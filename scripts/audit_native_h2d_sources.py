@@ -37,7 +37,7 @@ def acknowledged_prefetch_sources(
         if row.get("action") == "PREFETCH_GPU"
     }
     path = arm / "opportunities/admission_opportunities.jsonl"
-    if sources and path.exists():
+    if any(source is None for source in sources.values()) and path.exists():
         with path.open() as stream:
             for line in stream:
                 if "prefetch_native_issued" not in line:
@@ -45,7 +45,7 @@ def acknowledged_prefetch_sources(
                 row = json.loads(line)
                 if row.get("event") == "prefetch_native_issued":
                     command = row["command_id"]
-                    if command in sources and row.get("source") is not None:
+                    if command in sources and sources[command] is None and row.get("source") is not None:
                         sources[command] = row["source"]
     return sources
 

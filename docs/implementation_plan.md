@@ -1,6 +1,56 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-10.
+Status date: 2026-10-11.
+
+## V20 Capacity Handoff Follow-up and Busy-Window Evidence
+
+Terminal private-suffix retirement and parent restore/admission are implemented.
+The frozen predictive arm contains 371 real spawn children; their cumulative
+device releases are 119.545 GB FULL and 125.816 GB Mamba. Independent JOIN
+requests have 143.10/499.16 ms P50/P90 queue-to-first-service time, with a
+16.838 s maximum. Keep 1.507 GB early reused JOIN FULL separate from 76.993 GB
+demand-handoff reuse and from cumulative allocator release.
+
+Queued follow-ups activate an existing final-child report notice on sibling
+RETURN, reclaim settled unreferenced state under an actual Mamba shortfall,
+and exclude the full target closure from reclamation. Deploy after the current
+native arm preserves its frozen b019d24/c58cc891 comparison. Earlier sibling
+release can support pre-RETURN prediction; last-child release can only support
+post-RETURN demand restoration or subsequent parent growth.
+
+Reuse rid and visible identity within each request's completed-batch callback.
+Preserve full metadata checks for lease consumption and final-stage updates.
+Relative to befd5e0, alternating CPU fixtures report 39.884→35.132 microseconds
+for plain callbacks and 145.502→131.500 with semantic progress and 16 pending
+parent handoffs. Queue order and callback runtime state match. Preserve both
+v20_batch_visible_lookup_*_cpu_20261011.json reports; these are not GPU results.
+
+The live comparator now supports repeated --busy-window START:END without
+requiring a terminal summary. Keep decode token deltas separate from completed
+request lengths and explicitly report the complete service horizon. Attribute
+completed physical receipts and measured batch durations to submission windows;
+partition H2D bytes into JOIN/tool, demand handoff and native sources, timing
+each physical batch once. Report sampled layer waits without extrapolation.
+Receipt source metadata remains authoritative; only missing legacy sources
+require the opportunity-log fallback scan.
+
+Preserve v20_busy_windows_transfers_live_20261011.json. In 600–2400 s,
+native/predictive decode output is 1059.67/1036.79 token/s, despite nearly
+identical 47.309/47.325 weighted decode batches and input demand. Prefill
+worker wall intervals are 272.95/313.15 s. Total H2D is 2.337/2.328 TB and
+transfer-stream time is 71.34/67.39 s; sampled layer-wait P95 is 0.174/0.145 ms.
+These observations do not establish DMA as the cause of the extra 40.20 s
+prefill wall time. Inspect CPU restoration, admission and worker intervals
+next; avoid claiming a kernel-time breakdown from wall intervals.
+
+The busy window follows the native GC correction, but full-run JCT still
+carries that initialization asymmetry. Native django-11087 ends incomplete
+with two root finish_reason=length responses and 34998 visible characters;
+no deadline expiry, abort or guard completion occurs. The same task is
+incomplete in predictive. Preserve this model truncation and keep collecting.
+After this arm finishes, compare full results, deploy the queued revision,
+then run predictive first and cold native second with identical pre-workload
+GC initialization. The full performance goal remains active.
 
 ## V20 Parent Restoration and Control Cost
 

@@ -1,7 +1,11 @@
+from datetime import datetime
+import json
+
 import pytest
 
 from scripts.compare_native_policy_runs import (
-    h2d_source_parts, interval_milliseconds, last_runtime_state, percentile,
+    acknowledged_prefetch_sources, busy_window_statistics, h2d_source_parts,
+    interval_milliseconds, last_runtime_state, percentile,
     phase_statistics, transfer_parts, restore_wait_statistics,
 )
 
@@ -126,4 +130,164 @@ def test_last_runtime_state_ignores_partial_head_and_trailing_other_events(tmp_p
     )
     assert last_runtime_state(path) == {
         "event": "admission_runtime_state", "physical_disabled": False,
+    }
+
+
+def write_busy_window_fixture(arm, *, partial=False):
+    client, server = arm / "client_4", arm / "server"
+    client.mkdir()
+    server.mkdir()
+    client.joinpath("gpu_samples.csv").write_text(
+        "timestamp,gpu_utilization_percent\n"
+        "2026/10/10 00:00:00.000,0\n"
+        "2026/10/10 00:00:01.500,60\n"
+        "2026/10/10 00:00:02.500,80\n"
+        "2026/10/10 00:00:03.500,0\n"
+    )
+    anchor = datetime(2026, 10, 10).timestamp() * 1000.
+    services = [{
+        "event": "gpu_service_sample", "phase": phase, "batch_size": size,
+        "service_start_ts_ms": anchor + begin, "complete_ts_ms": anchor + end,
+        "complete_monotonic_ms": 1000. + end, "request_samples": [{"token_delta": tokens}],
+    } for phase, size, begin, end, tokens in (
+        ("decode", 2, 500., 1500., 4),
+        ("prefill", 4, 1250., 2500., 0),
+        ("decode", 6, 2500., 3500., 8),
+    )]
+    if partial:
+        services.pop()
+    server.joinpath("runtime_audit.jsonl").write_text(
+        "".join(json.dumps(row) + "\n" for row in services)
+        + ('{"event":"gpu_service_sample","complete_ts_ms":' if partial else "")
+    )
+    server.joinpath("runtime_events.sglang.jsonl").write_text(
+        json.dumps({
+            "kind": "llm_result", "ts_ms": anchor + 2750.,
+            "attributes": {"output_tokens": 100},
+        }) + "\n" + json.dumps({
+            "kind": "llm_submit", "ts_ms": anchor + 2000.,
+            "attributes": {"prompt_tokens": 20, "uncached_prompt_tokens": 4, "cached_tokens_host": 8},
+        }) + "\n"
+    )
+    client.joinpath("sglang_metrics.jsonl").write_text(json.dumps({
+        "monotonic_ts_ms": 3000., "num_running_reqs": 4, "num_queue_reqs": 2,
+    }) + "\n")
+
+
+def test_live_busy_window_separates_decode_work_from_request_completion_and_clips_overlap(tmp_path):
+    write_busy_window_fixture(tmp_path)
+    result = busy_window_statistics(tmp_path, [(1., 3.)])
+    window = result["windows"][0]
+    assert window["service_window_observed_complete"] is True
+    assert window["gpu_utilization_mean"] == 70.
+    assert window["running_mean"] == 4.
+    assert window["decode_output_tokens"] == 4
+    assert window["decode_output_tokens_per_second"] == 2.
+    assert window["request_completed_output_tokens_per_second"] == 50.
+    assert window["submitted_requests"] == 1
+    assert window["submitted_prompt_tokens"] == 20
+    assert window["submitted_uncached_prompt_tokens"] == 4
+    assert window["submitted_host_hit_tokens"] == 8
+    assert window["decode_batch_count"] == 2
+    assert window["prefill_batch_count"] == 1
+    assert window["decode_worker_interval_seconds"] == 1.
+    assert window["prefill_worker_interval_seconds"] == 1.25
+    assert window["decode_time_weighted_batch_size"] == 4.
+    assert window["worker_interval_union_seconds"] == 2.
+    assert "jct_mean_seconds" not in result
+
+
+def test_live_busy_window_keeps_incomplete_service_horizon_explicit(tmp_path):
+    write_busy_window_fixture(tmp_path, partial=True)
+    window = busy_window_statistics(tmp_path, [(1., 3.)])["windows"][0]
+    assert window["service_window_observed_complete"] is False
+    assert window["decode_output_tokens"] == 4
+    assert window["decode_worker_interval_seconds"] == .5
+
+
+def test_live_busy_window_partitions_mixed_transfers_without_duplicating_batch_time(tmp_path):
+    write_busy_window_fixture(tmp_path)
+    server = tmp_path / "server"
+    anchor = datetime(2026, 10, 10).timestamp() * 1000.
+    server.joinpath("native_telemetry_status.json").write_text(json.dumps({
+        "host_pool_evidence": {
+            "full": {"bytes_per_unit": 10}, "mamba": {"bytes_per_unit": 100},
+        },
+    }))
+    server.joinpath("physical_action_ack.jsonl").write_text("".join(
+        json.dumps(row) + "\n" for row in [
+            {"command_id": "join", "action": "PREFETCH_GPU", "source": "join_ticket"},
+            {"command_id": "handoff", "action": "PREFETCH_GPU", "source": "execution_handoff"},
+            {"command_id": "prepare", "action": "PREPARE_HOST",
+             "num_bytes": 20, "pool_bytes": {"kv": 20}},
+        ]
+    ))
+    server.joinpath("transfer_telemetry.jsonl").write_text("".join(
+        json.dumps(row) + "\n" for row in [
+            {
+                "direction": "h2d", "submit_ts_ms": anchor + 2000.,
+                "actual_bytes": 180, "num_tokens_by_pool": {"kv": 8, "mamba": 1},
+                "submit_to_ack_ms": 20., "transfer_stream_elapsed_ms": 5.,
+                "tagged_child_commits": [
+                    {"command_id": "join", "num_bytes": 30, "num_tokens_by_pool": {"kv": 3}},
+                    {"command_id": "handoff", "num_bytes": 120,
+                     "num_tokens_by_pool": {"kv": 2, "mamba": 1}},
+                ],
+            },
+            {
+                "direction": "d2h", "submit_ts_ms": anchor + 1500.,
+                "actual_bytes": 50, "num_tokens_by_pool": {"kv": 5},
+                "submit_to_ack_ms": 10., "transfer_stream_elapsed_ms": None,
+                "tagged_child_commits": [{"command_id": "prepare"}],
+            },
+            {
+                "direction": "h2d", "submit_ts_ms": anchor + 500.,
+                "actual_bytes": 1000, "num_tokens_by_pool": {"kv": 100},
+                "submit_to_ack_ms": 5., "transfer_stream_elapsed_ms": 1.,
+            },
+        ]
+    ) + '{"direction":"h2d"')
+    audit_path = server / "runtime_audit.jsonl"
+    rows = [json.loads(line) for line in audit_path.read_text().splitlines()]
+    rows.insert(0, {
+        "event": "gpu_restore_dependency_wait", "ts_ms": anchor + 500.,
+        "gpu_layer_dependency_wait_ms": 100.,
+    })
+    rows.insert(2, {
+        "event": "gpu_restore_dependency_wait", "ts_ms": anchor + 2250.,
+        "gpu_layer_dependency_wait_ms": 3.,
+    })
+    audit_path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    window = busy_window_statistics(tmp_path, [(1., 3.)])["windows"][0]
+    assert window["transfer_telemetry_present"] is True
+    assert window["transfer_batches"]["h2d"] == {
+        "count": 1, "bytes": 180, "submit_to_ack_ms": 20.,
+        "stream_measured_count": 1, "transfer_stream_ms": 5.,
+        "kv_units": 8, "kv_bytes": 80, "mamba_units": 1, "mamba_bytes": 100,
+    }
+    assert window["h2d_sources"]["predictive"]["bytes"] == 30
+    assert window["h2d_sources"]["execution_handoff"]["bytes"] == 120
+    assert window["h2d_sources"]["native"]["bytes"] == 30
+    assert window["d2h_actions"]["PREPARE_HOST"]["bytes"] == 20
+    assert window["d2h_actions"]["native"]["bytes"] == 30
+    assert window["gpu_restore_dependency_wait"]["sampled_batches"] == 1
+    assert window["gpu_restore_dependency_wait"]["sampled_gpu_wait_sum_ms"] == 3.
+
+
+def test_receipt_sources_skip_unneeded_opportunity_scan_and_keep_legacy_fallback(tmp_path):
+    opportunities = tmp_path / "opportunities"
+    opportunities.mkdir()
+    path = opportunities / "admission_opportunities.jsonl"
+    path.write_text(
+        '{"event":"prefetch_native_issued","command_id":"join","source":"join_ticket"}\n'
+        '{"event":"prefetch_native_issued","command_id":"legacy","source":"execution_handoff"}\n'
+    )
+    receipts = [{"command_id": "join", "action": "PREFETCH_GPU", "source": "tool_wait"}]
+    assert acknowledged_prefetch_sources(tmp_path, receipts) == {"join": "tool_wait"}
+    receipts[0]["source"] = None
+    assert acknowledged_prefetch_sources(tmp_path, receipts) == {"join": "join_ticket"}
+    receipts[0]["source"] = "tool_wait"
+    receipts.append({"command_id": "legacy", "action": "PREFETCH_GPU"})
+    assert acknowledged_prefetch_sources(tmp_path, receipts) == {
+        "join": "tool_wait", "legacy": "execution_handoff",
     }

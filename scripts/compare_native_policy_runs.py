@@ -25,8 +25,10 @@ from scripts.audit_native_h2d_sources import (
 
 def records(path: Path):
     if path.exists():
-        with path.open() as stream:
+        with path.open("rb") as stream:
             for line in stream:
+                if not line.endswith(b"\n"):
+                    break
                 if line.strip():
                     yield json.loads(line)
 
@@ -137,6 +139,207 @@ def restore_wait_statistics(rows) -> dict:
             "Sampled CUDA-stream native layer-dependency waits including event "
             "overhead; not all H2D, not request queue delay or an oracle JCT bound."
         ),
+    }
+
+
+def busy_window_statistics(arm: Path, windows: list[tuple[float, float]]) -> dict:
+    """Read completed service batches without requiring a terminal client summary."""
+    clients = list(arm.glob("client_*/gpu_samples.csv"))
+    if len(clients) != 1:
+        raise ValueError(f"expected one GPU monitor: {arm}")
+    with clients[0].open() as stream:
+        gpu_rows = list(csv.DictReader(stream))
+    anchor_ms = datetime.strptime(
+        gpu_rows[0]["timestamp"].strip(), "%Y/%m/%d %H:%M:%S.%f",
+    ).timestamp() * 1000.
+    horizon_ms = anchor_ms + max(end for _, end in windows) * 1000.
+    bands = [{
+        "start_seconds": begin, "end_seconds": end,
+        "gpu_utilization": [], "running": [], "waiting": [],
+        "request_completed_output_tokens": 0, "decode_output_tokens": 0,
+        "submitted_requests": 0, "submitted_prompt_tokens": 0,
+        "submitted_uncached_prompt_tokens": 0, "submitted_host_hit_tokens": 0,
+        "service_rows": [], "restore_wait_rows": [],
+        "transfer_batches": defaultdict(Counter), "h2d_sources": defaultdict(Counter),
+        "d2h_actions": defaultdict(Counter),
+    } for begin, end in windows]
+    for row in gpu_rows:
+        ts_ms = datetime.strptime(
+            row["timestamp"].strip(), "%Y/%m/%d %H:%M:%S.%f",
+        ).timestamp() * 1000.
+        for band in bands:
+            if band["start_seconds"] <= (ts_ms - anchor_ms) / 1000. < band["end_seconds"]:
+                band["gpu_utilization"].append(float(row["gpu_utilization_percent"]))
+    clock_offset = None
+    last_complete_ms = None
+    service_path = arm / "server/runtime_audit.jsonl"
+    with service_path.open("rb") as stream:
+        for line in stream:
+            if not line.endswith(b"\n"):
+                break
+            if b"gpu_service_sample" not in line and b"gpu_restore_dependency_wait" not in line:
+                continue
+            row = json.loads(line)
+            if row.get("event") == "gpu_restore_dependency_wait":
+                for band in bands:
+                    if band["start_seconds"] <= (row["ts_ms"] - anchor_ms) / 1000. < band["end_seconds"]:
+                        band["restore_wait_rows"].append(row)
+                continue
+            if row.get("event") != "gpu_service_sample":
+                continue
+            complete = row["complete_ts_ms"]
+            if last_complete_ms is not None and complete < last_complete_ms:
+                raise ValueError(f"service observations are not ordered: {service_path}")
+            last_complete_ms = complete
+            if clock_offset is None:
+                clock_offset = complete - row["complete_monotonic_ms"]
+            for band in bands:
+                begin_ms = anchor_ms + band["start_seconds"] * 1000.
+                end_ms = anchor_ms + band["end_seconds"] * 1000.
+                if row["service_start_ts_ms"] < end_ms and complete > begin_ms:
+                    band["service_rows"].append({
+                        "start_ms": max(begin_ms, row["service_start_ts_ms"]),
+                        "end_ms": min(end_ms, complete), "phase": row["phase"],
+                        "running": row["batch_size"], "observation_count": 1,
+                    })
+                if row["phase"] == "decode" and begin_ms <= complete < end_ms:
+                    band["decode_output_tokens"] += sum(
+                        sample["token_delta"] for sample in row["request_samples"]
+                    )
+            if complete >= horizon_ms:
+                break
+    for row in records(arm / "server/runtime_events.sglang.jsonl"):
+        for band in bands:
+            if band["start_seconds"] <= (row["ts_ms"] - anchor_ms) / 1000. < band["end_seconds"]:
+                attrs = row.get("attributes") or {}
+                if row["kind"] == "llm_result":
+                    band["request_completed_output_tokens"] += attrs.get("output_tokens") or 0
+                elif row["kind"] == "llm_submit":
+                    band["submitted_requests"] += 1
+                    for field, source in (
+                        ("submitted_prompt_tokens", "prompt_tokens"),
+                        ("submitted_uncached_prompt_tokens", "uncached_prompt_tokens"),
+                        ("submitted_host_hit_tokens", "cached_tokens_host"),
+                    ):
+                        band[field] += attrs.get(source) or 0
+    if clock_offset is not None:
+        for row in records(clients[0].parent / "sglang_metrics.jsonl"):
+            mono = row.get("monotonic_ts_ms")
+            if "error" in row or mono is None:
+                continue
+            for band in bands:
+                if band["start_seconds"] <= (mono + clock_offset - anchor_ms) / 1000. < band["end_seconds"]:
+                    band["running"].append(row.get("num_running_reqs", 0))
+                    band["waiting"].append(row.get("num_queue_reqs", 0))
+    acknowledgements = {
+        row["command_id"]: row
+        for row in records(arm / "server/physical_action_ack.jsonl")
+    }
+    sources = acknowledged_prefetch_sources(arm, acknowledgements.values())
+    status_path = arm / "server/native_telemetry_status.json"
+    status = json.loads(status_path.read_text()) if status_path.exists() else {}
+    pools = status.get("host_pool_evidence") or {}
+    sizes = {
+        pool: evidence["bytes_per_unit"]
+        for pool, name in (("kv", "full"), ("mamba", "mamba"))
+        if (evidence := pools.get(name) or {}).get("bytes_per_unit") is not None
+    }
+    transfer_path = arm / "server/transfer_telemetry.jsonl"
+    for row in records(transfer_path):
+        selected = [
+            band for band in bands
+            if band["start_seconds"] <= (row["submit_ts_ms"] - anchor_ms) / 1000. < band["end_seconds"]
+        ]
+        if not selected:
+            continue
+        direction = row["direction"]
+        parts = (
+            h2d_source_parts(row, sources, sizes) if direction == "h2d"
+            else transfer_parts(row, acknowledgements, sizes)
+        )
+        for band in selected:
+            batch = band["transfer_batches"][direction]
+            batch["count"] += 1
+            batch["bytes"] += row["actual_bytes"]
+            batch["submit_to_ack_ms"] += row["submit_to_ack_ms"]
+            if row.get("transfer_stream_elapsed_ms") is not None:
+                batch["stream_measured_count"] += 1
+                batch["transfer_stream_ms"] += row["transfer_stream_elapsed_ms"]
+            for pool, units in row["num_tokens_by_pool"].items():
+                batch[f"{pool}_units"] += units
+                if pool in sizes:
+                    batch[f"{pool}_bytes"] += units * sizes[pool]
+            source_counts = band["h2d_sources" if direction == "h2d" else "d2h_actions"]
+            for part in parts:
+                source = part["category" if direction == "h2d" else "kind"]
+                counts = source_counts[source]
+                counts["batch_parts"] += 1
+                counts["bytes"] += part["bytes"]
+                for pool, amount in part["pool_bytes"].items():
+                    counts[f"{pool}_bytes"] += amount
+    result = []
+    for band in bands:
+        duration = band["end_seconds"] - band["start_seconds"]
+        service_rows = band.pop("service_rows")
+        restore_waits = band.pop("restore_wait_rows")
+        transfers = {
+            name: {source: dict(counts) for source, counts in band.pop(name).items()}
+            for name in ("transfer_batches", "h2d_sources", "d2h_actions")
+        }
+        item = {
+            **{key: value for key, value in band.items()
+               if key not in ("gpu_utilization", "running", "waiting")},
+            **transfers,
+            "transfer_telemetry_present": transfer_path.exists(),
+            "pool_bytes_per_unit": sizes,
+            "gpu_restore_dependency_wait": restore_wait_statistics(restore_waits),
+            **{f"{key}_mean": mean(band[key]) if band[key] else None
+               for key in ("gpu_utilization", "running", "waiting")},
+            "service_window_observed_complete": (
+                last_complete_ms is not None
+                and last_complete_ms >= anchor_ms + band["end_seconds"] * 1000.
+            ),
+            "decode_output_tokens_per_second": band["decode_output_tokens"] / duration,
+            "request_completed_output_tokens_per_second": (
+                band["request_completed_output_tokens"] / duration
+            ),
+            "worker_interval_union_seconds": interval_milliseconds(
+                service_rows, anchor_ms + band["start_seconds"] * 1000.,
+                anchor_ms + band["end_seconds"] * 1000.,
+            ) / 1000.,
+        }
+        for phase in ("decode", "prefill"):
+            selected = [row for row in service_rows if row["phase"] == phase]
+            elapsed = sum(row["end_ms"] - row["start_ms"] for row in selected)
+            item[f"{phase}_batch_count"] = len(selected)
+            item[f"{phase}_worker_interval_seconds"] = elapsed / 1000.
+            item[f"{phase}_mean_clipped_worker_interval_ms"] = (
+                elapsed / len(selected) if selected else None
+            )
+            item[f"{phase}_time_weighted_batch_size"] = (
+                sum(row["running"] * (row["end_ms"] - row["start_ms"]) for row in selected)
+                / elapsed if elapsed else None
+            )
+        result.append(item)
+    return {
+        "run": str(arm.resolve()), "time_origin": "first GPU-monitor sample",
+        "time_origin_local": gpu_rows[0]["timestamp"].strip(),
+        "windows": result,
+        "measurement_notes": [
+            "Live generation can produce different request traces in each policy.",
+            "No incomplete-run JCT or completed-only workflow comparison is included.",
+            "Decode token deltas belong to their completed worker batch's window.",
+            "LLM output lengths separately belong to the request completion window.",
+            "Worker intervals are scheduler/worker wall intervals, not CUDA kernel durations.",
+            "Input/cache token counts belong to submission, not the actual GPU-service window.",
+            "Transfer payloads and measured batch durations belong to the physical submission window.",
+            "Only completed transfer receipts are included; live pending batches are not credited.",
+            "Physical batch durations are counted once, even when payload sources share a batch.",
+            "JOIN/tool source bytes require separate event-boundary and first-reuse checks to prove anticipation.",
+            "Restore dependency waits are sampled CUDA layer waits, not per-request queue wait or all-batch totals.",
+            "GPU utilization is the mean of monitor samples within each window.",
+            "A trailing unfinished JSONL record is excluded from this read.",
+        ],
     }
 
 
@@ -523,13 +726,29 @@ def compare_run(arm: Path, timeline_path: Path, bin_seconds: int) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--arm", action="append", required=True, help="NAME=RUN_PATH")
-    parser.add_argument("--timeline", action="append", required=True, help="NAME=JSON_GZ_PATH")
+    parser.add_argument("--timeline", action="append", default=[], help="NAME=JSON_GZ_PATH")
+    parser.add_argument("--busy-window", action="append", help="START_SECONDS:END_SECONDS; supports live arms")
     parser.add_argument("--bin-seconds", type=int, default=600)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.bin_seconds <= 0:
         parser.error("--bin-seconds must be positive")
     arms = dict(item.split("=", 1) for item in args.arm)
+    if args.busy_window:
+        windows = [tuple(float(value) for value in window.split(":")) for window in args.busy_window]
+        if any(len(window) != 2 or not 0 <= window[0] < window[1] for window in windows):
+            parser.error("busy windows must have nonnegative start and greater end")
+        report = {
+            "schema_version": 1,
+            "scope": "observed live busy windows, not a completed pair or causal speedup",
+            "runs": {name: busy_window_statistics(Path(path), windows) for name, path in arms.items()},
+        }
+        args.output.parent.mkdir(parents=True, exist_ok=True)
+        args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
+        print(f"Saved {args.output}")
+        for name, run in report["runs"].items():
+            print(name, json.dumps(run["windows"]))
+        return
     timelines = dict(item.split("=", 1) for item in args.timeline)
     if set(arms) != set(timelines):
         parser.error("each arm requires its corresponding timeline")

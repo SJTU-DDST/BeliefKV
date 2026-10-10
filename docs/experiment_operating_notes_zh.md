@@ -1,8 +1,33 @@
 # BeliefKV 实验注意事项
 
-更新日期：2026-10-10。本文是当前实验的执行约束，不是新增 agent
+更新日期：2026-10-11。本文是当前实验的执行约束，不是新增 agent
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
+
+## V20 容量交接与忙时统计
+
+当前 native 保持 b019d24/c58cc891 冻结，隔离分支的 sibling 通知
+联动、Mamba 槽回收和控制减负在成对采集结束后部署。终态 child
+释放必须基于真实 RETURN、上下文结束和原生无引用/锁/在途依赖；
+不得预测性释放运行中 child，也不为无用私有后缀再做 D2H。
+较早 sibling 释放与最后 child 释放分别核对；返回后 handoff 不
+归为完成边界前的预测 H2D，累计释放量不代表 parent 独占空间。
+
+可用 compare_native_policy_runs.py --busy-window 比较已观测完整
+的忙时窗口，但未完成 native 不计算部分 JCT。输出按完成 decode
+batch 的 token delta，最终请求长度另列；worker 墙钟区间不能当
+GPU kernel 时间。物理传输按 submit 窗口的已完成回执统计，
+混合 batch 的时间只计一次。JOIN/tool 来源标记还需独立完成
+边界及下一请求复用，需求 handoff 继续单列。层恢复等待只是
+采样，不乘采样间隔推算总等待。
+
+V20 的 600–2400 秒窗口 predictive 输出仍低约 2.16%，prefill
+墙钟区间多约 40.20 秒；H2D stream 和采样层等待没有同步增大。
+保留此未解决问题，不用容量交接、CPU 基准或工具尾部宣称达标。
+native django-11087 的 incomplete 来自 root 输出 length 截断；
+没有 workflow deadline、abort 或 guard 终态，不因此中断实验。
+全程 JCT 仍注明 native GC 初始化在就绪后 331 秒才补做；后续
+两臂都在 health 成功后、提交 workload 前完成同一初始化。
 
 ## V17 开发迭代约定
 

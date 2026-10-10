@@ -1,6 +1,62 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-10-10。
+更新日期：2026-10-11。
+
+## V20 容量交接跟进与忙时对照
+
+终态 child 到 parent 的容量交接已在冻结版 v20 predictive 中
+触发；按真实 spawn 身份重算，371 个 child 累计释放设备
+FULL 119.545 GB、Mamba 125.816 GB。192 个独立 JOIN 的
+parent 入队到实际首次服务 P50/P90 为 143.10/499.16 ms，
+最大仍为 16.838 秒。JOIN 边界前启动并由下一请求复用的
+FULL 为 1.507 GB；76.993 GB 需求 handoff 复用继续单列。
+这些是关联和复用证据，不是释放空间被 parent 独占的证明。
+
+后续隔离修订已补齐 sibling RETURN 后激活最后 child 的既有
+收尾通知、真实 Mamba 短缺时回收无引用冷备份，以及恢复闭包
+内驻留祖先的保护。最后 child 结束后才启动的恢复仍记作需求
+恢复，不能算 RETURN 前预取。主目录 b019d24、部署引擎
+c58cc891 和预测产物在本轮 native 中保持冻结。
+
+完成 batch 回调进一步复用同一请求内的 rid 和 visible key，
+省去重复字典查询；lease 和收尾阶段的元数据仍独立核验，
+不跨调度迭代缓存身份。相对 befd5e0 的交替顺序 CPU 基准，
+普通回调均值 39.884→35.132 微秒，带语义进度和 16 个待交接
+parent 时 145.502→131.500 微秒，分别降低 11.9%/9.6%。
+队列顺序与回调后 runtime 状态一致；这不是实测 GPU 吞吐收益。
+报告保留为 v20_batch_visible_lookup_{plain,semantic}_cpu_20261011.json。
+
+新增 compare_native_policy_runs.py --busy-window，允许在 native
+尚未结束时比较已完整观测的相同忙时窗口，不计算部分 JCT。
+按完成 decode batch 的 token delta 统计输出，另列请求结束时
+输出长度；worker 墙钟区间按窗口裁剪，不把它当 CUDA kernel
+时间。迁移按真实 submit 窗口统计已完成回执，各物理 batch 的
+时间只计一次；JOIN/tool、需求 handoff 与原生字节分别归因。
+恢复等待单列为采样 CUDA 层依赖，不外推成全部请求等待。
+
+v20_busy_windows_transfers_live_20261011.json 的 600–2400 秒
+窗口中，native/predictive 的 decode batch 为 47.309/47.325，
+实际 decode 输出为 1059.67/1036.79 token/s，predictive 低
+2.16%；GPU 利用率为 82.44%/79.46%。提交请求 11216/11232、
+未缓存输入约 10.44/10.32 M token，prefill worker 区间累计
+272.95/313.15 秒，差约 40.20 秒。
+
+同窗口总 H2D 为 2.337/2.328 TB，transfer-stream 累计
+71.34/67.39 秒；predictive 的 FULL H2D 为 1.298 TB，
+其中原生 1.242 TB、需求 handoff 55.969 GB、JOIN/tool
+来源 839.434 MB。来源标记不单独证明完成边界前的提前复用。
+D2H stream 累计为 140.03/65.45 秒；采样层恢复等待 P95
+为 0.174/0.145 ms，464/418 个 batch 合计 86.55/75.49 ms。
+这些测量未显示 DMA 或采样层依赖增大，不能据此解释额外的
+prefill 墙钟区间；继续核查 CPU 恢复、准入和 worker 路径。
+
+本窗口晚于 native 的 331 秒 GC 初始化补做；全程 JCT 仍须
+注明初始化差异。native 已出现与 predictive 同任务的
+django-11087 incomplete：root 最后两次 finish_reason=length，
+最终正文 34998 字符，无 deadline、abort 或 guard 终态。
+保留为模型终态截断，不因此重启 native 或加入 agent guard。
+后续修订在本轮结束后部署，再先 predictive、后同版本冷 native；
+实际忙时吞吐和配对 JCT 改善尚未达到 active 目标。
 
 ## V20 parent 恢复与控制开销优化
 

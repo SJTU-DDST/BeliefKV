@@ -6651,12 +6651,13 @@ class NativeAdmissionRuntime:
             if self._prefetch_service_leases else ()
         )
         for req in batch.reqs:
+            rid = req.rid
+            visible_key = self.visible.get(rid)
             if self._parent_capacity_handoffs:
-                visible = self.visible.get(getattr(req, "rid", None))
-                if visible is not None and visible.context_id in self._parent_capacity_handoffs:
+                if visible_key is not None and visible_key.context_id in self._parent_capacity_handoffs:
                     self._observe_parent_handoff_service(req)
             if pending_by_context:
-                key = self.visible.get(getattr(req, "rid", None))
+                key = visible_key
                 for command, step in pending_by_context.get(
                     key.context_id if key is not None else "", (),
                 ):
@@ -6691,7 +6692,7 @@ class NativeAdmissionRuntime:
                                 command, "first_gpu_service", request=req,
                             )
             if self._semantic_worker is not None:
-                key = self.visible.get(getattr(req, "rid", None))
+                key = visible_key
                 if key is not None:
                     self._semantic_keys[key.request_id] = key
                     history = self._semantic_progress.setdefault(
@@ -6720,11 +6721,11 @@ class NativeAdmissionRuntime:
                             time.monotonic() * 1000, tokens,
                         )
                         self._record_native_final_body(req, key)
-            stage = self._final_request_stages.get(getattr(req, "rid", None))
+            stage = self._final_request_stages.get(rid)
             if stage is not None:
                 key = _request_key(req)
                 if (
-                    key is not None and key == self.visible.get(key.request_id)
+                    key is not None and key == visible_key
                     and key.invocation_id == stage.child_id
                     and key.context_epoch == stage.child_epoch
                 ):
@@ -6743,8 +6744,8 @@ class NativeAdmissionRuntime:
                         stage.generated_tokens = tokens
                         stage.last_service_at = now
             if (
-                req.rid in self.visible
-                and (key := self.visible[req.rid]).session_id is not None
+                visible_key is not None
+                and (key := visible_key).session_id is not None
                 and key.session_generation is not None
             ):
                 self._context_tokens[key.context_id] = (
@@ -6753,19 +6754,19 @@ class NativeAdmissionRuntime:
                     len(getattr(req, "output_ids", ()) or ()),
                     req.beliefkv_metadata.get("parent_invocation_id") is not None,
                 )
-            if req.rid in self.visible and req.finished():
-                context_id = self.visible[req.rid].context_id
-                key = self.visible[req.rid]
-                del self.visible[req.rid]
-                self._visible_since.pop(req.rid, None)
-                self.demand_hints.pop(req.rid, None)
+            if visible_key is not None and req.finished():
+                context_id = visible_key.context_id
+                key = visible_key
+                del self.visible[rid]
+                self._visible_since.pop(rid, None)
+                self.demand_hints.pop(rid, None)
                 session_key = self.context_sessions.get(context_id)
                 if (
                     session_key is not None
-                    and session_key.request_id == req.rid
+                    and session_key.request_id == rid
                     and self._terminal(session_key)
                 ):
-                    self._forget_session(req.rid)
+                    self._forget_session(rid)
                     self._context_tokens.pop(context_id, None)
                 self.semantic_revision += 1
         self._refresh_prefetch_service_leases()
