@@ -2,6 +2,52 @@
 
 Status date: 2026-10-10.
 
+## V19 Terminal Child Capacity Handoff
+
+Implement authoritative RETURN-based retirement of nonpersistent child sessions.
+Reuse existing final-stage parent checkpoint/extent planning; a completion notice
+or EOS alone cannot release running child data. Release session references in the
+native scheduler and discard only proven child-path leaves without session/device/
+Host references or pending writes/loads. Walk proven ancestors only after their
+last private branch is removed; preserve shared prefixes. No extra D2H is needed
+for dead suffixes. Account actual FULL tokens and Mamba slots independently.
+
+Retain bounded closed-generation leaf provenance for close-before-RETURN, and
+invalidate it when a session reopens. Handle TOOL_END and RETURN in one event
+batch without losing the terminal session identity. Retry unsettled native
+dependencies with bounded maintenance work; unsupported tree cores retain KV.
+Parent bookkeeping survives its next-request epoch transition, then clears at
+first observed service, context compaction, terminal state or workflow end.
+
+Use actual freed capacity via the native allocator. Retry demand restoration
+immediately after device capacity release. Within the imminent native admission
+frontier, prefer a JOIN-unlocked parent after the shared ordinary-admission quota;
+once its submitted request's required checkpoint is resident, apply bounded
+ready-parent priority. Preserve aging, ordinary admissions, restoration leases,
+new-input/decode/state reserves and native running-slot decisions. Do not reserve
+physical pages exclusively for a parent or manufacture a GPU slot.
+
+Keep early-sibling-enabled anticipatory restoration separate from last-child
+post-RETURN demand handoff. Audit actual per-pool terminal releases and parent
+JOIN/service linkage using terminal_child_cache_reclaimed and
+parent_capacity_handoff_first_service. The service record is the first observed
+completed GPU batch, not exact kernel start or proof of exclusive capacity reuse.
+Unknown byte sizes and reversed/missing clock boundaries remain unknown.
+
+440 scoped runtime/physical/lifecycle checks and116 native session/tree/allocator/
+restoration checks pass, including real CPU FULL+Mamba pools, shared references,
+close/RETURN races, pending DMA, reopening, imminent-frontier bounds, aged quotas
+and one-shot parent service linkage. Canonical engine patch SHA256:
+`c58cc89194a66fe74d2a0e842db4972e5d1d059a2f4870f109f36f223c8ee4ae`.
+
+Commit first, preserve V18's traces/receipts/plan and interruption classification,
+stop all old client/server/scheduler processes, then deploy and cold-start V19
+predictive first. Keep156 tasks,108+48 at3600s,running48,Host200GB80:20,
+HBM0.9,hard180s tools,lead500ms and unchanged semantic artifact. Verify real
+terminal releases and parent consumption before a stable same-version native
+comparison. Do not mark the active throughput/JCT goal achieved from these tests
+or from CPU, ACK, transfer-byte or tool-tail evidence.
+
 ## V18 Text Ingress Revision
 
 Stop V17 for the authorized development iteration at16:21:53 CST,2026-10-10.

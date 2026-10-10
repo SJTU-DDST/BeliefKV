@@ -5,8 +5,50 @@ import pytest
 from scripts.audit_prefetch_lifecycle import (
     audit, full_expiration_evidence, http_transport_waits,
     prepare_host_lifetime_summary, prepare_restore_attribution,
-    prepare_selection_summary, source_summary, wait_event_attribution,
+    prepare_selection_summary, source_summary, terminal_capacity_summary, wait_event_attribution,
 )
+
+
+def test_terminal_capacity_link_keeps_pool_evidence_and_post_service_release_separate():
+    child = {
+        "workflow_id": "wf", "context_id": "child", "session_id": "s",
+        "session_generation": 1, "parent_context_id": "parent", "join_id": "join",
+        "ts_ms": 20., "freed_device_units": {"0": 4, "2": 1},
+        "freed_host_units": {"0": 2}, "bytes_per_unit": {"0": 10},
+    }
+    reclaims = [
+        child,
+        {**child, "retry": True, "ts_ms": 40.,
+         "freed_device_units": {"0": 2}, "freed_host_units": {}},
+        {**child, "ts_ms": 30., "join_id": "other",
+         "freed_device_units": {"0": 100}, "freed_host_units": {}},
+    ]
+    services = [{
+        "workflow_id": "wf", "context_id": "parent", "join_id": "join",
+        "request_id": "next", "ts_ms": 35.,
+        "last_observed_child_return_ts_ms": 15., "request_wait_ms": 5.,
+    }]
+    result = terminal_capacity_summary(reclaims, services)
+    assert result["freed_device_units"] == {"0": 106, "2": 1}
+    assert result["freed_device_bytes_known"] == {"0": 1060}
+    assert result["freed_device_units_with_unknown_byte_size"] == {"2": 1}
+    assert result["freed_host_bytes_known"] == {"0": 20}
+    assert result["rows"][0]["freed_device_units_before_service"] == {"0": 4, "2": 1}
+    assert result["last_child_return_to_first_service_ms"]["p50"] == 20.
+    assert result["parent_services_with_prior_device_release"] == 1
+    assert result["terminal_children"] == 1
+
+
+def test_terminal_capacity_missing_or_reversed_return_time_stays_unknown():
+    services = [{
+        "workflow_id": "wf", "context_id": "parent", "join_id": "join",
+        "request_id": "next", "ts_ms": 30.,
+        "last_observed_child_return_ts_ms": returned,
+    } for returned in (None, 40.)]
+    result = terminal_capacity_summary([], services)
+    assert result["last_child_return_to_first_service_ms"] == {"count": 0}
+    assert result["freed_device_bytes_known"] == {}
+    assert result["parent_services_with_prior_device_release"] == 0
 
 
 def test_prepare_burst_ack_attribution_does_not_multiply_first_extent_estimates():

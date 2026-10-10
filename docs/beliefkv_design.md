@@ -83,7 +83,25 @@ child/tool 返回前的预测 H2D 单独计数。前者已有物理 ACK 与
 FULL 首次复用证据，不能计作提前预测收益。完整 JointPlan、
 主动 COMMIT 与 running retraction 的缺口仍单列为后续工作。
 
-当前 V15 比较为 156 个任务，108 个在 t=0 到达、48 个在
+child→parent 容量交接由权威 RETURN 与原生物理引用共同驱动。
+通知阶段复用现有 parent 安全 checkpoint/缺失页规划；RETURN
+后，在 scheduler 内释放非持久 child 的 session 引用，并直接
+回收无共享引用、无设备/Host 锁、无在途 DMA 的私有终态叶及
+经逐节点验证的私有祖先，不为无用后缀新增 D2H。闭合 generation
+来源处理 close/RETURN 顺序，session 重开失效旧来源。FULL、
+Mamba 和 parent 新输入/decode 增长分别核算，不能按 child
+完整上下文推算释放量，也不要求 parent 使用相同物理页号。
+
+实际释放容量进入原生 allocator，可供既有预取与需求恢复使用。
+JOIN 解锁 parent 的缺失 checkpoint 恢复只在近期可准入候选内
+有界优先；JOIN 满足、下一请求已提交且必要数据驻留后，再与
+恢复页租约和普通请求老化共同决定优先准入。不存在未提交
+parent 长期独占容量或模型预测许可释放运行中 child 的路径。
+较早 sibling 释放可支持真正边界前 H2D；最后 child 释放后才
+启动的恢复属于需求 handoff。终态分池释放与 parent 首次观测
+完成 batch 独立记录，不能把容量关联当成预测复用或 JCT 改善。
+
+V15 历史比较配置为 156 个任务，108 个在 t=0 到达、48 个在
 3600 秒后到达，running=48、NUMA1 Host200GB/FULL:Mamba80:20、
 HBM Mamba/FULL=0.9、context131072、completion8192、
 graph2048/reserve32、workflow14400s，seed21/temperature0。
@@ -92,11 +110,12 @@ native 关闭 BeliefKV 控制与优先策略，保留双方一致的协议兼容
 客户端优化及遥测；它不是未修改的上游 wheel。
 
 V15 从冻结提交 `feb5ee01a9f1340a694dcba442c439d08e4bd274`
-运行；主目录、引擎与预测产物在两侧及完整后处理结束前保持
-冻结，新修订仅在隔离分支提交。predictive 已完成 156/156；
-native 对照尚未完成，目标仍未达成。completed 是运行终态，
-任务正确性另行评价。正式实验多轮取平均，当前开发先用完整
-同配置比较定位退化；固定需求 GPU 回放不是主线前置条件。
+运行，其最终比较与高负载退化见架构状态页。当前推进 V19
+终态容量交接：运行中的主目录、引擎与预测产物保持冻结，
+新修订先在隔离分支提交，再按已授权的快速开发节奏停旧采集、
+保存截断证据并冷启动新版。仍需完成稳定同版本 native 对照，
+目标尚未达成。completed 是运行终态，任务正确性另行评价。
+正式实验多轮取平均，固定需求 GPU 回放不是主线前置条件。
 实际实现、最终数据与未完成项以架构状态页和执行计划为准。
 
 主指标为完成吞吐、JCT 和 completion curve；同时报告实际

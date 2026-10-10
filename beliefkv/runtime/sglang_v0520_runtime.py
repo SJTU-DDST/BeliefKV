@@ -7,7 +7,7 @@ from __future__ import annotations
 
 from collections import Counter, OrderedDict, deque
 from collections.abc import Sequence
-from dataclasses import asdict, dataclass, replace
+from dataclasses import asdict, dataclass, field, replace
 from itertools import islice
 import math
 import json
@@ -215,6 +215,26 @@ class _PrefetchServiceLease:
     demand_ready: bool = False
     reentry_ready_at: float | None = None
     client_submitted_at: float | None = None
+
+
+@dataclass
+class _ParentCapacityHandoff:
+    key: PrefillCandidateKey
+    join_id: str
+    created_at: float
+    child_ids: set[str] = field(default_factory=set)
+    freed_device_units: Counter = field(default_factory=Counter)
+    freed_host_units: Counter = field(default_factory=Counter)
+    last_return_ts_ms: float = 0.
+
+
+@dataclass
+class _TerminalChildReclaim:
+    key: PrefillCandidateKey
+    parent_context_id: str | None
+    join_id: str | None
+    returned_ts_ms: float
+    retry_anchors: tuple = ()
 
 
 class NativeAdmissionRuntime:
@@ -452,6 +472,10 @@ class NativeAdmissionRuntime:
         self._execution_handoff_next_ms = 0.
         self._execution_handoff_attempted: set[PrefillCandidateKey] = set()
         self._reentry_observations: dict[PrefillCandidateKey, tuple[float, dict | None]] = {}
+        self._terminal_child_reclaims: OrderedDict[tuple, _TerminalChildReclaim] = OrderedDict()
+        self._terminal_child_reclaim_next_ms = 0.
+        self._parent_capacity_handoffs: dict[str, _ParentCapacityHandoff] = {}
+        self._parent_handoff_priority_promoted: str | None = None
         self._residency_scan_cursor = 0
         self._prefill_causal_cache: tuple | None = None
         self._prefill_cycle_active = False
@@ -583,6 +607,8 @@ class NativeAdmissionRuntime:
         self._final_stages.clear()
         self._final_request_stages.clear()
         self._terminal_cache_watches.clear()
+        self._terminal_child_reclaims.clear()
+        self._parent_capacity_handoffs.clear()
         if self._opportunity_writer is not None:
             self._record_runtime_state(final=True)
             self._opportunity_writer.close()
@@ -660,6 +686,8 @@ class NativeAdmissionRuntime:
     def idle_poll_timeout_ms(self) -> int:
         if self.physical_ledger.pending_count:
             return 10
+        if self._terminal_child_reclaims:
+            return 50
         if self._prefetch_service_leases:
             return 100
         if self._tool_timing_only and any(
@@ -749,6 +777,8 @@ class NativeAdmissionRuntime:
             self.demand_hints.clear()
             self._last_model_signature = None
             self.context_sessions.clear()
+            self._terminal_child_reclaims.clear()
+            self._parent_capacity_handoffs.clear()
             self.tool_wait_hint = None
             self.join_wait_hint = None
             self._completion_hints.clear()
@@ -773,6 +803,10 @@ class NativeAdmissionRuntime:
             self.counts["causal_mirror_discarded"] += 1
             raise
         else:
+            terminal_returns = {
+                event.invocation_id: event
+                for event in events if event.kind is RuntimeEventKind.RETURN
+            }
             for event in events:
                 if event.kind is RuntimeEventKind.JOIN_CREATE and event.join_id:
                     join = self.graph.joins.get(event.join_id)
@@ -859,6 +893,12 @@ class NativeAdmissionRuntime:
                     key = self.context_sessions.get(context_id)
                     if key is not None and self._terminal(key):
                         self._track_terminal_cache(key)
+                        returned = terminal_returns.get(key.invocation_id)
+                        if returned is not None:
+                            self._retire_terminal_child(key, returned)
+                        invocation = self.graph.invocations.get(key.invocation_id)
+                        if invocation is not None and invocation.state.terminal:
+                            self._parent_capacity_handoffs.pop(context_id, None)
                         self._tool_last_queries.pop(key, None)
                         self._tool_opportunity_cache.pop(key, None)
                         del self.context_sessions[context_id]
@@ -872,6 +912,16 @@ class NativeAdmissionRuntime:
                         self.tool_wait_hints.pop(context_id, None)
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.WORKFLOW_END:
+                    self._parent_capacity_handoffs = {
+                        context: handoff
+                        for context, handoff in self._parent_capacity_handoffs.items()
+                        if handoff.key.root_workflow_id != event.workflow_id
+                    }
+                    self._terminal_child_reclaims = OrderedDict(
+                        (identity, reclaim)
+                        for identity, reclaim in self._terminal_child_reclaims.items()
+                        if reclaim.key.root_workflow_id != event.workflow_id
+                    )
                     self._child_report_notices = {
                         child: notice for child, notice in self._child_report_notices.items()
                         if notice.workflow_id != event.workflow_id
@@ -975,6 +1025,7 @@ class NativeAdmissionRuntime:
                             self._clear_final_stage(join_id)
                 elif event.kind is RuntimeEventKind.CONTEXT_COMPACT:
                     self._child_report_notices.pop(event.invocation_id, None)
+                    self._parent_capacity_handoffs.pop(event.context_id, None)
             self._refresh_prefetch_service_leases()
             self.join_wait_hints = {
                 join_id: hint for join_id, hint in self.join_wait_hints.items()
@@ -1337,6 +1388,8 @@ class NativeAdmissionRuntime:
                 self.event_server.drain(max_messages=128)
         self._refresh_prefetch_service_leases()
         now_ms = time.monotonic() * 1000
+        if self._terminal_child_reclaims and now_ms >= self._terminal_child_reclaim_next_ms:
+            self._retry_terminal_child_reclaims(now_ms=now_ms)
         self._poll_semantic_reports(now_ms)
         for join_id, stage in tuple(self._final_stages.items()):
             if not self._live_final_stage(stage):
@@ -3021,6 +3074,165 @@ class NativeAdmissionRuntime:
             self._terminal_cache_watches.popitem(last=False)
             self.counts["terminal_cache_watch_capacity_expired"] += 1
         self._record_terminal_cache(watch)
+
+    def _retire_terminal_child(self, key: PrefillCandidateKey, event: RuntimeEvent) -> None:
+        child = self.graph.invocations.get(key.invocation_id)
+        context = self.graph.contexts.get(key.context_id)
+        retire = getattr(self._native_cache, "retire_beliefkv_child_session", None)
+        if (
+            child is None or child.parent_invocation_id is None or child.persistent
+            or context is None or context.persistent
+            or child.state is not InvocationState.DONE
+            or key.session_id is None or key.session_generation is None
+            or not callable(retire)
+        ):
+            return
+        parent_context, join_id = None, None
+        for jid in sorted(self._join_by_invocation.get(child.invocation_id, ())):
+            join = self.graph.joins.get(jid)
+            parent_key = self._join_parent_key(jid)
+            if (
+                join is None or parent_key is None
+                or parent_key.invocation_id != child.parent_invocation_id
+                or jid in self._noncontinuing_joins
+            ):
+                continue
+            parent_context, join_id = parent_key.context_id, jid
+            handoff = self._parent_capacity_handoffs.get(parent_context)
+            if handoff is None or (
+                handoff.join_id != jid
+                or handoff.key.invocation_id != parent_key.invocation_id
+                or handoff.key.session_id != parent_key.session_id
+                or handoff.key.session_generation != parent_key.session_generation
+                or parent_key.context_epoch not in (
+                    handoff.key.context_epoch, handoff.key.context_epoch + 1,
+                )
+            ):
+                handoff = _ParentCapacityHandoff(parent_key, jid, time.monotonic())
+                self._parent_capacity_handoffs[parent_context] = handoff
+            handoff.child_ids.add(child.invocation_id)
+            handoff.last_return_ts_ms = max(handoff.last_return_ts_ms, event.ts_ms)
+            break
+        reclaim = _TerminalChildReclaim(key, parent_context, join_id, event.ts_ms)
+        self._apply_terminal_child_reclaim(reclaim, retry=False)
+
+    @timed_runtime("terminal_child_reclaim")
+    def _apply_terminal_child_reclaim(
+        self, reclaim: _TerminalChildReclaim, *, retry: bool,
+    ) -> None:
+        key = reclaim.key
+        result = self._native_cache.retire_beliefkv_child_session(
+            session_id=key.session_id, session_generation=key.session_generation,
+            **({"retry_anchors": reclaim.retry_anchors, "max_nodes": 16} if retry else {}),
+        )
+        device = result["freed_device_units"]
+        host = result["freed_host_units"]
+        handoff = self._parent_capacity_handoffs.get(reclaim.parent_context_id)
+        if handoff is not None and handoff.join_id == reclaim.join_id:
+            handoff.freed_device_units.update(device)
+            handoff.freed_host_units.update(host)
+        self.counts["terminal_child_reclaim_calls"] += 1
+        self.counts["terminal_child_discarded_nodes"] += len(result["discarded_nodes"])
+        self.counts["terminal_child_freed_full_tokens"] += device.get(0, 0)
+        self.counts["terminal_child_freed_mamba_slots"] += device.get(2, 0)
+        reclaim.retry_anchors = result["retry_anchors"]
+        identity = (key.session_id, key.session_generation)
+        if reclaim.retry_anchors:
+            self._terminal_child_reclaims[identity] = reclaim
+            self._terminal_child_reclaims.move_to_end(identity)
+            if len(self._terminal_child_reclaims) > 512:
+                self._terminal_child_reclaims.popitem(last=False)
+                self.counts["terminal_child_reclaim_provenance_expired"] += 1
+        else:
+            self._terminal_child_reclaims.pop(identity, None)
+        if self._opportunity_writer is not None and (not retry or device or host):
+            entries = getattr(getattr(self._native_cache, "host_pool_group", None), "entry_map", {})
+            bytes_per_unit = {
+                int(component): entry.host_pool.size_per_token
+                for component, pool in ((0, "kv"), (2, "mamba"))
+                if (entry := entries.get(pool)) is not None
+            }
+            self._opportunity_writer.record({
+                "event": "terminal_child_cache_reclaimed", "ts_ms": time.time() * 1000.,
+                "workflow_id": key.root_workflow_id, "invocation_id": key.invocation_id,
+                "context_id": key.context_id, "context_epoch": key.context_epoch,
+                "session_id": key.session_id, "session_generation": key.session_generation,
+                "parent_context_id": reclaim.parent_context_id, "join_id": reclaim.join_id,
+                "child_return_ts_ms": reclaim.returned_ts_ms, "retry": retry,
+                "freed_device_units": device, "freed_host_units": host,
+                "bytes_per_unit": bytes_per_unit,
+                "discarded_nodes": result["discarded_nodes"],
+                "pending_anchors": len(reclaim.retry_anchors), "reason": result["reason"],
+                "semantics": (
+                    "Native allocator release of unreferenced terminal suffixes, no D2H; "
+                    "shared ancestors remain. Released capacity is not reserved or proof "
+                    "of an exclusive physical-page handoff to the parent."
+                ),
+            })
+        if device:
+            self._reentry_observations.clear()
+            self._execution_handoff_next_ms = 0.
+
+    def _retry_terminal_child_reclaims(self, *, now_ms: float) -> None:
+        self._terminal_child_reclaim_next_ms = now_ms + 50.
+        for identity in tuple(self._terminal_child_reclaims)[:4]:
+            reclaim = self._terminal_child_reclaims.get(identity)
+            if reclaim is not None:
+                self._apply_terminal_child_reclaim(reclaim, retry=True)
+
+    def _live_parent_capacity_handoff(
+        self, key: PrefillCandidateKey,
+    ) -> _ParentCapacityHandoff | None:
+        handoff = self._parent_capacity_handoffs.get(key.context_id)
+        if handoff is None:
+            return None
+        target = handoff.key
+        join = self.graph.joins.get(handoff.join_id)
+        parent = self.graph.invocations.get(key.invocation_id)
+        valid = (
+            key.root_workflow_id == target.root_workflow_id
+            and key.invocation_id == target.invocation_id
+            and key.context_epoch in (target.context_epoch, target.context_epoch + 1)
+            and (key.session_id, key.session_generation)
+            == (target.session_id, target.session_generation)
+            and parent is not None and not self._terminal(key)
+            and join is not None and join.workflow_id == key.root_workflow_id
+            and key.invocation_id in join.waiter_invocation_ids
+            and parent.join_id in (None, handoff.join_id)
+        )
+        if not valid:
+            self._parent_capacity_handoffs.pop(key.context_id, None)
+            return None
+        return handoff if join.satisfied else None
+
+    def _observe_parent_handoff_service(self, req: object) -> None:
+        key = _request_key(req)
+        if key is None or self.visible.get(key.request_id) != key:
+            return
+        handoff = self._live_parent_capacity_handoff(key) if key is not None else None
+        if handoff is None:
+            return
+        self._parent_capacity_handoffs.pop(key.context_id, None)
+        self.counts["parent_capacity_handoff_first_service"] += 1
+        if self._opportunity_writer is not None:
+            self._opportunity_writer.record({
+                "event": "parent_capacity_handoff_first_service",
+                "ts_ms": time.time() * 1000., "workflow_id": key.root_workflow_id,
+                "invocation_id": key.invocation_id, "context_id": key.context_id,
+                "context_epoch": key.context_epoch, "request_id": key.request_id,
+                "join_id": handoff.join_id, "child_ids": sorted(handoff.child_ids),
+                "last_observed_child_return_ts_ms": handoff.last_return_ts_ms,
+                "freed_device_units": dict(handoff.freed_device_units),
+                "freed_host_units": dict(handoff.freed_host_units),
+                "request_wait_ms": (
+                    time.monotonic() - self._visible_since.get(key.request_id, time.monotonic())
+                ) * 1000.,
+                "semantics": (
+                    "First observed completed parent GPU batch after JOIN, not kernel start; "
+                    "linked capacity release "
+                    "is separate from predictive H2D ACK/FULL reuse and JCT benefit."
+                ),
+            })
 
     def _record_terminal_cache(self, watch: dict) -> None:
         key = watch["key"]
@@ -5305,7 +5517,13 @@ class NativeAdmissionRuntime:
                 waiting_queue, running_batch=running_batch, adder=None,
             )
             by_id = {getattr(req, "rid", None): req for req in waiting_queue}
-            for key in plan.prioritized[:frontier_slots]:
+            imminent = plan.prioritized[:frontier_slots]
+            if self._parent_capacity_handoffs and self._prefetch_priority_normal_admissions >= 4:
+                imminent = sorted(
+                    imminent,
+                    key=lambda key: self._live_parent_capacity_handoff(key) is None,
+                )
+            for key in imminent:
                 request = by_id[key.request_id]
                 if key in self._execution_handoff_attempted:
                     continue
@@ -5318,6 +5536,8 @@ class NativeAdmissionRuntime:
                 self._execution_handoff = ticket
                 self._execution_handoff_attempted.add(key)
                 self.counts["execution_handoff_selected"] += 1
+                if self._live_parent_capacity_handoff(key) is not None:
+                    self.counts["parent_capacity_handoff_restore_selected"] += 1
                 if self._opportunity_writer is not None:
                     self._opportunity_writer.record({
                         "event": "execution_handoff_selected", "ts_ms": time.time() * 1000.,
@@ -5933,6 +6153,7 @@ class NativeAdmissionRuntime:
         self._final_priority_promoted = None
         self._final_priority_native_rank = None
         self._prefetch_priority_promoted = None
+        self._parent_handoff_priority_promoted = None
         self._prefetch_priority_native_rank = None
         self._prefetch_priority_aged_head_bypassed = False
         priority_candidates = []
@@ -5974,32 +6195,59 @@ class NativeAdmissionRuntime:
                     priority_candidates.append((
                         min(lease.expires_at for lease in matches),
                         0 if any(lease.source == "join_ticket" for lease in matches) else 1,
-                        candidate,
+                        candidate, "prefetch",
                     ))
-            if priority_candidates:
-                candidate = min(priority_candidates, key=lambda item: item[:2])[2]
-                native_rank = ordered.index(candidate)
-                # Aged requests keep four ordinary admissions between restored
-                # requests; an aged head must not disable restore consumption.
-                head = keys[ordered[0][0]]
-                priority_now = time.monotonic()
-                aged_head = head is not None and (
-                    priority_now - self._visible_since.get(head.request_id, priority_now) >= 10.
-                )
-                ordinary_quota_met = self._prefetch_priority_normal_admissions >= (
-                    4 if aged_head else restore_stride
-                )
-                if native_rank > 0 and ordinary_quota_met:
-                    ordered.remove(candidate)
-                    ordered.insert(0, candidate)
+        if (
+            self.enable_resident_first and ordered
+            and self._parent_capacity_handoffs
+            and self._prefetch_priority_normal_admissions >= 4
+        ):
+            inspected = 0
+            for candidate in ordered:
+                key = keys[candidate[0]]
+                handoff = self._live_parent_capacity_handoff(key) if key is not None else None
+                if handoff is None:
+                    continue
+                observation = self._read_request_reentry(candidate[1])
+                inspected += 1
+                if observation is not None and not (
+                    observation["missing_full_tokens"] or observation["missing_mamba_slots"]
+                ):
+                    priority_candidates.append((
+                        handoff.created_at + 10., 2, candidate, "parent_handoff",
+                    ))
+                if inspected == 8:
+                    break
+        if priority_candidates:
+            chosen = min(priority_candidates, key=lambda item: item[:2])
+            source = chosen[3]
+            candidate = chosen[2]
+            native_rank = ordered.index(candidate)
+            # Aged requests keep four ordinary admissions between restored
+            # requests; an aged head must not disable restore consumption.
+            head = keys[ordered[0][0]]
+            priority_now = time.monotonic()
+            aged_head = head is not None and (
+                priority_now - self._visible_since.get(head.request_id, priority_now) >= 10.
+            )
+            ordinary_quota_met = self._prefetch_priority_normal_admissions >= (
+                4 if aged_head else restore_stride
+            )
+            if native_rank > 0 and ordinary_quota_met:
+                ordered.remove(candidate)
+                ordered.insert(0, candidate)
+                if source == "parent_handoff":
+                    self._parent_handoff_priority_promoted = candidate[1].rid
+                    self.counts["parent_handoff_priority_ordered"] += 1
+                else:
                     self._prefetch_priority_promoted = candidate[1].rid
-                    self._prefetch_priority_native_rank = native_rank
-                    self._prefetch_priority_aged_head_bypassed = aged_head
                     self.counts["prefetch_priority_ordered"] += 1
-                    if aged_head:
-                        self.counts["prefetch_priority_aged_head_bounded_bypass"] += 1
-                elif aged_head:
-                    self.counts["prefetch_priority_aged_head_kept"] += 1
+                self._prefetch_priority_native_rank = native_rank
+                self._prefetch_priority_aged_head_bypassed = aged_head
+                if aged_head:
+                    self.counts["prefetch_priority_aged_head_bounded_bypass"] += 1
+            elif aged_head:
+                self.counts["prefetch_priority_aged_head_kept"] += 1
         if (
             (
                 self.enable_final_stage_priority
@@ -6008,7 +6256,8 @@ class NativeAdmissionRuntime:
             )
             and self._final_priority_normal_admissions >= 4
             and self._prefetch_priority_normal_admissions >= 4
-            and self._prefetch_priority_promoted is None and ordered
+            and self._prefetch_priority_promoted is None
+            and self._parent_handoff_priority_promoted is None and ordered
             and time.monotonic() - self._visible_since.get(
                 getattr(ordered[0][1], "rid", ""), time.monotonic(),
             ) < 10.
@@ -6108,8 +6357,13 @@ class NativeAdmissionRuntime:
             self.counts["native_admitted" if admitted else f"native_{result}"] += 1
             if admitted:
                 self.demand_hints.pop(req.rid, None)
-                if req.rid in (self._prefetch_priority_promoted, self._final_priority_promoted):
+                if req.rid in (
+                    self._prefetch_priority_promoted, self._final_priority_promoted,
+                    self._parent_handoff_priority_promoted,
+                ):
                     self._prefetch_priority_normal_admissions = 0
+                    if req.rid == self._parent_handoff_priority_promoted:
+                        self.counts["parent_handoff_priority_admitted"] += 1
                     if req.rid == self._prefetch_priority_promoted:
                         self.counts["prefetch_priority_admitted"] += 1
                         if self._prefetch_priority_aged_head_bypassed:
@@ -6182,6 +6436,8 @@ class NativeAdmissionRuntime:
             if command not in self._prefetch_first_services:
                 pending_by_context.setdefault(step.key.context_id, []).append((command, step))
         for req in batch.reqs:
+            if self._parent_capacity_handoffs:
+                self._observe_parent_handoff_service(req)
             if pending_by_context:
                 key = self.visible.get(getattr(req, "rid", None))
                 for command, step in pending_by_context.get(

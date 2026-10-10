@@ -2,6 +2,51 @@
 
 更新日期：2026-10-10。
 
+## V19 终态 child 到 parent 的容量交接
+
+已实现定向终态回收与 parent 恢复/准入联动。收尾通知继续使用
+既有安全 checkpoint、缺失 FULL extent 和必要 Mamba 的规划；
+通知及模型 EOS 不触发释放，只有真实 RETURN 的非持久 child
+才在 scheduler 内释放 session 引用并检查私有叶节点。无共享
+引用、设备/Host 锁或在途 D2H/H2D 的终态后缀直接交还原生
+allocator，不先做 D2H；共享祖先和仍有依赖的页保留。
+
+close_session 可能先于控制 RETURN 到达，因此闭合 session
+保留有界的 generation/leaf 来源，重开 session 会失效旧来源。
+工具结束和 RETURN 同批交付也能完成回收。依赖尚未结算的
+节点按原生锁/传输状态重试；不借预测状态释放运行中 child。
+FULL 和 Mamba 各自核算实际释放量，不把完整 child 上下文
+大小当成可用容量。Python tree core 实现回收，其他不支持
+该接口的 core 保留原生缓存行为。
+
+较早 sibling 的释放可用于最后一个 child 返回前的既有预取；
+最后一个 child 返回后恢复仍记作需求 handoff。实际容量释放
+使恢复立即可重试；在下一批真实准入候选内，有界偏向已解锁
+parent 的缺失 checkpoint 恢复。parent 已提交、JOIN 满足且
+FULL/必要 Mamba 已驻留后，再进入现有有界优先准入；普通
+请求老化和四次普通准入额度继续有效。没有独占容量预留或
+复用同一物理页号的要求，GPU running slot 仍由原生管理。
+
+新增 terminal_child_cache_reclaimed 和
+parent_capacity_handoff_first_service 审计，分别记录真实分池
+allocator 释放、关联 JOIN、parent 请求等待与首次观测到的
+已完成 GPU batch。该 batch 回调不是精确 kernel 开始时刻，
+也不是释放容量被 parent 独占使用的证明。未知池字节大小
+保留为未知单位；预测 H2D ACK/FULL 复用与需求恢复继续分列。
+
+440项相关运行时、恢复、物理回执与审计检查及116项原生
+会话/树/allocator/恢复检查通过，包括真实 CPU FULL+Mamba
+allocator、共享前缀、两种 close/RETURN 顺序、锁与 DMA
+重试、session 重开、普通请求老化及一次性消费。
+规范引擎 patch SHA256：
+`c58cc89194a66fe74d2a0e842db4972e5d1d059a2f4870f109f36f223c8ee4ae`。
+
+下一轮按已授权的快速开发节奏保存 V18 中断 trace 与回执，
+停净旧进程后冷启动 V19 predictive，再运行稳定同版本 native。
+保持156任务、108+48/3600秒、running48、Host200GB80:20、
+HBM0.9、工具180秒、lead500ms及预测产物不变。实现验证
+尚不证明忙时吞吐或 paired JCT 提升，active 目标继续。
+
 ## V18 请求入口修订与启动计划
 
 V17于2026-10-10 16:21:53 CST停止开发采集，已核验旧client/

@@ -101,6 +101,76 @@ def source_summary(rows: list[dict]) -> dict:
     }
 
 
+def terminal_capacity_summary(reclaims: list[dict], services: list[dict]) -> dict:
+    device, host, device_bytes, host_bytes = Counter(), Counter(), Counter(), Counter()
+    device_unknown, host_unknown = Counter(), Counter()
+    linked = defaultdict(list)
+    for row in reclaims:
+        identity = (row["workflow_id"], row.get("parent_context_id"), row.get("join_id"))
+        linked[identity].append(row)
+        for target, target_bytes, unknown, field in (
+            (device, device_bytes, device_unknown, "freed_device_units"),
+            (host, host_bytes, host_unknown, "freed_host_units"),
+        ):
+            for component, units in row.get(field, {}).items():
+                component = str(component)
+                target[component] += units
+                size = row.get("bytes_per_unit", {}).get(component)
+                if size is None:
+                    size = row.get("bytes_per_unit", {}).get(int(component))
+                if size is not None:
+                    target_bytes[component] += units * size
+                else:
+                    unknown[component] += units
+    linked_services = []
+    for service in services:
+        rows = linked.get((
+            service["workflow_id"], service["context_id"], service["join_id"],
+        ), ())
+        before = [row for row in rows if row["ts_ms"] <= service["ts_ms"]]
+        freed = Counter()
+        for row in before:
+            freed.update({str(ct): units for ct, units in row["freed_device_units"].items()})
+        last_return = service.get("last_observed_child_return_ts_ms")
+        linked_services.append({
+            "workflow_id": service["workflow_id"], "context_id": service["context_id"],
+            "join_id": service["join_id"], "request_id": service["request_id"],
+            "freed_device_units_before_service": dict(freed),
+            "last_child_return_to_first_service_ms": (
+                service["ts_ms"] - last_return
+                if last_return is not None and service["ts_ms"] >= last_return else None
+            ),
+            "request_wait_ms": service.get("request_wait_ms"),
+        })
+    return {
+        "reclaim_records": len(reclaims),
+        "terminal_children": len({
+            (row["workflow_id"], row["context_id"], row["session_id"], row["session_generation"])
+            for row in reclaims if not row.get("retry")
+        }),
+        "freed_device_units": dict(device), "freed_host_units": dict(host),
+        "freed_device_bytes_known": dict(device_bytes),
+        "freed_host_bytes_known": dict(host_bytes),
+        "freed_device_units_with_unknown_byte_size": dict(device_unknown),
+        "freed_host_units_with_unknown_byte_size": dict(host_unknown),
+        "parent_first_services": len(services),
+        "parent_services_with_prior_device_release": sum(
+            any(row["freed_device_units_before_service"].values()) for row in linked_services
+        ),
+        "last_child_return_to_first_service_ms": distribution(
+            row["last_child_return_to_first_service_ms"] for row in linked_services
+        ),
+        "request_wait_ms": distribution(row["request_wait_ms"] for row in linked_services),
+        "rows": linked_services,
+        "semantics": (
+            "Actual terminal-suffix allocator release, linked to the first observed "
+            "completed parent GPU batch, not kernel start; "
+            "not exclusive slot ownership, predictive H2D reuse, avoided D2H bytes, "
+            "or a native-relative latency saving. Missing pool byte sizes stay unknown."
+        ),
+    }
+
+
 def transfer_parts(transfer: dict) -> list[dict]:
     """Separate native operations from tagged children in a merged transfer."""
     exact = transfer.get("node_commits") or []
@@ -896,6 +966,7 @@ def wait_event_attribution(
 def audit(arm: Path) -> dict:
     issued, prepared, parks, leases, stages = {}, {}, [], defaultdict(list), {}
     prepare_selections = []
+    terminal_reclaims, parent_handoff_services = [], []
     wait_observations, clock_offset = [], None
     for row in records(arm / "opportunities/admission_opportunities.jsonl"):
         event = row["event"]
@@ -912,6 +983,10 @@ def audit(arm: Path) -> dict:
             parks.append(row)
         elif event == "prepare_candidate_selected":
             prepare_selections.append(row)
+        elif event == "terminal_child_cache_reclaimed":
+            terminal_reclaims.append(row)
+        elif event == "parent_capacity_handoff_first_service":
+            parent_handoff_services.append(row)
         elif event in (
             "prefetch_residency_registered", "prefetch_residency_released",
             "prefetch_reentry_ready", "prefetch_client_submitted", "prefetch_demand_submitted",
@@ -1170,6 +1245,9 @@ def audit(arm: Path) -> dict:
         "prepare_host_lifetime": prepare_host_lifetime_summary(prepare_restores, host_evictions),
         "prepare_selection": prepare_selection_summary(prepare_selections, prepare_restores),
         "wait_events": wait_events["summary"],
+        "terminal_capacity_handoff": terminal_capacity_summary(
+            terminal_reclaims, parent_handoff_services,
+        ),
     }
     return {
         "scope": (
