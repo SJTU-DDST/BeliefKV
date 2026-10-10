@@ -2,9 +2,26 @@
 
 更新日期：2026-10-11。
 
-## V20 容量交接跟进与忙时对照
+## V21 部署与 V20 完整对照
 
-隔离版进一步消除机会性容量回收的同步 Mamba 备份等待：
+V20 两臂及 summary、HTML、完成 workspace 清理和最终对照已结束。
+predictive 为 154 completed、2 incomplete，耗时 10690.00 秒；
+native 为 155 completed、1 incomplete，耗时 10003.74 秒。
+完成吞吐为 51.862/55.779 workflow/h，predictive 低 7.02%。
+154 个共同完成任务的平均 JCT 为 predictive 3098.94 秒、
+native 3487.53 秒，前者低 11.14%；轨迹与 native 初始化差异
+仍影响这个比较，不能据此宣称已达成吞吐和可归因 JCT 目标。
+
+2026-10-11 01:21:58 CST，自动启动器核验 V20 完整产物后，
+已部署 597688c 和下述新 patch，启动独立 V21 predictive。
+部署引擎预期/实际 Git tree 同为
+`e6cc9d6322c0b9031243acd1228037003751cadd`。继续使用 156 个任务、
+108+48 两波、running=48、Host 200 GB/80:20、HBM 0.9、
+180 秒工具上限、500 ms 提前量及相同冻结预测产物；后续
+native 将同版本冷启动。启动状态见
+`experiments/reports/v21_launch_after_v20_20261011.json`。
+
+本次部署进一步消除机会性容量回收的同步 Mamba 备份等待：
 `reclaim_beliefkv_handoff_capacity` 遇到尚无 Host 副本的活跃
 checkpoint 时，异步提交必要状态备份，保留原生设备读锁，
 本次不把在途副本算作可回收容量。原生 ACK 释放锁后，后续
@@ -15,9 +32,9 @@ checkpoint 时，异步提交必要状态备份，保留原生设备读锁，
 页和槽保持占用、ACK 后解锁且后续回收可返回容量。仅传输被
 替换为 CPU 夹具，不包含 GPU 或端到端性能证据。该等待点是
 代码确认的问题，尚不能归因为下述忙时多出的 40.20 秒。
-隔离规范 patch SHA256 为
+已部署规范 patch SHA256 为
 `98fc5af9c40121d6f7ba1824f1fd5b586d0b141d5b12370a2d9243c1b1b5e8f1`；
-完整预期/实际 Git tree 与反向应用检查通过，尚未部署到 V20。
+完整预期/实际 Git tree 与反向应用检查通过，V20 的冻结代码未改动。
 
 `launch_semantic_h2d_after_pair.py` 支持在完整 pair 后自动部署
 已提交的隔离修订，再启动独立 V21：等待原 driver/server/
@@ -25,7 +42,7 @@ scheduler 的同一进程身份退出、两侧 summary/HTML/cleanup 和
 最终对照完成，核验冻结计划后 fast-forward 与精确引擎增量。
 复用原 workload、到达流和模型配置，先 predictive、后同版本
 冷 native；状态文件记录目标提交与新目录，不改写 V20 计划。
-尚未完成的 native 不触发部署，后续源码变化也不会偷偷进入排队轮。
+本次部署已按上述顺序完成；后续源码变化不进入运行中的冻结 pair。
 
 终态 child 到 parent 的容量交接已在冻结版 v20 predictive 中
 触发；按真实 spawn 身份重算，371 个 child 累计释放设备
@@ -35,11 +52,11 @@ parent 入队到实际首次服务 P50/P90 为 143.10/499.16 ms，
 FULL 为 1.507 GB；76.993 GB 需求 handoff 复用继续单列。
 这些是关联和复用证据，不是释放空间被 parent 独占的证明。
 
-后续隔离修订已补齐 sibling RETURN 后激活最后 child 的既有
+V21 已包含 sibling RETURN 后激活最后 child 的既有
 收尾通知、真实 Mamba 短缺时回收无引用冷备份，以及恢复闭包
 内驻留祖先的保护。最后 child 结束后才启动的恢复仍记作需求
-恢复，不能算 RETURN 前预取。主目录 b019d24、部署引擎
-c58cc891 和预测产物在本轮 native 中保持冻结。
+恢复，不能算 RETURN 前预取。V20 两臂的 b019d24、部署引擎
+c58cc891 和预测产物保持冻结；V21 已使用上述新提交和 patch。
 
 完成 batch 回调进一步复用同一请求内的 rid 和 visible key，
 省去重复字典查询；lease 和收尾阶段的元数据仍独立核验，
@@ -73,13 +90,36 @@ D2H stream 累计为 140.03/65.45 秒；采样层恢复等待 P95
 这些测量未显示 DMA 或采样层依赖增大，不能据此解释额外的
 prefill 墙钟区间；继续核查 CPU 恢复、准入和 worker 路径。
 
+完整窗口复核保存于 v20_completed_busy_windows_20261011.json。
+600–2400、2400–4200、4200–6000 秒的 predictive decode
+吞吐相对 native 分别为 -2.16%、+0.16%、+2.64%，不能把首段
+劣势外推为每个阶段均落后。后二段的 batch、未缓存输入和迁移
+需求不同；特别是 4200–6000 秒未缓存输入为 native 8.50 M、
+predictive 9.49 M，prefill worker 墙钟为 250.17/383.92 秒，
+不能将这个差值全部归为控制开销。优先核验相近 batch/输入的
+首段成本，再以 V21 的同版本 native 完成性能结论。
+
+更新审计 v20_capacity_handoff_followup_audit_20261011.json 保留
+独立 JOIN/tool 分母。171 个 JOIN 有 FULL 计划，其中 114 个
+在至少一个快照中仅缺 Mamba 容量，对应每事件最大 FULL 计划
+合计 2.374 GB；这不是已实现预取或可相加的同时容量。工具
+10159 个等待事件中只有 1 个确认边界前 FULL 复用。V21 须验证
+已部署的历史残余分布路由、状态容量回收和 sibling 通知联动，
+不能通过增加 ACK 数量或把需求 handoff 改称预取来扩大覆盖。
+
 本窗口晚于 native 的 331 秒 GC 初始化补做；全程 JCT 仍须
-注明初始化差异。native 已出现与 predictive 同任务的
+注明初始化差异。native 保留与 predictive 同任务的
 django-11087 incomplete：root 最后两次 finish_reason=length，
 最终正文 34998 字符，无 deadline、abort 或 guard 终态。
-保留为模型终态截断，不因此重启 native 或加入 agent guard。
-后续修订在本轮结束后部署，再先 predictive、后同版本冷 native；
-实际忙时吞吐和配对 JCT 改善尚未达到 active 目标。
+保留为模型终态截断，未因此重启 native 或加入 agent guard。
+V21 两臂在 health 就绪后、提交 workload 前统一执行 GC 初始化。
+predictive 的 server/gc_freeze_initialization.txt 已记录成功；
+早期运行时 physical_disabled=false，工具及语义 worker 正常，
+真实工具 forecast 已出现 same_input_completed 和
+completed_project_command 的条件历史残余分布。尚未启动的
+native 仍需独立核验初始化回执；这些启动检查不是性能达标证据。
+新一轮已启动，实际忙时吞吐和可归因配对 JCT 改善尚未达到
+active 目标。后续开发在独立 worktree 完成，不修改运行中源码。
 
 ## V20 parent 恢复与控制开销优化
 

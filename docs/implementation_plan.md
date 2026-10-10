@@ -2,7 +2,23 @@
 
 Status date: 2026-10-11.
 
-## V20 Capacity Handoff Follow-up and Busy-Window Evidence
+## V21 Deployment and Completed V20 Evidence
+
+The V20 pair, both summaries, HTML exports, completed-workspace cleanup and
+final comparison are complete. Predictive collected 154 completed / 2 incomplete
+in 10690.00 s; native collected 155 completed / 1 incomplete in 10003.74 s.
+Completed throughput is 51.862 / 55.779 workflows/h, or -7.02% for predictive.
+For 154 commonly completed tasks, mean JCT is 3098.94 / 3487.53 s, or -11.14%.
+Different trajectories and native GC startup still affect the JCT comparison;
+neither that mean nor a tool tail completes the active performance objective.
+
+At 2026-10-11 01:21:58 CST the coordinator verified all previous outputs,
+deployed 597688c and the patch below, and started fresh V21 predictive.
+The deployed expected/actual engine tree is
+`e6cc9d6322c0b9031243acd1228037003751cadd`. Preserve 156 tasks, 108+48
+arrivals, running=48, Host 200 GB/80:20, HBM 0.9, 180 s tools, 500 ms lead
+and the same predictor artifacts. Cold native follows on the same revision.
+Develop subsequent changes in a separate worktree, leaving this pair frozen.
 
 Opportunistic capacity reclaim now submits an unbacked live Mamba checkpoint
 asynchronously instead of draining pending write ACKs. Keep native device read
@@ -14,19 +30,16 @@ dependency. Merely removing the wait from unlocked write-back is unsafe.
 74 scoped native CPU checks pass, including real hybrid allocators and native
 write-ACK unlock processing with transport replaced by a fixture. This confirms
 capacity/lock semantics, not GPU throughput or the cause of the 40.20 s busy
-prefill gap. The isolated canonical patch has SHA256
+prefill gap. The deployed canonical patch has SHA256
 `98fc5af9c40121d6f7ba1824f1fd5b586d0b141d5b12370a2d9243c1b1b5e8f1`;
-reverse application and exact expected/actual tree verification pass. Deploy
-after the frozen V20 pair, then measure reuse and busy-window/paired JCT results.
+reverse application and exact expected/actual tree verification pass. Deployment
+after the completed V20 pair is done; measure V21 reuse and busy-window/paired
+JCT results before claiming an improvement.
 
-Use launch_semantic_h2d_after_pair.py to queue the committed follow-up in a
-separate V21 directory. Wait for the original driver/server/scheduler identities
-to exit and for both summaries, timeline exports, cleanup and final comparison.
-Verify the old frozen plan before fast-forwarding main and applying the exact
-old-to-new engine delta. Preserve the workload, arrival flow, artifacts and
-settings, but start a fresh predictive-first/cold-native pair. Record the
-scheduled revision and environment in a separate launch state; do not rewrite
-V20 or use its native arm as the new revision's matched baseline.
+launch_semantic_h2d_after_pair.py performed the previous-process, output,
+frozen-plan and source checks before fast-forwarding main and applying the exact
+engine delta. Preserve its separate launch state and the V20 frozen plan.
+V20 native is diagnostic context, not V21's matched baseline.
 
 Terminal private-suffix retirement and parent restore/admission are implemented.
 The frozen predictive arm contains 371 real spawn children; their cumulative
@@ -35,10 +48,10 @@ requests have 143.10/499.16 ms P50/P90 queue-to-first-service time, with a
 16.838 s maximum. Keep 1.507 GB early reused JOIN FULL separate from 76.993 GB
 demand-handoff reuse and from cumulative allocator release.
 
-Queued follow-ups activate an existing final-child report notice on sibling
+The deployed follow-ups activate an existing final-child report notice on sibling
 RETURN, reclaim settled unreferenced state under an actual Mamba shortfall,
-and exclude the full target closure from reclamation. Deploy after the current
-native arm preserves its frozen b019d24/c58cc891 comparison. Earlier sibling
+and exclude the full target closure from reclamation. The completed V20 pair
+preserved its frozen b019d24/c58cc891 comparison. Earlier sibling
 release can support pre-RETURN prediction; last-child release can only support
 post-RETURN demand restoration or subsequent parent growth.
 
@@ -67,14 +80,34 @@ These observations do not establish DMA as the cause of the extra 40.20 s
 prefill wall time. Inspect CPU restoration, admission and worker intervals
 next; avoid claiming a kernel-time breakdown from wall intervals.
 
+The completed recheck is v20_completed_busy_windows_20261011.json. Predictive
+decode output relative to native is -2.16%, +0.16%, +2.64% in 600–2400,
+2400–4200 and 4200–6000 s. Later windows have different batches, input and
+restoration demand. In 4200–6000 s uncached input is native 8.50 M versus
+predictive 9.49 M and prefill worker wall time is 250.17 versus 383.92 s.
+Do not call the entire difference control overhead. First verify the cost gap
+under similar batch/input conditions, then use V21's matched native arm.
+
+Keep v20_capacity_handoff_followup_audit_20261011.json. Of 171 independent
+JOINs with an observed FULL plan, 114 ever encounter only a Mamba shortfall;
+their per-event maximum FULL plans total 2.374 GB, not achieved reuse or
+simultaneous capacity. Only one of 10159 tool-wait events has proven pre-boundary
+FULL reuse. Verify deployed history-head routing, Mamba reclaim and sibling
+notice activation on real V21 transfers. Keep submitted demand handoff separate.
+
 The busy window follows the native GC correction, but full-run JCT still
 carries that initialization asymmetry. Native django-11087 ends incomplete
 with two root finish_reason=length responses and 34998 visible characters;
 no deadline expiry, abort or guard completion occurs. The same task is
-incomplete in predictive. Preserve this model truncation and keep collecting.
-After this arm finishes, compare full results, deploy the queued revision,
-then run predictive first and cold native second with identical pre-workload
-GC initialization. The full performance goal remains active.
+incomplete in predictive. Preserve this model truncation in the completed pair.
+V21 starts predictive first and cold native second with GC initialization after
+health readiness and before each workload. Predictive's
+server/gc_freeze_initialization.txt confirms success. Early runtime evidence has
+physical_disabled=false, healthy tool/semantic workers and actual
+same_input_completed / completed_project_command conditional residual
+forecasts. Inspect the future cold-native receipt separately. These startup
+checks do not prove throughput or usable pre-boundary restoration.
+The full performance goal remains active.
 
 ## V20 Parent Restoration and Control Cost
 
