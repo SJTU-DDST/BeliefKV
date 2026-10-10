@@ -31,13 +31,9 @@ def distribution(values) -> dict:
     }
 
 
-def source_summary(rows: list[dict]) -> dict:
-    full = [row for row in rows if (row["pool_units"] or {}).get("kv", 0) > 0]
+def full_reuse_summary(full: list[dict]) -> dict:
     known_full = [row for row in full if row["pool_bytes"] is not None]
     return {
-        "issued_commands": len(rows),
-        "acknowledged_commands": sum(row["actual_bytes"] is not None for row in rows),
-        "actual_bytes": sum(row["actual_bytes"] or 0 for row in rows),
         "full_transfer_commands": len(full),
         "full_reused_commands": sum(row["full_first_service_reused"] is True for row in full),
         "full_not_reused_commands": sum(row["full_first_service_reused"] is False for row in full),
@@ -52,12 +48,54 @@ def source_summary(rows: list[dict]) -> dict:
             str(row["full_reuse_proof_version"]) for row in full
             if row["full_reuse_proof_version"] is not None
         )),
-        "mamba_forward_verified_commands": sum(row["mamba_forward_verified"] for row in rows),
         "native_reloaded_prefetched_full_before_first_service": sum(
             any("kv" in load["prefetched_pool_overlap"]
                 for load in row["native_reloads_before_first_service"])
-            for row in rows
+            for row in full
         ),
+    }
+
+
+def full_residency_summary(full: list[dict]) -> list[dict]:
+    groups = defaultdict(list)
+    for row in full:
+        lease_events = row.get("lease_events", [])
+        registered = next(
+            (event for event in lease_events
+             if event["event"] == "prefetch_residency_registered"), {},
+        )
+        released = next(
+            (event for event in reversed(lease_events)
+             if event["event"] == "prefetch_residency_released"), {},
+        )
+        locked = registered.get("native_locked")
+        if type(locked) is not bool:
+            locked = None
+        groups[locked, released.get("reason")].append(row)
+    return [
+        {
+            "native_locked_at_registration": locked,
+            "last_observed_release_reason": reason,
+            **full_reuse_summary(group),
+            "ack_to_first_service_ms": distribution(
+                row["ack_to_first_service_ms"] for row in group
+            ),
+        }
+        for (locked, reason), group in sorted(
+            groups.items(), key=lambda item: (str(item[0][0]), item[0][1] or ""),
+        )
+    ]
+
+
+def source_summary(rows: list[dict]) -> dict:
+    full = [row for row in rows if (row["pool_units"] or {}).get("kv", 0) > 0]
+    return {
+        "issued_commands": len(rows),
+        "acknowledged_commands": sum(row["actual_bytes"] is not None for row in rows),
+        "actual_bytes": sum(row["actual_bytes"] or 0 for row in rows),
+        **full_reuse_summary(full),
+        "full_reuse_by_residency": full_residency_summary(full),
+        "mamba_forward_verified_commands": sum(row["mamba_forward_verified"] for row in rows),
         "ack_to_first_service_ms": distribution(row["ack_to_first_service_ms"] for row in rows),
     }
 
@@ -430,7 +468,12 @@ def audit(arm: Path) -> dict:
             "FULL reuse counts include only commands with positive FULL transfer units. "
             "Pool bytes come from reconciled physical ACKs; missing legacy pool-byte "
             "evidence is reported, never reconstructed by byte shares. Execution "
-            "handoff is submitted demand, separate from anticipatory JOIN/tool actions."
+            "handoff is submitted demand, separate from anticipatory JOIN/tool actions. "
+            "FULL residency groups use the initial observed registration lock and "
+            "last observed release reason in log order; absent evidence stays unknown. "
+            "Groups are lifecycle associations, not isolated causes. Lease expiry "
+            "does not imply a reuse miss, nor does registration prove continuous "
+            "protection until service; Mamba-only transfers are excluded."
         ),
         "native_reload_attribution_semantics": (
             "Node/pool overlap before first service, not proof of repeated physical "
@@ -456,8 +499,15 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--arm", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--summary-only", action="store_true",
+                        help="Keep summary and evidence scope without duplicating detailed rows.")
     args = parser.parse_args()
     report = audit(args.arm.resolve())
+    if args.summary_only:
+        report = {
+            key: value for key, value in report.items()
+            if key not in ("rows", "prepare_consumption", "prepare_restore_attribution")
+        }
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     print(json.dumps(report["summary"], indent=2))
 

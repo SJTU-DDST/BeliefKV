@@ -1,0 +1,397 @@
+{
+  "scope": "Observed controller submission/ACK/first-launch chain; no DMA wall anchor, exposed-stall measurement or counterfactual speedup.",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v15/predictive_h2d",
+  "summary": {
+    "join_commands": 99,
+    "tool_commands": 77,
+    "handoff_commands": 15132,
+    "by_source": {
+      "execution_handoff": {
+        "issued_commands": 15132,
+        "acknowledged_commands": 15132,
+        "actual_bytes": 118265384960,
+        "full_transfer_commands": 15132,
+        "full_reused_commands": 15104,
+        "full_not_reused_commands": 28,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 67204812800,
+        "full_verified_reused_bytes_known": 67046686720,
+        "full_reuse_proof_versions": {
+          "2": 15132
+        },
+        "native_reloaded_prefetched_full_before_first_service": 23,
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": false,
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 11242,
+            "full_reused_commands": 11242,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 50134487040,
+            "full_verified_reused_bytes_known": 50134487040,
+            "full_reuse_proof_versions": {
+              "2": 11242
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 11242,
+              "p50": 24.55859375,
+              "p90": 98.91884765624991,
+              "max": 1680.84521484375
+            }
+          },
+          {
+            "native_locked_at_registration": false,
+            "last_observed_release_reason": "native_residency_lost",
+            "full_transfer_commands": 28,
+            "full_reused_commands": 0,
+            "full_not_reused_commands": 28,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 158126080,
+            "full_verified_reused_bytes_known": 0,
+            "full_reuse_proof_versions": {
+              "2": 28
+            },
+            "native_reloaded_prefetched_full_before_first_service": 23,
+            "ack_to_first_service_ms": {
+              "count": 28,
+              "p50": 135.766357421875,
+              "p90": 320.3985107421876,
+              "max": 672.436767578125
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 3862,
+            "full_reused_commands": 3862,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 16912199680,
+            "full_verified_reused_bytes_known": 16912199680,
+            "full_reuse_proof_versions": {
+              "2": 3862
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 3862,
+              "p50": 28.473876953125,
+              "p90": 116.79536132812504,
+              "max": 1682.478271484375
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 770,
+        "ack_to_first_service_ms": {
+          "count": 15132,
+          "p50": 25.6951904296875,
+          "p90": 103.78691406249999,
+          "max": 1682.478271484375
+        }
+      },
+      "join_ticket": {
+        "issued_commands": 99,
+        "acknowledged_commands": 99,
+        "actual_bytes": 5335490560,
+        "full_transfer_commands": 97,
+        "full_reused_commands": 77,
+        "full_not_reused_commands": 20,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 892641280,
+        "full_verified_reused_bytes_known": 742604800,
+        "full_reuse_proof_versions": {
+          "2": 97
+        },
+        "native_reloaded_prefetched_full_before_first_service": 11,
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": false,
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 40,
+            "full_reused_commands": 40,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 479088640,
+            "full_verified_reused_bytes_known": 479088640,
+            "full_reuse_proof_versions": {
+              "2": 40
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 40,
+              "p50": 430.5660400390625,
+              "p90": 1005.3434326171877,
+              "max": 1398.6826171875
+            }
+          },
+          {
+            "native_locked_at_registration": false,
+            "last_observed_release_reason": "native_residency_lost",
+            "full_transfer_commands": 11,
+            "full_reused_commands": 0,
+            "full_not_reused_commands": 11,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 72232960,
+            "full_verified_reused_bytes_known": 0,
+            "full_reuse_proof_versions": {
+              "2": 11
+            },
+            "native_reloaded_prefetched_full_before_first_service": 6,
+            "ack_to_first_service_ms": {
+              "count": 11,
+              "p50": 16059.21630859375,
+              "p90": 20552.654296875,
+              "max": 23282.947998046875
+            }
+          },
+          {
+            "native_locked_at_registration": false,
+            "last_observed_release_reason": "service_window_expired",
+            "full_transfer_commands": 6,
+            "full_reused_commands": 6,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 70778880,
+            "full_verified_reused_bytes_known": 70778880,
+            "full_reuse_proof_versions": {
+              "2": 6
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 6,
+              "p50": 1763.65185546875,
+              "p90": 4120.15673828125,
+              "max": 6337.7412109375
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 31,
+            "full_reused_commands": 31,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 192737280,
+            "full_verified_reused_bytes_known": 192737280,
+            "full_reuse_proof_versions": {
+              "2": 31
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 31,
+              "p50": 631.70849609375,
+              "p90": 1212.5341796875,
+              "max": 3348.562744140625
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "last_observed_release_reason": "service_window_expired",
+            "full_transfer_commands": 9,
+            "full_reused_commands": 0,
+            "full_not_reused_commands": 9,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 77803520,
+            "full_verified_reused_bytes_known": 0,
+            "full_reuse_proof_versions": {
+              "2": 9
+            },
+            "native_reloaded_prefetched_full_before_first_service": 5,
+            "ack_to_first_service_ms": {
+              "count": 9,
+              "p50": 20254.61279296875,
+              "p90": 21076.174755859374,
+              "max": 23098.493896484375
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 50,
+        "ack_to_first_service_ms": {
+          "count": 99,
+          "p50": 755.218505859375,
+          "p90": 17685.735888671876,
+          "max": 23282.947998046875
+        }
+      },
+      "tool_wait": {
+        "issued_commands": 77,
+        "acknowledged_commands": 77,
+        "actual_bytes": 723886080,
+        "full_transfer_commands": 77,
+        "full_reused_commands": 57,
+        "full_not_reused_commands": 20,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 337551360,
+        "full_verified_reused_bytes_known": 293253120,
+        "full_reuse_proof_versions": {
+          "2": 77
+        },
+        "native_reloaded_prefetched_full_before_first_service": 2,
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": false,
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 3,
+            "full_reused_commands": 3,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 35471360,
+            "full_verified_reused_bytes_known": 35471360,
+            "full_reuse_proof_versions": {
+              "2": 3
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 3,
+              "p50": 261.311279296875,
+              "p90": 284.005615234375,
+              "max": 289.67919921875
+            }
+          },
+          {
+            "native_locked_at_registration": false,
+            "last_observed_release_reason": "native_residency_lost",
+            "full_transfer_commands": 20,
+            "full_reused_commands": 0,
+            "full_not_reused_commands": 20,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 44298240,
+            "full_verified_reused_bytes_known": 0,
+            "full_reuse_proof_versions": {
+              "2": 20
+            },
+            "native_reloaded_prefetched_full_before_first_service": 2,
+            "ack_to_first_service_ms": {
+              "count": 20,
+              "p50": 14586.139526367188,
+              "p90": 17272.473266601562,
+              "max": 18166.536376953125
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 54,
+            "full_reused_commands": 54,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 257781760,
+            "full_verified_reused_bytes_known": 257781760,
+            "full_reuse_proof_versions": {
+              "2": 54
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 54,
+              "p50": 876.461181640625,
+              "p90": 1916.2178955078132,
+              "max": 3276.414306640625
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 4,
+        "ack_to_first_service_ms": {
+          "count": 77,
+          "p50": 1034.5888671875,
+          "p90": 15326.395654296877,
+          "max": 18166.536376953125
+        }
+      }
+    },
+    "trigger_kinds": {
+      "observed_no_tool_eos": 87,
+      "unrecorded_legacy": 15209,
+      "estimated_work": 12
+    },
+    "join_bytes": 5335490560,
+    "tool_bytes": 723886080,
+    "handoff_bytes": 118265384960,
+    "join_submitted_before_eos": 12,
+    "full_reused": 15238,
+    "full_not_reused": 68,
+    "full_use_unknown": 2,
+    "full_reuse_proof_versions": {
+      "2": 15308
+    },
+    "mamba_forward_verified": 824,
+    "redemoted_before_first_service": 0,
+    "native_reloaded_before_first_service": 36,
+    "native_reloaded_prefetched_full_before_first_service": 36,
+    "native_reloaded_prefetched_mamba_before_first_service": 36,
+    "native_reload_pool_associations_by_evidence": {
+      "kv": {
+        "reconciled_native_receipt": 0,
+        "legacy_batch_pool_presence": 36
+      },
+      "mamba": {
+        "reconciled_native_receipt": 0,
+        "legacy_batch_pool_presence": 36
+      }
+    },
+    "issue_to_submit_ms": {
+      "count": 15308,
+      "p50": 1.803955078125,
+      "p90": 3.822509765625,
+      "max": 155.69189453125
+    },
+    "enqueue_to_submit_ms": {
+      "count": 15308,
+      "p50": 1.5196907334029675,
+      "p90": 3.525509499013424,
+      "max": 155.48598859459162
+    },
+    "submit_to_ack_ms": {
+      "count": 15308,
+      "p50": 11.742912232875824,
+      "p90": 105.23250233381987,
+      "max": 1433.213820680976
+    },
+    "ack_to_first_service_ms": {
+      "count": 15308,
+      "p50": 25.935302734375,
+      "p90": 113.03806152343752,
+      "max": 23282.947998046875
+    },
+    "join_submit_after_eos_ms": {
+      "count": 99,
+      "p50": 14.92626953125,
+      "p90": 139.88066406250002,
+      "max": 1788.123779296875
+    },
+    "completion_lead_ms": {
+      "count": 176,
+      "p50": 168.7958984375,
+      "p90": 1257.47265625,
+      "max": 6375.1767578125
+    },
+    "pressure_events": 62,
+    "pressure_events_with_prior_prepare_ack": 58,
+    "unique_prepared_nodes_demoted": 58,
+    "prepare_issued_commands": 846,
+    "prepare_acknowledged_commands": 846,
+    "prepare_commands_with_observed_restore": 196,
+    "prepare_commands_with_native_restore": 59,
+    "prepare_commands_with_controlled_restore": 159,
+    "prepare_commands_without_observed_restore": 650,
+    "prepare_commands_with_later_node_pool_d2h": 715,
+    "prepare_commands_with_host_eviction_before_later_d2h": 715
+  },
+  "source_summary_semantics": "Per-source node commands, not independent requests or workflow events. FULL reuse counts include only commands with positive FULL transfer units. Pool bytes come from reconciled physical ACKs; missing legacy pool-byte evidence is reported, never reconstructed by byte shares. Execution handoff is submitted demand, separate from anticipatory JOIN/tool actions. FULL residency groups use the initial observed registration lock and last observed release reason in log order; absent evidence stays unknown. Groups are lifecycle associations, not isolated causes. Lease expiry does not imply a reuse miss, nor does registration prove continuous protection until service; Mamba-only transfers are excluded.",
+  "native_reload_attribution_semantics": "Node/pool overlap before first service, not proof of repeated physical allocation or duplicate bytes. Mixed tagged batches retain untagged operations. Exact receipts carry per-operation units and bytes; legacy batch pool presence remains an ambiguous association. Evidence counts may overlap when a command has multiple reloads.",
+  "prepare_attribution_semantics": "Latest observed D2H writer per node/pool. A later D2H is not proof of byte overwrite or duplicate transfer: Host eviction/reallocation, node splitting and legacy merged pool attribution are unresolved. Intervening same-node/pool Host eviction is reported when available; it does not recover an allocation identity across radix splits. Observed restoration is not final model-forward reuse."
+}

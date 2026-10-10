@@ -115,6 +115,26 @@ Current status:
   v15_join_pipeline_first_service_v2_final_20261010.json without overwriting
   the frozen arm's reports. Separate client completion delay, early work
   underprediction and actual admission waiting before adjusting leases.
+- The isolated lifecycle audit now groups positive-FULL commands by initial
+  observed native lock and last observed release reason. Missing evidence is
+  unknown; Mamba-only commands stay excluded. Report confirmed reuse, misses,
+  unknown results, known FULL bytes and node/pool reload associations separately;
+  a lease expiry is not a reuse miss or an isolated cause. All11 audit checks
+  pass and every pre-existing V15 summary field equals the frozen report.
+  V15 has174 JOIN/tool FULL commands:134 reused,31 unprotected/residency-lost
+  misses and9 protected/expired misses. Six unprotected/expired JOIN commands
+  were reused. The9 protected misses include3 observed-EOS commands and6
+  estimated-work commands across5 children. The former start15--23ms after
+  native EOS, with2.76--3.43s of subsequent protocol/RETURN delay and13.3--15.0s
+  of arrival-to-service waiting; the latter start2.0--5.2s before EOS, retaining
+  a real early-work estimation issue. Do not treat all9 as prediction failures
+  or solve them with blanket longer leases. PREPARE has846 ACKs,196 later
+  restoration associations and715 later same-node/pool D2H associations, all
+  with intervening Host FULL eviction. Preserve the compact
+  v15_prefetch_lifecycle_residency_final_20261010.json; detailed evidence remains
+  in the frozen arm's logs. The CLI --summary-only avoids duplicated event rows.
+  Issue-to-ACK protection is already fixed in isolation but V15 lacks the issue
+  budget telemetry to prove how many unprotected misses it would recover.
 - At2026-10-10 05:40 CST, the partial V15 H2D source snapshot has native
   2358 batches/731.314GB, JOIN/tool72 commands/1.384GB, demand handoff
   4692 node commands/1524 batches/36.050GB and no unknown controlled source.

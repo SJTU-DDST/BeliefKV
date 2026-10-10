@@ -1,6 +1,6 @@
 import json
 
-from scripts.audit_prefetch_lifecycle import audit, prepare_restore_attribution
+from scripts.audit_prefetch_lifecycle import audit, prepare_restore_attribution, source_summary
 
 
 def write_rows(path, rows):
@@ -41,6 +41,11 @@ def test_lifecycle_keeps_expired_but_reused_and_missing_use_distinct(tmp_path):
     assert result["rows"][1]["actual_bytes"] is None
     assert result["summary"]["by_source"]["join_ticket"]["full_reused_commands"] == 1
     assert result["summary"]["by_source"]["join_ticket"]["full_pool_bytes_unknown_commands"] == 1
+    [expired] = result["summary"]["by_source"]["join_ticket"]["full_reuse_by_residency"]
+    assert expired["native_locked_at_registration"] is None
+    assert expired["last_observed_release_reason"] == "service_window_expired"
+    assert expired["full_reused_commands"] == 1
+    assert expired["full_not_reused_commands"] == 0
     assert result["summary"]["by_source"]["tool_wait"]["acknowledged_commands"] == 0
 
 
@@ -76,6 +81,7 @@ def test_lifecycle_source_full_reuse_does_not_mix_handoff_or_mamba_only(tmp_path
     assert summaries["join_ticket"]["ack_to_first_service_ms"]["p50"] == 1.
     assert summaries["tool_wait"]["full_transfer_commands"] == 0
     assert summaries["tool_wait"]["full_reused_commands"] == 0
+    assert summaries["tool_wait"]["full_reuse_by_residency"] == []
     assert summaries["execution_handoff"]["full_verified_reused_bytes_known"] == 100
     assert summaries["execution_handoff"]["ack_to_first_service_ms"]["p50"] == 1000.
 
@@ -275,3 +281,73 @@ def test_mamba_load_does_not_count_as_reloading_a_full_only_prefetch(tmp_path):
     assert result["summary"]["native_reload_pool_associations_by_evidence"]["kv"] == {
         "reconciled_native_receipt": 0, "legacy_batch_pool_presence": 0,
     }
+
+
+def test_full_residency_groups_keep_reuse_bytes_and_missing_lock_evidence_distinct():
+    def row(reused, *, locked=None, reason=None, pool_bytes=None, reloads=()):
+        events = []
+        if locked is not None:
+            events.append({
+                "event": "prefetch_residency_registered", "native_locked": locked,
+            })
+        if reason is not None:
+            events.append({"event": "prefetch_residency_released", "reason": reason})
+        return {
+            "pool_units": {"kv": 5}, "pool_bytes": pool_bytes, "actual_bytes": 100,
+            "full_first_service_reused": reused, "full_reuse_proof_version": 2,
+            "lease_events": events, "native_reloads_before_first_service": list(reloads),
+            "mamba_forward_verified": False,
+            "ack_to_first_service_ms": 2000. if reused is not None else None,
+        }
+
+    lost = [{"prefetched_pool_overlap": ["kv"]}]
+    rows = [
+        row(True, locked=True, reason="service_window_expired", pool_bytes={"kv": 80}),
+        row(False, locked=True, reason="service_window_expired", pool_bytes={"kv": 100}),
+        row(False, locked=False, reason="native_residency_lost", pool_bytes={"kv": 60},
+            reloads=lost),
+        row(None, locked="false", reason="service_window_expired"),
+        row(None),
+    ]
+    summary = source_summary(rows)
+    groups = {
+        (group["native_locked_at_registration"], group["last_observed_release_reason"]): group
+        for group in summary["full_reuse_by_residency"]
+    }
+    expired = groups[True, "service_window_expired"]
+    assert expired["full_transfer_commands"] == 2
+    assert expired["full_reused_commands"] == expired["full_not_reused_commands"] == 1
+    assert expired["full_transferred_bytes_known"] == 180
+    assert expired["full_verified_reused_bytes_known"] == 80
+    assert expired["ack_to_first_service_ms"]["p50"] == 2000.
+    unprotected = groups[False, "native_residency_lost"]
+    assert unprotected["native_reloaded_prefetched_full_before_first_service"] == 1
+    assert groups[None, "service_window_expired"]["full_pool_bytes_unknown_commands"] == 1
+    assert groups[None, None]["full_use_unknown_commands"] == 1
+    for field in (
+        "full_transfer_commands", "full_reused_commands", "full_not_reused_commands",
+        "full_use_unknown_commands", "full_pool_bytes_unknown_commands",
+        "full_transferred_bytes_known", "full_verified_reused_bytes_known",
+        "native_reloaded_prefetched_full_before_first_service",
+    ):
+        assert sum(group[field] for group in groups.values()) == summary[field]
+
+
+def test_residency_summary_keeps_last_release_and_does_not_infer_initial_lock():
+    row = {
+        "pool_units": {"kv": 5}, "pool_bytes": {"kv": 100}, "actual_bytes": 100,
+        "full_first_service_reused": True, "full_reuse_proof_version": 2,
+        "native_reloads_before_first_service": [], "mamba_forward_verified": False,
+        "ack_to_first_service_ms": 10.,
+        "lease_events": [
+            {"event": "prefetch_residency_registered"},
+            {"event": "prefetch_residency_released", "reason": "service_window_expired",
+             "native_locked": True},
+            {"event": "prefetch_residency_released", "reason": "first_service",
+             "native_locked": False},
+        ],
+    }
+    [group] = source_summary([row])["full_reuse_by_residency"]
+    assert group["native_locked_at_registration"] is None
+    assert group["last_observed_release_reason"] == "first_service"
+    assert group["full_reused_commands"] == 1

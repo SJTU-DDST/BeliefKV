@@ -67,6 +67,20 @@ P50/P90为254.63/1074.24 ms，parent提交到worker首次服务为
 v15_join_pipeline_first_service_v2_final_20261010.json；冻结侧不覆盖。
 分别处理过早预测、客户端完成积压与服务端准入，不能一律延长租约。
 
+FULL消费按首次登记时的原生锁及末次观察到的释放原因分组，
+缺失证据保持未知，纯Mamba传输不纳入；不能将租约到期自动
+判为未复用，分组也不证明独立因果。11项审计检查通过，旧统计
+与冻结侧一致。v15 JOIN/tool FULL共174次，134次确认复用；
+31次未保护且丢失驻留，9次保护后到期且未复用；另6次未保护/
+到期动作仍复用。9次含3次observed-EOS和6次estimated-work，
+须分别检查客户端完成积压/准入等待与过早工作估计。
+PREPARE为846次ACK、196次后续恢复关联；715次后续同node/
+pool D2H均存在中间Host FULL驱逐，不能称覆盖有效副本。
+报告v15_prefetch_lifecycle_residency_final_20261010.json使用
+--summary-only，仅保留汇总和证据口径，明细沿用冻结侧原日志。
+issue-budget保护修复尚未部署，V15缺少该遥测，不能直接推导
+其能挽回多少未保护动作。当前目标及双侧代码冻结保持不变。
+
 2026-10-10 05:40 CST快照：原生H2D731.314 GB，JOIN/tool1.384 GB，
 需求handoff36.050 GB。稍后消费快照中handoff FULL传输/确认复用
 19.283/19.203 GB，ACK到首次launch P5022.62 ms；JOIN为
