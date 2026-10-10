@@ -3,14 +3,15 @@
 Status date: 2026-10-11.
 
 V21 same-version native collection is running; predictive finished with 155
-completed and one incomplete workflow. At 2026-10-11 05:12 CST, the still-waiting
-V22 target was updated to fef94d3 in frozen beliefkv-v27-validated-20261011,
-coordinator PID3876782. Environment, canonical native patch and waited process
-identities match the preserved ed974d2 registration. Keep
-v22_supersession_ed974d2_to_fef94d3_20261011.json. After the complete V21 pair and
+completed and one incomplete workflow. At 2026-10-11 05:36 CST, the still-waiting
+V22 target was updated to e3ee8ec in frozen beliefkv-v28-validated-20261011,
+coordinator PID51430. Environment, canonical native patch and waited process
+identities match the preserved fef94d3 registration. Keep
+v22_supersession_fef94d3_to_e3ee8ec_20261011.json. After the complete V21 pair and
 postprocessing, automatically deploy this revision, predictive first then cold
-same-version native. The target includes same-dispatch tool-plan reuse and the
-matched busy-window evidence. Waiting registration is not GPU validation; the
+same-version native. The target includes aged-order residency inspection
+reduction and the matched control-cost evidence. Waiting registration is not
+GPU validation; the
 broad performance objective remains active.
 
 The isolated follow-up skips resident-order reentry inspection for requests
@@ -26,8 +27,8 @@ For fully aged48/156-request queues, two-plan wall means change from
 1.110/2.504 to0.689/1.965ms;48-request native reads change2344→0.
 This uses a deterministic native-inspector stub, includes warmups in read counts,
 and is not GPU throughput proof. Unaged timing differences are noise rather
-than evidence of savings. Register the validated revision only while V22
-remains waiting, preserving the current V21 pair.
+than evidence of savings. This validated revision is now registered in the
+still-waiting V22 coordinator; the current V21 pair remains frozen.
 
 Keep the reproducible scripts/analyze_busy_context_control.py and
 v21_busy_context_control_600_900_20261011.json with source-prefix and boundary-row
@@ -79,7 +80,7 @@ unrelated caches and all current page/capacity/time/residency checks. Untagged
 native ACKs, invalid receipts, stale sessions, Host-only release and no-capacity
 retries do not trigger invalidation. There is no new decode-loop scan. The261
 terminal/tool/runtime/handoff checks pass. This revision is now included in the
-updated frozen fef94d3 V22 target; waiting registration is not GPU validation.
+updated frozen e3ee8ec V22 target; waiting registration is not GPU validation.
 
 Reuse only a tool restore plan freshly read during the current dispatch. Refresh
 plans from the short cache or an earlier selection. Preserve the post-event-drain
@@ -90,7 +91,7 @@ v27_tool_dispatch_cpu_20261011.json: 100 alternating CPU samples retain ordered
 bursts and ledger reservations; four/300-node dispatch means change from
 0.858/9.117 to 0.683/6.672 ms. The optimized 300-node maximum remains 19.507 ms.
 This is a CPU planning result, not GPU throughput or end-to-end savings. The
-committed change is now registered in fef94d3; the running V21 remains frozen.
+committed change is now registered in e3ee8ec; the running V21 remains frozen.
 
 Keep v21_busy_window_same_version_evidence_20261011.json with the original
 comparison SHA256. Both V21 arms completely observe 600–900 s: predictive/native
@@ -142,7 +143,7 @@ second, and measure actual early FULL reuse, parent service wait, protection
 reasons and busy-window throughput. The broad performance objective stays active.
 
 The validated deep-prefix observation reduction is registered in frozen V22
-revision fef94d3, preserving superseded registrations and receipts. Within one closure
+revision e3ee8ec, preserving superseded registrations and receipts. Within one closure
 read, validate newly encountered native node/component classes once and validate
 the current node's lock/reference counters together. Continue reading identity,
 creation time, lengths, locks, references and pending DMA for every node.
@@ -198,7 +199,7 @@ CPU samples preserve observations and plans:300-node H2D/PREPARE planning
 means change1.760→1.732ms and1.664→1.647ms;four-node means change
 87.01→85.98 and66.28→65.13 microseconds. Unchanged phases remain noise.
 This modest CPU reduction is not throughput proof. It is not part of frozen V21
-and is now included in the updated registered fef94d3 V22 checkout.
+and is now included in the updated registered e3ee8ec V22 checkout.
 
 The latest independent-wait evidence makes complete-prefix coverage the next
 runtime validation priority. Keep v25_v21_prefetch_gap_attribution_20261011.json:
