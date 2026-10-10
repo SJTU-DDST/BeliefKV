@@ -610,6 +610,60 @@ def test_tool_boundary_includes_sequential_calls_outside_sampled_active_set(tmp_
     assert incomplete["rows"][0]["early_started_and_reused_full_bytes"] == 0
 
 
+@pytest.mark.parametrize("sampled_tools", (["first"], ["first", "later-round"]))
+def test_late_tool_observation_keeps_the_immediate_next_request(tmp_path, sampled_tools):
+    tool = {
+        "source": "tool_wait", "workflow_id": "w", "context_id": "t",
+        "context_epoch": 2, "invocation_id": "tool", "active_tool_ids": sampled_tools,
+    }
+    observations = [{
+        **tool, "event": "wait_prefetch_plan", "ts_ms": 125.,
+        "planned_full_tokens": 8, "reason": "start_window",
+    }]
+    issues = {"late": {**tool, "event": "prefetch_native_issued", "ts_ms": 126.}}
+    actions = [{
+        **tool, "command_id": "late", "submit_ts_ms": 127., "ack_ts_ms": 130.,
+        "pool_bytes": {"kv": 20}, "full_first_service_reused": True,
+        "first_service_request_id": "next", "first_service_context_epoch": 3,
+    }]
+    requests = [
+        {"kind": "llm_submit", "workflow_id": "w", "context_id": "t",
+         "invocation_id": "tool", "context_epoch": epoch, "ts_ms": when,
+         "attributes": {"request_id": rid}}
+        for epoch, when, rid in (
+            (2, 90., "origin"), (3, 120., "next"), (4, 190., "later"),
+        )
+    ]
+    tools = [
+        {"kind": kind, "workflow_id": "w", "invocation_id": "tool",
+         "ts_ms": when, "attributes": {"tool_run_id": identity}}
+        for kind, identity, when in (
+            ("tool_start", "first", 95.), ("tool_end", "first", 110.),
+            ("tool_start", "later-round", 160.), ("tool_end", "later-round", 180.),
+        )
+    ]
+    write_rows(
+        tmp_path / "client_1/workflows/example/runtime_events.deepagents.jsonl",
+        requests + tools,
+    )
+    result = wait_event_attribution(tmp_path, observations, issues, actions, 0.)
+    [row] = result["rows"]
+    assert row["observed_tool_call_count"] == 1
+    assert row["completion_ts_ms"] == 110.
+    assert row["completion_evidence"] == "whole_tool_request_round"
+    assert row["next_request_id"] == "next"
+    assert row["client_submit_ts_ms"] == 120.
+    assert row["first_observation_after_completion_ms"] == 15.
+    assert row["tool_ids_outside_request_round"] == (
+        ["later-round"] if "later-round" in sampled_tools else []
+    )
+    assert row["early_started_and_reused_full_bytes"] == 0
+    assert row["early_ready_and_reused_full_bytes"] == 0
+    assert result["summary"]["by_source"]["tool_wait"][
+        "events_first_observed_after_completion"
+    ] == 1
+
+
 def test_lifecycle_keeps_expired_but_reused_and_missing_use_distinct(tmp_path):
     write_rows(tmp_path / "opportunities/admission_opportunities.jsonl", [
         {"event": "prefetch_native_issued", "command_id": "prefetch1",

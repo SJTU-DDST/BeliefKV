@@ -871,26 +871,32 @@ def wait_event_attribution(
     targets = set()
     for group in groups.values():
         requests = submits.get((group["workflow_id"], group["context_id"]), ())
+        origin = next((
+            row for row in reversed(requests)
+            if row.get("context_epoch") == group["context_epoch"]
+            and row.get("invocation_id") == group["invocation_id"]
+            and row["ts_ms"] <= group["first_observation_ts_ms"]
+        ), None)
+        # A delayed observation can follow the beneficiary's submission. Bind
+        # the round to its request epoch before considering observation latency.
         following = next((
             row for row in requests
             if row.get("context_epoch") is not None
             and row["context_epoch"] > group["context_epoch"]
             and row.get("invocation_id") == group["invocation_id"]
-            and row["ts_ms"] >= group["first_observation_ts_ms"]
+            and row["ts_ms"] >= (
+                origin["ts_ms"] if origin is not None
+                else group["first_observation_ts_ms"]
+            )
         ), None)
         group["observed_tools_completion_ts_ms"] = None
         group["completion_evidence"] = None
+        group["tool_ids_outside_request_round"] = ()
         if group["source"] == "join_ticket":
             completion = joins.get((group["workflow_id"], group["join_id"]))
             if completion is not None:
                 group["completion_evidence"] = "join_satisfied"
         else:
-            origin = next((
-                row for row in reversed(requests)
-                if row.get("context_epoch") == group["context_epoch"]
-                and row.get("invocation_id") == group["invocation_id"]
-                and row["ts_ms"] <= group["first_observation_ts_ms"]
-            ), None)
             if origin is not None:
                 identity = group["workflow_id"], group["invocation_id"]
                 starts = tool_starts.get(identity, ())
@@ -900,7 +906,14 @@ def wait_event_attribution(
                     bisect_left(times, following["ts_ms"])
                     if following is not None else len(starts)
                 )
-                group["active_tool_ids"].update(tool for _, tool in starts[left:right])
+                round_tools = {tool for _, tool in starts[left:right]}
+                if following is not None:
+                    group["tool_ids_outside_request_round"] = tuple(sorted(
+                        group["active_tool_ids"] - round_tools,
+                    ))
+                    group["active_tool_ids"] = round_tools
+                else:
+                    group["active_tool_ids"].update(round_tools)
             tool_times = [
                 ends.get((group["workflow_id"], group["invocation_id"], tool))
                 for tool in group["active_tool_ids"]
@@ -1026,6 +1039,11 @@ def wait_event_attribution(
             )},
             "observed_context_epochs": sorted(group["observed_context_epochs"]),
             "observed_tool_call_count": len(group["active_tool_ids"]),
+            "tool_ids_outside_request_round": list(group["tool_ids_outside_request_round"]),
+            "first_observation_after_completion_ms": (
+                max(0., group["first_observation_ts_ms"] - completion)
+                if completion is not None else None
+            ),
             "max_observed_planned_full_bytes": (
                 group["max_observed_planned_full_bytes"]
                 if group["max_observed_planned_full_bytes"] is not None
@@ -1119,6 +1137,13 @@ def wait_event_attribution(
                     "completion_boundary_unknown_events": sum(
                         row["completion_ts_ms"] is None for row in selected
                     ),
+                    "events_first_observed_after_completion": sum(
+                        (row["first_observation_after_completion_ms"] or 0) > 0
+                        for row in selected
+                    ),
+                    "events_with_tool_ids_outside_request_round": sum(
+                        bool(row["tool_ids_outside_request_round"]) for row in selected
+                    ),
                     "early_started_and_reused_full_bytes": sum(
                         row["early_started_and_reused_full_bytes"] for row in selected
                     ),
@@ -1172,7 +1197,10 @@ def wait_event_attribution(
             "Early FULL requires actual submit before complete JOIN/all-tool END and "
             "verified reuse by that episode's next request. Tool boundaries require "
             "the origin and following request plus every intervening tool, including "
-            "sequential calls not active at the sampled plan. Unclosed or unproven "
+            "sequential calls not active at the sampled plan. The following request "
+            "is bound by the origin epoch, even if observation delivery occurs later. "
+            "Sampled tool IDs outside that bounded request round are reported separately "
+            "and cannot extend its completion boundary. Unclosed or unproven "
             "tool rounds keep their completion boundary unknown. Native Host-hit counters and exact demand "
             "handoff receipts are separate remaining-demand evidence; do not add them "
             "without proving disjoint allocations. Client-to-native-arrival includes "

@@ -16,6 +16,19 @@ aged-order inspection reduction and same-dispatch tool plan reuse.
 Waiting registration is not GPU validation;
 the broad performance objective remains active.
 
+Fix delayed tool-observation attribution in the isolated follow-up. Requiring
+following submission to be later than first_observation can skip the real next
+request and fold another model/tool round into the completion label. Original
+V21 xarray-4687 child epoch20 has one7.59ms read_file; the old audit counts two
+tools and selects epoch22 instead of21. Bind following to the origin request
+epoch, prove the bounded round from its intervening START/END events, and report
+sampled tool IDs outside that round separately. Post-completion observations
+and transfers remain post-completion evidence, never early predictions.
+The66 lifecycle/tool-forecast/transfer-window checks pass. Recompute from
+closed V21 raw evidence, preserve previous reports and treat the earlier
+single/multi classifications as historical until recomputation. This is an
+offline evidence correction, absent from the running V21 and frozen V22 policy.
+
 Add independent background-writer CPU evidence in the isolated follow-up.
 Sample every 64th record per category with thread_time_ns and perf_counter_ns.
 For native evidence, distinguish stream and event/internal-event categories.

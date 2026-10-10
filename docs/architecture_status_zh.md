@@ -14,6 +14,18 @@ V21完整pair及后处理结束后，自动部署该版本并先predictive后冷
 同次tool恢复计划复用；
 等待启动不代表GPU验证完成，吞吐目标仍未达成。
 
+隔离工作区修正工具轮次审计中的晚到观测关联。原先following请求
+必须晚于first_observation；若控制观测在真正下一请求提交后到达，
+就会跳过该请求并合并下一轮工具，误差混入一次模型生成时间。
+已核对V21 xarray-4687的child epoch20：实际只调用一次7.59ms的
+read_file，旧审计却计为两次工具，并选取epoch22而非epoch21。
+现在以origin epoch绑定直接following请求，按两请求之间的真实
+工具START/END证明整轮完成，额外采样工具身份单独报告；
+完成后观测与完成后传输不能变成提前预测证据。66项生命周期、
+工具forecast与传输窗口检查通过。正在用原始闭合V21证据重算，
+原审计及较早single/multi分类保留为历史，不能据旧分类调整模型。
+本项是离线归因修订，运行中的V21及已冻结V22策略保持原版本。
+
 隔离工作区补齐后台证据写入线程的独立计时。Native与opportunity
 writer按记录类别每64条采样一次，同时记录thread_time_ns CPU
 时间和perf_counter_ns墙钟时间；native按stream及event/internal
