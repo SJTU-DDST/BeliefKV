@@ -306,6 +306,10 @@ def prepare_host_lifetime_summary(
 def prepare_selection_summary(selections: list[dict], prepared: list[dict]) -> dict:
     """Keep candidate potential separate from completed transfers and consumption."""
     acknowledged = {row["command_id"] for row in prepared}
+    burst_commands = {
+        command for row in selections
+        for command in row.get("burst_command_ids", ())
+    }
     sources = defaultdict(list)
     for row in selections:
         sources[row["source"]].append(row)
@@ -314,6 +318,11 @@ def prepare_selection_summary(selections: list[dict], prepared: list[dict]) -> d
         "records_without_command_id": sum(
             row.get("command_id") is None for row in selections
         ),
+        "burst_records": sum(
+            len(row.get("burst_command_ids", ())) > 1 for row in selections
+        ),
+        "explicit_burst_commands": len(burst_commands),
+        "acknowledged_burst_commands": len(burst_commands & acknowledged),
         "by_source": {
             source: {
                 "candidate_records": len(rows),
@@ -353,7 +362,10 @@ def prepare_selection_summary(selections: list[dict], prepared: list[dict]) -> d
             "forward-use credit. Zero direct reclaim may be a necessary ancestor "
             "backup before an exclusive checkpoint becomes reclaimable. Match ACKs "
             "by command ID only; legacy records without it remain unassociated. "
-            "Missing candidate estimates remain unknown."
+            "Missing candidate estimates remain unknown. For a burst, candidate "
+            "transfer/reclaim estimates describe the selected first extent only; "
+            "explicit burst IDs link additional per-node receipts without "
+            "multiplying this estimate or granting reuse credit."
         ),
     }
 

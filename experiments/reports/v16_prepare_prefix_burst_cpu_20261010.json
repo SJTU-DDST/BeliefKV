@@ -1,0 +1,219 @@
+{
+  "schema_version": 1,
+  "engine_root": "/tmp/sglang-v13-cold-reclaim-20261010",
+  "iterations_per_case": 120,
+  "warmup_iterations": 5,
+  "source_sha256": {
+    "python/sglang/srt/mem_cache/unified_radix_cache.py": "31bc6cce61bb1f0d0792df86e8171abbb6b2969d4301166f85cd7ff81988924a",
+    "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py": "d68468802d4c1ce8c8a977f2dc5a1baaf2a9cd6ddb68260545ba8c53665c8d4d",
+    "python/sglang/srt/managers/cache_controller.py": "304a789de188f5535156c831e54609ce90a13b61618018ec1a9de542c59ab740"
+  },
+  "cases": [
+    {
+      "missing_full_extents": 1,
+      "full_tokens_per_extent": 128,
+      "per_node_receipts_equal": true,
+      "measurements": {
+        "single_extent": {
+          "wall_ms": {
+            "mean": 0.2642299416666667,
+            "p50": 0.2638655,
+            "p90": 0.275215,
+            "max": 0.281465
+          },
+          "thread_cpu_ms": {
+            "mean": 0.2644539,
+            "p50": 0.264127,
+            "p90": 0.275358,
+            "max": 0.281499
+          }
+        },
+        "prefix_burst": {
+          "wall_ms": {
+            "mean": 0.31354614166666667,
+            "p50": 0.274099,
+            "p90": 0.389779,
+            "max": 0.622262
+          },
+          "thread_cpu_ms": {
+            "mean": 0.31380865,
+            "p50": 0.2743445,
+            "p90": 0.390114,
+            "max": 0.622724
+          }
+        }
+      },
+      "native_evidence": {
+        "single_extent": {
+          "controller_submissions": 1,
+          "ack_groups": 1,
+          "caller_opportunities": 1,
+          "full_bytes": 1024,
+          "mamba_allocations": 0
+        },
+        "prefix_burst": {
+          "controller_submissions": 1,
+          "ack_groups": 1,
+          "caller_opportunities": 1,
+          "full_bytes": 1024,
+          "mamba_allocations": 0
+        }
+      }
+    },
+    {
+      "missing_full_extents": 4,
+      "full_tokens_per_extent": 128,
+      "per_node_receipts_equal": true,
+      "measurements": {
+        "single_extent": {
+          "wall_ms": {
+            "mean": 0.798462725,
+            "p50": 0.7957000000000001,
+            "p90": 0.860854,
+            "max": 0.888696
+          },
+          "thread_cpu_ms": {
+            "mean": 0.7987813333333333,
+            "p50": 0.7960769999999999,
+            "p90": 0.86115,
+            "max": 0.889059
+          }
+        },
+        "prefix_burst": {
+          "wall_ms": {
+            "mean": 0.7377827833333334,
+            "p50": 0.6908920000000001,
+            "p90": 0.757522,
+            "max": 3.189454
+          },
+          "thread_cpu_ms": {
+            "mean": 0.7381299916666667,
+            "p50": 0.6911905,
+            "p90": 0.758029,
+            "max": 3.19127
+          }
+        }
+      },
+      "native_evidence": {
+        "single_extent": {
+          "controller_submissions": 4,
+          "ack_groups": 4,
+          "caller_opportunities": 4,
+          "full_bytes": 4096,
+          "mamba_allocations": 0
+        },
+        "prefix_burst": {
+          "controller_submissions": 1,
+          "ack_groups": 1,
+          "caller_opportunities": 1,
+          "full_bytes": 4096,
+          "mamba_allocations": 0
+        }
+      }
+    },
+    {
+      "missing_full_extents": 8,
+      "full_tokens_per_extent": 128,
+      "per_node_receipts_equal": true,
+      "measurements": {
+        "single_extent": {
+          "wall_ms": {
+            "mean": 2.856368191666667,
+            "p50": 1.5756515,
+            "p90": 1.733003,
+            "max": 151.537642
+          },
+          "thread_cpu_ms": {
+            "mean": 2.85682325,
+            "p50": 1.576032,
+            "p90": 1.733638,
+            "max": 151.545497
+          }
+        },
+        "prefix_burst": {
+          "wall_ms": {
+            "mean": 1.372268225,
+            "p50": 1.325758,
+            "p90": 1.373574,
+            "max": 3.545698
+          },
+          "thread_cpu_ms": {
+            "mean": 1.3726698833333333,
+            "p50": 1.3262205,
+            "p90": 1.373983,
+            "max": 3.546393
+          }
+        }
+      },
+      "native_evidence": {
+        "single_extent": {
+          "controller_submissions": 8,
+          "ack_groups": 8,
+          "caller_opportunities": 8,
+          "full_bytes": 8192,
+          "mamba_allocations": 0
+        },
+        "prefix_burst": {
+          "controller_submissions": 1,
+          "ack_groups": 1,
+          "caller_opportunities": 1,
+          "full_bytes": 8192,
+          "mamba_allocations": 0
+        }
+      }
+    },
+    {
+      "missing_full_extents": 16,
+      "full_tokens_per_extent": 128,
+      "per_node_receipts_equal": true,
+      "measurements": {
+        "single_extent": {
+          "wall_ms": {
+            "mean": 3.6737405416666666,
+            "p50": 3.6301680000000003,
+            "p90": 3.822757,
+            "max": 3.866197
+          },
+          "thread_cpu_ms": {
+            "mean": 3.6743198583333334,
+            "p50": 3.6307289999999997,
+            "p90": 3.823472,
+            "max": 3.867106
+          }
+        },
+        "prefix_burst": {
+          "wall_ms": {
+            "mean": 3.1628809166666665,
+            "p50": 3.1324415,
+            "p90": 3.301329,
+            "max": 3.3611
+          },
+          "thread_cpu_ms": {
+            "mean": 3.163481066666667,
+            "p50": 3.1329190000000002,
+            "p90": 3.301953,
+            "max": 3.361926
+          }
+        }
+      },
+      "native_evidence": {
+        "single_extent": {
+          "controller_submissions": 16,
+          "ack_groups": 16,
+          "caller_opportunities": 16,
+          "full_bytes": 16384,
+          "mamba_allocations": 0
+        },
+        "prefix_burst": {
+          "controller_submissions": 2,
+          "ack_groups": 2,
+          "caller_opportunities": 2,
+          "full_bytes": 16384,
+          "mamba_allocations": 0
+        }
+      }
+    }
+  ],
+  "scope": "CPU native queue/commit/ACK methods with real controller write and receipt merging. CPU tensors and fake transfer completion exclude CUDA, DMA, scheduler polling and workload throughput. Earlier single-extent method is unchanged and invoked with FULL only. The singleton burst uses the same direct primitive as runtime. Caller opportunities are counted calls, not observed wall-clock polling delays. Each fixture starts without Host copies.",
+  "deployed": false
+}

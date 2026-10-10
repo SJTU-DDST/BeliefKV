@@ -16,6 +16,24 @@ workflow14400s、2--4 child、seed21及产物不变。客户端共用优化
 在两侧生效。代码冻结核验已通过；两侧及审计、HTML、cleanup全部
 结束前，后续修订只在隔离工作树提交，不修改主目录或服务文件。
 
+本轮目标补充不改变native相对收益方向：FULL PREPARE只补缺失
+extent，Host有效副本与radix分裂后仍有效的索引保留；Host驱逐
+后的补传另行归因。Mamba不做投机PREPARE，必要状态的原生写回
+和恢复依赖照常处理，不能据此关闭状态保存。
+隔离下一版JOIN/长工具等待按安全输入前缀一次排队最多8节点，
+单节点直接走既有入口；统一提交仍保留每节点预留、command_id
+和ACK。后续节点容量不足或未授权时，已经排队的部分必须提交。
+候选估计仅对应首个选中extent，burst_command_ids记录全部实际
+入队命令；不按批量大小放大估计或把ACK当消费。基准报告为
+v16_prepare_prefix_burst_cpu_20261010.json，使用真实原生CPU
+写入/回执合并方法，不包含CUDA、DMA或workload吞吐。
+251项runtime/物理/审计与94项原生CPU检查通过，规范patch和
+精确增量的正反应用检查通过，清单为
+v16_engine_followup_manifest_20261010.json。4/8/16 extent提交
+次数分别4→1、8→1、16→2，逐节点字节和回执一致、Mamba分配0；
+全部计时和离群值保留，不能直接归为GPU或JCT收益。
+主目录及实时服务继续冻结，本项只能在完整V15后处理后部署。
+
 v15 predictive侧已完成156/156 workflow，无error/incomplete；
 采集10857.481秒，完成吞吐51.725 workflow/h，JCT P503119.630秒，
 GPU利用率均值74.476%，输出795.773 token/s。此处completed

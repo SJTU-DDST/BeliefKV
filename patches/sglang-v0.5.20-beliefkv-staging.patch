@@ -1139,16 +1139,17 @@ index 1b63fb6..07ab19d 100644
                  require_reasoning=obj.require_reasoning,
                  return_hidden_states=obj.return_hidden_states,
 diff --git a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
-index 17b3774..751f7e5 100644
+index 17b3774..2e60f8d 100644
 --- a/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
 +++ b/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py
-@@ -327,10 +327,22 @@ class HybridCacheController(BaseHiCacheController):
+@@ -327,10 +327,23 @@ class HybridCacheController(BaseHiCacheController):
          priority: Optional[int] = None,
          node_id: int = -1,
          extra_pools: Optional[list[PoolTransfer]] = None,
 +        beliefkv_command_id: Optional[str] = None,
 +        *,
 +        beliefkv_before_enqueue: Optional[Callable[[CacheOperation], bool]] = None,
++        beliefkv_defer_writing: bool = False,
      ) -> Optional[torch.Tensor]:
          host_indices = self.mem_pool_host.alloc(len(device_indices))
          if host_indices is None:
@@ -1165,7 +1166,7 @@ index 17b3774..751f7e5 100644
          pool_transfers = self.mem_pool_host.resolve_host_transfers(
              extra_pools,
              primary_device_indices=device_indices,
-@@ -340,15 +352,31 @@ class HybridCacheController(BaseHiCacheController):
+@@ -340,16 +353,33 @@ class HybridCacheController(BaseHiCacheController):
              self.mem_pool_host.free(host_indices)
              return None
  
@@ -1185,6 +1186,7 @@ index 17b3774..751f7e5 100644
 +            pool_transfers=pool_transfers or None,
 +            beliefkv_command_id=beliefkv_command_id,
          )
+-        self.start_writing()
 +        if beliefkv_before_enqueue is not None:
 +            allocated_sidecars = [
 +                (transfer.name, transfer.host_indices)
@@ -1202,10 +1204,12 @@ index 17b3774..751f7e5 100644
 +                self.mem_pool_host.free(host_indices)
 +                return None
 +        self.write_queue.append(op)
-         self.start_writing()
++        if not beliefkv_defer_writing:
++            self.start_writing()
          return host_indices
  
-@@ -518,6 +546,10 @@ class HybridCacheController(BaseHiCacheController):
+     def _move_op_indices(
+@@ -518,6 +548,10 @@ class HybridCacheController(BaseHiCacheController):
          priority: Optional[int] = None,
          node_id: int = -1,
          extra_pools: Optional[list[PoolTransfer]] = None,
@@ -1216,7 +1220,7 @@ index 17b3774..751f7e5 100644
      ) -> Optional[torch.Tensor]:
          need_load_kv = host_indices.numel() > 0
  
-@@ -533,25 +565,61 @@ class HybridCacheController(BaseHiCacheController):
+@@ -533,25 +567,61 @@ class HybridCacheController(BaseHiCacheController):
              if device_indices is None:
                  return None
  
@@ -1291,7 +1295,7 @@ index 17b3774..751f7e5 100644
          return device_indices
  
      def prefetch(
-@@ -875,6 +943,8 @@ class HybridCacheController(BaseHiCacheController):
+@@ -875,6 +945,8 @@ class HybridCacheController(BaseHiCacheController):
          extra_pools: Optional[list[PoolTransfer]],
          kv_device_indices: Optional[torch.Tensor] = None,
          kv_host_indices: Optional[torch.Tensor] = None,
@@ -1300,7 +1304,7 @@ index 17b3774..751f7e5 100644
      ) -> Optional[list[PoolTransfer]]:
          """Allocate unresolved side-pool device indices atomically."""
          if not extra_pools:
-@@ -904,7 +974,7 @@ class HybridCacheController(BaseHiCacheController):
+@@ -904,7 +976,7 @@ class HybridCacheController(BaseHiCacheController):
              evict_fn = entry.device_evict_fn
              size = len(pool.host_indices)
              indices = alloc_fn(size)
@@ -1734,7 +1738,7 @@ index 6815679..fc9deaa 100644
      def reset(self) -> None:
          """Drop the entire tree and reinitialize empty state."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..0cdae7b 100644
+index d417d7d..6b868dd 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -6,7 +6,7 @@ import threading
@@ -2121,7 +2125,7 @@ index d417d7d..0cdae7b 100644
          return result.tracker.get(component_type, 0)
  
      # ---- Decode retraction ----
-@@ -1518,8 +1809,160 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1518,8 +1809,227 @@ class UnifiedRadixCache(BasePrefixCache):
  
      # ---- HiCache: Backup / LoadBack ----
  
@@ -2137,6 +2141,8 @@ index d417d7d..0cdae7b 100644
 +        beliefkv_command_id: str,
 +        beliefkv_before_enqueue: Optional[Callable[[CacheOperation], bool]] = None,
 +        beliefkv_include_mamba: bool = True,
++        _beliefkv_pending_write_ids: frozenset[NodeId] = frozenset(),
++        _beliefkv_defer_writing: bool = False,
 +    ) -> PrepareHostShadowResult:
 +        """Issue one tagged, non-evicting D2H shadow; only the native ACK certifies it.
 +
@@ -2218,6 +2224,7 @@ index d417d7d..0cdae7b 100644
 +                return declined
 +            if (
 +                cur.write_through_pending_id is not None
++                and cur.write_through_pending_id not in _beliefkv_pending_write_ids
 +                or cur.load_back_pending_id is not None
 +            ):
 +                return declined
@@ -2263,12 +2270,75 @@ index d417d7d..0cdae7b 100644
 +            no_host_reclaim=True,
 +            beliefkv_before_enqueue=beliefkv_before_enqueue,
 +            beliefkv_include_mamba=beliefkv_include_mamba,
++            beliefkv_defer_writing=_beliefkv_defer_writing,
 +        )
 +        # Mamba-only backups have zero Full tokens, so the helper's integer
 +        # token count cannot distinguish their successful enqueue from failure.
 +        if node_id not in self.ongoing_write_through:
 +            return declined
 +        return PrepareHostShadowResult(True, node_id)
++
++    def prepare_host_session_nodes(
++        self,
++        *,
++        session_id: str,
++        session_generation: int,
++        leaf_node_id: NodeId,
++        leaf_creation_time: int | float,
++        nodes: tuple[tuple[NodeId, int | float, str], ...],
++        beliefkv_before_enqueue: Callable[[CacheOperation], bool],
++    ) -> tuple[PrepareHostShadowResult, ...]:
++        """Queue a bounded FULL-only burst, then submit separate node receipts once."""
++        if (
++            type(nodes) is not tuple or not 1 <= len(nodes) <= 16
++            or any(type(item) is not tuple or len(item) != 3 for item in nodes)
++            or any(
++                type(node_id) is not int
++                or type(created) not in (int, float)
++                or type(command) is not str or not command
++                for node_id, created, command in nodes
++            )
++            or len({item[0] for item in nodes}) != len(nodes)
++            or len({item[2] for item in nodes}) != len(nodes)
++            or not callable(beliefkv_before_enqueue)
++        ):
++            return ()
++        if len(nodes) == 1:
++            node_id, created, command = nodes[0]
++            outcome = self.prepare_host_shadow(
++                session_id=session_id, session_generation=session_generation,
++                leaf_node_id=leaf_node_id, leaf_creation_time=leaf_creation_time,
++                node_id=node_id, node_creation_time=created,
++                beliefkv_command_id=command,
++                beliefkv_before_enqueue=beliefkv_before_enqueue,
++                beliefkv_include_mamba=False,
++            )
++            return (outcome,) if outcome.issued else ()
++        issued = []
++        pending_ids: set[NodeId] = set()
++        try:
++            for node_id, created, command in nodes:
++                outcome = self.prepare_host_shadow(
++                    session_id=session_id,
++                    session_generation=session_generation,
++                    leaf_node_id=leaf_node_id,
++                    leaf_creation_time=leaf_creation_time,
++                    node_id=node_id,
++                    node_creation_time=created,
++                    beliefkv_command_id=command,
++                    beliefkv_before_enqueue=beliefkv_before_enqueue,
++                    beliefkv_include_mamba=False,
++                    _beliefkv_pending_write_ids=frozenset(pending_ids),
++                    _beliefkv_defer_writing=True,
++                )
++                if not outcome.issued:
++                    break
++                issued.append(outcome)
++                pending_ids.add(node_id)
++        finally:
++            if issued:
++                self.cache_controller.start_writing()
++        return tuple(issued)
 +
      def _execute_and_commit_kv_backup(
 -        self, action: BackupKV, write_back: bool = False
@@ -2280,10 +2350,11 @@ index d417d7d..0cdae7b 100644
 +        no_host_reclaim: bool = False,
 +        beliefkv_before_enqueue: Optional[Callable[[CacheOperation], bool]] = None,
 +        beliefkv_include_mamba: bool = True,
++        beliefkv_defer_writing: bool = False,
      ) -> int:
          """Run a backup action top-down, stopping at the first failed backup."""
          if self.buffer_pipeline is not None:
-@@ -1532,14 +1975,22 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1532,14 +2042,23 @@ class UnifiedRadixCache(BasePrefixCache):
              return 0
          written = 0
          for node_id in action.node_ids:
@@ -2305,10 +2376,11 @@ index d417d7d..0cdae7b 100644
 +                beliefkv_command_id=beliefkv_command_id,
 +                no_host_reclaim=no_host_reclaim,
 +                beliefkv_before_enqueue=beliefkv_before_enqueue,
++                beliefkv_defer_writing=beliefkv_defer_writing,
              )
              if host_indices is None:
                  return 0
-@@ -1554,6 +2005,340 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1554,6 +2073,340 @@ class UnifiedRadixCache(BasePrefixCache):
              written = len(host_indices)
          return written
  
@@ -2649,7 +2721,7 @@ index d417d7d..0cdae7b 100644
      @staticmethod
      def _backup_publish_node_ids(
          node_id: NodeId, comp_xfers: dict[ComponentType, list[PoolTransfer]]
-@@ -1574,18 +2359,74 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1574,18 +2427,77 @@ class UnifiedRadixCache(BasePrefixCache):
              CacheTransferPhase.BACKUP_HOST, kv_xfer, comp_xfers
          )
  
@@ -2659,6 +2731,7 @@ index d417d7d..0cdae7b 100644
 +        beliefkv_command_id: str | None = None,
 +        no_host_reclaim: bool = False,
 +        beliefkv_before_enqueue: Optional[Callable[[CacheOperation], bool]] = None,
++        beliefkv_defer_writing: bool = False,
 +    ):
          """Execute Backup action."""
          kv_tokens = len(device_value)
@@ -2710,6 +2783,7 @@ index d417d7d..0cdae7b 100644
 +                    extra_pools=aux_xfers or None,
 +                    beliefkv_command_id=beliefkv_command_id,
 +                    beliefkv_before_enqueue=beliefkv_before_enqueue,
++                    **({"beliefkv_defer_writing": True} if beliefkv_defer_writing else {}),
 +                )
 +                if result is not None:
 +                    return result
@@ -2723,10 +2797,11 @@ index d417d7d..0cdae7b 100644
 +            node_id=node_id,
 +            extra_pools=aux_xfers or None,
 +            beliefkv_command_id=beliefkv_command_id,
++            **({"beliefkv_defer_writing": True} if beliefkv_defer_writing else {}),
          )
  
      def _track_write_through_node(
-@@ -1627,10 +2468,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1627,10 +2539,10 @@ class UnifiedRadixCache(BasePrefixCache):
              updated_node_ids,
          )
  
@@ -2739,7 +2814,7 @@ index d417d7d..0cdae7b 100644
  
          lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
              ack_id
-@@ -1643,15 +2484,25 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1643,15 +2555,25 @@ class UnifiedRadixCache(BasePrefixCache):
              # suffix; the prefix fragment must be persisted as well.
              for node_id in publish_node_ids:
                  self.write_backup_storage(node_id)
@@ -2766,7 +2841,7 @@ index d417d7d..0cdae7b 100644
              return False
  
          host_anchor_params = self.inc_host_lock_ref(node_id).to_dec_params()
-@@ -1675,6 +2526,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1675,6 +2597,10 @@ class UnifiedRadixCache(BasePrefixCache):
                  result=result,
                  ancestor_lock_params=ancestor_lock_params,
                  host_anchor_params=host_anchor_params,
@@ -2777,7 +2852,7 @@ index d417d7d..0cdae7b 100644
              )
              return success
          finally:
-@@ -1690,9 +2545,15 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1690,9 +2616,15 @@ class UnifiedRadixCache(BasePrefixCache):
          result: IncLockRefResult,
          ancestor_lock_params: DecLockRefParams,
          host_anchor_params: DecLockRefParams,
@@ -2794,7 +2869,7 @@ index d417d7d..0cdae7b 100644
          kv_tokens = len(kv_xfer.host_indices)
          sidecar_xfers = self._build_sidecar_transfers(
              CacheTransferPhase.LOAD_BACK, kv_xfer, comp_xfers
-@@ -1703,7 +2564,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1703,7 +2635,8 @@ class UnifiedRadixCache(BasePrefixCache):
          # when the Full-KV load is skipped by thresholding. max(1, ...): an
          # entirely empty spec (e.g. foreign-pin rejection) must never report
          # success, even at load_back_threshold <= 0.
@@ -2804,7 +2879,7 @@ index d417d7d..0cdae7b 100644
              mem_quota is not None and kv_tokens + result.delta > mem_quota
          ):
              self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -1714,6 +2576,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1714,6 +2647,10 @@ class UnifiedRadixCache(BasePrefixCache):
              self.token_to_kv_pool_allocator, "c128_attn_allocator", None
          )
          if c128_allocator is not None:
@@ -2815,7 +2890,7 @@ index d417d7d..0cdae7b 100644
              c128_num_pages = _c128_transfer_num_pages(
                  comp_xfers.get(ComponentType.C128, ()),
                  c128_allocator.page_size,
-@@ -1727,6 +2593,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1727,6 +2664,10 @@ class UnifiedRadixCache(BasePrefixCache):
  
          avail = self._component_available_size(ComponentType.FULL)
          if avail < kv_tokens:
@@ -2826,7 +2901,7 @@ index d417d7d..0cdae7b 100644
              needed = kv_tokens - avail
              self.evict_for_alloc(EvictParams(num_tokens=needed))
              if self._component_available_size(ComponentType.FULL) < kv_tokens:
-@@ -1741,6 +2611,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1741,6 +2682,9 @@ class UnifiedRadixCache(BasePrefixCache):
              host_indices=kv_xfer.host_indices,
              node_id=node_id,
              extra_pools=aux_xfers or None,
@@ -2836,7 +2911,7 @@ index d417d7d..0cdae7b 100644
          )
  
          self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -3130,10 +4003,24 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3130,10 +4074,24 @@ class UnifiedRadixCache(BasePrefixCache):
              while self.ongoing_write_through:
                  for ack in cc.ack_write_queue:
                      ack.finish_event.synchronize()
@@ -2862,7 +2937,7 @@ index d417d7d..0cdae7b 100644
                  cc.ack_write_queue.clear()
                  assert len(self.ongoing_write_through) == 0
              return
-@@ -3154,11 +4041,122 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3154,11 +4112,122 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_write_queue.pop(0)
              ack.finish_event.synchronize()
@@ -2986,7 +3061,7 @@ index d417d7d..0cdae7b 100644
      def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
          """Record D->H backup volume and duration for a completed write ack."""
          if self.metrics_collector is None:
-@@ -3200,6 +4198,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3200,6 +4269,8 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_load_queue.pop(0)
              ack.finish_event.synchronize()
@@ -2995,7 +3070,7 @@ index d417d7d..0cdae7b 100644
              for ack_id in ack.node_ids:
                  if (
                      self.buffer_pipeline is not None
-@@ -3211,6 +4211,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3211,6 +4282,8 @@ class UnifiedRadixCache(BasePrefixCache):
                  self.dec_host_lock_ref(node, host_lock_params)
                  # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
                  self.tree_core.finish_load_back(node)
@@ -3004,7 +3079,7 @@ index d417d7d..0cdae7b 100644
  
              if self.metrics_collector is not None:
                  for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
-@@ -3225,6 +4227,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3225,6 +4298,13 @@ class UnifiedRadixCache(BasePrefixCache):
                      self.metrics_collector.observe_load_back_duration(
                          duration_ms / 1000.0
                      )
@@ -3018,7 +3093,7 @@ index d417d7d..0cdae7b 100644
              finish_count -= 1
  
      # ---- HiCache: Scheduler Entry Points ----
-@@ -3341,9 +4350,31 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3341,9 +4421,31 @@ class UnifiedRadixCache(BasePrefixCache):
          if self.linker is not None:
              return self.linker.start_layer_wise_loading()
          if self.cache_controller is not None:
@@ -5488,10 +5563,10 @@ index 0000000..388cb28
 +    assert tracker.snapshot_session_leaf_anchors("session", generation) is None
 diff --git a/test/srt/test_beliefkv_shadow_dispatch.py b/test/srt/test_beliefkv_shadow_dispatch.py
 new file mode 100644
-index 0000000..f840b2c
+index 0000000..6743718
 --- /dev/null
 +++ b/test/srt/test_beliefkv_shadow_dispatch.py
-@@ -0,0 +1,1098 @@
+@@ -0,0 +1,1189 @@
 +"""CPU-only action-local shadow dispatch tests, without importing the GPU runtime."""
 +
 +import ast
@@ -5545,6 +5620,7 @@ index 0000000..f840b2c
 +    )
 +    names = {
 +        "prepare_host_shadow",
++        "prepare_host_session_nodes",
 +        "prefetch_gpu_session_node",
 +        "prefetch_gpu_session_nodes",
 +        "_start_beliefkv_prefetch_loads",
@@ -5725,7 +5801,7 @@ index 0000000..f840b2c
 +
 +    def write(
 +        device_indices, *, node_id, extra_pools, beliefkv_command_id,
-+        beliefkv_before_enqueue=None,
++        beliefkv_before_enqueue=None, beliefkv_defer_writing=False,
 +    ):
 +        indices = group.alloc(len(device_indices))
 +        if indices is not None:
@@ -5757,6 +5833,8 @@ index 0000000..f840b2c
 +                    group.free(indices)
 +                    return None
 +            ops.append((node_id, beliefkv_command_id, extra_pools))
++            if not beliefkv_defer_writing:
++                cache.cache_controller.start_writing()
 +        return indices
 +
 +    def backup_spec(node_id, *, include_mamba=True):
@@ -5818,6 +5896,7 @@ index 0000000..f840b2c
 +        write=Mock(side_effect=write),
 +        load=Mock(),
 +        ack_write_queue=[],
++        start_writing=Mock(),
 +    )
 +    cache.ongoing_write_through = {}
 +    cache.ongoing_load_back = {}
@@ -5841,6 +5920,93 @@ index 0000000..f840b2c
 +
 +
 +class TestPrepareHostShadow(unittest.TestCase):
++    def test_prefix_burst_queues_ancestors_once_and_retains_per_node_ack_identity(self):
++        cache, _, parent, leaf, group, ops, args = fixture()
++        parent.component_data[ComponentType.FULL].host_value = None
++        for target in (parent, leaf):
++            target.component_data[ComponentType.MAMBA].value = torch.arange(1)
++        observed = []
++        outcomes = cache.prepare_host_session_nodes(
++            session_id=args["session_id"],
++            session_generation=args["session_generation"],
++            leaf_node_id=leaf.id, leaf_creation_time=leaf.creation_time,
++            nodes=((parent.id, parent.creation_time, "first"),
++                   (leaf.id, leaf.creation_time, "second")),
++            beliefkv_before_enqueue=lambda op: observed.append(
++                (op.beliefkv_command_id, len(op.device_indices))
++            ) or True,
++        )
++        self.assertEqual([outcome.node_id for outcome in outcomes], [parent.id, leaf.id])
++        self.assertEqual(observed, [("first", 2), ("second", 2)])
++        self.assertEqual([(nid, tag) for nid, tag, _ in ops],
++                         [(parent.id, "first"), (leaf.id, "second")])
++        cache.cache_controller.start_writing.assert_called_once_with()
++        self.assertEqual(group.allocations, [(PoolName.KV, 2), (PoolName.KV, 2)])
++        self.assertEqual(group.free_sizes[PoolName.MAMBA], 8)
++        self.assertIsNone(leaf.component_data[ComponentType.MAMBA].host_value)
++        events = []
++        cache.on_hicache_transfer_commit = events.append
++        cache.cache_controller.ack_write_queue = [SimpleNamespace(
++            node_ids=[parent.id, leaf.id],
++            finish_event=SimpleNamespace(synchronize=Mock()),
++            num_tokens_by_pool={"kv": 4}, num_bytes=32,
++            timing_enabled=False, submit_ts_ms=1000., submit_mono=None,
++            unacked_bytes_at_submit=0,
++            child_receipts=tuple(SimpleNamespace(
++                command_id=command, node_id=nid,
++                num_tokens_by_pool=(("kv", 2),), num_bytes=16,
++            ) for nid, command, _ in ops),
++        )]
++        cache.writing_check(finish_count=1)
++        self.assertEqual([child.command_id for child in events[0].child_commits],
++                         ["first", "second"])
++        self.assertEqual(cache.ongoing_write_through, {})
++        self.assertEqual(cache.dec_lock_ref.call_count, 2)
++
++    def test_prefix_burst_skips_existing_copy_and_rejects_foreign_pending_write(self):
++        cache, _, parent, leaf, group, ops, args = fixture()
++        nodes = ((parent.id, parent.creation_time, "first"),
++                 (leaf.id, leaf.creation_time, "second"))
++        kwargs = dict(
++            session_id=args["session_id"], session_generation=args["session_generation"],
++            leaf_node_id=leaf.id, leaf_creation_time=leaf.creation_time,
++            nodes=nodes, beliefkv_before_enqueue=lambda _: True,
++        )
++        existing_host = parent.component_data[ComponentType.FULL].host_value
++        self.assertEqual(cache.prepare_host_session_nodes(**kwargs), ())
++        self.assertIs(parent.component_data[ComponentType.FULL].host_value, existing_host)
++        cache.cache_controller.start_writing.assert_not_called()
++        self.assertEqual(ops, [])
++        parent.component_data[ComponentType.FULL].host_value = None
++        parent.write_through_pending_id = 999
++        self.assertEqual(cache.prepare_host_session_nodes(**kwargs), ())
++        self.assertEqual(group.allocations, [])
++
++    def test_prefix_burst_submits_partial_success_after_capacity_or_hook_decline(self):
++        for decline in ("capacity", "hook"):
++            with self.subTest(decline=decline):
++                cache, _, parent, leaf, group, ops, args = fixture()
++                parent.component_data[ComponentType.FULL].host_value = None
++                if decline == "capacity":
++                    group.free_sizes[PoolName.KV] = 3
++                outcomes = cache.prepare_host_session_nodes(
++                    session_id=args["session_id"],
++                    session_generation=args["session_generation"],
++                    leaf_node_id=leaf.id, leaf_creation_time=leaf.creation_time,
++                    nodes=((parent.id, parent.creation_time, "first"),
++                           (leaf.id, leaf.creation_time, "second")),
++                    beliefkv_before_enqueue=lambda op: (
++                        decline != "hook" or op.beliefkv_command_id != "second"
++                    ),
++                )
++                self.assertEqual([item.node_id for item in outcomes], [parent.id])
++                cache.cache_controller.start_writing.assert_called_once_with()
++                self.assertEqual([(nid, tag) for nid, tag, _ in ops], [(parent.id, "first")])
++                self.assertIn(parent.id, cache.ongoing_write_through)
++                self.assertNotIn(leaf.id, cache.ongoing_write_through)
++                self.assertIsNone(leaf.component_data[ComponentType.FULL].host_value)
++                cache.evict_host.assert_not_called()
++
 +    def test_full_only_backup_does_not_allocate_a_historical_mamba_slot(self):
 +        cache, _, _, leaf, group, ops, args = fixture()
 +        leaf.component_data[ComponentType.MAMBA].value = torch.arange(1)
@@ -6592,10 +6758,10 @@ index 0000000..f840b2c
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_transfer_receipts.py b/test/srt/test_beliefkv_transfer_receipts.py
 new file mode 100644
-index 0000000..ff7003f
+index 0000000..04f9ddd
 --- /dev/null
 +++ b/test/srt/test_beliefkv_transfer_receipts.py
-@@ -0,0 +1,659 @@
+@@ -0,0 +1,678 @@
 +"""CPU-only coverage for per-operation HiCache transfer receipts."""
 +
 +import ast
@@ -7093,6 +7259,25 @@ index 0000000..ff7003f
 +        self.assertIsInstance(ack.submit_mono, float)
 +        assert_reconciled(self, ack)
 +        ctrl.l2_transfer_engine.submit_device_to_host.assert_called_once()
++
++    def test_deferred_hybrid_writes_share_one_submit_and_keep_separate_receipts(self):
++        ctrl = hybrid_controller()
++        for nid, count, command in ((11, 2, "first"), (12, 3, "second")):
++            self.assertIsNotNone(ctrl.write(
++                indices(count), node_id=nid, beliefkv_command_id=command,
++                beliefkv_defer_writing=True, beliefkv_before_enqueue=lambda _: True,
++            ))
++        ctrl.l2_transfer_engine.submit_device_to_host.assert_not_called()
++        self.assertEqual(len(ctrl.write_queue), 2)
++        ctrl.start_writing()
++        ctrl.l2_transfer_engine.submit_device_to_host.assert_called_once()
++        ack, = ctrl.ack_write_queue
++        self.assertEqual(ack.node_ids, [11, 12])
++        self.assertEqual([child.command_id for child in ack.child_receipts],
++                         ["first", "second"])
++        self.assertEqual([child.num_bytes for child in ack.child_receipts], [20, 30])
++        self.assertEqual(ack.num_bytes, 50)
++        assert_reconciled(self, ack)
 +
 +    def test_h2d_submit_snapshots_unacked_bytes_without_claiming_dma_start(self):
 +        ctrl = controller()

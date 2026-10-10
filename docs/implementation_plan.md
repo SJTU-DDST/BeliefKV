@@ -29,6 +29,11 @@ Additional execution requirements:
 - A later same-node/pool D2H is an association, not proof of overwritten or
   duplicate bytes. Rename that audit field to later_node_pool_d2h and state the
   unresolved allocation/split identity limits.
+- Complete missing FULL input prefixes in a bounded ancestor-first burst,
+  retaining per-node reservations and ACK identity. Submit earlier queued nodes
+  if a later node declines. One missing extent uses the direct native write.
+  Measure actual consumption, repeated restoration and CPU cost; batching or
+  ACK counts alone do not establish native-relative performance gains.
 
 These are concrete execution requirements of the existing active /goal;
 the native-relative throughput direction is unchanged. For legacy merged transfers, subtract
@@ -40,6 +45,25 @@ across splits. The legacy residual correction did not change these counts.
 Report: experiments/reports/v10_prepare_full_incrementality_20261009.json.
 
 Current status:
+- The isolated JOIN/tool PREPARE queues at most eight missing FULL extents from
+  one safe input path before one controller submission. Existing valid Host
+  copies and generation beyond the reusable checkpoint are excluded. Only this
+  burst's pending ancestors may authorize its descendants; foreign writes and
+  loads retain native exclusion. A fresh action-point closure is captured once.
+  Partial decline preserves successful prior submissions and cancels only
+  registered-but-unsubmitted commands. Candidate estimates describe the first
+  selected extent; explicit burst IDs connect separate receipts without
+  multiplying those estimates or granting use credit. Preserve
+  v16_prepare_prefix_burst_cpu_20261010.json, the canonical engine patch and
+  exact frozen-engine delta. The current package manifest is
+  v16_engine_followup_manifest_20261010.json; forward/reverse application checks
+  pass. All251 runtime/physical/audit and94 native CPU checks pass. For4/8/16
+  extents, actual controller submissions change4->1,8->1,16->2 with equal
+  per-node receipts and FULL bytes, and zero Mamba allocation. Retain raw
+  timing distributions and outliers, not a blanket CPU acceleration claim.
+  This CPU fixture executes native write/commit/
+  ACK and receipt merging with CPU tensors and fake completions; it is not
+  GPU/JCT evidence. Keep the complete V15 freeze before deploying.
 - V15 is live from frozen main commit
   feb5ee01a9f1340a694dcba442c439d08e4bd274 and full engine patch SHA256
   dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63.

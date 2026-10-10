@@ -1183,6 +1183,134 @@ def test_native_shadow_explicit_decline_cancels_unsubmitted_reservation():
     assert runtime.counts["shadow_native_declined"] == 1
 
 
+@pytest.mark.parametrize("source", ("join_prepare", "tool_wait"))
+@pytest.mark.parametrize("partial", (False, True))
+def test_native_shadow_burst_reserves_each_node_and_credits_only_its_ack(source, partial):
+    from beliefkv.runtime.sglang_v0520_physical import next_shadow_backup_step
+    from tests.test_sglang_v0520_physical import prefetch_node
+
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    runtime.enable_prepare_host = True
+    runtime.predictor_sha256 = "a" * 64
+    key = runtime.context_sessions["ctx-parent"]
+    if source == "tool_wait":
+        runtime.on_events((event(
+            7, RuntimeEventKind.TOOL_START, invocation_id="parent",
+            attributes={"tool_family": "shell"},
+        ),))
+        now = time.monotonic() * 1000
+        runtime.tool_wait_hints[key.context_id] = NativeToolWaitHint(
+            key, 20_000., 30_000., 40_000., now, now + 60_000.,
+            "a" * 64, runtime.graph.invocations["parent"].updated_ts_ms,
+        )
+    anchors = ContextSessionAnchors(
+        key, ((0, ((12, 5),)), (2, ((12, 5),))), 1.,
+        reusable_input_tokens=12,
+    )
+    candidate = ActionLocalShadowCandidate(anchors, (
+        prefetch_node(0, None, 1, key_tokens=0),
+        prefetch_node(11, 0, 4, full_gpu=8, key_tokens=8),
+        prefetch_node(12, 11, 5, full_gpu=4, mamba_gpu=True, key_tokens=4),
+    ), 12, 1)
+    step = next_shadow_backup_step(candidate)
+    controller = NS(
+        mem_pool_host=NS(entry_map={"kv": NS(host_pool=NS(size_per_token=10))}),
+        _num_tokens_by_pool=lambda op: {"kv": len(op.device_indices)},
+        _transfer_num_bytes=lambda op: 10 * len(op.device_indices),
+    )
+    reserved = []
+
+    def prepare(**kwargs):
+        outcomes = []
+        for node_id, _, command in kwargs["nodes"]:
+            op = NS(
+                beliefkv_command_id=command, node_ids=[node_id],
+                device_indices=tuple(range(8 if node_id == 11 else 4)),
+                host_indices=tuple(range(8 if node_id == 11 else 4)),
+            )
+            assert kwargs["beliefkv_before_enqueue"](op)
+            reserved.append(command)
+            if partial and node_id == 12:
+                break
+            outcomes.append(NS(issued=True, node_id=node_id))
+        return tuple(outcomes)
+
+    runtime.attach_native_cache(NS(
+        cache_controller=controller, prepare_host_session_nodes=prepare,
+    ))
+    with patch.object(runtime, "capture_shadow_candidate", return_value=candidate) as capture:
+        issued = runtime.issue_shadow_backup_steps(step, source=source)
+        capture.assert_called_once()
+    assert [item.node_id for item, _ in issued] == ([11] if partial else [11, 12])
+    assert runtime.physical_ledger.pending_count == len(issued)
+    assert runtime.counts["shadow_burst_nodes"] == len(issued)
+    assert not runtime.completed_physical_actions
+    assert not partial or not runtime.physical_ledger.is_pending(reserved[-1])
+    for item, command in issued:
+        tokens = 8 if item.node_id == 11 else 4
+        runtime.on_native_transfer_commit(NS(
+            direction="d2h", status="completed", node_ids=(item.node_id,),
+            num_tokens_by_pool=(("kv", tokens),),
+            child_commits=(NS(
+                command_id=command, anchor_node_id=item.node_id,
+                published_node_ids=(item.node_id,),
+                num_tokens_by_pool=(("kv", tokens),), num_bytes=10 * tokens,
+            ),),
+        ))
+    assert runtime.physical_ledger.pending_count == 0
+    assert [action.command_id for action in runtime.completed_physical_actions] == [
+        command for _, command in issued
+    ]
+
+
+def test_single_missing_shadow_extent_uses_direct_native_write_with_full_only():
+    from beliefkv.runtime.sglang_v0520_physical import next_shadow_backup_step
+    from tests.test_sglang_v0520_physical import prefetch_node
+
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    runtime.enable_prepare_host = True
+    key = runtime.context_sessions["ctx-parent"]
+    candidate = ActionLocalShadowCandidate(
+        ContextSessionAnchors(
+            key, ((0, ((11, 4),)), (2, ((11, 4),))), 1.,
+            reusable_input_tokens=8,
+        ),
+        (prefetch_node(0, None, 1, key_tokens=0),
+         prefetch_node(11, 0, 4, full_gpu=8, mamba_gpu=True, key_tokens=8)),
+        8, 1,
+    )
+    observed = []
+
+    def native_shadow(**kwargs):
+        observed.append(kwargs)
+        assert kwargs["beliefkv_before_enqueue"](NS(
+            beliefkv_command_id=kwargs["beliefkv_command_id"],
+            node_ids=[11], device_indices=tuple(range(8)), host_indices=tuple(range(8)),
+        ))
+        return NS(issued=True, node_id=11)
+
+    def unexpected_burst(**kwargs):
+        raise AssertionError("one extent should use the direct native write")
+
+    runtime.attach_native_cache(NS(
+        cache_controller=NS(
+            mem_pool_host=NS(entry_map={"kv": NS(host_pool=NS(size_per_token=10))}),
+            _num_tokens_by_pool=lambda _: {"kv": 8}, _transfer_num_bytes=lambda _: 80,
+        ),
+        prepare_host_shadow=native_shadow, prepare_host_session_nodes=unexpected_burst,
+    ))
+    with patch.object(runtime, "capture_shadow_candidate", return_value=candidate):
+        issued = runtime.issue_shadow_backup_steps(
+            next_shadow_backup_step(candidate), source="join_prepare",
+        )
+    assert len(issued) == 1
+    assert observed[0]["beliefkv_include_mamba"] is False
+    assert runtime.physical_ledger.pending_count == 1
+    assert not runtime.completed_physical_actions
+
+
 def test_native_prefetch_issues_one_node_but_credits_only_h2d_ack():
     runtime = NativeAdmissionRuntime()
     runtime.predictor_sha256 = "a" * 64

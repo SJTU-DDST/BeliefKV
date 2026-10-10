@@ -49,6 +49,27 @@ graph2048/reserve32、workflow14400s、2--4 child、seed21及模型
 产物均冻结。共用客户端优化在两侧生效，后续开发仅在隔离工作树，
 两侧及完整后处理结束前不合入或部署新代码。
 
+本轮注释补充继续作为同一active目标的执行要求：FULL必须保留
+有效Host副本，只传安全输入前缀中缺失的extent；Mamba不参与
+投机PREPARE，必要检查点仍由原生驱逐写回和恢复依赖管理。
+隔离下一版已将JOIN/长工具等待的缺失FULL前缀改为祖先优先、
+每次最多8节点的批量排队，统一启动D2H；单节点直接使用既有
+原生写入入口。每节点独立预留和ACK，后续节点被拒绝时仍提交
+前面已成功入队的节点，不回收其他Host副本，也不把ACK视为
+实际消费。动作前只重新捕获一次原生闭包。候选日志保留首个
+extent的估计，并携带全部实际入队command_id；审计关联各节点
+回执，不能将首节点估计乘以批量大小或把需求handoff记为预测。
+相关CPU验证及提交次数报告为
+`experiments/reports/v16_prepare_prefix_burst_cpu_20261010.json`；
+251项runtime/物理/审计检查和94项原生检查通过。CPU夹具中
+4/8/16缺失extent的提交次数为4→1、8→1、16→2，逐节点回执
+与FULL字节相同，Mamba分配为0；保留全部计时及离群数据，
+不能把均值差异当作真实DMA或吞吐收益。当前引擎包清单为
+`experiments/reports/v16_engine_followup_manifest_20261010.json`，
+规范patch与精确冻结引擎增量均通过应用/反向核验。
+报告不包含CUDA传输、调度轮询等待或端到端吞吐。本项尚未部署，
+仍待完整冻结对照后验证PREPARE消费、重复补传与native相对收益。
+
 v15 predictive侧已完成：156/156 workflow completed，无error或
 incomplete；采集10857.481秒，完成吞吐51.725 workflow/h，
 JCT P50为3119.630秒，GPU利用率均值74.476%，输出795.773 token/s。

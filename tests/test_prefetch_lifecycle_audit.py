@@ -6,6 +6,22 @@ from scripts.audit_prefetch_lifecycle import (
 )
 
 
+def test_prepare_burst_ack_attribution_does_not_multiply_first_extent_estimates():
+    result = prepare_selection_summary([{
+        "source": "join_prepare", "command_id": "first",
+        "burst_command_ids": ["first", "second", "unacked"],
+        "transfer_bytes": 80, "reclaimable_pressured_bytes": 0,
+    }], [{"command_id": "first"}, {"command_id": "second"}])
+    assert result["candidate_records"] == 1
+    assert result["burst_records"] == 1
+    assert result["explicit_burst_commands"] == 3
+    assert result["acknowledged_burst_commands"] == 2
+    selected = result["by_source"]["join_prepare"]
+    assert selected["acknowledged_command_records"] == 1
+    assert selected["selected_transfer_bytes_known"] == 80
+    assert selected["zero_direct_reclaim_potential_commands"] == 1
+
+
 def write_rows(path, rows):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(json.dumps(row) + "\n" for row in rows))

@@ -60,6 +60,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     next_prefetch_gpu_step,
     next_shadow_backup_step,
     prefetch_expectation_from_native_op,
+    shadow_backup_steps,
     shadow_expectation_from_native_op,
 )
 from beliefkv.runtime.sglang_v0520_observer import (
@@ -3086,7 +3087,20 @@ class NativeAdmissionRuntime:
         self, *, context_id: str | None = None, source: str = "tool_wait",
         host_full_free_tokens: int | None = None,
     ) -> ShadowBackupStep | None:
-        """Recheck a tool wait and its native closure at the action safe point."""
+        """Recheck a waiting context and native closure at the action safe point."""
+        candidate = self._refreshed_shadow_backup_candidate(
+            context_id=context_id, source=source,
+            host_full_free_tokens=host_full_free_tokens,
+        )
+        step = next_shadow_backup_step(candidate) if candidate is not None else None
+        if step is None and candidate is not None:
+            self._register_backed_pressure_nodes(candidate.anchors.key, candidate=candidate)
+        return step
+
+    def _refreshed_shadow_backup_candidate(
+        self, *, context_id: str | None = None, source: str = "tool_wait",
+        host_full_free_tokens: int | None = None,
+    ) -> ActionLocalShadowCandidate | None:
         if not self.enable_prepare_host:
             return None
         if source == "join_prepare":
@@ -3100,16 +3114,12 @@ class NativeAdmissionRuntime:
                 or parent.join_id in self._final_stages
             ):
                 return None
-            candidate = self.capture_shadow_candidate(
+            return self.capture_shadow_candidate(
                 self._native_cache, context_id=key.context_id,
                 context_epoch=key.context_epoch,
                 include_non_actionable=True,
                 host_full_free_tokens=host_full_free_tokens,
             )
-            step = next_shadow_backup_step(candidate) if candidate is not None else None
-            if step is None and candidate is not None:
-                self._register_backed_pressure_nodes(key, candidate=candidate)
-            return step
         hint = (self.tool_wait_hints.get(context_id) if context_id is not None
                 else self.tool_wait_hint)
         cache = self._native_cache
@@ -3135,10 +3145,7 @@ class NativeAdmissionRuntime:
             host_full_free_tokens=host_full_free_tokens,
         )
         self.shadow_candidate = candidate
-        step = next_shadow_backup_step(candidate) if candidate is not None else None
-        if step is None and candidate is not None:
-            self._register_backed_pressure_nodes(key, candidate=candidate)
-        return step
+        return candidate
 
     def issue_shadow_backup_step(
         self, step: ShadowBackupStep, *, source: str = "tool_wait",
@@ -3210,6 +3217,99 @@ class NativeAdmissionRuntime:
                 "leaf_creation_time": step.leaf_creation_time,
             })
         return command_id
+
+    def issue_shadow_backup_steps(
+        self, step: ShadowBackupStep, *, source: str = "tool_wait",
+    ) -> tuple[tuple[ShadowBackupStep, str], ...]:
+        """Reserve one FULL prefix burst; each extent retains its own ACK."""
+        cache = self._native_cache
+        burst = getattr(cache, "prepare_host_session_nodes", None)
+        if not callable(burst):
+            command = self.issue_shadow_backup_step(step, source=source)
+            return ((step, command),) if command is not None else ()
+        if self.event_server is not None:
+            self.event_server.drain(max_messages=128)
+        if (
+            self.physical_disabled
+            or self.physical_ledger.pending_action_count("PREPARE_HOST")
+            or not isinstance(step, ShadowBackupStep)
+        ):
+            self.counts["shadow_step_stale"] += 1
+            return ()
+        candidate = self._refreshed_shadow_backup_candidate(
+            context_id=step.key.context_id, source=source,
+        )
+        steps = shadow_backup_steps(candidate) if candidate is not None else ()
+        if not steps or steps[0] != step:
+            self.counts["shadow_step_stale"] += 1
+            return ()
+        commands = tuple(f"beliefkv-shadow-{uuid4().hex}" for _ in steps)
+        planned = dict(zip(commands, steps))
+        registered = set()
+
+        def before_enqueue(operation: object) -> bool:
+            command = getattr(operation, "beliefkv_command_id", None)
+            planned_step = planned.get(command)
+            if planned_step is None or not self._live_parent_pressure_key(step.key):
+                self.counts["shadow_causal_invalidated_before_enqueue"] += 1
+                return False
+            try:
+                expected = shadow_expectation_from_native_op(
+                    command, planned_step, operation, cache.cache_controller,
+                )
+                self.register_physical_action(expected)
+            except (PhysicalReceiptError, AttributeError, TypeError, ValueError):
+                self.counts["shadow_reservation_rejected"] += 1
+                return False
+            registered.add(command)
+            return True
+
+        native_args = dict(
+            session_id=step.key.session_id,
+            session_generation=step.key.session_generation,
+            leaf_node_id=steps[0].leaf_node_id,
+            leaf_creation_time=steps[0].leaf_creation_time,
+            beliefkv_before_enqueue=before_enqueue,
+        )
+        if len(steps) == 1:
+            outcome = cache.prepare_host_shadow(
+                **native_args, node_id=step.node_id,
+                node_creation_time=step.creation_time,
+                beliefkv_command_id=commands[0], beliefkv_include_mamba=False,
+            )
+            outcomes = (outcome,) if outcome.issued else ()
+        else:
+            outcomes = burst(
+                **native_args, nodes=tuple(
+                    (item.node_id, item.creation_time, command)
+                    for item, command in zip(steps, commands)
+                ),
+            )
+        issued = []
+        for item, command, outcome in zip(steps, commands, outcomes):
+            if not outcome.issued or outcome.node_id != item.node_id or command not in registered:
+                self.physical_disabled = True
+                raise PhysicalReceiptError("native shadow burst has no matching reservation")
+            issued.append((item, command))
+            self.counts["shadow_native_issued"] += 1
+            if self._opportunity_writer is not None:
+                self._opportunity_writer.record({
+                    "event": "prepare_native_issued", "ts_ms": time.time() * 1000,
+                    "command_id": command, "source": source,
+                    "context_id": item.key.context_id,
+                    "context_epoch": item.key.context_epoch,
+                    "include_mamba": False, "backup_scope": "missing_full_prefix",
+                    "node_id": item.node_id, "leaf_node_id": item.leaf_node_id,
+                    "node_creation_time": item.creation_time,
+                    "leaf_creation_time": item.leaf_creation_time,
+                    "burst_command_ids": commands[:len(outcomes)],
+                })
+        for command in registered.difference(command for _, command in issued):
+            self.physical_ledger.cancel_unsubmitted(command)
+        if issued:
+            self.counts["shadow_bursts"] += 1
+            self.counts["shadow_burst_nodes"] += len(issued)
+        return tuple(issued)
 
     def _live_parent_pressure_node(self, node_id: int, creation_time: int | float) -> bool:
         record = self._parent_pressure_candidates.get(node_id)
@@ -3435,6 +3535,7 @@ class NativeAdmissionRuntime:
     def _record_prepare_selection(
         self, step: ShadowBackupStep, *, command_id: str, source: str,
         rank: tuple[float, float], scanned: int,
+        burst_command_ids: tuple[str, ...] = (),
     ) -> None:
         if self._opportunity_writer is not None:
             self._opportunity_writer.record({
@@ -3445,6 +3546,8 @@ class NativeAdmissionRuntime:
                 "missing_full_prefix_tokens": step.missing_full_prefix_tokens,
                 "reclaimable_pressured_bytes": -rank[0],
                 "transfer_bytes": rank[1], "scanned_candidates": scanned,
+                "burst_command_ids": burst_command_ids or (command_id,),
+                "estimate_scope": "selected_first_extent",
             })
 
     def _prepare_pressure(
@@ -3539,16 +3642,18 @@ class NativeAdmissionRuntime:
                 self._prepare_probe_after_ms[key] = now_ms + 1000.
         self._join_prepare_cursor = (self._join_prepare_cursor + 8) % len(parents)
         for rank, offset, identity, step in sorted(candidates, key=lambda item: item[:2]):
-            command = self.issue_shadow_backup_step(step, source="join_prepare")
-            if command is None:
+            issued = self.issue_shadow_backup_steps(step, source="join_prepare")
+            if not issued:
                 self._prepare_probe_after_ms[step.key] = now_ms + 250.
                 continue
-            self._join_prepare_commands[identity] = command
-            self._parent_pressure_candidates[step.node_id] = (step.key, step.creation_time)
-            self.counts["join_prepare_issued"] += 1
+            self._join_prepare_commands[identity] = issued[-1][1]
+            for item, command in issued:
+                self._parent_pressure_candidates[item.node_id] = (item.key, item.creation_time)
+            self.counts["join_prepare_issued"] += len(issued)
             self._record_prepare_selection(
-                step, command_id=command, source="join_prepare",
+                step, command_id=issued[0][1], source="join_prepare",
                 rank=rank, scanned=len(candidates),
+                burst_command_ids=tuple(command for _, command in issued),
             )
             break
         # Native PREPARE cannot reclaim memory; publish once after its lock changes.
@@ -3627,13 +3732,17 @@ class NativeAdmissionRuntime:
                 self._prepare_probe_after_ms[hint.key] = now_ms + 1000.
         self._tool_prepare_cursor = (self._tool_prepare_cursor + 8) % len(hints)
         for rank, offset, step in sorted(candidates, key=lambda item: item[:2]):
-            command = self.issue_shadow_backup_step(step)
-            if command is not None:
-                self._parent_pressure_candidates[step.node_id] = (step.key, step.creation_time)
-                self.counts["tool_prepare_issued"] += 1
+            issued = self.issue_shadow_backup_steps(step)
+            if issued:
+                for item, command in issued:
+                    self._parent_pressure_candidates[item.node_id] = (
+                        item.key, item.creation_time,
+                    )
+                self.counts["tool_prepare_issued"] += len(issued)
                 self._record_prepare_selection(
-                    step, command_id=command, source="tool_wait",
+                    step, command_id=issued[0][1], source="tool_wait",
                     rank=rank, scanned=len(candidates),
+                    burst_command_ids=tuple(command for _, command in issued),
                 )
                 break
             self._prepare_probe_after_ms[step.key] = now_ms + 250.

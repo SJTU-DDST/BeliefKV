@@ -5,21 +5,26 @@
   "frozen_main_commit": "feb5ee01a9f1340a694dcba442c439d08e4bd274",
   "frozen_engine_full_patch_sha256": "dbde39b7f37977ecacd72dddf78b3da94a56fa6a0879afb1798ae55ab7f1fe63",
   "candidate_full_patch": "patches/sglang-v0.5.20-beliefkv-staging.patch",
-  "candidate_full_patch_sha256": "66aa563627fb8882808e290ff0ccde10535bc7d787a66eba6848baa8bcf203d8",
+  "candidate_full_patch_sha256": "c6f9183ac7b95b6710d5988fb1d5adf500ebc5a859225c879d5cef41193d18ba",
   "exact_delta": "experiments/reports/v16_engine_followup_delta_20261010.patch",
-  "exact_delta_sha256": "dced5a847a7416c8d8abdfa591914cd743c822c1f41735d0ce852d144f58deeb",
+  "exact_delta_sha256": "19a7dbccc51a0b9d9abe8b3998767dbafb8aaf8aaed3ec455e2535ff20a11364",
   "changed_engine_paths": [
+    "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
     "python/sglang/srt/mem_cache/unified_radix_cache.py",
-    "test/srt/test_beliefkv_execution_handoff.py"
+    "test/srt/test_beliefkv_execution_handoff.py",
+    "test/srt/test_beliefkv_shadow_dispatch.py",
+    "test/srt/test_beliefkv_transfer_receipts.py"
   ],
   "validation": {
     "candidate_full_reverse_check": true,
     "frozen_live_delta_forward_check": true,
     "candidate_delta_reverse_check": true,
-    "related_cpu_checks_passed": 76
+    "related_engine_cpu_checks_passed": 94,
+    "runtime_audit_cpu_checks_passed": 251,
+    "related_cpu_checks_passed": 345
   },
-  "cpu_report": "experiments/reports/v16_reentry_result_cpu_20261010.json",
+  "cpu_report": "experiments/reports/v16_prepare_prefix_burst_cpu_20261010.json",
   "deployed": false,
   "deploy_after": "both frozen V15 arms and complete postprocessing",
-  "scope": "CPU prefix inspection and existing isolated runtime follow-ups; no verified native-relative throughput claim"
+  "scope": "FULL-only missing-prefix burst, CPU prefix inspection and existing isolated follow-ups; separate per-node receipts, preserved Host copies and partial-success submission; no verified native-relative throughput claim"
 }

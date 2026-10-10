@@ -504,21 +504,30 @@ def plan_prefetch_gpu_steps(
 def next_shadow_backup_step(
     candidate: ActionLocalShadowCandidate,
 ) -> ShadowBackupStep | None:
-    """Prefer the first unbacked FULL node on the session closure path.
+    steps = shadow_backup_steps(candidate, max_steps=1)
+    return steps[0] if steps else None
+
+
+def shadow_backup_steps(
+    candidate: ActionLocalShadowCandidate, *, max_steps: int = 8,
+) -> tuple[ShadowBackupStep, ...]:
+    """Plan one ancestor-first burst of missing FULL extents on one input path.
 
     Existing Host extents are retained. Mamba snapshots stay with native
     demand write-back; speculative PREPARE does not copy them.
     """
+    if type(max_steps) is not int or not 1 <= max_steps <= 16:
+        raise ValueError("shadow burst must contain one to sixteen extents")
     nodes = {node.node_id: node for node in candidate.nodes}
     if len(nodes) != len(candidate.nodes):
-        return None
+        return ()
     leaves = dict(dict(candidate.anchors.component_leaves).get(0, ()))
     if not leaves or not leaves.keys() <= nodes.keys():
-        return None
+        return ()
     if not any(
         node.full_device_tokens > node.full_host_tokens for node in nodes.values()
     ):
-        return None
+        return ()
     paths: set[int] = set()
     provenance: dict[int, int] = {}
     depth: dict[int, int] = {}
@@ -528,7 +537,7 @@ def next_shadow_backup_step(
         seen: set[int] = set()
         while current is not None:
             if current not in nodes or current in seen:
-                return None
+                return ()
             seen.add(current)
             chain.append(current)
             current = nodes[current].parent_id
@@ -538,12 +547,22 @@ def next_shadow_backup_step(
             depth[node_id] = distance
     selected = _checkpoint_paths(candidate.anchors, nodes, leaves, depth)
     if selected is None:
-        return None
+        return ()
     eligible_paths, _ = selected
-    # Depth from root, so a host copy of a parent settles before its child.
+    steps = []
+    staged_full = set()
+    leaf_id = None
+    remaining = sum(
+        max(nodes[current].full_device_tokens - nodes[current].full_host_tokens, 0)
+        for current in eligible_paths
+    )
+    # Native queues each predecessor before its child; only this burst may
+    # use those unsettled writes as ancestors.
     for node_id in sorted(paths, key=lambda value: (depth[value], value)):
         node = nodes[node_id]
-        if node_id not in eligible_paths:
+        if node_id not in eligible_paths or (
+            leaf_id is not None and provenance[node_id] != leaf_id
+        ):
             continue
         parent = nodes.get(node.parent_id)
         if (
@@ -556,24 +575,27 @@ def next_shadow_backup_step(
                     parent.pending_write_id is not None
                     or parent.pending_load_id is not None
                     or parent.full_device_tokens > parent.full_host_tokens
+                    and parent.node_id not in staged_full
                 )
             )
         ):
             continue
         if node.full_device_tokens > node.full_host_tokens:
-            return ShadowBackupStep(
+            leaf_id = provenance[node_id]
+            steps.append(ShadowBackupStep(
                 key=candidate.anchors.key,
-                leaf_node_id=provenance[node_id],
-                leaf_creation_time=leaves[provenance[node_id]],
+                leaf_node_id=leaf_id,
+                leaf_creation_time=leaves[leaf_id],
                 node_id=node_id,
                 creation_time=node.creation_time,
                 include_mamba=False,
-                missing_full_prefix_tokens=sum(
-                    max(nodes[current].full_device_tokens - nodes[current].full_host_tokens, 0)
-                    for current in eligible_paths
-                ),
-            )
-    return None
+                missing_full_prefix_tokens=remaining,
+            ))
+            staged_full.add(node_id)
+            remaining -= node.full_device_tokens - node.full_host_tokens
+            if len(steps) == max_steps:
+                break
+    return tuple(steps)
 
 
 def capture_action_local_shadow(

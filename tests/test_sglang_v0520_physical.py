@@ -23,6 +23,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     next_prefetch_gpu_step,
     plan_prefetch_gpu_steps,
     next_shadow_backup_step,
+    shadow_backup_steps,
     prefetch_expectation_from_native_op,
     shadow_expectation_from_native_op,
     ShadowBackupStep,
@@ -983,6 +984,56 @@ def test_prepare_extends_full_prefix_without_copying_any_mamba_state():
     assert next_shadow_backup_step(candidate) is None
     assert not ancestor.mamba_host_present
     assert not checkpoint.mamba_host_present
+
+
+def test_prepare_burst_skips_backed_full_and_keeps_ancestor_order_and_budget():
+    anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
+    root = prefetch_node(0, None, 1, key_tokens=0)
+    backed = prefetch_node(10, 0, 3, full_gpu=4, full_host=4, key_tokens=4)
+    ancestor = prefetch_node(11, 10, 4, full_gpu=4, mamba_gpu=True, key_tokens=4)
+    checkpoint = prefetch_node(12, 11, 5, full_gpu=4, mamba_gpu=True, key_tokens=4)
+    candidate = ActionLocalShadowCandidate(
+        anchors, (checkpoint, ancestor, root, backed), 8, 2,
+    )
+    steps = shadow_backup_steps(candidate)
+    assert [(step.node_id, step.missing_full_prefix_tokens, step.include_mamba)
+            for step in steps] == [(11, 8, False), (12, 4, False)]
+    assert shadow_backup_steps(candidate, max_steps=1) == steps[:1]
+    assert next_shadow_backup_step(candidate) == steps[0]
+    ancestor.full_host_tokens = 4
+    assert [step.node_id for step in shadow_backup_steps(candidate)] == [12]
+    checkpoint.full_host_tokens = 4
+    assert shadow_backup_steps(candidate) == ()
+    ancestor.full_host_tokens = 0
+    assert [step.node_id for step in shadow_backup_steps(candidate)] == [11]
+
+
+@pytest.mark.parametrize("pending_field", ("pending_write_id", "pending_load_id"))
+def test_prepare_burst_does_not_plan_through_foreign_pending_ancestor(pending_field):
+    anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
+    root = prefetch_node(0, None, 1, key_tokens=0)
+    ancestor = prefetch_node(11, 0, 4, full_gpu=8, key_tokens=8)
+    checkpoint = prefetch_node(12, 11, 5, full_gpu=4, mamba_gpu=True, key_tokens=4)
+    setattr(ancestor, pending_field, 99)
+    candidate = ActionLocalShadowCandidate(anchors, (root, ancestor, checkpoint), 12, 1)
+    assert shadow_backup_steps(candidate) == ()
+
+
+def test_prepare_burst_stays_on_one_leaf_and_excludes_generated_output():
+    key = prefetch_anchors().key
+    anchors = ContextSessionAnchors(
+        key, ((0, ((13, 6), (14, 7))), (2, ((12, 5), (14, 7)))),
+        10., reusable_input_tokens=12,
+    )
+    nodes = (
+        prefetch_node(0, None, 1, key_tokens=0),
+        prefetch_node(11, 0, 4, full_gpu=8, key_tokens=8),
+        prefetch_node(12, 11, 5, full_gpu=4, mamba_gpu=True, key_tokens=4),
+        prefetch_node(13, 12, 6, full_gpu=2000, mamba_gpu=True, key_tokens=2000),
+        prefetch_node(14, 11, 7, full_gpu=4, mamba_gpu=True, key_tokens=4),
+    )
+    steps = shadow_backup_steps(ActionLocalShadowCandidate(anchors, nodes, 2016, 3))
+    assert [(step.node_id, step.leaf_node_id) for step in steps] == [(11, 13), (12, 13)]
 
 
 def test_prepare_prefix_budget_excludes_generation_after_reusable_checkpoint():
