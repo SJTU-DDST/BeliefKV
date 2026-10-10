@@ -49,6 +49,25 @@ Current status:
   workflow14400s, native_in_graph_2to4, seed21/temperature0 and artifacts
   unchanged across both arms. Main and engine remain frozen through exports
   and cleanup; all subsequent development stays in the isolated worktree.
+- V15 predictive has completed156/156 workflows with no errors or incomplete
+  outcomes:10857.481s,51.725 completed workflows/hour, JCT P503119.630s,
+  mean GPU utilization74.476% and795.773 output tokens/s. Task correctness
+  is not independently graded. JOIN/tool have99/77 ACKs and FULL sent/reused
+  0.893/0.743GB and0.338/0.293GB; demand handoff has15132 ACKs and FULL
+  67.205/67.047GB, which is not anticipation. Forecast age P50 is137.325ms
+  and mean inference28.603ms. The fresh native arm is serving; do not assert
+  native-relative improvement before the complete frozen pair and exports.
+- The completed predictive input audit uses the exact pinned tokenizer.
+  Right truncation at256 MiniLM tokens can drop the newest suffix of the
+  1024-character window. Last client windows truncate502/24014 requests and
+  336/370 no-tool normal-stop rounds(90.81%); the latter drop54 tokens at P50.
+  These are encoder tokens, not Qwen decode/KV tokens, and the windows are
+  not guaranteed to have been consumed before native EOS. Train/inference
+  share this policy; representation limits are not demonstrated error causes.
+  Preservev15_semantic_encoder_window_20261010.json. Next compare inexpensive
+  suffix sequence features in the conditional work head only, retaining phase,
+  encoder and threshold. Avoid a second online encoder pass. Use the existing
+  project-separated development roles; V15 is not a new sealed evaluation set.
 - At2026-10-10 05:40 CST, the partial V15 H2D source snapshot has native
   2358 batches/731.314GB, JOIN/tool72 commands/1.384GB, demand handoff
   4692 node commands/1524 batches/36.050GB and no unknown controlled source.

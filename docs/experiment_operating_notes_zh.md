@@ -16,6 +16,23 @@ workflow14400s、2--4 child、seed21及产物不变。客户端共用优化
 在两侧生效。代码冻结核验已通过；两侧及审计、HTML、cleanup全部
 结束前，后续修订只在隔离工作树提交，不修改主目录或服务文件。
 
+v15 predictive侧已完成156/156 workflow，无error/incomplete；
+采集10857.481秒，完成吞吐51.725 workflow/h，JCT P503119.630秒，
+GPU利用率均值74.476%，输出795.773 token/s。此处completed
+不是独立评测的任务正确性。JOIN/tool FULL传输与确认复用分别
+0.893/0.743 GB、0.338/0.293 GB；handoff为67.205/67.047 GB，
+应继续单列为需求恢复。native侧已冷启动正常服务；完整对照和
+导出完成前，主目录、引擎、预测产物及两侧配置继续冻结。
+
+末次客户端语义窗口的审计使用原固定tokenizer，最多256个
+MiniLM token，右侧截断会丢失最新后缀。无工具正常stop轮次
+336/370个被截断，丢失量P50为54；全部请求为502/24014个。
+该统计不是自然RETURN或EOS前预测准确率，MiniLM token也不是
+Qwen生成/KV token。训练与推理采用同一截断，不能直接归因为
+预测误差。报告为`v15_semantic_encoder_window_20261010.json`。
+后续仅在隔离分支比较低成本后缀序列特征，不改变阶段头和
+阈值、不新增在线encoder推理；现有开发项目不能改称密封验证。
+
 2026-10-10 05:40 CST快照：原生H2D731.314 GB，JOIN/tool1.384 GB，
 需求handoff36.050 GB。稍后消费快照中handoff FULL传输/确认复用
 19.283/19.203 GB，ACK到首次launch P5022.62 ms；JOIN为
