@@ -2,9 +2,34 @@
 
 Status date: 2026-10-10.
 
+## V19b Harness Context Retirement Integration
+
+Live V19 produced authoritative child RETURNs but zero terminal-reclaim/parent-
+handoff records. Deep Agents task children are marked persistent=True for
+multi-round execution, while their existing RETURN path already retires the native
+session. Preserve this running-context feature and automatically emit
+context_retired=True from the task completion callback. Accept that authoritative
+lifetime signal for terminal reclamation; retain a context shared by another live
+invocation. No model-side tool, report-format requirement or forecast retraining
+is added.
+
+Preserve the parent checkpoint/capacity link when child RETURN and the parent's
+next LLM_SUBMIT share an event batch and advance the same session by one epoch.
+Keep native generation/residency/admission checks. Use scheduler wall time for
+RETURN-delivery-to-first-observed-completed-batch intervals; retain the original
+client event timestamp separately rather than subtracting incompatible clocks.
+
+498 harness/runtime/physical/audit checks pass. The116 prior native allocator/
+reference/transfer checks cover the unchanged canonical engine patch. V19 stopped
+at17:47 CST,2026-10-10 with0 root outcomes and156 interrupted/not-yet-arrived
+planned tasks. All old processes/GPU exited; preserve the integration-failure
+traces and stopped audit. Cold-start V19b predictive first with unchanged settings,
+verify actual terminal releases and parent consumption, then complete a stable
+same-version native comparison before closing the active throughput/JCT goal.
+
 ## V19 Terminal Child Capacity Handoff
 
-Implement authoritative RETURN-based retirement of nonpersistent child sessions.
+Implement authoritative RETURN-based retirement of ended child contexts.
 Reuse existing final-stage parent checkpoint/extent planning; a completion notice
 or EOS alone cannot release running child data. Release session references in the
 native scheduler and discard only proven child-path leaves without session/device/

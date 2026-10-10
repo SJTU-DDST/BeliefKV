@@ -2065,6 +2065,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 attributes={
                     "source": "deepagents_task",
                     "outcome": "error" if cancelled else "completed",
+                    "context_retired": True,
                     "exception_type": type(error).__name__ if error else None,
                     **(
                         {"child_report_status": child_report_status}

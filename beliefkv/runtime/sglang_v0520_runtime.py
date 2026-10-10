@@ -234,6 +234,7 @@ class _TerminalChildReclaim:
     parent_context_id: str | None
     join_id: str | None
     returned_ts_ms: float
+    observed_return_wall_ts_ms: float
     retry_anchors: tuple = ()
 
 
@@ -3080,17 +3081,39 @@ class NativeAdmissionRuntime:
         context = self.graph.contexts.get(key.context_id)
         retire = getattr(self._native_cache, "retire_beliefkv_child_session", None)
         if (
-            child is None or child.parent_invocation_id is None or child.persistent
-            or context is None or context.persistent
+            child is None or child.parent_invocation_id is None or context is None
+            or (
+                (child.persistent or context.persistent)
+                and event.attributes.get("context_retired") is not True
+            )
+            or any(
+                invocation_id != key.invocation_id
+                and not self.graph.invocations[invocation_id].state.terminal
+                for invocation_id in context.invocation_ids
+            )
             or child.state is not InvocationState.DONE
             or key.session_id is None or key.session_generation is None
             or not callable(retire)
         ):
             return
+        observed_return_wall_ts_ms = time.time() * 1000.
         parent_context, join_id = None, None
         for jid in sorted(self._join_by_invocation.get(child.invocation_id, ())):
             join = self.graph.joins.get(jid)
             parent_key = self._join_parent_key(jid)
+            if parent_key is None and join is not None:
+                parent = self.graph.invocations.get(child.parent_invocation_id)
+                candidate = self.context_sessions.get(parent.context_id) if parent else None
+                parent_record = self.graph.contexts.get(parent.context_id) if parent else None
+                if (
+                    candidate is not None and parent is not None and not parent.state.terminal
+                    and parent.invocation_id in join.waiter_invocation_ids
+                    and parent_record is not None
+                    and parent_record.epoch == candidate.context_epoch + 1
+                    and candidate.invocation_id == parent.invocation_id
+                    and candidate.session_id is not None and candidate.session_generation is not None
+                ):
+                    parent_key = candidate
             if (
                 join is None or parent_key is None
                 or parent_key.invocation_id != child.parent_invocation_id
@@ -3111,9 +3134,13 @@ class NativeAdmissionRuntime:
                 handoff = _ParentCapacityHandoff(parent_key, jid, time.monotonic())
                 self._parent_capacity_handoffs[parent_context] = handoff
             handoff.child_ids.add(child.invocation_id)
-            handoff.last_return_ts_ms = max(handoff.last_return_ts_ms, event.ts_ms)
+            handoff.last_return_ts_ms = max(
+                handoff.last_return_ts_ms, observed_return_wall_ts_ms,
+            )
             break
-        reclaim = _TerminalChildReclaim(key, parent_context, join_id, event.ts_ms)
+        reclaim = _TerminalChildReclaim(
+            key, parent_context, join_id, event.ts_ms, observed_return_wall_ts_ms,
+        )
         self._apply_terminal_child_reclaim(reclaim, retry=False)
 
     @timed_runtime("terminal_child_reclaim")
@@ -3158,7 +3185,9 @@ class NativeAdmissionRuntime:
                 "context_id": key.context_id, "context_epoch": key.context_epoch,
                 "session_id": key.session_id, "session_generation": key.session_generation,
                 "parent_context_id": reclaim.parent_context_id, "join_id": reclaim.join_id,
-                "child_return_ts_ms": reclaim.returned_ts_ms, "retry": retry,
+                "child_return_event_ts_ms": reclaim.returned_ts_ms,
+                "child_return_observed_wall_ts_ms": reclaim.observed_return_wall_ts_ms,
+                "retry": retry,
                 "freed_device_units": device, "freed_host_units": host,
                 "bytes_per_unit": bytes_per_unit,
                 "discarded_nodes": result["discarded_nodes"],
@@ -3229,6 +3258,7 @@ class NativeAdmissionRuntime:
                 ) * 1000.,
                 "semantics": (
                     "First observed completed parent GPU batch after JOIN, not kernel start; "
+                    "RETURN observation uses scheduler wall time, not the client's event clock; "
                     "linked capacity release "
                     "is separate from predictive H2D ACK/FULL reuse and JCT benefit."
                 ),

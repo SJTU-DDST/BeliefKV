@@ -164,7 +164,8 @@ def terminal_capacity_summary(reclaims: list[dict], services: list[dict]) -> dic
         "rows": linked_services,
         "semantics": (
             "Actual terminal-suffix allocator release, linked to the first observed "
-            "completed parent GPU batch, not kernel start; "
+            "completed parent GPU batch, not kernel start; RETURN delivery observation "
+            "and service observation use scheduler wall time, not client event time; "
             "not exclusive slot ownership, predictive H2D reuse, avoided D2H bytes, "
             "or a native-relative latency saving. Missing pool byte sizes stay unknown."
         ),

@@ -2006,6 +2006,7 @@ def test_declared_child_return_carries_report_status_without_changing_join() -> 
     assert [event.attributes["child_report_status"] for event in returns] == [
         "complete", "blocked",
     ]
+    assert all(event.attributes["context_retired"] is True for event in returns)
     assert sum(
         event.kind == RuntimeEventKind.JOIN_SATISFIED for event in sink.events
     ) == 1

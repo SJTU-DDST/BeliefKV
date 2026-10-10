@@ -2,12 +2,37 @@
 
 更新日期：2026-10-10。
 
+## V19b child 上下文结束的集成修正
+
+V19实跑已观察到child自然RETURN，但终态回收和parent消费记录
+均为0，因Deep Agents task把child声明为persistent=True。这个
+标记保留任务内部多轮上下文，不能据此推断RETURN后还会复用
+同一child上下文。适配器原本已在RETURN后retire原生session，
+因此现在由任务完成回调自动携带context_retired=True，runtime
+按这个权威生命周期信号处理终态；不增加模型工具或输出门槛，
+不改变运行中child的persistent特征，也不要求重新训练预测器。
+同一context仍有其他活跃invocation时继续保留。
+
+另补齐RETURN和parent下一次LLM_SUBMIT同批处理时的checkpoint
+关联：允许相同session/generation的一次epoch推进，随后仍按
+实际下一请求身份和驻留核验准入。容量交接的RETURN交付与
+首个观测完成batch改用同一scheduler墙钟；客户端原始event
+时间单独保留，不能直接与服务器墙钟相减。
+
+498项运行时、harness、恢复与生命周期检查通过；原生
+116项allocator/引用/传输验证仍适用于未变更的规范引擎patch。
+V19在2026-10-10 17:47 CST停止，0个root终态，156个计划任务
+按截断或尚未到达保存，旧client/server/scheduler及GPU已退出。
+保留集成失败的trace与停止审计。下一轮V19b仍按同配置先
+predictive、再稳定同版本native；先确认真实容量回收及parent
+消费记录，再讨论忙时吞吐与JCT。active目标继续。
+
 ## V19 终态 child 到 parent 的容量交接
 
 已实现定向终态回收与 parent 恢复/准入联动。收尾通知继续使用
 既有安全 checkpoint、缺失 FULL extent 和必要 Mamba 的规划；
-通知及模型 EOS 不触发释放，只有真实 RETURN 的非持久 child
-才在 scheduler 内释放 session 引用并检查私有叶节点。无共享
+通知及模型 EOS 不触发释放，只有真实 RETURN 且上下文已结束
+的 child 才在 scheduler 内释放 session 引用并检查私有叶节点。无共享
 引用、设备/Host 锁或在途 D2H/H2D 的终态后缀直接交还原生
 allocator，不先做 D2H；共享祖先和仍有依赖的页保留。
 

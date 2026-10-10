@@ -85,7 +85,8 @@ def test_sibling_return_releases_capacity_without_admitting_waiting_parent(famil
     assert runtime._live_parent_capacity_handoff(runtime.visible["parent"]) is None
     assert runtime._parent_handoff_priority_promoted is None
     assert records[0]["parent_context_id"] == "ctx-parent"
-    assert records[0]["child_return_ts_ms"] == 7.
+    assert records[0]["child_return_event_ts_ms"] == 7.
+    assert records[0]["child_return_observed_wall_ts_ms"] <= records[0]["ts_ms"]
     assert "ctx-child1" not in runtime.context_sessions
 
 
@@ -99,7 +100,7 @@ def test_batched_tool_end_does_not_consume_return_session_before_reclaim(family)
         returned(9, "child1"),
     ))
     cache.retire_beliefkv_child_session.assert_called_once()
-    assert runtime._parent_capacity_handoffs["ctx-parent"].last_return_ts_ms == 9.
+    assert runtime._parent_capacity_handoffs["ctx-parent"].last_return_ts_ms > 9.
 
 
 def test_last_child_final_notice_reuses_parent_plan_after_sibling_release(family):
@@ -139,7 +140,7 @@ def test_parent_next_request_preserves_sibling_release_and_consumes_handoff_once
     assert "ctx-parent" not in runtime._parent_capacity_handoffs
     service = [row for row in records if row["event"] == "parent_capacity_handoff_first_service"]
     assert len(service) == 1
-    assert service[0]["last_observed_child_return_ts_ms"] == 8.
+    assert records[0]["ts_ms"] <= service[0]["last_observed_child_return_ts_ms"] <= service[0]["ts_ms"]
     assert service[0]["freed_device_units"] == {0: 16, 2: 2}
     assert runtime._prefetch_first_services == {}
 
@@ -153,6 +154,25 @@ def test_stale_batch_identity_cannot_consume_the_parent_handoff(family):
     runtime.on_batch_completed(NS(reqs=[stale]))
     assert "ctx-parent" in runtime._parent_capacity_handoffs
     assert runtime.counts["parent_capacity_handoff_first_service"] == 0
+    runtime.on_batch_completed(NS(reqs=[parent]))
+    assert runtime.counts["parent_capacity_handoff_first_service"] == 1
+
+
+def test_return_and_parent_submit_in_one_batch_keep_the_checkpoint_capacity_link(family):
+    runtime, requests, _, _ = family
+    runtime.on_events((
+        returned(7, "child1"), returned(8, "child2"),
+        event(9, RuntimeEventKind.LLM_SUBMIT, invocation_id="parent",
+              context_id="ctx-parent", context_epoch=1,
+              attributes={"request_id": "parent-next"}),
+    ))
+    parent = req("parent")
+    parent.rid = "parent-next"
+    parent.session_id, parent.session_generation = requests["parent"].session_id, 1
+    parent.beliefkv_metadata["context_epoch"] = 1
+    runtime.register_visible_request(parent)
+    handoff = runtime._live_parent_capacity_handoff(runtime.visible[parent.rid])
+    assert handoff.freed_device_units == {0: 16, 2: 2}
     runtime.on_batch_completed(NS(reqs=[parent]))
     assert runtime.counts["parent_capacity_handoff_first_service"] == 1
 
@@ -269,6 +289,27 @@ def test_persistent_child_is_not_retired(family, persistent):
     else:
         runtime.graph.contexts["ctx-child1"].persistent = True
     runtime.on_events((returned(7, "child1"),))
+    cache.retire_beliefkv_child_session.assert_not_called()
+
+
+def test_real_harness_persistent_child_is_reclaimed_after_context_retirement(family):
+    runtime, _, cache, _ = family
+    runtime.graph.invocations["child1"].persistent = True
+    runtime.graph.contexts["ctx-child1"].persistent = True
+    runtime.on_events((replace(returned(7, "child1"), attributes={"context_retired": True}),))
+    cache.retire_beliefkv_child_session.assert_called_once_with(
+        session_id="s-child1", session_generation=1,
+    )
+    assert runtime._parent_capacity_handoffs["ctx-parent"].freed_device_units == {0: 8, 2: 1}
+
+
+def test_context_with_another_live_invocation_is_not_retired(family):
+    runtime, _, cache, _ = family
+    runtime.on_events((event(
+        7, RuntimeEventKind.INVOCATION_CREATE, invocation_id="reuser",
+        context_id="ctx-child1", parent_invocation_id="parent",
+    ),))
+    runtime.on_events((replace(returned(8, "child1"), attributes={"context_retired": True}),))
     cache.retire_beliefkv_child_session.assert_not_called()
 
 

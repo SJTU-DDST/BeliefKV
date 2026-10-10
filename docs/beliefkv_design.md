@@ -85,12 +85,17 @@ FULL 首次复用证据，不能计作提前预测收益。完整 JointPlan、
 
 child→parent 容量交接由权威 RETURN 与原生物理引用共同驱动。
 通知阶段复用现有 parent 安全 checkpoint/缺失页规划；RETURN
-后，在 scheduler 内释放非持久 child 的 session 引用，并直接
+后，在 scheduler 内释放已结束上下文的 child session 引用，并直接
 回收无共享引用、无设备/Host 锁、无在途 DMA 的私有终态叶及
 经逐节点验证的私有祖先，不为无用后缀新增 D2H。闭合 generation
 来源处理 close/RETURN 顺序，session 重开失效旧来源。FULL、
 Mamba 和 parent 新输入/decode 增长分别核算，不能按 child
 完整上下文推算释放量，也不要求 parent 使用相同物理页号。
+Deep Agents 的 persistent 标记用于任务内部多轮执行；完成回调
+自动声明 context_retired，复用现有 RETURN 后关闭 session 的
+生命周期，不要求模型输出新增字段。同一 context 有其他活跃
+invocation 时保留；原始客户端事件时间与 scheduler 交付观察
+墙钟分别记录，容量交接时延用同一墙钟计算。
 
 实际释放容量进入原生 allocator，可供既有预取与需求恢复使用。
 JOIN 解锁 parent 的缺失 checkpoint 恢复只在近期可准入候选内
@@ -110,7 +115,7 @@ native 关闭 BeliefKV 控制与优先策略，保留双方一致的协议兼容
 客户端优化及遥测；它不是未修改的上游 wheel。
 
 V15 从冻结提交 `feb5ee01a9f1340a694dcba442c439d08e4bd274`
-运行，其最终比较与高负载退化见架构状态页。当前推进 V19
+运行，其最终比较与高负载退化见架构状态页。当前推进 V19b
 终态容量交接：运行中的主目录、引擎与预测产物保持冻结，
 新修订先在隔离分支提交，再按已授权的快速开发节奏停旧采集、
 保存截断证据并冷启动新版。仍需完成稳定同版本 native 对照，
