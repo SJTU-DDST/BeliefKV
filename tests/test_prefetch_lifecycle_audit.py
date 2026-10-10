@@ -6,8 +6,69 @@ from scripts.audit_prefetch_lifecycle import (
     audit, full_expiration_evidence, http_transport_waits, observed_capacity_shortfall,
     prepare_host_lifetime_summary, prepare_restore_attribution,
     prepare_selection_summary, source_summary, terminal_capacity_summary, wait_event_attribution,
-    terminal_invocation_scopes,
+    terminal_invocation_scopes, wait_plan_gap_summary,
 )
+
+
+def test_wait_plan_gaps_preserve_unknown_demand_and_overlapping_reasons():
+    base = {
+        "completion_ts_ms": 100.,
+        "early_started_and_reused_full_bytes": 0,
+        "observed_no_live_details": {},
+    }
+    rows = [
+        {
+            **base, "max_observed_planned_full_tokens": 0,
+            "remaining_native_full_host_hit_bytes": 100,
+            "observed_plan_reasons": {"closure_unobservable": 50, "no_restore_plan": 10},
+            "observed_planning_blocked_details": {"node ancestry exceeds bound": 50},
+        },
+        {
+            **base, "max_observed_planned_full_tokens": 10,
+            "remaining_native_full_host_hit_bytes": 40,
+            "early_started_and_reused_full_bytes": 60,
+            "observed_plan_reasons": {"no_restore_plan": 3, "start_window": 1},
+        },
+        {
+            **base, "max_observed_planned_full_tokens": None,
+            "completion_ts_ms": None, "remaining_native_full_host_hit_bytes": None,
+            "observed_plan_reasons": {"no_live_session_or_anchors": 100},
+            "observed_no_live_details": {"native_anchor_snapshot_rejected": 100},
+        },
+    ]
+    result = wait_plan_gap_summary(rows)
+    categories = result["plan_evidence_categories"]
+    assert sum(group["independent_events"] for group in categories.values()) == 3
+    assert categories["only_zero_full_plan"]["remaining_native_full_host_hit_bytes_known"] == 100
+    assert categories["positive_full_plan"]["events_with_early_reused_full"] == 1
+    assert categories["full_plan_unobserved"]["remaining_native_full_evidence_unknown_events"] == 1
+    reasons = result["residual_native_demand_by_observed_planning_evidence"]
+    assert reasons["observed_plan_reasons"]["no_restore_plan"]["independent_events"] == 2
+    assert reasons["observed_plan_reasons"]["no_restore_plan"]["remaining_native_full_host_hit_bytes_known"] == 140
+    assert reasons["observed_planning_blocked_details"]["node ancestry exceeds bound"]["independent_events"] == 1
+    assert reasons["observed_no_live_details"]["native_anchor_snapshot_rejected"]["remaining_native_full_evidence_unknown_events"] == 1
+    assert "must not be summed" in result["planning_gap_semantics"]
+
+
+def test_wait_plan_details_group_repeated_samples_into_one_wait(tmp_path):
+    observation = {
+        "event": "session_h2d_opportunity", "source": "join_wait",
+        "workflow_id": "wf", "context_id": "parent", "context_epoch": 0,
+        "invocation_id": "root", "join_id": "join", "ts_ms": 10.,
+        "required_full_tokens": 0, "reason": "closure_unobservable",
+        "blocked_detail": "node ancestry exceeds bound",
+        "no_live_detail": "native_anchor_snapshot_rejected",
+    }
+    result = wait_event_attribution(
+        tmp_path, [observation, {**observation, "ts_ms": 20.}], {}, [], None,
+    )
+    [row] = result["rows"]
+    assert row["observed_plan_reasons"] == {"closure_unobservable": 2}
+    assert row["observed_planning_blocked_details"] == {"node ancestry exceeds bound": 2}
+    summary = result["summary"]["by_source"]["join_ticket"]
+    reasons = summary["residual_native_demand_by_observed_planning_evidence"]
+    assert reasons["observed_planning_blocked_details"]["node ancestry exceeds bound"]["independent_events"] == 1
+    assert summary["plan_evidence_categories"]["only_zero_full_plan"]["remaining_native_full_evidence_unknown_events"] == 1
 
 
 def test_terminal_capacity_link_keeps_pool_evidence_and_post_service_release_separate():

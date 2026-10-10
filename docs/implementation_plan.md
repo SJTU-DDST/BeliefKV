@@ -65,6 +65,35 @@ deploy exactly this revision and patch, run predictive first and cold native
 second, and measure actual early FULL reuse, parent service wait, protection
 reasons and busy-window throughput. The broad performance objective stays active.
 
+The latest independent-wait evidence makes complete-prefix coverage the next
+runtime validation priority. Keep v25_v21_prefetch_gap_attribution_20261011.json:
+4433 tool waits observed node ancestry exceeds bound and are associated with
+298.122 GB of remaining native FULL Host hits and no verified early FULL reuse.
+The already queued V22 removes this restriction. There are 1105 tool waits with
+positive FULL plans and 256.066 GB residual native demand, 9593 with only observed
+zero plans and 327.839 GB, and 12 without a plan observation. Zero or absent plans
+must not be interpreted as absence of physical demand.
+
+Track planning reasons, blocked_detail and no_live_detail once per independent
+wait per reason, with residual native FULL bytes and known/unknown evidence.
+Evidence categories partition events; reason groups overlap. The 464 waits with
+no_cold_capacity associate with 122.589 GB and may overlap depth rejections.
+Neither byte association proves all demand could have been moved early or is an
+oracle speedup. The 53 lifecycle-audit checks pass, including repeated samples,
+unknown demand and overlapping reasons. This revision changes offline attribution
+only; the frozen V21 and registered 629eaa4 V22 production sources remain unchanged.
+
+The later partial V21 snapshot has 1.405/2.530 GB independent early-reused JOIN/tool
+FULL; 99.764 GB demand-handoff reuse stays separate. Node-command ACK-to-first-
+service P90 is 1.473/0.922 s, not the earlier 16 s, while maxima remain 24.730/12.354 s.
+Known-boundary FULL lease expirations include 10 JOIN commands before completion,
+one awaiting native ingress, and one tool command before completion. Diagnose
+premature prediction separately from post-return admission; do not attribute every
+long delay to lack of parent priority. There are 338 confirmed children and 175
+parent services, 172 after linked device release. Validate useful pre-boundary
+coverage, demand-restoration consumption and busy-window performance in the
+same-version pair before marking the full performance goal achieved.
+
 Include the isolated live-counter reduction in the next V22 registration.
 Headroom and Host usage now validate current pool ownership and geometry and
 sample live free lists without a device tensor-byte census. Full capacity census

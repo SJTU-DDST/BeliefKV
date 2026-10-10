@@ -695,6 +695,65 @@ def full_expiration_summary(rows: list[dict]) -> dict:
     }
 
 
+def wait_plan_gap_summary(rows: list[dict]) -> dict:
+    """Associate residual native demand with independent waits, not scan counts."""
+    categories = defaultdict(list)
+    reasons = {
+        name: defaultdict(list)
+        for name in (
+            "observed_plan_reasons", "observed_planning_blocked_details",
+            "observed_no_live_details",
+        )
+    }
+    for row in rows:
+        tokens = row["max_observed_planned_full_tokens"]
+        category = (
+            "positive_full_plan" if tokens is not None and tokens > 0
+            else "only_zero_full_plan" if tokens == 0
+            else "full_plan_unobserved"
+        )
+        categories[category].append(row)
+        for field, groups in reasons.items():
+            for reason in row.get(field, {}):
+                groups[reason].append(row)
+
+    def totals(selected: list[dict]) -> dict:
+        return {
+            "independent_events": len(selected),
+            "events_with_known_completion_boundary": sum(
+                row["completion_ts_ms"] is not None for row in selected
+            ),
+            "remaining_native_full_host_hit_bytes_known": sum(
+                row["remaining_native_full_host_hit_bytes"] or 0 for row in selected
+            ),
+            "remaining_native_full_evidence_unknown_events": sum(
+                row["remaining_native_full_host_hit_bytes"] is None for row in selected
+            ),
+            "events_with_early_reused_full": sum(
+                row["early_started_and_reused_full_bytes"] > 0 for row in selected
+            ),
+        }
+
+    return {
+        "plan_evidence_categories": {
+            category: totals(selected) for category, selected in sorted(categories.items())
+        },
+        "residual_native_demand_by_observed_planning_evidence": {
+            field: {
+                reason: totals(selected) for reason, selected in sorted(groups.items())
+            }
+            for field, groups in reasons.items()
+        },
+        "planning_gap_semantics": (
+            "One count per independent wait per observed reason, regardless of repeated "
+            "samples. Evidence categories partition waits; reason/detail groups overlap "
+            "and must not be summed. Zero or missing plans do not prove zero physical "
+            "demand. Residual bytes are next-request native FULL Host hits, not a proven "
+            "pre-boundary opportunity, exclusive rejection cause or oracle speedup."
+        ),
+    }
+
+
 def wait_event_attribution(
     arm: Path, observations: list[dict], issues: dict, actions: list[dict],
     clock_offset: float | None,
@@ -716,6 +775,7 @@ def wait_event_attribution(
             "invocation_id": observation.get("invocation_id"),
             "first_observation_ts_ms": observation["ts_ms"],
             "max_observed_planned_full_tokens": None, "plan_reasons": Counter(),
+            "planning_blocked_details": Counter(), "no_live_details": Counter(),
             "max_observed_planned_full_bytes": None,
             "observed_capacity_conditions": Counter(),
             "max_observed_full_tokens_with_mamba_only_shortfall": None,
@@ -750,6 +810,12 @@ def wait_event_attribution(
             )
         if observation.get("event") != "prefetch_native_issued":
             group["plan_reasons"][observation.get("reason", "unknown")] += 1
+            for field, target in (
+                ("blocked_detail", "planning_blocked_details"),
+                ("no_live_detail", "no_live_details"),
+            ):
+                if observation.get(field):
+                    group[target][observation[field]] += 1
     for action in actions:
         identity = wait_event_identity(issues.get(action["command_id"], {}))
         if identity in groups:
@@ -946,6 +1012,8 @@ def wait_event_attribution(
                 and type(full_unit) is int else None
             ),
             "observed_plan_reasons": dict(group["plan_reasons"]),
+            "observed_planning_blocked_details": dict(group["planning_blocked_details"]),
+            "observed_no_live_details": dict(group["no_live_details"]),
             "observed_capacity_conditions": dict(group["observed_capacity_conditions"]),
             "max_observed_full_bytes_with_mamba_only_shortfall": (
                 group["max_observed_full_tokens_with_mamba_only_shortfall"] * full_unit
@@ -1038,6 +1106,7 @@ def wait_event_attribution(
                     "remaining_native_full_evidence_unknown_events": sum(
                         row["remaining_native_full_host_hit_bytes"] is None for row in selected
                     ),
+                    **wait_plan_gap_summary(selected),
                     "client_submit_to_native_arrival_ms": distribution(
                         row["client_submit_to_native_arrival_ms"] for row in selected
                     ),
