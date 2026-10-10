@@ -980,6 +980,66 @@ def test_pressure_publication_stops_only_after_both_native_prefixes_are_complete
         runtime.close()
 
 
+@pytest.mark.parametrize("indexed", (False, True))
+def test_pressure_publication_uses_live_pool_indexes_without_changing_candidate_order(indexed):
+    class Node(NS):
+        __hash__ = object.__hash__
+
+    runtime, _ = tool_runtime()
+    nodes = {
+        number: Node(
+            id=number, creation_time=number, backuped=True,
+            write_through_pending_id=None, load_back_pending_id=None,
+            component_data=[
+                NS(value=[1], host_value=[1], lock_ref=0, session_ref=1),
+                NS(value=None, host_value=None, lock_ref=0, session_ref=0),
+                NS(
+                    value=[1] if number == 1024 else None,
+                    host_value=[1] if number == 1024 else None,
+                    lock_ref=0, session_ref=1,
+                ),
+            ],
+        )
+        for number in range(1, 1025)
+    }
+    lookup = []
+
+    def node_by_id(node_id):
+        lookup.append(node_id)
+        return nodes[node_id]
+
+    tree = NS(node_by_id=node_by_id, evictable_device_leaves={nodes[1024]})
+    if indexed:
+        tree.lru_lists = {2: NS(cache={1024: nodes[1024]})}
+    cache = NS(tree_core=tree, ongoing_write_through={})
+    runtime._native_cache = cache
+    runtime._parent_pressure_candidates = {number: (None, number) for number in nodes}
+    try:
+        runtime._publish_parent_pressure_candidates()
+        assert cache.beliefkv_join_pressure_candidates == tuple((n, n) for n in range(1, 9))
+        assert cache.beliefkv_join_pressure_candidates_by_component == {
+            0: ((1024, 1024),), 2: ((1024, 1024),),
+        }
+        if indexed:
+            assert len(lookup) <= 17
+        else:
+            assert len(lookup) == len(nodes)
+        if indexed:
+            nodes[1024].load_back_pending_id = 9
+            runtime._publish_parent_pressure_candidates()
+            assert cache.beliefkv_join_pressure_candidates_by_component == {0: (), 2: ()}
+            nodes[1024].load_back_pending_id = None
+            nodes[1024].component_data[2].value = None
+            tree.lru_lists[2].cache.clear()
+            tree.evictable_device_leaves = {nodes[512]}
+            runtime._publish_parent_pressure_candidates()
+            assert cache.beliefkv_join_pressure_candidates_by_component == {
+                0: ((512, 512),), 2: (),
+            }
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("blocked", ("none", "locked", "shared", "swa_unbacked", "pending"))
 def test_full_only_pressure_candidate_can_save_missing_mamba_at_actual_eviction(blocked):
     class Node(NS):

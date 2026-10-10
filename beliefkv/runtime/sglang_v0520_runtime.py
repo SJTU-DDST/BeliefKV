@@ -3983,8 +3983,36 @@ class NativeAdmissionRuntime:
         # Native reclaim/eviction reads only the first eight entries per pool.
         limit = 8
         fallback_left = full_left = mamba_left = limit
-        device_leaves = getattr(getattr(cache, "tree_core", None), "evictable_device_leaves", ())
-        for node_id, (_, created) in self._parent_pressure_candidates.items():
+        tree = getattr(cache, "tree_core", None)
+        device_leaves = getattr(tree, "evictable_device_leaves", ())
+        indexed = False
+        for position, (node_id, (_, created)) in enumerate(self._parent_pressure_candidates.items()):
+            if position == 2 * limit:
+                lrus = getattr(tree, "lru_lists", None)
+                mamba_lru = getattr(lrus.get(2), "cache", None) if isinstance(lrus, dict) else None
+                if isinstance(device_leaves, set) and isinstance(mamba_lru, dict):
+                    # Only index a scan that outlasts two native pool prefixes.
+                    # Live checks and the original order remain authoritative.
+                    visited = set(islice(self._parent_pressure_candidates, position))
+                    full_ids = {
+                        node.id for node in device_leaves
+                        if node.id in self._parent_pressure_candidates and node.id not in visited
+                    }
+                    mamba_ids = (
+                        self._parent_pressure_candidates.keys() & mamba_lru.keys()
+                    ) - visited
+                    indexed = True
+            if indexed:
+                if not fallback_left and not (
+                    full_left and full_ids or mamba_left and mamba_ids
+                ):
+                    break
+                if not fallback_left and not (
+                    full_left and node_id in full_ids or mamba_left and node_id in mamba_ids
+                ):
+                    continue
+                full_ids.discard(node_id)
+                mamba_ids.discard(node_id)
             try:
                 node = cache.tree_core.node_by_id(node_id)
                 full = node.component_data[0]
@@ -4033,7 +4061,7 @@ class NativeAdmissionRuntime:
                 ):
                     by_component[2].append((node_id, created))
                     mamba_left -= 1
-                if not full_left and not mamba_left:
+                if not fallback_left and not full_left and not mamba_left:
                     break
         cache.beliefkv_join_pressure_candidates = tuple(candidates)
         cache.beliefkv_join_pressure_candidates_by_component = {

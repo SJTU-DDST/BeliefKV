@@ -532,7 +532,13 @@ def publication_case(baseline, *, workflows, depth, iterations, sparse_pool):
             return nodes[node_id]
 
         runtime._native_cache = NS(
-            tree_core=NS(node_by_id=node_by_id, evictable_device_leaves=leaves),
+            tree_core=NS(
+                node_by_id=node_by_id, evictable_device_leaves=leaves,
+                lru_lists={2: NS(cache={
+                    index: node for index, node in nodes.items()
+                    if node.component_data[2].value is not None
+                })},
+            ),
             ongoing_write_through={},
         )
         runtime._parent_pressure_candidates = {

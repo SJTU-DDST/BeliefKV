@@ -289,6 +289,43 @@ reasons are absent,so slot,capacity and dependency causes are not uniquely
 identified. Retain this gap without enlarging budgets or preempting hot requests
 on speculative attribution.
 
+Use live native pool indexes to reduce sparse pressure-candidate publication.
+The old publisher walks all registered ancestors when one pool cannot supply
+its first eight candidates. Retain the initial sixteen-entry scan and original
+order; only then intersect registered candidates with native evictable FULL
+leaves and the resident Mamba LRU. Skip irrelevant node lookups once fallback
+is full, stopping after possible remaining pool candidates are exhausted.
+Keep each pool's consumed prefix, fallback, creation time, locks, references,
+Host-copy validity and pending-transfer checks. Missing indexes retain the
+original scan. Rebuild from live indexes each publication; do not cache physical
+authority across calls or change eviction/restoration/admission policy.
+
+443 scoped runtime/transfer/terminal/handoff/tool/physical checks pass.
+Preserve v20_pressure_publication_native_index_cpu_20261010_v3.json and
+v20_pressure_publication_native_index_flat_cpu_20261010_v3.json. Against207643f,
+156 workflows with24 ancestors and150 alternating iterations show mean
+publication cost0.16851→0.10122ms with both pools available,3.19760→0.55181ms
+with sparse FULL,and2.95728→0.57657ms with sparse Mamba. Native-consumed
+prefixes match every iteration; node reads fall192→24 or3744→25. The shallow
+dense case P50 increases0.023336→0.023963ms; its mean includes one0.282676ms
+outlier. Do not claim every path improves. The eager-index preliminary version
+is superseded by the lazy-index v3. These fixtures exclude DMA,GPU throughput
+and JCT. Commit promptly in isolation and deploy only between frozen pairs.
+
+Preserve v20_shared_path_cpu_snapshot_20261010_2209.json. At9720.138s,
+instrumented exclusive Python wall totals are control drain139.501s,
+opportunity sampling115.718s,reentry inspection100.152s,batch callback91.747s,
+JOIN PREPARE87.136s,admission planning76.811s,semantic updates58.985s and
+maintenance54.643s. These are not GPU idle or directly removable JCT.
+closure_unobservable action samples lack detailed capture failure reasons;
+terminal diagnostic depth failures do not prove lost actionable opportunities.
+Propagate cheap failure detail before changing observation depth bounds.
+
+At22:16 CST on2026-10-10,the collecting arm has153 completed,2 incomplete,
+zero errors,with pydata__xarray-6992 unfinished. Native has not started.
+Keep V20 atb019d24/c58cc891 for both arms; all latest isolated changes remain
+queued for the next predictive-first same-version native pair.
+
 ## V19b Harness Context Retirement Integration
 
 The V19 diagnostic snapshot contained authoritative child RETURNs but zero
