@@ -108,6 +108,18 @@ These are partial lifecycle associations, not simultaneous free capacity,
 exclusive page ownership, exact kernel-start times or native-relative savings.
 The queued V22 changes are not deployed in this snapshot.
 
+Reuse the current H2D/PREPARE plan's root-first node order for checkpoint
+selection and transfer-step generation, preserving full ancestry, identity,
+input clipping, necessary Mamba and physical budget checks. The207 existing
+physical/execution-handoff/terminal-capacity checks pass. Keep
+v26_checkpoint300_root_order_cpu_20261011.json and
+v26_checkpoint4_root_order_cpu_20261011.json. Against658f639,100 alternating
+CPU samples preserve observations and plans:300-node H2D/PREPARE planning
+means change1.760→1.732ms and1.664→1.647ms;four-node means change
+87.01→85.98 and66.28→65.13 microseconds. Unchanged phases remain noise.
+This modest CPU reduction is not throughput proof and is not included in
+the running frozen V21 or the registered658f639 V22 checkout.
+
 The latest independent-wait evidence makes complete-prefix coverage the next
 runtime validation priority. Keep v25_v21_prefetch_gap_attribution_20261011.json:
 4433 tool waits observed node ancestry exceeds bound and are associated with

@@ -244,6 +244,8 @@ def _checkpoint_paths(
     nodes: Mapping[int, UnifiedNodeSummary | _PreparePrefixNode],
     leaves: Mapping[int, int | float],
     depth: Mapping[int, int],
+    *,
+    ordered_nodes: list[int] | None = None,
 ) -> tuple[set[int], set[int]] | None:
     """Only the deepest reusable state on each current input path is needed."""
     input_limit = anchors.reusable_input_tokens
@@ -252,7 +254,9 @@ def _checkpoint_paths(
     if type(input_limit) is not int or input_limit < 0:
         return None
     prefix_lengths: dict[int, int] = {}
-    for node_id in sorted(nodes, key=lambda value: (depth[value], value)):
+    if ordered_nodes is None:
+        ordered_nodes = sorted(nodes, key=lambda value: (depth[value], value))
+    for node_id in ordered_nodes:
         node = nodes[node_id]
         if type(node.key_tokens) is not int or node.key_tokens < 0:
             return None
@@ -462,13 +466,16 @@ def plan_prefetch_gpu_steps(
         )
     ):
         return ()
-    selected = _checkpoint_paths(anchors, nodes, full_leaves, depth)
+    ordered_nodes = sorted(paths, key=lambda value: (depth[value], value))
+    selected = _checkpoint_paths(
+        anchors, nodes, full_leaves, depth, ordered_nodes=ordered_nodes,
+    )
     if selected is None:
         return ()
     eligible_paths, checkpoint_nodes = selected
     steps: list[PrefetchLoadStep] = []
     restored_full: set[int] = set()
-    for node_id in sorted(paths, key=lambda value: (depth[value], value)):
+    for node_id in ordered_nodes:
         if node_id not in eligible_paths:
             continue
         node = nodes[node_id]
@@ -548,7 +555,11 @@ def shadow_backup_steps(
             paths.add(node_id)
             provenance.setdefault(node_id, leaf)
             depth[node_id] = distance
-    selected = _checkpoint_paths(candidate.anchors, nodes, leaves, depth)
+    ordered_nodes = sorted(paths, key=lambda value: (depth[value], value))
+    selected = _checkpoint_paths(
+        candidate.anchors, nodes, leaves, depth,
+        ordered_nodes=ordered_nodes if len(paths) == len(nodes) else None,
+    )
     if selected is None:
         return ()
     eligible_paths, _ = selected
@@ -561,7 +572,7 @@ def shadow_backup_steps(
     )
     # Native queues each predecessor before its child; only this burst may
     # use those unsettled writes as ancestors.
-    for node_id in sorted(paths, key=lambda value: (depth[value], value)):
+    for node_id in ordered_nodes:
         node = nodes[node_id]
         if node_id not in eligible_paths or (
             leaf_id is not None and provenance[node_id] != leaf_id

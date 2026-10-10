@@ -104,6 +104,18 @@ tool2.530GB（84事件）；99.782GB需求handoff复用另列。
 或独占交接，完成batch也不是kernel启动时间；这份局部证据仍
 不能证明native相对吞吐提高或等待中的V22修复已在GPU上有效。
 
+隔离工作区进一步复用同一次H2D/PREPARE规划的root-first顺序，
+安全checkpoint选择与传输步骤不再重复排序相同祖先集合。节点
+身份、完整祖先、输入裁剪、必要Mamba和物理预算检查保持原有
+语义。207项physical、execution handoff及终态容量检查通过。
+以658f639为对照的100轮交替CPU测量中，300节点H2D/PREPARE
+规划均值为1.760→1.732ms和1.664→1.647ms，改善约1.6%/1.1%；
+4节点为87.01→85.98微秒和66.28→65.13微秒。观察与传输计划
+一致，无代码改动的其他阶段差异属于噪声。保存
+v26_checkpoint300_root_order_cpu_20261011.json及
+v26_checkpoint4_root_order_cpu_20261011.json。这项小幅CPU减负
+不证明吞吐收益，尚未进入冻结V21或已登记658f639的V22。
+
 新的独立等待事件审计进一步明确覆盖缺口，证据保存在
 v25_v21_prefetch_gap_attribution_20261011.json。工具等待中
 1105个事件曾观察到正FULL恢复计划，关联后续原生FULL Host
