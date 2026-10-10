@@ -91,6 +91,30 @@ Current status:
   so this excludes disk writes, GPU work and end-to-end performance.
   Preservev16_terminal_scalar_serialization_cpu_20261010.json, commit only
   in isolation and deploy after both V15 arms and full postprocessing.
+- Within one resident-first admission plan, skip rotating positions already
+  covered by the fixed first eight. Preserve scan order, rotating coverage,
+  fresh observations on the next call and native read counts; add no persistent
+  residency cache. All201 related admission/runtime/policy checks pass. The
+  pinned13491b2 CPU fixtures retain16 rounds and two planning calls, with300
+  iterations and mixed stub-native residency. Queue8 mean wall falls
+  0.562451→0.442924ms(21.25%); queue156 falls4.160591→4.130053ms(0.73%),
+  with P503.767605→3.719760ms and large wall outliers retained. Every call's
+  ordering equals its corresponding baseline call, and native inspection
+  counts are identical. A later call can discover new residency and legitimately
+  reorder requests. Preservev16_resident_scan_cpu_queue8_20261010.json and
+  v16_resident_scan_cpu_queue156_20261010.json. These are CPU fixture results;
+  the large queue has no demonstrated robust gain and V15 remains frozen.
+- The complete isolated schema2 JOIN audit covers99 node commands and75
+  unique child requests:95 start before RETURN,57 within0--500ms, median
+  submit lead309.66ms and82 ACK before JOIN. On unique children, native
+  completion-to-client-result P50/P90 is254.63/1074.24ms, JOIN-to-parent-submit
+  P5025.36ms, parent-submit-to-arrival P50127.72ms and arrival-to-worker
+  P50/P90160.30/14512.15ms. Submit-to-worker P50/P90 is352.47/14930.20ms.
+  These percentiles are not additive, worker intervals are not CUDA kernel
+  measurements, and node commands are not independent child events. Preserve
+  v15_join_pipeline_first_service_v2_final_20261010.json without overwriting
+  the frozen arm's reports. Separate client completion delay, early work
+  underprediction and actual admission waiting before adjusting leases.
 - At2026-10-10 05:40 CST, the partial V15 H2D source snapshot has native
   2358 batches/731.314GB, JOIN/tool72 commands/1.384GB, demand handoff
   4692 node commands/1524 batches/36.050GB and no unknown controlled source.

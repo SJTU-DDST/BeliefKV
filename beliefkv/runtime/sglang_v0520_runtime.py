@@ -5262,8 +5262,9 @@ class NativeAdmissionRuntime:
         if self.enable_resident_first and ordered:
             count = len(ordered)
             scan = ordered[:8] + [
-                ordered[(self._residency_scan_cursor + offset) % count]
+                ordered[position]
                 for offset in range(min(8, count))
+                if (position := (self._residency_scan_cursor + offset) % count) >= 8
             ]
             self._residency_scan_cursor = (self._residency_scan_cursor + 8) % count
             for _, req in scan:

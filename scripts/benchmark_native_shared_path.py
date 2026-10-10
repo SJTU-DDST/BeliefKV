@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ast
+from collections import Counter
 import hashlib
 import json
 from pathlib import Path
@@ -135,7 +136,7 @@ def distribution(samples: list[float]) -> dict:
 
 
 def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
-              planning_calls: int = 1) -> dict:
+              planning_calls: int = 1, resident_first: bool = False) -> dict:
     baseline, frontier, digests = baseline_classes(revision)
     variants = {
         "baseline": synthetic_runtime(baseline, frontier, workflows, rounds),
@@ -145,6 +146,22 @@ def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
                                                 workflows, rounds, profiling=True),
     }
     samples = {name: {"admission": [], "batch_completed": []} for name in variants}
+    inspection_counts = {name: Counter() for name in variants}
+    if resident_first:
+        for name, (runtime, queue) in variants.items():
+            positions = {request.rid: index for index, request in enumerate(queue)}
+
+            def inspect(request, *, positions=positions, counts=inspection_counts[name]):
+                counts[request.rid] += 1
+                level = positions[request.rid] % 3
+                return {
+                    "missing_full_tokens": 0 if level == 0 else 256,
+                    "missing_mamba_slots": int(level == 2),
+                    "device_checkpoint_tokens": 0 if level == 2 else 1024,
+                }
+
+            runtime.enable_resident_first = True
+            runtime._native_cache = NS(inspect_beliefkv_reentry=inspect)
     try:
         for iteration in range(iterations + 5):
             orders = []
@@ -159,6 +176,8 @@ def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
                 }
                 runtime._prefill_cycle_active = planning_calls > 1
                 runtime._prefill_causal_cache = None
+                if resident_first:
+                    runtime._reentry_observations.clear()
                 started = time.perf_counter_ns()
                 cycle_orders = []
                 for call in range(planning_calls):
@@ -166,10 +185,12 @@ def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
                         queue, running_batch=None, adder=None if call == 0 else NS(),
                     )
                     cycle_orders.append(plan.prioritized)
-                if any(order != cycle_orders[0] for order in cycle_orders[1:]):
+                if not resident_first and any(
+                    order != cycle_orders[0] for order in cycle_orders[1:]
+                ):
                     raise AssertionError("repeated planning changed the queue order")
                 elapsed = (time.perf_counter_ns() - started) / 1_000_000
-                orders.append(plan.prioritized)
+                orders.append(tuple(cycle_orders))
                 if iteration >= 5:
                     samples[name]["admission"].append(elapsed)
                 started = time.perf_counter_ns()
@@ -180,6 +201,11 @@ def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
                     )
             if any(order != orders[0] for order in orders[1:]):
                 raise AssertionError(f"optimization changed the synthetic queue order at {iteration}")
+            if resident_first and any(
+                counts != inspection_counts["baseline"]
+                for counts in inspection_counts.values()
+            ):
+                raise AssertionError(f"changed native reentry observations at {iteration}")
         costs = {name: {phase: distribution(values) for phase, values in data.items()}
                  for name, data in samples.items()}
         return {
@@ -196,6 +222,15 @@ def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
             "planning_scope": (
                 "causal admission calls only; excludes physical handoff inspection and enqueue"
             ),
+            "resident_first": resident_first,
+            "residency_fixture": (
+                "mixed resident/partial/Host-only observations from a stub native inspector"
+                if resident_first else None
+            ),
+            "native_inspection_counts_equal": True if resident_first else None,
+            "native_inspections_including_warmup": {
+                name: sum(counts.values()) for name, counts in inspection_counts.items()
+            } if resident_first else None,
             "invalidate_caches_each_iteration": True, "queue_order_equal": True,
             "costs": costs,
             "admission_mean_reduction_fraction": (
@@ -328,6 +363,8 @@ def main():
     parser.add_argument("--iterations", type=int, default=200)
     parser.add_argument("--planning-calls", type=int, choices=(1, 2), default=1)
     parser.add_argument("--handoff-frontier", action="store_true")
+    parser.add_argument("--resident-first", action="store_true",
+                        help="Use mixed residency observations and check identical native reads.")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     runtime_source_path()
@@ -341,7 +378,8 @@ def main():
     else:
         report = benchmark(revision=args.baseline_revision, workflows=args.workflows,
                            rounds=args.rounds, iterations=args.iterations,
-                           planning_calls=args.planning_calls)
+                           planning_calls=args.planning_calls,
+                           resident_first=args.resident_first)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     if args.handoff_frontier:
