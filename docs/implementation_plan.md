@@ -2,6 +2,17 @@
 
 Status date: 2026-10-11.
 
+V21 same-version native collection is running; predictive finished with 155
+completed and one incomplete workflow. At 2026-10-11 05:12 CST, the still-waiting
+V22 target was updated to fef94d3 in frozen beliefkv-v27-validated-20261011,
+coordinator PID3876782. Environment, canonical native patch and waited process
+identities match the preserved ed974d2 registration. Keep
+v22_supersession_ed974d2_to_fef94d3_20261011.json. After the complete V21 pair and
+postprocessing, automatically deploy this revision, predictive first then cold
+same-version native. The target includes same-dispatch tool-plan reuse and the
+matched busy-window evidence. Waiting registration is not GPU validation; the
+broad performance objective remains active.
+
 ## Child-to-Parent Capacity and Complete-Prefix Recovery
 
 The four-step path is deployed in V21: plan the parent's safe checkpoint during
@@ -37,7 +48,7 @@ unrelated caches and all current page/capacity/time/residency checks. Untagged
 native ACKs, invalid receipts, stale sessions, Host-only release and no-capacity
 retries do not trigger invalidation. There is no new decode-loop scan. The261
 terminal/tool/runtime/handoff checks pass. This revision is now included in the
-updated frozened974d2 V22 target; waiting registration is not GPU validation.
+updated frozen fef94d3 V22 target; waiting registration is not GPU validation.
 
 Reuse only a tool restore plan freshly read during the current dispatch. Refresh
 plans from the short cache or an earlier selection. Preserve the post-event-drain
@@ -47,8 +58,8 @@ and checkpoint replacement during the drain. Keep
 v27_tool_dispatch_cpu_20261011.json: 100 alternating CPU samples retain ordered
 bursts and ledger reservations; four/300-node dispatch means change from
 0.858/9.117 to 0.683/6.672 ms. The optimized 300-node maximum remains 19.507 ms.
-This is a CPU planning result, not GPU throughput or end-to-end savings. Register
-the committed change for the next pair while keeping the running V21 frozen.
+This is a CPU planning result, not GPU throughput or end-to-end savings. The
+committed change is now registered in fef94d3; the running V21 remains frozen.
 
 Keep v21_busy_window_same_version_evidence_20261011.json with the original
 comparison SHA256. Both V21 arms completely observe 600–900 s: predictive/native
@@ -100,7 +111,7 @@ second, and measure actual early FULL reuse, parent service wait, protection
 reasons and busy-window throughput. The broad performance objective stays active.
 
 The validated deep-prefix observation reduction is registered in frozen V22
-revision ed974d2, preserving superseded registrations and receipts. Within one closure
+revision fef94d3, preserving superseded registrations and receipts. Within one closure
 read, validate newly encountered native node/component classes once and validate
 the current node's lock/reference counters together. Continue reading identity,
 creation time, lengths, locks, references and pending DMA for every node.
@@ -119,7 +130,7 @@ proof of GPU throughput or an end-to-end saving. Preserve the frozen V21 pair
 and validate actual useful early FULL coverage, consumption and busy-window
 throughput/JCT under the next predictive-first, same-version cold-native pair.
 
-The waiting coordinator was updated at2026-10-11 04:47 CST; PID3439480 is
+An earlier registration at2026-10-11 04:47 CST used PID3439480 in
 waiting_for_previous_pair with target checkout beliefkv-v26-validated-20261011,
 revisioned974d2. Keep v22_supersession_658f639_to_ed974d2_20261011.json and the
 preserved658f639 and629eaa4 registrations. The environment and canonical native
@@ -156,7 +167,7 @@ CPU samples preserve observations and plans:300-node H2D/PREPARE planning
 means change1.760→1.732ms and1.664→1.647ms;four-node means change
 87.01→85.98 and66.28→65.13 microseconds. Unchanged phases remain noise.
 This modest CPU reduction is not throughput proof. It is not part of frozen V21
-and is now included in the updated registereded974d2 V22 checkout.
+and is now included in the updated registered fef94d3 V22 checkout.
 
 The latest independent-wait evidence makes complete-prefix coverage the next
 runtime validation priority. Keep v25_v21_prefetch_gap_attribution_20261011.json:

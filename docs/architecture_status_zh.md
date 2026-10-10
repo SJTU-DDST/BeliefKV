@@ -2,6 +2,15 @@
 
 更新日期：2026-10-11。
 
+当前运行V21同版本native；predictive已155个completed、1个incomplete。
+2026-10-11 05:12 CST将仍等待中的V22目标更新为fef94d3，
+冻结checkout为beliefkv-v27-validated-20261011，协调器PID3876782。
+实验环境、原生patch和等待进程身份与ed974d2登记一致，旧状态
+完整保留；回执为v22_supersession_ed974d2_to_fef94d3_20261011.json。
+V21完整pair及后处理结束后，自动部署该版本并先predictive后冷native。
+本次登记纳入同次tool dispatch恢复计划复用及同版本繁忙窗口证据；
+等待启动不代表GPU验证完成，吞吐目标仍未达成。
+
 ## 终态 child 容量交接与完整前缀恢复
 
 四步联动已在 V21 中部署：child 收尾时规划 parent 的安全
@@ -38,7 +47,7 @@ epoch的等待对象观测，并允许相关tool重新扫描。避免Host副本
 释放容量不触发刷新，其他对象继续使用原有缓存。预取仍经过
 实时页、容量、时间与驻留检查。这项变更只有事件发生时的局部
 字典操作，没有新增逐decode扫描；261项终态/工具/runtime/
-handoff检查通过，现已进入更新后的V22冻结登记ed974d2。
+handoff检查通过，现已进入更新后的V22冻结登记fef94d3。
 
 工具预取进一步复用同一次dispatch中刚读取的恢复计划，避免
 选取候选后立即重复完整观察。缓存命中、前次选定的ticket仍重新
@@ -48,8 +57,8 @@ handoff检查通过，现已进入更新后的V22冻结登记ed974d2。
 100轮交替CPU测量中，4节点/300节点完整dispatch均值分别由
 0.858/9.117ms降至0.683/6.672ms；计划与记账一致，300节点新版
 仍有19.507ms最大值，不能声称消除了长尾。保留
-v27_tool_dispatch_cpu_20261011.json。这项修订已在隔离工作区
-验证，登记到下一轮前仍不属于冻结运行中的V21。
+v27_tool_dispatch_cpu_20261011.json。这项修订已纳入等待启动的
+fef94d3，不属于冻结运行中的V21。
 
 同版本V21的600–900秒窗口两侧都已完整观测，predictive/native
 decode吞吐为891.68/1165.71 token/s，GPU利用率69.26%/87.60%，
@@ -116,7 +125,7 @@ v25_checkpoint300_count_reuse_cpu_20261011.json；最初仅复用
 上述运行时修订与完整前缀覆盖、容量结算重试、实时几何计数和
 稀疏控制计时先登记为V22版本658f639。2026-10-11 04:47 CST
 将仍等待中的目标更新为已验证ed974d2，另纳入同次规划排序复用、
-物理进展后的观测刷新与burst归因。新PID3439480，状态为
+物理进展后的观测刷新与burst归因。当时PID3439480，状态为
 waiting_for_previous_pair；旧658f639及629eaa4登记完整保留。
 回执为v22_supersession_658f639_to_ed974d2_20261011.json。
 已逐项确认实验环境相同，排队版本间的原生patch SHA256不变。
@@ -150,7 +159,7 @@ tool2.530GB（84事件）；99.782GB需求handoff复用另列。
 一致，无代码改动的其他阶段差异属于噪声。保存
 v26_checkpoint300_root_order_cpu_20261011.json及
 v26_checkpoint4_root_order_cpu_20261011.json。这项小幅CPU减负
-不证明吞吐收益，不属于冻结V21，现已进入更新后的ed974d2 V22。
+不证明吞吐收益，不属于冻结V21，现已进入更新后的fef94d3 V22。
 
 新的独立等待事件审计进一步明确覆盖缺口，证据保存在
 v25_v21_prefetch_gap_attribution_20261011.json。工具等待中
