@@ -90,6 +90,10 @@ def test_wait_events_deduplicate_node_commands_and_keep_native_residual_demand_s
     actions[1]["first_service_context_epoch"] = 3
     mismatched = wait_event_attribution(tmp_path, observations, issues, actions, 80.)
     assert mismatched["rows"][0]["early_started_and_reused_full_bytes"] == 0
+    missing = wait_event_attribution(tmp_path, [], issues, actions, 80.)
+    assert missing["rows"][0]["max_observed_planned_full_tokens"] is None
+    assert missing["rows"][0]["max_observed_planned_full_bytes"] is None
+    assert missing["summary"]["by_source"]["join_ticket"]["planned_full_bytes_unknown_events"] == 1
 
 
 def test_tool_event_waits_for_all_tools_and_leaves_unknown_evidence_unknown(tmp_path):

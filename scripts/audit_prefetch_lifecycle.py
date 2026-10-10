@@ -401,7 +401,7 @@ def wait_event_attribution(
             "context_id": identity[2], "context_epoch": identity[3], "join_id": identity[4],
             "invocation_id": observation.get("invocation_id"),
             "first_observation_ts_ms": observation["ts_ms"],
-            "max_observed_planned_full_tokens": 0, "plan_reasons": Counter(),
+            "max_observed_planned_full_tokens": None, "plan_reasons": Counter(),
             "max_observed_planned_full_bytes": None,
             "active_tool_ids": set(), "actions": [], "sessions": set(),
         })
@@ -415,7 +415,7 @@ def wait_event_attribution(
         tokens = observation.get("planned_full_tokens", observation.get("required_full_tokens"))
         if type(tokens) is int:
             group["max_observed_planned_full_tokens"] = max(
-                group["max_observed_planned_full_tokens"], tokens,
+                group["max_observed_planned_full_tokens"] or 0, tokens,
             )
         planned_bytes = (observation.get("planned_pool_bytes") or {}).get("kv")
         if type(planned_bytes) is int:
@@ -541,7 +541,8 @@ def wait_event_attribution(
                 group["max_observed_planned_full_bytes"]
                 if group["max_observed_planned_full_bytes"] is not None
                 else group["max_observed_planned_full_tokens"] * full_unit
-                if type(full_unit) is int else None
+                if type(group["max_observed_planned_full_tokens"]) is int
+                and type(full_unit) is int else None
             ),
             "observed_plan_reasons": dict(group["plan_reasons"]),
             "observed_session_bindings": len(group["sessions"] - {(None, None)}),
@@ -583,7 +584,7 @@ def wait_event_attribution(
                         row for row in rows if row["source"] == source
                     ]),
                     "events_with_observed_full_plan": sum(
-                        row["max_observed_planned_full_tokens"] > 0 for row in selected
+                        (row["max_observed_planned_full_tokens"] or 0) > 0 for row in selected
                     ),
                     "max_snapshot_planned_full_bytes_known": sum(
                         row["max_observed_planned_full_bytes"] or 0 for row in selected
