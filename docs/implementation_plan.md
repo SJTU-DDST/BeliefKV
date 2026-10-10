@@ -36,8 +36,8 @@ progress; it does not guarantee a100ms saving or authorize prefetch. Preserve
 unrelated caches and all current page/capacity/time/residency checks. Untagged
 native ACKs, invalid receipts, stale sessions, Host-only release and no-capacity
 retries do not trigger invalidation. There is no new decode-loop scan. The261
-terminal/tool/runtime/handoff checks pass. This isolated revision is not in the
-registered frozen658f639 V22 target; keep its deployment status explicit.
+terminal/tool/runtime/handoff checks pass. This revision is now included in the
+updated frozened974d2 V22 target; waiting registration is not GPU validation.
 
 Complete valid checkpoint ancestry must remain observable. The next revision
 removes artificial 64/256-node rejection from action closure, PREPARE/H2D
@@ -77,7 +77,7 @@ second, and measure actual early FULL reuse, parent service wait, protection
 reasons and busy-window throughput. The broad performance objective stays active.
 
 The validated deep-prefix observation reduction is registered in frozen V22
-revision 658f639, preserving the superseded registration and receipt. Within one closure
+revision ed974d2, preserving superseded registrations and receipts. Within one closure
 read, validate newly encountered native node/component classes once and validate
 the current node's lock/reference counters together. Continue reading identity,
 creation time, lengths, locks, references and pending DMA for every node.
@@ -96,11 +96,13 @@ proof of GPU throughput or an end-to-end saving. Preserve the frozen V21 pair
 and validate actual useful early FULL coverage, consumption and busy-window
 throughput/JCT under the next predictive-first, same-version cold-native pair.
 
-The waiting coordinator was replaced at 2026-10-11 04:12 CST; PID3341956 is
-waiting_for_previous_pair with target checkout beliefkv-v25-validated-20261011.
-Keep v22_supersession_629eaa4_to_658f639_20261011.json. The environment is
-identical to the preserved 629eaa4 registration, and the canonical patch SHA256
-and expected engine tree are unchanged. Do not edit the registered checkout.
+The waiting coordinator was updated at2026-10-11 04:47 CST; PID3439480 is
+waiting_for_previous_pair with target checkout beliefkv-v26-validated-20261011,
+revisioned974d2. Keep v22_supersession_658f639_to_ed974d2_20261011.json and the
+preserved658f639 and629eaa4 registrations. The environment and canonical native
+patch SHA256 are identical to the previous registration. The updated target adds
+single-plan root ordering reuse, physical-progress observation invalidation and
+independent burst attribution. Do not edit the registered detached checkout.
 Commit documentation and receipts only in the editable follow-up worktree.
 The live V21 source, engine and processes remain frozen; after its full pair
 and postprocessing complete, the coordinator deploys exactly the registered
@@ -130,8 +132,8 @@ v26_checkpoint4_root_order_cpu_20261011.json. Against658f639,100 alternating
 CPU samples preserve observations and plans:300-node H2D/PREPARE planning
 means change1.760→1.732ms and1.664→1.647ms;four-node means change
 87.01→85.98 and66.28→65.13 microseconds. Unchanged phases remain noise.
-This modest CPU reduction is not throughput proof and is not included in
-the running frozen V21 or the registered658f639 V22 checkout.
+This modest CPU reduction is not throughput proof. It is not part of frozen V21
+and is now included in the updated registereded974d2 V22 checkout.
 
 The latest independent-wait evidence makes complete-prefix coverage the next
 runtime validation priority. Keep v25_v21_prefetch_gap_attribution_20261011.json:

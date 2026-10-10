@@ -3,7 +3,7 @@
   "source_audit": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/prefetch_lifecycle.json",
   "source_audit_sha256": "73839a4c339c95df4efae3555219b5c04074cffc961959cc8ca02f299444756b",
   "live_revision": "597688c62aabc9667484aefe315664a447fea9bb",
-  "queued_revision": "658f6390126148b1df76d5f4b0ce7c19e1dacd6f",
+  "queued_revision": "ed974d2e4f29ea29b09d6f3588d950e759b74b81",
   "predictive_workflow_outcomes": {
     "completed": 155,
     "incomplete": 1
