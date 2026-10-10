@@ -91,6 +91,19 @@ native。登记后的目标checkout不再编辑，文档及回执在隔离工作
 提交。下一轮仍以真实提前FULL复用、恢复消费和繁忙窗口吞吐/JCT
 验收，不能把等待中的登记当作已完成GPU验证。
 
+新阶段审计保存在v25_v21_capacity_handoff_progress_20261011.json，
+带原始审计路径及SHA256。352个真实动态child累计释放设备
+FULL113.907GB/Mamba117.188GB；186个parent首次服务中183个
+可关联到先前child设备释放。最后child的scheduler RETURN观测到
+parent首个观测完成GPU batch的P50/P90为209.57/496.53ms，
+原生入队到该batch为169.05/501.93ms，最大仍约18.906秒。
+独立完成边界前启动并复用的FULL为JOIN1.419GB（91事件）、
+tool2.530GB（84事件）；99.782GB需求handoff复用另列。
+只有23条JOIN节点动作先于server EOS提交，不能把这些边界前
+动作全部解释为模型尚未结束时的预测。累积释放不等于同时空闲
+或独占交接，完成batch也不是kernel启动时间；这份局部证据仍
+不能证明native相对吞吐提高或等待中的V22修复已在GPU上有效。
+
 新的独立等待事件审计进一步明确覆盖缺口，证据保存在
 v25_v21_prefetch_gap_attribution_20261011.json。工具等待中
 1105个事件曾观察到正FULL恢复计划，关联后续原生FULL Host

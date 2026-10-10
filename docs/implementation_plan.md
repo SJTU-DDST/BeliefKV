@@ -96,6 +96,18 @@ and postprocessing complete, the coordinator deploys exactly the registered
 revision and runs predictive first, then cold native. Waiting registration is
 not completed GPU validation or achievement of the broad performance goal.
 
+Keep v25_v21_capacity_handoff_progress_20261011.json with the source audit
+path and SHA256. Its 352 confirmed dynamic children release cumulative device
+FULL113.907GB and Mamba117.188GB. Of186 observed parent services,183 follow
+linked device release. Last child scheduler RETURN observation to first observed
+completed parent batch P50/P90 is209.57/496.53ms; request queue to that batch is
+169.05/501.93ms, with an18.906s maximum. Independent early-and-reused FULL is
+1.419GB from91 JOIN events and2.530GB from84 tool events;99.782GB reused demand
+handoff FULL stays separate. Only23 JOIN node commands precede server EOS.
+These are partial lifecycle associations, not simultaneous free capacity,
+exclusive page ownership, exact kernel-start times or native-relative savings.
+The queued V22 changes are not deployed in this snapshot.
+
 The latest independent-wait evidence makes complete-prefix coverage the next
 runtime validation priority. Keep v25_v21_prefetch_gap_attribution_20261011.json:
 4433 tool waits observed node ancestry exceeds bound and are associated with

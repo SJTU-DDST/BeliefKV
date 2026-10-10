@@ -1,0 +1,68 @@
+{
+  "scope": "partial running V21 evidence; not a completed native-relative comparison",
+  "source_audit": "/home/longhao/experiment/BeliefKV/experiments/reports/v25_v21_capacity_handoff_refresh_20261011.json",
+  "source_audit_sha256": "7bc0f8b34f33e027cb332386cabdc08c1359fddc18460d90157bfe73acc11941",
+  "live_revision": "597688c62aabc9667484aefe315664a447fea9bb",
+  "queued_revision": "658f6390126148b1df76d5f4b0ce7c19e1dacd6f",
+  "confirmed_dynamic_children": 352,
+  "dynamic_child_cumulative_device_release_bytes": {
+    "full": 113907384320,
+    "mamba": 117188198400
+  },
+  "dynamic_child_cumulative_host_release_bytes": {
+    "full": 50917806080,
+    "mamba": 53958082560
+  },
+  "parent_first_observed_completed_batches": 186,
+  "parent_services_after_linked_device_release": 183,
+  "last_child_return_observation_to_parent_completed_batch_ms": {
+    "count": 186,
+    "p50": 209.568603515625,
+    "p90": 496.5311279296875,
+    "max": 18904.607666015625
+  },
+  "parent_request_queue_to_completed_batch_ms": {
+    "count": 186,
+    "p50": 169.05482998117805,
+    "p90": 501.93176651373506,
+    "max": 18905.920029617846
+  },
+  "restore_lookahead_records": 43,
+  "parent_services_after_linked_restore_lookahead": 43,
+  "independent_early_reused_full": {
+    "join": {
+      "observed_wait_events": 186,
+      "events_with_early_reused_full": 91,
+      "early_started_and_reused_full_bytes": 1418731520
+    },
+    "tool": {
+      "observed_wait_events": 11810,
+      "events_with_early_reused_full": 84,
+      "early_started_and_reused_full_bytes": 2529935360
+    }
+  },
+  "demand_handoff_verified_reused_full_bytes": 99782062080,
+  "node_command_ack_to_first_service_ms": {
+    "join": {
+      "count": 189,
+      "p50": 294.96044921875,
+      "p90": 1442.0663574218802,
+      "max": 24730.1455078125
+    },
+    "tool": {
+      "count": 401,
+      "p50": 363.911376953125,
+      "p90": 922.460205078125,
+      "max": 12353.883544921875
+    }
+  },
+  "join_node_commands_submitted_before_server_eos": 23,
+  "semantics": [
+    "Child totals include only explicitly identified dynamic subagents; internal summary calls remain separate in the source audit.",
+    "Cumulative allocator releases are neither simultaneously free capacity nor pages exclusively handed to the parent.",
+    "The parent service timestamp is the first observed completed GPU batch, not kernel start. RETURN observation uses the scheduler clock.",
+    "Early reuse requires controller submission before the actual completion boundary and FULL reuse by the linked next request; it does not prove submission before model EOS.",
+    "Demand handoff is separately reported and never counted as predictive prefetch.",
+    "The queued revision's capacity-blocked retry, complete-prefix coverage and CPU reductions are not deployed in this snapshot."
+  ]
+}
