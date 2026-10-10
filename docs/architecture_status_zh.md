@@ -53,6 +53,18 @@ v32_writer_timing_cpu_20261011.json；该CPU夹具不包含实际
 队列、文件I/O、前缀处理或并行scheduler，不是GPU收益证据。
 本项计时已进入87370d3的冻结登记；运行中的V21仍为原版本。
 
+隔离工作区补齐scripts/analyze_busy_context_control.py的writer窗口
+分析：原生writer快照随decode证据读取，opportunity writer随控制
+快照读取，均按各自snapshot_ts_ms取累计差值，不能沿用可能在
+队列中延迟的producer时间。报告实际样本数、thread CPU和墙钟、
+边界行SHA256及快照滞后；不乘64估算全量成本，不把累计最大值
+当作窗口最大值，未采集或窗口不完整明确标为不可用。12项窗口/
+writer检查通过，V21真实600–900秒重算的decode、控制计时和
+cohort结果与原证据完全相同，三份writer证据均为未采集。保存
+v34_busy_writer_analysis_validation_20261011.json。此项是离线分析，
+未修改已冻结08b804f；V22采到完整窗口后从隔离工作区运行，
+用于定位残余服务成本，不是CPU归因或GPU性能改善证据。
+
 结束的V21 predictive工具触发窗口诊断已按修正后的轮次重算，
 脚本为scripts/audit_tool_forecast_windows.py，当前紧凑证据为
 v33_v21_tool_forecast_epoch_bound_20261011.json；v31旧口径及

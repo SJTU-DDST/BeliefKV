@@ -58,6 +58,20 @@ actual queue, disk, prefix processing and concurrent scheduler work; it is not
 GPU performance evidence. This instrumentation is registered in the frozen
 87370d3 target; the running V21 retains its original version.
 
+Extend scripts/analyze_busy_context_control.py with background-writer window
+analysis, consuming native snapshots during the decode scan and opportunity
+snapshots during the control scan. Difference on each writer's snapshot_ts_ms,
+not its potentially delayed producer timestamp. Retain measured sample counts,
+thread CPU/wall totals, exact boundary-row hashes and snapshot lag. Do not
+multiply samples by64, use cumulative maxima as window maxima or report absent/
+incomplete collection as zero cost. The12 window/writer checks pass. Recompute
+V21's real600–900s window: all original decode geometry, control and cohort
+metrics remain identical; all three writer profiles are explicitly uncollected.
+Keep v34_busy_writer_analysis_validation_20261011.json. This is offline analysis,
+not a change to frozen08b804f. Run from the isolated follow-up after V22 collects
+complete windows; this preparation is neither measured writer attribution nor
+GPU performance improvement.
+
 Keep scripts/audit_tool_forecast_windows.py and the corrected compact
 v33_v21_tool_forecast_epoch_bound_20261011.json. Preserve v31 and the original
 audit as historical evidence. Store detailed per-round evidence with the closed

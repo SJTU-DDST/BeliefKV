@@ -14,6 +14,85 @@ from statistics import mean, median
 from zoneinfo import ZoneInfo
 
 
+class WriterTimingWindow:
+    """Difference processing samples on the writer clock, not producer timestamps."""
+
+    def __init__(self, begin: float, end: float) -> None:
+        self.begin, self.end = begin, end
+        self.boundaries: list[tuple[dict, bytes] | None] = [None, None]
+        self.collected = False
+        self.covered = False
+
+    def observe(self, timing: dict | None, line: bytes) -> None:
+        if timing is None:
+            return
+        self.collected = True
+        timestamp = timing["snapshot_ts_ms"]
+        if timestamp > self.end:
+            self.covered = True
+            return
+        if timestamp <= self.begin:
+            self.boundaries[0] = timing, line
+        self.boundaries[1] = timing, line
+
+    def summary(self) -> dict:
+        if not self.collected:
+            return {"available": False, "reason": "writer_timing_not_collected"}
+        if not self.covered or any(boundary is None for boundary in self.boundaries):
+            return {"available": False, "reason": "writer_window_not_fully_observed"}
+        lower, upper = (boundary[0] for boundary in self.boundaries)
+        elapsed = upper["snapshot_ts_ms"] - lower["snapshot_ts_ms"]
+        if elapsed <= 0:
+            return {"available": False, "reason": "no_writer_snapshot_inside_window"}
+        for field in ("schema_version", "sample_every", "cpu_clock", "wall_clock"):
+            if lower[field] != upper[field]:
+                raise ValueError(f"writer timing changed within the window: {field}")
+        categories = {}
+        for name in lower["categories"].keys() | upper["categories"].keys():
+            before = lower["categories"].get(name, {})
+            after = upper["categories"].get(name, {})
+            delta = {
+                metric: after.get(metric, 0) - before.get(metric, 0)
+                for metric in (
+                    "records_seen", "samples", "sampled_cpu_ms", "sampled_wall_ms",
+                )
+            }
+            if any(value < 0 for value in delta.values()):
+                raise ValueError(f"writer timing counters reset within the window: {name}")
+            samples = delta["samples"]
+            categories[name] = {
+                **delta,
+                "mean_sample_cpu_ms": delta["sampled_cpu_ms"] / samples if samples else None,
+                "mean_sample_wall_ms": delta["sampled_wall_ms"] / samples if samples else None,
+            }
+        return {
+            "available": True,
+            "sample_every": upper["sample_every"],
+            "cpu_clock": upper["cpu_clock"], "wall_clock": upper["wall_clock"],
+            "boundary_snapshot_ts_ms": [
+                boundary[0]["snapshot_ts_ms"] for boundary in self.boundaries
+            ],
+            "raw_boundary_line_sha256": [
+                hashlib.sha256(boundary[1]).hexdigest() for boundary in self.boundaries
+            ],
+            "observed_duration_ms": elapsed,
+            "begin_snapshot_lag_ms": self.begin - lower["snapshot_ts_ms"],
+            "end_snapshot_lag_ms": self.end - upper["snapshot_ts_ms"],
+            "sampled_cpu_ms": sum(values["sampled_cpu_ms"] for values in categories.values()),
+            "sampled_wall_ms": sum(values["sampled_wall_ms"] for values in categories.values()),
+            "categories": dict(sorted(
+                categories.items(), key=lambda item: (-item[1]["sampled_cpu_ms"], item[0]),
+            )),
+            "semantics": (
+                "Measured processing samples completed between writer snapshots. "
+                "Producer timestamps, queue waiting and status publication are excluded. "
+                "Samples may span a boundary; cumulative maxima are not window maxima. "
+                "No multiplication by the sampling interval, full-window cost, "
+                "GIL attribution, GPU stall or JCT saving is inferred."
+            ),
+        }
+
+
 def monitor_window(arm: Path, start: float, end: float, timezone: ZoneInfo) -> dict:
     paths = list(arm.glob("client_*/gpu_samples.csv"))
     if len(paths) != 1:
@@ -49,18 +128,26 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
     groups = defaultdict(list)
     prefix, bytes_read = hashlib.sha256(), 0
     covered = False
+    writer = WriterTimingWindow(begin, end)
     with path.open("rb") as stream:
         for line in stream:
             if not line.endswith(b"\n"):
                 break
             prefix.update(line)
             bytes_read += len(line)
+            if b'"background_writer_timing"' in line:
+                writer.observe(json.loads(line)["timing"], line)
+                if covered and writer.covered:
+                    break
+                continue
             if b'"gpu_service_sample"' not in line:
                 continue
             row = json.loads(line)
             if row["complete_ts_ms"] >= end:
                 covered = True
-                break
+                if not writer.collected or writer.covered:
+                    break
+                continue
             if row["complete_ts_ms"] < begin or row["phase"] != "decode":
                 continue
             observed = [
@@ -87,6 +174,7 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
         "sequence_tokens_per_batch_sum_mean": mean(sums),
         "worker_decode_duration_mean_ms": mean(durations),
         "worker_decode_duration_median_ms": median(durations),
+        "background_writer_timing": writer.summary(),
         "time_weighted_mean_request_sequence_tokens": (
             sum(average * duration for average, duration in batches) / sum(durations)
         ),
@@ -103,6 +191,7 @@ def control_profile(arm: Path, begin: float, end: float) -> dict:
     boundary, selected_lines = [None, None], [None, None]
     prefix, bytes_read = hashlib.sha256(), 0
     covered = False
+    writer = WriterTimingWindow(begin, end)
     with path.open("rb") as stream:
         for line in stream:
             if not line.endswith(b"\n"):
@@ -112,9 +201,12 @@ def control_profile(arm: Path, begin: float, end: float) -> dict:
             if b'"admission_runtime_state"' not in line:
                 continue
             state = json.loads(line)
+            writer.observe(state.get("opportunity_writer_timing"), line)
             if state["ts_ms"] > end:
                 covered = True
-                break
+                if not writer.collected or writer.covered:
+                    break
+                continue
             index = 0 if state["ts_ms"] <= begin else 1
             boundary[index], selected_lines[index] = state, line
     if not covered or any(state is None for state in boundary):
@@ -133,6 +225,7 @@ def control_profile(arm: Path, begin: float, end: float) -> dict:
         "raw_boundary_line_sha256": [hashlib.sha256(line).hexdigest() for line in selected_lines],
         "observed_duration_ms": boundary[1]["ts_ms"] - boundary[0]["ts_ms"],
         "summed_python_self_ms": sum(item["self_ms"] for item in phases.values()),
+        "background_writer_timing": writer.summary(),
         "phases": dict(sorted(phases.items(), key=lambda item: item[1]["self_ms"], reverse=True)),
     }
 
@@ -158,6 +251,7 @@ def main() -> None:
             "Cohorts match batch size and a 2048-token bin of batch-mean context, not exact demand.",
             "Worker intervals include scheduler processing and are not CUDA kernel timings.",
             "Control counters use preceding snapshots; exclusive Python wall time is not removable JCT.",
+            "Writer CPU/wall differences use their own snapshot clocks and measured samples only.",
         ],
     }
     for name in ("predictive_h2d", "native"):
