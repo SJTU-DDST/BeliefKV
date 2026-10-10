@@ -64,7 +64,7 @@ def predict_tool_wait_batch(
     items: tuple[tuple[PrefillCandidateKey, LocalFrontierFeatures, float], ...],
     *,
     model: FrontierBeliefModel | None = None,
-) -> tuple[tuple[PrefillCandidateKey, float, float, float, float], ...]:
+) -> tuple[tuple[object, ...], ...]:
     model = model or _MODEL
     if model is None:
         raise RuntimeError("tool-wait predictor is not loaded")
@@ -100,6 +100,7 @@ def predict_tool_wait_batch(
             and quantiles[0] <= quantiles[1] <= quantiles[2]
         ):
             curve = getattr(prediction, "operational_timing_curve", None)
+            probabilities = ()
             if curve is not None and curve.support_level != "unavailable":
                 probabilities = tuple(
                     (float(tau), float(prediction.action_timing(
@@ -107,6 +108,22 @@ def predict_tool_wait_batch(
                     ).favorable_probability))
                     for tau in curve.tau_ms
                 )
+            if wait.support_detail in {
+                "same_input_completed", "same_failed_input_completed",
+                "completed_project_command",
+            }:
+                # The generic operational curve has no completed-command
+                # history inputs; preserve the history-conditioned residual head.
+                residual_mass = tuple(zip(
+                    wait.residual_duration.values,
+                    wait.residual_duration.probability_mass,
+                ))
+                observed = revision + features.state_elapsed_ms
+                results.append((
+                    key, *quantiles, revision, probabilities, observed,
+                    residual_mass, wait.support_detail,
+                ))
+            elif probabilities:
                 observed = revision + features.state_elapsed_ms
                 results.append((key, *quantiles, revision, probabilities, observed))
             else:
@@ -384,7 +401,7 @@ class NativePredictorWorker:
             hints = []
             for value in values:
                 key, p10, p50, p90, revision = value[:5]
-                observed = float(value[6]) if len(value) == 7 else issued
+                observed = float(value[6]) if len(value) >= 7 else issued
                 hints.append(NativeToolWaitHint(
                     key=key,
                     wait_p10_ms=p10,
@@ -395,6 +412,8 @@ class NativePredictorWorker:
                     predictor_sha256=self.predictor_sha256,
                     invocation_revision_ts_ms=revision,
                     release_cdf=value[5] if len(value) >= 6 else (),
+                    residual_duration_mass=value[7] if len(value) >= 8 else (),
+                    residual_support_detail=value[8] if len(value) >= 9 else None,
                 ))
             return tuple(hints)
         return tuple(

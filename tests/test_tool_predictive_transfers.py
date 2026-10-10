@@ -136,6 +136,50 @@ def test_conditional_quantiles_and_cdf_stay_consistent_after_old_median():
     assert surviving.release_probability_within(remaining, now_ms=1500.) == pytest.approx(.5)
 
 
+def test_history_wait_conditions_on_live_survivors_after_its_median():
+    runtime, hint = tool_runtime()
+    history = replace(
+        hint, issued_monotonic_ms=1000., expires_monotonic_ms=6000.,
+        release_cdf=((1000., .1), (10000., .9)),
+        residual_duration_mass=((200., .1), (250., .79), (300., .11)),
+        residual_support_detail="same_input_completed",
+    )
+    assert history.remaining_quantile(.5, now_ms=1225.) == pytest.approx(25.)
+    assert history.release_probability_within(25., now_ms=1225.) == pytest.approx(.79 / .9)
+    assert history.remaining_quantile(.5, now_ms=1251.) == pytest.approx(49.)
+    assert history.release_probability_within(48., now_ms=1251.) == 0.
+    assert history.release_probability_within(49., now_ms=1251.) == 1.
+    assert history.remaining_quantile(.5, now_ms=1300.) is None
+    assert history.release_probability_within(500., now_ms=1300.) is None
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.3):
+        assert not runtime._tool_prefetch_ready(history)
+    runtime.close()
+
+
+def test_history_wait_drives_tool_dispatch_before_the_completion_boundary():
+    runtime, hint = tool_runtime()
+    now_ms = time.monotonic() * 1000.
+    hint = replace(
+        hint, issued_monotonic_ms=now_ms,
+        release_cdf=((1000., .1), (10000., .9)),
+        residual_duration_mass=((200., .1), (250., .79), (300., .11)),
+        residual_support_detail="same_input_completed",
+    )
+    runtime.tool_wait_hints[hint.key.context_id] = hint
+    step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
+    opportunity = NS(step=step, fits_current_free_lists=True)
+    with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity), \
+         patch.object(runtime, "_h2d_start_window", return_value=TransferStartWindow(
+             200., 0., 500.,
+         )), patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step), \
+         patch.object(runtime, "issue_prefetch_gpu_step", return_value="cmd") as issue:
+        runtime.dispatch_tool_prefetch()
+        issue.assert_called_once()
+        assert runtime.graph.invocations["tool"].state is InvocationState.WAIT_TOOL
+        assert runtime.counts["tool_prefetch_issued"] == 1
+    runtime.close()
+
+
 def test_long_wait_and_prefetch_never_both_true_for_surviving_curve():
     runtime, hint = tool_runtime()
     distribution = NativeToolWaitHint(

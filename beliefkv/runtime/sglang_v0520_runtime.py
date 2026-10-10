@@ -2884,10 +2884,16 @@ class NativeAdmissionRuntime:
                 "context_id": key.context_id, "context_epoch": key.context_epoch,
                 "p10_ms": hint.wait_p10_ms, "p50_ms": hint.wait_p50_ms,
                 "p90_ms": hint.wait_p90_ms, "release_cdf": hint.release_cdf,
+                "residual_duration_mass": hint.residual_duration_mass,
+                "residual_support_detail": hint.residual_support_detail,
                 "conditional_p50_ms": hint.remaining_quantile(
                     .5, now_ms=time.monotonic() * 1000,
                 ),
-                "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile",
+                "timing_policy": (
+                    "survival_conditioned_completed_history"
+                    if hint.residual_duration_mass
+                    else "survival_conditioned_cdf_or_unexpired_quantile"
+                ),
             })
 
     def _live_join_hint(self, hint: NativeJoinWaitHint) -> bool:

@@ -16,6 +16,7 @@ from beliefkv.predictor.structured_frontier import (
     WaitBelief,
     WaitBeliefKind,
 )
+from beliefkv.predictor.action_frontier import ActionTimingCurve
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_prediction import (
     MAX_TOOL_WAIT_MS,
@@ -230,6 +231,74 @@ def test_predict_tool_wait_batch_keeps_new_child_class_head_separate() -> None:
     assert len(hints) == 2
     assert hints[0][2] < 500
     assert hints[1][2] > 2000
+
+
+@pytest.mark.parametrize("support_detail", (
+    "same_input_completed", "same_failed_input_completed", "completed_project_command",
+))
+def test_completed_history_wait_survives_the_generic_curve_and_worker_latency(
+    fake_context, support_detail,
+):
+    class Model:
+        def predict(self, features):
+            return NS(
+                calibration_coverage=.9, head_support={"tool_wait": "backoff"},
+                ood_reasons=(),
+                wait_belief=WaitBelief(
+                    WaitBeliefKind.TOOL,
+                    EmpiricalDistribution((200., 250., 300.), (.1, .79, .11), 1.),
+                    support_level="backoff", support_detail=support_detail,
+                ),
+                operational_timing_curve=ActionTimingCurve(
+                    (1000., 10000.), (.1, .9), "pooled", 100.,
+                ),
+                action_timing=lambda action, tau: NS(
+                    favorable_probability=.1 if tau == 1000. else .9,
+                ),
+            )
+
+    features = LocalFrontierFeatures(
+        "wait", "wait_tool", elapsed_wait_ms=9750., state_elapsed_ms=9750.,
+    )
+    values = predict_tool_wait_batch(((key("wait"), features, 1000.),), model=Model())
+    worker = NativePredictorWorker("unused", predictor_sha256="b" * 64)
+    try:
+        worker.submit_tool_wait(((key("wait"), features, 1000.),))
+        worker._output_queue.put_nowait((1, "tool_wait", values))
+        [hint] = worker.poll()
+        assert hint.residual_support_detail == support_detail
+        assert hint.issued_monotonic_ms == 10750.
+        assert hint.expires_monotonic_ms == 15750.
+        assert hint.remaining_quantile(.5, now_ms=10775.) == pytest.approx(225.)
+        assert hint.release_probability_within(225., now_ms=10775.) == pytest.approx(.89)
+        assert hint.release_cdf == ((1000., .1), (10000., .9))
+    finally:
+        worker.close()
+
+
+def test_generic_tool_wait_keeps_operational_curve_without_specific_history():
+    class Model:
+        def predict(self, features):
+            return NS(
+                calibration_coverage=.9, head_support={"tool_wait": "pooled"},
+                ood_reasons=(),
+                wait_belief=WaitBelief(
+                    WaitBeliefKind.TOOL,
+                    EmpiricalDistribution((200., 250., 300.), (.1, .79, .11), 1.),
+                    support_level="backoff", support_detail="pooled",
+                ),
+                operational_timing_curve=ActionTimingCurve(
+                    (1000., 10000.), (.1, .9), "pooled", 100.,
+                ),
+                action_timing=lambda action, tau: NS(
+                    favorable_probability=.1 if tau == 1000. else .9,
+                ),
+            )
+
+    features = LocalFrontierFeatures("wait", "wait_tool", state_elapsed_ms=50.)
+    [value] = predict_tool_wait_batch(((key("wait"), features, 1000.),), model=Model())
+    assert len(value) == 7
+    assert value[5:] == (((1000., .1), (10000., .9)), 1050.)
 
 
 def test_join_prediction_uses_child_completion_not_parent_structural_wait():

@@ -232,6 +232,33 @@ so do not treat permanent retry suppression as the demonstrated parent-tail
 cause or add periodic retries on that assumption. Early tool coverage and
 the actual long JOIN wait remain unresolved.
 
+Preserve the completed-command history residual head through the worker/runtime
+boundary. The former hint preferred an operational CDF that lacked the history
+inputs, replacing same-input, failed-repeat and project-command predictions.
+At9750ms elapsed,10000/15000ms prior durations should produce250/5250ms
+residual P50; the former route produced about41560ms for both. Carry the
+specific residual probability mass and support detail in the hint; condition on
+survival since the original observation, including IPC latency. Exhausted
+support becomes unknown rather than a zero-time completion. Generic history-free
+curves and legacy reply formats remain supported. Record the selected timing
+policy and mass without changing the frozen predictor or physical authority.
+
+Preserve experiments/reports/v20_tool_history_routing_20261010_v2.json:
+11635 independent matched tools and33053 observations. Equal-weight per-tool
+last-second median absolute error is313.43→24.68ms; for actual durations at
+least1000ms it is296.95→127.94ms,with1538 comparable tools of1574 matched.
+First predicted500ms-window entries with actual0--500ms lead increase7→838
+in this long-tool subset. Use online-recorded history and frozen error margins,
+with future TOOL_END only an evaluation label; exclude ambiguous parallel tools
+including unclosed intervals. This fixed-trace routing audit is not heldout
+calibration,physical Host-only opportunity coverage or GPU speedup. Retain
+support-specific groups and do not count short-command forecasts as transfers.
+432 scoped worker/tool/physical/terminal/batch/runtime/lifecycle checks pass.
+Commit this follow-up promptly in isolation. Preserve both V20 arms,then deploy
+the queued changes between pairs and validate predictive-first/native on the
+same version. Continue checking actual capacity,early FULL reuse,busy-window
+throughput,paired JCT and costs to other requests.
+
 ## V19b Harness Context Retirement Integration
 
 The V19 diagnostic snapshot contained authoritative child RETURNs but zero

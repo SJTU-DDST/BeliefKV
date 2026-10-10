@@ -140,6 +140,8 @@ class NativeToolWaitHint:
     predictor_sha256: str
     invocation_revision_ts_ms: float | None = None
     release_cdf: tuple[tuple[float, float], ...] = ()
+    residual_duration_mass: tuple[tuple[float, float], ...] = ()
+    residual_support_detail: str | None = None
 
     def live(self, key: PrefillCandidateKey, *, now_ms: float) -> bool:
         return self.key == key and self.issued_monotonic_ms <= now_ms < self.expires_monotonic_ms
@@ -155,11 +157,29 @@ class NativeToolWaitHint:
             tuple(point[1] for point in self.release_cdf), "pooled", 0.,
         )
 
+    @cached_property
+    def _residual_distribution(self):
+        if not self.residual_duration_mass:
+            return None
+        from beliefkv.predictor.structured_frontier import EmpiricalDistribution
+
+        return EmpiricalDistribution(
+            tuple(point[0] for point in self.residual_duration_mass),
+            tuple(point[1] for point in self.residual_duration_mass), 1.,
+        )
+
     def release_probability_within(self, horizon_ms: float, *, now_ms: float) -> float | None:
+        age = max(0., now_ms - self.issued_monotonic_ms)
+        distribution = self._residual_distribution
+        if distribution is not None:
+            surviving = distribution.probability_greater_than(age)
+            if surviving <= 1e-9:
+                return None
+            future = distribution.probability_greater_than(age + max(0., horizon_ms))
+            return max(0., min(1., (surviving - future) / surviving))
         curve = self._release_curve
         if curve is None:
             return None
-        age = max(0., now_ms - self.issued_monotonic_ms)
         past = curve.release_within(age)
         if past >= 1. - 1e-9:
             return None
@@ -171,6 +191,13 @@ class NativeToolWaitHint:
         if not math.isfinite(quantile) or not 0 < quantile < 1:
             raise ValueError("tool timing quantile must be strictly between zero and one")
         age = max(0., now_ms - self.issued_monotonic_ms)
+        distribution = self._residual_distribution
+        if distribution is not None:
+            surviving = distribution.probability_greater_than(age)
+            if surviving <= 1e-9:
+                return None
+            finish = distribution.quantile(1. - (1. - quantile) * surviving)
+            return max(0., finish - age)
         curve = self._release_curve
         if curve is not None:
             past = curve.release_within(age)
