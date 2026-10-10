@@ -66,6 +66,16 @@ V16停止审计JOIN/tool提前且复用FULL为127.96MB，handoff复用
 审计用于下轮双侧，不能给当前旧trace补造不存在的发送时间。
 报告：`experiments/reports/v16_native_predictor_poll_cpu_20261010.json`。
 
+恢复租约的多回执请求查找只在本次刷新共享扫描，按context分组后
+仍逐项核对workflow、invocation、session/代际、epoch和下一请求；
+已有等待session证明时省去物理登记可见队列扫描。250项相关检查
+通过。156 workflow、16回执夹具的线程CPU无consumer/有consumer
+为232.13→67.88/342.54→193.74微秒，扫描16→1；单回执基本
+不变，已就绪16回执慢0.58微秒，不能只保留改善样本。报告为
+`experiments/reports/v16_restore_lease_matching_cpu_20261010.json`，
+保留源码SHA256和实际导入路径。enqueue为stub，没有CUDA、DMA
+或端到端证据，修订仅在隔离分支提交，不进入V16b任一侧。
+
 ## 当前执行状态
 
 后续新实验统一先运行predictive_h2d，再运行native；与reactive

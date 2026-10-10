@@ -97,6 +97,20 @@ attempts. Keep request/SSE content unchanged;56 related checks pass. Report:
 Use the new boundaries in the next frozen pair to identify the actual costly
 request stage before changing frontend or scheduling policy.
 
+Share one visible-request scan across extent receipts during one lease refresh,
+grouped lazily by context. Retain exact workflow/invocation/session/generation/
+epoch and next-request checks; do not cache visibility across calls. Skip the
+physical-registration visible scan when the existing waiting-session proof
+already establishes admissibility.250 related checks pass. With156 workflows
+and16 receipts, mean thread CPU falls232.13->67.88us without a next consumer
+and342.54->193.74us with one (70.8%/43.4%); queue scans fall16->1.
+The single-receipt path is effectively unchanged; already-ready16-receipt
+refresh is0.58us slower (1.6%). Keep the regression and full distributions.
+Outputs and lease identity/validity agree. Report:
+`experiments/reports/v16_restore_lease_matching_cpu_20261010.json`.
+Native enqueue is stubbed; this is not GPU, DMA or throughput evidence.
+Keep this change isolated from both frozen V16b arms.
+
 ## Current Objective And V15 Comparison
 
 Keep the fixed workload, model, capacity and arrival schedule. Continue until

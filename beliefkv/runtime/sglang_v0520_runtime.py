@@ -2901,7 +2901,7 @@ class NativeAdmissionRuntime:
             and invocation is not None
             and invocation.state.value in ("wait_tool", "wait_child", "wait_join")
         )
-        visible = any(
+        visible = not session_waiting and any(
             key.context_id == expected.context_id
             and key.context_epoch == expected.context_epoch
             and (
@@ -4766,7 +4766,9 @@ class NativeAdmissionRuntime:
         if not self._prefetch_service_leases:
             return
         now = time.monotonic()
-        for command, lease in tuple(self._prefetch_service_leases.items()):
+        leases = tuple(self._prefetch_service_leases.items())
+        visible_by_context = None
+        for command, lease in leases:
             if context_id is not None and lease.key.context_id != context_id:
                 continue
             invocation = self.graph.invocations.get(lease.key.invocation_id)
@@ -4795,10 +4797,17 @@ class NativeAdmissionRuntime:
                         "context_epoch": lease.key.context_epoch,
                         "submission_grace_ms": (lease.expires_at - now) * 1000.,
                     })
-            if (
-                not lease.demand_ready
-                and now < lease.expires_at
-                and any(
+            if not lease.demand_ready and now < lease.expires_at:
+                if len(leases) > 1 and visible_by_context is None:
+                    # A prefix burst has several receipts for the same next consumer.
+                    visible_by_context = {
+                        item.key.context_id: [] for _, item in leases
+                        if context_id is None or item.key.context_id == context_id
+                    }
+                    for key in self.visible.values():
+                        if key.context_id in visible_by_context:
+                            visible_by_context[key.context_id].append(key)
+                if any(
                     key.context_id == lease.key.context_id
                     and key.invocation_id == lease.key.invocation_id
                     and key.root_workflow_id == lease.key.root_workflow_id
@@ -4808,30 +4817,32 @@ class NativeAdmissionRuntime:
                         lease.key.context_epoch, lease.key.context_epoch + 1,
                     )
                     and key.request_id != lease.key.request_id
-                    for key in self.visible.values()
-                )
-            ):
-                lease = replace(
-                    lease, demand_ready=True,
-                    expires_at=(
-                        lease.acknowledged_at + 10.
-                        if lease.lock_params is not None else lease.expires_at
-                    ),
-                )
-                self._prefetch_service_leases[command] = lease
-                self.counts["prefetch_residency_demand_ready"] += 1
-                if self._opportunity_writer is not None:
-                    self._opportunity_writer.record({
-                        "event": "prefetch_demand_submitted",
-                        "ts_ms": time.time() * 1000, "command_id": command,
-                        "source": lease.source, "context_id": lease.key.context_id,
-                        "ready_to_submit_ms": (
-                            (now - lease.reentry_ready_at) * 1000.
-                            if lease.reentry_ready_at is not None else None
+                    for key in (
+                        visible_by_context.get(lease.key.context_id, ())
+                        if visible_by_context is not None else self.visible.values()
+                    )
+                ):
+                    lease = replace(
+                        lease, demand_ready=True,
+                        expires_at=(
+                            lease.acknowledged_at + 10.
+                            if lease.lock_params is not None else lease.expires_at
                         ),
-                        "ack_to_submit_ms": (now - lease.acknowledged_at) * 1000.,
-                        "remaining_lease_ms": (lease.expires_at - now) * 1000.,
-                    })
+                    )
+                    self._prefetch_service_leases[command] = lease
+                    self.counts["prefetch_residency_demand_ready"] += 1
+                    if self._opportunity_writer is not None:
+                        self._opportunity_writer.record({
+                            "event": "prefetch_demand_submitted",
+                            "ts_ms": time.time() * 1000, "command_id": command,
+                            "source": lease.source, "context_id": lease.key.context_id,
+                            "ready_to_submit_ms": (
+                                (now - lease.reentry_ready_at) * 1000.
+                                if lease.reentry_ready_at is not None else None
+                            ),
+                            "ack_to_submit_ms": (now - lease.acknowledged_at) * 1000.,
+                            "remaining_lease_ms": (lease.expires_at - now) * 1000.,
+                        })
             reason = self._prefetch_lease_invalid_reason(lease)
             if reason is not None:
                 self._release_prefetch_service_lease(command, reason)

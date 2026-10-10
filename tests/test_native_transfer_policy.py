@@ -366,6 +366,35 @@ def test_same_request_tool_progress_keeps_restore_until_next_request_consumes_it
     runtime._native_cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
 
 
+def test_burst_consumers_include_all_visible_requests_with_exact_session_identity():
+    from dataclasses import replace
+
+    runtime, _, _, action, *_ = locked_runtime()
+    lease = runtime._prefetch_service_leases[action.command_id]
+    runtime._prefetch_service_leases["second-extent"] = replace(
+        lease, command_id="second-extent", lock_params=None, protected_bytes=0,
+    )
+    mismatches = {
+        "wrong-generation": {"session_generation": 2},
+        "wrong-session": {"session_id": "another-session"},
+        "wrong-epoch": {"context_epoch": lease.key.context_epoch + 2},
+        "wrong-workflow": {"root_workflow_id": "another-workflow"},
+        "wrong-invocation": {"invocation_id": "another-agent"},
+        "wrong-context": {"context_id": "another-context"},
+    }
+    for rid, fields in mismatches.items():
+        runtime.visible[rid] = replace(lease.key, request_id=rid, **fields)
+    runtime._refresh_prefetch_service_leases(context_id=lease.key.context_id)
+    assert all(not item.demand_ready for item in runtime._prefetch_service_leases.values())
+    runtime.visible["matching-request"] = replace(
+        lease.key, request_id="matching-request", context_epoch=lease.key.context_epoch + 1,
+    )
+    runtime._refresh_prefetch_service_leases(context_id=lease.key.context_id)
+    assert all(item.demand_ready for item in runtime._prefetch_service_leases.values())
+    assert runtime.counts["prefetch_residency_demand_ready"] == 2
+    runtime.close()
+
+
 def test_dynamic_restore_priority_still_gives_ordinary_demand_a_turn():
     from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
     runtime, *_ = locked_runtime()

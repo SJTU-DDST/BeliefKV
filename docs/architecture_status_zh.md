@@ -91,6 +91,19 @@ V16b主目录冻结于`1a09ada`，规范引擎patch SHA256为
 多次尝试和逆序时钟保留未知；56项相关检查通过。基准报告为
 `experiments/reports/v16_native_predictor_poll_cpu_20261010.json`。
 
+多extent恢复租约在同一次刷新中按context临时分组可见请求，共享
+一次队列扫描；仍逐回执匹配workflow、invocation、session/代际、
+epoch及下一请求身份。已有等待session证明时，物理登记省去无用
+的可见请求扫描；没有跨调用缓存请求或驻留。250项相关检查通过。
+156 workflow、16个回执的CPU夹具中，无下一consumer/已有consumer
+的线程CPU均值232.13→67.88/342.54→193.74微秒，下降70.8%/
+43.4%，可见队列扫描16→1。单回执基本不变，已demand-ready的
+16回执约慢0.58微秒（1.6%），退步与全部原始分位数一并保留。
+登记与消费身份、输出和有效性一致。报告
+`experiments/reports/v16_restore_lease_matching_cpu_20261010.json`
+包含实际隔离导入路径和源码SHA256；原生enqueue使用stub，不含
+GPU服务、DMA或吞吐证据。本修订未部署到V16b任一侧。
+
 ## 当前目标与 v15 最终对照
 
 当前目标是在固定workload、模型、容量及到达表下，使predictive

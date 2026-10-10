@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 from collections import Counter
+from dataclasses import replace
 import hashlib
 import json
 from pathlib import Path
@@ -405,6 +406,93 @@ def terminal_case(baseline, *, depth, anchor_count, iterations):
             runtime.close()
 
 
+def lease_case(baseline, *, workflows, lease_count, matching, iterations,
+               already_demand_ready=False):
+    class CountedVisible(dict):
+        def values(self):
+            self.scans += 1
+            return super().values()
+
+    variants = {}
+    for name, cls in (("baseline", baseline), ("optimized", NativeAdmissionRuntime)):
+        runtime, *_ = fixture(
+            cls, workflows=workflows, depth=2, backed=True,
+            host_full=1_000_000, leases=1,
+        )
+        original = next(iter(runtime._prefetch_service_leases.values()))
+        runtime._prefetch_service_leases = {
+            str(index): replace(original, command_id=str(index))
+            for index in range(lease_count)
+        }
+        runtime.visible = CountedVisible(runtime.visible)
+        runtime.visible["wrong-generation"] = replace(
+            original.key, request_id="wrong-generation", session_generation=2,
+        )
+        if matching:
+            runtime.visible["next-request"] = replace(
+                original.key, request_id="next-request",
+                context_epoch=original.key.context_epoch + 1,
+            )
+        variants[name] = runtime
+    samples = {name: {"wall": [], "thread_cpu": []} for name in variants}
+    scans = {name: 0 for name in variants}
+    canonical = None
+    try:
+        for iteration in range(iterations + 5):
+            names = list(variants)
+            if iteration % 2:
+                names.reverse()
+            evidence = {}
+            for name in names:
+                runtime = variants[name]
+                for command, lease in runtime._prefetch_service_leases.items():
+                    runtime._prefetch_service_leases[command] = replace(
+                        lease, demand_ready=already_demand_ready,
+                    )
+                runtime.visible.scans = 0
+                wall_start = time.perf_counter_ns()
+                cpu_start = time.thread_time_ns()
+                runtime._refresh_prefetch_service_leases()
+                cpu_ms = (time.thread_time_ns() - cpu_start) / 1_000_000
+                wall_ms = (time.perf_counter_ns() - wall_start) / 1_000_000
+                evidence[name] = [
+                    (command, lease.key, lease.demand_ready, lease.reentry_ready_at,
+                     lease.pool_bytes, lease.lock_params)
+                    for command, lease in runtime._prefetch_service_leases.items()
+                ]
+                if len(evidence[name]) != lease_count or any(
+                    item[2] != (matching or already_demand_ready) for item in evidence[name]
+                ):
+                    raise AssertionError("changed lease validity or next consumer")
+                if iteration >= 5:
+                    samples[name]["wall"].append(wall_ms)
+                    samples[name]["thread_cpu"].append(cpu_ms)
+                    scans[name] += runtime.visible.scans
+            if evidence["baseline"] != evidence["optimized"]:
+                raise AssertionError("changed per-extent lease evidence")
+            canonical = repr(evidence["optimized"])
+        costs = {
+            name: {clock: distribution(values) for clock, values in clocks.items()}
+            for name, clocks in samples.items()
+        }
+        return {
+            "workflows": workflows, "restore_extent_receipts": lease_count,
+            "matching_next_request": matching, "iterations": iterations,
+            "already_demand_ready": already_demand_ready,
+            "lease_consumer_and_validity_equal": True,
+            "lease_evidence_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
+            "visible_scans": scans, "costs": costs,
+            "mean_reduction": {
+                clock: 1 - costs["optimized"][clock]["mean_ms"]
+                / costs["baseline"][clock]["mean_ms"]
+                for clock in ("wall", "thread_cpu")
+            },
+        }
+    finally:
+        for runtime in variants.values():
+            runtime.close()
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-revision", default="e985d8c")
@@ -413,6 +501,8 @@ def main():
     parser.add_argument("--iterations", type=int, default=40)
     parser.add_argument("--terminal-only", action="store_true",
                         help="Measure read-only terminal samples with overlapping anchors.")
+    parser.add_argument("--lease-only", action="store_true",
+                        help="Measure consumer matching for one- and sixteen-extent restores.")
     parser.add_argument("--force-prepare-probes", action="store_true",
                         help="Measure each PREPARE probe instead of its one-second backoff.")
     parser.add_argument(
@@ -426,6 +516,8 @@ def main():
         raise ValueError("depth 1..64, workflows 4..512 and positive iterations required")
     if args.mamba_ancestor and args.depth < 3:
         raise ValueError("Mamba ancestor fixture requires depth at least three")
+    if args.terminal_only and args.lease_only:
+        raise ValueError("choose one isolated benchmark scope")
     baseline, digests = baseline_runtime(args.baseline_revision)
     imported_sources = {
         path: str(Path(sys.modules[f"beliefkv.runtime.sglang_v0520_{name}"].__file__).resolve())
@@ -446,7 +538,7 @@ def main():
             "path": str(args.service_seed.resolve()), "sha256": digest,
             "sample_count": len(service_samples),
         }
-    cases = [] if args.terminal_only else [
+    cases = [] if args.terminal_only or args.lease_only else [
         measure_case(baseline, workflows=args.workflows, depth=args.depth,
                      iterations=args.iterations, service_samples=service_samples,
                      force_probes=args.force_prepare_probes,
@@ -472,13 +564,22 @@ def main():
         "imported_sources": imported_sources,
         "benchmark_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "service_seed": service_seed,
-        "handoff_identity": None if args.terminal_only else handoff_identity_case(baseline),
+        "handoff_identity": (
+            None if args.terminal_only or args.lease_only else handoff_identity_case(baseline)
+        ),
         "cases": cases,
-        "terminal_cases": [
+        "terminal_cases": [] if args.lease_only else [
             terminal_case(baseline, depth=args.depth, anchor_count=anchors,
                           iterations=args.iterations)
             for anchors in (1, 2, 8)
         ],
+        "lease_cases": [
+            lease_case(baseline, workflows=args.workflows, lease_count=receipts,
+                       matching=matching, iterations=args.iterations,
+                       already_demand_ready=ready)
+            for receipts in (1, 16)
+            for matching, ready in ((False, False), (True, False), (True, True))
+        ] if args.lease_only else [],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2) + "\n")
@@ -497,6 +598,7 @@ def main():
                 "unique_summaries_per_watch", "output_equal", "mean_reduction",
             )
         } for case in report["terminal_cases"]],
+        "lease_cases": report["lease_cases"],
     }, indent=2))
 
 

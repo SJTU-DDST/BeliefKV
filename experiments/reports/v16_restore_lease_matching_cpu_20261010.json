@@ -1,0 +1,333 @@
+{
+  "scope": "same-input CPU fixtures; native enqueue is stubbed, no GPU or throughput claim",
+  "baseline_revision": "ccaccd2",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "eaea82c6f01e7e52ad1206f94cc3d96b50e433986b53724df12429494351ce53",
+    "beliefkv/runtime/sglang_v0520_physical.py": "7a8c712ab8f1876db57871326004a315b7ad0893bcd13fcd92dcc5caa3a8470d",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "0fd264ace84503138824a47820a7347695f1720dbbe1ff146fe5c39c1151b520"
+  },
+  "fixture": "validated static pools and real observer ancestry; sixteen retained workflow rounds",
+  "optimized_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "eaea82c6f01e7e52ad1206f94cc3d96b50e433986b53724df12429494351ce53",
+    "beliefkv/runtime/sglang_v0520_physical.py": "7a8c712ab8f1876db57871326004a315b7ad0893bcd13fcd92dcc5caa3a8470d",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "20ebed8dfd6db9e0f668aaec973bea63940b79c26f348dbb13b289245147f43c"
+  },
+  "imported_sources": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "/home/longhao/experiment/.worktrees/beliefkv-v16-followup-20261010/beliefkv/runtime/sglang_v0520_observer.py",
+    "beliefkv/runtime/sglang_v0520_physical.py": "/home/longhao/experiment/.worktrees/beliefkv-v16-followup-20261010/beliefkv/runtime/sglang_v0520_physical.py",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "/home/longhao/experiment/.worktrees/beliefkv-v16-followup-20261010/beliefkv/runtime/sglang_v0520_runtime.py"
+  },
+  "benchmark_source_sha256": "9e05f4fa380b8afc9456a28d31ba666f82f17a1bb830224719c46188ddc64a2e",
+  "service_seed": null,
+  "handoff_identity": null,
+  "cases": [],
+  "terminal_cases": [],
+  "lease_cases": [
+    {
+      "workflows": 156,
+      "restore_extent_receipts": 1,
+      "matching_next_request": false,
+      "iterations": 5000,
+      "already_demand_ready": false,
+      "lease_consumer_and_validity_equal": true,
+      "lease_evidence_sha256": "d90b1d5a1a3026d5dc7d778c40412cac3ff5d23ed391abee2b20c950926e8ab2",
+      "visible_scans": {
+        "baseline": 5000,
+        "optimized": 5000
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.0167129672,
+            "p50_ms": 0.016592,
+            "p99_ms": 0.020661,
+            "max_ms": 0.02903
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.0160088292,
+            "p50_ms": 0.015902,
+            "p99_ms": 0.019626,
+            "max_ms": 0.028349
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.0167107338,
+            "p50_ms": 0.016585,
+            "p99_ms": 0.020877,
+            "max_ms": 0.027471
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.016020008,
+            "p50_ms": 0.015903,
+            "p99_ms": 0.020198,
+            "max_ms": 0.026755
+          }
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.00013363276390576662,
+        "thread_cpu": -0.0006982896663048077
+      }
+    },
+    {
+      "workflows": 156,
+      "restore_extent_receipts": 1,
+      "matching_next_request": true,
+      "iterations": 5000,
+      "already_demand_ready": false,
+      "lease_consumer_and_validity_equal": true,
+      "lease_evidence_sha256": "360b58cd35a1e6059d6156c04f021ac5d7a6d384647475e5963903338f901be9",
+      "visible_scans": {
+        "baseline": 5000,
+        "optimized": 5000
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.0239997546,
+            "p50_ms": 0.023675,
+            "p99_ms": 0.034741,
+            "max_ms": 0.043422
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.0232830366,
+            "p50_ms": 0.022973,
+            "p99_ms": 0.033783,
+            "max_ms": 0.042599
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.0241356606,
+            "p50_ms": 0.023688,
+            "p99_ms": 0.035119,
+            "max_ms": 0.372357
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.0234237838,
+            "p50_ms": 0.02299,
+            "p99_ms": 0.034182,
+            "max_ms": 0.370934
+          }
+        }
+      },
+      "mean_reduction": {
+        "wall": -0.0056628079022109645,
+        "thread_cpu": -0.006045053418848312
+      }
+    },
+    {
+      "workflows": 156,
+      "restore_extent_receipts": 1,
+      "matching_next_request": true,
+      "iterations": 5000,
+      "already_demand_ready": true,
+      "lease_consumer_and_validity_equal": true,
+      "lease_evidence_sha256": "360b58cd35a1e6059d6156c04f021ac5d7a6d384647475e5963903338f901be9",
+      "visible_scans": {
+        "baseline": 0,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.0056413004,
+            "p50_ms": 0.005627,
+            "p99_ms": 0.006799,
+            "max_ms": 0.011724
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.0049526328,
+            "p50_ms": 0.004934,
+            "p99_ms": 0.006093,
+            "max_ms": 0.010759
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.0056263858,
+            "p50_ms": 0.005574,
+            "p99_ms": 0.006848,
+            "max_ms": 0.012436
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.0049341076,
+            "p50_ms": 0.004881,
+            "p99_ms": 0.006126,
+            "max_ms": 0.010055
+          }
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.0026438230447718425,
+        "thread_cpu": 0.003740475167066548
+      }
+    },
+    {
+      "workflows": 156,
+      "restore_extent_receipts": 16,
+      "matching_next_request": false,
+      "iterations": 5000,
+      "already_demand_ready": false,
+      "lease_consumer_and_validity_equal": true,
+      "lease_evidence_sha256": "3f2be58ab47cdc79a7b8e46de429f4417d206a112c58d4f296f11989ab22e686",
+      "visible_scans": {
+        "baseline": 80000,
+        "optimized": 5000
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.2329385714,
+            "p50_ms": 0.229532,
+            "p99_ms": 0.255579,
+            "max_ms": 1.269647
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.2321253834,
+            "p50_ms": 0.228679,
+            "p99_ms": 0.254377,
+            "max_ms": 1.268652
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.0686570732,
+            "p50_ms": 0.067831,
+            "p99_ms": 0.077006,
+            "max_ms": 0.587363
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.067884375,
+            "p50_ms": 0.067079,
+            "p99_ms": 0.07625,
+            "max_ms": 0.583662
+          }
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.7052567430659532,
+        "thread_cpu": 0.7075529870724169
+      }
+    },
+    {
+      "workflows": 156,
+      "restore_extent_receipts": 16,
+      "matching_next_request": true,
+      "iterations": 5000,
+      "already_demand_ready": false,
+      "lease_consumer_and_validity_equal": true,
+      "lease_evidence_sha256": "c6294150ae56a886143ecc38dfc47b3df17adbd55a7e96af744b4f2be809deae",
+      "visible_scans": {
+        "baseline": 80000,
+        "optimized": 5000
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.3433925808,
+            "p50_ms": 0.354565,
+            "p99_ms": 0.390617,
+            "max_ms": 2.620664
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.3425409258,
+            "p50_ms": 0.353713,
+            "p99_ms": 0.389613,
+            "max_ms": 2.619584
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.1945827672,
+            "p50_ms": 0.194053,
+            "p99_ms": 0.214886,
+            "max_ms": 33.014385
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.1937449482,
+            "p50_ms": 0.193176,
+            "p99_ms": 0.213999,
+            "max_ms": 33.013474
+          }
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.43335186000034864,
+        "thread_cpu": 0.43438890477827985
+      }
+    },
+    {
+      "workflows": 156,
+      "restore_extent_receipts": 16,
+      "matching_next_request": true,
+      "iterations": 5000,
+      "already_demand_ready": true,
+      "lease_consumer_and_validity_equal": true,
+      "lease_evidence_sha256": "c6294150ae56a886143ecc38dfc47b3df17adbd55a7e96af744b4f2be809deae",
+      "visible_scans": {
+        "baseline": 0,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.0366960694,
+            "p50_ms": 0.036373,
+            "p99_ms": 0.043849,
+            "max_ms": 0.160956
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.0361150824,
+            "p50_ms": 0.035822,
+            "p99_ms": 0.043221,
+            "max_ms": 0.057506
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 5000,
+            "mean_ms": 0.037239485,
+            "p50_ms": 0.036973,
+            "p99_ms": 0.044319,
+            "max_ms": 0.070493
+          },
+          "thread_cpu": {
+            "count": 5000,
+            "mean_ms": 0.0366908014,
+            "p50_ms": 0.036421,
+            "p99_ms": 0.043776,
+            "max_ms": 0.069985
+          }
+        }
+      },
+      "mean_reduction": {
+        "wall": -0.014808550585529545,
+        "thread_cpu": -0.01594123456852481
+      }
+    }
+  ]
+}
