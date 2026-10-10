@@ -3,15 +3,16 @@
 Status date: 2026-10-11.
 
 V21 same-version native collection is running; predictive finished with 155
-completed and one incomplete workflow. At 2026-10-11 05:53 CST, the still-waiting
-V22 target was updated to 10e3712 in frozen beliefkv-v29-validated-20261011,
-coordinator PID270524. Environment, canonical native patch and waited process
-identities match the preserved e3ee8ec registration. Keep
-v22_supersession_e3ee8ec_to_10e3712_20261011.json. After the complete V21 pair and
+completed and one incomplete workflow. At 2026-10-11 06:10 CST, the still-waiting
+V22 target was updated to 7a1eb6a in frozen beliefkv-v30-validated-20261011,
+coordinator PID491685. Environment, canonical native patch and waited process
+identities match the preserved 10e3712 registration. Keep
+v22_supersession_10e3712_to_7a1eb6a_20261011.json. After the complete V21 pair and
 postprocessing, automatically deploy this revision, predictive first then cold
-same-version native. The target adds shared first-service input-prefix evidence
-and complete ancestor observation, retaining aged-order inspection reduction and
-same-dispatch tool plan reuse. Waiting registration is not GPU validation;
+same-version native. The target further reduces background prefix writer work,
+retaining shared first-service input-prefix evidence, complete ancestor observation,
+aged-order inspection reduction and same-dispatch tool plan reuse.
+Waiting registration is not GPU validation;
 the broad performance objective remains active.
 
 Reduce background prefix-evidence writer work using direct native integer-array
@@ -31,8 +32,8 @@ speedup evidence. The closed V21 predictive output has44790 context probes
 comparing951763303 common token positions, with21261-token median. Retain its
 source SHA256. These are neither extra useful KV bytes nor avoided JCT. This
 fixture excludes concurrent scheduler work and does not establish GIL contention
-as the cause of the GPU performance gap. Queue the validated reduction for the
-next frozen deployment; preserve the running V21 pair.
+as the cause of the GPU performance gap. The validated reduction is registered
+in the waiting 7a1eb6a target; preserve the running V21 pair.
 
 The isolated follow-up skips resident-order reentry inspection for requests
 already in the ten-second arrival-order aging class. Their residency cannot
@@ -70,7 +71,7 @@ records for4285 requests,3001 with multiple target prefixes. Reported matching
 prefixes total262613488 tokens, including199168503 repeated matching positions
 within the same request. Preserve the source SHA256. These counts are neither
 additional verified reuse bytes nor removable JCT; the fixture excludes writer,
-allocator, DMA and GPU work. The validated follow-up is now registered as 10e3712
+allocator, DMA and GPU work. The validated follow-up is now registered as 7a1eb6a
 in the still-waiting V22 coordinator; V21 and its evidence retain their version.
 
 Keep the reproducible scripts/analyze_busy_context_control.py and
@@ -123,7 +124,7 @@ unrelated caches and all current page/capacity/time/residency checks. Untagged
 native ACKs, invalid receipts, stale sessions, Host-only release and no-capacity
 retries do not trigger invalidation. There is no new decode-loop scan. The261
 terminal/tool/runtime/handoff checks pass. This revision is now included in the
-updated frozen 10e3712 V22 target; waiting registration is not GPU validation.
+updated frozen 7a1eb6a V22 target; waiting registration is not GPU validation.
 
 Reuse only a tool restore plan freshly read during the current dispatch. Refresh
 plans from the short cache or an earlier selection. Preserve the post-event-drain
@@ -134,7 +135,7 @@ v27_tool_dispatch_cpu_20261011.json: 100 alternating CPU samples retain ordered
 bursts and ledger reservations; four/300-node dispatch means change from
 0.858/9.117 to 0.683/6.672 ms. The optimized 300-node maximum remains 19.507 ms.
 This is a CPU planning result, not GPU throughput or end-to-end savings. The
-committed change is now registered in 10e3712; the running V21 remains frozen.
+committed change is now registered in 7a1eb6a; the running V21 remains frozen.
 
 Keep v21_busy_window_same_version_evidence_20261011.json with the original
 comparison SHA256. Both V21 arms completely observe 600–900 s: predictive/native
@@ -186,7 +187,7 @@ second, and measure actual early FULL reuse, parent service wait, protection
 reasons and busy-window throughput. The broad performance objective stays active.
 
 The validated deep-prefix observation reduction is registered in frozen V22
-revision 10e3712, preserving superseded registrations and receipts. Within one closure
+revision 7a1eb6a, preserving superseded registrations and receipts. Within one closure
 read, validate newly encountered native node/component classes once and validate
 the current node's lock/reference counters together. Continue reading identity,
 creation time, lengths, locks, references and pending DMA for every node.
@@ -242,7 +243,7 @@ CPU samples preserve observations and plans:300-node H2D/PREPARE planning
 means change1.760→1.732ms and1.664→1.647ms;four-node means change
 87.01→85.98 and66.28→65.13 microseconds. Unchanged phases remain noise.
 This modest CPU reduction is not throughput proof. It is not part of frozen V21
-and is now included in the updated registered 10e3712 V22 checkout.
+and is now included in the updated registered 7a1eb6a V22 checkout.
 
 The latest independent-wait evidence makes complete-prefix coverage the next
 runtime validation priority. Keep v25_v21_prefetch_gap_attribution_20261011.json:
