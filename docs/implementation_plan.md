@@ -2,6 +2,38 @@
 
 Status date: 2026-10-10.
 
+## V17 Rapid Development Iteration
+
+The user now authorizes stopping a development collection after actionable
+issues have been collected, committing/deploying fixes and promptly cold-starting
+the next predictive revision. A confirmed failure is no longer the only reason
+for a development restart. Preserve the stopped plan, traces, receipts and
+censor reason. Never mutate a running arm. Once a candidate is stable, complete
+a same-version native comparison before claiming busy-window or paired-JCT gains.
+This current cadence supersedes the historical frozen-pair deployment notes below.
+
+V16b stopped at15:28 CST on2026-10-10 for iteration; old client/server/scheduler
+and GPU release were verified at15:31. Its80 terminal results are all completed;
+76 planned tasks have no terminal result and are interrupted/censored, not model
+incomplete. Native did not start. Deploy ccaccd2,447f294,74efbcf and a423989 in
+V17 with the unchanged canonical engine patch and established156-task108+48/
+3600s, running48, Host200GB80:20, HBM0.9 and hard180s-tool configuration.
+
+The stopped lifecycle audit verifies908.96MB independently early and consumed
+JOIN/tool FULL, with47.947GB demand handoff reuse kept separate. JOIN last-ACK
+to first-service P90 remains15.95s. Inspect the new HTTP intervals and native
+admission, restore residency, repeated loads and actual early FULL consumption.
+
+Audit signed endpoint error, predicted minus actual, separately against native
+EOS and child RETURN. The11 matched work triggers have RETURN error P50
+-4619.51ms versus-322.83ms for89 EOS triggers. Fit an additive bias only on the
+earlier independent events and inspect later events: work correction+2557.72ms
+reduces heldout absolute P50 from4788.18 to2230.46ms, but only1/6 events is
+within500ms. EOS correction+367.72ms improves500ms coverage68.9%->82.2%
+while worsening absolute P50. This is selected-trigger development evidence,
+not project-isolated calibration; do not deploy one several-second offset for
+both signals. Retain full stopped candidate-window rows and keep the goal active.
+
 ## V16 Execution And Acceptance
 
 The existing active goal remains open: improve native-relative busy-window

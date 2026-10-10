@@ -8,6 +8,7 @@ from bisect import bisect_right
 from collections import Counter, defaultdict
 import json
 from pathlib import Path
+from statistics import median
 import sys
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -17,8 +18,90 @@ if str(ROOT) not in sys.path:
 from scripts.summarize_semantic_h2d_ab import records
 
 
+def _error_summary(values: list[float]) -> dict:
+    if not values:
+        return {"count": 0}
+    ordered = sorted(values)
+    absolute = sorted(abs(value) for value in values)
+    return {
+        "count": len(values),
+        "signed_p50_ms": median(ordered),
+        "absolute_p50_ms": median(absolute),
+        "absolute_p90_ms": absolute[min(len(values) - 1, int(.9 * len(values)))],
+        "within_500ms_fraction": sum(abs(value) <= 500 for value in values) / len(values),
+        "early_over_500ms_fraction": sum(value < -500 for value in values) / len(values),
+        "late_over_500ms_fraction": sum(value > 500 for value in values) / len(values),
+    }
+
+
+def latest_start_bias(rows: list[dict]) -> dict:
+    groups = defaultdict(list)
+    for row in rows:
+        for kind in ("estimated_work", "observed_no_tool_eos"):
+            matches = [
+                forecast for forecast in row["latest_start_forecasts"]
+                if forecast["trigger_kind"] == kind
+                and forecast["matches_final_child_request"]
+                and forecast["ts_ms"] <= row["child_return_ts_ms"]
+                and (
+                    kind != "estimated_work"
+                    or forecast["ts_ms"] < row["native_eos_ts_ms"]
+                )
+            ]
+            if matches:
+                forecast = max(matches, key=lambda item: item["ts_ms"])
+                groups[kind].append(forecast)
+    result = {}
+    for kind, forecasts in groups.items():
+        forecasts.sort(key=lambda item: item["ts_ms"])
+        split = len(forecasts) // 2
+        fit, heldout = forecasts[:split], forecasts[split:]
+        correction = (
+            -median(item["signed_error_to_child_return_ms"] for item in fit)
+            if fit else None
+        )
+        result[kind] = {
+            "independent_complete_join_count": len(forecasts),
+            "generation_endpoint_error": _error_summary([
+                item["signed_error_to_native_eos_ms"] for item in forecasts
+            ]),
+            "child_return_endpoint_error": _error_summary([
+                item["signed_error_to_child_return_ms"] for item in forecasts
+            ]),
+            "chronological_fit_count": len(fit),
+            "chronological_heldout_count": len(heldout),
+            "fitted_additive_correction_ms": correction,
+            "heldout_uncorrected": _error_summary([
+                item["signed_error_to_child_return_ms"] for item in heldout
+            ]),
+            "heldout_corrected": _error_summary([
+                item["signed_error_to_child_return_ms"] + correction
+                for item in heldout if correction is not None
+            ]),
+        }
+    return {
+        "sign": "predicted endpoint minus actual endpoint; negative means early",
+        "selection": "latest eligible trigger per complete ALL JOIN and trigger kind",
+        "scope": (
+            "chronological development check of already-issued triggers; "
+            "not project-isolated calibration, all-forecast accuracy, or a runtime offset"
+        ),
+        "eos_to_child_return_ms": {
+            "count": len(rows),
+            "p50_ms": median(row["eos_to_return_ms"] for row in rows) if rows else None,
+            "p90_ms": (
+                sorted(row["eos_to_return_ms"] for row in rows)[
+                    min(len(rows) - 1, int(.9 * len(rows)))
+                ] if rows else None
+            ),
+        },
+        "by_trigger": result,
+    }
+
+
 def audit(arm: Path, threshold: float, *, sample_max_age_ms: float = 1500.) -> dict:
     opportunities, forecasts = defaultdict(list), defaultdict(list)
+    latest_starts = defaultdict(list)
     clock = None
     for row in records(arm / "opportunities/admission_opportunities.jsonl"):
         if row["event"] == "safe_point_census" and clock is None:
@@ -28,6 +111,8 @@ def audit(arm: Path, threshold: float, *, sample_max_age_ms: float = 1500.) -> d
                 opportunities[row["invocation_id"]].append(row)
         elif row["event"] == "semantic_child_forecast":
             forecasts[row["request_id"]].append(row)
+        elif row["event"] == "final_stage_latest_start":
+            latest_starts[row["join_id"]].append(row)
     if clock is None:
         raise ValueError("missing paired scheduler wall/monotonic clock")
     native = {
@@ -146,6 +231,24 @@ def audit(arm: Path, threshold: float, *, sample_max_age_ms: float = 1500.) -> d
                 "last_pre_eos_forecast_with_sampled_target": (
                     intersections[-1] if intersections else None
                 ),
+                "latest_start_forecasts": [
+                    {
+                        "ts_ms": forecast["ts_ms"],
+                        "trigger_kind": forecast.get("trigger_kind", "unknown"),
+                        "child_request_id": forecast.get("child_request_id"),
+                        "matches_final_child_request": forecast.get("child_request_id") == rid,
+                        "remaining_ms": forecast["remaining_ms"],
+                        "work_statistic": forecast.get("effective_work_statistic"),
+                        "predicted_endpoint_ts_ms": forecast["ts_ms"] + forecast["remaining_ms"],
+                        "signed_error_to_native_eos_ms": (
+                            forecast["ts_ms"] + forecast["remaining_ms"] - eos_ms
+                        ),
+                        "signed_error_to_child_return_ms": (
+                            forecast["ts_ms"] + forecast["remaining_ms"] - return_ms
+                        ),
+                    }
+                    for forecast in latest_starts.get(join_id, ())
+                ],
             })
     return {
         "scope": "development window audit, not a transfer permit or continuous residency proof",
@@ -164,6 +267,7 @@ def audit(arm: Path, threshold: float, *, sample_max_age_ms: float = 1500.) -> d
         "joins_with_internal_calls_on_waiting_parent": sum(
             row["internal_calls_on_waiting_parent"] > 0 for row in rows
         ),
+        "latest_start_signed_bias": latest_start_bias(rows),
         "rows": rows,
     }
 
