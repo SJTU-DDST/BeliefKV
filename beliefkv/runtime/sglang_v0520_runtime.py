@@ -2979,7 +2979,7 @@ class NativeAdmissionRuntime:
                     continue
                 for summary in observation.nodes:
                     summaries[(summary.node_id, summary.creation_time)] = (
-                        summary if multiple_anchors else asdict(summary)
+                        summary if multiple_anchors else summary.to_record()
                     )
             except (AttributeError, KeyError, TypeError, ValueError):
                 unavailable.append({"node_id": node_id, "reason": "native node unavailable"})
@@ -2991,7 +2991,7 @@ class NativeAdmissionRuntime:
             "elapsed_since_terminal_ms": time.monotonic() * 1000. - watch["terminated_ms"],
             "anchor_node_ids": [node for node, _ in watch["anchors"]],
             "nodes": (
-                [asdict(summary) for summary in summaries.values()]
+                [summary.to_record() for summary in summaries.values()]
                 if multiple_anchors else list(summaries.values())
             ),
             "gone_or_replaced_anchors": gone,

@@ -78,6 +78,19 @@ Current status:
   child_semantic_work_suffix_candidate_20261010/report.json. No V15 labels
   enter selection, no second encoder pass is introduced, and the frozen
   native-relative comparison remains the next throughput check.
+- The isolated terminal-cache sampler now directly serializes scalar node
+  observations instead of recursively copying dataclasses. Preserve the last
+  observation of a shared ancestor, node order, native read counts, sampling
+  frequency and unavailable/gone-anchor handling; no cross-anchor physical
+  state cache is added. All164 runtime/observer checks pass. Against782c283,
+  identical four-watch/24-level fixtures,200 alternating iterations per case,
+  give mean wall2.666→0.911,3.379→1.641 and6.808→5.110ms for1/2/8
+  anchors:65.83%,51.44% and24.93% reductions, with similar thread CPU
+  changes. Outputs excluding timestamps and native read counts are equal;
+  imported isolated source paths are pinned. The writer is an in-memory sink,
+  so this excludes disk writes, GPU work and end-to-end performance.
+  Preservev16_terminal_scalar_serialization_cpu_20261010.json, commit only
+  in isolation and deploy after both V15 arms and full postprocessing.
 - At2026-10-10 05:40 CST, the partial V15 H2D source snapshot has native
   2358 batches/731.314GB, JOIN/tool72 commands/1.384GB, demand handoff
   4692 node commands/1524 batches/36.050GB and no unknown controlled source.

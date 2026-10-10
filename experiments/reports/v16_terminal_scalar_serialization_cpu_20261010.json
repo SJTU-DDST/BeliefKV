@@ -1,0 +1,206 @@
+{
+  "scope": "same-input CPU fixtures; native enqueue is stubbed, no GPU or throughput claim",
+  "baseline_revision": "782c283",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "baa4e17cf236bda9ab123d9f99b8568bbafab551e3c9b3d9e57c20ab1af1713a",
+    "beliefkv/runtime/sglang_v0520_physical.py": "0f1f1431a2e572ea64ce4276db3e35bbca9f4651841e7043621a4ee985740a9a",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "20d4e4d81307ac083fd6e25c4a8da024adf6a21fba7b345f7574b2ff8cb91c86"
+  },
+  "fixture": "validated static pools and real observer ancestry; sixteen retained workflow rounds",
+  "optimized_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "eaea82c6f01e7e52ad1206f94cc3d96b50e433986b53724df12429494351ce53",
+    "beliefkv/runtime/sglang_v0520_physical.py": "0f1f1431a2e572ea64ce4276db3e35bbca9f4651841e7043621a4ee985740a9a",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "84053d0db5443e2e36879346514a7c35fae0fe74214a2a39af4e38b62967abd1"
+  },
+  "imported_sources": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "/tmp/beliefkv-v12-followup-20261009/beliefkv/runtime/sglang_v0520_observer.py",
+    "beliefkv/runtime/sglang_v0520_physical.py": "/tmp/beliefkv-v12-followup-20261009/beliefkv/runtime/sglang_v0520_physical.py",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "/tmp/beliefkv-v12-followup-20261009/beliefkv/runtime/sglang_v0520_runtime.py"
+  },
+  "benchmark_source_sha256": "1c8926e9bbe8ca5563c480e15c2b06429ae9ca73744c2419624894696584e0f1",
+  "service_seed": null,
+  "handoff_identity": null,
+  "cases": [],
+  "terminal_cases": [
+    {
+      "watch_count": 4,
+      "depth": 24,
+      "anchor_count": 1,
+      "iterations": 200,
+      "summaries_per_watch": 24,
+      "unique_summaries_per_watch": 24,
+      "output_equal": true,
+      "ignored_output_fields": [
+        "elapsed_since_terminal_ms",
+        "ts_ms"
+      ],
+      "canonical_output_sha256": "96efba8f7ff22ff454952f49c09740c158d5003ae47d32f1b11cbb9af2e0fb2b",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 200,
+            "mean_ms": 2.666238815,
+            "p50_ms": 2.666952,
+            "p99_ms": 2.699545,
+            "max_ms": 2.699998
+          },
+          "thread_cpu": {
+            "count": 200,
+            "mean_ms": 2.66523194,
+            "p50_ms": 2.665721,
+            "p99_ms": 2.69828,
+            "max_ms": 2.699037
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 200,
+            "mean_ms": 0.911119045,
+            "p50_ms": 0.911593,
+            "p99_ms": 0.932204,
+            "max_ms": 0.933375
+          },
+          "thread_cpu": {
+            "count": 200,
+            "mean_ms": 0.91011013,
+            "p50_ms": 0.910623,
+            "p99_ms": 0.931159,
+            "max_ms": 0.932338
+          }
+        }
+      },
+      "observed_reads": {
+        "baseline": {
+          "node_lookup": 1600
+        },
+        "optimized": {
+          "node_lookup": 1600
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.6582755303560457,
+        "thread_cpu": 0.6585249800060553
+      }
+    },
+    {
+      "watch_count": 4,
+      "depth": 24,
+      "anchor_count": 2,
+      "iterations": 200,
+      "summaries_per_watch": 48,
+      "unique_summaries_per_watch": 25,
+      "output_equal": true,
+      "ignored_output_fields": [
+        "elapsed_since_terminal_ms",
+        "ts_ms"
+      ],
+      "canonical_output_sha256": "a9516a9bf48c735b17017577a316938e6b754dc6e23f94eaf8d6dc7480e9754c",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 200,
+            "mean_ms": 3.379392215,
+            "p50_ms": 3.534796,
+            "p99_ms": 3.586251,
+            "max_ms": 4.26684
+          },
+          "thread_cpu": {
+            "count": 200,
+            "mean_ms": 3.378376925,
+            "p50_ms": 3.533852,
+            "p99_ms": 3.585226,
+            "max_ms": 4.26561
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 200,
+            "mean_ms": 1.64102713,
+            "p50_ms": 1.717298,
+            "p99_ms": 1.770558,
+            "max_ms": 1.771419
+          },
+          "thread_cpu": {
+            "count": 200,
+            "mean_ms": 1.640037475,
+            "p50_ms": 1.716208,
+            "p99_ms": 1.769337,
+            "max_ms": 1.770405
+          }
+        }
+      },
+      "observed_reads": {
+        "baseline": {
+          "node_lookup": 3200
+        },
+        "optimized": {
+          "node_lookup": 3200
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.5144016954539857,
+        "thread_cpu": 0.5145486985588501
+      }
+    },
+    {
+      "watch_count": 4,
+      "depth": 24,
+      "anchor_count": 8,
+      "iterations": 200,
+      "summaries_per_watch": 192,
+      "unique_summaries_per_watch": 31,
+      "output_equal": true,
+      "ignored_output_fields": [
+        "elapsed_since_terminal_ms",
+        "ts_ms"
+      ],
+      "canonical_output_sha256": "c58b9a9782c46525a7dd38472dac9e04e50bf30450445cc672b2e07c7e0f5e06",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 200,
+            "mean_ms": 6.807646315,
+            "p50_ms": 6.8039,
+            "p99_ms": 6.912547,
+            "max_ms": 7.383449
+          },
+          "thread_cpu": {
+            "count": 200,
+            "mean_ms": 6.806689275,
+            "p50_ms": 6.803054,
+            "p99_ms": 6.911888,
+            "max_ms": 7.382542
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 200,
+            "mean_ms": 5.11021148,
+            "p50_ms": 5.109635,
+            "p99_ms": 5.219291,
+            "max_ms": 5.255702
+          },
+          "thread_cpu": {
+            "count": 200,
+            "mean_ms": 5.109298025,
+            "p50_ms": 5.108035,
+            "p99_ms": 5.218519,
+            "max_ms": 5.254436
+          }
+        }
+      },
+      "observed_reads": {
+        "baseline": {
+          "node_lookup": 12800
+        },
+        "optimized": {
+          "node_lookup": 12800
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.24934239478039044,
+        "thread_cpu": 0.24937104977514934
+      }
+    }
+  ]
+}

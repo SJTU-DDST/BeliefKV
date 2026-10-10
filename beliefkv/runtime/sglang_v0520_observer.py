@@ -128,6 +128,29 @@ class UnifiedNodeSummary:
     pending_load_id: int | None
     key_tokens: int | None = None
 
+    def to_record(self) -> dict[str, int | float | bool | None]:
+        """Serialize the scalar observation without recursive dataclass copies."""
+        return {
+            "node_id": self.node_id,
+            "parent_id": self.parent_id,
+            "creation_time": self.creation_time,
+            "full_device_tokens": self.full_device_tokens,
+            "full_host_tokens": self.full_host_tokens,
+            "mamba_device_present": self.mamba_device_present,
+            "mamba_host_present": self.mamba_host_present,
+            "full_device_locks": self.full_device_locks,
+            "full_host_locks": self.full_host_locks,
+            "mamba_device_locks": self.mamba_device_locks,
+            "mamba_host_locks": self.mamba_host_locks,
+            "full_session_refs": self.full_session_refs,
+            "mamba_session_refs": self.mamba_session_refs,
+            "full_session_leaf_count": self.full_session_leaf_count,
+            "mamba_session_leaf_count": self.mamba_session_leaf_count,
+            "pending_write_id": self.pending_write_id,
+            "pending_load_id": self.pending_load_id,
+            "key_tokens": self.key_tokens,
+        }
+
 
 @dataclass(frozen=True)
 class UnifiedNodeClosureObservation:
