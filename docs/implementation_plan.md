@@ -358,6 +358,25 @@ tool early reuse is3.154MB,while76.993GB demand handoff stays separate.
 These frozen-code results neither measure queued follow-ups nor establish
 native-relative throughput/JCT improvement. Keep the performance goal active.
 
+Native is healthy and serving from2026-10-10 22:31:29 CST. Predictive HTML
+was exported;154 completed workspaces were removed,2 incomplete workspaces
+and all traces/results retained. Free disk briefly rose74→106GiB before
+native workspace creation. Main code,engine and model artifacts remain frozen.
+
+Retain the native startup GC asymmetry. With skipped warmup,the engine's
+post-warmup /freeze_gc request can precede HTTP listening; it failed on native
+but succeeded on predictive. The same standard POST was accepted at22:37:00
+CST,331s after native readiness and after workflows began. Preserve
+native/gc_freeze_correction.json and the original failure. HTTP success confirms
+tokenizer acceptance/dispatch,not an independently observed scheduler or
+detokenizer GC acknowledgement. Report post-correction busy windows separately;
+full-run paired JCT retains this initialization difference and is not a fully
+matched cold-start result. The isolated launcher now explicitly POSTs /freeze_gc
+after health succeeds and before launching either workload client,saving
+gc_freeze_initialization.txt. Actual endpoint200 and bash syntax validate this
+setup change; do not change the active pair's code. Validate the next pair with
+both arms initialized before workload submission.
+
 ## V19b Harness Context Retirement Integration
 
 The V19 diagnostic snapshot contained authoritative child RETURNs but zero

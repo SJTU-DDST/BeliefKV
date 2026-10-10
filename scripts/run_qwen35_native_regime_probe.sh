@@ -204,6 +204,11 @@ if [[ "$ready" != true ]]; then
   exit 1
 fi
 
+# Skipped warmup can race the engine's POST with HTTP startup.
+# Initialize both arms after health succeeds and before any workflow submits.
+curl --silent --show-error --max-time 10 --fail --request POST \
+  --output "$RUN_ROOT/server/gc_freeze_initialization.txt" "$BASE_URL/freeze_gc"
+
 set +e
 client_flags=()
 if [[ "$CHILD_FINAL_REPORT_SHADOW" == "1" ]]; then

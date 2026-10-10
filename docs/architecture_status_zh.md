@@ -335,6 +335,24 @@ FULL共1.507GB，tool为3.154MB；76.993GB需求handoff
 复用单列。当前结果来自冻结代码，不归因于未部署的采样优化
 或sibling通知联动，也不证明已超过native。
 
+native于2026-10-10 22:31:29 CST服务就绪，健康检查通过并
+开始相同到达流。predictive已导出timelines/predictive_h2d.html，
+清理154个完成workspace，保留2个incomplete的workspace及
+全部trace/结果；短时可用磁盘74→106GiB，native克隆新任务
+后余量继续变化。运行源码及产物仍冻结，新修订在隔离分支。
+
+启动核对发现native的post-warmup freeze_gc在HTTP监听前
+遭连接拒绝，predictive原初始化则成功。2026-10-10 22:37:00
+CST补做同一POST，返回200；时间比native服务就绪晚331秒，
+workflow已经开始。原始失败保留，另存native/gc_freeze_correction.json。
+这是初始化条件差异，不是模型或调度版本变化；本轮全程JCT
+需注明它，完成补做后的繁忙窗口单列，不能当作完全一致的
+冷启动对照。HTTP响应证明tokenizer接受并交付原生消息，不是
+scheduler/detokenizer的独立GC状态ACK。隔离launcher已将
+相同初始化移至health成功之后、启动workflow client之前，
+两臂都执行；保存gc_freeze_initialization.txt，不改GPU服务策略。
+已用实际端点200及bash语法检查验证，下一轮再检验完整对照。
+
 ## V19b child 上下文结束的集成修正
 
 V19诊断快照已观察到child自然RETURN，但终态回收和parent消费记录
