@@ -528,6 +528,22 @@ def wait_event_identity(row: dict) -> tuple | None:
     return source, row["workflow_id"], row["context_id"], epoch, join
 
 
+def observed_capacity_shortfall(row: dict) -> str | None:
+    names = (
+        "required_full_tokens", "required_mamba_slots",
+        "device_full_free_tokens", "device_mamba_free_slots",
+    )
+    values = tuple(row.get(name) for name in names)
+    if (
+        row.get("headroom_observable") is not True
+        or any(type(value) is not int or value < 0 for value in values)
+        or values[0] + values[1] == 0
+    ):
+        return None
+    full, mamba = values[0] > values[2], values[1] > values[3]
+    return "both" if full and mamba else "full_only" if full else "mamba_only" if mamba else "none"
+
+
 def http_transport_waits(
     attempts: list[dict], client_submit: float | None, native_arrival: float | None,
 ) -> dict:
@@ -699,6 +715,8 @@ def wait_event_attribution(
             "first_observation_ts_ms": observation["ts_ms"],
             "max_observed_planned_full_tokens": None, "plan_reasons": Counter(),
             "max_observed_planned_full_bytes": None,
+            "observed_capacity_conditions": Counter(),
+            "max_observed_full_tokens_with_mamba_only_shortfall": None,
             "active_tool_ids": set(), "actions": [], "sessions": set(),
         })
         group["first_observation_ts_ms"] = min(
@@ -710,6 +728,14 @@ def wait_event_attribution(
             group["invocation_id"] = observation["invocation_id"]
         group["active_tool_ids"].update(observation.get("active_tool_ids") or ())
         group["sessions"].add((observation.get("session_id"), observation.get("session_generation")))
+        shortfall = observed_capacity_shortfall(observation)
+        if shortfall is not None:
+            group["observed_capacity_conditions"][shortfall] += 1
+            if shortfall == "mamba_only":
+                group["max_observed_full_tokens_with_mamba_only_shortfall"] = max(
+                    group["max_observed_full_tokens_with_mamba_only_shortfall"] or 0,
+                    observation["required_full_tokens"],
+                )
         tokens = observation.get("planned_full_tokens", observation.get("required_full_tokens"))
         if type(tokens) is int:
             group["max_observed_planned_full_tokens"] = max(
@@ -918,6 +944,12 @@ def wait_event_attribution(
                 and type(full_unit) is int else None
             ),
             "observed_plan_reasons": dict(group["plan_reasons"]),
+            "observed_capacity_conditions": dict(group["observed_capacity_conditions"]),
+            "max_observed_full_bytes_with_mamba_only_shortfall": (
+                group["max_observed_full_tokens_with_mamba_only_shortfall"] * full_unit
+                if type(group["max_observed_full_tokens_with_mamba_only_shortfall"]) is int
+                and type(full_unit) is int else None
+            ),
             "observed_session_bindings": len(group["sessions"] - {(None, None)}),
             "next_request_id": rid, "first_service_ts_ms": service,
             "client_submit_ts_ms": client_submit, "native_arrival_ts_ms": native_arrival,
@@ -968,6 +1000,20 @@ def wait_event_attribution(
                     ]),
                     "events_with_observed_full_plan": sum(
                         (row["max_observed_planned_full_tokens"] or 0) > 0 for row in selected
+                    ),
+                    "events_with_capacity_observation": sum(
+                        bool(row["observed_capacity_conditions"]) for row in selected
+                    ),
+                    "events_with_capacity_condition": {
+                        condition: sum(
+                            row["observed_capacity_conditions"].get(condition, 0) > 0
+                            for row in selected
+                        )
+                        for condition in ("none", "full_only", "mamba_only", "both")
+                    },
+                    "max_snapshot_full_bytes_under_mamba_only_shortfall_known": sum(
+                        row["max_observed_full_bytes_with_mamba_only_shortfall"] or 0
+                        for row in selected
                     ),
                     "max_snapshot_planned_full_bytes_known": sum(
                         row["max_observed_planned_full_bytes"] or 0 for row in selected
@@ -1026,6 +1072,10 @@ def wait_event_attribution(
             "an unobserved JOIN boundary leaves that request association unknown. "
             "Plans are bounded snapshots, not a continuous or counterfactual opportunity "
             "denominator; the maximum snapshot is not summed across repeated samples. "
+            "Capacity conditions require observable exact FULL/Mamba free lists and a "
+            "nonempty plan. An event may appear in multiple conditions at different "
+            "snapshots; conditions do not prove unavailable cold victims, the cause "
+            "of an actual rejection, or recoverable bytes after a policy change. "
             "Early FULL requires actual submit before complete JOIN/all-tool END and "
             "verified reuse by that episode's next request. Tool boundaries require "
             "the origin and following request plus every intervening tool, including "

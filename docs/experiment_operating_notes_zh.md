@@ -129,6 +129,23 @@ V16停止审计JOIN/tool提前且复用FULL为127.96MB，handoff复用
 
 ## 当前执行状态
 
+V20 native仍在冻结b019d24/c58cc891上采集。child→parent容量
+交接的后续修订在隔离分支提交：Mamba真实短缺时可单独释放
+原生LRU中已有Host副本的无引用设备状态，包括内部节点；FULL
+页及其引用保留。需求handoff须排除整条恢复闭包，不能为了
+恢复parent而回收本次所需的已驻留祖先。较早sibling释放可支撑
+RETURN前预取，最后child释放后才启动的动作仍算需求恢复。
+
+v20_restore_pool_shortfalls_20261010.json按独立事件保存准确
+free-list快照；192个JOIN中171个有完整非空规划容量观测，
+114个曾Mamba单池短缺，逐事件最大FULL规划量合计2.374GB。
+容量条件跨时刻重叠，缺观测不补为充足，规划量不算实际恢复
+收益。184项repo及72项原生CPU检查通过；真实分池allocator
+验证槽位返回、FULL保留及无额外D2H。CPU夹具仅替换GPU测试
+启动辅助模块，部署及吞吐验证须等当前两臂结束；使用隔离
+规范patch93d2b9e3及两侧health后、workload前的同样GC初始化。
+保留本轮native晚331秒补GC的记录，单列补做后的繁忙窗口。
+
 后续新实验统一先运行predictive_h2d，再运行native；与reactive
 对照时同样先predictive。启动脚本和计划生成器默认
 `ARM_ORDER="predictive_h2d native"`，正式重复实验也沿用此顺序，

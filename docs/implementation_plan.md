@@ -415,6 +415,38 @@ checks pass. Keep these observed opportunities separate from actual migration,
 reuse or speedup; validate queued history routing with sibling release and
 parent restoration in the next GPU pair,without changing the live native arm.
 
+Fix the isolated capacity-handoff omission under a real Mamba-only shortfall.
+The previous path requires one waiting-agent session reference and scans FULL
+leaves, missing unreferenced backed Mamba on leaves and interior nodes. Inspect
+at most eight unlocked native Mamba LRU entries only when its free list is
+insufficient. Demote settled, Host-backed, zero-reference Mamba independently;
+preserve FULL values and references, Host state and native load dependencies.
+Keep existing waiting-agent causal validation and direct no-D2H terminal-child
+discard. Exclude every node in the upcoming restoration closure, including
+resident ancestors, from demand-handoff reclamation just as JOIN/tool already do.
+
+Two added shortage cases fail against the old path.184 scoped runtime/terminal/
+batch/tool/audit checks and72 native CPU checks pass after correction. Real hybrid
+allocator cases cover both leaf and interior Mamba: one slot actually returns,
+FULL capacity and values remain unchanged, Host state remains and no D2H runs.
+Only the GPU test-launch helper is substituted with unittest.TestCase for CPU
+fixtures; the native tree, references, allocator and reclamation methods run.
+The canonical isolated patch passes reverse application and forward checking
+against an upstream-HEAD temporary index; SHA256:
+`93d2b9e31c23ec466c48aaab6cf1b8129e259a96fc484b59dc3a894b87375480`.
+
+Preserve v20_restore_pool_shortfalls_20261010.json. Of192 independent JOINs,
+171 have exact observable free-list snapshots for nonempty restore plans.
+114 ever show Mamba-only shortage, with2.374GB summed per-event maximum
+planned FULL;167 ever show FULL-only,125 both,and166 neither. Conditions
+overlap across time and are not exclusive event counts. Only194 of10159 tool
+episodes have complete capacity observations; zero observed Mamba shortage
+does not establish its absence. Snapshots do not prove actual rejection causes,
+available cold victims or achievable extra transfers/reuse. Keep V20 native
+frozen atb019d24/c58cc891; deploy after the pair ends, then verify early sibling-
+enabled FULL reuse, post-final-child demand restoration and busy-window/paired
+JCT performance. The full goal remains active.
+
 ## V19b Harness Context Retirement Integration
 
 The V19 diagnostic snapshot contained authoritative child RETURNs but zero

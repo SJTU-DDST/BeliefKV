@@ -3,7 +3,7 @@ import json
 import pytest
 
 from scripts.audit_prefetch_lifecycle import (
-    audit, full_expiration_evidence, http_transport_waits,
+    audit, full_expiration_evidence, http_transport_waits, observed_capacity_shortfall,
     prepare_host_lifetime_summary, prepare_restore_attribution,
     prepare_selection_summary, source_summary, terminal_capacity_summary, wait_event_attribution,
     terminal_invocation_scopes,
@@ -152,6 +152,44 @@ def test_prepare_burst_ack_attribution_does_not_multiply_first_extent_estimates(
 def write_rows(path, rows):
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+
+
+@pytest.mark.parametrize("full_free,mamba_free,condition", [
+    (8, 1, "none"), (7, 1, "full_only"), (8, 0, "mamba_only"), (7, 0, "both"),
+    (None, 1, None), (-1, 1, None), (True, 1, None),
+])
+def test_capacity_shortfall_requires_exact_nonempty_pool_observation(full_free, mamba_free, condition):
+    row = {
+        "headroom_observable": True, "required_full_tokens": 8, "required_mamba_slots": 1,
+        "device_full_free_tokens": full_free, "device_mamba_free_slots": mamba_free,
+    }
+    assert observed_capacity_shortfall(row) == condition
+    assert observed_capacity_shortfall({**row, "headroom_observable": False}) is None
+    assert observed_capacity_shortfall({
+        **row, "required_full_tokens": 0, "required_mamba_slots": 0,
+    }) is None
+
+
+def test_wait_capacity_conditions_count_independent_events_without_duplicate_byte_credit(tmp_path):
+    base = {
+        "source": "tool_wait", "workflow_id": "w", "invocation_id": "child",
+        "context_id": "c", "context_epoch": 1, "ts_ms": 100.,
+        "headroom_observable": True, "required_mamba_slots": 1,
+        "device_mamba_free_slots": 0, "device_full_free_tokens": 100,
+    }
+    (tmp_path / "server").mkdir()
+    (tmp_path / "server/native_telemetry_status.json").write_text(json.dumps({
+        "host_pool_evidence": {"full": {"bytes_per_unit": 10}},
+    }))
+    result = wait_event_attribution(tmp_path, [
+        {**base, "required_full_tokens": tokens} for tokens in (8, 8, 6)
+    ] + [{**base, "required_full_tokens": 8, "device_full_free_tokens": 0}], {}, [], None)
+    summary = result["summary"]["by_source"]["tool_wait"]
+    assert summary["observed_events"] == 1
+    assert summary["events_with_capacity_condition"]["mamba_only"] == 1
+    assert summary["events_with_capacity_condition"]["both"] == 1
+    assert summary["max_snapshot_full_bytes_under_mamba_only_shortfall_known"] == 80
+    assert result["rows"][0]["observed_capacity_conditions"] == {"mamba_only": 3, "both": 1}
 
 
 def test_wait_events_deduplicate_node_commands_and_keep_native_residual_demand_separate(tmp_path):

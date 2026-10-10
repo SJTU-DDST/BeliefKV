@@ -1,6 +1,6 @@
 # SGLang Runtime Patches
 
-Updated: 2026-10-09.
+Updated: 2026-10-10.
 
 The current Qwen3.5 / SGLang v0.5.20 integration uses
 `sglang-v0.5.20-beliefkv-staging.patch`, pinned to
@@ -96,3 +96,14 @@ Required device capacity is rechecked after release; in-flight D2H is not
 credit. H2D remains scoped to native missing FULL ancestors/current state,
 not an entire agent history. The new CPU tests are
 `test/srt/test_beliefkv_execution_handoff.py`; no new GPU benefit is claimed.
+
+During a Mamba-only handoff shortfall, the follow-up also examines up to eight
+unlocked native Mamba LRU entries, including interior nodes. It demotes only
+settled, Host-backed, unreferenced device state and preserves FULL values,
+references and Host state. Waiting-agent victims retain their existing causal
+validation. Every node in the target restoration closure must be excluded from
+reclamation by the runtime, including already resident ancestors.
+`test/srt/test_beliefkv_terminal_capacity.py` exercises actual CPU hybrid pools:
+Mamba capacity returns without FULL release or additional D2H. The live V20
+arms retain their frozen engine; deploy this patch between completed paired runs
+and measure GPU reuse, busy-window throughput and paired JCT separately.

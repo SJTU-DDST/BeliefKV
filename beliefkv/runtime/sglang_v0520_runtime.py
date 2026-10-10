@@ -5798,9 +5798,14 @@ class NativeAdmissionRuntime:
             reclaim = getattr(self._native_cache, "reclaim_beliefkv_handoff_capacity", None)
             if callable(reclaim):
                 self._publish_parent_pressure_candidates()
+                candidate = getattr(opportunity, "candidate", None)
                 freed = reclaim(
                     full_tokens=opportunity.required_full_tokens,
                     mamba_slots=opportunity.required_mamba_slots,
+                    exclude_node_ids=(
+                        tuple(node.node_id for node in candidate.nodes)
+                        if candidate is not None else ()
+                    ),
                 )
                 if freed:
                     self.counts["execution_handoff_cold_reclaimed"] += 1

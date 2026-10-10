@@ -390,6 +390,39 @@ history125.244ms。此为固定trace的路由诊断，非未见项目校准。
 不是可保证的预取量、ACK、复用或吞吐收益；queued历史路由
 与sibling容量释放需在下一轮GPU实验共同验证，当前代码不变。
 
+容量交接的隔离跟进修正了一条实际恢复阻塞路径：FULL free-list
+充足、Mamba槽位不足时，原handoff仅允许session_ref=1的等待
+agent状态回收，遗漏session_ref=0的冷备份；只扫FULL叶也会
+遗漏内部节点上的无引用Mamba。现在仅在真实Mamba短缺时，
+检查原生未加锁Mamba LRU的前8项，释放已有Host副本、无引用、
+无在途传输的设备状态。只释放Mamba，保留FULL数据及其活跃
+引用、Host状态和原生恢复依赖；已有等待agent回收仍按原因果
+状态验证。真实终态child私有页继续走无需D2H的直接回收路径。
+
+需求handoff现在与JOIN/tool一致，将本次恢复闭包内所有节点
+排除出冷回收候选，包括已驻留祖先，避免为恢复parent反而
+回收它马上要用的前缀。两个新增短缺案例在旧实现中复现失败；
+修复后184项runtime/终态/批量预取/工具/归因检查及72项原生
+CPU检查通过。后者含真实FULL/Mamba allocator的叶与内部节点
+槽位释放，确认FULL free-list不变、Mamba free-list实际增加且
+不新增D2H；只有GPU测试启动辅助模块替换为unittest.TestCase，
+没有替换树、引用、分配器或回收方法。
+
+保留v20_restore_pool_shortfalls_20261010.json。192个独立JOIN中，
+171个有可观测非空恢复规划的准确容量快照，114个曾出现仅
+Mamba短缺，逐事件最大FULL规划量合计2.374GB；167个曾仅
+FULL短缺、125个曾双池短缺、166个曾双池充足。同一事件可以
+跨多个条件，不能相加作互斥分母。工具10159个观测事件中仅
+194个有完整容量快照，没有观测到Mamba短缺不能推出其从不
+发生。快照不是实际拒绝原因、冷候选可回收证明或可保证收益。
+
+隔离规范patch正向临时index及反向应用校验通过，SHA256为
+`93d2b9e31c23ec466c48aaab6cf1b8129e259a96fc484b59dc3a894b87375480`。
+本次修订仍未部署，V20 native继续使用b019d24/c58cc891。
+成对采集结束后部署，再验证sibling释放支撑的真正RETURN前
+FULL复用、最后child结束后的需求恢复，以及繁忙吞吐/配对JCT。
+不能用已回收字节或槽位测试替代GPU收益，完整active目标仍未达成。
+
 ## V19b child 上下文结束的集成修正
 
 V19诊断快照已观察到child自然RETURN，但终态回收和parent消费记录
