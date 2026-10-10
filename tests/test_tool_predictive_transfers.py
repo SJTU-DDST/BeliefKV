@@ -105,7 +105,6 @@ def test_completed_prepare_reopens_a_cached_missing_tool_restore_target():
     runtime._semantic_target_cache[hint.key] = (now_ms + 100., False)
     with patch.object(runtime, "inspect_context_h2d_opportunity", side_effect=(
         NS(step=None), NS(step=step, fits_current_free_lists=True),
-        NS(step=step, fits_current_free_lists=True),
     )) as inspect, patch.object(runtime, "_h2d_start_window", return_value=TransferStartWindow(
         200., 0., 500.,
     )), patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step), \
@@ -125,7 +124,7 @@ def test_completed_prepare_reopens_a_cached_missing_tool_restore_target():
         assert hint.key not in runtime._semantic_target_cache
         assert runtime._tool_prefetch_next_ms == 0.
         runtime.dispatch_tool_prefetch()
-        assert inspect.call_count == 3
+        assert inspect.call_count == 2
         issue.assert_called_once()
     assert runtime._tool_opportunity_cache[unrelated] == (now_ms + 100., None)
     assert runtime.graph.invocations["tool"].state is InvocationState.WAIT_TOOL
@@ -818,6 +817,118 @@ def test_tool_opportunity_cache_avoids_repeated_native_inspection():
         runtime._roll_tool_prefetch()
     assert inspect.call_count == 1
     assert runtime._tool_ticket is None
+
+
+def test_fresh_tool_selection_reuses_the_plan_in_the_same_dispatch_call():
+    runtime, hint = tool_runtime()
+    step = PrefetchLoadStep(hint.key, 11, 4, 11, 4)
+    with patch.object(runtime, "inspect_context_h2d_opportunity",
+                      return_value=NS(step=step, fits_current_free_lists=True)) as inspect, \
+         patch.object(runtime, "_h2d_start_window",
+                      return_value=TransferStartWindow(200., 0., 500.)), \
+         patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step), \
+         patch.object(runtime, "issue_prefetch_gpu_step", return_value="cmd") as issue:
+        runtime.dispatch_tool_prefetch()
+    inspect.assert_called_once()
+    issue.assert_called_once_with(step, source="tool_wait")
+    assert runtime._tool_ticket.key == hint.key
+    assert runtime.graph.invocations["tool"].state is InvocationState.WAIT_TOOL
+    runtime.close()
+
+
+@pytest.mark.parametrize("during_drain", ("unchanged", "checkpoint_changed", "tool_returned"))
+def test_fresh_tool_plan_is_revalidated_after_event_drain_before_native_enqueue(during_drain):
+    runtime, hint = tool_runtime()
+    steps = (
+        PrefetchLoadStep(hint.key, 12, 5, 11, 4, False),
+        PrefetchLoadStep(hint.key, 12, 5, 12, 5, True),
+    )
+    opportunity = NS(step=steps[0], steps=steps, fits_current_free_lists=True)
+    runtime._native_cache = NS(cache_controller=NS(
+        mem_pool_host=NS(entry_map={
+            "kv": NS(host_pool=NS(size_per_token=10)),
+            "mamba": NS(host_pool=NS(size_per_token=20)),
+        }),
+        _num_tokens_by_pool=lambda op: {
+            "kv": len(op.host_indices),
+            **({"mamba": 1} if op.pool_transfers else {}),
+        },
+        _transfer_num_bytes=lambda op: len(op.host_indices) * 10 + (20 if op.pool_transfers else 0),
+    ))
+
+    def drain(**kwargs):
+        nonlocal opportunity
+        if during_drain == "checkpoint_changed":
+            changed = replace(steps[0], creation_time=99)
+            opportunity = NS(step=changed, steps=(changed,), fits_current_free_lists=True)
+        elif during_drain == "tool_returned":
+            runtime.on_events((event(
+                3, RuntimeEventKind.TOOL_END, invocation_id="tool",
+                attributes={"tool_run_id": "long"},
+            ),))
+
+    def native_burst(**kwargs):
+        outcomes = []
+        for node, created, include_state, command in kwargs["nodes"]:
+            operation = NS(
+                beliefkv_command_id=command, node_ids=[node],
+                host_indices=(1, 2), device_indices=(3, 4),
+                pool_transfers=[NS(
+                    name="mamba", indices_from_pool=None,
+                    host_indices=(10,), device_indices=(11,),
+                )] if include_state else None,
+            )
+            assert kwargs["beliefkv_before_enqueue"](operation)
+            outcomes.append(NS(issued=True, node_id=node, load_started=True))
+        return tuple(outcomes)
+
+    runtime._native_cache.prefetch_gpu_session_nodes = Mock(side_effect=native_burst)
+    runtime.event_server = NS(drain=Mock(side_effect=drain), close=Mock())
+    with patch.object(runtime, "inspect_context_h2d_opportunity",
+                      side_effect=lambda **kwargs: opportunity) as inspect, \
+         patch.object(runtime, "_h2d_start_window",
+                      return_value=TransferStartWindow(200., 0., 500.)), \
+         patch.object(runtime, "_current_residency_budget",
+                      return_value=PrefetchResidencyBudget(4, 1024)), \
+         patch.object(runtime, "refreshed_prefetch_gpu_step") as recapture:
+        runtime.dispatch_tool_prefetch()
+    runtime.event_server.drain.assert_called_once_with(max_messages=128)
+    recapture.assert_not_called()
+    assert not runtime.physical_disabled
+    if during_drain == "unchanged":
+        assert inspect.call_count == 2
+        assert runtime.physical_ledger.pending_action_count("PREFETCH_GPU") == 2
+        assert runtime.counts["tool_prefetch_issued"] == 2
+        assert runtime.graph.invocations["tool"].state is InvocationState.WAIT_TOOL
+        runtime._native_cache.prefetch_gpu_session_nodes.assert_called_once()
+    else:
+        assert inspect.call_count == (2 if during_drain == "checkpoint_changed" else 1)
+        assert runtime.physical_ledger.pending_action_count("PREFETCH_GPU") == 0
+        assert runtime.counts["tool_prefetch_issued"] == 0
+        runtime._native_cache.prefetch_gpu_session_nodes.assert_not_called()
+    runtime.close()
+
+
+@pytest.mark.parametrize("selected", ("cached", "previous_call"))
+def test_tool_dispatch_refreshes_a_plan_from_cache_or_a_previous_selection(selected):
+    runtime, hint = tool_runtime()
+    step = PrefetchLoadStep(hint.key, 11, 4, 11, 4)
+    previous = NS(step=step, fits_current_free_lists=True)
+    with patch.object(runtime, "_h2d_start_window",
+                      return_value=TransferStartWindow(200., 0., 500.)), \
+         patch.object(runtime, "inspect_context_h2d_opportunity",
+                      side_effect=(previous, NS(step=None))) as inspect, \
+         patch.object(runtime, "issue_prefetch_gpu_step") as issue:
+        if selected == "cached":
+            runtime._tool_opportunity_cache[hint.key] = (time.monotonic() * 1000. + 100., previous)
+            inspect.side_effect = (NS(step=None),)
+        else:
+            assert runtime._roll_tool_prefetch() is previous
+        runtime.dispatch_tool_prefetch()
+    assert inspect.call_count == (1 if selected == "cached" else 2)
+    issue.assert_not_called()
+    assert runtime._tool_ticket is None
+    runtime.close()
 
 
 def test_tool_candidate_scan_reaches_start_window_without_decode_tick_rescans():

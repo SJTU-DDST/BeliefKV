@@ -39,6 +39,29 @@ retries do not trigger invalidation. There is no new decode-loop scan. The261
 terminal/tool/runtime/handoff checks pass. This revision is now included in the
 updated frozened974d2 V22 target; waiting registration is not GPU validation.
 
+Reuse only a tool restore plan freshly read during the current dispatch. Refresh
+plans from the short cache or an earlier selection. Preserve the post-event-drain
+checkpoint, extent, timing and capacity checks and native per-node reservations.
+The 267 scoped runtime/tool/terminal/handoff checks pass, including tool completion
+and checkpoint replacement during the drain. Keep
+v27_tool_dispatch_cpu_20261011.json: 100 alternating CPU samples retain ordered
+bursts and ledger reservations; four/300-node dispatch means change from
+0.858/9.117 to 0.683/6.672 ms. The optimized 300-node maximum remains 19.507 ms.
+This is a CPU planning result, not GPU throughput or end-to-end savings. Register
+the committed change for the next pair while keeping the running V21 frozen.
+
+Keep v21_busy_window_same_version_evidence_20261011.json with the original
+comparison SHA256. Both V21 arms completely observe 600–900 s: predictive/native
+decode throughput is 891.68/1165.71 token/s, GPU utilization 69.26%/87.60% and
+time-weighted decode batch 47.18/47.36. Predictive is 23.51% slower in this window.
+The mean worker decode intervals 44.19/35.50 ms are not CUDA kernel timings.
+Capacity handoff associations do not establish service performance improvement,
+and similar batch sizes do not explain the measured gap. Native collection is
+still running; do not label the window a final JCT or causal speedup. Validate
+queued live-pool geometry, complete-prefix coverage and control reductions with
+actual early FULL reuse and parent service in the next same-version pair.
+The broad performance goal remains active.
+
 Complete valid checkpoint ancestry must remain observable. The next revision
 removes artificial 64/256-node rejection from action closure, PREPARE/H2D
 planning, native session primitives and reentry inspection. Retain cycle and
@@ -111,7 +134,7 @@ not completed GPU validation or achievement of the broad performance goal.
 
 Update v25_v21_capacity_handoff_progress_20261011.json with the final predictive
 source audit path and SHA256. V21 predictive completes155 workflows with1
-incomplete in11375.87 seconds; same-version cold native is loading the service.
+incomplete in11375.87 seconds; same-version cold native is collecting.
 Its354 confirmed dynamic children release cumulative device FULL115.495GB and
 Mamba120.858GB. Of188 observed parent services,185 follow
 linked device release. Last child scheduler RETURN observation to first observed

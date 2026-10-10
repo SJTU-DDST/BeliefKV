@@ -4443,7 +4443,7 @@ class NativeAdmissionRuntime:
             self._prepare_probe_after_ms[step.key] = now_ms + 250.
         self._publish_parent_pressure_candidates()
 
-    def _roll_tool_prefetch(self) -> None:
+    def _roll_tool_prefetch(self) -> SessionH2DOpportunity | None:
         if not self.enable_tool_prefetch or self.physical_disabled:
             return
         self._refresh_prefetch_service_leases()
@@ -4503,7 +4503,8 @@ class NativeAdmissionRuntime:
                 self.counts["tool_prefetch_admission_budget_busy"] += 1
                 continue
             cached = self._tool_opportunity_cache.get(hint.key)
-            if cached is not None and now_ms < cached[0]:
+            from_cache = cached is not None and now_ms < cached[0]
+            if from_cache:
                 opportunity = cached[1]
             else:
                 opportunity = self._wait_prefetch_opportunity(hint.key)
@@ -4554,7 +4555,7 @@ class NativeAdmissionRuntime:
                     "h2d_ms": window.service_ms,
                     "enqueue_to_submit_p90_ms": window.enqueue_ms,
                 })
-            break
+            return None if from_cache else opportunity
 
     def _tool_prefetch_ready(
         self, hint: NativeToolWaitHint, *, horizon_ms: float | None = None,
@@ -4588,7 +4589,7 @@ class NativeAdmissionRuntime:
 
     @timed_runtime("tool_prefetch")
     def dispatch_tool_prefetch(self) -> None:
-        self._roll_tool_prefetch()
+        opportunity = self._roll_tool_prefetch()
         ticket = self._tool_ticket
         if ticket is None or self.physical_ledger.pending_action_count("PREFETCH_GPU"):
             return
@@ -4601,7 +4602,10 @@ class NativeAdmissionRuntime:
         ):
             self._tool_ticket = None
             return
-        opportunity = self._wait_prefetch_opportunity(ticket.key)
+        # Only a plan read during this call can skip the redundant dispatch read.
+        # Enqueue still drains causal events and revalidates the native burst.
+        if opportunity is None:
+            opportunity = self._wait_prefetch_opportunity(ticket.key)
         if (
             opportunity is not None and opportunity.step is not None
             and callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))

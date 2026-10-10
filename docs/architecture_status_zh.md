@@ -40,6 +40,28 @@ epoch的等待对象观测，并允许相关tool重新扫描。避免Host副本
 字典操作，没有新增逐decode扫描；261项终态/工具/runtime/
 handoff检查通过，现已进入更新后的V22冻结登记ed974d2。
 
+工具预取进一步复用同一次dispatch中刚读取的恢复计划，避免
+选取候选后立即重复完整观察。缓存命中、前次选定的ticket仍重新
+读取；排空因果事件后仍检查当前checkpoint、页集合、时间、容量，
+原生逐节点预留和ledger记账不变。267项runtime/tool/终态/handoff
+检查通过，覆盖排空期间工具返回与checkpoint变化时取消提交。
+100轮交替CPU测量中，4节点/300节点完整dispatch均值分别由
+0.858/9.117ms降至0.683/6.672ms；计划与记账一致，300节点新版
+仍有19.507ms最大值，不能声称消除了长尾。保留
+v27_tool_dispatch_cpu_20261011.json。这项修订已在隔离工作区
+验证，登记到下一轮前仍不属于冻结运行中的V21。
+
+同版本V21的600–900秒窗口两侧都已完整观测，predictive/native
+decode吞吐为891.68/1165.71 token/s，GPU利用率69.26%/87.60%，
+时间加权decode batch约47.18/47.36。predictive吞吐低23.51%，
+worker decode区间均值44.19ms，native为35.50ms；该区间不是
+CUDA kernel时间。这说明当前容量交接证据不能代替服务性能验收，
+也不能仅用batch大小解释差距。原始比较及SHA256保存在
+v21_busy_window_same_version_evidence_20261011.json。native整侧
+尚未完成，不将这个局部窗口当作完整JCT或因果速度提升。
+下一轮需验证已排队的实时池计数、深前缀完整观察和控制减负，
+同时继续检查实际提前FULL复用与parent服务，性能目标保持进行中。
+
 后续检查确认完整前缀规划存在不合理的固定祖先数量限制：
 observer、PREPARE/H2D 规划和原生 session 恢复分别以64或256
 个节点拒绝合法路径。V21 局部采样中，1643个不同的tool等待
@@ -106,7 +128,7 @@ native。登记后的目标checkout不再编辑，文档及回执在隔离工作
 完成后的predictive审计更新到v25_v21_capacity_handoff_progress_
 20261011.json，保留最终原始审计路径及SHA256。V21 predictive
 155个completed、1个incomplete，约11375.87秒；同版本冷native
-已开始加载服务。354个真实动态child累计释放设备
+正在采集。354个真实动态child累计释放设备
 FULL115.495GB/Mamba120.858GB；188个parent首次服务中185个
 可关联到先前child设备释放。最后child的scheduler RETURN观测到
 parent首个观测完成GPU batch的P50/P90为209.57/493.56ms，

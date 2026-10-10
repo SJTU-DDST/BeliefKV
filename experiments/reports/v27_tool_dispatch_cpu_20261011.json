@@ -1,0 +1,113 @@
+{
+  "scope": "Alternating CPU complete tool dispatch planning; no GPU, DMA or throughput claim",
+  "baseline_revision": "9e7c82b",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "6e1db6ad33c310c11a6f5a721958dae4646366b0d9ea8599efae56a903d2711e",
+    "beliefkv/runtime/sglang_v0520_physical.py": "4a9864dee191023775aa3323657dec6a4a28862c4f15b1f613050dd26369555a",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "69ff14503d21a7a4298b8b3b3bdbf8c4a9bbff95610e0f1df6520a412f57fab4"
+  },
+  "optimized_runtime_sha256": "ec19fe1bc1701637ff6104335e0c7575d384a572f09f96a5994912bdd902996e",
+  "benchmark_source": "/tmp/beliefkv_tool_dispatch_cpu_20261011.py",
+  "benchmark_source_sha256": "2c768a1fcd5dc5b6235b5aeb4ec2df00a071d109e286a3506e30de40872c4710",
+  "cases": [
+    {
+      "checkpoint_depth": 4,
+      "planned_nodes": 3,
+      "iterations": 100,
+      "identical_ordered_plans": true,
+      "one_causal_drain_and_per_node_reservations_preserved": true,
+      "node_lookups_per_dispatch": {
+        "baseline": [
+          3
+        ],
+        "optimized": [
+          2
+        ]
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 100,
+            "mean_ms": 0.85800327,
+            "p50_ms": 0.842367,
+            "p99_ms": 1.267582,
+            "max_ms": 1.267582
+          },
+          "thread_cpu": {
+            "count": 100,
+            "mean_ms": 0.8567572999999999,
+            "p50_ms": 0.841158,
+            "p99_ms": 1.266077,
+            "max_ms": 1.266077
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 100,
+            "mean_ms": 0.6834628,
+            "p50_ms": 0.675214,
+            "p99_ms": 0.757739,
+            "max_ms": 0.757739
+          },
+          "thread_cpu": {
+            "count": 100,
+            "mean_ms": 0.68223323,
+            "p50_ms": 0.674117,
+            "p99_ms": 0.756282,
+            "max_ms": 0.756282
+          }
+        }
+      }
+    },
+    {
+      "checkpoint_depth": 300,
+      "planned_nodes": 16,
+      "iterations": 100,
+      "identical_ordered_plans": true,
+      "one_causal_drain_and_per_node_reservations_preserved": true,
+      "node_lookups_per_dispatch": {
+        "baseline": [
+          3
+        ],
+        "optimized": [
+          2
+        ]
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 100,
+            "mean_ms": 9.1170511,
+            "p50_ms": 9.10384,
+            "p99_ms": 10.138038,
+            "max_ms": 10.138038
+          },
+          "thread_cpu": {
+            "count": 100,
+            "mean_ms": 9.11500687,
+            "p50_ms": 9.102429,
+            "p99_ms": 10.136051,
+            "max_ms": 10.136051
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 100,
+            "mean_ms": 6.67165772,
+            "p50_ms": 6.46655,
+            "p99_ms": 19.506998,
+            "max_ms": 19.506998
+          },
+          "thread_cpu": {
+            "count": 100,
+            "mean_ms": 6.67010216,
+            "p50_ms": 6.465006,
+            "p99_ms": 19.505354,
+            "max_ms": 19.505354
+          }
+        }
+      }
+    }
+  ],
+  "semantics": "Fixed unchanged physical fixture and clock; resets pending mocked actions between dispatches. H2D timing is supplied. Cost is planning and ledger work, not physical transfers."
+}

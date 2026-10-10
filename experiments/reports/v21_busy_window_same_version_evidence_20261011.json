@@ -1,0 +1,46 @@
+{
+  "scope": "Same-version completed 600-900 second observation windows; V21 native arm and final pair remain incomplete",
+  "source": "/home/longhao/experiment/BeliefKV/experiments/reports/v21_busy_window_same_version_600_900_20261011.json",
+  "source_sha256": "27ac24e55c49c31725ee74edf7eedd3b40f27ff8bc47a2d29befa4fb16551a8c",
+  "frozen_pair_plan": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/ab_plan.json",
+  "code_commit": "597688c62aabc9667484aefe315664a447fea9bb",
+  "sglang_patch_sha256": "98fc5af9c40121d6f7ba1824f1fd5b586d0b141d5b12370a2d9243c1b1b5e8f1",
+  "window_seconds": [600, 900],
+  "predictive": {
+    "service_window_observed_complete": true,
+    "decode_output_tokens_per_second": 891.6766666666666,
+    "request_completed_output_tokens_per_second": 882.9633333333334,
+    "gpu_utilization_mean": 69.25500667556743,
+    "decode_time_weighted_batch_size": 47.182408652721975,
+    "decode_mean_clipped_worker_interval_ms": 44.18615344093346,
+    "prefill_mean_clipped_worker_interval_ms": 31.3668896937887,
+    "h2d_transfer_stream_ms": 15343.77401835844,
+    "h2d_submit_to_ack_ms": 143511.6939879954
+  },
+  "native": {
+    "service_window_observed_complete": true,
+    "decode_output_tokens_per_second": 1165.7066666666667,
+    "request_completed_output_tokens_per_second": 1128.7266666666667,
+    "gpu_utilization_mean": 87.59879839786382,
+    "decode_time_weighted_batch_size": 47.35568234059461,
+    "decode_mean_clipped_worker_interval_ms": 35.49895096446819,
+    "prefill_mean_clipped_worker_interval_ms": 20.086264630644845,
+    "h2d_transfer_stream_ms": 18749.547335147858,
+    "h2d_submit_to_ack_ms": 108893.55501905084
+  },
+  "predictive_decode_throughput_reduction_percent": 23.507629134830953,
+  "predictive_decode_worker_interval_increase_percent": 24.471716037920423,
+  "predictive_gpu_utilization_difference_percentage_points": -18.343791722296388,
+  "next_validation": [
+    "Deploy the validated live-pool geometry, complete-prefix coverage and control-cost reductions only after the current complete pair",
+    "Measure useful early FULL reuse and parent service as well as same-version busy-window throughput/JCT",
+    "Preserve the current native collection and frozen source/engine"
+  ],
+  "semantics": [
+    "Each arm uses its own service time origin and completely covers this observation window.",
+    "The window is not final workflow JCT, a repeated-run average or causal proof of a single optimization.",
+    "Worker intervals include service-path wall time and are not CUDA kernel durations.",
+    "Transfer-stream and submit-to-ACK totals are neither exposed service waits nor removable JCT.",
+    "Queued V22 revisions are absent from both observed V21 arms."
+  ]
+}
