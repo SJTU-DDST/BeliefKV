@@ -1,14 +1,17 @@
 from pathlib import Path
 from collections import OrderedDict
+import multiprocessing as mp
 import select
 import time
 
 import pytest
 from types import SimpleNamespace as NS
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
-from beliefkv.runtime.semantic_report_worker import SemanticReportInput, SemanticReportWorker
+from beliefkv.runtime.semantic_report_worker import (
+    SemanticReportInput, SemanticReportReply, SemanticReportWorker,
+)
 
 
 ARTIFACT = Path(__file__).resolve().parents[1] / (
@@ -31,6 +34,81 @@ def test_worker_prioritizes_fresh_notice_frames_and_cancels_stale_pending():
     batch = worker._inputs.put_nowait.call_args[0][0]
     assert [item.key.request_id for item in batch] == ["2", "1"]
     assert not worker._pending
+
+
+@pytest.fixture
+def queue_worker():
+    worker = object.__new__(SemanticReportWorker)
+    context = mp.get_context("spawn")
+    worker._inputs = context.Queue(maxsize=1)
+    worker._outputs = context.Queue(maxsize=2)
+    worker._result_poller = select.poll()
+    worker._result_poller.register(worker._outputs._reader, select.POLLIN)
+    worker._process = NS(is_alive=Mock(return_value=True))
+    worker._pending = OrderedDict()
+    worker._active = False
+    worker._started = time.monotonic()
+    worker.ready = False
+    worker.disabled = False
+    worker.error = ""
+    worker.dropped = 0
+    try:
+        yield worker
+    finally:
+        for queue in (worker._inputs, worker._outputs):
+            queue.close()
+            queue.join_thread()
+
+
+def test_empty_poll_then_ready_dispatches_pending_input_without_delay(queue_worker):
+    worker = queue_worker
+    key = PrefillCandidateKey("r", "wf", "child", "ctx", 1, 0, "s", 1)
+    item = SemanticReportInput(key, 100., 20, 128, "Report.", True, 100, 1, 1)
+    worker.submit(item)
+    assert worker.poll() == ()
+    assert not worker.ready and not worker._active
+    worker._outputs.put(("ready", ()))
+    assert select.select([worker.fileno()], [], [], 1)[0]
+    assert worker.poll() == ()
+    assert worker.ready and worker._active
+    assert worker._inputs.get(timeout=1) == (item,)
+    assert not worker._pending
+
+
+def test_reply_poll_preserves_forecast_and_dispatches_next_batch(queue_worker):
+    worker = queue_worker
+    worker.ready = True
+    key = PrefillCandidateKey("r", "wf", "child", "ctx", 1, 0, "s", 1)
+    item = SemanticReportInput(key, 100., 20, 128, "Report.", True, 100, 1, 1)
+    worker.submit(item)
+    assert worker._inputs.get(timeout=1) == (item,)
+    newer = SemanticReportInput(key, 200., 40, 256, "Report complete.", True, 100, 1, 1)
+    worker.submit(newer)
+    reply = SemanticReportReply(item, .9, 10., 20., 40., 0.)
+    worker._outputs.put(("result", (reply,)))
+    assert select.select([worker.fileno()], [], [], 1)[0]
+    assert worker.poll() == (reply,)
+    assert worker._active
+    assert worker._inputs.get(timeout=1) == (newer,)
+    assert worker.poll() == ()
+    assert not worker.disabled
+
+
+@pytest.mark.parametrize("failure", ("exit", "startup_timeout", "inference_timeout"))
+def test_empty_result_queue_does_not_delay_worker_failure_detection(queue_worker, failure):
+    worker = queue_worker
+    worker._started = 0.
+    if failure == "exit":
+        worker._process.is_alive.return_value = False
+        expected = "semantic worker exited"
+    else:
+        if failure == "inference_timeout":
+            worker.ready = worker._active = True
+        expected = "semantic worker timed out"
+    with patch("beliefkv.runtime.semantic_report_worker.time.monotonic", return_value=61.):
+        assert worker.poll() == ()
+    assert worker.disabled
+    assert worker.error == expected
 
 
 @pytest.mark.skipif(not ARTIFACT.exists(), reason="local pinned encoder artifact required")

@@ -135,6 +135,19 @@ Current status:
   in the frozen arm's logs. The CLI --summary-only avoids duplicated event rows.
   Issue-to-ACK protection is already fixed in isolation but V15 lacks the issue
   budget telemetry to prove how many unprotected misses it would recover.
+- The isolated semantic worker now reuses a nonblocking poll listener to check
+  the result pipe before Queue.get_nowait, avoiding selector construction on
+  empty polls. Retain per-tick result, process-exit and timeout checks, input
+  freshness and batch dispatch. Relevant checks pass38 with one old-artifact
+  integration skip. Against4d6e6ea, real spawned CPU processes and bounded queues
+  with deterministic four-reply batches preserve inputs, replies and active
+  state. On20000 alternating idle/inflight-empty polls, mean wall falls
+  8.666/8.560 to3.371/3.283us(61.10%/61.64%). On400 result-ready polls,
+  mean rises49.280 to51.129us(3.75%); retain this cost. The benchmark excludes
+  neural inference, DMA and GPU stalls, so it cannot establish JCT savings.
+  Preservev16_semantic_worker_poll_cpu_20261010.json and commit in isolation.
+  At2026-10-10 09:42 CST, native has77 completed and no error/incomplete
+  outcomes; keep the full V15 freeze through both arms and postprocessing.
 - At2026-10-10 05:40 CST, the partial V15 H2D source snapshot has native
   2358 batches/731.314GB, JOIN/tool72 commands/1.384GB, demand handoff
   4692 node commands/1524 batches/36.050GB and no unknown controlled source.

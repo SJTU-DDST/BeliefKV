@@ -81,6 +81,18 @@ pool D2H均存在中间Host FULL驱逐，不能称覆盖有效副本。
 issue-budget保护修复尚未部署，V15缺少该遥测，不能直接推导
 其能挽回多少未保护动作。当前目标及双侧代码冻结保持不变。
 
+语义worker的结果轮询也属于共用控制路径成本。隔离下一版复用
+非阻塞poll监听器检查结果管道，空队列免去Queue.get_nowait内反复
+构建selector；每tick仍检查结果、退出及超时，不节流预测交付。
+38项相关检查通过，1项旧固定artifact集成检查跳过。真实spawn
+进程和有界IPC队列比较固定4d6e6ea，以确定性4条回复隔离神经
+推理：空闲/在途空队列各20000次，平均wall下降61.10%/61.64%；
+400次已就绪回复读取慢3.75%，保留其约1.85微秒代价。核对输入、
+回复及active状态一致，不能将CPU轮询节省当GPU或JCT收益。
+报告v16_semantic_worker_poll_cpu_20261010.json仅在隔离目录提交。
+09:42 CST的native结果为77个completed、无error/incomplete；
+未出终态的workflow不判失败，V15主目录、引擎与产物保持冻结。
+
 2026-10-10 05:40 CST快照：原生H2D731.314 GB，JOIN/tool1.384 GB，
 需求handoff36.050 GB。稍后消费快照中handoff FULL传输/确认复用
 19.283/19.203 GB，ACK到首次launch P5022.62 ms；JOIN为

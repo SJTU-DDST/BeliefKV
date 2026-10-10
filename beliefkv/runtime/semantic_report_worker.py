@@ -7,6 +7,7 @@ from dataclasses import dataclass
 import multiprocessing as mp
 import os
 from queue import Empty, Full
+import select
 import time
 
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
@@ -81,6 +82,8 @@ class SemanticReportWorker:
         context = mp.get_context("spawn")
         self._inputs = context.Queue(maxsize=1)
         self._outputs = context.Queue(maxsize=2)
+        self._result_poller = select.poll()
+        self._result_poller.register(self._outputs._reader, select.POLLIN)
         self._process = context.Process(
             target=_worker_main, args=(artifact, self._inputs, self._outputs), daemon=True,
         )
@@ -138,6 +141,9 @@ class SemanticReportWorker:
             if self._active or not self.ready:
                 self.disabled, self.error = True, "semantic worker timed out"
                 return ()
+        # Queue.get_nowait constructs a selector even when no result is available.
+        if not self._result_poller.poll(0):
+            return ()
         try:
             kind, values = self._outputs.get_nowait()
         except Empty:
