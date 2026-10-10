@@ -3,7 +3,9 @@ from __future__ import annotations
 import hashlib
 import json
 from pathlib import Path
+import shutil
 import subprocess
+import tempfile
 from typing import Iterable
 
 
@@ -43,19 +45,18 @@ def _tree_fingerprint(root: Path, paths: Iterable[str]) -> str:
     return digest.hexdigest()
 
 
-def _tree_with_patch(repository: Path, patch: Path | None) -> str:
-    base_tree = _git(repository, "rev-parse", "HEAD^{tree}")
-    temporary_index = repository / ".git" / "beliefkv-provenance-index"
-    environment = {"GIT_INDEX_FILE": str(temporary_index)}
-    try:
-        subprocess.run(
-            ("git", "read-tree", base_tree),
-            cwd=repository,
-            env={**__import__("os").environ, **environment},
-            check=True,
-            capture_output=True,
-        )
+def _tree_with_patch(
+    repository: Path, patch: Path | None, *, extra_paths: Iterable[str] = (),
+) -> str:
+    with tempfile.TemporaryDirectory(prefix="beliefkv-provenance-") as directory:
+        temporary_index = Path(directory) / "index"
+        environment = {"GIT_INDEX_FILE": str(temporary_index)}
         if patch is None:
+            index = Path(_git(repository, "rev-parse", "--git-path", "index"))
+            if not index.is_absolute():
+                index = repository / index
+            # Preserve staged additions and intent-to-add without touching the real index.
+            shutil.copyfile(index, temporary_index)
             subprocess.run(
                 ("git", "add", "-u"),
                 cwd=repository,
@@ -63,7 +64,22 @@ def _tree_with_patch(repository: Path, patch: Path | None) -> str:
                 check=True,
                 capture_output=True,
             )
+            if extra_paths:
+                subprocess.run(
+                    ("git", "add", "--", *extra_paths),
+                    cwd=repository,
+                    env={**__import__("os").environ, **environment},
+                    check=True,
+                    capture_output=True,
+                )
         else:
+            subprocess.run(
+                ("git", "read-tree", _git(repository, "rev-parse", "HEAD^{tree}")),
+                cwd=repository,
+                env={**__import__("os").environ, **environment},
+                check=True,
+                capture_output=True,
+            )
             subprocess.run(
                 ("git", "apply", "--cached", str(patch)),
                 cwd=repository,
@@ -77,8 +93,6 @@ def _tree_with_patch(repository: Path, patch: Path | None) -> str:
             env={**__import__("os").environ, **environment},
             text=True,
         ).strip()
-    finally:
-        temporary_index.unlink(missing_ok=True)
 
 
 def git_source_state(
@@ -112,14 +126,19 @@ def git_source_state(
     if canonical_patch is not None:
         patch = canonical_patch.expanduser().resolve()
         expected_tree = _tree_with_patch(repository, patch)
-        actual_tree = _tree_with_patch(repository, None)
-        patch_matches = expected_tree == actual_tree and not untracked
+        added = set(_paths(_git(
+            repository, "diff", "--name-only", "--diff-filter=A", "HEAD", expected_tree,
+        )))
+        covered_untracked = [path for path in untracked if path in added]
+        actual_tree = _tree_with_patch(repository, None, extra_paths=covered_untracked)
+        patch_matches = expected_tree == actual_tree and not (set(untracked) - added)
         state["canonical_patch"] = {
             "path": str(patch),
             "sha256": sha256_file(patch),
             "expected_tree": expected_tree,
             "actual_tree": actual_tree,
             "matches_worktree": patch_matches,
+            "covered_untracked_paths": covered_untracked,
         }
         if not patch_matches:
             raise RuntimeError(
