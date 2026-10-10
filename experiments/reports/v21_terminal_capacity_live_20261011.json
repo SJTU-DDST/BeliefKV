@@ -1,0 +1,1448 @@
+{
+  "scope": "Observed controller submission/ACK/first-launch chain; no DMA wall anchor, exposed-stall measurement or counterfactual speedup.",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d",
+  "summary": {
+    "join_commands": 46,
+    "tool_commands": 148,
+    "handoff_commands": 8549,
+    "by_source": {
+      "execution_handoff": {
+        "issued_commands": 8549,
+        "acknowledged_commands": 8549,
+        "actual_bytes": 74545111040,
+        "full_transfer_commands": 8549,
+        "full_reused_commands": 8535,
+        "full_not_reused_commands": 14,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 48660684800,
+        "full_verified_reused_bytes_known": 48570654720,
+        "full_reuse_proof_versions": {
+          "2": 8549
+        },
+        "native_reloaded_prefetched_full_before_first_service": 9,
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": false,
+            "last_observed_release_reason": null,
+            "full_transfer_commands": 3,
+            "full_reused_commands": 3,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 16158720,
+            "full_verified_reused_bytes_known": 16158720,
+            "full_reuse_proof_versions": {
+              "2": 3
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 3,
+              "p50": 24.819091796875,
+              "p90": 25.619482421875,
+              "max": 25.819580078125
+            }
+          },
+          {
+            "native_locked_at_registration": false,
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 6475,
+            "full_reused_commands": 6475,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 38322073600,
+            "full_verified_reused_bytes_known": 38322073600,
+            "full_reuse_proof_versions": {
+              "2": 6475
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 6475,
+              "p50": 23.472412109375,
+              "p90": 59.34790039062501,
+              "max": 740.208740234375
+            }
+          },
+          {
+            "native_locked_at_registration": false,
+            "last_observed_release_reason": "native_residency_lost",
+            "full_transfer_commands": 14,
+            "full_reused_commands": 0,
+            "full_not_reused_commands": 14,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 90030080,
+            "full_verified_reused_bytes_known": 0,
+            "full_reuse_proof_versions": {
+              "2": 14
+            },
+            "native_reloaded_prefetched_full_before_first_service": 9,
+            "ack_to_first_service_ms": {
+              "count": 14,
+              "p50": 137.26025390625,
+              "p90": 12330.71789550783,
+              "max": 17595.067626953125
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "last_observed_release_reason": null,
+            "full_transfer_commands": 1,
+            "full_reused_commands": 1,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 34078720,
+            "full_verified_reused_bytes_known": 34078720,
+            "full_reuse_proof_versions": {
+              "2": 1
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 1,
+              "p50": 26.853515625,
+              "p90": 26.853515625,
+              "max": 26.853515625
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 2056,
+            "full_reused_commands": 2056,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 10198343680,
+            "full_verified_reused_bytes_known": 10198343680,
+            "full_reuse_proof_versions": {
+              "2": 2056
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 2056,
+              "p50": 26.0096435546875,
+              "p90": 57.60400390625,
+              "max": 740.63671875
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 393,
+        "ack_to_first_service_ms": {
+          "count": 8549,
+          "p50": 24.193359375,
+          "p90": 59.61376953124999,
+          "max": 17595.067626953125
+        }
+      },
+      "join_ticket": {
+        "issued_commands": 46,
+        "acknowledged_commands": 46,
+        "actual_bytes": 2240614400,
+        "full_transfer_commands": 46,
+        "full_reused_commands": 36,
+        "full_not_reused_commands": 10,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 373329920,
+        "full_verified_reused_bytes_known": 265482240,
+        "full_reuse_proof_versions": {
+          "2": 46
+        },
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": false,
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 12,
+            "full_reused_commands": 12,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 266240,
+            "full_verified_reused_bytes_known": 266240,
+            "full_reuse_proof_versions": {
+              "2": 12
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 12,
+              "p50": 373.308837890625,
+              "p90": 496.7272216796875,
+              "max": 1379.422607421875
+            }
+          },
+          {
+            "native_locked_at_registration": false,
+            "last_observed_release_reason": "service_window_expired",
+            "full_transfer_commands": 5,
+            "full_reused_commands": 1,
+            "full_not_reused_commands": 4,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 102400,
+            "full_verified_reused_bytes_known": 20480,
+            "full_reuse_proof_versions": {
+              "2": 5
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 5,
+              "p50": 9003.6865234375,
+              "p90": 23735.629833984374,
+              "max": 24729.550048828125
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 22,
+            "full_reused_commands": 22,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 257495040,
+            "full_verified_reused_bytes_known": 257495040,
+            "full_reuse_proof_versions": {
+              "2": 22
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 22,
+              "p50": 267.7454833984375,
+              "p90": 457.3010986328126,
+              "max": 1380.315185546875
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "last_observed_release_reason": "service_window_expired",
+            "full_transfer_commands": 7,
+            "full_reused_commands": 1,
+            "full_not_reused_commands": 6,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 115466240,
+            "full_verified_reused_bytes_known": 7700480,
+            "full_reuse_proof_versions": {
+              "2": 7
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 7,
+              "p50": 7335.96875,
+              "p90": 23239.2966796875,
+              "max": 24730.1455078125
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 23,
+        "ack_to_first_service_ms": {
+          "count": 46,
+          "p50": 373.7904052734375,
+          "p90": 9004.238037109375,
+          "max": 24730.1455078125
+        }
+      },
+      "tool_wait": {
+        "issued_commands": 148,
+        "acknowledged_commands": 148,
+        "actual_bytes": 3232194560,
+        "full_transfer_commands": 148,
+        "full_reused_commands": 144,
+        "full_not_reused_commands": 4,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 1107353600,
+        "full_verified_reused_bytes_known": 946278400,
+        "full_reuse_proof_versions": {
+          "2": 148
+        },
+        "native_reloaded_prefetched_full_before_first_service": 1,
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": false,
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 110,
+            "full_reused_commands": 110,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 727900160,
+            "full_verified_reused_bytes_known": 727900160,
+            "full_reuse_proof_versions": {
+              "2": 110
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 110,
+              "p50": 431.6343994140625,
+              "p90": 927.5178466796875,
+              "max": 1268.686767578125
+            }
+          },
+          {
+            "native_locked_at_registration": false,
+            "last_observed_release_reason": "service_window_expired",
+            "full_transfer_commands": 4,
+            "full_reused_commands": 1,
+            "full_not_reused_commands": 3,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 163553280,
+            "full_verified_reused_bytes_known": 6922240,
+            "full_reuse_proof_versions": {
+              "2": 4
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 4,
+              "p50": 12351.925170898438,
+              "p90": 12352.823852539062,
+              "max": 12353.057861328125
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 33,
+            "full_reused_commands": 33,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 211456000,
+            "full_verified_reused_bytes_known": 211456000,
+            "full_reuse_proof_versions": {
+              "2": 33
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 33,
+              "p50": 367.624267578125,
+              "p90": 962.1244140625,
+              "max": 1612.563232421875
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "last_observed_release_reason": "service_window_expired",
+            "full_transfer_commands": 1,
+            "full_reused_commands": 0,
+            "full_not_reused_commands": 1,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 4444160,
+            "full_verified_reused_bytes_known": 0,
+            "full_reuse_proof_versions": {
+              "2": 1
+            },
+            "native_reloaded_prefetched_full_before_first_service": 1,
+            "ack_to_first_service_ms": {
+              "count": 1,
+              "p50": 12353.883544921875,
+              "p90": 12353.883544921875,
+              "max": 12353.883544921875
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 32,
+        "ack_to_first_service_ms": {
+          "count": 148,
+          "p50": 431.6343994140625,
+          "p90": 1021.3655517578126,
+          "max": 12353.883544921875
+        }
+      }
+    },
+    "trigger_kinds": {
+      "unrecorded_legacy": 8697,
+      "observed_no_tool_eos": 32,
+      "estimated_work": 14
+    },
+    "join_bytes": 2240614400,
+    "tool_bytes": 3232194560,
+    "handoff_bytes": 74545111040,
+    "join_submitted_before_eos": 14,
+    "full_reused": 8715,
+    "full_not_reused": 28,
+    "full_use_unknown": 0,
+    "full_reuse_proof_versions": {
+      "2": 8743
+    },
+    "mamba_forward_verified": 448,
+    "redemoted_before_first_service": 0,
+    "native_reloaded_before_first_service": 10,
+    "native_reloaded_prefetched_full_before_first_service": 10,
+    "native_reloaded_prefetched_mamba_before_first_service": 10,
+    "native_reload_pool_associations_by_evidence": {
+      "kv": {
+        "reconciled_native_receipt": 0,
+        "legacy_batch_pool_presence": 10
+      },
+      "mamba": {
+        "reconciled_native_receipt": 0,
+        "legacy_batch_pool_presence": 10
+      }
+    },
+    "issue_to_submit_ms": {
+      "count": 8743,
+      "p50": 2.034912109375,
+      "p90": 5.3865234375000055,
+      "max": 34.150146484375
+    },
+    "enqueue_to_submit_ms": {
+      "count": 8743,
+      "p50": 1.756131649017334,
+      "p90": 4.909176565706734,
+      "max": 28.694089502096176
+    },
+    "submit_to_ack_ms": {
+      "count": 8743,
+      "p50": 12.612351216375828,
+      "p90": 103.38035691529512,
+      "max": 425.95561034977436
+    },
+    "ack_to_first_service_ms": {
+      "count": 8743,
+      "p50": 24.617431640625,
+      "p90": 66.960791015625,
+      "max": 24730.1455078125
+    },
+    "join_submit_after_eos_ms": {
+      "count": 46,
+      "p50": 11.3292236328125,
+      "p90": 33.802734375,
+      "max": 203.701171875
+    },
+    "completion_lead_ms": {
+      "count": 0
+    },
+    "pressure_events": 56,
+    "pressure_events_with_prior_prepare_ack": 52,
+    "unique_prepared_nodes_demoted": 52,
+    "prepare_issued_commands": 1134,
+    "prepare_acknowledged_commands": 1134,
+    "prepare_commands_with_observed_restore": 147,
+    "prepare_commands_with_native_restore": 13,
+    "prepare_commands_with_controlled_restore": 141,
+    "prepare_commands_without_observed_restore": 987,
+    "prepare_commands_with_later_node_pool_d2h": 0,
+    "prepare_commands_with_host_eviction_before_later_d2h": 0,
+    "prepare_host_lifetime": {
+      "host_eviction_evidence_available": true,
+      "command_categories": {
+        "no_restore": 987,
+        "before_observed_eviction_only": 147,
+        "after_observed_eviction_only": 0,
+        "mixed": 0,
+        "unknown_eviction_evidence": 0
+      },
+      "restore_node_pool_associations": {
+        "before_observed_eviction": 651,
+        "after_observed_eviction": 0,
+        "unknown": 0
+      },
+      "by_pool": {
+        "kv": {
+          "prepared_commands": 1134,
+          "commands_with_observed_eviction": 450,
+          "ack_to_first_observed_eviction_ms": {
+            "count": 450,
+            "p50": 381341.9919433594,
+            "p90": 727603.7726806641,
+            "max": 982398.7236328125
+          }
+        }
+      },
+      "repeated_context_epoch_node_creation_groups": 0,
+      "additional_prepares_on_same_identity": 0,
+      "max_commands_on_same_identity": 1,
+      "prepare_identity_evidence_missing_commands": 0,
+      "scope": "Node/pool associations, not allocation continuity or model-forward reuse. A restore after observed Host eviction cannot establish consumption of the original prepared copy. Eviction latency stops at the next observed same-node/pool D2H write; absent eviction records are not zero evictions. Reported latencies include only observed evictions, excluding censored copies. Repeated context/epoch/node/creation identities are not exact duplicate bytes and do not establish the same wait episode across splits."
+    },
+    "prepare_selection": {
+      "candidate_records": 254,
+      "records_without_command_id": 0,
+      "burst_records": 169,
+      "explicit_burst_commands": 1134,
+      "acknowledged_burst_commands": 1134,
+      "by_source": {
+        "join_prepare": {
+          "candidate_records": 100,
+          "acknowledged_command_records": 100,
+          "direct_reclaim_potential_commands": 64,
+          "zero_direct_reclaim_potential_commands": 36,
+          "direct_reclaim_potential_unknown_commands": 0,
+          "selected_transfer_bytes_known": 1236459520.0,
+          "selected_transfer_bytes_unknown_records": 0,
+          "zero_direct_reclaim_selected_transfer_bytes_known": 208199680.0,
+          "missing_full_prefix_tokens": {
+            "count": 100,
+            "p50": 568.0,
+            "p90": 2340.1000000000004,
+            "max": 9088.0
+          }
+        },
+        "tool_wait": {
+          "candidate_records": 154,
+          "acknowledged_command_records": 154,
+          "direct_reclaim_potential_commands": 8,
+          "zero_direct_reclaim_potential_commands": 146,
+          "direct_reclaim_potential_unknown_commands": 0,
+          "selected_transfer_bytes_known": 1063321600.0,
+          "selected_transfer_bytes_unknown_records": 0,
+          "zero_direct_reclaim_selected_transfer_bytes_known": 923361280.0,
+          "missing_full_prefix_tokens": {
+            "count": 154,
+            "p50": 3860.5,
+            "p90": 10308.2,
+            "max": 21469.0
+          }
+        }
+      },
+      "scope": "Candidate selection-time estimates, not reclaimed bytes, DMA bytes or forward-use credit. Zero direct reclaim may be a necessary ancestor backup before an exclusive checkpoint becomes reclaimable. Match ACKs by command ID only; legacy records without it remain unassociated. Missing candidate estimates remain unknown. For a burst, candidate transfer/reclaim estimates describe the selected first extent only; explicit burst IDs link additional per-node receipts without multiplying this estimate or granting reuse credit."
+    },
+    "wait_events": {
+      "observed_wait_events": 1966,
+      "records_without_wait_event_identity": 0,
+      "by_source": {
+        "join_ticket": {
+          "observed_events": 112,
+          "events_with_observed_full_plan": 109,
+          "events_with_capacity_observation": 109,
+          "events_with_capacity_condition": {
+            "none": 107,
+            "full_only": 109,
+            "mamba_only": 23,
+            "both": 23
+          },
+          "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 271933440,
+          "max_snapshot_planned_full_bytes_known": 2236723200,
+          "planned_full_bytes_unknown_events": 0,
+          "events_with_early_reused_full": 21,
+          "completion_boundary_unknown_events": 69,
+          "early_started_and_reused_full_bytes": 221245440,
+          "remaining_native_full_host_hit_bytes_known": 216268800,
+          "remaining_native_full_evidence_unknown_events": 69,
+          "client_submit_to_native_arrival_ms": {
+            "count": 43,
+            "p50": 110.558837890625,
+            "p90": 189.7372070312501,
+            "max": 277.868408203125
+          },
+          "client_submit_to_http_request_ms": {
+            "count": 41,
+            "p50": 9.24853515625,
+            "p90": 12.641845703125,
+            "max": 23.904296875
+          },
+          "http_request_to_body_sent_ms": {
+            "count": 41,
+            "p50": 1.924072265625,
+            "p90": 27.655029296875,
+            "max": 90.863037109375
+          },
+          "body_sent_to_native_arrival_ms": {
+            "count": 41,
+            "p50": 91.063720703125,
+            "p90": 159.301025390625,
+            "max": 251.09326171875
+          },
+          "http_request_to_response_headers_ms": {
+            "count": 41,
+            "p50": 435.842041015625,
+            "p90": 1014.048095703125,
+            "max": 18978.97802734375
+          },
+          "body_sent_to_api_received_ms": {
+            "count": 36,
+            "p50": 0.9649658203125,
+            "p90": 23.7943115234375,
+            "max": 59.68603515625
+          },
+          "api_received_to_chat_conversion_ms": {
+            "count": 43,
+            "p50": 15.200439453125,
+            "p90": 29.905761718750004,
+            "max": 34.255126953125
+          },
+          "chat_conversion_ms": {
+            "count": 43,
+            "p50": 27.366943359375,
+            "p90": 31.293017578125003,
+            "max": 38.44580078125
+          },
+          "chat_conversion_to_tokenized_ms": {
+            "count": 43,
+            "p50": 0.38330078125,
+            "p90": 0.436572265625,
+            "max": 0.519775390625
+          },
+          "tokenized_to_dispatch_ms": {
+            "count": 43,
+            "p50": 0.0048828125,
+            "p90": 0.005322265625000001,
+            "max": 0.006103515625
+          },
+          "dispatch_to_scheduler_received_ms": {
+            "count": 43,
+            "p50": 34.048095703125,
+            "p90": 110.75878906250011,
+            "max": 196.9677734375
+          },
+          "scheduler_received_to_queue_registered_ms": {
+            "count": 43,
+            "p50": 0.177734375,
+            "p90": 0.2809570312500001,
+            "max": 0.4814453125
+          },
+          "client_submit_to_first_service_ms": {
+            "count": 43,
+            "p50": 359.73583984375,
+            "p90": 834.1160644531253,
+            "max": 18967.23779296875
+          },
+          "submit_to_first_service_ms": {
+            "count": 43,
+            "p50": 215.363525390625,
+            "p90": 749.3898925781257,
+            "max": 18888.0244140625
+          },
+          "last_ack_to_first_service_ms": {
+            "count": 24,
+            "p50": 368.781982421875,
+            "p90": 1195.8198730468744,
+            "max": 2580.164306640625
+          },
+          "full_expiration_commands_by_stage": {
+            "before_completion": 6,
+            "awaiting_native_arrival": 1
+          },
+          "full_expiration_bytes_by_stage": {
+            "before_completion": 107765760,
+            "awaiting_native_arrival": 7700480
+          }
+        },
+        "tool_wait": {
+          "observed_events": 1854,
+          "events_with_observed_full_plan": 579,
+          "events_with_capacity_observation": 76,
+          "events_with_capacity_condition": {
+            "none": 8,
+            "full_only": 69,
+            "mamba_only": 0,
+            "both": 0
+          },
+          "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 0,
+          "max_snapshot_planned_full_bytes_known": 56691425280,
+          "planned_full_bytes_unknown_events": 0,
+          "events_with_early_reused_full": 29,
+          "completion_boundary_unknown_events": 4,
+          "early_started_and_reused_full_bytes": 830730240,
+          "remaining_native_full_host_hit_bytes_known": 245173493760,
+          "remaining_native_full_evidence_unknown_events": 11,
+          "client_submit_to_native_arrival_ms": {
+            "count": 1843,
+            "p50": 170.400146484375,
+            "p90": 313.4610351562499,
+            "max": 1905.825927734375
+          },
+          "client_submit_to_http_request_ms": {
+            "count": 1819,
+            "p50": 13.841552734375,
+            "p90": 68.03188476562501,
+            "max": 945.183349609375
+          },
+          "http_request_to_body_sent_ms": {
+            "count": 1781,
+            "p50": 7.716064453125,
+            "p90": 98.573974609375,
+            "max": 857.783935546875
+          },
+          "body_sent_to_native_arrival_ms": {
+            "count": 1781,
+            "p50": 114.036376953125,
+            "p90": 230.152587890625,
+            "max": 628.943603515625
+          },
+          "http_request_to_response_headers_ms": {
+            "count": 1819,
+            "p50": 13977.041015625,
+            "p90": 19061.569287109374,
+            "max": 23656.867919921875
+          },
+          "body_sent_to_api_received_ms": {
+            "count": 1463,
+            "p50": 37.839599609375,
+            "p90": 144.39184570312494,
+            "max": 562.0869140625
+          },
+          "api_received_to_chat_conversion_ms": {
+            "count": 1843,
+            "p50": 14.543212890625,
+            "p90": 20.475927734375,
+            "max": 41.939697265625
+          },
+          "chat_conversion_ms": {
+            "count": 1843,
+            "p50": 34.47509765625,
+            "p90": 67.6517578125,
+            "max": 158.202392578125
+          },
+          "chat_conversion_to_tokenized_ms": {
+            "count": 1843,
+            "p50": 0.47412109375,
+            "p90": 0.8331054687499999,
+            "max": 3.188720703125
+          },
+          "tokenized_to_dispatch_ms": {
+            "count": 1843,
+            "p50": 0.00439453125,
+            "p90": 0.00537109375,
+            "max": 0.012451171875
+          },
+          "dispatch_to_scheduler_received_ms": {
+            "count": 1843,
+            "p50": 19.43798828125,
+            "p90": 72.8787109375,
+            "max": 222.67626953125
+          },
+          "scheduler_received_to_queue_registered_ms": {
+            "count": 1843,
+            "p50": 0.13037109375,
+            "p90": 0.205322265625,
+            "max": 5.32568359375
+          },
+          "client_submit_to_first_service_ms": {
+            "count": 1844,
+            "p50": 13860.35693359375,
+            "p90": 18927.178662109374,
+            "max": 23529.571044921875
+          },
+          "submit_to_first_service_ms": {
+            "count": 1843,
+            "p50": 13641.778564453125,
+            "p90": 18771.93681640625,
+            "max": 23446.60498046875
+          },
+          "last_ack_to_first_service_ms": {
+            "count": 34,
+            "p50": 440.8424072265625,
+            "p90": 1066.0477050781249,
+            "max": 12395.997802734375
+          },
+          "full_expiration_commands_by_stage": {
+            "before_completion": 1
+          },
+          "full_expiration_bytes_by_stage": {
+            "before_completion": 4444160
+          }
+        }
+      }
+    },
+    "terminal_capacity_handoff": {
+      "reclaim_records": 267,
+      "terminal_contexts": 182,
+      "freed_device_units": {
+        "0": 2267654,
+        "2": 398
+      },
+      "freed_host_units": {
+        "0": 1817866,
+        "2": 510
+      },
+      "freed_device_bytes_known": {
+        "0": 46441553920,
+        "2": 25626869760
+      },
+      "freed_host_bytes_known": {
+        "0": 37229895680,
+        "2": 32838451200
+      },
+      "freed_device_units_with_unknown_byte_size": {},
+      "freed_host_units_with_unknown_byte_size": {},
+      "terminal_children": 126,
+      "by_invocation_scope": {
+        "dynamic_subagent": {
+          "reclaim_records": 211,
+          "terminal_contexts": 126,
+          "freed_device_units": {
+            "0": 1277582,
+            "2": 137
+          },
+          "freed_host_units": {
+            "0": 1395787,
+            "2": 354
+          },
+          "freed_device_bytes_known": {
+            "0": 26164879360,
+            "2": 8821309440
+          },
+          "freed_host_bytes_known": {
+            "0": 28585717760,
+            "2": 22793748480
+          },
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        },
+        "runtime_internal": {
+          "reclaim_records": 56,
+          "terminal_contexts": 56,
+          "freed_device_units": {
+            "0": 990072,
+            "2": 261
+          },
+          "freed_host_units": {
+            "0": 422079,
+            "2": 156
+          },
+          "freed_device_bytes_known": {
+            "0": 20276674560,
+            "2": 16805560320
+          },
+          "freed_host_bytes_known": {
+            "0": 8644177920,
+            "2": 10044702720
+          },
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        }
+      },
+      "parent_first_services": 44,
+      "parent_services_with_prior_device_release": 43,
+      "last_child_return_to_first_service_ms": {
+        "count": 44,
+        "p50": 270.99658203125,
+        "p90": 756.9531494140628,
+        "max": 18904.607666015625
+      },
+      "request_wait_ms": {
+        "count": 44,
+        "p50": 240.07355282083154,
+        "p90": 750.145901460201,
+        "max": 18905.920029617846
+      },
+      "restore_lookahead_records": 18,
+      "parent_services_with_prior_restore_lookahead": 18,
+      "restore_lookahead_to_first_service_ms": {
+        "count": 18,
+        "p50": 169.13330078125,
+        "p90": 230.79047851562504,
+        "max": 17725.23779296875
+      },
+      "queue_wait_before_restore_lookahead_ms": {
+        "count": 18,
+        "p50": 240.34658260643482,
+        "p90": 929.8167668282987,
+        "max": 1180.679633282125
+      },
+      "rows": [
+        {
+          "workflow_id": "deepagents:autonomous:django__django-12741:874cc5a30550",
+          "context_id": "deepagents:autonomous:django__django-12741:874cc5a30550:context:root",
+          "join_id": "deepagents-join:0161afa6b8a3a53d",
+          "request_id": "beliefkv:01a126da-da1f-7ad3-98a8-c335cec48bb8",
+          "freed_device_units_before_service": {
+            "0": 6109,
+            "2": 4
+          },
+          "last_child_return_to_first_service_ms": 334.87353515625,
+          "request_wait_ms": 234.84668601304293,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11099:1b1795f9c2a6",
+          "context_id": "deepagents:autonomous:django__django-11099:1b1795f9c2a6:context:root",
+          "join_id": "deepagents-join:4e6628df7510adba",
+          "request_id": "beliefkv:01a126dc-5e8a-7043-9000-1c1b4092e9e8",
+          "freed_device_units_before_service": {
+            "0": 6867,
+            "2": 6
+          },
+          "last_child_return_to_first_service_ms": 79.3125,
+          "request_wait_ms": 79.75874748080969,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-15103:5b84e72a0da8",
+          "context_id": "deepagents:autonomous:django__django-15103:5b84e72a0da8:context:root",
+          "join_id": "deepagents-join:04900d570e02ec91",
+          "request_id": "beliefkv:01a126dd-c60e-7e21-b90c-6ec3859b9a2a",
+          "freed_device_units_before_service": {
+            "0": 8477,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 211.217529296875,
+          "request_wait_ms": 213.0898917093873,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11066:1939ea8eb0a7",
+          "context_id": "deepagents:autonomous:django__django-11066:1939ea8eb0a7:context:root",
+          "join_id": "deepagents-join:7931188f14e5c10b",
+          "request_id": "beliefkv:01a126dd-cc2a-7c51-81c7-d29d30d07c27",
+          "freed_device_units_before_service": {
+            "0": 24540,
+            "2": 6
+          },
+          "last_child_return_to_first_service_ms": 79.769287109375,
+          "request_wait_ms": 101.0846197605133,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-10914:2ef9209a9297",
+          "context_id": "deepagents:autonomous:django__django-10914:2ef9209a9297:context:root",
+          "join_id": "deepagents-join:6f6c1aa130fc574b",
+          "request_id": "beliefkv:01a126de-20d9-74e0-ab07-dbbc29fb0a32",
+          "freed_device_units_before_service": {
+            "0": 24200,
+            "2": 6
+          },
+          "last_child_return_to_first_service_ms": 123.5361328125,
+          "request_wait_ms": 123.9024680107832,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pydata__xarray-3993:e66bd1ac565f",
+          "context_id": "deepagents:autonomous:pydata__xarray-3993:e66bd1ac565f:context:root",
+          "join_id": "deepagents-join:42aedcdb350d8c59",
+          "request_id": "beliefkv:01a126de-6382-7b12-8522-7f8f98513a79",
+          "freed_device_units_before_service": {
+            "0": 17029,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 321.970703125,
+          "request_wait_ms": 415.8161021769047,
+          "restore_lookahead_to_first_service_ms": 180.753662109375,
+          "queue_wait_before_restore_lookahead_ms": 235.05886923521757
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-16255:07903d021612",
+          "context_id": "deepagents:autonomous:django__django-16255:07903d021612:context:root",
+          "join_id": "deepagents-join:c9db8f281c95c664",
+          "request_id": "beliefkv:01a126df-1b3a-7df2-8063-4f5b2d188cde",
+          "freed_device_units_before_service": {
+            "0": 26450,
+            "2": 1
+          },
+          "last_child_return_to_first_service_ms": 88.911376953125,
+          "request_wait_ms": 89.70809914171696,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pytest-dev__pytest-5809:0e3d26e69f47",
+          "context_id": "deepagents:autonomous:pytest-dev__pytest-5809:0e3d26e69f47:context:root",
+          "join_id": "deepagents-join:2f41b1f7651fafcb",
+          "request_id": "beliefkv:01a126df-7044-7580-b844-55610ac8a2f4",
+          "freed_device_units_before_service": {
+            "0": 8352,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 364.278076171875,
+          "request_wait_ms": 385.3493966162205,
+          "restore_lookahead_to_first_service_ms": 211.70166015625,
+          "queue_wait_before_restore_lookahead_ms": 173.64239878952503
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11400:9a33693a5b5e",
+          "context_id": "deepagents:autonomous:django__django-11400:9a33693a5b5e:context:root",
+          "join_id": "deepagents-join:621fdbe569f2ba07",
+          "request_id": "beliefkv:01a126df-9273-7b43-856d-a759532ed285",
+          "freed_device_units_before_service": {
+            "0": 25417,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 932.50634765625,
+          "request_wait_ms": 979.1286755353212,
+          "restore_lookahead_to_first_service_ms": 92.162353515625,
+          "queue_wait_before_restore_lookahead_ms": 886.963352560997
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167",
+          "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+          "join_id": "deepagents-join:482e75013c5a0dc5",
+          "request_id": "beliefkv:01a126e0-aa98-77c0-a542-8253373cc8ce",
+          "freed_device_units_before_service": {
+            "0": 15119,
+            "2": 4
+          },
+          "last_child_return_to_first_service_ms": 602.0869140625,
+          "request_wait_ms": 602.4204855784774,
+          "restore_lookahead_to_first_service_ms": 185.663330078125,
+          "queue_wait_before_restore_lookahead_ms": 416.754181496799
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11276:21576a5c06fc",
+          "context_id": "deepagents:autonomous:django__django-11276:21576a5c06fc:context:root",
+          "join_id": "deepagents-join:9a1e80dbfa74340d",
+          "request_id": "beliefkv:01a126e0-f666-76b3-b122-af850184a706",
+          "freed_device_units_before_service": {
+            "0": 19360,
+            "2": 1
+          },
+          "last_child_return_to_first_service_ms": 179.294677734375,
+          "request_wait_ms": 146.9708839431405,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11292:be64dc14b282",
+          "context_id": "deepagents:autonomous:django__django-11292:be64dc14b282:context:root",
+          "join_id": "deepagents-join:fad3ffb7c109b005",
+          "request_id": "beliefkv:01a126e1-2c95-7503-b882-98f129d73a6c",
+          "freed_device_units_before_service": {
+            "0": 35625,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 125.791015625,
+          "request_wait_ms": 139.48780298233032,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:psf__requests-1766:beba0016a51c",
+          "context_id": "deepagents:autonomous:psf__requests-1766:beba0016a51c:context:root",
+          "join_id": "deepagents-join:5f46a9fffeeb9985",
+          "request_id": "beliefkv:01a126e1-2e03-7540-8508-484aecd095b5",
+          "freed_device_units_before_service": {
+            "0": 18871,
+            "2": 5
+          },
+          "last_child_return_to_first_service_ms": 345.8154296875,
+          "request_wait_ms": 254.97262366116047,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11239:606be0a8f4e9",
+          "context_id": "deepagents:autonomous:django__django-11239:606be0a8f4e9:context:root",
+          "join_id": "deepagents-join:acb0b771638f96cc",
+          "request_id": "beliefkv:01a126e1-3e7b-7f33-92ae-70bb9acac34f",
+          "freed_device_units_before_service": {
+            "0": 9394
+          },
+          "last_child_return_to_first_service_ms": 200.95068359375,
+          "request_wait_ms": 221.66569717228413,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11333:48f4b5412f44",
+          "context_id": "deepagents:autonomous:django__django-11333:48f4b5412f44:context:root",
+          "join_id": "deepagents-join:ecdb5bf8129259ef",
+          "request_id": "beliefkv:01a126e1-5222-7fb3-9164-5150fbd62ba9",
+          "freed_device_units_before_service": {
+            "0": 29200,
+            "2": 4
+          },
+          "last_child_return_to_first_service_ms": 281.095703125,
+          "request_wait_ms": 156.41554817557335,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:psf__requests-1142:68ffd976de2b",
+          "context_id": "deepagents:autonomous:psf__requests-1142:68ffd976de2b:context:root",
+          "join_id": "deepagents-join:257ffb665868e1c0",
+          "request_id": "beliefkv:01a126e1-acd7-7cd2-b7c8-78f7a182e652",
+          "freed_device_units_before_service": {
+            "0": 18426,
+            "2": 1
+          },
+          "last_child_return_to_first_service_ms": 229.3232421875,
+          "request_wait_ms": 234.20218471437693,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11066:1939ea8eb0a7",
+          "context_id": "deepagents:autonomous:django__django-11066:1939ea8eb0a7:context:root",
+          "join_id": "deepagents-join:8bc0cefce299ac13",
+          "request_id": "beliefkv:01a126e1-ee78-7093-9827-7973cdd096f2",
+          "freed_device_units_before_service": {
+            "0": 5391
+          },
+          "last_child_return_to_first_service_ms": 288.57470703125,
+          "request_wait_ms": 290.2944078668952,
+          "restore_lookahead_to_first_service_ms": 209.5234375,
+          "queue_wait_before_restore_lookahead_ms": 80.76867088675499
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pydata__xarray-6744:820d5e0e51b1",
+          "context_id": "deepagents:autonomous:pydata__xarray-6744:820d5e0e51b1:context:root",
+          "join_id": "deepagents-join:5dc832736fd5edc1",
+          "request_id": "beliefkv:01a126e2-64a1-77d2-889c-469cadd0ac12",
+          "freed_device_units_before_service": {
+            "0": 23541,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 318.31298828125,
+          "request_wait_ms": 319.2984228953719,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa",
+          "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+          "join_id": "deepagents-join:6db449887f252f67",
+          "request_id": "beliefkv:01a126e2-2ea9-7ac2-845c-283c43b52e68",
+          "freed_device_units_before_service": {
+            "0": 15997
+          },
+          "last_child_return_to_first_service_ms": 17773.31005859375,
+          "request_wait_ms": 17775.17957147211,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7432:4159262db3c2",
+          "context_id": "deepagents:autonomous:pytest-dev__pytest-7432:4159262db3c2:context:root",
+          "join_id": "deepagents-join:5ccab11550d5c5df",
+          "request_id": "beliefkv:01a126e3-63ea-7dd1-8590-ad6627dbf41c",
+          "freed_device_units_before_service": {
+            "0": 21055,
+            "2": 1
+          },
+          "last_child_return_to_first_service_ms": 299.476318359375,
+          "request_wait_ms": 156.19808714836836,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11163:413b51e7d0af",
+          "context_id": "deepagents:autonomous:django__django-11163:413b51e7d0af:context:root",
+          "join_id": "deepagents-join:ff65a18c136c1efb",
+          "request_id": "beliefkv:01a126e3-6a3c-7861-a97a-41e7e7581be3",
+          "freed_device_units_before_service": {
+            "0": 11945,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 175.0439453125,
+          "request_wait_ms": 143.69409251958132,
+          "restore_lookahead_to_first_service_ms": 123.537109375,
+          "queue_wait_before_restore_lookahead_ms": 20.15372086316347
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-13023:3b9d85055dc2",
+          "context_id": "deepagents:autonomous:django__django-13023:3b9d85055dc2:context:root",
+          "join_id": "deepagents-join:43d3d4d9e28e1cd8",
+          "request_id": "beliefkv:01a126e3-6c5f-7343-a91e-e0126f875083",
+          "freed_device_units_before_service": {
+            "0": 12153
+          },
+          "last_child_return_to_first_service_ms": 18904.607666015625,
+          "request_wait_ms": 18905.920029617846,
+          "restore_lookahead_to_first_service_ms": 17725.23779296875,
+          "queue_wait_before_restore_lookahead_ms": 1180.679633282125
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11206:2d80ef444f55",
+          "context_id": "deepagents:autonomous:django__django-11206:2d80ef444f55:context:root",
+          "join_id": "deepagents-join:acb142de53027727",
+          "request_id": "beliefkv:01a126e3-d951-7da2-9132-226190f07caf",
+          "freed_device_units_before_service": {
+            "0": 14440,
+            "2": 5
+          },
+          "last_child_return_to_first_service_ms": 260.135986328125,
+          "request_wait_ms": 270.81532031297684,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:psf__requests-2317:5b0e8c907878",
+          "context_id": "deepagents:autonomous:psf__requests-2317:5b0e8c907878:context:root",
+          "join_id": "deepagents-join:3e08f4d4f7f70332",
+          "request_id": "beliefkv:01a126e4-4a97-72b2-8666-d207a9e720f4",
+          "freed_device_units_before_service": {
+            "0": 14817,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 323.505615234375,
+          "request_wait_ms": 349.5734101161361,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+          "context_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:context:root",
+          "join_id": "deepagents-join:c13ab615d0a2a78d",
+          "request_id": "beliefkv:01a126e4-50ba-7ad1-ad76-a38457cba156",
+          "freed_device_units_before_service": {
+            "0": 31732,
+            "2": 2
+          },
+          "last_child_return_to_first_service_ms": 1436.516845703125,
+          "request_wait_ms": 1210.6549721211195,
+          "restore_lookahead_to_first_service_ms": 180.84228515625,
+          "queue_wait_before_restore_lookahead_ms": 1029.8080667853355
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-14631:2f18f23667cc",
+          "context_id": "deepagents:autonomous:django__django-14631:2f18f23667cc:context:root",
+          "join_id": "deepagents-join:291c6a333ef010a0",
+          "request_id": "beliefkv:01a126e5-7420-7892-87e2-718d6fcd4973",
+          "freed_device_units_before_service": {
+            "0": 15468,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 153.79638671875,
+          "request_wait_ms": 187.39579059183598,
+          "restore_lookahead_to_first_service_ms": 99.91015625,
+          "queue_wait_before_restore_lookahead_ms": 87.48337253928185
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-10999:ba6bc943cf20",
+          "context_id": "deepagents:autonomous:django__django-10999:ba6bc943cf20:context:root",
+          "join_id": "deepagents-join:d36375abd32952a9",
+          "request_id": "beliefkv:01a126e5-e7d2-7440-ae85-4e37c7089bd1",
+          "freed_device_units_before_service": {
+            "0": 12214,
+            "2": 5
+          },
+          "last_child_return_to_first_service_ms": 542.432861328125,
+          "request_wait_ms": 498.73256031423807,
+          "restore_lookahead_to_first_service_ms": 103.299072265625,
+          "queue_wait_before_restore_lookahead_ms": 395.43121214956045
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pytest-dev__pytest-10051:ce010bfbbfdd",
+          "context_id": "deepagents:autonomous:pytest-dev__pytest-10051:ce010bfbbfdd:context:root",
+          "join_id": "deepagents-join:2d592144e2c54e8a",
+          "request_id": "beliefkv:01a126e6-f08d-7572-8093-4ce57f6944bb",
+          "freed_device_units_before_service": {
+            "0": 27916,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 336.877685546875,
+          "request_wait_ms": 210.293329320848,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11066:1939ea8eb0a7",
+          "context_id": "deepagents:autonomous:django__django-11066:1939ea8eb0a7:context:root",
+          "join_id": "deepagents-join:7b56686a66063361",
+          "request_id": "beliefkv:01a126e7-45f7-70c2-b2ec-1f6cdf7fa462",
+          "freed_device_units_before_service": {},
+          "last_child_return_to_first_service_ms": 260.8974609375,
+          "request_wait_ms": 239.3843438476324,
+          "restore_lookahead_to_first_service_ms": 155.353759765625,
+          "queue_wait_before_restore_lookahead_ms": 84.02774855494499
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-16877:22a8438bda7c",
+          "context_id": "deepagents:autonomous:django__django-16877:22a8438bda7c:context:root",
+          "join_id": "deepagents-join:56f74306c5b271c7",
+          "request_id": "beliefkv:01a126e7-554b-7431-aad7-f2167944c8e3",
+          "freed_device_units_before_service": {
+            "0": 45742,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 151.291259765625,
+          "request_wait_ms": 110.67417543381453,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11095:67d9455d8566",
+          "context_id": "deepagents:autonomous:django__django-11095:67d9455d8566:context:root",
+          "join_id": "deepagents-join:3a0889a598ddc05a",
+          "request_id": "beliefkv:01a126e8-7308-7f90-a933-a119878b2009",
+          "freed_device_units_before_service": {
+            "0": 20216,
+            "2": 1
+          },
+          "last_child_return_to_first_service_ms": 312.369140625,
+          "request_wait_ms": 323.5414568334818,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pallets__flask-5014:7d2b18204aa2",
+          "context_id": "deepagents:autonomous:pallets__flask-5014:7d2b18204aa2:context:root",
+          "join_id": "deepagents-join:217ada375bc761c4",
+          "request_id": "beliefkv:01a126e8-c1f1-7e50-b72a-ea64e8703892",
+          "freed_device_units_before_service": {
+            "0": 16984
+          },
+          "last_child_return_to_first_service_ms": 704.392822265625,
+          "request_wait_ms": 797.3490850999951,
+          "restore_lookahead_to_first_service_ms": 213.420654296875,
+          "queue_wait_before_restore_lookahead_ms": 583.9261692017317
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pydata__xarray-4966:d00cd9a2049b",
+          "context_id": "deepagents:autonomous:pydata__xarray-4966:d00cd9a2049b:context:root",
+          "join_id": "deepagents-join:e59c8e525b3cf89f",
+          "request_id": "beliefkv:01a126e9-c4d5-7c01-aabc-f34474424383",
+          "freed_device_units_before_service": {
+            "0": 15538,
+            "2": 1
+          },
+          "last_child_return_to_first_service_ms": 341.090576171875,
+          "request_wait_ms": 372.76733946055174,
+          "restore_lookahead_to_first_service_ms": 112.98779296875,
+          "queue_wait_before_restore_lookahead_ms": 259.77690797299147
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11119:7ad073658ab1",
+          "context_id": "deepagents:autonomous:django__django-11119:7ad073658ab1:context:root",
+          "join_id": "deepagents-join:8acfea5a5be8cf61",
+          "request_id": "beliefkv:01a126e9-e16a-7602-b593-acfa3d01024d",
+          "freed_device_units_before_service": {
+            "0": 27248
+          },
+          "last_child_return_to_first_service_ms": 124.873046875,
+          "request_wait_ms": 100.52644461393356,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:psf__requests-6028:85c9df3aa89f",
+          "context_id": "deepagents:autonomous:psf__requests-6028:85c9df3aa89f:context:root",
+          "join_id": "deepagents-join:3eb8b4ef629e3bc4",
+          "request_id": "beliefkv:01a126ea-0b60-73f1-8138-e73b7ba7dee8",
+          "freed_device_units_before_service": {
+            "0": 39007,
+            "2": 1
+          },
+          "last_child_return_to_first_service_ms": 132.830322265625,
+          "request_wait_ms": 73.58276844024658,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pydata__xarray-6599:7ae66091b513",
+          "context_id": "deepagents:autonomous:pydata__xarray-6599:7ae66091b513:context:root",
+          "join_id": "deepagents-join:1140ab894becdc15",
+          "request_id": "beliefkv:01a126ea-1ffc-7900-8989-06aaa674ac35",
+          "freed_device_units_before_service": {
+            "0": 14583
+          },
+          "last_child_return_to_first_service_ms": 204.954833984375,
+          "request_wait_ms": 235.4712188243866,
+          "restore_lookahead_to_first_service_ms": 94.37744140625,
+          "queue_wait_before_restore_lookahead_ms": 141.0912424325943
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31",
+          "context_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31:context:root",
+          "join_id": "deepagents-join:b508d42db920fbdb",
+          "request_id": "beliefkv:01a126ea-83dd-7203-ac3a-5e84427fb9cd",
+          "freed_device_units_before_service": {
+            "0": 33913,
+            "2": 6
+          },
+          "last_child_return_to_first_service_ms": 779.47900390625,
+          "request_wait_ms": 640.0051396340132,
+          "restore_lookahead_to_first_service_ms": 183.97119140625,
+          "queue_wait_before_restore_lookahead_ms": 456.032145768404
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pydata__xarray-2905:2bab764734a6",
+          "context_id": "deepagents:autonomous:pydata__xarray-2905:2bab764734a6:context:root",
+          "join_id": "deepagents-join:45050a2b5cef7bbc",
+          "request_id": "beliefkv:01a126eb-7691-7062-8567-4fadc6e497c7",
+          "freed_device_units_before_service": {
+            "0": 21798
+          },
+          "last_child_return_to_first_service_ms": 238.977294921875,
+          "request_wait_ms": 240.76276179403067,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-16667:1f7731acce8b",
+          "context_id": "deepagents:autonomous:django__django-16667:1f7731acce8b:context:root",
+          "join_id": "deepagents-join:43cbd3791e4abb2a",
+          "request_id": "beliefkv:01a126eb-ee5d-77c3-b85c-0b97586f4f81",
+          "freed_device_units_before_service": {
+            "0": 17985,
+            "2": 5
+          },
+          "last_child_return_to_first_service_ms": 20.81787109375,
+          "request_wait_ms": 139.74718656390905,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pydata__xarray-3095:fa0d3057575d",
+          "context_id": "deepagents:autonomous:pydata__xarray-3095:fa0d3057575d:context:root",
+          "join_id": "deepagents-join:d39a84c41f92b79f",
+          "request_id": "beliefkv:01a126ec-35f2-74d0-943b-f9551f09f44a",
+          "freed_device_units_before_service": {
+            "0": 19476
+          },
+          "last_child_return_to_first_service_ms": 248.0703125,
+          "request_wait_ms": 327.1451788023114,
+          "restore_lookahead_to_first_service_ms": 81.50830078125,
+          "queue_wait_before_restore_lookahead_ms": 245.63429597765207
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7205:c503ff72f7b8",
+          "context_id": "deepagents:autonomous:pytest-dev__pytest-7205:c503ff72f7b8:context:root",
+          "join_id": "deepagents-join:2e1c4f570667a155",
+          "request_id": "beliefkv:01a126ec-692b-7f80-ab70-cf1ece1957de",
+          "freed_device_units_before_service": {
+            "0": 24616
+          },
+          "last_child_return_to_first_service_ms": 357.376953125,
+          "request_wait_ms": 358.2757608965039,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:psf__requests-1724:23d571538f57",
+          "context_id": "deepagents:autonomous:psf__requests-1724:23d571538f57:context:root",
+          "join_id": "deepagents-join:12dc89bbe6070739",
+          "request_id": "beliefkv:01a126ec-77f7-7960-a25a-c16153734461",
+          "freed_device_units_before_service": {
+            "0": 28917
+          },
+          "last_child_return_to_first_service_ms": 223.89404296875,
+          "request_wait_ms": 146.04574907571077,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11333:48f4b5412f44",
+          "context_id": "deepagents:autonomous:django__django-11333:48f4b5412f44:context:root",
+          "join_id": "deepagents-join:e405f79b52c20f0e",
+          "request_id": "beliefkv:01a126ed-10aa-74c0-b7fb-c3452e039b4d",
+          "freed_device_units_before_service": {
+            "0": 19486
+          },
+          "last_child_return_to_first_service_ms": 418.809814453125,
+          "request_wait_ms": 394.5719189941883,
+          "restore_lookahead_to_first_service_ms": 271.320068359375,
+          "queue_wait_before_restore_lookahead_ms": 123.24913963675499
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pytest-dev__pytest-5262:2bf485d2d225",
+          "context_id": "deepagents:autonomous:pytest-dev__pytest-5262:2bf485d2d225:context:root",
+          "join_id": "deepagents-join:336efd3e8a319f57",
+          "request_id": "beliefkv:01a126ed-707c-75a1-8d5c-772512160c42",
+          "freed_device_units_before_service": {
+            "0": 28230
+          },
+          "last_child_return_to_first_service_ms": 241.304443359375,
+          "request_wait_ms": 258.6530093103647,
+          "restore_lookahead_to_first_service_ms": 157.512939453125,
+          "queue_wait_before_restore_lookahead_ms": 101.13905649632215
+        }
+      ],
+      "semantics": "Actual terminal-suffix allocator release, linked to the first observed completed parent GPU batch, not kernel start; RETURN delivery observation and service observation use scheduler wall time, not client event time; not exclusive slot ownership, predictive H2D reuse, avoided D2H bytes, or a native-relative latency saving. Restore lookahead is selection evidence, not submission/ACK evidence. Aggregate releases include internal calls; scope breakdown and terminal_children use explicit invocation-create metadata or recorded runtime scope, never ID spelling. Only confirmed dynamic subagents link to JOIN parent services; absent metadata stays unknown. Missing pool byte sizes stay unknown."
+    }
+  },
+  "source_summary_semantics": "Per-source node commands, not independent requests or workflow events. FULL reuse counts include only commands with positive FULL transfer units. Pool bytes come from reconciled physical ACKs; missing legacy pool-byte evidence is reported, never reconstructed by byte shares. Execution handoff is submitted demand, separate from anticipatory JOIN/tool actions. FULL residency groups use the initial observed registration lock and last observed release reason in log order; absent evidence stays unknown. Groups are lifecycle associations, not isolated causes. Lease expiry does not imply a reuse miss, nor does registration prove continuous protection until service; Mamba-only transfers are excluded.",
+  "native_reload_attribution_semantics": "Node/pool overlap before first service, not proof of repeated physical allocation or duplicate bytes. Mixed tagged batches retain untagged operations. Exact receipts carry per-operation units and bytes; legacy batch pool presence remains an ambiguous association. Evidence counts may overlap when a command has multiple reloads.",
+  "prepare_attribution_semantics": "Latest observed D2H writer per node/pool. A later D2H is not proof of byte overwrite or duplicate transfer: Host eviction/reallocation, node splitting and legacy merged pool attribution are unresolved. Intervening same-node/pool Host eviction is reported when available; it does not recover an allocation identity across radix splits. The lifetime summary separates restore associations before/after observed Host eviction without changing legacy latest-writer association counts. Observed restoration is not final model-forward reuse."
+}

@@ -2,6 +2,49 @@
 
 更新日期：2026-10-11。
 
+## 终态 child 容量交接的后续修订
+
+四步联动已在 V21 中部署：child 收尾时规划 parent 的安全
+checkpoint；真实 RETURN 后回收无引用、无共享依赖且传输已结算
+的私有后缀；使用原生 allocator 的实际空闲 FULL/Mamba 容量
+恢复 parent；JOIN 满足、请求提交且依赖就绪后有界优先准入。
+早返回 sibling 的容量可支持 RETURN 前预取，最后 child 的释放
+只支持返回后的需求恢复或 parent 后续增长。容量没有独占预留，
+也不要求复用 child 原来的页号，GPU running slot 仍由原生管理。
+
+隔离工作区进一步修复容量释放后的恢复重试缺口。原先 parent
+handoff 因 no_cold_capacity 关闭后会一直保留在已尝试集合中；
+随后终态 child 的 DMA/锁结算并实际释放设备容量，也不能重新
+选取该 parent。现在只有关联 child 确实释放设备容量、JOIN 满足
+且 parent 当前请求/session/epoch 仍有效时，才重新允许此前因
+容量不足失败的恢复。没有新容量、只有 Host 释放、旧请求或其他
+失败不重复尝试。该事件记为 parent_capacity_handoff_restore_rearmed，
+仍是需求恢复，不能记入 RETURN 前预测 H2D。
+
+恢复驻留记录新增 protection_reason 和 protected_by_command_id，
+区分已有锁覆盖、下一批名额已占用、无名额、字节预算不足与原生
+闭包不可观测。审计按这些原因分别报告 FULL 传输及实际复用，
+并按相同 workflow/context/JOIN/request 关联重试后的 parent
+服务，不能把 native_locked=false 全部视作失去保护或浪费。
+431 项终态回收、handoff、运行时、物理传输、tool 与审计检查
+通过；这项修订尚未部署到运行中的冻结 V21。
+
+V21 局部审计保存在 v21_terminal_capacity_live_20261011.json：
+126 个真实 child 累计释放设备 FULL 26.165 GB、Mamba 8.821 GB；
+44 个 parent 的入队到首个观测完成 GPU batch P50/P90 为
+240.07/750.15 ms，最大 18.906 秒。21 个 JOIN 与 29 个 tool
+事件确认完成边界前启动并被下一请求复用，FULL 分别为
+221.245/830.730 MB；48.571 GB handoff FULL 复用单列需求恢复。
+这些是采集中局部数据，累计释放量不是同时空闲容量或吞吐收益。
+
+django-13023 的一个 parent 在 handoff 选取后仍等待约17.73秒。
+两个已恢复节点的 ACK 后182/96ms便记录失去驻留，约17.5秒后
+首次服务未复用这两份恢复分配。这是需要定位的驻留/准入问题，
+旧日志不能判断未获锁的具体原因，不能用 RETURN 预测误差解释
+全部等待。新原因记录用于下一轮确认这一点，未因此放大保护
+预算或锁住所有 parent。V21 及其同版本 native 保持冻结，
+后续修订计划在完整 pair 后由启动器自动部署并验证。
+
 ## V21 部署与 V20 完整对照
 
 V20 两臂及 summary、HTML、完成 workspace 清理和最终对照已结束。

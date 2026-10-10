@@ -970,6 +970,50 @@ def test_residency_summary_keeps_last_release_and_does_not_infer_initial_lock():
     assert group["native_locked_at_registration"] is None
     assert group["last_observed_release_reason"] == "first_service"
     assert group["full_reused_commands"] == 1
+
+
+def test_residency_summary_separates_shared_protection_from_missing_capacity():
+    base = {
+        "pool_units": {"kv": 5}, "pool_bytes": {"kv": 100}, "actual_bytes": 100,
+        "full_first_service_reused": True, "full_reuse_proof_version": 2,
+        "native_reloads_before_first_service": [], "mamba_forward_verified": False,
+        "ack_to_first_service_ms": 10.,
+    }
+    rows = [
+        {**base, "lease_events": [{
+            "event": "prefetch_residency_registered", "native_locked": False,
+            "protection_reason": reason,
+        }]}
+        for reason in ("covered_by_existing_lock", "frontier_slot_occupied", None)
+    ]
+    groups = source_summary(rows)["full_reuse_by_residency"]
+    assert len(groups) == 3
+    assert {group["protection_reason_at_registration"] for group in groups} == {
+        "covered_by_existing_lock", "frontier_slot_occupied", None,
+    }
+    assert sum(group["full_verified_reused_bytes_known"] for group in groups) == 300
+
+
+def test_parent_capacity_retry_audit_requires_same_request_join_and_causal_order(tmp_path):
+    base = {
+        "workflow_id": "wf", "context_id": "parent", "join_id": "join",
+        "request_id": "next",
+    }
+    write_rows(tmp_path / "opportunities/admission_opportunities.jsonl", [
+        {**base, "event": "parent_capacity_handoff_restore_rearmed", "ts_ms": 10.},
+        {**base, "event": "parent_capacity_handoff_restore_rearmed", "ts_ms": 15.},
+        {**base, "event": "parent_capacity_handoff_restore_rearmed", "ts_ms": 40.,
+         "request_id": "later"},
+        {**base, "event": "parent_capacity_handoff_first_service", "ts_ms": 30.},
+        {**base, "event": "parent_capacity_handoff_first_service", "ts_ms": 35.,
+         "request_id": "later", "join_id": "other"},
+    ])
+    retry = audit(tmp_path)["summary"]["parent_capacity_restore_retries"]
+    assert retry["rearm_records"] == 3
+    assert retry["rearmed_requests"] == 2
+    assert retry["rearmed_requests_with_observed_parent_service"] == 1
+
+
 def test_native_ingress_intervals_preserve_missing_and_reversed_boundaries():
     from scripts.audit_prefetch_lifecycle import native_ingress_waits
 

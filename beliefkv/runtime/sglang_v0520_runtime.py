@@ -475,6 +475,7 @@ class NativeAdmissionRuntime:
         self._execution_handoff: _ExecutionHandoffTicket | None = None
         self._execution_handoff_next_ms = 0.
         self._execution_handoff_attempted: set[PrefillCandidateKey] = set()
+        self._execution_handoff_capacity_blocked: set[PrefillCandidateKey] = set()
         self._reentry_observations: dict[PrefillCandidateKey, tuple[float, dict | None]] = {}
         self._terminal_child_reclaims: OrderedDict[tuple, _TerminalChildReclaim] = OrderedDict()
         self._terminal_child_reclaim_next_ms = 0.
@@ -916,6 +917,10 @@ class NativeAdmissionRuntime:
                         self.tool_wait_hints.pop(context_id, None)
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.WORKFLOW_END:
+                    self._execution_handoff_capacity_blocked = {
+                        key for key in self._execution_handoff_capacity_blocked
+                        if key.root_workflow_id != event.workflow_id
+                    }
                     self._parent_capacity_handoffs = {
                         context: handoff
                         for context, handoff in self._parent_capacity_handoffs.items()
@@ -3274,6 +3279,31 @@ class NativeAdmissionRuntime:
         if device:
             self._reentry_observations.clear()
             self._execution_handoff_next_ms = 0.
+            if handoff is not None and handoff.join_id == reclaim.join_id:
+                self._rearm_parent_capacity_restore(handoff)
+
+    def _rearm_parent_capacity_restore(self, handoff: _ParentCapacityHandoff) -> None:
+        for key in tuple(self._execution_handoff_capacity_blocked):
+            if (
+                key.context_id != handoff.key.context_id
+                or self.visible.get(key.request_id) != key
+                or self.context_sessions.get(key.context_id) != key
+                or self._live_parent_capacity_handoff(key) is not handoff
+            ):
+                continue
+            self._execution_handoff_capacity_blocked.discard(key)
+            self._execution_handoff_attempted.discard(key)
+            self.counts["parent_capacity_handoff_restore_rearmed"] += 1
+            if self._opportunity_writer is not None:
+                self._opportunity_writer.record({
+                    "event": "parent_capacity_handoff_restore_rearmed",
+                    "ts_ms": time.time() * 1000.,
+                    "workflow_id": key.root_workflow_id,
+                    "context_id": key.context_id, "context_epoch": key.context_epoch,
+                    "request_id": key.request_id, "join_id": handoff.join_id,
+                    "reason": "linked_terminal_child_device_capacity_released",
+                    "scope": "retry capacity-blocked demand restore; not predictive H2D",
+                })
 
     def _retry_terminal_child_reclaims(self, *, now_ms: float) -> None:
         self._terminal_child_reclaim_next_ms = now_ms + 50.
@@ -5297,6 +5327,8 @@ class NativeAdmissionRuntime:
             return
         budget = self._residency_budget
         protection_slots = budget.request_slots
+        protection_reason = "native_protection_unobservable"
+        protected_by_command_id = None
         try:
             from beliefkv.runtime.sglang_v0520_observer import observe_unified_node_closure
             observation = observe_unified_node_closure(cache, step.node_id, max_nodes=64)
@@ -5320,6 +5352,7 @@ class NativeAdmissionRuntime:
                     step.node_id, step.creation_time,
                 ):
                     already_protected = True
+                    protected_by_command_id = existing.command_id
                     break
                 if (existing.node_id, existing.creation_time) in ancestors:
                     superseded.append(existing)
@@ -5330,6 +5363,7 @@ class NativeAdmissionRuntime:
                         break
                     if current.id == step.node_id and current.creation_time == step.creation_time:
                         already_protected = True
+                        protected_by_command_id = existing.command_id
                         break
                     current = current.parent
                 if already_protected:
@@ -5345,23 +5379,22 @@ class NativeAdmissionRuntime:
                 # A completed restore uses its issued protection allowance,
                 # while bytes and actual request admission remain live.
                 protection_slots = max(protection_slots, issue_budget.request_slots)
+            locked_keys = {
+                item.key for item in self._prefetch_service_leases.values()
+                if item.lock_params is not None
+            }
+            protection_slot_available = (
+                step.key in locked_keys or len(locked_keys) < protection_slots
+            )
+            protection_bytes_fit = (
+                protected_bytes + sum(
+                    item.protected_bytes for item in self._prefetch_service_leases.values()
+                ) - sum(item.protected_bytes for item in superseded) <= budget.byte_limit
+            )
             if (
                 observation.observable and not already_protected
                 and protection_slots > 0
-                and (
-                    any(
-                        item.key == step.key and item.lock_params is not None
-                        for item in self._prefetch_service_leases.values()
-                    )
-                    or len({
-                        item.key
-                        for item in self._prefetch_service_leases.values()
-                        if item.lock_params is not None
-                    }) < protection_slots
-                )
-                and protected_bytes + sum(
-                    lease.protected_bytes for lease in self._prefetch_service_leases.values()
-                ) - sum(item.protected_bytes for item in superseded) <= budget.byte_limit
+                and protection_slot_available and protection_bytes_fit
             ):
                 try:
                     lock_params = cache.tree_core.inc_lock_ref(step.node_id).to_dec_params()
@@ -5371,10 +5404,12 @@ class NativeAdmissionRuntime:
                     return
                 if getattr(lock_params, "node_id", None) != step.node_id:
                     self.physical_disabled = True
+                    protection_reason = "native_lock_receipt_invalid"
                     self.counts["prefetch_native_lock_receipt_invalid"] += 1
                     self._prefetch_lock_release_failures.add(action.command_id)
                 else:
                     self.counts["prefetch_native_lock_acquired"] += 1
+                    protection_reason = "native_locked"
                     # Acquire the descendant first, then relinquish ancestor
                     # locks. Keep every node's receipt and first-use tracking.
                     for prior in superseded:
@@ -5401,6 +5436,13 @@ class NativeAdmissionRuntime:
                     if protection_slots > budget.request_slots:
                         self.counts["prefetch_issued_slot_protection_preserved"] += 1
             else:
+                protection_reason = (
+                    "closure_unobservable" if not observation.observable
+                    else "covered_by_existing_lock" if already_protected
+                    else "no_frontier_slot" if protection_slots < 1
+                    else "frontier_slot_occupied" if not protection_slot_available
+                    else "byte_budget_exceeded"
+                )
                 protected_bytes = 0
         except (AttributeError, KeyError, TypeError, ValueError, RuntimeError):
             protected_bytes = 0
@@ -5423,6 +5465,8 @@ class NativeAdmissionRuntime:
                 "lease_ms": (lease.expires_at - now) * 1000,
                 "native_locked": lock_params is not None,
                 "protected_bytes": protected_bytes,
+                "protection_reason": protection_reason,
+                "protected_by_command_id": protected_by_command_id,
                 "budget": asdict(budget),
                 "residency_issue_budget": asdict(issue_budget) if issue_budget is not None else None,
                 "protection_request_slots": protection_slots,
@@ -5605,6 +5649,10 @@ class NativeAdmissionRuntime:
         if ticket is None:
             return
         self.counts[f"execution_handoff_closed:{reason}"] += 1
+        if reason == "no_cold_capacity":
+            self._execution_handoff_capacity_blocked.add(ticket.key)
+        else:
+            self._execution_handoff_capacity_blocked.discard(ticket.key)
         if self._opportunity_writer is not None:
             self._opportunity_writer.record({
                 "event": "execution_handoff_closed", "ts_ms": time.time() * 1000.,
@@ -5659,6 +5707,9 @@ class NativeAdmissionRuntime:
                 key for key in self._execution_handoff_attempted
                 if self.visible.get(key.request_id) == key
             }
+            self._execution_handoff_capacity_blocked.intersection_update(
+                self._execution_handoff_attempted,
+            )
             plan = self.plan_native_prefill(
                 waiting_queue, running_batch=running_batch, adder=None,
             )

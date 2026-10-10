@@ -445,6 +445,71 @@ def test_pending_native_dependency_retries_without_losing_sibling_accounting(fam
     assert runtime._parent_capacity_handoffs["ctx-parent"].freed_device_units == {0: 8}
 
 
+def test_parent_restore_retries_after_pending_child_pages_are_actually_released(family):
+    runtime, requests, cache, records = family
+    runtime.enable_execution_handoff = True
+    cache.retire_beliefkv_child_session.side_effect = (
+        reclaimed(retry=((11, 1),)), reclaimed(), reclaimed(device={0: 8}),
+    )
+    runtime.on_events((returned(7, "child1"), returned(8, "child2")))
+    parent = parent_request(runtime, requests["parent"])
+    key = runtime.visible[parent.rid]
+    cache.inspect_beliefkv_reentry.return_value = {
+        "missing_full_tokens": 4, "missing_mamba_slots": 0,
+        "device_checkpoint_tokens": 0, "checkpoint_tokens": 4,
+        "reusable_input_tokens": 4, "component_leaves": ((0, ((11, 1),)),),
+    }
+    opportunity = NS(
+        step=PrefetchLoadStep(key, 11, 1, 4, 0),
+        fits_current_free_lists=False, required_full_tokens=4, required_mamba_slots=0,
+    )
+    with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+        1, 1024 ** 3, source="native_next_prefill",
+    )), patch(
+        "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+        return_value=opportunity,
+    ), patch.object(runtime, "issue_prefetch_gpu_step", return_value="restore") as issue:
+        runtime.dispatch_execution_handoff([parent], running_batch=None)
+        issue.assert_not_called()
+        assert runtime._execution_handoff_capacity_blocked == {key}
+        runtime._execution_handoff_next_ms = 0.
+        runtime.dispatch_execution_handoff([parent], running_batch=None)
+        assert runtime.counts["execution_handoff_selected"] == 1
+        runtime._retry_terminal_child_reclaims(now_ms=100.)
+        assert key not in runtime._execution_handoff_attempted
+        assert not runtime._execution_handoff_capacity_blocked
+        opportunity.fits_current_free_lists = True
+        runtime.dispatch_execution_handoff([parent], running_batch=None)
+        issue.assert_called_once_with(opportunity.step, source="execution_handoff")
+    assert runtime.counts["execution_handoff_selected"] == 2
+    retries = [row for row in records
+               if row["event"] == "parent_capacity_handoff_restore_rearmed"]
+    assert len(retries) == 1
+    assert retries[0]["request_id"] == parent.rid
+    assert retries[0]["join_id"] == "join"
+    assert runtime._parent_capacity_handoffs["ctx-parent"].freed_device_units == {0: 8}
+
+
+@pytest.mark.parametrize("invalidated", ("host_only", "not_capacity_blocked", "stale_request"))
+def test_terminal_release_does_not_rearm_an_ineligible_parent(family, invalidated):
+    runtime, requests, cache, _ = family
+    cache.retire_beliefkv_child_session.side_effect = (
+        reclaimed(retry=((11, 1),)), reclaimed(),
+        reclaimed(device={} if invalidated == "host_only" else {0: 8}),
+    )
+    runtime.on_events((returned(7, "child1"), returned(8, "child2")))
+    parent = parent_request(runtime, requests["parent"])
+    key = runtime.visible[parent.rid]
+    runtime._execution_handoff_attempted.add(key)
+    if invalidated != "not_capacity_blocked":
+        runtime._execution_handoff_capacity_blocked.add(key)
+    if invalidated == "stale_request":
+        runtime.visible.pop(parent.rid)
+    runtime._retry_terminal_child_reclaims(now_ms=100.)
+    assert key in runtime._execution_handoff_attempted
+    assert runtime.counts["parent_capacity_handoff_restore_rearmed"] == 0
+
+
 @pytest.mark.parametrize("ordinary_admissions,slots", ((3, 2), (4, 1), (4, 2)))
 def test_capacity_handoff_restores_one_unlocked_parent_after_ordinary_quota(
     family, ordinary_admissions, slots,

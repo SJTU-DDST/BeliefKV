@@ -73,18 +73,20 @@ def full_residency_summary(full: list[dict]) -> list[dict]:
         locked = registered.get("native_locked")
         if type(locked) is not bool:
             locked = None
-        groups[locked, released.get("reason")].append(row)
+        groups[locked, registered.get("protection_reason"), released.get("reason")].append(row)
     return [
         {
             "native_locked_at_registration": locked,
+            "protection_reason_at_registration": protection_reason,
             "last_observed_release_reason": reason,
             **full_reuse_summary(group),
             "ack_to_first_service_ms": distribution(
                 row["ack_to_first_service_ms"] for row in group
             ),
         }
-        for (locked, reason), group in sorted(
-            groups.items(), key=lambda item: (str(item[0][0]), item[0][1] or ""),
+        for (locked, protection_reason, reason), group in sorted(
+            groups.items(),
+            key=lambda item: (str(item[0][0]), item[0][1] or "", item[0][2] or ""),
         )
     ]
 
@@ -1105,6 +1107,7 @@ def audit(arm: Path) -> dict:
     issued, prepared, parks, leases, stages = {}, {}, [], defaultdict(list), {}
     prepare_selections = []
     terminal_reclaims, parent_handoff_services, parent_handoff_lookaheads = [], [], []
+    parent_handoff_rearms = []
     wait_observations, clock_offset = [], None
     for row in records(arm / "opportunities/admission_opportunities.jsonl"):
         event = row["event"]
@@ -1127,6 +1130,8 @@ def audit(arm: Path) -> dict:
             parent_handoff_services.append(row)
         elif event == "parent_capacity_handoff_restore_lookahead":
             parent_handoff_lookaheads.append(row)
+        elif event == "parent_capacity_handoff_restore_rearmed":
+            parent_handoff_rearms.append(row)
         elif event in (
             "prefetch_residency_registered", "prefetch_residency_released",
             "prefetch_reentry_ready", "prefetch_client_submitted", "prefetch_demand_submitted",
@@ -1389,6 +1394,24 @@ def audit(arm: Path) -> dict:
             terminal_reclaims, parent_handoff_services, parent_handoff_lookaheads,
             invocation_scopes=terminal_invocation_scopes(arm),
         ),
+        "parent_capacity_restore_retries": {
+            "rearm_records": len(parent_handoff_rearms),
+            "rearmed_requests": len({
+                (row["workflow_id"], row["context_id"], row["join_id"], row["request_id"])
+                for row in parent_handoff_rearms
+            }),
+            "rearmed_requests_with_observed_parent_service": len({
+                (row["workflow_id"], row["context_id"], row["join_id"], row["request_id"])
+                for row in parent_handoff_rearms
+                if any(
+                    all(row[field] == service[field] for field in (
+                        "workflow_id", "context_id", "join_id", "request_id",
+                    )) and row["ts_ms"] <= service["ts_ms"]
+                    for service in parent_handoff_services
+                )
+            }),
+            "scope": "linked child allocator release enables a demand retry; not pre-boundary H2D",
+        },
     }
     return {
         "scope": (

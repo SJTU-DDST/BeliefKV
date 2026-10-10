@@ -2,6 +2,46 @@
 
 Status date: 2026-10-11.
 
+## Child-to-Parent Capacity Follow-Up
+
+The four-step path is deployed in V21: plan the parent's safe checkpoint during
+child finalization, retire only settled unreferenced private suffixes after real
+RETURN, restore using actual native FULL/Mamba free lists, and give the submitted
+JOIN-unlocked dependency-ready parent bounded admission priority. Earlier sibling
+release can support pre-RETURN H2D. Last-child release supports demand restoration
+or parent growth. Do not claim exclusive capacity ownership or reuse of page IDs;
+native allocation and running-slot management remain authoritative.
+
+The isolated follow-up fixes a missed retry when a parent's handoff closes for
+no_cold_capacity and linked child pages are freed later after DMA/lock settlement.
+Remove that current parent's one-shot attempt only on actual linked device release,
+after verifying JOIN completion and visible request/session/epoch identity.
+Keep retries disabled without new capacity, for Host-only release, stale requests
+and other failure reasons. Record parent_capacity_handoff_restore_rearmed as
+demand restoration, separate from early prediction.
+
+Add protection_reason and protected_by_command_id to residency registration.
+Distinguish an existing covering lock from occupied/absent frontier slots, byte
+budget exhaustion and an unobservable native closure. Partition FULL transfer and
+reuse by those reasons; link rearmed requests to observed parent service using the
+same workflow/context/JOIN/request and causal time order. Do not infer a miss
+from native_locked=false. The 431 scoped terminal/handoff/runtime/physical/tool/
+lifecycle checks pass. This revision is not part of the running frozen V21.
+
+Keep v21_terminal_capacity_live_20261011.json as a partial audit:126 real children
+release cumulative26.165GB device FULL and8.821GB Mamba. Forty-four parent
+requests have240.07/750.15ms P50/P90 queue-to-first-observed-completed-batch time,
+with18.906s maximum. Early verified FULL is221.245MB from21 independent JOINs
+and830.730MB from29 tool events;48.571GB demand-handoff reuse stays separate.
+Cumulative release is neither simultaneous free capacity nor a throughput win.
+
+One django-13023 parent waits17.73s after handoff selection. Both restored nodes
+lose residency182/96ms after their ACKs and their allocations are not reused at
+first service roughly17.5s later. Old records cannot identify why protection was
+unavailable; validate the new reasons before expanding residency budgets. Preserve
+the V21 same-version pair. Schedule deployment of the committed follow-up after
+that pair completes, then validate the unchanged workload and performance goal.
+
 ## V21 Deployment and Completed V20 Evidence
 
 The V20 pair, both summaries, HTML exports, completed-workspace cleanup and

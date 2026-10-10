@@ -6,6 +6,7 @@ import pytest
 
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+from beliefkv.runtime.sglang_v0520_runtime import _PrefetchServiceLease
 from beliefkv.runtime.sglang_v0520_physical import (
     PrefetchLoadStep, PhysicalActionCompleted, PhysicalReceiptError,
 )
@@ -306,6 +307,72 @@ def test_handoff_extents_share_one_request_slot_and_release_together_on_pressure
     cache.tree_core.dec_lock_ref.assert_any_call(2, receipts[2])
     assert cache.tree_core.dec_lock_ref.call_count == 2
     assert not runtime.physical_disabled
+    runtime.close()
+
+
+@pytest.mark.parametrize("condition,expected", (
+    ("covered", "covered_by_existing_lock"),
+    ("occupied", "frontier_slot_occupied"),
+    ("bytes", "byte_budget_exceeded"),
+    ("no_slot", "no_frontier_slot"),
+    ("unobservable", "closure_unobservable"),
+))
+def test_restore_reports_unprotected_capacity_without_changing_native_admission(
+    monkeypatch, condition, expected,
+):
+    runtime, (cold, warm, _), cache = runtime_with_requests(monkeypatch)
+    key = runtime.visible[cold.rid]
+    node = NS(id=1, creation_time=2, parent=None, component_data={
+        0: NS(value=object()), 2: NS(value=object()),
+    })
+    cache.tree_core = NS(
+        node_by_id=lambda _: node, inc_lock_ref=Mock(), dec_lock_ref=Mock(),
+    )
+    cache.session_refs = NS(
+        _session_generations={key.session_id: key.session_generation},
+        _closed_session_ids=set(),
+    )
+    cache.host_pool_group = NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=10)),
+        "mamba": NS(host_pool=NS(size_per_token=20)),
+    })
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    step = PrefetchLoadStep(key, 1, 2, 1, 2)
+    action = PhysicalActionCompleted(
+        "restore", "PREFETCH_GPU", key.context_id, key.context_epoch,
+        (1,), (("kv", 1000),), 1000,
+    )
+    runtime._prefetch_steps["restore"] = (step, "execution_handoff", None)
+    if condition in ("covered", "occupied"):
+        existing_key = key if condition == "covered" else runtime.visible[warm.rid]
+        runtime._prefetch_service_leases["prior"] = _PrefetchServiceLease(
+            existing_key, "prior", 1, 2, "execution_handoff", None,
+            0., float("inf"), (("kv", 1000),),
+            lock_params=NS(node_id=1), protected_bytes=1020, demand_ready=True,
+        )
+    with patch.object(
+        runtime, "_current_residency_budget",
+        return_value=PrefetchResidencyBudget(
+            0 if condition == "no_slot" else 1,
+            500 if condition == "bytes" else 1024 ** 3,
+            source="native_next_prefill",
+        ),
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
+        return_value=NS(observable=condition != "unobservable", nodes=(
+            NS(node_id=1, creation_time=2, full_device_tokens=100, mamba_device_present=True),
+        )),
+    ):
+        runtime._register_prefetch_service_lease(action)
+    cache.tree_core.inc_lock_ref.assert_not_called()
+    assert records[-1]["event"] == "prefetch_residency_registered"
+    assert records[-1]["native_locked"] is False
+    assert records[-1]["protection_reason"] == expected
+    assert records[-1]["protected_by_command_id"] == (
+        "prior" if condition == "covered" else None
+    )
+    assert not runtime.defer_prefill_for_prefetch(cold)
     runtime.close()
 
 
