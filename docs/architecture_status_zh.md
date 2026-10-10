@@ -176,6 +176,36 @@ v20_batch_context_filter_semantic_cpu_20261010.json及
 v20_batch_context_filter_empty_cpu_20261010.json；没有DMA、
 GPU吞吐或JCT测量。该修订未部署，不改变当前冻结对照。
 
+终态容量交接的隔离跟进补齐通知与sibling RETURN的事件联动：
+child在其它sibling未完成时发送的收尾通知已被保存并绑定下一
+请求，但此前只在新语义结果或EOS到达时重新建立最后child的
+恢复阶段。现在处理真实RETURN后，只检查该RETURN关联的JOIN；
+当只剩一个child时，复用其仍有效、同JOIN和当前context epoch
+的通知，接续已观测decode token及速率。保留通知原有有效期，
+不因sibling返回延长。工具调用、下一轮请求、旧JOIN及过期
+通知不复活；现有有效阶段不重复建立。没有下一请求时先保存
+阶段，随后沿用原提交绑定逻辑，不为未提交parent预留容量。
+
+这条联动不直接授权传输：原批量缺失FULL/必要Mamba规划、
+原生分池free lists、新输入/decode预留、近期准入及滚动启动
+时机仍决定是否H2D；未结束child的页继续保留。新增
+final_stage_resumed_after_sibling_return计数及阶段记录字段。
+242项终态、收尾、批量预取、恢复、准入与归因检查通过，包括
+通知/提交/RETURN同批及利用sibling释放后在最后child RETURN
+前提交parent预取的调度回归；后者为mock传输，非GPU收益证据。
+此次修订仍在隔离分支，当前V20及随后native继续同版本冻结。
+
+保存v20_terminal_capacity_snapshot_20261010_2115.json的后续
+采集中审计：869个终态child、1241次含重试的回收，累计实际
+释放设备FULL338.281GB、Mamba200.830GB。170个parent完成batch
+观察中169个关联此前设备释放；54次恢复lookahead均关联服务，
+选取到完成batch P50/P90为152.75/321.15ms。168个独立JOIN
+请求入队到实际首次服务P50/P90为163.05/505.54ms，最长仍为
+16.838秒。88个JOIN有边界前启动且下一请求复用的FULL，共
+1.438GB；tool为3.154MB，76.934GB需求handoff复用单列。
+这些是在冻结代码下的部分结果，不能归因于尚未部署的通知
+联动，也不证明native相对吞吐/JCT改善。
+
 工具侧运行计数包含20次进入预取窗口、18次无冷容量退出。
 需求handoff中4306个请求以no_cold_capacity关闭，但其中
 4个关联parent在约100--125ms后即获得首个完成batch，未见

@@ -88,6 +88,14 @@ Device/Host 余量，不用总体显存占用代替可行动容量，不为制�
 sibling 的真实释放供最终 child 返回前预取使用时，仍按独立
 完成边界、实际 submit/ACK 和 FULL 复用证明计算预测覆盖。
 
+若最后child的收尾通知先于sibling RETURN，保留该通知及其
+下一请求绑定，在sibling真正RETURN、JOIN只剩一个child时
+立即建立恢复阶段，并接续已经观察到的decode进度。检查同一
+JOIN与当前context epoch，沿用通知原有效期，不因RETURN
+续期；工具调用和后续请求失效的通知不复活。该联动只是提前
+规划，H2D仍由真实缺失页、分池容量、近期准入和剩余工作触发，
+不释放未结束child的页面，也不替未提交parent独占容量。
+
 已提交请求的 execution handoff 按实际输入规划需求恢复；
 child/tool 返回前的预测 H2D 单独计数。前者已有物理 ACK 与
 FULL 首次复用证据，不能计作提前预测收益。完整 JointPlan、

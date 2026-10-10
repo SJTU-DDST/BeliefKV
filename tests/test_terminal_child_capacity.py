@@ -1,4 +1,6 @@
+from collections import deque
 from dataclasses import replace
+import time
 from types import SimpleNamespace as NS
 from unittest.mock import Mock, patch
 
@@ -119,6 +121,158 @@ def test_last_child_final_notice_reuses_parent_plan_after_sibling_release(family
     assert runtime._final_stages["join"].child_id == "child2"
     assert runtime._parent_capacity_handoffs["ctx-parent"].freed_device_units == {0: 8, 2: 1}
     cache.retire_beliefkv_child_session.assert_called_once()
+    assert not runtime.graph.joins["join"].satisfied
+
+
+def early_report_notice(runtime):
+    runtime.on_events((event(
+        7, RuntimeEventKind.STRUCTURED_ACTION,
+        invocation_id="child2", context_id="ctx-child2", context_epoch=0, join_id="join",
+        attributes={
+            "beliefkv_child_completion_intent": True,
+            "child_completion_signal_kind": "stage",
+            "estimated_final_report_tokens": 128,
+        },
+    ),))
+    return runtime._child_report_notices["child2"]
+
+
+def child_report_request(runtime, previous, *, seq=8):
+    request = req("child2")
+    request.rid = "child2-report"
+    request.session_id, request.session_generation = previous.session_id, 1
+    request.beliefkv_metadata["context_epoch"] = 1
+    runtime.on_events((event(
+        seq, RuntimeEventKind.LLM_SUBMIT,
+        invocation_id="child2", context_id="ctx-child2", context_epoch=1,
+        attributes={"request_id": request.rid},
+    ),))
+    runtime.register_visible_request(request)
+    return request
+
+
+def test_sibling_return_activates_an_already_serviced_report_without_another_notice(family):
+    runtime, requests, cache, records = family
+    notice = early_report_notice(runtime)
+    child = child_report_request(runtime, requests["child2"])
+    now_ms = time.monotonic() * 1000.
+    runtime._semantic_progress[child.rid] = deque(((now_ms - 200., 112), (now_ms, 120)))
+    assert not runtime._final_stages
+    runtime.on_events((returned(9, "child1"),))
+    stage = runtime._final_stages["join"]
+    assert stage.request_id == child.rid
+    assert stage.generated_tokens == 120
+    assert stage.tokens_per_second == pytest.approx(40.)
+    assert stage.expires_at == notice.expires_at
+    assert not stage.semantic_only
+    assert runtime._final_request_stages[child.rid] is stage
+    assert runtime._parent_capacity_handoffs["ctx-parent"].freed_device_units == {0: 8, 2: 1}
+    cache.retire_beliefkv_child_session.assert_called_once_with(
+        session_id="s-child1", session_generation=1,
+    )
+    assert runtime.counts["final_stage_resumed_after_sibling_return"] == 1
+    assert records[-1]["resumed_after_sibling_return"] is True
+    assert not runtime.graph.joins["join"].satisfied
+
+
+def test_sibling_capacity_can_feed_prefetch_before_the_final_child_returns(family):
+    runtime, requests, cache, _ = family
+    runtime.enable_admission_prefetch = True
+    early_report_notice(runtime)
+    child = child_report_request(runtime, requests["child2"])
+    now_ms = time.monotonic() * 1000.
+    runtime._semantic_progress[child.rid] = deque(((now_ms - 200., 112), (now_ms, 120)))
+    runtime.on_events((returned(9, "child1"),))
+    key = runtime.context_sessions["ctx-parent"]
+    step = PrefetchLoadStep(key, 11, 4, 11, 4)
+    cache.cache_controller = NS(mem_pool_host=NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=10)),
+        "mamba": NS(host_pool=NS(size_per_token=5)),
+    }))
+    runtime._h2d_samples.extend([(105, 200.)] * 3)
+    with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=NS(
+        step=step, fits_current_free_lists=True,
+        required_full_tokens=10, required_mamba_slots=1,
+    )), patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step), \
+         patch.object(runtime, "issue_prefetch_gpu_step", return_value="prefetch-parent") as issue:
+        runtime.dispatch_join_prefetch()
+    issue.assert_called_once()
+    assert issue.call_args.args[0].key == key
+    assert issue.call_args.kwargs["source"] == "join_ticket"
+    assert runtime._join_ticket.phase == "provisional"
+    assert not runtime.graph.joins["join"].satisfied
+    assert not runtime.graph.invocations["child2"].state.terminal
+    cache.retire_beliefkv_child_session.assert_called_once_with(
+        session_id="s-child1", session_generation=1,
+    )
+
+
+def test_sibling_return_preserves_notice_until_the_report_request_is_submitted(family):
+    runtime, requests, _, _ = family
+    notice = early_report_notice(runtime)
+    runtime.on_events((returned(8, "child1"),))
+    stage = runtime._final_stages["join"]
+    assert stage.request_id is None
+    assert stage.expires_at == notice.expires_at
+    child = child_report_request(runtime, requests["child2"], seq=9)
+    assert stage.request_id == child.rid
+    assert stage.child_epoch == 1
+    assert runtime._live_final_stage(stage)
+
+
+def test_notice_submit_and_sibling_return_in_one_batch_activate_the_current_report(family):
+    runtime, requests, _, _ = family
+    runtime.on_events((
+        event(
+            7, RuntimeEventKind.STRUCTURED_ACTION,
+            invocation_id="child2", context_id="ctx-child2", context_epoch=0,
+            join_id="join",
+            attributes={
+                "beliefkv_child_completion_intent": True,
+                "child_completion_signal_kind": "stage",
+                "estimated_final_report_tokens": 128,
+            },
+        ),
+        event(
+            8, RuntimeEventKind.LLM_SUBMIT,
+            invocation_id="child2", context_id="ctx-child2", context_epoch=1,
+            attributes={"request_id": "child2-report"},
+        ),
+        returned(9, "child1"),
+    ))
+    stage = runtime._final_stages["join"]
+    assert stage.request_id == "child2-report"
+    assert stage.child_epoch == 1
+    assert stage.key == runtime.context_sessions["ctx-parent"]
+    assert stage.expires_at == runtime._child_report_notices["child2"].expires_at
+    assert not runtime.graph.joins["join"].satisfied
+
+
+@pytest.mark.parametrize("invalidated", ("tool", "new_request", "expired", "different_join"))
+def test_sibling_return_does_not_reactivate_obsolete_report_notices(family, invalidated):
+    runtime, requests, _, _ = family
+    early_report_notice(runtime)
+    child_report_request(runtime, requests["child2"])
+    if invalidated == "tool":
+        runtime.on_events((event(
+            9, RuntimeEventKind.TOOL_START,
+            invocation_id="child2", context_id="ctx-child2",
+        ),))
+    elif invalidated == "new_request":
+        runtime.on_events((event(
+            9, RuntimeEventKind.LLM_SUBMIT,
+            invocation_id="child2", context_id="ctx-child2", context_epoch=2,
+            attributes={"request_id": "child2-another-round"},
+        ),))
+    else:
+        notice = runtime._child_report_notices["child2"]
+        runtime._child_report_notices["child2"] = replace(
+            notice, **({"expires_at": 0.} if invalidated == "expired"
+                       else {"join_id": "previous-join"}),
+        )
+    runtime.on_events((returned(10, "child1"),))
+    assert not runtime._final_stages
+    assert runtime.counts["final_stage_resumed_after_sibling_return"] == 0
     assert not runtime.graph.joins["join"].satisfied
 
 

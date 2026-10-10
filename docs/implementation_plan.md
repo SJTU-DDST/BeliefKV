@@ -193,6 +193,37 @@ v20_batch_context_filter_semantic_cpu_20261010.json and
 v20_batch_context_filter_empty_cpu_20261010.json. These contain no DMA,
 GPU throughput or JCT evidence. Commit and deploy between frozen pairs.
 
+Complete the sibling-RETURN/earlier-notice linkage in the isolated follow-up.
+When a child announced before other siblings finished,its notice and following
+request were retained but the last-child restoration stage previously required
+a new semantic reply or EOS. After a real RETURN,inspect only its associated
+JOINs. If one child remains,reuse that child's current same-JOIN/context-epoch
+notice and observed decode tokens/rate without renewing the original expiry.
+Do not revive notices invalidated by tools,new requests,another JOIN or expiry;
+retain a live existing stage. A report not yet submitted uses the existing
+request binding path. Native private-suffix reclamation and the existing FULL/
+required-Mamba,capacity,reserve,admission and latest-start rules still control
+physical transfer; running child pages and unsubmitted parent capacity are
+not claimed by this stage observation.
+
+Record final_stage_resumed_after_sibling_return and the corresponding stage
+field.242 scoped terminal/report/batch-transfer/handoff/admission/audit checks
+pass,including one-batch notice/submit/RETURN ordering and a mocked early
+parent submission after sibling release while the last child is still live.
+The mocked transfer proves dispatch ordering,not physical DMA or performance.
+Commit promptly in isolation; deploy after the frozen V20 predictive/native pair.
+
+Preserve experiments/reports/v20_terminal_capacity_snapshot_20261010_2115.json.
+This later partial audit has869 terminal children,1241 reclaim records including
+retries,and338.281GB FULL/200.830GB Mamba actual cumulative device release.
+169 of170 parent completed-batch observations link to earlier device release;
+all54 lookaheads link to service,with152.75/321.15ms selection-to-completed-batch
+P50/P90.168 independent JOIN requests have163.05/505.54ms queue-to-actual-service
+P50/P90 and16.838s maximum.88 JOINs have early-started,next-request-reused FULL
+totaling1.438GB;tool early FULL remains3.154MB. Keep76.934GB reused demand-handoff
+FULL separate. These are frozen-code observations,not effects of the undeployed
+notice follow-up or native-relative throughput/JCT gains.
+
 Current tool counters include20 window entries and18 cold-capacity exits.
 4306 demand-handoff requests close for no_cold_capacity; only4 link to a
 parent service,and those complete a first batch about100--125ms later.

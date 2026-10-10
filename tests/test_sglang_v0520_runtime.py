@@ -2369,6 +2369,8 @@ def test_multi_child_join_prefetch_waits_for_the_observed_last_unfinished_child(
     runtime.on_events((event(8, RuntimeEventKind.RETURN, invocation_id="a"),))
     assert runtime._semantic_parent("b")[0] == "join"
     assert not runtime.graph.joins["join"].satisfied
+    assert runtime._final_stages["join"].request_id == "b"
+    assert runtime.counts["final_stage_resumed_after_sibling_return"] == 1
     now = time.monotonic() * 1000
     submitted = []
     runtime._semantic_worker = NS(
@@ -2389,7 +2391,7 @@ def test_multi_child_join_prefetch_waits_for_the_observed_last_unfinished_child(
     reply = SemanticReportReply(submitted[0], .9, 10., 30., 60., 0.)
     runtime._semantic_worker.poll = lambda: (reply,)
     runtime._poll_semantic_reports(now + 200)
-    assert runtime._final_stages["join"].semantic_only
+    assert not runtime._final_stages["join"].semantic_only
     assert runtime._semantic_forecasts["b"].observation.notice_active
     runtime.on_events((event(
         9, RuntimeEventKind.RETURN, invocation_id="b", context_id="ctx-b",

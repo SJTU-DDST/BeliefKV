@@ -170,6 +170,8 @@ class _ChildReportNotice:
     context_id: str
     context_epoch: int
     estimated_tokens: int
+    join_id: str
+    expires_at: float
     request_id: str | None = None
 
 
@@ -1027,6 +1029,12 @@ class NativeAdmissionRuntime:
                 elif event.kind is RuntimeEventKind.CONTEXT_COMPACT:
                     self._child_report_notices.pop(event.invocation_id, None)
                     self._parent_capacity_handoffs.pop(event.context_id, None)
+            returned_joins = {
+                join_id for event in events if event.kind is RuntimeEventKind.RETURN
+                for join_id in self._join_by_invocation.get(event.invocation_id, ())
+            }
+            for join_id in sorted(returned_joins):
+                self._resume_remaining_child_report_stage(join_id)
             self._refresh_prefetch_service_leases()
             self.join_wait_hints = {
                 join_id: hint for join_id, hint in self.join_wait_hints.items()
@@ -1913,7 +1921,8 @@ class NativeAdmissionRuntime:
         # announcement history in event order, independently of H2D eligibility.
         self._child_report_notices[event.invocation_id] = _ChildReportNotice(
             event.workflow_id, event.context_id, event.context_epoch, estimated,
-            event.attributes.get("completion_stage_bound_request_id"),
+            event.join_id, time.monotonic() + 120.,
+            request_id=event.attributes.get("completion_stage_bound_request_id"),
         )
         self.counts["child_report_notice_observed"] += 1
 
@@ -1941,6 +1950,71 @@ class NativeAdmissionRuntime:
             or rid != notice.request_id
         ):
             self._child_report_notices.pop(event.invocation_id, None)
+
+    def _activate_child_report_stage(
+        self, key: PrefillCandidateKey, child_id: str, notice: _ChildReportNotice, *,
+        resumed_after_sibling_return: bool = False,
+    ) -> None:
+        self._clear_final_stage(notice.join_id)
+        progress = self._semantic_progress.get(notice.request_id, ())
+        stage = _ChildFinalStage(
+            key, notice.join_id, child_id, notice.context_epoch,
+            notice.estimated_tokens, notice.expires_at,
+            request_id=notice.request_id,
+            generated_tokens=progress[-1][1] if progress else 0,
+            tokens_per_second=self._semantic_rate(notice.request_id) if progress else None,
+            issued_nodes=self._issued_join_nodes(notice.join_id, key),
+        )
+        self._final_stages[notice.join_id] = stage
+        if notice.request_id is not None:
+            self._final_request_stages[notice.request_id] = stage
+        self.counts["final_stage_accepted"] += 1
+        if resumed_after_sibling_return:
+            self.counts["final_stage_resumed_after_sibling_return"] += 1
+        if self._opportunity_writer is not None:
+            self._opportunity_writer.record({
+                "event": "child_final_stage_accepted",
+                "ts_ms": time.time() * 1000.,
+                "workflow_id": notice.workflow_id, "join_id": notice.join_id,
+                "child_invocation_id": child_id,
+                "context_epoch": notice.context_epoch,
+                "estimated_final_report_tokens": notice.estimated_tokens,
+                "epoch_handoff": notice.request_id is not None,
+                "resumed_after_sibling_return": resumed_after_sibling_return,
+            })
+
+    def _resume_remaining_child_report_stage(self, join_id: str) -> None:
+        if self.enable_confirmed_join_canary or join_id in self._noncontinuing_joins:
+            return
+        join = self.graph.joins.get(join_id)
+        if join is None or join.satisfied or join.mode.value != "all":
+            return
+        remaining = join.member_invocation_ids - join.completed_member_ids
+        if len(remaining) != 1:
+            return
+        previous = self._final_stages.get(join_id)
+        if previous is not None and self._live_final_stage(previous):
+            return
+        child_id = next(iter(remaining))
+        notice = self._child_report_notices.get(child_id)
+        child = self.graph.invocations.get(child_id)
+        context = self.graph.contexts.get(child.context_id) if child else None
+        key = self._join_parent_key(join_id)
+        parent = self.graph.invocations.get(key.invocation_id) if key else None
+        if (
+            notice is None or notice.join_id != join_id
+            or notice.workflow_id != join.workflow_id
+            or time.monotonic() >= notice.expires_at
+            or child is None or child.state.terminal or child.active_tool_family is not None
+            or child.context_id != notice.context_id
+            or context is None or context.epoch != notice.context_epoch
+            or key is None or parent.state is not InvocationState.WAIT_JOIN
+            or parent.join_id != join_id
+        ):
+            return
+        self._activate_child_report_stage(
+            key, child_id, notice, resumed_after_sibling_return=True,
+        )
 
     def _observe_child_completion_intent(self, event: RuntimeEvent) -> None:
         if self.enable_confirmed_join_canary:
@@ -1994,31 +2068,9 @@ class NativeAdmissionRuntime:
             if type(estimated) is not int or not 1 <= estimated <= 4096:
                 self.counts["final_stage_no_estimate"] += 1
                 return
-            self._clear_final_stage(join_id)
-            bound_request_id = event.attributes.get(
-                "completion_stage_bound_request_id"
-            )
-            stage = _ChildFinalStage(
-                key, join_id, child_id, context.epoch, estimated,
-                time.monotonic() + 120.0,
-                request_id=bound_request_id,
-                issued_nodes=self._issued_join_nodes(join_id, key),
-            )
-            self._final_stages[join_id] = stage
-            if bound_request_id is not None:
-                self._final_request_stages[bound_request_id] = stage
-            self.counts["final_stage_accepted"] += 1
-            if self._opportunity_writer is not None:
-                self._opportunity_writer.record({
-                    "event": "child_final_stage_accepted",
-                    "ts_ms": time.time() * 1000.0,
-                    "workflow_id": event.workflow_id,
-                    "join_id": join_id,
-                    "child_invocation_id": child_id,
-                    "context_epoch": context.epoch,
-                    "estimated_final_report_tokens": estimated,
-                    "epoch_handoff": bound_request_id is not None,
-                })
+            notice = self._child_report_notices.get(child_id)
+            if notice is not None:
+                self._activate_child_report_stage(key, child_id, notice)
             return
         if join_id in self._final_stages:
             # The explicit stage is governed by service progress, not a
