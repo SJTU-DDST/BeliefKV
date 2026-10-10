@@ -5,15 +5,31 @@ from __future__ import annotations
 import json
 from pathlib import Path
 from typing import Sequence
+from zlib import crc32
 
 import numpy as np
 from scipy.special import erf
 
-from beliefkv.predictor.child_report_phase import ReportObservation
+from beliefkv.predictor.child_report_phase import ReportObservation, words
 
 
 LEGACY_WORK_PROJECTION = "clip_then_expand_v1"
 SIGNED_WORK_PROJECTION = "expand_then_clip_v2"
+WORK_FEATURE_VERSIONS = ("structural_v1", "body_progress_v2", "suffix_sequence_v3")
+
+
+def suffix_sequence_features(text: str) -> np.ndarray:
+    """Retain the latest word order without another encoder pass."""
+    tokens = words(text)[-32:]
+    features = np.zeros(64, dtype=np.float32)
+    for width in (1, 2, 3):
+        count = len(tokens) - width + 1
+        for index in range(max(0, count)):
+            code = crc32("\x1f".join(tokens[index:index + width]).encode("utf-8"))
+            sign = 1. if code & 0x80000000 else -1.
+            features[code % len(features)] += sign * (index + 1.) / count
+    norm = np.linalg.norm(features)
+    return features / norm if norm else features
 
 
 def project_work_bounds(
@@ -32,7 +48,7 @@ def project_work_bounds(
 def structural_work_features(
     observations: Sequence[ReportObservation], *, version: str = "structural_v1",
 ) -> np.ndarray:
-    if version not in ("structural_v1", "body_progress_v2"):
+    if version not in WORK_FEATURE_VERSIONS:
         raise ValueError("unsupported structural work features")
     values = []
     for row in observations:
@@ -61,6 +77,8 @@ def structural_work_features(
                 np.log1p(max(0., row.observed_output_tokens - body_tokens)),
                 float(text.endswith(("**", "```"))),
             ))
+        elif version == "suffix_sequence_v3":
+            features.extend(suffix_sequence_features(text))
         values.append(features)
     return np.asarray(values, dtype=np.float32)
 
@@ -90,7 +108,7 @@ class NeuralConditionalWork:
                 or raw.get("output_space") != "ordered_log1p_quantiles"
             )
             or self.projection not in (LEGACY_WORK_PROJECTION, SIGNED_WORK_PROJECTION)
-            or self.feature_version not in ("structural_v1", "body_progress_v2")
+            or self.feature_version not in WORK_FEATURE_VERSIONS
             or self.schema == 1 and self.feature_version != "structural_v1"
             or not np.isfinite((self.bias, self.margin)).all()
             or len(self.center) != len(self.scale) or (self.scale <= 0).any()

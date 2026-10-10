@@ -1,0 +1,43 @@
+{
+  "scope": "Pinned development sample caches retain the original V7 observations and exclusions; archived raw runs are not reconstructed. Compare structural and suffix refits on identical cached observations. Astropy selects and calibrates; repeatedly used Sphinx is development evaluation.",
+  "source_root": "/home/longhao/experiment/BeliefKV",
+  "source_report": "/home/longhao/experiment/BeliefKV/experiments/models/child_semantic_work_live_v7_quantiles/report.json",
+  "source_report_sha256": "b25f8d66acbb5ed12f7cc452ecd9acd2b66480d6e90603613de308f53e897590",
+  "samples": [
+    {
+      "run": "experiments/raw/qwen35_child_service_stream_36root_35_65_v1",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/processed/child_semantic_stage2_cache/samples-2989cc75aa8be17670059d5f5da90bea7737d699fe950d4ff4e04da7532b44e5.json.gz",
+      "sha256": "22d8d8d8ffafa1c5e9d0450b3110229b0bea42822ae019ed45028a467d8efb3c"
+    },
+    {
+      "run": "experiments/raw/qwen35_child_return_joint_project_32root_20260929_v1",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/processed/child_semantic_stage2_cache/samples-98935361b64bdbc5a2e079358e9906ccdda3613414f8261d273a0ec6515c8361.json.gz",
+      "sha256": "827ad0341f6ae81f2bf77b3079b695f86e4e31975ebbd5b3a8357390f138c1dc"
+    },
+    {
+      "run": "experiments/raw/qwen35_child_return_eos_recent_32root_20260929_v1",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/processed/child_semantic_stage2_cache/samples-8acf894fd41a9b77cd7b67442274cb8c478246aa9d2c4cb211ba315c76600c72.json.gz",
+      "sha256": "159035fc279f6f85976aa9f7613fe809f47b27c956a49983e8b5da3f6289787c"
+    },
+    {
+      "run": "experiments/raw/qwen35_semantic_h2d_ab_36root_20260930_v4/predictive_h2d",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/processed/child_semantic_stage2_cache/samples-f8146c192f98ab7267b8e876ae807ab8d148be6b7c7b8a5e5cf925e397e9a3f8.json.gz",
+      "sha256": "06d0b56621c5d29b5ced364a889c2beb21f459b44c110f767179647e9e0a5076"
+    },
+    {
+      "run": "experiments/raw/qwen35_joint_wait_h2d_ab_84root_20261006_v6/reactive",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/processed/child_semantic_stage2_cache/samples-769a48256747d0ba79a0cdd6f5f4afa76936b496a03d2e8bdca628a16daad369.json.gz",
+      "sha256": "db7feabf7e46f45cba9df94f7486b833f1cddd2884e6d7650468cf4c024c49fa"
+    },
+    {
+      "run": "experiments/raw/qwen35_joint_wait_h2d_ab_84root_20261006_v6/predictive_h2d",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/processed/child_semantic_stage2_cache/samples-51a445a1a844fb27fd92818900d0752d3277fe021276f80955ebc92f91206498.json.gz",
+      "sha256": "b258dc75b932e51db9a2126bb043e064c22895841a4b456886d6546b77765e6a"
+    },
+    {
+      "run": "experiments/raw/qwen35_child_stream_eos_sampled_dev_astropy_sphinx_32root_v1",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/processed/child_semantic_stage2_cache/samples-d155a9942fc6013bb12f3b8ffcc3aa3cebe66835bc9f8060045c542f68ee4d28.json.gz",
+      "sha256": "0f456251ce1216c284f57d1b448adeac8b78cfe1e30a6763dc8172433ea748ed"
+    }
+  ]
+}

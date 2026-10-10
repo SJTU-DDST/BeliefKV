@@ -64,10 +64,20 @@ Current status:
   These are encoder tokens, not Qwen decode/KV tokens, and the windows are
   not guaranteed to have been consumed before native EOS. Train/inference
   share this policy; representation limits are not demonstrated error causes.
-  Preservev15_semantic_encoder_window_20261010.json. Next compare inexpensive
-  suffix sequence features in the conditional work head only, retaining phase,
-  encoder and threshold. Avoid a second online encoder pass. Use the existing
-  project-separated development roles; V15 is not a new sealed evaluation set.
+  Preservev15_semantic_encoder_window_20261010.json. A CPU comparison of
+  inexpensive suffix sequence features is complete. Restore the original18650
+  work observations/embeddings using the pinned cached-source manifest;
+  structural refit reproduces the V7 numerical weights and selection loss.
+  Adding64 hashed sequence features over the latest32 words/symbols regresses
+  Astropy selector log pinball0.146075→0.153486 and Sphinx's31 last-request
+  snapshot absolute-token-error P5026.631→44.179. Keep phase, encoder and
+  threshold frozen; reject candidate deployment. Sphinx's nine workflows are
+  reused development data and have no notified snapshots in this cohort, so
+  they cannot validate notice-driven H2D triggering. Preserve
+  child_semantic_suffix_cached_samples_20261010.json and the isolated
+  child_semantic_work_suffix_candidate_20261010/report.json. No V15 labels
+  enter selection, no second encoder pass is introduced, and the frozen
+  native-relative comparison remains the next throughput check.
 - At2026-10-10 05:40 CST, the partial V15 H2D source snapshot has native
   2358 batches/731.314GB, JOIN/tool72 commands/1.384GB, demand handoff
   4692 node commands/1524 batches/36.050GB and no unknown controlled source.

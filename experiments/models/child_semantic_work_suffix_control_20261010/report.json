@@ -1,0 +1,408 @@
+{
+  "scope": "CPU development conditional-work refit, not sealed validation or H2D benefit",
+  "plan": {
+    "plan_id": "child-semantic-work-live-v7",
+    "snapshot_policy": "rolling_100ms",
+    "encoder": {
+      "repository": "sentence-transformers/all-MiniLM-L6-v2",
+      "revision": "962c85140d46c4a811a4d05c3a120af2918bf85c3de67d8f478891abd039471d",
+      "max_tokens": 256,
+      "local_snapshot": "experiments/models/child_semantic_work_stage2_adapted_20260930_v1/adapted_encoder",
+      "initialization": "reuse_frozen_train_only_stage2_adapter"
+    },
+    "training_runs": [
+      "experiments/raw/qwen35_child_service_stream_36root_35_65_v1",
+      "experiments/raw/qwen35_child_return_joint_project_32root_20260929_v1",
+      "experiments/raw/qwen35_child_return_eos_recent_32root_20260929_v1",
+      "experiments/raw/qwen35_semantic_h2d_ab_36root_20260930_v4/predictive_h2d",
+      "experiments/raw/qwen35_joint_wait_h2d_ab_84root_20261006_v6/reactive",
+      "experiments/raw/qwen35_joint_wait_h2d_ab_84root_20261006_v6/predictive_h2d"
+    ],
+    "calibration_evaluation_runs": [
+      "experiments/raw/qwen35_child_stream_eos_sampled_dev_astropy_sphinx_32root_v1"
+    ],
+    "training_projects": [
+      "django",
+      "pallets",
+      "psf",
+      "pydata",
+      "pylint-dev",
+      "pytest-dev",
+      "mwaskom"
+    ],
+    "calibration_projects": [
+      "astropy"
+    ],
+    "evaluation_projects": [
+      "sphinx-doc"
+    ],
+    "calibration_workflow_assignment": "sorted_sha256_task_even_selector_odd_interval",
+    "pca_dimensions": 32,
+    "phase_regularization": 0.05,
+    "work_regularization": 0.2,
+    "calibration_precision_target": 0.9,
+    "minimum_selected_calibration_requests": 5,
+    "nominal_workflow_interval_coverage": 0.8,
+    "exclude_runtime_interventions": true,
+    "scope": "Work-only development refit using intrinsic remaining token labels, not first parent service or action benefit. Phase/encoder stay frozen. V6 is training replay; Astropy/Sphinx are reused project-disjoint development holdouts, not a new sealed test."
+  },
+  "phase_and_encoder_frozen": true,
+  "work_features": "structural_v1",
+  "cached_sample_manifest": {
+    "scope": "Pinned development sample caches retain the original V7 observations and exclusions; archived raw runs are not reconstructed. Compare structural and suffix refits on identical cached observations. Astropy selects and calibrates; repeatedly used Sphinx is development evaluation.",
+    "source_root": "/home/longhao/experiment/BeliefKV",
+    "source_report": "/home/longhao/experiment/BeliefKV/experiments/models/child_semantic_work_live_v7_quantiles/report.json",
+    "source_report_sha256": "b25f8d66acbb5ed12f7cc452ecd9acd2b66480d6e90603613de308f53e897590",
+    "samples": [
+      {
+        "run": "experiments/raw/qwen35_child_service_stream_36root_35_65_v1",
+        "path": "/home/longhao/experiment/BeliefKV/experiments/processed/child_semantic_stage2_cache/samples-2989cc75aa8be17670059d5f5da90bea7737d699fe950d4ff4e04da7532b44e5.json.gz",
+        "sha256": "22d8d8d8ffafa1c5e9d0450b3110229b0bea42822ae019ed45028a467d8efb3c"
+      },
+      {
+        "run": "experiments/raw/qwen35_child_return_joint_project_32root_20260929_v1",
+        "path": "/home/longhao/experiment/BeliefKV/experiments/processed/child_semantic_stage2_cache/samples-98935361b64bdbc5a2e079358e9906ccdda3613414f8261d273a0ec6515c8361.json.gz",
+        "sha256": "827ad0341f6ae81f2bf77b3079b695f86e4e31975ebbd5b3a8357390f138c1dc"
+      },
+      {
+        "run": "experiments/raw/qwen35_child_return_eos_recent_32root_20260929_v1",
+        "path": "/home/longhao/experiment/BeliefKV/experiments/processed/child_semantic_stage2_cache/samples-8acf894fd41a9b77cd7b67442274cb8c478246aa9d2c4cb211ba315c76600c72.json.gz",
+        "sha256": "159035fc279f6f85976aa9f7613fe809f47b27c956a49983e8b5da3f6289787c"
+      },
+      {
+        "run": "experiments/raw/qwen35_semantic_h2d_ab_36root_20260930_v4/predictive_h2d",
+        "path": "/home/longhao/experiment/BeliefKV/experiments/processed/child_semantic_stage2_cache/samples-f8146c192f98ab7267b8e876ae807ab8d148be6b7c7b8a5e5cf925e397e9a3f8.json.gz",
+        "sha256": "06d0b56621c5d29b5ced364a889c2beb21f459b44c110f767179647e9e0a5076"
+      },
+      {
+        "run": "experiments/raw/qwen35_joint_wait_h2d_ab_84root_20261006_v6/reactive",
+        "path": "/home/longhao/experiment/BeliefKV/experiments/processed/child_semantic_stage2_cache/samples-769a48256747d0ba79a0cdd6f5f4afa76936b496a03d2e8bdca628a16daad369.json.gz",
+        "sha256": "db7feabf7e46f45cba9df94f7486b833f1cddd2884e6d7650468cf4c024c49fa"
+      },
+      {
+        "run": "experiments/raw/qwen35_joint_wait_h2d_ab_84root_20261006_v6/predictive_h2d",
+        "path": "/home/longhao/experiment/BeliefKV/experiments/processed/child_semantic_stage2_cache/samples-51a445a1a844fb27fd92818900d0752d3277fe021276f80955ebc92f91206498.json.gz",
+        "sha256": "b258dc75b932e51db9a2126bb043e064c22895841a4b456886d6546b77765e6a"
+      },
+      {
+        "run": "experiments/raw/qwen35_child_stream_eos_sampled_dev_astropy_sphinx_32root_v1",
+        "path": "/home/longhao/experiment/BeliefKV/experiments/processed/child_semantic_stage2_cache/samples-d155a9942fc6013bb12f3b8ffcc3aa3cebe66835bc9f8060045c542f68ee4d28.json.gz",
+        "sha256": "0f456251ce1216c284f57d1b448adeac8b78cfe1e30a6763dc8172433ea748ed"
+      }
+    ]
+  },
+  "training_late_weight": 1.0,
+  "weighted_output_semantics": "Late labels are training-loss weights only, never online features. Reweighted nominal quantile regression is not the unweighted RETURN distribution; report separately calibrated bounds and point errors.",
+  "phase_artifact_sha256": "126e9447789c4361df436383a42afc8db092ca7cf085e8af24eb83aa39feb74d",
+  "encoder_weights_sha256": "962c85140d46c4a811a4d05c3a120af2918bf85c3de67d8f478891abd039471d",
+  "selected": {
+    "weight_decay": 0.1,
+    "log1p_bias": -0.1709148244554688,
+    "selector_workflow_weighted_log_pinball": 0.14607500999223313
+  },
+  "selection_basis": "Astropy selector only; no Sphinx labels or action benefit",
+  "candidates": [
+    {
+      "weight_decay": 0.01,
+      "log1p_bias": -0.194294150322168,
+      "selector_workflow_weighted_log_pinball": 0.14642963596021746
+    },
+    {
+      "weight_decay": 0.1,
+      "log1p_bias": -0.1709148244554688,
+      "selector_workflow_weighted_log_pinball": 0.14607500999223313
+    }
+  ],
+  "work_bounds": {
+    "workflow_count": 10,
+    "rank": 9,
+    "nominal_workflow_coverage": 0.8,
+    "added_log1p_margin": 1.4916526665164405,
+    "assumption": "Repeated snapshots clustered by workflow; project exchangeability unverified."
+  },
+  "export_max_absolute_token_difference": 0.03839412845627521,
+  "role_snapshot_counts": {
+    "training": 17546,
+    "calibration": 659,
+    "evaluation": 445,
+    "selector": 303,
+    "interval": 356
+  },
+  "role_workflow_counts": {
+    "training": 83,
+    "calibration": 20,
+    "evaluation": 9,
+    "selector": 10,
+    "interval": 10
+  },
+  "excluded_intervened_tasks_by_run": {
+    "experiments/raw/qwen35_child_service_stream_36root_35_65_v1": [
+      "django__django-10554",
+      "django__django-11400",
+      "pydata__xarray-7393",
+      "pylint-dev__pylint-4551"
+    ],
+    "experiments/raw/qwen35_child_return_joint_project_32root_20260929_v1": [
+      "pydata__xarray-6599",
+      "pytest-dev__pytest-10051"
+    ],
+    "experiments/raw/qwen35_child_return_eos_recent_32root_20260929_v1": [
+      "pytest-dev__pytest-10051",
+      "pytest-dev__pytest-5840"
+    ],
+    "experiments/raw/qwen35_semantic_h2d_ab_36root_20260930_v4/predictive_h2d": [],
+    "experiments/raw/qwen35_joint_wait_h2d_ab_84root_20261006_v6/reactive": [
+      "django__django-11734",
+      "django__django-12754",
+      "django__django-16938",
+      "psf__requests-6028",
+      "pydata__xarray-6744",
+      "pytest-dev__pytest-10051",
+      "pytest-dev__pytest-6197",
+      "pytest-dev__pytest-6202"
+    ],
+    "experiments/raw/qwen35_joint_wait_h2d_ab_84root_20261006_v6/predictive_h2d": [
+      "django__django-10554",
+      "django__django-10999",
+      "django__django-11400",
+      "django__django-13964",
+      "mwaskom__seaborn-3069",
+      "pydata__xarray-4356",
+      "pytest-dev__pytest-6197",
+      "pytest-dev__pytest-7236"
+    ],
+    "experiments/raw/qwen35_child_stream_eos_sampled_dev_astropy_sphinx_32root_v1": [
+      "astropy__astropy-13398",
+      "astropy__astropy-14598",
+      "sphinx-doc__sphinx-7440"
+    ]
+  },
+  "evaluation_last_snapshot": {
+    "baseline": {
+      "request_count": 31,
+      "median_absolute_error_tokens": 26.630695478202078,
+      "median_signed_error_tokens": 2.619127720023208,
+      "p90_absolute_error_tokens": 159.5964558140034
+    },
+    "candidate": {
+      "request_count": 31,
+      "median_absolute_error_tokens": 26.630695478202078,
+      "median_signed_error_tokens": 2.619127720023208,
+      "p90_absolute_error_tokens": 159.5964558140034
+    }
+  },
+  "evaluation_near_end": {
+    "32": {
+      "baseline": {
+        "request_count": 2,
+        "median_absolute_error_tokens": 44.54754255630164,
+        "median_signed_error_tokens": 44.54754255630164,
+        "p90_absolute_error_tokens": 70.54585553806065
+      },
+      "candidate": {
+        "request_count": 2,
+        "median_absolute_error_tokens": 44.54754255630164,
+        "median_signed_error_tokens": 44.54754255630164,
+        "p90_absolute_error_tokens": 70.54585553806065
+      }
+    },
+    "64": {
+      "baseline": {
+        "request_count": 16,
+        "median_absolute_error_tokens": 21.437587464701956,
+        "median_signed_error_tokens": 20.305610002330646,
+        "p90_absolute_error_tokens": 82.83561987377342
+      },
+      "candidate": {
+        "request_count": 16,
+        "median_absolute_error_tokens": 21.437587464701956,
+        "median_signed_error_tokens": 20.305610002330646,
+        "p90_absolute_error_tokens": 82.83561987377342
+      }
+    },
+    "128": {
+      "baseline": {
+        "request_count": 24,
+        "median_absolute_error_tokens": 19.17552770520846,
+        "median_signed_error_tokens": 14.031441504516067,
+        "p90_absolute_error_tokens": 85.15169430988261
+      },
+      "candidate": {
+        "request_count": 24,
+        "median_absolute_error_tokens": 19.17552770520846,
+        "median_signed_error_tokens": 14.031441504516067,
+        "p90_absolute_error_tokens": 85.15169430988261
+      }
+    }
+  },
+  "evaluation_rolling_conditional_final_only": {
+    "8": {
+      "baseline": {
+        "scope": "first sampled semantic trigger; no Host/capacity check or physical action",
+        "request_count": 31,
+        "natural_return_requests": 31,
+        "requests_with_notice_observation": 0,
+        "first_trigger_count": 0,
+        "natural_first_trigger_count": 0,
+        "tool_round_false_trigger_count": 0,
+        "positive_work_at_trigger_count": 0,
+        "upper_underestimated_at_trigger_count": 0,
+        "median_point_error_at_trigger_tokens": null,
+        "median_snapshot_lead_to_return_ms": null,
+        "lead_0_to_1000ms_count": 0,
+        "lead_100_to_1000ms_count": 0,
+        "lead_over_2000ms_count": 0,
+        "token_horizon": 8,
+        "time_horizon_ms": null,
+        "work_statistic": "center",
+        "first_trigger_rows": []
+      },
+      "candidate": {
+        "scope": "first sampled semantic trigger; no Host/capacity check or physical action",
+        "request_count": 31,
+        "natural_return_requests": 31,
+        "requests_with_notice_observation": 0,
+        "first_trigger_count": 0,
+        "natural_first_trigger_count": 0,
+        "tool_round_false_trigger_count": 0,
+        "positive_work_at_trigger_count": 0,
+        "upper_underestimated_at_trigger_count": 0,
+        "median_point_error_at_trigger_tokens": null,
+        "median_snapshot_lead_to_return_ms": null,
+        "lead_0_to_1000ms_count": 0,
+        "lead_100_to_1000ms_count": 0,
+        "lead_over_2000ms_count": 0,
+        "token_horizon": 8,
+        "time_horizon_ms": null,
+        "work_statistic": "center",
+        "first_trigger_rows": []
+      }
+    },
+    "16": {
+      "baseline": {
+        "scope": "first sampled semantic trigger; no Host/capacity check or physical action",
+        "request_count": 31,
+        "natural_return_requests": 31,
+        "requests_with_notice_observation": 0,
+        "first_trigger_count": 0,
+        "natural_first_trigger_count": 0,
+        "tool_round_false_trigger_count": 0,
+        "positive_work_at_trigger_count": 0,
+        "upper_underestimated_at_trigger_count": 0,
+        "median_point_error_at_trigger_tokens": null,
+        "median_snapshot_lead_to_return_ms": null,
+        "lead_0_to_1000ms_count": 0,
+        "lead_100_to_1000ms_count": 0,
+        "lead_over_2000ms_count": 0,
+        "token_horizon": 16,
+        "time_horizon_ms": null,
+        "work_statistic": "center",
+        "first_trigger_rows": []
+      },
+      "candidate": {
+        "scope": "first sampled semantic trigger; no Host/capacity check or physical action",
+        "request_count": 31,
+        "natural_return_requests": 31,
+        "requests_with_notice_observation": 0,
+        "first_trigger_count": 0,
+        "natural_first_trigger_count": 0,
+        "tool_round_false_trigger_count": 0,
+        "positive_work_at_trigger_count": 0,
+        "upper_underestimated_at_trigger_count": 0,
+        "median_point_error_at_trigger_tokens": null,
+        "median_snapshot_lead_to_return_ms": null,
+        "lead_0_to_1000ms_count": 0,
+        "lead_100_to_1000ms_count": 0,
+        "lead_over_2000ms_count": 0,
+        "token_horizon": 16,
+        "time_horizon_ms": null,
+        "work_statistic": "center",
+        "first_trigger_rows": []
+      }
+    },
+    "32": {
+      "baseline": {
+        "scope": "first sampled semantic trigger; no Host/capacity check or physical action",
+        "request_count": 31,
+        "natural_return_requests": 31,
+        "requests_with_notice_observation": 0,
+        "first_trigger_count": 0,
+        "natural_first_trigger_count": 0,
+        "tool_round_false_trigger_count": 0,
+        "positive_work_at_trigger_count": 0,
+        "upper_underestimated_at_trigger_count": 0,
+        "median_point_error_at_trigger_tokens": null,
+        "median_snapshot_lead_to_return_ms": null,
+        "lead_0_to_1000ms_count": 0,
+        "lead_100_to_1000ms_count": 0,
+        "lead_over_2000ms_count": 0,
+        "token_horizon": 32,
+        "time_horizon_ms": null,
+        "work_statistic": "center",
+        "first_trigger_rows": []
+      },
+      "candidate": {
+        "scope": "first sampled semantic trigger; no Host/capacity check or physical action",
+        "request_count": 31,
+        "natural_return_requests": 31,
+        "requests_with_notice_observation": 0,
+        "first_trigger_count": 0,
+        "natural_first_trigger_count": 0,
+        "tool_round_false_trigger_count": 0,
+        "positive_work_at_trigger_count": 0,
+        "upper_underestimated_at_trigger_count": 0,
+        "median_point_error_at_trigger_tokens": null,
+        "median_snapshot_lead_to_return_ms": null,
+        "lead_0_to_1000ms_count": 0,
+        "lead_100_to_1000ms_count": 0,
+        "lead_over_2000ms_count": 0,
+        "token_horizon": 32,
+        "time_horizon_ms": null,
+        "work_statistic": "center",
+        "first_trigger_rows": []
+      }
+    }
+  },
+  "calibration": {
+    "progress_event": {
+      "temperature": 0.8629918558036128,
+      "token_bias": 5.404711584301992,
+      "bias_workflows": 11,
+      "work_bounds": {
+        "nominal_workflow_coverage": 0.8,
+        "workflow_count": 11,
+        "rank": 10,
+        "added_token_margin": 100.35714290967212,
+        "assumption": "Workflow clustering handles repeated snapshots. Cross-project exchangeability is unverified; report measured coverage, not a guarantee."
+      },
+      "request_operating_point": {
+        "threshold": 0.819646008799979,
+        "status": "calibration_only_request_operating_point",
+        "selected": 22,
+        "true": 20,
+        "precision": 0.9090909090909091,
+        "meaning": "Advisory classification statistic, not a child guard or H2D permit."
+      }
+    },
+    "semantic_event": {
+      "temperature": 0.6956132153335757,
+      "token_bias": 11.223574507673078,
+      "bias_workflows": 11,
+      "work_bounds": {
+        "workflow_count": 10,
+        "rank": 9,
+        "nominal_workflow_coverage": 0.8,
+        "added_log1p_margin": 1.4916526665164405,
+        "assumption": "Repeated snapshots clustered by workflow; project exchangeability unverified."
+      },
+      "request_operating_point": {
+        "threshold": 0.5816927983520741,
+        "status": "calibration_only_request_operating_point",
+        "selected": 33,
+        "true": 30,
+        "precision": 0.9090909090909091,
+        "meaning": "Advisory classification statistic, not a child guard or H2D permit."
+      }
+    }
+  }
+}

@@ -5,6 +5,7 @@ from __future__ import annotations
 
 import argparse
 import copy
+import gzip
 import hashlib
 import json
 import math
@@ -20,10 +21,13 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from beliefkv.predictor.child_semantic_work import (
-    FrozenTextEncoder, SemanticHead, encoder_snapshot, workflow_weights,
+    SemanticReportPredictor, encoder_snapshot, workflow_weights,
 )
-from beliefkv.predictor.conditional_work import NeuralConditionalWork, structural_work_features
-from scripts.compare_semantic_rolling_work import metrics
+from beliefkv.predictor.child_report_phase import ReportObservation
+from beliefkv.predictor.conditional_work import (
+    WORK_FEATURE_VERSIONS, NeuralConditionalWork, structural_work_features,
+)
+from scripts.compare_semantic_rolling_work import metrics, work_arrays, work_triggers
 from scripts.fit_child_completion_windows import load_samples
 from scripts.train_child_semantic_work import cached_embeddings, split_roles
 
@@ -55,14 +59,69 @@ def comparison_rows(samples, predicted):
     } for row, value in zip(samples, predicted)]
 
 
+def cached_work_samples(manifest_path: Path, plan: dict) -> tuple[list[dict], dict, dict]:
+    manifest = json.loads(manifest_path.read_text())
+    reference_path = Path(manifest["source_report"])
+    if hashlib.sha256(reference_path.read_bytes()).hexdigest() != manifest["source_report_sha256"]:
+        raise ValueError("sample exclusion report changed")
+    reference = json.loads(reference_path.read_text())
+    if reference["plan"] != plan:
+        raise ValueError("cached sample roles differ from the work plan")
+    runs = plan["training_runs"] + plan["calibration_evaluation_runs"]
+    if [entry["run"] for entry in manifest["samples"]] != runs:
+        raise ValueError("cached sample sources differ from the work plan")
+    samples, exclusions = [], reference["excluded_intervened_tasks_by_run"]
+    for entry in manifest["samples"]:
+        path = Path(entry["path"])
+        if hashlib.sha256(path.read_bytes()).hexdigest() != entry["sha256"]:
+            raise ValueError("cached samples changed")
+        with gzip.open(path, "rt", encoding="utf-8") as stream:
+            raw = json.load(stream)
+        if raw["coverage"]["snapshot_policy"] != plan["snapshot_policy"]:
+            raise ValueError("cached snapshot policy differs from the work plan")
+        expected_run = str(Path(manifest["source_root"]) / entry["run"])
+        if any(row["run"] != expected_run for row in raw["rows"]):
+            raise ValueError("cached observations belong to a different run")
+        samples.extend({
+            **row, "observation": ReportObservation(**row["observation"]),
+        } for row in raw["rows"] if (
+            row["task"] not in exclusions[entry["run"]]
+            and row["remaining_tokens"] is not None and row["remaining_tokens"] > 0
+        ))
+    return samples, exclusions, manifest
+
+
+def rolling_rows(samples, scores, baseline, candidate):
+    result = []
+    for row, score, before, after in zip(samples, scores, baseline, candidate):
+        observation = row["observation"]
+        per_token = row.get("observed_decode_ms_per_token")
+        result.append({
+            "request_id": observation.request_id,
+            "snapshot_ts_ms": observation.ts_ms,
+            "notice_active": observation.notice_active,
+            "observed_output_tokens": observation.observed_output_tokens,
+            "actual_remaining_tokens": row["remaining_tokens"],
+            "remaining_client_wall_ms": row["remaining_client_wall_ms"],
+            "sampled_tokens_per_second": (
+                1000. / per_token if per_token is not None and per_token > 0 else None
+            ),
+            "scores": {"baseline": float(score), "candidate": float(score)},
+            "baseline": float(before[1]), "candidate": float(after[1]),
+            "baseline_bounds": before.tolist(), "candidate_bounds": after.tolist(),
+        })
+    return result
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--plan", type=Path, required=True)
     parser.add_argument("--phase-artifact", type=Path, required=True)
     parser.add_argument("--cache", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--sample-cache-manifest", type=Path)
     parser.add_argument("--epochs", type=int, default=160)
-    parser.add_argument("--work-features", choices=("structural_v1", "body_progress_v2"), default="structural_v1")
+    parser.add_argument("--work-features", choices=WORK_FEATURE_VERSIONS, default="structural_v1")
     parser.add_argument("--late-weight", type=float, default=1.)
     args = parser.parse_args()
     if args.output.exists():
@@ -75,19 +134,28 @@ def main() -> None:
     args.cache.mkdir(parents=True, exist_ok=True)
     plan = json.loads(args.plan.read_text())
     artifact = json.loads(args.phase_artifact.read_text())
-    phase = SemanticHead.load(args.phase_artifact)
+    baseline = SemanticReportPredictor.load(args.phase_artifact)
+    phase = baseline.head
+    phase_report = json.loads((args.phase_artifact.parent / "report.json").read_text())
+    phase_threshold = phase_report["calibration"]["semantic_event"]["request_operating_point"]["threshold"]
     sha = artifact["metadata"]["adapted_encoder"]["weights_sha256"]
     if sha != plan["encoder"]["revision"]:
         raise ValueError("work fit requires the original frozen encoder")
-    samples, exclusions = [], {}
-    for run in plan["training_runs"] + plan["calibration_evaluation_runs"]:
-        print(f"Collecting {run}", flush=True)
-        rows, exclusions[run] = load_samples(ROOT / run, args.cache, plan["snapshot_policy"])
-        # This head is conditional on a natural final report; phase stays frozen.
-        samples.extend(row for row in rows if row["remaining_tokens"] is not None)
+    samples, exclusions, manifest = [], {}, None
+    if args.sample_cache_manifest:
+        samples, exclusions, manifest = cached_work_samples(args.sample_cache_manifest, plan)
+    else:
+        for run in plan["training_runs"] + plan["calibration_evaluation_runs"]:
+            print(f"Collecting {run}", flush=True)
+            rows, exclusions[run] = load_samples(ROOT / run, args.cache, plan["snapshot_policy"])
+            # This head is conditional on a natural final report; phase stays frozen.
+            samples.extend(row for row in rows if row["remaining_tokens"] is not None)
     roles = split_roles(samples, plan)
     observations = [row["observation"] for row in samples]
-    encoder = FrozenTextEncoder(encoder_snapshot(artifact, args.phase_artifact), max_tokens=256)
+    encoder = baseline.encoder
+    if encoder is None:
+        raise ValueError("work refit requires the frozen semantic encoder")
+    print(f"Encoding {len(samples)} cached work snapshots", flush=True)
     embeddings = cached_embeddings(samples, encoder, sha, args.cache)
     raw = np.column_stack((
         phase.design(observations, embeddings),
@@ -172,10 +240,11 @@ def main() -> None:
     export_error = float(np.max(np.abs(bounds - expected)))
     if not np.allclose(bounds, expected, atol=.05, rtol=1e-4):
         raise ValueError(f"exported inference differs from fitted head: {export_error}")
-    baseline_path = args.phase_artifact.parent / artifact["conditional_work_head"]["path"]
-    baseline = SemanticHead.load(baseline_path)
-    _, old = baseline.arrays([observations[i] for i in held], embeddings[held])
-    rows = comparison_rows([samples[i] for i in held], bounds[held, 1])
+    held_observations = [observations[i] for i in held]
+    scores, old = work_arrays(baseline, held_observations, embeddings[held])
+    held_samples = [samples[i] for i in held]
+    rows = comparison_rows(held_samples, bounds[held, 1])
+    rolling = rolling_rows(held_samples, scores[:, 2], old, bounds[held])
     for row, before in zip(rows, old):
         row["baseline"] = float(before[1])
     args.output.mkdir(parents=True)
@@ -200,6 +269,7 @@ def main() -> None:
         "scope": "CPU development conditional-work refit, not sealed validation or H2D benefit",
         "plan": plan, "phase_and_encoder_frozen": True,
         "work_features": args.work_features,
+        "cached_sample_manifest": manifest,
         "training_late_weight": args.late_weight,
         "weighted_output_semantics": (
             "Late labels are training-loss weights only, never online features. "
@@ -222,9 +292,15 @@ def main() -> None:
                 row for row in rows if row["actual_remaining_tokens"] <= limit
             ], name) for name in ("baseline", "candidate")} for limit in (32, 64, 128)
         },
-        "calibration": copy.deepcopy(json.loads(
-            (args.phase_artifact.parent / "report.json").read_text(),
-        )["calibration"]),
+        "evaluation_rolling_conditional_final_only": {
+            str(horizon): {
+                name: work_triggers(
+                    rolling, name, phase_threshold,
+                    token_horizon=horizon, statistic="center",
+                ) for name in ("baseline", "candidate")
+            } for horizon in (8, 16, 32)
+        },
+        "calibration": copy.deepcopy(phase_report["calibration"]),
     }
     report["calibration"]["semantic_event"]["work_bounds"] = cal
     (args.output / "report.json").write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")

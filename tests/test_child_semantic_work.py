@@ -422,3 +422,73 @@ def test_body_progress_separates_visible_report_from_total_decode_without_future
     assert body[0, 7] == pytest.approx(np.log1p(400))
     assert body[0, 9] == pytest.approx(.2)
     assert body[0, 10] == pytest.approx(np.log1p(700))
+
+
+def test_suffix_work_features_preserve_recent_order_without_future_or_old_prefix():
+    row = replace(rows()[0]["observation"], content_tail="tests passed; report complete.")
+    changed = replace(row, content_tail="report complete; tests passed.")
+    suffix = structural_work_features([row], version="suffix_sequence_v3")
+    reordered = structural_work_features([changed], version="suffix_sequence_v3")
+    assert suffix.shape == (1, 72)
+    assert suffix[0, :8] == pytest.approx(structural_work_features([row])[0])
+    assert not np.allclose(suffix[0, 8:], reordered[0, 8:])
+    assert np.linalg.norm(suffix[0, 8:]) == pytest.approx(1.)
+    tail = " ".join(f"token{i}" for i in range(40))
+    recent = structural_work_features(
+        [replace(row, content_tail=tail)], version="suffix_sequence_v3",
+    )
+    prefixed = structural_work_features(
+        [replace(row, content_tail="old text " * 200 + tail)], version="suffix_sequence_v3",
+    )
+    assert recent[0, 8:] == pytest.approx(prefixed[0, 8:])
+    empty = structural_work_features(
+        [replace(row, content_tail="")], version="suffix_sequence_v3",
+    )
+    assert np.isfinite(empty).all()
+    assert not empty[0, 8:].any()
+
+
+def test_cached_work_samples_bind_exclusions_to_the_original_run(tmp_path):
+    import gzip
+    import hashlib
+    import json
+    from dataclasses import asdict
+
+    from scripts.fit_semantic_work_quantiles import cached_work_samples
+
+    plan = {
+        "training_runs": ["run"], "calibration_evaluation_runs": [],
+        "snapshot_policy": "rolling_100ms",
+    }
+    report = tmp_path / "report.json"
+    report.write_text(json.dumps({
+        "plan": plan, "excluded_intervened_tasks_by_run": {"run": ["train__task0"]},
+    }))
+    cached = tmp_path / "samples.json.gz"
+    data = {
+        "coverage": {"snapshot_policy": "rolling_100ms"},
+        "rows": [{
+            **row, "observation": asdict(row["observation"]), "run": str(tmp_path / "run"),
+        } for row in rows(count=6)],
+    }
+    manifest = tmp_path / "manifest.json"
+
+    def save():
+        with gzip.open(cached, "wt", encoding="utf-8") as stream:
+            json.dump(data, stream)
+        manifest.write_text(json.dumps({
+            "source_root": str(tmp_path), "source_report": str(report),
+            "source_report_sha256": hashlib.sha256(report.read_bytes()).hexdigest(),
+            "samples": [{
+                "run": "run", "path": str(cached),
+                "sha256": hashlib.sha256(cached.read_bytes()).hexdigest(),
+            }],
+        }))
+
+    save()
+    samples, _, _ = cached_work_samples(manifest, plan)
+    assert [row["observation"].request_id for row in samples] == ["train-r5"]
+    data["rows"][0]["run"] = str(tmp_path / "different-run")
+    save()
+    with pytest.raises(ValueError, match="different run"):
+        cached_work_samples(manifest, plan)

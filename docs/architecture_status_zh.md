@@ -67,9 +67,18 @@ ACK，FULL传输与确认首次复用分别为0.893/0.743 GB、0.338/
 训练与在线使用同一截断规则，证据只说明表示存在限制，不直接
 证明预测误差原因。报告为
 `experiments/reports/v15_semantic_encoder_window_20261010.json`。
-下一步在隔离分支比较低成本正文后缀序列特征，仅改条件剩余
-工作头，保持阶段头、encoder和阈值；不增加第二次在线encoder
-推理，不将V15作为新的独立验证集。
+隔离CPU比较已完成：原V7的18650个工作快照及embedding可从固定
+缓存完整恢复，structural基线重拟合的数值权重和选择损失均复现。
+在最近32个词/符号上增加64维有序后缀特征，保持阶段头、encoder
+和阈值，未改善条件工作头：Astropy选择集log pinball从0.146075
+升到0.153486；Sphinx开发集31个请求末次快照的绝对token误差
+P50从26.631升到44.179。该9-workflow开发集被反复使用，不能
+称独立验证。其快照均无有效通知，无法验证通知后的H2D触发。
+候选不部署，V15不参与选择。重建样本清单为
+`configs/migration/child_semantic_suffix_cached_samples_20261010.json`，
+比较报告为隔离目录中
+`experiments/models/child_semantic_work_suffix_candidate_20261010/report.json`。
+本轮仍优先完成冻结对照，再验证已提交控制成本与消费优化。
 
 2026-10-10 05:40 CST的v15来源快照：原生2358批/731.314 GB，
 JOIN/tool72命令/1.384 GB，需求handoff4692节点命令、1524批/
