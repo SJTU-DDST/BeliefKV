@@ -31,7 +31,7 @@ from tests.test_sglang_v0520_observer import (
 )
 
 
-def static_counter_case(*, engine: Path, iterations: int) -> dict:
+def static_counter_case(*, engine: Path, iterations: int, checkpoint_depth: int = 4) -> dict:
     """Compare live counters and recovery observation with native size code."""
     import torch
     from beliefkv.runtime import sglang_v0520_observer as current
@@ -58,6 +58,8 @@ def static_counter_case(*, engine: Path, iterations: int) -> dict:
     for name, module in (("baseline", baseline), ("optimized", current)):
         cache = _static_cache()
         full = cache.token_to_kv_pool_allocator._kvcache.full_kv_pool
+        cache.token_to_kv_pool_allocator.size = full.size = checkpoint_depth + 13
+        cache.host_pool_group.entry_map["kv"].host_pool.size = checkpoint_depth + 13
         full.k_buffer = [torch.empty((2, 4), dtype=torch.bfloat16) for _ in range(10)]
         full.v_buffer = [torch.empty_like(item) for item in full.k_buffer]
 
@@ -71,29 +73,35 @@ def static_counter_case(*, engine: Path, iterations: int) -> dict:
         state.temporal = torch.empty((30, 2, 4), dtype=torch.bfloat16)
         nodes = {0: _node(0)}
         nodes[0].key = ()
-        for offset in range(1, 5):
+        for offset in range(1, checkpoint_depth + 1):
             nodes[offset] = _node(
-                offset, nodes[offset - 1], host=[offset], mamba_host=offset == 4,
+                offset, nodes[offset - 1], host=[offset],
+                mamba_host=offset == checkpoint_depth,
             )
             nodes[offset].key = (offset,)
         cache.tree_core = UnifiedTreeCore(node_by_id=nodes.__getitem__)
         physical = baseline_physical if name == "baseline" else current_physical
         anchors = physical.ContextSessionAnchors(
             key=PrefillCandidateKey("req", "wf", "parent", "ctx", 0, 0, "session", 1),
-            component_leaves=((0, ((4, 14),)), (2, ((4, 14),))),
-            captured_monotonic_s=1.0, reusable_input_tokens=4,
+            component_leaves=(
+                (0, ((checkpoint_depth, checkpoint_depth + 10),)),
+                (2, ((checkpoint_depth, checkpoint_depth + 10),)),
+            ),
+            captured_monotonic_s=1.0, reusable_input_tokens=checkpoint_depth,
         )
         prepare_cache = _static_cache()
         prepare_full = prepare_cache.token_to_kv_pool_allocator._kvcache.full_kv_pool
+        prepare_cache.token_to_kv_pool_allocator.size = prepare_full.size = checkpoint_depth + 13
+        prepare_cache.host_pool_group.entry_map["kv"].host_pool.size = checkpoint_depth + 13
         prepare_full.get_kv_size_bytes = census
         prepare_nodes = {0: _node(0)}
         prepare_nodes[0].key = ()
-        for offset in range(1, 5):
+        for offset in range(1, checkpoint_depth + 1):
             prepare_nodes[offset] = _node(
                 offset, prepare_nodes[offset - 1], device=[offset],
             )
             prepare_nodes[offset].key = (offset,)
-            if offset != 4:
+            if offset != checkpoint_depth:
                 prepare_nodes[offset].component_data[2].value = None
         prepare_cache.tree_core = UnifiedTreeCore(node_by_id=prepare_nodes.__getitem__)
 
@@ -101,17 +109,23 @@ def static_counter_case(*, engine: Path, iterations: int) -> dict:
             candidate = physical.capture_action_local_shadow(cache, anchors)
             if candidate is None:
                 raise AssertionError("viable FULL-only PREPARE fixture was rejected")
-            return physical.shadow_backup_steps(candidate, max_steps=4)
+            return physical.shadow_backup_steps(
+                candidate, max_steps=min(checkpoint_depth, 16),
+            )
 
         variants[name] = (cache, {
             "headroom": module.observe_static_full_mamba_headroom,
             "host_usage": module.observe_static_full_mamba_host_usage,
-            "closure": lambda cache, module=module: module.observe_unified_node_closure(cache, 4),
+            "closure": lambda cache, module=module: module.observe_unified_node_closure(
+                cache, checkpoint_depth,
+            ),
             "session_h2d": lambda cache, physical=physical, anchors=anchors:
-                physical.inspect_session_h2d_opportunity(cache, anchors, max_steps=4),
+                physical.inspect_session_h2d_opportunity(
+                    cache, anchors, max_steps=min(checkpoint_depth, 16),
+                ),
             "prepare_plan": prepare_plan,
         })
-    calls_per_sample = 50
+    calls_per_sample = 50 if checkpoint_depth <= 16 else 10
     for iteration in range(iterations + 5):
         names = list(variants)
         if iteration % 2:
@@ -130,11 +144,14 @@ def static_counter_case(*, engine: Path, iterations: int) -> dict:
                 cpu_ms = (time.thread_time_ns() - cpu_start) / 1_000_000 / calls_per_sample
                 wall_ms = (time.perf_counter_ns() - wall_start) / 1_000_000 / calls_per_sample
                 if phase == "session_h2d":
-                    if len(observed.steps) != 4 or observed.required_full_tokens != 4:
+                    expected = min(checkpoint_depth, 16)
+                    if len(observed.steps) != expected or observed.required_full_tokens != expected:
                         raise AssertionError("full checkpoint restore plan changed")
                 elif phase == "prepare_plan":
-                    if len(observed) != 4 or any(step.include_mamba for step in observed):
-                        raise AssertionError("four-extent FULL-only PREPARE plan changed")
+                    if len(observed) != min(checkpoint_depth, 16) or any(
+                        step.include_mamba for step in observed
+                    ):
+                        raise AssertionError("FULL-only PREPARE plan changed")
                 elif not observed.observable:
                     raise AssertionError("valid live-counter fixture was rejected")
                 record = (
@@ -155,14 +172,18 @@ def static_counter_case(*, engine: Path, iterations: int) -> dict:
         for name, per_phase in samples.items()
     }
     return {
-        "scope": "native size code and real four-extent checkpoint planner on CPU fixtures; no DMA or GPU throughput",
+        "scope": "native size code and complete checkpoint planning on CPU fixtures; no DMA or GPU throughput",
         "native_pool_source": str(source_path.resolve()),
         "native_pool_source_sha256": hashlib.sha256(source.encode()).hexdigest(),
         "full_tensor_layers": 10, "mamba_tensor_layers": 30,
         "iterations": iterations, "calls_per_sample": calls_per_sample,
+        "checkpoint_depth": checkpoint_depth,
+        "planned_burst_steps": min(checkpoint_depth, 16),
         "live_free_list_observations_equal": True,
-        "node_closure_and_four_extent_restore_plan_equal": True,
-        "four_extent_full_only_prepare_plan_equal": True,
+        "node_closure_and_checkpoint_restore_plan_equal": True,
+        "full_only_prepare_plan_equal": True,
+        "node_closure_and_four_extent_restore_plan_equal": True if checkpoint_depth == 4 else None,
+        "four_extent_full_only_prepare_plan_equal": True if checkpoint_depth == 4 else None,
         "ignored_output_fields": ["closure.captured_monotonic_s"],
         "tensor_census_calls_including_warmup": dict(census_reads),
         "costs": costs,
@@ -840,6 +861,8 @@ def main():
                         help="Measure shared failed-closure sampling and its normal-path overhead.")
     parser.add_argument("--static-counters-only", action="store_true",
                         help="Measure live free-list counters using native tensor-size code.")
+    parser.add_argument("--counter-checkpoint-depth", type=int, default=4,
+                        help="Ancestry depth for the isolated native-counter/planning fixture.")
     parser.add_argument("--engine", type=Path,
                         default=ROOT / "third_party/sglang-v0.5.20")
     parser.add_argument("--force-prepare-probes", action="store_true",
@@ -855,6 +878,8 @@ def main():
         raise ValueError("depth 1..64, workflows 4..512 and positive iterations required")
     if args.mamba_ancestor and args.depth < 3:
         raise ValueError("Mamba ancestor fixture requires depth at least three")
+    if not 1 <= args.counter_checkpoint_depth <= 512:
+        raise ValueError("counter checkpoint depth 1..512 required")
     isolated = (
         args.terminal_only or args.lease_only or args.publication_only
         or args.failed_sampling_only or args.static_counters_only
@@ -942,7 +967,10 @@ def main():
             for failure in (None, "ancestry_bound", "pending_write", "pending_load")
         ] if args.failed_sampling_only else [],
         "static_counter_cases": [
-            static_counter_case(engine=args.engine, iterations=args.iterations)
+            static_counter_case(
+                engine=args.engine, iterations=args.iterations,
+                checkpoint_depth=args.counter_checkpoint_depth,
+            )
         ] if args.static_counters_only else [],
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

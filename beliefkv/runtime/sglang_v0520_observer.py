@@ -570,8 +570,11 @@ def observe_unified_node_closure(
         node = tree.node_by_id(node_id)
         visited: set[int] = set()
         summaries: list[UnifiedNodeSummary] = []
+        node_type = component_type = None
         while node is not None:
-            _named(node, "UnifiedTreeNode")
+            if type(node) is not node_type:
+                _named(node, "UnifiedTreeNode")
+                node_type = type(node)
             if type(node.id) is not int or node.id < 0 or node.id in visited:
                 raise ValueError("invalid or cyclic node ancestry")
             if not summaries and node.id != node_id:
@@ -581,37 +584,33 @@ def observe_unified_node_closure(
             visited.add(node.id)
             parent = node.parent
             if parent is not None:
-                _named(parent, "UnifiedTreeNode")
+                if type(parent) is not node_type:
+                    _named(parent, "UnifiedTreeNode")
                 if type(parent.id) is not int or parent.id < 0:
                     raise ValueError("invalid parent ID")
             full = node.component_data[0]
             mamba = node.component_data[2]
-            _named(full, "ComponentData")
-            _named(mamba, "ComponentData")
+            if type(full) is not component_type:
+                _named(full, "ComponentData")
+                component_type = type(full)
+            if type(mamba) is not component_type:
+                _named(mamba, "ComponentData")
             full_device_tokens = (
                 0 if full.value is None else _bounded(len(full.value), device_full_tokens, "FULL device length")
             )
             full_host_tokens = (
                 0 if full.host_value is None else _bounded(len(full.host_value), host_full_tokens, "FULL host length")
             )
-            full_device_locks = _bounded(
-                full.lock_ref, 2**31 - 1, "node lock count"
-            )
-            full_host_locks = _bounded(
-                full.host_lock_ref, 2**31 - 1, "node lock count"
-            )
-            mamba_device_locks = _bounded(
-                mamba.lock_ref, 2**31 - 1, "node lock count"
-            )
-            mamba_host_locks = _bounded(
-                mamba.host_lock_ref, 2**31 - 1, "node lock count"
-            )
-            full_session_refs = _bounded(
-                full.session_ref, 2**31 - 1, "session reference count"
-            )
-            mamba_session_refs = _bounded(
-                mamba.session_ref, 2**31 - 1, "session reference count"
-            )
+            locks = (full.lock_ref, full.host_lock_ref, mamba.lock_ref, mamba.host_lock_ref)
+            for value in locks:
+                if type(value) is not int or not 0 <= value <= 2**31 - 1:
+                    raise ValueError("invalid node lock count")
+            full_device_locks, full_host_locks, mamba_device_locks, mamba_host_locks = locks
+            references = (full.session_ref, mamba.session_ref)
+            for value in references:
+                if type(value) is not int or not 0 <= value <= 2**31 - 1:
+                    raise ValueError("invalid session reference count")
+            full_session_refs, mamba_session_refs = references
             session_leaves = []
             for item in (full, mamba):
                 ids = item.session_ids

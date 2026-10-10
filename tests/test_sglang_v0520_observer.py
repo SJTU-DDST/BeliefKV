@@ -747,6 +747,30 @@ def test_node_closure_rejects_unknown_tree_or_mismatched_node() -> None:
     assert not observe_unified_node_closure(cache, 5).observable
 
 
+@pytest.mark.parametrize("component", [None, 0, 2])
+@pytest.mark.parametrize("recognized", [False, True])
+def test_node_closure_validates_changed_ancestor_types(component, recognized) -> None:
+    cache = _cache()
+    ancestor = _node(4, _node(0), device=[1])
+    leaf = _node(5, ancestor, device=[2])
+    original = ancestor if component is None else ancestor.component_data[component]
+    name = "UnifiedTreeNode" if component is None else "ComponentData"
+    changed_type = type(name, (NS,), {}) if recognized else NS
+    changed = changed_type(**vars(original))
+    if component is None:
+        leaf.parent = changed
+    else:
+        ancestor.component_data[component] = changed
+    cache.tree_core = UnifiedTreeCore(node_by_id=lambda _: leaf)
+    observed = observe_unified_node_closure(cache, 5)
+    assert observed.observable is recognized
+    if recognized:
+        assert [item.node_id for item in observed.nodes] == [5, 4, 0]
+        assert observed.nodes[1].full_device_tokens == 1
+    else:
+        assert observed.nodes == ()
+
+
 @pytest.mark.parametrize("field,value", [
     ("id", -1),
     ("write_through_pending_id", True),

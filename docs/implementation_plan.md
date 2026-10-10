@@ -65,6 +65,26 @@ deploy exactly this revision and patch, run predictive first and cold native
 second, and measure actual early FULL reuse, parent service wait, protection
 reasons and busy-window throughput. The broad performance objective stays active.
 
+Include the validated deep-prefix observation reduction in the still-waiting V22
+revision, preserving the superseded registration and receipt. Within one closure
+read, validate newly encountered native node/component classes once and validate
+the current node's lock/reference counters together. Continue reading identity,
+creation time, lengths, locks, references and pending DMA for every node.
+Do not cache physical residency or capacity across calls. The 240 scoped
+observer/physical/terminal-capacity checks pass, including changed ancestor types.
+The canonical native patch SHA256 and engine tree remain unchanged.
+
+Keep v25_checkpoint4_count_reuse_cpu_20261011.json and
+v25_checkpoint300_count_reuse_cpu_20261011.json. In 100 alternating CPU samples
+against 629eaa4, complete 300-node closure/H2D/FULL-only PREPARE planning means
+change from 1.536/1.995/1.920 to 1.453/1.925/1.810 ms with identical complete
+observations and 16-extent plans. Four-node closure changes from 33.57 to 32.91
+microseconds, while full planning means do not show a stable improvement.
+Do not treat the initial type-only run, fixture CPU reductions or their sum as
+proof of GPU throughput or an end-to-end saving. Preserve the frozen V21 pair
+and validate actual useful early FULL coverage, consumption and busy-window
+throughput/JCT under the next predictive-first, same-version cold-native pair.
+
 The latest independent-wait evidence makes complete-prefix coverage the next
 runtime validation priority. Keep v25_v21_prefetch_gap_attribution_20261011.json:
 4433 tool waits observed node ancestry exceeds bound and are associated with
@@ -81,7 +101,7 @@ no_cold_capacity associate with 122.589 GB and may overlap depth rejections.
 Neither byte association proves all demand could have been moved early or is an
 oracle speedup. The 53 lifecycle-audit checks pass, including repeated samples,
 unknown demand and overlapping reasons. This revision changes offline attribution
-only; the frozen V21 and registered 629eaa4 V22 production sources remain unchanged.
+only; it does not change the scheduling policy or the frozen V21 sources.
 
 The later partial V21 snapshot has 1.405/2.530 GB independent early-reused JOIN/tool
 FULL; 99.764 GB demand-handoff reuse stays separate. Node-command ACK-to-first-
