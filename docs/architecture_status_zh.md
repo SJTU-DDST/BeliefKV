@@ -41,8 +41,18 @@ allocator、共享前缀、两种 close/RETURN 顺序、锁与 DMA
 规范引擎 patch SHA256：
 `c58cc89194a66fe74d2a0e842db4972e5d1d059a2f4870f109f36f223c8ee4ae`。
 
-下一轮按已授权的快速开发节奏保存 V18 中断 trace 与回执，
-停净旧进程后冷启动 V19 predictive，再运行稳定同版本 native。
+V18于2026-10-10 17:25 CST停止，旧client/server/scheduler
+全部退出，GPU及18454端口已释放。69个终态均completed，
+其余87个任务按运行中断或尚未到达保存，不计为模型incomplete。
+独立边界审计确认JOIN687.86MB、tool52.24MB提前且复用FULL，
+共740.11MB；需求handoff确认复用52.138GB另列。JOIN最后
+ACK到服务P50/P90为327.78/940.52ms，但最大仍18.96秒，
+8条FULL保护在完成前到期。这是旧版截断观察，不是新容量
+交接的性能证据。停止记录与三份审计位于V18原目录。
+已清理69个完成并归档的root workspace；trace、回执、
+补丁及中断中的workspace保留，磁盘空闲约161GiB。
+
+下一轮冷启动 V19 predictive，再运行稳定同版本 native。
 保持156任务、108+48/3600秒、running48、Host200GB80:20、
 HBM0.9、工具180秒、lead500ms及预测产物不变。实现验证
 尚不证明忙时吞吐或 paired JCT 提升，active 目标继续。

@@ -40,8 +40,17 @@ close/RETURN races, pending DMA, reopening, imminent-frontier bounds, aged quota
 and one-shot parent service linkage. Canonical engine patch SHA256:
 `c58cc89194a66fe74d2a0e842db4972e5d1d059a2f4870f109f36f223c8ee4ae`.
 
-Commit first, preserve V18's traces/receipts/plan and interruption classification,
-stop all old client/server/scheduler processes, then deploy and cold-start V19
+V18 stopped at17:25 CST on2026-10-10; all old client/server/scheduler processes
+exited and GPU/port18454 release was verified. Preserve69 completed results and87
+interrupted/not-yet-arrived tasks, the plan, traces, receipts and three stopped
+audits. Independently early consumed FULL is687.86MB JOIN+52.24MB tool;
+52.138GB verified demand handoff is separate. JOIN last-ACK-to-service P50/P90
+is327.78/940.52ms, but max18.96s and8 pre-completion FULL expirations remain.
+These are censored old-version observations, not validation of the new handoff.
+Clean69 archived completed root workspaces; retain evidence and interrupted
+workspaces. Deployment engine matches all35 tested patched files exactly.
+
+Cold-start V19
 predictive first. Keep156 tasks,108+48 at3600s,running48,Host200GB80:20,
 HBM0.9,hard180s tools,lead500ms and unchanged semantic artifact. Verify real
 terminal releases and parent consumption before a stable same-version native
