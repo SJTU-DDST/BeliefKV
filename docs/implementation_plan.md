@@ -3,14 +3,17 @@
 Status date: 2026-10-11.
 
 V21 same-version native collection is running; predictive finished with 155
-completed and one incomplete workflow. At 2026-10-11 07:22 CST, the still-waiting
-V22 target was updated to 08b804f in frozen beliefkv-v33-epoch-audit-20261011,
-coordinator PID1131802. Environment, canonical native patch, policy runtime,
-background writers and waited process identities match the preserved 87370d3
-registration. Keep v22_supersession_87370d3_to_08b804f_20261011.json.
+completed and one incomplete workflow. At 2026-10-11 07:43 CST, the still-waiting
+V22 target was updated to 3aa27dd in frozen beliefkv-v35-fragmented-handoff-20261011,
+coordinator PID1159560. Environment, canonical native patch, background writers,
+lifecycle audit and waited process identities match the preserved 08b804f
+registration. Keep v22_supersession_08b804f_to_3aa27dd_20261011.json.
 After the complete V21 pair and
 postprocessing, automatically deploy this revision, predictive first then cold
-same-version native. The target adds the epoch-bounded tool-round audit below,
+same-version native. The target removes the cumulative16-extent demand-restore
+cutoff, retaining16 extents per burst, live capacity/pending limits, original
+expiry and native dependencies. It adds writer-window analysis and retains
+the epoch-bounded tool-round audit below,
 retaining terminal-child capacity handoff, capacity-settlement parent retries,
 background writer CPU evidence, prefix writer reduction, shared first-service
 input-prefix evidence, complete ancestor observation, aged-order inspection
@@ -67,8 +70,8 @@ multiply samples by64, use cumulative maxima as window maxima or report absent/
 incomplete collection as zero cost. The12 window/writer checks pass. Recompute
 V21's real600–900s window: all original decode geometry, control and cohort
 metrics remain identical; all three writer profiles are explicitly uncollected.
-Keep v34_busy_writer_analysis_validation_20261011.json. This is offline analysis,
-not a change to frozen08b804f. Run from the isolated follow-up after V22 collects
+Keep v34_busy_writer_analysis_validation_20261011.json. This offline analysis
+is now registered with3aa27dd. Run after V22 collects
 complete windows; this preparation is neither measured writer attribution nor
 GPU performance improvement.
 
@@ -215,8 +218,8 @@ continue bursts fitting current native capacity and pending-action slots.
 Do not renew the deadline or relax page/session identity, native pipeline
 dependencies, receipt verification or ordinary fallback. Nonoverlap deferral
 must also follow the live fragmented restoration beyond16 extents.
-The205 handoff/terminal-capacity/runtime checks pass. This is not deployed yet;
-include it in the next frozen registration. Demand restoration remains separate
+The205 handoff/terminal-capacity/runtime checks pass. This is registered in the
+still-waiting V22 target3aa27dd, not yet GPU-validated. Demand restoration remains separate
 from pre-RETURN prefetch; tests and Host-hit proxies are not throughput/JCT proof.
 
 Invalidate only the affected parent's semantic/tool restore observations after

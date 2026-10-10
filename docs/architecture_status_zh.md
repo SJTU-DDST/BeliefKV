@@ -3,13 +3,15 @@
 更新日期：2026-10-11。
 
 当前运行V21同版本native；predictive已155个completed、1个incomplete。
-2026-10-11 07:22 CST将仍等待中的V22目标更新为08b804f，
-冻结checkout为beliefkv-v33-epoch-audit-20261011，协调器PID1131802。
-实验环境、原生patch、调度runtime、后台writer及等待进程身份
-与87370d3登记一致，旧状态完整保留；回执为
-v22_supersession_87370d3_to_08b804f_20261011.json。
+2026-10-11 07:43 CST将仍等待中的V22目标更新为3aa27dd，
+冻结checkout为beliefkv-v35-fragmented-handoff-20261011，协调器PID1159560。
+实验环境、原生patch、后台writer、生命周期审计及等待进程身份
+与08b804f登记一致，旧状态完整保留；回执为
+v22_supersession_08b804f_to_3aa27dd_20261011.json。
 V21完整pair及后处理结束后，自动部署该版本并先predictive后冷native。
-本次登记纳入下述按epoch绑定的工具轮次审计修正，保留终态child
+本次登记取消需求恢复的累计16-extent截断，保留单批16-extent、
+实时容量/pending额度、原有有效期及原生依赖；纳入writer窗口
+分析和按epoch绑定的工具轮次审计修正，保留终态child
 容量交接、容量结算后parent恢复重试、后台写入CPU证据、
 前缀写入减负、首次服务公共前缀比较复用、完整祖先观察、
 已老化准入检查减负和同次tool恢复计划复用；
@@ -62,7 +64,7 @@ v32_writer_timing_cpu_20261011.json；该CPU夹具不包含实际
 writer检查通过，V21真实600–900秒重算的decode、控制计时和
 cohort结果与原证据完全相同，三份writer证据均为未采集。保存
 v34_busy_writer_analysis_validation_20261011.json。此项是离线分析，
-未修改已冻结08b804f；V22采到完整窗口后从隔离工作区运行，
+已随3aa27dd进入V22登记；V22采到完整窗口后运行，
 用于定位残余服务成本，不是CPU归因或GPU性能改善证据。
 
 结束的V21 predictive工具触发窗口诊断已按修正后的轮次重算，
@@ -199,7 +201,7 @@ token；对应22.136GB只是原生请求缓存记账代理，可能包含合并
 pending额度继续分批恢复；有效期不续长，原生依赖、页身份、
 ACK校验与失效回退不变，非overlap路径也不再把第16个extent
 当作恢复结束。205项handoff/终态容量/runtime检查通过。
-此项尚未部署，待纳入下一轮冻结登记；需求恢复不计入RETURN
+此项已纳入待启动V22的3aa27dd，尚未GPU验证；需求恢复不计入RETURN
 前预取，不能由这些检查或Host命中记账宣称吞吐/JCT改善。
 
 隔离工作区补齐物理状态变化后的短期观测失效。关联child确实释放
