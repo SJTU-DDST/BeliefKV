@@ -202,6 +202,23 @@ same workflow/context/JOIN/request and causal time order. Do not infer a miss
 from native_locked=false. The 431 scoped terminal/handoff/runtime/physical/tool/
 lifecycle checks pass. This revision is not part of the running frozen V21.
 
+Remove the demand handoff's cumulative16-extent cutoff, retaining16 extents per
+burst. Closed V21 has81 requests stopped after16 ACKs, all before linked first
+service; cutoff elapsed P50/max are39.85/291.90ms, well before the original
+two-second lifetime.68 first services still record FULL Host hits totaling
+1080888 tokens. The22.136GB byte proxy is native request cache accounting and
+may include coalesced or already-restored ranges; it is not exclusively
+attributed residual physical H2D or achievable savings.
+Keep v35_v21_handoff_extent_limit_20261011.json with all request rows.
+Within the unchanged expiry, inspect remaining safe checkpoint pages and
+continue bursts fitting current native capacity and pending-action slots.
+Do not renew the deadline or relax page/session identity, native pipeline
+dependencies, receipt verification or ordinary fallback. Nonoverlap deferral
+must also follow the live fragmented restoration beyond16 extents.
+The205 handoff/terminal-capacity/runtime checks pass. This is not deployed yet;
+include it in the next frozen registration. Demand restoration remains separate
+from pre-RETURN prefetch; tests and Host-hit proxies are not throughput/JCT proof.
+
 Invalidate only the affected parent's semantic/tool restore observations after
 linked terminal-child device release. On ledger-validated completed PREPARE,
 invalidate the current matching or next-epoch context observation and rescan its

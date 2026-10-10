@@ -5833,13 +5833,10 @@ class NativeAdmissionRuntime:
                 break
         if ticket is None:
             return
-        if ticket.issued_nodes >= 16:
-            self._clear_execution_handoff("node_budget")
-            return
         anchors = self._request_reentry_anchors(ticket.request)
         batched = callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
         max_steps = min(
-            16 - ticket.issued_nodes,
+            16,
             self.physical_ledger.max_pending - self.physical_ledger.pending_count,
         ) if batched else 1
         if max_steps < 1:
@@ -5955,7 +5952,7 @@ class NativeAdmissionRuntime:
         ticket = self._execution_handoff
         if (
             ticket is not None and ticket.key == key
-            and self._live_execution_handoff(ticket) and 0 < ticket.issued_nodes < 16
+            and self._live_execution_handoff(ticket) and ticket.issued_nodes > 0
             and not self.can_prefetch_during_overlap()
         ):
             observation = self._read_request_reentry(req)

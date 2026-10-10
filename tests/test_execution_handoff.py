@@ -1,4 +1,5 @@
 from types import SimpleNamespace as NS
+import time
 from unittest.mock import Mock, patch
 
 import numpy as np
@@ -6,6 +7,7 @@ import pytest
 
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+from beliefkv.runtime.sglang_v0520_runtime import _ExecutionHandoffTicket
 from beliefkv.runtime.sglang_v0520_runtime import _PrefetchServiceLease
 from beliefkv.runtime.sglang_v0520_physical import (
     PrefetchLoadStep, PhysicalActionCompleted, PhysicalReceiptError,
@@ -218,6 +220,83 @@ def test_existing_handoff_processes_ack_and_extents_with_zero_frontier_slots(mon
     issue.assert_called_once_with(next_step, source="execution_handoff")
     assert runtime._execution_handoff.issued_nodes == 2
     assert runtime.counts["execution_handoff_acked"] == 1
+    runtime.close()
+
+
+def test_fragmented_handoff_continues_after_sixteen_acked_extents(monkeypatch):
+    runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
+    key = runtime.visible[cold.rid]
+    first_commands = tuple(f"first-{index}" for index in range(16))
+    ticket = _ExecutionHandoffTicket(
+        key, cold, time.monotonic() + 2., command_id=first_commands[-1],
+        issued_nodes=16, command_ids=first_commands,
+    )
+    runtime._execution_handoff = ticket
+    runtime.completed_physical_actions.extend(
+        PhysicalActionCompleted(command, "PREFETCH_GPU", key.context_id,
+                                key.context_epoch, (index,), (("kv", 100),), 100)
+        for index, command in enumerate(first_commands)
+    )
+    cache.prefetch_gpu_session_nodes = Mock()
+    steps = tuple(PrefetchLoadStep(key, 1, 2, index, 3) for index in range(16, 20))
+    commands = tuple(f"tail-{index}" for index in range(4))
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+        return_value=NS(step=steps[0], steps=steps, fits_current_free_lists=True),
+    ) as inspect, patch.object(
+        runtime, "_issue_handoff_prefetch_steps", return_value=commands,
+    ) as issue:
+        runtime.dispatch_execution_handoff([cold], running_batch=None)
+    assert inspect.call_args.kwargs["max_steps"] == 16
+    issue.assert_called_once_with(ticket, steps)
+    assert ticket.issued_nodes == 20
+    assert ticket.command_ids == commands
+    assert runtime.counts["execution_handoff_acked"] == 16
+    assert runtime.counts["execution_handoff_closed:node_budget"] == 0
+    runtime.close()
+
+
+def test_fragmented_handoff_respects_pending_capacity_and_original_expiry(monkeypatch):
+    runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
+    key = runtime.visible[cold.rid]
+    ticket = _ExecutionHandoffTicket(key, cold, time.monotonic() + 2., issued_nodes=32)
+    runtime._execution_handoff = ticket
+    runtime._execution_handoff_attempted.add(key)
+    cache.prefetch_gpu_session_nodes = Mock()
+    runtime.physical_ledger.max_pending = 3
+    step = PrefetchLoadStep(key, 1, 2, 33, 3)
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+        return_value=NS(step=step, steps=(step,), fits_current_free_lists=True),
+    ) as inspect, patch.object(
+        runtime, "_issue_handoff_prefetch_steps", return_value=("tail",),
+    ) as issue:
+        original_expiry = ticket.expires_at
+        runtime.dispatch_execution_handoff([cold], running_batch=None)
+        assert inspect.call_args.kwargs["max_steps"] == 3
+        assert ticket.expires_at == original_expiry
+        inspect.reset_mock()
+        issue.reset_mock()
+        ticket.expires_at -= 10.
+        runtime.dispatch_execution_handoff([cold], running_batch=None)
+        inspect.assert_not_called()
+        issue.assert_not_called()
+    assert runtime._execution_handoff is None
+    assert runtime.counts["execution_handoff_closed:expired_or_request_changed"] == 1
+    runtime.close()
+
+
+def test_nonoverlap_fragmented_restore_defer_still_expires_after_sixteen_extents(monkeypatch):
+    runtime, (cold, warm, _), _ = runtime_with_requests(monkeypatch)
+    ticket = _ExecutionHandoffTicket(
+        runtime.visible[cold.rid], cold, time.monotonic() + 2., issued_nodes=16,
+    )
+    runtime._execution_handoff = ticket
+    with patch.object(runtime, "can_prefetch_during_overlap", return_value=False):
+        assert runtime.defer_prefill_for_prefetch(cold)
+        assert not runtime.defer_prefill_for_prefetch(warm)
+        ticket.expires_at -= 10.
+        assert not runtime.defer_prefill_for_prefetch(cold)
     runtime.close()
 
 
