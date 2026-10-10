@@ -2,7 +2,7 @@
 
 更新日期：2026-10-10。
 
-## V20 已解锁 parent 的恢复候选修订
+## V20 parent 恢复与控制开销优化
 
 V19b 的实际终态回收已工作，但 Host-backed parent 仍需等原准入
 队列老化后才进入 handoff。诊断快照中的19个原生FULL Host-hit
@@ -43,10 +43,37 @@ client/server/scheduler退出、GPU及18454端口释放。80个终态
 的选中事件评价，不是内容模型整体预测精度或数秒提前量。
 
 保留停止记录与三份stopped审计，清理已经完成且归档的80个
-root workspace，保留trace、补丁及中断workspace。下一轮V20
-仍用156任务、108+48/3600秒、running48、Host200GB80:20、
-HBM0.9、工具180秒、lead500ms和原预测产物，先predictive再
-同版本冷native。active吞吐/JCT目标仍未达标。
+root workspace，保留trace、补丁及中断workspace。V20在冻结
+提交b019d24上启动，2026-10-10 19:26 CST服务就绪，仍用156
+任务、108+48/3600秒、running48、Host200GB80:20、HBM0.9、
+工具180秒、lead500ms和原预测产物，先predictive再同版本冷
+native。运行中的主目录、引擎和预测产物继续冻结。
+
+已保存prefetch_lifecycle_early_snapshot.json：78个终态child、
+79次含重试的回收累计释放设备FULL14.797GB、Mamba8.306GB。
+23个有终态容量关联的parent，入队到首个完成batch的P50/P90
+为198.53/441.96ms，最大16.923秒。7个真实restore lookahead
+均关联到后续服务；选取前排队P50/P90为54.83/211.81ms，
+选取到首个完成batch为201.32/319.64ms。这是早期关联子集，
+不能代替全部JOIN评价，也不能作为native相对节省。
+独立完成边界前启动并复用的FULL为JOIN101.888MB、tool3.154MB；
+20.198GB已复用需求handoff继续单列。pytest-7571的16.923秒
+parent尾部在完成边界附近记录no_restore_plan，没有restore
+lookahead。仍需拆解安全checkpoint、原生准入和容量等待。
+
+后续隔离优化将至少2048个token的同格式int64完整前缀比较
+改为不复制数组的memcmp，保留GIL避免Python数组在比较时
+改变大小。短段、list及不同array格式继续原数值比较；
+namespace、salt、limit、offset、bigram边界和页对齐保持原语义。
+指定隔离源码后，127项前缀等价、真实CPU回收/引用、恢复及
+ACK检查通过；仅GPU测试启动辅助模块被替换。整次reentry
+inspection的交替顺序CPU基准中，32K--98K token、1/8叶匹配
+案例中位耗时降低19.5%--29.4%，4K基本不变。结果保存在
+v20_followup_reentry_cpu_20261010.json；它未测DMA或GPU吞吐。
+仅radix_cache.py及前缀测试与部署引擎不同，隔离patch SHA256：
+`67fcbe012a9d3adbd1b5d6cca1510f55ad36b844aae402d968518c3999547617`。
+反向应用检查通过；此优化尚未部署，V20仍使用c58cc891。
+active吞吐/JCT目标仍未达标。
 
 ## V19b child 上下文结束的集成修正
 

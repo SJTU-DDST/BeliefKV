@@ -1514,10 +1514,30 @@ index 006b52a..83c96cf 100644
      kv_host_pool = build_kv_host_pool(
          kv_pool=kv_pool,
 diff --git a/python/sglang/srt/mem_cache/radix_cache.py b/python/sglang/srt/mem_cache/radix_cache.py
-index e7bee63..8144868 100644
+index e7bee63..1f5787a 100644
 --- a/python/sglang/srt/mem_cache/radix_cache.py
 +++ b/python/sglang/srt/mem_cache/radix_cache.py
-@@ -219,6 +219,28 @@ class RadixKey:
+@@ -21,6 +21,7 @@ limitations under the License.
+ The radix tree data structure for managing the KV cache.
+ """
+ 
++import ctypes
+ import heapq
+ import logging
+ import sys
+@@ -61,6 +62,11 @@ class RadixKey:
+ 
+     __slots__ = ("token_ids", "extra_key", "cache_salt", "is_bigram", "limit")
+ 
++    # Hold the GIL so Python token buffers cannot resize during the comparison.
++    _token_memcmp = ctypes.PyDLL(None).memcmp
++    _token_memcmp.argtypes = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t)
++    _token_memcmp.restype = ctypes.c_int
++
+     def __init__(
+         self,
+         token_ids: array[int],
+@@ -219,6 +225,34 @@ class RadixKey:
              return matched_tokens
          return (matched_tokens // page_size) * page_size
  
@@ -1540,6 +1560,12 @@ index e7bee63..8144868 100644
 +        raw_len = self._raw_len()
 +        if raw_len > other._raw_len() - offset or t0[0] != t1[offset]:
 +            return False
++        if raw_len >= 2048 and type(t0) is array and t0.typecode == t1.typecode == "q":
++            return self._token_memcmp(
++                t0.buffer_info()[0],
++                t1.buffer_info()[0] + offset * t1.itemsize,
++                raw_len * t0.itemsize,
++            ) == 0
 +        segment = t0 if raw_len == len(t0) else t0[:raw_len]
 +        return segment == t1[offset : offset + raw_len]
 +
@@ -5048,14 +5074,15 @@ index 0000000..0f6eaa2
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_radix_prefix.py b/test/srt/test_beliefkv_radix_prefix.py
 new file mode 100644
-index 0000000..2e29709
+index 0000000..038df8f
 --- /dev/null
 +++ b/test/srt/test_beliefkv_radix_prefix.py
-@@ -0,0 +1,123 @@
+@@ -0,0 +1,164 @@
 +"""CPU equivalence checks for complete-segment matching in reentry inspection."""
 +
 +import ast
 +from array import array
++import ctypes
 +from pathlib import Path
 +import random
 +
@@ -5080,7 +5107,7 @@ index 0000000..2e29709
 +        ),
 +        cls,
 +    ], type_ignores=[])
-+    namespace = {"array": array}
++    namespace = {"array": array, "ctypes": ctypes}
 +    exec(compile(ast.fix_missing_locations(module), str(SOURCE), "exec"), namespace)
 +    return namespace["RadixKey"]
 +
@@ -5175,6 +5202,46 @@ index 0000000..2e29709
 +        )
 +    with pytest.raises(ZeroDivisionError):
 +        left.is_prefix_at(other, 0, 0)
++
++
++@pytest.mark.parametrize(
++    "container",
++    (list, lambda tokens: array("q", tokens), lambda tokens: array("l", tokens)),
++)
++@pytest.mark.parametrize("bigram", (False, True))
++@pytest.mark.parametrize("mismatch", (None, 0, 2047, 4095, 8191))
++def test_long_segments_keep_exact_prefix_and_limit_semantics(container, bigram, mismatch):
++    raw = list(range(8192))
++    right = [9000] * 17 + raw + [9001]
++    if mismatch is not None:
++        right[17 + mismatch] = 9002
++    for left_limit, right_limit in (
++        (None, None), (4096, None), (4096, 17 + 4096), (None, 17 + 8191),
++    ):
++        left = key(raw, container=container, is_bigram=bigram, limit=left_limit)
++        other = key(right, container=container, is_bigram=bigram, limit=right_limit)
++        for page_size in (1, 16):
++            assert left.is_prefix_at(other, 17, page_size) == (
++                left.match_at(other, 17, page_size) >= len(left)
++            )
++
++
++def test_different_array_formats_keep_numeric_equality():
++    left = RadixKey(array("q", range(4096)))
++    other = RadixKey(array("I", [0, *range(4096)]))
++    assert left.is_prefix_at(other, 1)
++    other.token_ids[-1] = 9000
++    assert not left.is_prefix_at(other, 1)
++
++
++def test_long_comparison_reads_current_buffer_after_growth():
++    left = RadixKey(array("q", range(4096)))
++    other = RadixKey(array("q", [-1, *range(4096)]), limit=4097)
++    assert left.is_prefix_at(other, 1)
++    other.token_ids.extend(range(65536))
++    assert left.is_prefix_at(other, 1)
++    other.token_ids[2049] = -2
++    assert not left.is_prefix_at(other, 1)
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
 index 0000000..dd65055

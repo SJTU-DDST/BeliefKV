@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 import ast
 from array import array
+import ctypes
 import hashlib
 import json
 from pathlib import Path
@@ -41,7 +42,8 @@ def variant(engine_root):
         key, inspect,
     ], type_ignores=[])
     namespace = {
-        "array": array, "BASE_COMPONENT_TYPE": 0, "ComponentType": NS(MAMBA=2),
+        "array": array, "ctypes": ctypes,
+        "BASE_COMPONENT_TYPE": 0, "ComponentType": NS(MAMBA=2),
     }
     exec(compile(ast.fix_missing_locations(module), str(engine_root), "exec"), namespace)
     return NS(

@@ -2,7 +2,7 @@
 
 Status date: 2026-10-10.
 
-## V20 JOIN-Unlocked Parent Restore Selection
+## V20 Parent Restoration and Control Cost
 
 V19b terminal reclamation works, but Host-backed parents can wait for the
 original residency/admission queue to age before handoff starts. In a diagnostic
@@ -44,11 +44,41 @@ observed-no-tool-EOS triggers have58.56ms median RETURN endpoint error and
 forecast accuracy or a multi-second predictive window.
 
 Retain the stop record, three stopped audits, traces and patches; clean the80
-archived completed root workspaces, keeping interrupted workspaces. Cold-start
-V20 predictive first, then native on the same frozen revision. Keep156 tasks,
-108+48 at3600s,running48,Host200GB80:20,HBM0.9,180s tools and500ms lead.
-Validate the new parent-selection records, actual reuse and busy-window/paired
-JCT performance before closing the active goal.
+archived completed root workspaces, keeping interrupted workspaces. V20 runs on
+frozen revision b019d24; the server was ready at19:26 CST,2026-10-10.
+Predictive precedes cold native on that same revision. Keep156 tasks,108+48
+at3600s,running48,Host200GB80:20,HBM0.9,180s tools and500ms lead.
+Keep the deployed c58cc891 engine patch and predictors unchanged between arms.
+
+Preserve prefetch_lifecycle_early_snapshot.json. It contains78 terminal children,
+79 reclamation records including retries,14.797GB device FULL and8.306GB device
+Mamba released.23 linked parents have queue-wait P50/P90 of198.53/441.96ms,
+with16.923s maximum.7 restore lookaheads all link to observed service: selection
+queue-wait P50/P90 is54.83/211.81ms, selection-to-batch is201.32/319.64ms.
+This early linked subset is not all JOINs or a native-relative latency saving.
+Independently early reused FULL is101.888MB JOIN plus3.154MB tool;20.198GB
+reused demand-handoff FULL stays separate. The pytest-7571 parent with16.923s
+queue wait has no restore selection and a no_restore_plan observation near the
+completion boundary. Continue inspecting safe checkpoints and native capacity/
+admission; terminal reclaim alone does not prove a resumable checkpoint.
+
+The isolated follow-up compares long, same-format int64 token segments directly
+without copying slices. Hold the GIL during memcmp so Python buffers cannot resize.
+Use it only for segments of at least2048 tokens; retain numeric comparison for
+short segments, lists and different array formats. Preserve namespace,salt,
+limit,offset,bigram and page-alignment rules.127 scoped native checks pass with
+the isolated source and only the GPU test-launch helper replaced for CPU fixtures.
+The existing whole-inspection CPU benchmark alternates variant order and verifies
+identical observations.32K--98K,1/8-leaf matching fixtures improve median CPU cost
+by19.5%--29.4%;4K is essentially unchanged. Preserve
+experiments/reports/v20_followup_reentry_cpu_20261010.json; this is synthetic CPU
+evidence, not physical restoration or end-to-end throughput evidence.
+Only radix_cache.py and its prefix test differ from the deployed engine.
+The new isolated canonical patch passes reverse-application checking and has SHA256
+`67fcbe012a9d3adbd1b5d6cca1510f55ad36b844aae402d968518c3999547617`.
+Commit this follow-up now and deploy after preserving V20's same-version pair
+or a concrete stopped-run failure. Validate actual reuse and busy-window/paired
+JCT performance before closing the full active goal.
 
 ## V19b Harness Context Retirement Integration
 
