@@ -15,6 +15,25 @@ aged-order inspection reduction and same-dispatch tool plan reuse.
 Waiting registration is not GPU validation;
 the broad performance objective remains active.
 
+Add independent background-writer CPU evidence in the isolated follow-up.
+Sample every 64th record per category with thread_time_ns and perf_counter_ns.
+For native evidence, distinguish stream and event/internal-event categories.
+Measure processing only, excluding queue waiting and status publication. Append
+native cumulative snapshots to the existing audit stream each second, attach
+opportunity snapshots when consuming existing admission_runtime_state rows,
+and retain final status counters. Preserve authoritative event ordering, prefix
+attribution, ACK flushes and scheduling policy. Use this evidence to separate
+JSON processing, prefix checks and other writer work; CPU/wall differences alone
+do not prove GIL contention. Measured samples are not full-run cost estimates.
+The 243 scoped writer/telemetry/runtime/lifecycle checks and 19 timing/comparison
+summary checks pass, with overlap. Keep scripts/benchmark_writer_timing_cpu.py
+and v32_writer_timing_cpu_20261011.json. Its 16 groups of 1000 alternating samples
+preserve every encoded JSON record. Mean per-record added costs for
+1170/8543/20002-byte fixtures are 0.498/0.595/0.844 microseconds. This excludes
+actual queue, disk, prefix processing and concurrent scheduler work; it is not
+GPU performance evidence. Running V21 and the waiting 7a1eb6a target do not
+contain this instrumentation yet.
+
 Keep scripts/audit_tool_forecast_windows.py and the compact
 v31_v21_tool_forecast_window_summary_20261011.json. Store detailed per-round
 evidence with the closed V21 predictive output and pin its SHA256 in the summary.

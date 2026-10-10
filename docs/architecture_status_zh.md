@@ -13,6 +13,25 @@ V21完整pair及后处理结束后，自动部署该版本并先predictive后冷
 同次tool恢复计划复用；
 等待启动不代表GPU验证完成，吞吐目标仍未达成。
 
+隔离工作区补齐后台证据写入线程的独立计时。Native与opportunity
+writer按记录类别每64条采样一次，同时记录thread_time_ns CPU
+时间和perf_counter_ns墙钟时间；native按stream及event/internal
+event分别采样，避免将大批次序列化与小条目混在一个类别。
+记录处理以外的队列等待和状态发布不计入样本。Native每秒在
+原audit流追加累计快照，opportunity随原admission_runtime_state
+附带消费端快照，最终status也保存计数；实际事件、前缀归因、
+ACK刷新、处理顺序与调度策略保持原语义。新数据用于区分
+JSON处理、前缀核验和其他写入工作，不能仅凭CPU/墙钟差异
+断言GIL争用或将样本乘64视为已测全量成本。
+243项writer/telemetry/runtime/lifecycle检查及19项计时/对照摘要
+检查通过，两组有重叠。可复现脚本
+scripts/benchmark_writer_timing_cpu.py的16组1000轮交替测量，
+逐条JSON证据相同；1170/8543/20002字节夹具的平均新增成本
+分别为0.498/0.595/0.844微秒。保留
+v32_writer_timing_cpu_20261011.json；该CPU夹具不包含实际
+队列、文件I/O、前缀处理或并行scheduler，不是GPU收益证据。
+当前冻结V21和等待中的7a1eb6a仍未使用本项计时。
+
 补齐结束的V21 predictive工具触发窗口诊断，脚本为
 scripts/audit_tool_forecast_windows.py，提交紧凑证据
 v31_v21_tool_forecast_window_summary_20261011.json；完整逐轮结果

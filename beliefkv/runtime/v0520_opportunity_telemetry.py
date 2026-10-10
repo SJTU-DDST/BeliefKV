@@ -13,6 +13,8 @@ from queue import Full, Queue
 from threading import Thread
 from typing import Any
 
+from beliefkv.runtime.writer_timing import SampledWriterTiming
+
 
 class NativeOpportunityTelemetry:
     def __init__(self, directory: str | Path) -> None:
@@ -24,6 +26,7 @@ class NativeOpportunityTelemetry:
             raise RuntimeError("admission opportunity evidence already exists")
         self._queue: Queue[dict[str, Any] | None] = Queue(maxsize=4096)
         self._counts: Counter[str] = Counter()
+        self._writer_timing = SampledWriterTiming()
         self._error: BaseException | None = None
         self._closed = False
         self._writer = Thread(target=self._write, name="admission-opportunity", daemon=True)
@@ -44,7 +47,18 @@ class NativeOpportunityTelemetry:
         try:
             with self.path.open("x", encoding="utf-8") as stream:
                 while (row := self._queue.get()) is not None:
-                    stream.write(json.dumps(row, separators=(",", ":"), allow_nan=False) + "\n")
+                    if row["event"] == "admission_runtime_state":
+                        row = {
+                            **row,
+                            "opportunity_writer_timing": self._writer_timing.snapshot(),
+                        }
+                    sample = self._writer_timing.begin(row["event"])
+                    try:
+                        stream.write(
+                            json.dumps(row, separators=(",", ":"), allow_nan=False) + "\n"
+                        )
+                    finally:
+                        self._writer_timing.finish(sample)
         except BaseException as exc:
             self._error = exc
 
@@ -65,6 +79,7 @@ class NativeOpportunityTelemetry:
                 "complete": self._error is None,
                 "error": str(self._error) if self._error else None,
                 "enqueued": dict(self._counts),
+                "background_writer_timing": self._writer_timing.snapshot(),
             }, indent=2, sort_keys=True) + "\n",
             encoding="utf-8",
         )

@@ -1,0 +1,108 @@
+{
+  "scope": "Synthetic alternating JSON-processing CPU benchmark. Includes exact encoded-evidence comparisons, excludes queue, disk, prefix processing and concurrent scheduler work; not a GPU or end-to-end speedup.",
+  "groups": 16,
+  "iterations_per_group": 1000,
+  "warmup_groups": 2,
+  "sampler_sha256": "c1da43b0c206d305c16845c8a9250cbd0752425a44a5c6ac5fc0559275cc01a7",
+  "results": {
+    "semantic_frame": {
+      "encoded_bytes": 1170,
+      "evidence_equal": true,
+      "mean_ns_per_record": {
+        "baseline": 6079.47075,
+        "sampled": 6577.9628125
+      },
+      "median_ns_per_record": {
+        "baseline": 6076.3085,
+        "sampled": 6576.941500000001
+      },
+      "mean_increment_ns_per_record": 498.4920624999995,
+      "processing_timing": {
+        "schema_version": 1,
+        "sample_every": 64,
+        "snapshot_ts_ms": 1791672434471.6406,
+        "cpu_clock": "thread_time_ns",
+        "wall_clock": "perf_counter_ns",
+        "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+        "categories": {
+          "semantic_frame": {
+            "records_seen": 18000,
+            "samples": 282,
+            "sampled_cpu_ms": 1.99628,
+            "sampled_wall_ms": 1.987754,
+            "mean_sample_cpu_ms": 0.007079007092198581,
+            "mean_sample_wall_ms": 0.00704877304964539,
+            "max_sample_cpu_ms": 0.011214,
+            "max_sample_wall_ms": 0.011284
+          }
+        }
+      }
+    },
+    "decode_batch_48": {
+      "encoded_bytes": 8543,
+      "evidence_equal": true,
+      "mean_ns_per_record": {
+        "baseline": 72093.0290625,
+        "sampled": 72687.825
+      },
+      "median_ns_per_record": {
+        "baseline": 75882.062,
+        "sampled": 76899.6825
+      },
+      "mean_increment_ns_per_record": 594.7959374999919,
+      "processing_timing": {
+        "schema_version": 1,
+        "sample_every": 64,
+        "snapshot_ts_ms": 1791672437094.158,
+        "cpu_clock": "thread_time_ns",
+        "wall_clock": "perf_counter_ns",
+        "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+        "categories": {
+          "decode_batch_48": {
+            "records_seen": 18000,
+            "samples": 282,
+            "sampled_cpu_ms": 20.574967,
+            "sampled_wall_ms": 20.570745,
+            "mean_sample_cpu_ms": 0.07296087588652482,
+            "mean_sample_wall_ms": 0.07294590425531916,
+            "max_sample_cpu_ms": 0.088381,
+            "max_sample_wall_ms": 0.088735
+          }
+        }
+      }
+    },
+    "closure_64": {
+      "encoded_bytes": 20002,
+      "evidence_equal": true,
+      "mean_ns_per_record": {
+        "baseline": 126907.01725,
+        "sampled": 127751.0270625
+      },
+      "median_ns_per_record": {
+        "baseline": 126912.514,
+        "sampled": 127663.62400000001
+      },
+      "mean_increment_ns_per_record": 844.0098124999931,
+      "processing_timing": {
+        "schema_version": 1,
+        "sample_every": 64,
+        "snapshot_ts_ms": 1791672441678.4185,
+        "cpu_clock": "thread_time_ns",
+        "wall_clock": "perf_counter_ns",
+        "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+        "categories": {
+          "closure_64": {
+            "records_seen": 18000,
+            "samples": 282,
+            "sampled_cpu_ms": 35.646457,
+            "sampled_wall_ms": 35.643803,
+            "mean_sample_cpu_ms": 0.12640587588652483,
+            "mean_sample_wall_ms": 0.1263964645390071,
+            "max_sample_cpu_ms": 0.15746,
+            "max_sample_wall_ms": 0.157497
+          }
+        }
+      }
+    }
+  }
+}

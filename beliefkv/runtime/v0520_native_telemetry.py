@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
 from beliefkv.runtime.restore_wait_probe import RestoreWaitProbe
+from beliefkv.runtime.writer_timing import SampledWriterTiming
 
 import atexit
 from array import array
@@ -72,6 +73,7 @@ class NativeReactiveTelemetry:
         self._sequence = 0
         self._transfers = 0
         self._counts: Counter[str] = Counter()
+        self._writer_timing = SampledWriterTiming()
         self._state_lock = Lock()
         self._host_pool_geometry: dict[str, dict[str, int]] = {}
         self._host_pool_high_water: dict[str, dict[str, int]] = {}
@@ -1773,6 +1775,12 @@ class NativeReactiveTelemetry:
                     if time.monotonic() >= next_status:
                         for handle in handles.values():
                             handle.flush()
+                        audit.write(json.dumps({
+                            "event": "background_writer_timing",
+                            "ts_ms": time.time() * 1000.,
+                            "timing": self._writer_timing.snapshot(),
+                        }, separators=(",", ":"), allow_nan=False) + "\n")
+                        self._counts["audit"] += 1
                         self._write_status()
                         next_status = time.monotonic() + 1.0
                     try:
@@ -1785,46 +1793,57 @@ class NativeReactiveTelemetry:
                     if item is None:
                         break
                     stream, record = item
-                    if stream == "eviction_attribution":
-                        internal_event = record.get("_internal_event")
-                        try:
-                            if internal_event == "host_block_eviction":
-                                self._write_block_eviction(
-                                    record, eviction_attribution
-                                )
-                            elif internal_event == "request_probe":
-                                self._write_block_request_probe(
-                                    record, eviction_attribution
-                                )
-                            elif internal_event in ("context_prefix_probe", "served_context_prefix"):
-                                self._write_context_prefix(record, eviction_attribution)
-                            else:
-                                eviction_attribution.write(
-                                    json.dumps(
-                                        record,
-                                        separators=(",", ":"),
-                                        allow_nan=False,
-                                    ) + "\n"
-                                )
-                        except Exception as exc:
-                            self._block_attribution_counts[
-                                "processing_errors"
-                            ] += 1
-                            eviction_attribution.write(json.dumps({
-                                "event": "host_block_attribution_error",
-                                "ts_ms": time.time() * 1000.0,
-                                "internal_event": internal_event,
-                                "error_type": type(exc).__name__,
-                                "reason": str(exc)[:256],
-                            }, separators=(",", ":")) + "\n")
-                        self._counts[stream] += 1
-                        continue
-                    handles[stream].write(
-                        json.dumps(record, separators=(",", ":"), allow_nan=False) + "\n"
+                    category = (
+                        f"eviction_attribution:{record.get('_internal_event', 'record')}"
+                        if stream == "eviction_attribution"
+                        else f"{stream}:{record.get('event', 'record')}"
                     )
-                    self._counts[stream] += 1
-                    if stream in ("action_ack", "action_use"):
-                        handles[stream].flush()
+                    sample = self._writer_timing.begin(category)
+                    try:
+                        if stream == "eviction_attribution":
+                            internal_event = record.get("_internal_event")
+                            try:
+                                if internal_event == "host_block_eviction":
+                                    self._write_block_eviction(
+                                        record, eviction_attribution
+                                    )
+                                elif internal_event == "request_probe":
+                                    self._write_block_request_probe(
+                                        record, eviction_attribution
+                                    )
+                                elif internal_event in (
+                                    "context_prefix_probe", "served_context_prefix",
+                                ):
+                                    self._write_context_prefix(record, eviction_attribution)
+                                else:
+                                    eviction_attribution.write(
+                                        json.dumps(
+                                            record, separators=(",", ":"), allow_nan=False,
+                                        ) + "\n"
+                                    )
+                            except Exception as exc:
+                                self._block_attribution_counts[
+                                    "processing_errors"
+                                ] += 1
+                                eviction_attribution.write(json.dumps({
+                                    "event": "host_block_attribution_error",
+                                    "ts_ms": time.time() * 1000.0,
+                                    "internal_event": internal_event,
+                                    "error_type": type(exc).__name__,
+                                    "reason": str(exc)[:256],
+                                }, separators=(",", ":")) + "\n")
+                            self._counts[stream] += 1
+                            continue
+                        handles[stream].write(
+                            json.dumps(
+                                record, separators=(",", ":"), allow_nan=False,
+                            ) + "\n"
+                        )
+                        self._counts[stream] += 1
+                        if stream in ("action_ack", "action_use"):
+                            handles[stream].flush()
+                    finally:
+                        self._writer_timing.finish(sample)
                 if self._pending_block_evictions:
                     pending_by_pool: Counter[str] = Counter()
                     units_by_pool: Counter[str] = Counter()
@@ -1950,6 +1969,7 @@ class NativeReactiveTelemetry:
         path = self.directory / "native_telemetry_status.json"
         status["snapshot_ts_ms"] = time.time() * 1000.0
         status["writer_queue_depth"] = self._queue.qsize()
+        status["background_writer_timing"] = self._writer_timing.snapshot()
         status["gpu_restore_wait_probe"] = self._restore_wait_probe.snapshot()
         temporary = path.with_suffix(".json.tmp")
         temporary.write_text(
