@@ -14,6 +14,26 @@ and complete ancestor observation, retaining aged-order inspection reduction and
 same-dispatch tool plan reuse. Waiting registration is not GPU validation;
 the broad performance objective remains active.
 
+Reduce background prefix-evidence writer work using direct native integer-array
+conversion and exact array comparisons. Keep independent served-input snapshots,
+the original integer-normalization compatibility, session isolation, keyed
+eviction identities, record ordering, recompute proxies and attribution counts.
+Locate a divergent token exactly within the first unequal range; never infer
+equality from a sampled prefix. The167 telemetry/lifecycle/terminal-capacity
+checks pass. Preserve scripts/benchmark_native_prefix_writer_cpu.py, which
+isolates each revision's writer methods, and
+v30_native_prefix_writer_cpu_20261011.json. Its24 groups of100 alternating CPU
+samples preserve records, hashes, counters, history and pending attribution.
+For32768-token lists, served-snapshot-plus-appended-probe wall means change
+8.719→1.966ms; late divergence6.804→1.613ms. A16-prefix eviction reaccess
+list changes3.329→1.397ms; an existing array changes0.640→0.669ms without
+speedup evidence. The closed V21 predictive output has44790 context probes
+comparing951763303 common token positions, with21261-token median. Retain its
+source SHA256. These are neither extra useful KV bytes nor avoided JCT. This
+fixture excludes concurrent scheduler work and does not establish GIL contention
+as the cause of the GPU performance gap. Queue the validated reduction for the
+next frozen deployment; preserve the running V21 pair.
+
 The isolated follow-up skips resident-order reentry inspection for requests
 already in the ten-second arrival-order aging class. Their residency cannot
 change the sorting rank. Selected execution handoff and parent restoration

@@ -63,6 +63,91 @@ def test_context_prefix_loss_excludes_new_input_and_fresh_sessions(tmp_path):
     assert audit._context_prefix_counts["without_prior_served_prompt"] == 1
 
 
+@pytest.mark.parametrize("mismatch", (None, 0, 1, 1023, 1024, 2047, 2048, 4095))
+def test_context_prefix_loss_preserves_exact_divergence_across_ranges(tmp_path, mismatch):
+    audit = NativeReactiveTelemetry(tmp_path / "prefix")
+    audit.close()
+    prior = [(1 << 35) + index for index in range(4096)]
+    current = prior + [7, 8]
+    if mismatch is not None:
+        current[mismatch] = -1
+    common = len(prior) if mismatch is None else mismatch
+    base = {
+        "ts_ms": 1., "workflow_id": "w", "invocation_id": "i",
+        "context_id": "ctx", "context_epoch": 0, "request_id": "old",
+        "session_id": "s", "session_generation": 1,
+        "cached_tokens_device": 1000, "cached_tokens_host": 100,
+        "mamba_host_hit_slots": 0,
+    }
+    output = StringIO()
+    audit._write_context_prefix({
+        **base, "_internal_event": "served_context_prefix", "input_ids": prior,
+    }, output)
+    audit._write_context_prefix({
+        **base, "_internal_event": "context_prefix_probe", "input_ids": current,
+        "request_id": "next", "context_epoch": 1,
+    }, output)
+    [result] = [json.loads(line) for line in output.getvalue().splitlines()]
+    assert result["common_previously_served_input_tokens"] == common
+    assert result["previously_served_prefix_recompute_proxy_tokens"] == max(0, common - 1100)
+    assert result["new_or_changed_prompt_tokens"] == len(current) - common
+    assert audit._context_prefix_counts["previously_served_common_prefix_tokens"] == common
+
+
+@pytest.mark.parametrize("input_ids", (
+    [1, 2, 3], ("1", "2", "3"), [1., 2., 3.], array("q", [1, 2, 3]),
+))
+def test_served_prefix_is_an_independent_normalized_snapshot(tmp_path, input_ids):
+    audit = NativeReactiveTelemetry(tmp_path / "prefix")
+    audit.close()
+    base = {
+        "ts_ms": 1., "workflow_id": "w", "invocation_id": "i",
+        "context_id": "ctx", "context_epoch": 0, "request_id": "old",
+        "session_id": "s", "session_generation": 1,
+        "cached_tokens_device": 0, "cached_tokens_host": 0,
+        "mamba_host_hit_slots": 0,
+    }
+    output = StringIO()
+    audit._write_context_prefix({
+        **base, "_internal_event": "served_context_prefix", "input_ids": input_ids,
+    }, output)
+    if isinstance(input_ids, (list, array)):
+        input_ids[0] = 9
+    audit._write_context_prefix({
+        **base, "_internal_event": "context_prefix_probe", "input_ids": [1, 2],
+        "request_id": "next", "context_epoch": 1,
+    }, output)
+    [result] = [json.loads(line) for line in output.getvalue().splitlines()]
+    assert result["common_previously_served_input_tokens"] == 2
+    assert result["previously_served_prefix_recompute_proxy_tokens"] == 2
+    assert result["new_or_changed_prompt_tokens"] == 0
+
+
+@pytest.mark.parametrize("input_ids", (
+    [1, 2, 3], ("1", "2", "3"), [1., 2., 3.], array("q", [1, 2, 3]),
+))
+def test_block_reaccess_keeps_normalized_prefix_identity(tmp_path, input_ids):
+    audit = NativeReactiveTelemetry(tmp_path / "blocks")
+    audit.close()
+    audit._host_pool_geometry["full"] = {"bytes_per_unit": 2}
+    audit._write_block_eviction({
+        "key_path": (array("q", [1, 2]),), "pool": "full",
+        "node_id": 1, "units": 2, "ts_ms": 1.,
+        "extra_key": None, "cache_salt": None,
+    }, StringIO())
+    output = StringIO()
+    audit._write_block_request_probe({
+        "input_ids": input_ids, "ts_ms": 2.,
+        "extra_key": None, "cache_salt": None,
+        "cached_tokens_device": 1, "cached_tokens_host": 1,
+    }, output)
+    result, summary = [json.loads(line) for line in output.getvalue().splitlines()]
+    assert result["outcome"] == "full_mixed_tier_hit"
+    assert summary["matched_evicted_blocks"] == 1
+    assert audit._block_attribution_reused_units["full"] == 2
+    assert not audit._pending_block_evictions
+
+
 def test_block_probe_covers_more_than_the_old_1024_length_limit(tmp_path):
     audit = NativeReactiveTelemetry(tmp_path / "blocks")
     audit.close()

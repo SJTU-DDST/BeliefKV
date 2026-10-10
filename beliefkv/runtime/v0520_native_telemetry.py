@@ -438,8 +438,19 @@ class NativeReactiveTelemetry:
             "mamba_host_hit_slots": int(getattr(req, "mamba_host_hit_length", 0) or 0),
         })
 
+    @staticmethod
+    def _request_token_array(input_ids: Any, *, snapshot: bool = False) -> array:
+        if isinstance(input_ids, array) and input_ids.typecode == "q":
+            return array("q", input_ids) if snapshot else input_ids
+        if isinstance(input_ids, (list, tuple, array)):
+            try:
+                return array("q", input_ids)
+            except TypeError:
+                pass
+        return array("q", (int(token) for token in input_ids))
+
     def _write_context_prefix(self, record: dict[str, Any], output: Any) -> None:
-        token_ids = array("q", (int(token) for token in record["input_ids"]))
+        token_ids = self._request_token_array(record["input_ids"], snapshot=True)
         namespace = self._namespace_digest(record.get("extra_key"), record.get("cache_salt"))
         # A fresh native session/compaction is not an eviction-caused loss.
         scope = (
@@ -464,11 +475,24 @@ class NativeReactiveTelemetry:
         if record["context_epoch"] < previous["context_epoch"]:
             self._context_prefix_counts["epoch_regression"] += 1
             return
-        common = 0
-        for left, right in zip(token_ids, previous["tokens"]):
-            if left != right:
+        prior_tokens = previous["tokens"]
+        limit = min(len(token_ids), len(prior_tokens))
+        common = limit
+        if token_ids[:limit] != prior_tokens[:limit]:
+            # Check shared ranges in native code, then locate the differing token.
+            common = 0
+            while common < limit:
+                end = min(common + 1024, limit)
+                current_block = token_ids[common:end]
+                prior_block = prior_tokens[common:end]
+                if current_block == prior_block:
+                    common = end
+                    continue
+                for left, right in zip(current_block, prior_block):
+                    if left != right:
+                        break
+                    common += 1
                 break
-            common += 1
         cached = min(len(token_ids), max(0, record["cached_tokens_device"] + record["cached_tokens_host"]))
         lost = max(0, common - cached)
         new = len(token_ids) - common
@@ -618,11 +642,7 @@ class NativeReactiveTelemetry:
     ) -> None:
         self._block_attribution_counts["request_probes"] += 1
         try:
-            input_ids = record["input_ids"]
-            if isinstance(input_ids, array) and input_ids.typecode == "q":
-                token_ids = input_ids
-            else:
-                token_ids = array("q", (int(token) for token in input_ids))
+            token_ids = self._request_token_array(record["input_ids"])
         except (KeyError, TypeError, ValueError, OverflowError):
             self._block_attribution_counts["invalid_request_probes"] += 1
             return
