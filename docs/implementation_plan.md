@@ -65,8 +65,8 @@ deploy exactly this revision and patch, run predictive first and cold native
 second, and measure actual early FULL reuse, parent service wait, protection
 reasons and busy-window throughput. The broad performance objective stays active.
 
-Include the validated deep-prefix observation reduction in the still-waiting V22
-revision, preserving the superseded registration and receipt. Within one closure
+The validated deep-prefix observation reduction is registered in frozen V22
+revision 658f639, preserving the superseded registration and receipt. Within one closure
 read, validate newly encountered native node/component classes once and validate
 the current node's lock/reference counters together. Continue reading identity,
 creation time, lengths, locks, references and pending DMA for every node.
@@ -84,6 +84,17 @@ Do not treat the initial type-only run, fixture CPU reductions or their sum as
 proof of GPU throughput or an end-to-end saving. Preserve the frozen V21 pair
 and validate actual useful early FULL coverage, consumption and busy-window
 throughput/JCT under the next predictive-first, same-version cold-native pair.
+
+The waiting coordinator was replaced at 2026-10-11 04:12 CST; PID3341956 is
+waiting_for_previous_pair with target checkout beliefkv-v25-validated-20261011.
+Keep v22_supersession_629eaa4_to_658f639_20261011.json. The environment is
+identical to the preserved 629eaa4 registration, and the canonical patch SHA256
+and expected engine tree are unchanged. Do not edit the registered checkout.
+Commit documentation and receipts only in the editable follow-up worktree.
+The live V21 source, engine and processes remain frozen; after its full pair
+and postprocessing complete, the coordinator deploys exactly the registered
+revision and runs predictive first, then cold native. Waiting registration is
+not completed GPU validation or achievement of the broad performance goal.
 
 The latest independent-wait evidence makes complete-prefix coverage the next
 runtime validation priority. Keep v25_v21_prefetch_gap_attribution_20261011.json:

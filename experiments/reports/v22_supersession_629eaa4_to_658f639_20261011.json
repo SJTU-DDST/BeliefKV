@@ -1,0 +1,20 @@
+{
+  "scope": "waiting V22 target superseded; live V21 source, processes and native engine unchanged",
+  "old_coordinator_pid": 3134898,
+  "old_target_revision": "629eaa4bb8c8626e9f512df21557fb4c224223dc",
+  "old_state_preserved": "/home/longhao/experiment/BeliefKV/experiments/reports/v22_launch_after_v21_20261011.superseded_629eaa4.json",
+  "new_coordinator_pid": 3341956,
+  "new_target_revision": "658f6390126148b1df76d5f4b0ce7c19e1dacd6f",
+  "new_target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v25-validated-20261011",
+  "new_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v22_launch_after_v21_20261011.json",
+  "status": "waiting_for_previous_pair",
+  "environment_equal": true,
+  "native_patch_unchanged": true,
+  "target_patch_sha256": "03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83",
+  "live_main_revision": "597688c62aabc9667484aefe315664a447fea9bb",
+  "live_patch_sha256": "98fc5af9c40121d6f7ba1824f1fd5b586d0b141d5b12370a2d9243c1b1b5e8f1",
+  "registered_at_utc": "2026-10-10T20:12:19.914387+00:00",
+  "verified_at_local": "2026-10-11T04:13:20+08:00",
+  "deployment_order": "after complete V21 pair, predictive_h2d then cold native",
+  "semantics": "The old waiting coordinator was deliberately replaced, not an experimental failure. No running arm was stopped or changed. The registered target remains frozen."
+}
