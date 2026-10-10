@@ -1,6 +1,6 @@
 # BeliefKV 当前系统设计
 
-更新日期：2026-10-08
+更新日期：2026-10-10
 
 状态：本文是当前算法与系统边界的权威说明。历史版本保存在
 `docs/archive/snapshots/beliefkv_design_2026-07-14_zh.md`。
@@ -23,91 +23,78 @@ stall、D2H/H2D、recompute 与控制面开销是用于解释因果和判断退�
 
 Workflow fairness 只作为有界防饿死和最终 tie-break，不以平均分配 GPU 时间为目标。
 
-### 1.1 当前阶段目标：低重算负载中的可行动迁移
+### 1.1 当前阶段目标：相对 native 的可验证性能提升
 
-最近完成的v8d开发验证为108-root单波、running=48、NUMA node 1的
-200 GB Host池，FULL/Mamba分别验收。用户要求增加同108任务的
-原生FCFS/HiCache策略基线，关闭BeliefKV调度和预测动作，保留
-共用协议兼容补丁与只读遥测。该基线不是未修改的上游wheel。
-旧v8c物理策略失效，不能与v8d作公平加速对照；
-多轮取平均留到正式实验，固定需求GPU回放不是主线前置条件。
-实际实现和未完成项以 `docs/architecture_status_zh.md` 为准，
-下文旧P5/P6路径的机制描述不代表新版已完成全部JointPlan迁移。
+**当前主目标：**在固定 workload、模型、容量及到达流下，通过
+agent 调度、共用路径减负、predictive H2D 与 `PREPARE_HOST`，
+使 predictive 相对 native 取得可核实的完成吞吐与 JCT 改善。
+当前 active /goal 保持该方向，以下三项是同一目标的执行要求：
 
-**本阶段唯一主目标：**在 Qwen3.5/SGLang v0.5.20 上，找到
-FULL/Mamba HBM 有可用于目标 H2D 的真实空闲容量、同 NUMA Host
-池稳定、PCIe 有传输窗口，且有用 KV 丢弃后重算很少的动态负载。
-在真实后续消费存在时，以选择性、可部分备份的 `PREPARE_HOST`
-和提前恢复 Host-backed KV 的 predictive H2D，减少同步迁移等待，
-并通过同任务、同到达流、同物理配置的 reactive A/B 检验正确完成
-workflow 的吞吐和 JCT 净收益。物理余量按每次动作的 FULL/Mamba
-需求分别核实，不由总体 HBM 使用率推断。不为提高迁移次数制造
-Host 驱逐或 KV 重算；冷 KV 的有界替换、联合 handoff 和高压
-减少重算均单列为后续扩展，不作为主结果的前提。
-同时需要真实的工具等待、child JOIN 或候选执行请求，确保提前迁移
-有未来消费对象：PREPARE 必须有未来卸载机会，H2D 必须有尚未在
-Device 驻留的有效 Host-backed KV。HBM 空闲本身不构成收益。
-这是待测工作区间，不以 root 数、GPU 利用率或单个使用率定义。由训练项目上的并发/到达
-压力扫描冻结主配置，不预设 64+64 或必须使 Host/HBM 满载。
-高压作为物理机会枯竭、计算饱和及 Host thrash 时的安全回退/研究边界，
-不以减少高压重算或在饱和计算中多发迁移作为近期目标。
+1. 缩短恢复就绪到首次服务的等待，减少服务前重复加载；同时核对
+   缺失页、必要状态、准入等待及其他 workflow 的延迟。
+2. 补齐 PREPARE 消费归因，区分压力释放、恢复、Host 驱逐后补传
+   与未观察到消费，减少无效备份和反复回收/补传的成本。
+3. 提高有用 FULL 预取覆盖，验证 handoff 能否替代需求恢复，
+   并以实际首次复用、吞吐、JCT 与重算评价收益。
 
-主场景的准入必须同时核对：FULL/Mamba Device 与 Host 的各自余量、
-有效 Host 副本或未来可消费的部分备份、传输及首次服务之间的时间窗口、
-Host 驱逐到后续 miss/重算的归因，以及服务端和 workflow 的正确性。
-在训练项目上冻结机会数量、低重算、传输余量和驻留成本判据及动作预算；
-不以空闲 HBM 比例、低 Host 驱逐次数或某个 root 数单独代替可行动机会。
-若找不到这样的工作区间，
-应如实报告机会和收益上界，而不是提高压力以制造迁移次数。
-当前阶段不以高压环境下的 KV 驱逐优化、重算率降低或联合 handoff
-为验收条件；高压迁移开销可能已被计算或排队隐藏，不能将更多传输
-等同于更高端到端收益。
+FULL 的固定前缀可复用有效 Host 副本。PREPARE 只复制缺失
+extent，新增前缀增量备份；radix 分裂保留原生 Host 索引映射。
+若已有副本被 Host 驱逐，后续必须重新备份该段。后续同节点、
+同池 D2H 仅为关联证据，不能据此认定覆盖有效副本或精确重复
+字节。V10 的 35066 次关联均有中间 FULL Host 驱逐，支持
+回收后补传；详细归因见架构状态页与固定审计报告。
 
-在这个工作区间，优先验证两条传输路径的**实际效用**：
+投机 PREPARE 不携带 Mamba。运行请求的状态持续更新，固定
+前缀的检查点则是版本化快照；真正卸载与恢复时，仍由原生
+write-back 和恢复依赖保存、加载必要状态。关闭提前备份不能
+删除恢复所需状态，也不能将全部 Mamba 驱逐视作无成本。
 
-1. `PREPARE_HOST` 选择未来更可能卸载且值得复用的祖先闭包，可先
-   备份部分已生成 KV；以之后 native 卸载是否使用 Host shadow 和
-   避免了多少同步 D2H 为验收，不以 D2H 完成次数替代效用。
-2. predictive H2D 从 native 或 PREPARE 得到的 Host 副本中提前
-   恢复真正会服务的 KV，包括 JOIN parent 和接下来要执行的 agent；
-   以 H2D ACK 后首次 GPU 服务的 KV 命中、节省的等待与提前驻留
-   成本为验收。当前主实验只使用已有空闲 HBM；关键路径 parent
-   有界替换冷 KV 属于后续独立扩展，且不得抢占热页。
+预测器负责从已观察的 child 通知、正文及 decode 进度估计阶段
+和剩余工作，工具头估计工具返回；runtime 决定传输对象、物理
+范围与时机。未来首次服务时刻不进入预测输入，模型不学习
+离线 trace 中不可识别的预取净收益。准确率、真实传输提前量、
+ACK 后消费与端到端收益分别评价。
 
-执行 frontier、native 准入与 KV 余量必须共同决定下一请求的
-恢复时机。已ACK的恢复可在最多4个目标、1 GiB闭包预算内取得
-native receipt锁，预测期保持短租约；真实下一请求提交后才允许
-延长到ACK后最多10秒，恢复与收尾共享有界准入提升预算。
-真实分配压力、失效、首次服务和到期必须释放，不能以无限pin
-隐藏预测错误或损害其它workflow。JOIN已观测服务速率与剩余工作
-头分开核验，不能把短decode burst当未来服务份额。
-联合 handoff（有界选择 victim、D2H 与 H2D 重叠）仍是
-可选后续扩展，必须单独证明收益超过同步开销和 victim 债务。
-不能将 reactive 队列等待全算作可隐藏的传输时延，也不能因精确
-RETURN/JOIN ETA 误差大而否定由确定性事件和容量余量支持的动作。
-如果 session 本已在 GPU、Host 无可用副本或抢占会伤害其它
-workflow，则 abstain 并交还 P5 native reactive 路径。
+动作必须有真实迁移需求：PREPARE 的候选需要未来卸载机会，
+H2D 需要有效 Host-backed 缺失前缀及必要当前检查点。按池核对
+Device/Host 余量，不用总体显存占用代替可行动容量，不为制造
+机会主动驱逐有效 Host 副本。已有完成副本、未锁定冷等待 KV
+可在真实分配压力下由原生回收；不抢正在执行的热 KV。
+预取保护及准入提升有界，并计入新输入、decode 增长和状态
+预留、普通请求老化及其他 workflow 尾延迟。
 
-主指标为同配置下成功 workflow 吞吐和 JCT 分布，同时报告最慢 workflow、
-任务正确性、GPU 服务、重算、Host/Device hit、HBM 占用字节时间及公平性。
-若 GPU 计算始终满载、或 Host 已把可复用 KV 大量丢弃，预取可能净负收益；
-策略应降低预测动作强度并保留 P5 的活性/正确性回退，而非强行制造 H2D。
+已提交请求的 execution handoff 按实际输入规划需求恢复；
+child/tool 返回前的预测 H2D 单独计数。前者已有物理 ACK 与
+FULL 首次复用证据，不能计作提前预测收益。完整 JointPlan、
+主动 COMMIT 与 running retraction 的缺口仍单列为后续工作。
 
-当前阶段按证据递进：先在训练项目确定低重算、Host 稳定、HBM 有
-足够空闲空间，且有实际缺 Device 的 Host KV 或未来可消费 shadow
-的可复现工作区间；再分别验证部分 PREPARE 在后续 native 卸载时
-被消费，以及预测式 H2D 的物理 ACK、首次服务 KV 复用与同步等待
-节省；最后以任务、到达流和物理配置完全配对的 reactive 对照验证
-正确完成 workflow 的吞吐与 JCT 净收益，同时检查任务正确性、容量
-安全、饥饿和其它 workflow 的尾延迟。分档门槛和动作预算仅在训练
-项目上冻结；若无合格区间或无净收益，报告机会/收益上界并收敛结论。
-只读机会、原生迁移或单纯提前驻留均不构成目标完成。
+当前 V15 比较为 156 个任务，108 个在 t=0 到达、48 个在
+3600 秒后到达，running=48、NUMA1 Host200GB/FULL:Mamba80:20、
+HBM Mamba/FULL=0.9、context131072、completion8192、
+graph2048/reserve32、workflow14400s，seed21/temperature0。
+首轮约束为 2--4 child，后续轮次仍由 prompt 与模型执行决定。
+native 关闭 BeliefKV 控制与优先策略，保留双方一致的协议兼容、
+客户端优化及遥测；它不是未修改的上游 wheel。
+
+V15 从冻结提交 `feb5ee01a9f1340a694dcba442c439d08e4bd274`
+运行；主目录、引擎与预测产物在两侧及完整后处理结束前保持
+冻结，新修订仅在隔离分支提交。predictive 已完成 156/156；
+native 对照尚未完成，目标仍未达成。completed 是运行终态，
+任务正确性另行评价。正式实验多轮取平均，当前开发先用完整
+同配置比较定位退化；固定需求 GPU 回放不是主线前置条件。
+实际实现、最终数据与未完成项以架构状态页和执行计划为准。
+
+主指标为完成吞吐、JCT 和 completion curve；同时报告实际
+工作量、任务正确性、GPU 服务、缓存命中、重算、按来源分池
+传输、驻留字节时间与公平性。CPU wall 区间、传输累计时间或
+更多 ACK 不自动构成端到端节省。若计算、Host thrash 或工具
+长尾主导，需报告收益边界，并降低缺乏后续消费的动作成本。
 
 ### 1.2 可证伪的研究假设与对照
 
 - **HBM 有可行动余量**：工具等待或 JOIN 提供足够 lead，且未来
   卸载会消费提前备份、未来服务会消费提前恢复的 KV 时，
-  `PREPARE_HOST`/predictive H2D 相比同到达流 P5 可缩短同步
+  `PREPARE_HOST`/predictive H2D 相比同到达流 native 可缩短同步
   D2H/H2D 停顿；计入无效备份、提前驻留字节时间及 PCIe 干扰。
 - **有冷 KV 可置换**：当 free-list 不足但可安全收回更冷页时，
   在有界 lease 下预取关键路径 parent 或下一 agent；将 victim
@@ -469,12 +456,13 @@ restore/recompute debt、方向反转率以及最终 workflows/hour。
 | FULL/Mamba物理闭包、身份与ACK | 有界单node原生事务与首次消费证明已接入 |
 | 预测器 | 冻结语义phase/work + 独立工具残余时间/CDF；runtime独立选动作 |
 | Predictive `PREPARE_HOST` | JOIN/长工具已实际运行，备份后真实压力回收；净收益未证明 |
-| JOIN `PREFETCH_GPU` | v5十一个ACK且FULL复用，均EOS后；精度与净收益未全面达标 |
-| 工具 `PREFETCH_GPU` | v5六个ACK但均再回收；条件时间与短策略租约已CPU修复，GPU待验 |
+| JOIN `PREFETCH_GPU` | v15有99次ACK，FULL传输/确认首次复用0.893/0.743GB；净收益待完整对照 |
+| 工具 `PREFETCH_GPU` | v15有77次ACK，FULL传输/确认首次复用0.338/0.293GB；仍有未保护驻留丢失 |
 | 原生D2H副本恢复 | 同样可用，不强制依赖先前PREPARE |
-| 完整COMMIT/JointPlan/handoff | 尚未完成新版执行/ownership与收益验收 |
+| 新版 execution handoff | v15需求恢复15132次ACK，FULL传输/首次复用67.205/67.047GB；不属于提前预测 |
+| 完整COMMIT/JointPlan | 尚未完成新版执行/ownership与收益验收 |
 | Running selective retraction | 新版完整适配仍缺失，不开放旧全套物理开关 |
-| 新版有界关键路径 parent 驻留/抢占 | 设计目标，尚未实现或经 GPU 验证 |
+| 新版有界恢复驻留与准入提升 | 已接入；锁保护、准入长尾及其他workflow代价继续审计 |
 | 新版 child 工作/服务/排队分解与在线更新 | 待训练侧可识别性验证，尚未上线 |
 | Peer multi-agent 专项优化 | 非当前关键路径 |
 | Oracle action-space 优化 | 已暂停，仅保留诊断资产 |
@@ -505,11 +493,13 @@ runtime必须使预取目标、回收候选与短驻留生命周期保持一致�
 H200 NVL单卡、Qwen3.5-35B-A3B BF16、SGLang 0.5.20，
 同一 `beliefkv-next` 环境运行serving与agent实验。
 Device为FULL约36.843 GB/Mamba约33.096 GB，
-Host为NUMA node 1的200.010 GB，按实际Device字节比例分配。
+Host为NUMA node 1的约200 GB，FULL:Mamba按80:20分配；
+Host和Device不采用相同比例，容量以实际启动census为准。
 running=48、context=131072、completion=8192、workflow=14400秒，
 graph=2048/预留32步、宽松native-reactive profile、自然语言终态。
-最近开发为已完成的84-root单波reactive/predictive，详情及启动SHA
-见架构状态页和v5 launch记录，不从旧profile推断当前参数。
+当前比较为V15 native/predictive、156任务两波到达(108+48/
+3600s)。两侧冷启动服务和缓存，模型、脚本、共用协议与容量冻结；
+详情及启动SHA见架构状态页和当前执行计划。
 
 旧Qwen3/0.5.2rc1的冻结基线仍保存在
 `configs/p6/h200_bf16_v7/frozen_runtime_profile.json`，不是当前默认。
