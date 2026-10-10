@@ -180,6 +180,25 @@ P50约-72.82 token。继续分别处理提前低估和末端高估；不能
 统一加偏置或延长所有保护租约。报告：
 `experiments/reports/v15_semantic_trigger_causal_partial_20261010_0735.json`。
 
+通知历史与H2D资格须分开保存。v15局部审计发现requests-1142及
+django-11239、11095、11292、14349的5个请求、303个快照，客户端
+已通知但在线notice_active=false。五次通知发出时均仍有2个child，
+因此旧动作阶段未接受通知；不能在其后来成为最后成员时丢掉模型
+输入。下一版按child保存通知，只绑定后续一个context/epoch/request，
+在工具调用/工具token、压缩、取消、返回、workflow终止和镜像
+重置时清理。阶段租约到期不抹除历史，额外请求不继承旧通知。
+同一控制batch先通过图验证，再依事件顺序记录通知及绑定下一
+请求，不能因图已前进到下一epoch而漏掉已验证的通知。
+实际预取仍由原来的安全输入、最后成员、容量和依赖条件决定。
+forecast日志补充长度提示、字符数及历史轮数，正文不进入日志。
+364项相关检查通过、1项因隔离目录无固定encoder产物跳过；
+6种未通知CPU配置/400次比较输入和forecast相同，小幅计时差
+不算加速证据。证据分别为
+`experiments/reports/v15_notice_input_alignment_partial_20261010.json`、
+`experiments/reports/v16_notice_input_cpu_20261010.json`。
+客户端因果历史与模型输入的交付不是原子快照，缺少输入不等于
+存在可用传输机会。该修订仅在隔离目录，v15完整双侧继续冻结。
+
 隔离候选完整patch SHA256为
 `66aa563627fb8882808e290ff0ccde10535bc7d787a66eba6848baa8bcf203d8`。
 精确冻结引擎差量为

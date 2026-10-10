@@ -161,6 +161,15 @@ class _CompletionReentryHint:
     issued_monotonic_ms: float
 
 
+@dataclass(frozen=True)
+class _ChildReportNotice:
+    workflow_id: str
+    context_id: str
+    context_epoch: int
+    estimated_tokens: int
+    request_id: str | None = None
+
+
 @dataclass
 class _ChildFinalStage:
     key: PrefillCandidateKey
@@ -376,6 +385,7 @@ class NativeAdmissionRuntime:
         self._semantic_submitted_frames: dict[str, tuple[float, int]] = {}
         self._semantic_target_cache: dict[PrefillCandidateKey, tuple[float, bool]] = {}
         self._semantic_tool_counts: Counter[str] = Counter()
+        self._child_report_notices: dict[str, _ChildReportNotice] = {}
         self._decoded_tool_requests: set[str] = set()
         self._decoded_scan_positions: dict[str, int] = {}
         self._tool_open_token_ids: frozenset[int] = frozenset()
@@ -742,6 +752,7 @@ class NativeAdmissionRuntime:
             self._prefill_causal_cache = None
             self._final_stages.clear()
             self._final_request_stages.clear()
+            self._child_report_notices.clear()
             self._discard_join_ticket("causal_mirror_discarded")
             self._admission_lease = None
             self.shadow_candidate = None
@@ -855,6 +866,10 @@ class NativeAdmissionRuntime:
                         self.tool_wait_hints.pop(context_id, None)
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.WORKFLOW_END:
+                    self._child_report_notices = {
+                        child: notice for child, notice in self._child_report_notices.items()
+                        if notice.workflow_id != event.workflow_id
+                    }
                     for key in tuple(self._tool_last_queries):
                         if key.root_workflow_id == event.workflow_id:
                             self._tool_last_queries.pop(key, None)
@@ -916,11 +931,14 @@ class NativeAdmissionRuntime:
                     self._submit_tool_wait(context_id)
             for event in events:
                 if event.kind is RuntimeEventKind.STRUCTURED_ACTION:
+                    self._observe_child_report_notice(event)
                     self._observe_child_completion_intent(event)
                 elif event.kind is RuntimeEventKind.LLM_SUBMIT:
                     self._clear_semantic_invocation(event.invocation_id)
+                    self._bind_child_report_notice(event)
                     self._bind_final_request(event)
                 elif event.kind is RuntimeEventKind.TOOL_START:
+                    self._child_report_notices.pop(event.invocation_id, None)
                     self._semantic_tool_counts[event.invocation_id] += 1
                     self._clear_semantic_invocation(event.invocation_id)
                     for join_id, stage in tuple(self._final_stages.items()):
@@ -932,6 +950,7 @@ class NativeAdmissionRuntime:
                     RuntimeEventKind.JOIN_TIMEOUT, RuntimeEventKind.INVOCATION_CANCEL,
                 ):
                     if event.invocation_id is not None:
+                        self._child_report_notices.pop(event.invocation_id, None)
                         self._clear_semantic_invocation(event.invocation_id)
                     self._advance_join_ticket(event)
                     if event.kind is RuntimeEventKind.JOIN_TIMEOUT:
@@ -947,6 +966,8 @@ class NativeAdmissionRuntime:
                             or stage.join_id == event.join_id
                         ):
                             self._clear_final_stage(join_id)
+                elif event.kind is RuntimeEventKind.CONTEXT_COMPACT:
+                    self._child_report_notices.pop(event.invocation_id, None)
             self._refresh_prefetch_service_leases()
             self.join_wait_hints = {
                 join_id: hint for join_id, hint in self.join_wait_hints.items()
@@ -1026,6 +1047,7 @@ class NativeAdmissionRuntime:
             self.counts["semantic_text_stale"] += 1
             return
         if event.attributes.get("tool_chunk") is True:
+            self._child_report_notices.pop(key.invocation_id, None)
             self._clear_semantic_invocation(key.invocation_id)
             # Keep this request's negative evidence through late body/finish
             # frames, and let the normal invocation cleanup retire it.
@@ -1209,6 +1231,10 @@ class NativeAdmissionRuntime:
                     "observed_output_tokens": item.observed_output_tokens,
                     "causal_progress_guard_ms": item.causal_progress_guard_ms,
                     "notice_active": item.notice_active,
+                    "estimated_report_tokens": item.estimated_report_tokens,
+                    "content_chars": item.content_chars,
+                    "prior_tool_calls": item.prior_tool_calls,
+                    "prior_model_rounds": item.prior_model_rounds,
                     "current_output_tokens": progress[-1][1] if progress else None,
                     "last_service_age_ms": (
                         now_ms - progress[-1][0] if progress else None
@@ -1273,16 +1299,19 @@ class NativeAdmissionRuntime:
             if observed is None or observed < 1:
                 continue
             child = self.graph.invocations.get(key.invocation_id)
-            native_stage = next((
-                stage for stage in self._final_stages.values()
-                if stage.child_id == key.invocation_id and not stage.semantic_only
-                and self._live_final_stage(stage)
-            ), None)
+            notice = self._child_report_notices.get(key.invocation_id)
+            if notice is not None and (
+                notice.workflow_id != key.root_workflow_id
+                or notice.context_id != key.context_id
+                or notice.context_epoch != key.context_epoch
+                or notice.request_id != key.request_id
+            ):
+                notice = None
             worker.submit(SemanticReportInput(
                 key, event.ts_ms, observed, event.attributes["content_chars"],
                 event.attributes["content_tail"][-1024:],
-                native_stage is not None,
-                native_stage.expected_tokens if native_stage else 0,
+                notice is not None,
+                notice.estimated_tokens if notice else 0,
                 self._semantic_tool_counts[key.invocation_id],
                 child.llm_round,
                 causal_progress_guard_ms=guard_ms,
@@ -1787,6 +1816,61 @@ class NativeAdmissionRuntime:
                 self._submit_tool_wait(context_id)
         self.counts[f"{kind}_unhinted_scanned"] += len(selected)
         return True
+
+    def _observe_child_report_notice(self, event: RuntimeEvent) -> None:
+        if (
+            event.attributes.get(CHILD_COMPLETION_INTENT) is not True
+            or event.attributes.get("child_completion_signal_kind") != "stage"
+        ):
+            return
+        child = self.graph.invocations.get(event.invocation_id)
+        context = self.graph.contexts.get(event.context_id)
+        join = self.graph.joins.get(event.join_id)
+        estimated = event.attributes.get("estimated_final_report_tokens")
+        if not (
+            child is not None and not child.state.terminal
+            and child.workflow_id == event.workflow_id
+            and child.context_id == event.context_id
+            and context is not None and type(event.context_epoch) is int
+            and 0 <= event.context_epoch <= context.epoch
+            and join is not None and not join.satisfied
+            and join.workflow_id == event.workflow_id
+            and event.invocation_id in join.member_invocation_ids - join.completed_member_ids
+            and type(estimated) is int and 1 <= estimated <= 4096
+        ):
+            return
+        # The validated graph batch may already include the next submit. Bind
+        # announcement history in event order, independently of H2D eligibility.
+        self._child_report_notices[event.invocation_id] = _ChildReportNotice(
+            event.workflow_id, event.context_id, event.context_epoch, estimated,
+            event.attributes.get("completion_stage_bound_request_id"),
+        )
+        self.counts["child_report_notice_observed"] += 1
+
+    def _bind_child_report_notice(self, event: RuntimeEvent) -> None:
+        if event.attributes.get("runtime_internal"):
+            return
+        notice = self._child_report_notices.get(event.invocation_id)
+        if notice is None:
+            return
+        rid = event.attributes.get("request_id")
+        if (
+            event.workflow_id == notice.workflow_id
+            and event.context_id == notice.context_id
+            and isinstance(rid, str) and rid
+            and notice.request_id is None
+            and event.context_epoch == notice.context_epoch + 1
+        ):
+            self._child_report_notices[event.invocation_id] = replace(
+                notice, context_epoch=event.context_epoch, request_id=rid,
+            )
+        elif (
+            event.workflow_id != notice.workflow_id
+            or event.context_id != notice.context_id
+            or event.context_epoch != notice.context_epoch
+            or rid != notice.request_id
+        ):
+            self._child_report_notices.pop(event.invocation_id, None)
 
     def _observe_child_completion_intent(self, event: RuntimeEvent) -> None:
         if self.enable_confirmed_join_canary:
@@ -5495,6 +5579,7 @@ class NativeAdmissionRuntime:
                         key.request_id not in self._decoded_tool_requests
                         and any(token in self._tool_open_token_ids for token in outputs[start:])
                     ):
+                        self._child_report_notices.pop(key.invocation_id, None)
                         self._decoded_tool_requests.add(key.request_id)
                         self._semantic_forecasts.pop(key.request_id, None)
                         self._semantic_frames.pop(key.request_id, None)

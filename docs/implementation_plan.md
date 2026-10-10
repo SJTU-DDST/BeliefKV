@@ -245,6 +245,29 @@ Current status:
   overprediction still coexist. Do not apply a global bias or blanket lease
   extension; evaluate actual Host-only opportunities after the frozen comparison.
   Report:v15_semantic_trigger_causal_partial_20261010_0735.json.
+- The partial V15 feature audit identifies303 snapshots from five requests
+  with a client completion announcement but online notice_active=false.
+  All five announced while two children remained, so the old action-bound
+  stage rejected their notices. Tasks are requests-1142 and django11239,
+  11095,11292,14349. The offline feature collector retains those announced
+  facts, exposing an input mismatch. Client/server delivery is not atomically
+  observed; these snapshots are clustered requests, not independent samples
+  or proof of available Host-only H2D. Preserve
+  v15_notice_input_alignment_partial_20261010.json.
+- The isolated next revision stores child announcement history separately
+  from transfer stages and binds only the next matching context/epoch/request.
+  After graph-batch validation, record and bind in event order, including an
+  announcement and the next epoch's submission delivered in the same batch.
+  Stage expiry retains the historical feature; tools, native tool tokens,
+  compaction, cancellation, RETURN, workflow end and mirror reset retire it.
+  A further request cannot inherit it. Keep native H2D eligibility, capacity
+  and dependencies unchanged. Forecast records expose the estimated report
+  tokens, content character count and prior tool/model rounds without text.
+  The related suite passes364 checks with one missing-artifact skip. Against
+  8eac264, six unannounced CPU fixtures/400 iterations preserve model inputs
+  and accepted forecasts; timing differences are not GPU or throughput gains.
+  Report:v16_notice_input_cpu_20261010.json. Commit in isolation, retain the
+  V15 freeze and verify input alignment and consumed FULL after the full pair.
 - The final isolated engine package has full patch SHA256
   66aa563627fb8882808e290ff0ccde10535bc7d787a66eba6848baa8bcf203d8.
   Its exact frozen-V15 delta isv16_engine_followup_delta_20261010.patch with

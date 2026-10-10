@@ -2,7 +2,9 @@ import json
 
 import pytest
 
-from scripts.audit_semantic_h2d_online import audit, sampled_trigger_replay, snapshot_records
+from scripts.audit_semantic_h2d_online import (
+    audit, notice_feature_alignment, sampled_trigger_replay, snapshot_records,
+)
 
 
 def test_audit_groups_requests_and_keeps_native_eos_separate(tmp_path):
@@ -163,6 +165,48 @@ def test_work_update_replay_reports_early_triggers_without_using_future_labels()
             result[policy]["100"]["first_trigger_rows"][0]["ts_ms"]
         )
         assert without_labels[policy]["100"]["missing_native_result_count"] == 1
+
+
+def test_notice_input_alignment_binds_only_the_announced_request_and_prior_events():
+    events = {"child": [
+        {"kind": "structured_action", "ts_ms": 10, "context_id": "ctx", "context_epoch": 0,
+         "join_id": "join",
+         "attributes": {"beliefkv_child_completion_intent": True,
+                        "child_completion_signal_kind": "stage",
+                        "estimated_final_report_tokens": 128}},
+        {"kind": "llm_submit", "ts_ms": 20, "context_id": "ctx", "context_epoch": 1,
+         "attributes": {"request_id": "report"}},
+        {"kind": "tool_start", "ts_ms": 40, "attributes": {"tool_name": "execute"}},
+        {"kind": "llm_submit", "ts_ms": 50, "context_id": "ctx", "context_epoch": 2,
+         "attributes": {"request_id": "next"}},
+    ], "sibling": [
+        {"kind": "return", "ts_ms": 25, "invocation_id": "sibling"},
+    ]}
+    joins = [
+        {"kind": "join_create", "ts_ms": 1, "join_id": "join",
+         "member_invocation_ids": ["child", "sibling"]},
+    ]
+    forecasts = {
+        "report": [
+            {"ts_ms": 1040, "observation_age_ms": 10, "notice_active": False},
+            {"ts_ms": 1060, "observation_age_ms": 10, "notice_active": False},
+        ],
+        "next": [{"ts_ms": 1070, "observation_age_ms": 10, "notice_active": False}],
+    }
+    result = notice_feature_alignment(
+        events, forecasts, 1000., accepted_stages=set(), join_events=joins,
+    )
+    assert result["announced_without_online_notice_request_count"] == 1
+    assert result["snapshot_counts"]["client_notice_True_online_notice_False"] == 1
+    assert result["snapshot_counts"]["client_notice_False_online_notice_False"] == 2
+    [missing] = result["announced_without_online_notice_rows"]
+    assert missing["request_id"] == "report"
+    assert missing["first_notice_age_ms"] == 20
+    assert missing["estimated_report_tokens"] == 128
+    assert missing["snapshot_count"] == 1
+    assert missing["unfinished_members_at_notice"] == 2
+    assert missing["native_action_stage_accepted"] is False
+    assert notice_feature_alignment(events, forecasts, None)["unmatched_snapshot_count"] == 3
 
 
 @pytest.mark.parametrize("tail", [b'{"event":', b'{"text":"\xe4'])

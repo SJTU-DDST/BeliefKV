@@ -44,6 +44,121 @@ def error_summary(rows: list[tuple[float, int, float]]) -> dict:
     }
 
 
+def notice_feature_alignment(
+    events: dict, forecasts: dict, clock_offset_ms: float | None, *,
+    accepted_stages=None, join_events=(),
+) -> dict:
+    histories, requests = {}, {}
+    joins = {
+        event["join_id"]: (event["ts_ms"], event.get("member_invocation_ids") or ())
+        for event in join_events
+    }
+    terminal_times = {}
+    for rows in events.values():
+        for event in rows:
+            if event["kind"] == "join_create":
+                joins[event["join_id"]] = (
+                    event["ts_ms"], event.get("member_invocation_ids") or (),
+                )
+            elif event["kind"] in ("return", "invocation_cancel"):
+                terminal_times.setdefault(event["invocation_id"], []).append(event["ts_ms"])
+    for invocation, rows in events.items():
+        history, notice = [], None
+        for event in sorted(rows, key=lambda row: row["ts_ms"]):
+            attrs = event.get("attributes") or {}
+            kind = event["kind"]
+            if (
+                kind == "structured_action"
+                and attrs.get("beliefkv_child_completion_intent") is True
+                and attrs.get("child_completion_signal_kind") == "stage"
+                and type(attrs.get("estimated_final_report_tokens")) is int
+                and 1 <= attrs["estimated_final_report_tokens"] <= 4096
+            ):
+                notice = {
+                    "context_id": event.get("context_id"),
+                    "context_epoch": event.get("context_epoch"),
+                    "notice_epoch": event.get("context_epoch"),
+                    "join_id": event.get("join_id"),
+                    "estimated_tokens": attrs["estimated_final_report_tokens"],
+                    "notice_ts_ms": event["ts_ms"], "request_id": None,
+                }
+            elif kind == "llm_submit" and not attrs.get("runtime_internal"):
+                rid = attrs.get("request_id")
+                if isinstance(rid, str):
+                    requests[rid] = invocation
+                if notice is not None:
+                    if (
+                        notice["request_id"] is None
+                        and type(notice["context_epoch"]) is int
+                        and event.get("context_id") == notice["context_id"]
+                        and event.get("context_epoch") == notice["context_epoch"] + 1
+                        and isinstance(rid, str)
+                    ):
+                        notice = {
+                            **notice, "context_epoch": event["context_epoch"],
+                            "request_id": rid,
+                        }
+                    elif rid != notice["request_id"]:
+                        notice = None
+            elif (
+                kind == "tool_start" and attrs.get("tool_name") != "announce_completion_intent"
+                or kind in ("return", "invocation_cancel", "context_compact")
+            ):
+                notice = None
+            history.append((event["ts_ms"], notice))
+        histories[invocation] = ([row[0] for row in history], history)
+    counts, missing, unmatched = defaultdict(int), {}, 0
+    for rid, rows in forecasts.items():
+        invocation = requests.get(rid)
+        if invocation is None or clock_offset_ms is None:
+            unmatched += len(rows)
+            continue
+        timestamps, history = histories[invocation]
+        for row in rows:
+            if row.get("ts_ms") is None or row.get("observation_age_ms") is None:
+                unmatched += 1
+                continue
+            observed_ms = row["ts_ms"] - clock_offset_ms - row["observation_age_ms"]
+            index = bisect_right(timestamps, observed_ms) - 1
+            notice = history[index][1] if index >= 0 else None
+            expected = notice is not None and notice["request_id"] == rid
+            actual = row.get("notice_active") is True
+            counts[f"client_notice_{expected}_online_notice_{actual}"] += 1
+            if expected and not actual:
+                join = joins.get(notice["join_id"])
+                detail = missing.setdefault(rid, {
+                    "request_id": rid, "invocation_id": invocation,
+                    "context_id": notice["context_id"],
+                    "context_epoch": notice["context_epoch"],
+                    "estimated_report_tokens": notice["estimated_tokens"],
+                    "snapshot_count": 0, "first_observation_ts_ms": observed_ms,
+                    "first_notice_age_ms": observed_ms - notice["notice_ts_ms"],
+                    "unfinished_members_at_notice": (
+                        sum(
+                            not any(ts <= notice["notice_ts_ms"] for ts in terminal_times.get(member, ()))
+                            for member in join[1]
+                        ) if join is not None and join[0] <= notice["notice_ts_ms"] else None
+                    ),
+                    "native_action_stage_accepted": (
+                        any(
+                            (invocation, notice["join_id"], epoch) in accepted_stages
+                            for epoch in (notice["notice_epoch"], notice["context_epoch"])
+                        ) if accepted_stages is not None else None
+                    ),
+                })
+                detail["snapshot_count"] += 1
+    return {
+        "scope": (
+            "Client announcement history versus delivered model inputs; clock conversion "
+            "uses the first census offset. Delivery ordering is not atomically observed. "
+            "A missing input is not proof of a usable H2D opportunity."
+        ),
+        "snapshot_counts": dict(counts), "unmatched_snapshot_count": unmatched,
+        "announced_without_online_notice_request_count": len(missing),
+        "announced_without_online_notice_rows": list(missing.values()),
+    }
+
+
 def trigger_diagnostics(
     starts: list[dict], forecasts: dict, native: dict, terminals: set,
     return_times: dict, clock_offset_ms: float | None,
@@ -237,10 +352,21 @@ def audit(arm: Path, threshold: float, *, allow_partial: bool = False) -> dict:
     children, terminals, last_result, nonterminal = set(), set(), {}, set()
     return_times = {}
     requests_by_invocation = defaultdict(set)
+    notice_events = defaultdict(list)
+    join_events = []
     for path in sorted((clients[0] / "workflows").glob("*/runtime_events.deepagents.jsonl")):
         for row in snapshot_records(path, allow_partial=allow_partial):
             attrs = row.get("attributes") or {}
             invocation = row.get("invocation_id")
+            if row["kind"] == "join_create" and type(row.get("ts_ms")) in (int, float):
+                join_events.append(row)
+            if invocation is not None and type(row.get("ts_ms")) in (int, float) and (
+                row["kind"] in (
+                    "llm_submit", "tool_start", "return", "invocation_cancel", "context_compact",
+                )
+                or attrs.get("child_completion_signal_kind") == "stage"
+            ):
+                notice_events[invocation].append(row)
             if row["kind"] == "invocation_create" and attrs.get("source") == "deepagents_task":
                 children.add(invocation)
             elif row["kind"] == "llm_result" and not attrs.get("runtime_internal"):
@@ -268,6 +394,7 @@ def audit(arm: Path, threshold: float, *, allow_partial: bool = False) -> dict:
     }
     forecasts = defaultdict(list)
     starts = []
+    accepted_stages = set()
     clock_offset_ms = None
     for row in snapshot_records(
         arm / "opportunities/admission_opportunities.jsonl", allow_partial=allow_partial,
@@ -276,6 +403,10 @@ def audit(arm: Path, threshold: float, *, allow_partial: bool = False) -> dict:
             forecasts[row["request_id"]].append(row)
         elif row["event"] == "final_stage_latest_start":
             starts.append(row)
+        elif row["event"] == "child_final_stage_accepted":
+            accepted_stages.add((
+                row.get("child_invocation_id"), row.get("join_id"), row.get("context_epoch"),
+            ))
         elif row["event"] == "safe_point_census" and clock_offset_ms is None:
             if type(row.get("monotonic_ms")) in (int, float):
                 clock_offset_ms = row["ts_ms"] - row["monotonic_ms"]
@@ -354,6 +485,10 @@ def audit(arm: Path, threshold: float, *, allow_partial: bool = False) -> dict:
         "latest_start_at_or_after_native_result_count": after_eos,
         "latest_start_missing_native_result_count": unknown_eos,
         "estimated_work_trigger_diagnostics": diagnostics,
+        "notice_input_alignment": notice_feature_alignment(
+            notice_events, forecasts, clock_offset_ms,
+            accepted_stages=accepted_stages, join_events=join_events,
+        ),
         "sampled_work_update_comparison": replay,
     }
 

@@ -1,0 +1,196 @@
+{
+  "scope": "same-input synthetic CPU semantic capture/poll; retained workflow graph and actual runtime validation; stub worker and target availability; excludes neural inference, process IPC, DMA, GPU and throughput",
+  "baseline_revision": "8eac264",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "16c30ca9473b38ce2fd7ce8d1929447b9e2dc6c961144e7de7aced5236dffce6",
+    "beliefkv/policy/causal_frontier.py": "b2e1567cc5a6f50f33329c9b73f21949a6da6061b4560cbc36beb65e7e54acb2"
+  },
+  "optimized_runtime_source": "/tmp/beliefkv-v12-followup-20261009/beliefkv/runtime/sglang_v0520_runtime.py",
+  "optimized_runtime_source_sha256": "20d4e4d81307ac083fd6e25c4a8da024adf6a21fba7b345f7574b2ff8cb91c86",
+  "benchmark_source_sha256": "3524c8740f384dd811f09ec17092c164c49fa5e8e786ed337156dec5722b9e6d",
+  "equal_disabled_timing_wrappers": true,
+  "worker_final_score": 0.25,
+  "retained_rounds_per_workflow": 16,
+  "cases": [
+    {
+      "scenario": "idle",
+      "visible_requests": 48,
+      "iterations": 400,
+      "model_inputs_equal": true,
+      "accepted_forecasts_equal": true,
+      "submitted_inputs": 0,
+      "model_input_sha256": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+      "pending_frame_max": {
+        "baseline": 0,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "count": 400,
+          "mean_ms": 0.001508225,
+          "p50_ms": 0.001426,
+          "p99_ms": 0.002752,
+          "max_ms": 0.01069
+        },
+        "optimized": {
+          "count": 400,
+          "mean_ms": 0.0014139225,
+          "p50_ms": 0.001359,
+          "p99_ms": 0.002024,
+          "max_ms": 0.013861
+        }
+      },
+      "mean_reduction_fraction": 0.06252548525584711
+    },
+    {
+      "scenario": "submitted",
+      "visible_requests": 12,
+      "iterations": 400,
+      "model_inputs_equal": true,
+      "accepted_forecasts_equal": true,
+      "submitted_inputs": 12,
+      "model_input_sha256": "84f4c58791f7e62834d4256b4c9c7f20be37b482652d6eb7e271a7373098f677",
+      "pending_frame_max": {
+        "baseline": 0,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "count": 400,
+          "mean_ms": 0.002049945,
+          "p50_ms": 0.001913,
+          "p99_ms": 0.003014,
+          "max_ms": 0.003252
+        },
+        "optimized": {
+          "count": 400,
+          "mean_ms": 0.00191262,
+          "p50_ms": 0.00177,
+          "p99_ms": 0.00286,
+          "max_ms": 0.003381
+        }
+      },
+      "mean_reduction_fraction": 0.06698960216005789
+    },
+    {
+      "scenario": "submitted",
+      "visible_requests": 48,
+      "iterations": 400,
+      "model_inputs_equal": true,
+      "accepted_forecasts_equal": true,
+      "submitted_inputs": 48,
+      "model_input_sha256": "2b6ac210b0944d25d4da70396147199bc2ea535b9c451a0e0fcd6ec562f6b8af",
+      "pending_frame_max": {
+        "baseline": 0,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "count": 400,
+          "mean_ms": 0.002133155,
+          "p50_ms": 0.002003,
+          "p99_ms": 0.003454,
+          "max_ms": 0.005658
+        },
+        "optimized": {
+          "count": 400,
+          "mean_ms": 0.0019951225,
+          "p50_ms": 0.001856,
+          "p99_ms": 0.003351,
+          "max_ms": 0.005975
+        }
+      },
+      "mean_reduction_fraction": 0.06470814357137666
+    },
+    {
+      "scenario": "submitted",
+      "visible_requests": 96,
+      "iterations": 400,
+      "model_inputs_equal": true,
+      "accepted_forecasts_equal": true,
+      "submitted_inputs": 96,
+      "model_input_sha256": "3a674fcb71322de47116f75c2d3ef65d10779d1b23295e80955b51f6d04d981e",
+      "pending_frame_max": {
+        "baseline": 0,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "count": 400,
+          "mean_ms": 0.00238326,
+          "p50_ms": 0.002404,
+          "p99_ms": 0.003658,
+          "max_ms": 0.005832
+        },
+        "optimized": {
+          "count": 400,
+          "mean_ms": 0.0022757475,
+          "p50_ms": 0.00223,
+          "p99_ms": 0.003912,
+          "max_ms": 0.004874
+        }
+      },
+      "mean_reduction_fraction": 0.04511152790715234
+    },
+    {
+      "scenario": "fresh",
+      "visible_requests": 48,
+      "iterations": 400,
+      "model_inputs_equal": true,
+      "accepted_forecasts_equal": true,
+      "submitted_inputs": 19440,
+      "model_input_sha256": "5e48c961fe82946db875e08ba55674a84a60d381a4024fe83df96844cdd6af93",
+      "pending_frame_max": {
+        "baseline": 0,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "count": 400,
+          "mean_ms": 0.769181305,
+          "p50_ms": 0.701033,
+          "p99_ms": 1.285598,
+          "max_ms": 1.34429
+        },
+        "optimized": {
+          "count": 400,
+          "mean_ms": 0.7386592925,
+          "p50_ms": 0.673124,
+          "p99_ms": 1.176656,
+          "max_ms": 1.565946
+        }
+      },
+      "mean_reduction_fraction": 0.039681167887979374
+    },
+    {
+      "scenario": "target_retry",
+      "visible_requests": 48,
+      "iterations": 400,
+      "model_inputs_equal": true,
+      "accepted_forecasts_equal": true,
+      "submitted_inputs": 480,
+      "model_input_sha256": "db0d69ecf26e60efd7966cfbec1e131d88805ab1b5c42f1ca430083e6657c80e",
+      "pending_frame_max": {
+        "baseline": 48,
+        "optimized": 48
+      },
+      "costs": {
+        "baseline": {
+          "count": 400,
+          "mean_ms": 0.041129995,
+          "p50_ms": 0.002127,
+          "p99_ms": 0.352071,
+          "max_ms": 0.427598
+        },
+        "optimized": {
+          "count": 400,
+          "mean_ms": 0.0404769925,
+          "p50_ms": 0.001961,
+          "p99_ms": 0.329256,
+          "max_ms": 0.417652
+        }
+      },
+      "mean_reduction_fraction": 0.015876551893575508
+    }
+  ]
+}

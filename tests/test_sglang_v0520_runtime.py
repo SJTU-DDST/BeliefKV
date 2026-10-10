@@ -2183,6 +2183,8 @@ def final_stage_runtime(*, stage_only=False, event_socket_path=None, stage_recor
 
 
 def test_multi_child_join_prefetch_waits_for_the_observed_last_unfinished_child():
+    from collections import deque
+
     runtime = NativeAdmissionRuntime()
     parent = req("parent")
     parent.session_id, parent.session_generation = "s", 1
@@ -2201,12 +2203,62 @@ def test_multi_child_join_prefetch_waits_for_the_observed_last_unfinished_child(
     ))
     assert runtime._semantic_parent("a") is None
     assert runtime._semantic_parent("b") is None
-    runtime.on_events((event(6, RuntimeEventKind.RETURN, invocation_id="a"),))
+    runtime.on_events((
+        event(
+            6, RuntimeEventKind.STRUCTURED_ACTION,
+            invocation_id="b", context_id="ctx-b", context_epoch=0, join_id="join",
+            attributes={"beliefkv_child_completion_intent": True,
+                        "child_completion_signal_kind": "stage",
+                        "estimated_final_report_tokens": 256},
+        ),
+        event(
+            7, RuntimeEventKind.LLM_SUBMIT,
+            invocation_id="b", context_id="ctx-b", context_epoch=1,
+            attributes={"request_id": "b"},
+        ),
+    ))
+    assert not runtime._final_stages
+    assert runtime._join_ticket is None
+    assert runtime._child_report_notices["b"].estimated_tokens == 256
+    assert runtime._child_report_notices["b"].context_epoch == 1
+    assert runtime._child_report_notices["b"].request_id == "b"
+    child = req("b")
+    child.session_id, child.session_generation = "bs", 1
+    child.beliefkv_metadata["context_epoch"] = 1
+    runtime.register_visible_request(child)
+    runtime.on_events((event(8, RuntimeEventKind.RETURN, invocation_id="a"),))
     assert runtime._semantic_parent("b")[0] == "join"
     assert not runtime.graph.joins["join"].satisfied
-    runtime.on_events((event(7, RuntimeEventKind.RETURN, invocation_id="b"),))
+    now = time.monotonic() * 1000
+    submitted = []
+    runtime._semantic_worker = NS(
+        poll=lambda: (), submit=submitted.append,
+        ready=True, disabled=False, dropped=0, error="", close=lambda: None,
+    )
+    runtime._semantic_progress["b"] = deque(((now - 200, 20),))
+    runtime.on_events((RuntimeEvent(
+        "body-b", now, RuntimeEventKind.STRUCTURED_ACTION, "wf",
+        invocation_id="b", context_id="ctx-b", context_epoch=1,
+        attributes={SEMANTIC_TEXT: True, "request_id": "b",
+                    "content_chars": 128, "content_tail": "Report complete."},
+    ),))
+    runtime._poll_semantic_reports(now + 1)
+    assert len(submitted) == 1
+    assert submitted[0].notice_active
+    assert submitted[0].estimated_report_tokens == 256
+    reply = SemanticReportReply(submitted[0], .9, 10., 30., 60., 0.)
+    runtime._semantic_worker.poll = lambda: (reply,)
+    runtime._poll_semantic_reports(now + 200)
+    assert runtime._final_stages["join"].semantic_only
+    assert runtime._semantic_forecasts["b"].observation.notice_active
+    runtime.on_events((event(
+        9, RuntimeEventKind.RETURN, invocation_id="b", context_id="ctx-b",
+        context_epoch=1,
+    ),))
     assert runtime.graph.joins["join"].satisfied
     assert runtime._semantic_parent("b") is None
+    assert not runtime._child_report_notices
+    runtime.close()
 
 
 def test_terminal_cache_watch_is_read_only_and_keeps_shared_node_evidence(monkeypatch):
@@ -2418,6 +2470,42 @@ def semantic_pending_fixture():
     return runtime, now, submitted, text
 
 
+def test_semantic_notice_history_survives_transfer_stage_expiry():
+    runtime, now, submitted, text = semantic_pending_fixture()
+    runtime._final_stages["join"].expires_at = 0.
+    text(now, 128)
+    runtime._poll_semantic_reports(now + 1)
+    assert submitted[0].notice_active
+    assert submitted[0].estimated_report_tokens == 128
+    runtime.close()
+
+
+@pytest.mark.parametrize("kind", [
+    RuntimeEventKind.TOOL_START, RuntimeEventKind.CONTEXT_COMPACT,
+    RuntimeEventKind.RETURN, RuntimeEventKind.INVOCATION_CANCEL,
+    RuntimeEventKind.WORKFLOW_END,
+])
+def test_semantic_notice_history_is_retired_on_execution_change(kind):
+    runtime, _, _, _ = semantic_pending_fixture()
+    runtime.on_events((event(
+        8, kind, invocation_id="child", context_id="ctx-child",
+        context_epoch=2 if kind is RuntimeEventKind.CONTEXT_COMPACT else 1,
+    ),))
+    assert not runtime._child_report_notices
+    runtime.close()
+
+
+def test_semantic_notice_does_not_carry_into_another_request():
+    runtime, _, _, _ = semantic_pending_fixture()
+    runtime.on_events((event(
+        8, RuntimeEventKind.LLM_SUBMIT,
+        invocation_id="child", context_id="ctx-child", context_epoch=2,
+        attributes={"request_id": "next"},
+    ),))
+    assert not runtime._child_report_notices
+    runtime.close()
+
+
 def test_semantic_pending_snapshot_coalesces_then_resubmits_at_existing_interval():
     runtime, now, submitted, text = semantic_pending_fixture()
     text(now, 128)
@@ -2512,6 +2600,7 @@ def test_native_decode_tool_marker_invalidates_forecast_before_client_tool_chunk
     key = runtime.visible["child"]
     runtime.on_batch_completed(NS(reqs=[child]))
     assert "child" in runtime._decoded_tool_requests
+    assert "child" not in runtime._child_report_notices
     assert not runtime._semantic_key_live(key, time.monotonic() * 1000)
     assert not runtime._final_stages
     assert runtime.graph.invocations["child"].state is InvocationState.RUNNING_LLM
@@ -2723,6 +2812,8 @@ def test_final_stage_rebinds_one_epoch_late_notice_only_to_live_child_request():
     assert runtime._final_stages["join"].child_epoch == 1
     assert runtime._final_stages["join"].request_id == "child"
     assert runtime._final_request_stages["child"] is runtime._final_stages["join"]
+    assert runtime._child_report_notices["child"].context_epoch == 1
+    assert runtime._child_report_notices["child"].request_id == "child"
     assert stage_records[-1]["epoch_handoff"] is True
 
     runtime.on_events((event(
