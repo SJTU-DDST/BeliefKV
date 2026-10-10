@@ -50,6 +50,18 @@ across splits. The legacy residual correction did not change these counts.
 Report: experiments/reports/v10_prepare_full_incrementality_20261009.json.
 
 Current status:
+- A read-only V15 tool-duration audit uses execute_elapsed_ms separately from
+  the per-workflow sandbox lock wait. Native/predictive exit-zero maxima are
+  96.902/115.295s, with no naturally completed command above 180s. Recommend
+  a 180s default for the next pair, retaining explicit timeout overrides for
+  long tests; launcher defaults are not changed and both V15 arms retain 600s.
+  Pylint-6528 repeats one command 64 times at median 155s with exit 31, so 180s
+  would not truncate that tail. Keep 27 approximately 600s exit 137 commands as
+  timeout/SIGKILL candidates, not natural completion labels or JCT savings.
+  Report v15_tool_timeout_distribution_partial_20261010.json records the
+  non-atomic snapshot at 12:12 CST; use the reusable duration-audit script.
+  Any later timeout change must match both arms and censoring labels,
+  without adding repeat guards or changing the 14400s workflow deadline.
 - The isolated admission planner computes waiting ranks once per call and
   groups demand-ready leases by context for candidate lookup. Keep workflow,
   invocation, session/generation, epoch and request/source checks after lookup.

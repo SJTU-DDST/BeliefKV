@@ -63,6 +63,26 @@ GPU利用率均值74.476%，输出795.773 token/s。此处completed
 2026-10-10 10:50 CST核查native为150/156 completed，暂无error/
 incomplete，仍正常服务；观察超时不构成中止或重启理由。
 
+2026-10-10 12:12 CST的工具时延快照包含native20197条、
+predictive20686条sandbox命令；native155/156已完成，剩余一条
+尚无终态。统计execute_elapsed_ms，单独保留workflow执行锁等待，
+按自然结束、exit=0、非零退出及124/137候选分组。自然结束命令
+的P50/P95/P99分别为native0.340/2.109/6.860秒、
+predictive0.330/2.222/4.132秒；exit=0最大96.902/115.295秒，
+没有自然结束命令超过180秒。native的75条超过120秒的自然结束
+命令均来自pylint-6528、exit=31；同一command_sha256重复64次，
+P50约155秒、累计9961命令秒，锁等待近零。180秒上限不会截断
+这组调用。两侧另有27条约600秒、exit=137的Django测试候选，
+predictive还有一条约180秒候选；137也可能来自OOM或其他SIGKILL，
+不能一概认定为超时，也不能把截短命令秒当JCT或吞吐收益。
+报告为v15_tool_timeout_distribution_partial_20261010.json，
+由scripts/audit_tool_timeout_distribution.py生成，逐文件固定读取
+字节长度，跨文件快照非原子。建议下一轮默认命令上限600→180秒，
+需长预算的测试沿用显式timeout参数；120秒余量不足，30/60秒
+会截断已有成功长测试。该建议尚未应用到启动配置，V15两侧保持
+600秒；后续若采用须双侧统一并更新工具时延的删失标签，不新增
+重复调用guard，也不改变workflow14400秒截止时间。
+
 末次客户端语义窗口的审计使用原固定tokenizer，最多256个
 MiniLM token，右侧截断会丢失最新后缀。无工具正常stop轮次
 336/370个被截断，丢失量P50为54；全部请求为502/24014个。
