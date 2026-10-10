@@ -3,16 +3,18 @@
 Status date: 2026-10-11.
 
 V21 same-version native collection is running; predictive finished with 155
-completed and one incomplete workflow. At 2026-10-11 06:51 CST, the still-waiting
-V22 target was updated to 87370d3 in frozen beliefkv-v32-writer-profile-20261011,
-coordinator PID924639. Environment, canonical native patch, policy runtime and
-waited process identities match the preserved 7a1eb6a registration. Keep
-v22_supersession_7a1eb6a_to_87370d3_20261011.json. After the complete V21 pair and
+completed and one incomplete workflow. At 2026-10-11 07:22 CST, the still-waiting
+V22 target was updated to 08b804f in frozen beliefkv-v33-epoch-audit-20261011,
+coordinator PID1131802. Environment, canonical native patch, policy runtime,
+background writers and waited process identities match the preserved 87370d3
+registration. Keep v22_supersession_87370d3_to_08b804f_20261011.json.
+After the complete V21 pair and
 postprocessing, automatically deploy this revision, predictive first then cold
-same-version native. The target adds background writer CPU evidence, retaining
-the prefix writer reduction,
-retaining shared first-service input-prefix evidence, complete ancestor observation,
-aged-order inspection reduction and same-dispatch tool plan reuse.
+same-version native. The target adds the epoch-bounded tool-round audit below,
+retaining terminal-child capacity handoff, capacity-settlement parent retries,
+background writer CPU evidence, prefix writer reduction, shared first-service
+input-prefix evidence, complete ancestor observation, aged-order inspection
+reduction and same-dispatch tool plan reuse.
 Waiting registration is not GPU validation;
 the broad performance objective remains active.
 
@@ -34,6 +36,8 @@ tool residual native FULL is585.285GB of observed demand, not achievable
 prefetch or oracle savings. These corrections are not prediction or performance
 improvements. This is an
 offline evidence correction, absent from the running V21 and frozen V22 policy.
+The corrected audit script is now registered with 08b804f for V22 postprocessing;
+the model, transfer and admission policies remain the same as queued 87370d3.
 
 Add independent background-writer CPU evidence in the isolated follow-up.
 Sample every 64th record per category with thread_time_ns and perf_counter_ns.

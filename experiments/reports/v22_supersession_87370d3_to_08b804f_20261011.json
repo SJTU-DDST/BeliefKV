@@ -1,0 +1,51 @@
+{
+  "scope": "Waiting V22 retains child-to-parent recovery policy and writer reductions, and adds corrected epoch-bounded offline tool-round attribution",
+  "old_coordinator_pid": 924639,
+  "old_coordinator_identity": [
+    "S",
+    2225719,
+    "584294608"
+  ],
+  "old_target_revision": "87370d316e982bff89ff6f55b23d5def4c4ce94c",
+  "old_state_preserved": "/home/longhao/experiment/BeliefKV/experiments/reports/v22_launch_after_v21_20261011.superseded_87370d3.json",
+  "old_state_sha256": "0536bb334c143c9db4bc6f225305ae6b0908f24671f840b4260cddc837a78588",
+  "new_coordinator_pid": 1131802,
+  "new_coordinator_identity": [
+    "S",
+    2225719,
+    "584478394"
+  ],
+  "new_target_revision": "08b804f5cc9e10fc8a8b33f765a2d30eda824677",
+  "new_target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v33-epoch-audit-20261011",
+  "new_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v22_launch_after_v21_20261011.json",
+  "new_state_sha256": "7774f580a294b5a64201bd490c52b7b7f8ae29621e7c22349ec2a4316ccbb6eb",
+  "status": "waiting_for_previous_pair",
+  "environment_equal": true,
+  "wait_process_identities_equal": true,
+  "native_patch_unchanged_between_queued_revisions": true,
+  "policy_runtime_unchanged_between_queued_revisions": true,
+  "background_writers_unchanged_between_queued_revisions": true,
+  "target_file_sha256": {
+    "native_patch": "03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83",
+    "policy_runtime": "6ffda6a54275160e55d55cd11cc71c4a34d7e2ec2f4809b98f611b55581e0a1a",
+    "telemetry": "2a90a9202ffe76b5ef089dfda849570ff444351f588d1298deb6d9087b0eef13",
+    "opportunity_writer": "803281d169dccc01a318b18de394854c1c59384246afabbd447f82e1ff13bcfe",
+    "writer_timing": "c1da43b0c206d305c16845c8a9250cbd0752425a44a5c6ac5fc0559275cc01a7"
+  },
+  "target_audit_sha256": "ad7055c5b4bd228358075fe5bdc5ec1f70520557c973161e9f5268e67c6de248",
+  "live_main_revision": "597688c62aabc9667484aefe315664a447fea9bb",
+  "live_patch_sha256": "98fc5af9c40121d6f7ba1824f1fd5b586d0b141d5b12370a2d9243c1b1b5e8f1",
+  "live_coordinator_pid": 768435,
+  "live_pair_driver_pid": 873800,
+  "live_native_server_pid": 3385324,
+  "live_native_scheduler_pid": 3385695,
+  "registered_at_utc": "2026-10-10T23:22:01.270535+00:00",
+  "verified_at_utc": "2026-10-10T23:22:01.349059+00:00",
+  "deployment_order": "After complete V21 pair and postprocessing, predictive_h2d then same-version cold native",
+  "validation": {
+    "lifecycle_tool_forecast_transfer_window_checks_passed": 66,
+    "corrected_v21_evidence": "experiments/reports/v33_v21_wait_round_attribution_20261011.json",
+    "corrected_tool_forecast_evidence": "experiments/reports/v33_v21_tool_forecast_epoch_bound_20261011.json"
+  },
+  "semantics": "Only the confirmed waiting coordinator was replaced. The running V21 pair, workload, model, native patch, runtime policy, writer behavior and waited identities remain frozen. Tool evidence binds the true next request by origin epoch, retaining post-completion observations as late. Attribution correction is not prediction or performance improvement. Queued GPU validation remains pending."
+}
