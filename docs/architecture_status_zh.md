@@ -4,8 +4,10 @@
 
 ## V19b child 上下文结束的集成修正
 
-V19实跑已观察到child自然RETURN，但终态回收和parent消费记录
-均为0，因Deep Agents task把child声明为persistent=True。这个
+V19诊断快照已观察到child自然RETURN，但终态回收和parent消费记录
+均为0，因Deep Agents task把child声明为persistent=True。停止后的
+完整审计最终记录1次回收、0次parent消费，不能将快照0次当作
+最终总数。这个
 标记保留任务内部多轮上下文，不能据此推断RETURN后还会复用
 同一child上下文。适配器原本已在RETURN后retire原生session，
 因此现在由任务完成回调自动携带context_retired=True，runtime
@@ -26,6 +28,23 @@ V19在2026-10-10 17:47 CST停止，0个root终态，156个计划任务
 保留集成失败的trace与停止审计。下一轮V19b仍按同配置先
 predictive、再稳定同版本native；先确认真实容量回收及parent
 消费记录，再讨论忙时吞吐与JCT。active目标继续。
+
+V19b于2026-10-10 17:54 CST冷启动，冻结版本220896e。
+早期快照已确认27个真实child RETURN均有终态回收记录，实际
+释放166016个FULL token（3.400GB）和71个Mamba slot
+（4.572GB），无待重试依赖；27次回收平均1.51ms、最大2.80ms。
+第一个JOIN解锁parent已观测到首个完成GPU batch：scheduler
+收到最后一个child RETURN到该batch约105.96ms，原生入队到
+该batch约86.01ms。该记录关联两个child释放的3873个FULL
+token和6个Mamba slot，但不证明parent独占这些物理页。
+
+这批回收没有额外D2H，提前规划与返回后容量回收/准入路径已经
+在真实Deep Agents工作流中触发。遥测failed/dropped均为0，
+语义worker无错误，负载已进入Host/GPU迁移阶段。样本仍为
+采集中部分结果，不能由一次parent服务或回收字节推断吞吐
+提升。实时审计保存在V19b/predictive_h2d/prefetch_lifecycle_live.json。
+主工作区、引擎和预测产物继续冻结；状态更新在隔离工作区提交，
+本轮先predictive再同版本冷native的自动顺序保持不变。
 
 ## V19 终态 child 到 parent 的容量交接
 

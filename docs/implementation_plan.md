@@ -4,8 +4,10 @@ Status date: 2026-10-10.
 
 ## V19b Harness Context Retirement Integration
 
-Live V19 produced authoritative child RETURNs but zero terminal-reclaim/parent-
-handoff records. Deep Agents task children are marked persistent=True for
+The V19 diagnostic snapshot contained authoritative child RETURNs but zero
+terminal-reclaim/parent-handoff records. Its stopped audit ultimately contains
+one reclamation and zero parent services; distinguish this total from the live
+diagnostic snapshot. Deep Agents task children are marked persistent=True for
 multi-round execution, while their existing RETURN path already retires the native
 session. Preserve this running-context feature and automatically emit
 context_retired=True from the task completion callback. Accept that authoritative
@@ -26,6 +28,25 @@ planned tasks. All old processes/GPU exited; preserve the integration-failure
 traces and stopped audit. Cold-start V19b predictive first with unchanged settings,
 verify actual terminal releases and parent consumption, then complete a stable
 same-version native comparison before closing the active throughput/JCT goal.
+
+V19b cold-started at17:54 CST,2026-10-10 on frozen revision220896e.
+Its early snapshot confirms27 actual child RETURNs and27 terminal reclamations:
+166016 FULL tokens(3.400GB) and71 Mamba slots(4.572GB) returned to the
+native allocators without additional D2H. Reclamation wall time is1.51ms
+mean,2.80ms maximum across those27 calls. The first JOIN-unlocked parent
+has a completed GPU-batch observation105.96ms after scheduler RETURN
+delivery and86.01ms after native queue registration. Its two linked child
+releases total3873 FULL tokens and6 Mamba slots, without exclusive-page
+ownership or a native-relative performance claim.
+
+The live workload has begun Host/GPU transfers; telemetry has zero failed or
+dropped records and the semantic worker has no error. Keep collecting on the
+unchanged deployed revision, then cold-start native automatically. Update
+prefetch_lifecycle_live.json as partial evidence; preserve the distinction
+between sibling-enabled pre-boundary H2D and last-child post-RETURN demand
+handoff. Documentation observations are committed only in the isolated worktree
+until both frozen arms finish. Busy-window throughput and paired JCT remain
+unvalidated; the goal remains active.
 
 ## V19 Terminal Child Capacity Handoff
 
