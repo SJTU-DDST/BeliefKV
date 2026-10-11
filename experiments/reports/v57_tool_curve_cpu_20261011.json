@@ -1,0 +1,795 @@
+{
+  "scope": "Actual calibrated artifact, pinned and optimized inference on shared loaded components with each revision's operational curve, complete predict_tool_wait_batch with exact output equality and alternating measurements. Inputs are a synthetic elapsed-time matrix, not a workload frequency sample. Excludes worker IPC, queueing, scheduler, DMA and GPU performance; CPU savings do not prove throughput gain.",
+  "baseline_revision": "58f2097c7a0c6c098d6a6d81abaadb69663e2522",
+  "baseline_mode": "tool_only",
+  "baseline_source_sha256": {
+    "beliefkv/predictor/structured_frontier.py": "bc83110f982752dc0e4c64394ea309ac01aaf70310c45163756ab0fa0409d939",
+    "beliefkv/predictor/action_frontier.py": "091dcd7a39d632475e04db961218cc9f4aff69dc3a6df245d1ef2839d20f372b"
+  },
+  "optimized_source_sha256": "bc83110f982752dc0e4c64394ea309ac01aaf70310c45163756ab0fa0409d939",
+  "optimized_timing_source_sha256": "9803a5858eee5d22a9c3bb3da80ef8c2536e847de27a5abcedaf986613f19f77",
+  "benchmark_source_sha256": "85477450baca854bb79e59cfd2fd42b052874b74ca812fc0928205650bf90988",
+  "worker_source_sha256": "2d45ae18dfa2e6a0da08aee75bc51c621616932739f716dbefc8b16a1c4f92f0",
+  "artifact": "/home/longhao/experiment/BeliefKV/experiments/models/qwen35_native_event_horizons_20260928_calibrated.json",
+  "artifact_size": 35971604,
+  "artifact_sha256": "55ea6fdc3307ecbbc4bb06020dbc961801cf7d5da3a3c13ad09a619276c64e80",
+  "tool_feature_contract": "observed_command_child_failed_repeat_v4",
+  "cases": {
+    "single_root": {
+      "batch_size": 1,
+      "iterations": 200,
+      "full_predictions_equal": true,
+      "tool_hints_equal": true,
+      "returned_hint_count": 1,
+      "inputs": [
+        {
+          "key": {
+            "request_id": "r-0",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-0",
+            "context_id": "ctx-0",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-0",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 0.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 0.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": false
+          },
+          "revision": 1000.0
+        }
+      ],
+      "reply_sha256": "565ae053d671eb54327163625ecf554bd82fa685cb21a68c038ea270c9374ef1",
+      "costs_per_batch": {
+        "baseline": {
+          "wall": {
+            "count": 200,
+            "mean_ms": 1.283026195,
+            "p50_ms": 1.052837,
+            "p99_ms": 1.592241,
+            "max_ms": 1.596065
+          },
+          "thread_cpu": {
+            "count": 200,
+            "mean_ms": 1.282049875,
+            "p50_ms": 1.051987,
+            "p99_ms": 1.591288,
+            "max_ms": 1.595006
+          }
+        },
+        "tool_only": {
+          "wall": {
+            "count": 200,
+            "mean_ms": 0.840519735,
+            "p50_ms": 0.678787,
+            "p99_ms": 1.048704,
+            "max_ms": 1.05977
+          },
+          "thread_cpu": {
+            "count": 200,
+            "mean_ms": 0.839597255,
+            "p50_ms": 0.677903,
+            "p99_ms": 1.047682,
+            "max_ms": 1.058824
+          }
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.34489277126567164,
+        "thread_cpu": 0.34511342236198106
+      }
+    },
+    "mixed_batch_16": {
+      "batch_size": 16,
+      "iterations": 200,
+      "full_predictions_equal": true,
+      "tool_hints_equal": true,
+      "returned_hint_count": 16,
+      "inputs": [
+        {
+          "key": {
+            "request_id": "r-0",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-0",
+            "context_id": "ctx-0",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-0",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 0.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 0.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": false
+          },
+          "revision": 1000.0
+        },
+        {
+          "key": {
+            "request_id": "r-1",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-1",
+            "context_id": "ctx-1",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-1",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 25.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 25.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": false
+          },
+          "revision": 1000.0
+        },
+        {
+          "key": {
+            "request_id": "r-2",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-2",
+            "context_id": "ctx-2",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-2",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 100.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 100.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": false
+          },
+          "revision": 1000.0
+        },
+        {
+          "key": {
+            "request_id": "r-3",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-3",
+            "context_id": "ctx-3",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-3",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 500.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 500.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": false
+          },
+          "revision": 1000.0
+        },
+        {
+          "key": {
+            "request_id": "r-4",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-4",
+            "context_id": "ctx-4",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-4",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 2500.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 2500.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": false
+          },
+          "revision": 1000.0
+        },
+        {
+          "key": {
+            "request_id": "r-5",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-5",
+            "context_id": "ctx-5",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-5",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 10000.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 10000.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": false
+          },
+          "revision": 1000.0
+        },
+        {
+          "key": {
+            "request_id": "r-6",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-6",
+            "context_id": "ctx-6",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-6",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 120000.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 120000.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": false
+          },
+          "revision": 1000.0
+        },
+        {
+          "key": {
+            "request_id": "r-7",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-7",
+            "context_id": "ctx-7",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-7",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 180001.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 180001.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": false
+          },
+          "revision": 1000.0
+        },
+        {
+          "key": {
+            "request_id": "r-8",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-8",
+            "context_id": "ctx-8",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-8",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 0.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 0.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": true
+          },
+          "revision": 1000.0
+        },
+        {
+          "key": {
+            "request_id": "r-9",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-9",
+            "context_id": "ctx-9",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-9",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 25.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 25.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": true
+          },
+          "revision": 1000.0
+        },
+        {
+          "key": {
+            "request_id": "r-10",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-10",
+            "context_id": "ctx-10",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-10",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 100.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 100.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": true
+          },
+          "revision": 1000.0
+        },
+        {
+          "key": {
+            "request_id": "r-11",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-11",
+            "context_id": "ctx-11",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-11",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 500.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 500.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": true
+          },
+          "revision": 1000.0
+        },
+        {
+          "key": {
+            "request_id": "r-12",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-12",
+            "context_id": "ctx-12",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-12",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 2500.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 2500.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": true
+          },
+          "revision": 1000.0
+        },
+        {
+          "key": {
+            "request_id": "r-13",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-13",
+            "context_id": "ctx-13",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-13",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 10000.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 10000.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": true
+          },
+          "revision": 1000.0
+        },
+        {
+          "key": {
+            "request_id": "r-14",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-14",
+            "context_id": "ctx-14",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-14",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 120000.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 120000.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": true
+          },
+          "revision": 1000.0
+        },
+        {
+          "key": {
+            "request_id": "r-15",
+            "root_workflow_id": "wf",
+            "invocation_id": "agent-15",
+            "context_id": "ctx-15",
+            "context_epoch": 1,
+            "attempt_id": 0,
+            "session_id": "s",
+            "session_generation": 1
+          },
+          "features": {
+            "invocation_id": "agent-15",
+            "state": "wait_tool",
+            "agent_definition_id": "general-purpose",
+            "boundary_history": [
+              "tool",
+              "tool"
+            ],
+            "tool_family": "execute",
+            "backend_class": "local",
+            "command_class": "execute",
+            "observed_command_class": "git",
+            "previous_same_input_duration_ms": null,
+            "previous_failed_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "generated_tokens": 128,
+            "elapsed_wait_ms": 180001.0,
+            "current_sequence_tokens": 32768,
+            "active_tool_count": 1,
+            "backend_pressure": "active_family:1",
+            "invocation_elapsed_ms": 240000.0,
+            "state_elapsed_ms": 180001.0,
+            "llm_round": 8,
+            "child_count": 0,
+            "unfinished_child_count": 0,
+            "is_child": true
+          },
+          "revision": 1000.0
+        }
+      ],
+      "reply_sha256": "f5803d13c4a8399b90a29c2f80a7a93fd2ee5e66f64d4207db3e02348fc1161c",
+      "costs_per_batch": {
+        "baseline": {
+          "wall": {
+            "count": 200,
+            "mean_ms": 15.211194635,
+            "p50_ms": 15.213472,
+            "p99_ms": 15.357714,
+            "max_ms": 16.257099
+          },
+          "thread_cpu": {
+            "count": 200,
+            "mean_ms": 15.209258285,
+            "p50_ms": 15.210395,
+            "p99_ms": 15.356804,
+            "max_ms": 16.255294
+          }
+        },
+        "tool_only": {
+          "wall": {
+            "count": 200,
+            "mean_ms": 9.4766426,
+            "p50_ms": 9.481876,
+            "p99_ms": 10.174693,
+            "max_ms": 11.708011
+          },
+          "thread_cpu": {
+            "count": 200,
+            "mean_ms": 9.47494801,
+            "p50_ms": 9.479631,
+            "p99_ms": 10.173362,
+            "max_ms": 11.706706
+          }
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.3769955070987756,
+        "thread_cpu": 0.3770276082861591
+      }
+    }
+  }
+}

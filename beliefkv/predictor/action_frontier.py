@@ -752,15 +752,25 @@ class OperationalReleaseModel:
     def curve(self, features: object) -> ActionTimingCurve | None:
         if not self.fitted:
             return None
-        probabilities = _isotonic_non_decreasing(
-            tuple(
-                self.release_within_probability(features, tau)
-                for tau in _TIMING_CURVE_KNOTS_MS
-            )
+        sparse = _timing_sparse_features(features, _TIMING_CURVE_KNOTS_MS[0])
+        # All knots use the same feature names. Keep coefficient order and
+        # non-finite terms so this has the dense point prediction's arithmetic.
+        active = tuple(
+            (name, coefficient)
+            for name, coefficient in zip(self.feature_names, self.coefficients, strict=True)
+            if name in sparse or not math.isfinite(coefficient)
         )
+        names = tuple(name for name, _ in active)
+        coefficients = tuple(coefficient for _, coefficient in active)
+        probabilities = []
+        for index, tau in enumerate(_TIMING_CURVE_KNOTS_MS):
+            if index:
+                sparse = _timing_sparse_features(features, tau)
+            logit = _dot(names, coefficients, sparse)
+            probabilities.append(1.0 / (1.0 + math.exp(-max(-35.0, min(35.0, logit)))))
         return ActionTimingCurve(
             tau_ms=_TIMING_CURVE_KNOTS_MS,
-            release_within_probability=probabilities,
+            release_within_probability=_isotonic_non_decreasing(tuple(probabilities)),
             support_level="pooled",
             training_support=self.training_support,
         )

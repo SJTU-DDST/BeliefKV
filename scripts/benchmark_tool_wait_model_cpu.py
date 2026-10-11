@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Compare old full inference and tool-only inference with one loaded artifact."""
+"""Compare pinned inference methods with shared calibrated model components."""
 
 from __future__ import annotations
 
 import argparse
 import ast
+from copy import copy
 from dataclasses import asdict
 import hashlib
 import json
@@ -18,6 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path[:] = [str(ROOT), *(item for item in sys.path if item != str(ROOT))]
 
 from beliefkv.predictor import structured_frontier as model_module
+from beliefkv.predictor import action_frontier as timing_module
 from beliefkv.predictor.structured_frontier import FrontierBeliefModel, LocalFrontierFeatures
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_predictor_worker import predict_tool_wait_batch
@@ -26,20 +28,50 @@ from scripts.benchmark_native_shared_path import distribution
 SOURCE = Path("beliefkv/predictor/structured_frontier.py")
 
 
-def baseline_predict(revision: str):
+def baseline_model(model, revision: str):
     source = subprocess.check_output(
         ["git", "show", f"{revision}:{SOURCE.as_posix()}"], cwd=ROOT, text=True,
     )
     tree = ast.parse(source)
     original = next(node for node in tree.body
                     if isinstance(node, ast.ClassDef) and node.name == "FrontierBeliefModel")
-    method = next(node for node in original.body
-                  if isinstance(node, ast.FunctionDef) and node.name == "predict")
-    method.name = "baseline_predict"
+    original.name = "BaselineModel"
+    original.bases = [ast.Name(id="FrontierBeliefModel", ctx=ast.Load())]
+    original.body = [
+        node for node in original.body
+        if isinstance(node, ast.FunctionDef)
+        and node.name in {"predict", "_predict", "predict_tool_wait"}
+    ]
     namespace = dict(vars(model_module))
-    exec(compile(ast.fix_missing_locations(ast.Module(body=[method], type_ignores=[])),
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[original], type_ignores=[])),
                  f"{revision}:{SOURCE.as_posix()}", "exec"), namespace)
-    return namespace["baseline_predict"], hashlib.sha256(source.encode()).hexdigest()
+    baseline = copy(model)
+    baseline.__class__ = namespace["BaselineModel"]
+    timing_path = "beliefkv/predictor/action_frontier.py"
+    timing_source = subprocess.check_output(
+        ["git", "show", f"{revision}:{timing_path}"], cwd=ROOT, text=True,
+    )
+    timing_tree = ast.parse(timing_source)
+    timing_class = next(
+        node for node in timing_tree.body
+        if isinstance(node, ast.ClassDef) and node.name == "OperationalReleaseModel"
+    )
+    curve = next(
+        node for node in timing_class.body
+        if isinstance(node, ast.FunctionDef) and node.name == "curve"
+    )
+    curve.name = "baseline_curve"
+    timing_namespace = dict(vars(timing_module))
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[curve], type_ignores=[])),
+                 f"{revision}:{timing_path}", "exec"), timing_namespace)
+    baseline.operational_release = copy(model.operational_release)
+    baseline.operational_release.curve = timing_namespace["baseline_curve"].__get__(
+        baseline.operational_release, timing_module.OperationalReleaseModel,
+    )
+    return baseline, {
+        SOURCE.as_posix(): hashlib.sha256(source.encode()).hexdigest(),
+        timing_path: hashlib.sha256(timing_source.encode()).hexdigest(),
+    }
 
 
 def batches():
@@ -66,11 +98,13 @@ def batches():
     }
 
 
-def measure(model, original, items, *, iterations: int):
-    baseline = SimpleNamespace(predict=original.__get__(model, FrontierBeliefModel))
+def measure(model, original, items, *, iterations: int, baseline_mode: str):
+    baseline = SimpleNamespace(predict=(
+        original.predict_tool_wait if baseline_mode == "tool_only" else original.predict
+    ))
     variants = {"baseline": baseline, "tool_only": model}
     for _, features, _ in items:
-        if baseline.predict(features) != model.predict(features):
+        if original.predict(features) != model.predict(features):
             raise AssertionError("full inference changed")
     expected = predict_tool_wait_batch(items, model=baseline)
     if predict_tool_wait_batch(items, model=model) != expected:
@@ -118,6 +152,7 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-revision", required=True)
     parser.add_argument("--artifact", type=Path, required=True)
+    parser.add_argument("--baseline-mode", choices=("full", "tool_only"), default="full")
     parser.add_argument("--iterations", type=int, default=200)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -128,18 +163,23 @@ def main():
         raise RuntimeError(f"imported a different worktree: {imported}")
     artifact = args.artifact.resolve()
     model = FrontierBeliefModel.load(artifact)
-    original, original_digest = baseline_predict(args.baseline_revision)
+    original, original_digests = baseline_model(model, args.baseline_revision)
     report = {
         "scope": (
-            "Actual calibrated artifact, old and tool-only inference on the same loaded "
-            "components, complete predict_tool_wait_batch with exact output equality and "
+            "Actual calibrated artifact, pinned and optimized inference on shared loaded "
+            "components with each revision's operational curve, complete "
+            "predict_tool_wait_batch with exact output equality and "
             "alternating measurements. Inputs are a synthetic elapsed-time matrix, not "
             "a workload frequency sample. Excludes worker IPC, queueing, scheduler, DMA "
             "and GPU performance; CPU savings do not prove throughput gain."
         ),
         "baseline_revision": args.baseline_revision,
-        "baseline_source_sha256": original_digest,
+        "baseline_mode": args.baseline_mode,
+        "baseline_source_sha256": original_digests,
         "optimized_source_sha256": hashlib.sha256(imported.read_bytes()).hexdigest(),
+        "optimized_timing_source_sha256": hashlib.sha256(
+            Path(timing_module.__file__).read_bytes()
+        ).hexdigest(),
         "benchmark_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "worker_source_sha256": hashlib.sha256(
             (ROOT / "beliefkv/runtime/sglang_v0520_predictor_worker.py").read_bytes()
@@ -148,7 +188,10 @@ def main():
         "artifact_sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
         "tool_feature_contract": model.tool_feature_contract,
         "cases": {
-            name: measure(model, original, items, iterations=args.iterations)
+            name: measure(
+                model, original, items, iterations=args.iterations,
+                baseline_mode=args.baseline_mode,
+            )
             for name, items in batches().items()
         },
     }

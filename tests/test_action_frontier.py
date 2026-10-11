@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import math
+from types import SimpleNamespace
 
 import pytest
 
@@ -11,6 +12,8 @@ from beliefkv.predictor.action_frontier import (
     OperationalReleaseModel,
     PooledConditionalClassifier,
     PooledConditionalDemandModel,
+    _isotonic_non_decreasing,
+    _timing_sparse_features,
 )
 from beliefkv.runtime.action_frontier import (
     ActionFrontierObserver,
@@ -448,6 +451,42 @@ def test_operational_release_model_curve_is_monotonic_and_round_trips() -> None:
     assert restored_curve.release_within_probability == pytest.approx(
         curve.release_within_probability
     )
+
+
+@pytest.mark.parametrize("representation", ("mapping", "object"))
+@pytest.mark.parametrize("elapsed", (0., 25., 2500., 180000.))
+@pytest.mark.parametrize("coefficient_kind", ("finite", "cancellation", "non_finite"))
+def test_operational_curve_is_exactly_equal_to_dense_point_predictions(
+    representation, elapsed, coefficient_kind,
+):
+    features = {
+        "agent_definition_id": "child", "tool_family": "execute",
+        "backend_class": "local", "command_class": "unseen",
+        "elapsed_wait_ms": elapsed, "current_sequence_tokens": 32768,
+        "active_tool_count": 1,
+    }
+    if representation == "object":
+        features = SimpleNamespace(**features)
+    sparse = _timing_sparse_features(features, 1.)
+    terms = [(f"absent:{index}", index / 100.) for index in range(200)]
+    terms.extend((name, (index - 5) / 100.) for index, name in enumerate(sparse))
+    if coefficient_kind == "cancellation":
+        terms[:0] = [("bias", 1e16), ("bias", -1e16)]
+    elif coefficient_kind == "non_finite":
+        terms[:0] = [("absent:infinity", math.inf)]
+    model = OperationalReleaseModel()
+    model.feature_names = tuple(name for name, _ in terms)
+    model.coefficients = tuple(coefficient for _, coefficient in terms)
+    model.training_support = 64.
+    before = model.to_dict()
+    curve = model.curve(features)
+    expected = _isotonic_non_decreasing(tuple(
+        model.release_within_probability(features, tau) for tau in curve.tau_ms
+    ))
+    assert curve.release_within_probability == expected
+    assert model.to_dict() == before
+    restored = OperationalReleaseModel.from_dict(before)
+    assert restored.curve(features) == curve
 
 
 def test_pooled_conditional_classifier_learns_rare_conditional_class() -> None:

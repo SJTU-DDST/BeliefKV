@@ -2,6 +2,21 @@
 
 Status date: 2026-10-11.
 
+Reduce operational tool-curve cost after the CPU profile identifies repeated
+dense coefficient scans at18 knots. Select coefficients for this curve's feature
+names once, retaining original coefficient order, nonfinite terms, sigmoid,
+calibration and isotonic projection. Do not cache predictions across requests,
+change quantiles or alter transfer policy. Twenty-four mapping/object, elapsed,
+cancellation and nonfinite-coefficient cases match dense point predictions
+exactly and round-trip unchanged;603 relevant checks pass.
+Keepv57_tool_curve_cpu_20261011.json: baseline is58f2097's already optimized
+tool-only entry, shared35MB calibrated parameters and each revision's pinned
+curve function. Complete worker mean wall is1.283→0.841ms for one input and
+15.211→9.477ms for16, reducing34.5%/37.7%; full predict and nonempty hints
+are exactly equal. Inputs remain a synthetic elapsed matrix. This reduces CPU
+work, not proven GPU stalls or JCT. Include the committed change in the waiting
+V23 target while preserving the frozen V22 and its configuration.
+
 Terminal-child to parent capacity handoff is already in the frozen V22: retire
 confirmed finished contexts, release session references, and directly discard
 settled unreferenced private suffixes through the native allocator without D2H.
