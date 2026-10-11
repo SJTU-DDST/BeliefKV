@@ -29,11 +29,27 @@ ACK 时的独立前缀快照和 FULL/Mamba 身份证据未缩减。
 FULL handoff 属于需求恢复，工具残余 477.752 GB 原生 Host
 命中也不是已证明的提前机会或 oracle 收益。
 
-按用户的开发快速迭代约定，准备保留 V25 中断证据并冷启动
-包含 741d9d4 的 V26，继续原配置、predictive 优先及稳定候选
-同版本冷 native 对照。V25 尚在运行时不热更新代码或引擎；
-实际停止、部署与启动状态以新回执及主工作区登记为准。
-当前完整性能目标仍 active。
+已按开发快速迭代约定于 22:13:58 CST 主动停止 V25，52 个
+已写出终态均 completed；56 个已执行任务主动截断，48 个
+未到达任务单列，native 未启动。22:15:24 CST 确认旧进程
+全部退出、GPU 分配已释放；保留计划、trace、结果和 56 个
+未结束 workspace，清理 52 个已归档 workspace 与 56 个
+按 V25 bind mount 确认的容器。停止后的 drain/reset/exit
+日志是行政停止效果，主性能窗口截止于停止前。
+
+V26 于 22:15:26 CST 冷启动冻结 2d25850，包含 741d9d4；
+冻结计划与 V25 仅 code_commit 不同，配置、产物和规范
+引擎 patch 一致。协调器/server/scheduler/client 为
+3845301/3845543/3845905/3849212。22:18:10 CST 健康
+检查通过，22:18:53 CST 起提交真实请求；22:20:36 CST
+分文件核对记录 901 次原生提交、695 个 prefill batch、
+930 条 native_batch 工作量样本，writer_error=null，
+dropped_records=failed_records=0；可用空间约 72.3 GiB。
+当前权威登记为主工作区 v26_launch_after_v25_20261011.json，
+状态 running_new_pair；先 predictive、再同版本冷 native。
+停止、清理、启动回执保存为 experiments/reports/v96_*。
+局部 CPU 改善仍待繁忙窗口和完整对照验证，完整目标 active。
+以下 V95 及更早条目为历史状态，不覆盖当前 V26 登记。
 
 V95：已按开发快速迭代约定于 21:18:54 CST 主动结束 V24，
 132 个已写出终态均 completed，另 24 个任务记为主动截断；

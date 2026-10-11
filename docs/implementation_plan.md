@@ -10,9 +10,25 @@ identical records/consumed commands. Matching32K single/16-extent means fall
 from1.4742/1.9879 to0.0561/0.4277ms. Retain the8K/16-extent list cost
 0.7728 to0.8256ms and the unsuccessful eager-list-conversion report.
 ACK prefix materialization remains separate. Do not extrapolate CPU fixtures
-to throughput or JCT. Prepare a fresh V26 development restart with this
-committed fix, preserving V25 outcomes, active/unarrived tasks, frozen sources
-and diagnostic windows. No hot update of the running V25 source or engine.
+to throughput or JCT. V25 was administratively stopped at22:13:58 CST:
+52 written completed outcomes,56 started unfinished tasks censored and48
+unarrived tasks kept separate; native never started. All old processes/GPU
+allocations were verified absent at22:15:24 CST. Preserve frozen sources,
+raw evidence and56 partial workspaces; remove52 archived workspaces and56
+containers whose mounts belong to V25. Post-stop drain/reset/exit is an
+administrative effect and primary performance windows end before the stop.
+
+V26 cold-deployed frozen2d25850 at22:15:26 CST, including741d9d4.
+Plans differ only in code_commit; configuration, artifacts and canonical
+engine patch match V25. Coordinator/server/scheduler/client are3845301/
+3845543/3845905/3849212. Health passed at22:18:10 CST; native submissions
+began at22:18:53 CST. Startup prefix verification at22:20:36 CST records901
+submissions,695 prefill batches and930 native_batch geometry samples, with
+writer_error=null and zero dropped/failed records. Available disk is72.3GiB.
+Main v26_launch_after_v25_20261011.json is authoritative,running_new_pair,
+predictive first and cold same-version native afterwards. Retain V96 stop/
+cleanup/start receipts; actual busy-window/JCT validation remains pending.
+V95 and earlier deployment entries below are historical, not current status.
 
 The complete V25 600-900s diagnostic window has43.732s instrumented
 exclusive Python wall,36.456ms mean decode worker,23295 mean context tokens
