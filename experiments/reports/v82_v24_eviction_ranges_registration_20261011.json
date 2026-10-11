@@ -1,0 +1,62 @@
+{
+  "registered_at_cst": "2026-10-11 16:46:05 CST",
+  "verified_at_cst": "2026-10-11 16:49:31 CST",
+  "status": "waiting_for_previous_pair",
+  "authoritative_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v24_launch_after_v23_20261011.json",
+  "superseded_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v24_launch_after_v23_bb64e77_superseded_20261011.json",
+  "superseded_target_revision": "bb64e770574e46b35e708a842424ace9ae60562d",
+  "stopped_waiting_coordinator": {
+    "pid": 3283000,
+    "start_identity": "587664974",
+    "absent_after_stop": true
+  },
+  "new_waiting_coordinator": {
+    "pid": 3444664,
+    "ppid": 1,
+    "start_identity": "587862813"
+  },
+  "previous_pair_coordinator": {
+    "pid": 1083828,
+    "start_identity": "586838240",
+    "alive": true
+  },
+  "previous_native_arm": {
+    "server_pid": 3387765,
+    "server_started_at_cst": "2026-10-11 16:38:39 CST",
+    "client_pid": 3389704,
+    "client_started_at_cst": "2026-10-11 16:41:22 CST",
+    "alive": true
+  },
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v82-eviction-ranges-20261011",
+  "target_revision": "dd1245477187e3a7ce925822d971117c76798307",
+  "target_patch_sha256": "16008af16a20149f24f37123cddfe46228a722fc9f7a0b4d6dee394866345817",
+  "tool_offload_wait_ms": 1000,
+  "return_within_window_probability_limit": 0.1,
+  "eviction_writer_source_sha256": "369da166ccf7475384ee64540e059b711b033c7426acc9551a4af384cc7382d2",
+  "verification": {
+    "environment_matches_superseded_registration": true,
+    "previous_run_and_revision_match": true,
+    "native_patch_matches_superseded_registration": true,
+    "wait_process_identities_match": true,
+    "frozen_target_clean": true,
+    "main_still_at_frozen_v23_revision": true,
+    "v23_native_server_and_client_alive": true,
+    "v23_pair_modified": false,
+    "v24_gpu_arm_started": false
+  },
+  "v23_predictive": {
+    "workflow_count": 156,
+    "completed": 154,
+    "incomplete": 2,
+    "duration_seconds": 8984.587722424418,
+    "telemetry_dropped_records": 0,
+    "telemetry_failed_records": 0,
+    "writer_error": null,
+    "pending_request_count": 0,
+    "pending_batch_count": 0,
+    "comparison_status": "partial",
+    "comparison_eligible": false
+  },
+  "sequence": "After the complete V23 pair and postprocessing, deploy dd12454; run predictive first, then cold same-version native.",
+  "performance_goal_achieved": false
+}

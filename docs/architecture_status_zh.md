@@ -27,7 +27,13 @@ handoff 的 97.598 GB FULL 复用仍单列为需求恢复。按独立等待
 容量或扩大批量后的收益证明。保留
 v82_v23_prefetch_lifecycle_live_20261011.json；来源为顺序读取的
 追加日志，不是原子快照、独立策略消融或完整同版本性能对照。
-V23 predictive 仍运行，主吞吐/JCT 目标保持未完成。
+V23 predictive 已自然结束，156 个 workflow 中 154 个 completed、
+2 个 incomplete，耗时 8984.588 秒。最终遥测无丢失、写入失败
+或未完成 request/batch；native 对照于 16:38:39 CST 启动服务，
+16:41:22 启动客户端。两个 incomplete 的 workflow deadline
+均未过期、没有 child 取消、所有 JOIN 已满足；root 最后两次
+响应均为 length 截断，尚需核对终态路径。当前 comparison
+仍为 partial、comparison_eligible=false，主吞吐/JCT 目标未完成。
 
 隔离后续版本进一步减少工具预取扫描的重复容量读取：同一次
 扫描的准入槽检查复用首次预算；调用容量回收后清除该预算，
@@ -44,21 +50,21 @@ DMA、GPU 吞吐或 JCT，不能将此比例当作端到端改善。保留
 v81_tool_prefetch_scan_capacity_cpu_20261011.json 与验证回执；
 已提交为 bb64e77，冻结 V23 不变，已更新等待中的 V24 目标。
 
-2026-10-11 16:13:07 CST 已将等待中的 V24 更新为修订
-bb64e770574e46b35e708a842424ace9ae60562d，包含工具卸载
-1 秒窗口与本轮扫描减负；冻结 checkout 为
-beliefkv-v81-tool-scan-20261011。16:13:33 核验新协调器
-PID 3283000、PPID=1、启动身份 587664974；旧等待协调器
-2996799 已退出，原登记与日志归档为
-v24_launch_after_v23_1f75f55_superseded_20261011。V23
-协调器、server/client 保持运行，主代码仍冻结在 a6dd627。
+2026-10-11 16:46:05 CST 已将等待中的 V24 更新为修订
+dd1245477187e3a7ce925822d971117c76798307，包含工具卸载
+1 秒窗口、扫描减负与后台驱逐前缀范围跳过；冻结 checkout 为
+beliefkv-v82-eviction-ranges-20261011。核验新协调器
+PID 3444664、PPID=1、启动身份 587862813；旧等待协调器
+3283000 已退出，原登记与日志归档为
+v24_launch_after_v23_bb64e77_superseded_20261011。V23
+协调器、native server/client 保持运行，主代码仍冻结在 a6dd627。
 V24 环境、原生 patch、到达流、模型产物与原登记完全一致，
 只有等待目标代码更新。完整 V23 pair 及后处理后部署，再先
 predictive 后同版本冷 native；V24 GPU 尚未启动。权威状态仍为
 主工作区 v24_launch_after_v23_20261011.json，保留
-v81_v24_tool_scan_registration_20261011.json。15:48 的 1f75f55
-及下方 15:29 的 f61fc05 登记作为历史记录，保留各自回执；
-新规则和扫描减负尚无 GPU 性能收益证明。
+v82_v24_eviction_ranges_registration_20261011.json。16:13 的
+bb64e77、15:48 的 1f75f55 及下方 15:29 的 f61fc05 登记作为
+历史记录，保留各自回执；新规则及 CPU 减负尚无 GPU 收益证明。
 
 后续工具卸载的长等待窗口从 2000 ms 降为 1000 ms：有 CDF
 时要求未来 1 秒内返回概率不超过 0.1，无 CDF 时要求残余

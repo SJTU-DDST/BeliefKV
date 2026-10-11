@@ -13,7 +13,7 @@ indexes. Unrelated-branch CPU falls6.58%-18.28%; partial-branch CPU falls
 directly enumerates matching routes has weaker gains and some regressions,
 so retain the range-skipping version. These fixtures exclude concurrent
 GIL effects, DMA, GPU throughput and JCT. Keep both V82 writer CPU reports
-and the validation receipt; update only the still-waiting V24 registration.
+and the validation receipt. Commit dd12454 is registered for waiting V24.
 
 The V82 V23 live lifecycle audit links100 JOIN and390 tool waits to
 pre-boundary-started, next-request-reused FULL of1.479/6.257GB.
@@ -26,7 +26,14 @@ hits total480.284GB, including85.362GB across258 waits with at least16
 observed nodes; association is not a feasible early-recovery denominator.
 Keepv82_v23_prefetch_lifecycle_live_20261011.json. Sequential reads of
 append-only logs are not an atomic snapshot, ablation or completed-pair
-performance evidence. Preserve V23; the full goal remains unmet.
+performance evidence. V23 predictive has ended with 154 completed and
+2 incomplete workflows out of 156, in 8984.588s. Its final telemetry has
+no dropped/failed records, writer error or pending requests/batches.
+The native server/client started at 16:38:39/16:41:22 CST. Both incomplete
+roots have unexpired deadlines, no child cancellations and satisfied JOINs;
+their last two root responses ended with length. Inspect finalization and
+truncated output before attributing this to scheduling. The comparison is
+still partial and ineligible. Preserve V23; the full goal remains unmet.
 
 The isolated follow-up now reuses the admission-slot budget within one tool
 prefetch scan and invalidates it before capacity reclamation. The next
@@ -45,19 +52,20 @@ v81_tool_prefetch_scan_capacity_cpu_20261011.json and its validation receipt.
 Committed asbb64e77 and registered for waiting V24. Preserve the frozen
 V23 pair and require the same-version GPU comparison.
 
-At 16:13:07 CST, waiting V24 was updated to committed
-bb64e770574e46b35e708a842424ace9ae60562d in the frozen
-beliefkv-v81-tool-scan-20261011 checkout. At16:13:33 coordinator3283000
-has PPID1 and start identity587664974; old waiting coordinator2996799 is
-absent. Its1f75f55 state and log are archived. V23 coordinator, server and client
+At 16:46:05 CST, waiting V24 was updated to committed
+dd1245477187e3a7ce925822d971117c76798307 in the frozen
+beliefkv-v82-eviction-ranges-20261011 checkout. Coordinator3444664
+has PPID1 and start identity587862813; old waiting coordinator3283000 is
+absent. Itsbb64e77 state and log are archived. V23 coordinator, native server and client
 remain live; main stays at frozen a6dd627. The environment, native patch,
 arrival flow and model artifacts exactly match the superseded registration.
 Only the waiting target code changes. After the complete V23 pair and
-postprocessing, deploy the one-second tool-offload policy and scan reduction,
+postprocessing, deploy the one-second tool-offload policy, scan reduction
+and unmatched eviction-prefix range skipping,
 run predictive then cold same-version native. Keep authoritative main state
 v24_launch_after_v23_20261011.json and receipt
-v81_v24_tool_scan_registration_20261011.json. No V24 GPU arm or performance
-proof exists yet; the15:48 1f75f55 and15:29 f61fc05 registrations are historical
+v82_v24_eviction_ranges_registration_20261011.json. No V24 GPU arm or performance
+proof exists yet; the16:13 bb64e77,15:48 1f75f55 and15:29 f61fc05 registrations are historical
 and retain their own receipts.
 
 Reduce the subsequent tool-offload horizon from 2000ms to 1000ms.
