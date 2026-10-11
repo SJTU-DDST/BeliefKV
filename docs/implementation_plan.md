@@ -2,6 +2,19 @@
 
 Status date: 2026-10-11.
 
+At19:05:27 CST, waiting V24 was updated to frozen56ff3c2 in
+beliefkv-v88-reclaim-exclusions-20261011, including the one-second
+tool-offload policy and excluded-node reclaim correction. Coordinator
+1418070 has PPID1/start588699021; old1263690 is absent. Preserve its
+d73e292 state/log underv24_launch_after_v23_d73e292_superseded_20261011_v88.
+Environment and wait identities match exactly. The target includes the
+user'sbe627b3 monthly-report commit; preserve the untracked template.
+Main execution and the live engine still match frozen V23. Wait for the
+complete pair and postprocessing, then predictive followed by cold
+same-version native. No V24 GPU arm has started. Keep authoritative
+main state andv88_v24_reclaim_exclusions_registration_20261011.json.
+The18:42 registration below is superseded; the performance goal remains active.
+
 V88 excludes the restoring checkpoint's own nodes before spending the
 existing eight-candidate quota in both generic FULL-leaf and Mamba-LRU
 capacity scans. Otherwise eight protected entries can hide a safe cold
@@ -12,7 +25,7 @@ and pass after it;95 scoped native checks pass. Target values remain intact
 and no new D2H is submitted. The canonical patch matches the isolated tree
 and passes reverse application, SHA256
 826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65.
-Include this committed correction in still-waiting V24 with the existing
+This committed correction is included in still-waiting V24 with the existing
 one-second tool-offload policy. Preserve the frozen V23 pair and do not
 attribute all no_cold_capacity events or a GPU gain to these fixtures.
 Keepv88_reclaim_excluded_scan_validation_20261011.json.

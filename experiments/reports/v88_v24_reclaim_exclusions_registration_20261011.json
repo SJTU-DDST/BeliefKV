@@ -1,0 +1,53 @@
+{
+  "status": "waiting_for_previous_pair",
+  "registered_at_utc": "2026-10-11T11:05:27.558122+00:00",
+  "authoritative_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v24_launch_after_v23_20261011.json",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v88-reclaim-exclusions-20261011",
+  "target_revision": "56ff3c26768ac844f9c90f994f5ae5a09f8ec90f",
+  "target_patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+  "coordinator": {
+    "pid": 1418070,
+    "ppid": 1,
+    "start_identity": "588699021"
+  },
+  "superseded": {
+    "target_revision": "d73e292c6781e2dd6732dd5302c784302f79fa62",
+    "coordinator_pid": 1263690,
+    "coordinator_absent": true,
+    "archived_state": "v24_launch_after_v23_d73e292_superseded_20261011_v88.json",
+    "archived_log": "v24_launch_after_v23_d73e292_superseded_20261011_v88.log"
+  },
+  "v23_preserved": {
+    "main_revision": "be627b326529ac21940d89e86b60f21a63b9a478",
+    "collection_revision": "a6dd627587827f376bed7022d15e538100c0c775",
+    "execution_source_unchanged": true,
+    "live_engine_matches_frozen_patch": true,
+    "live_engine_patch_sha256": "4af68951beefdf759901d0143ca747c6893aa1ffc7124a3738158512851f7e60",
+    "coordinator_pid": 1083828,
+    "coordinator_start_identity": "586838240",
+    "native_server": {
+      "pid": 3387765,
+      "start_identity": "587818316"
+    },
+    "native_client": {
+      "pid": 3389704,
+      "start_identity": "587834675"
+    },
+    "user_untracked_report_preserved": true,
+    "local_ignore_added": false
+  },
+  "target_clean": true,
+  "target_contains_current_main": true,
+  "environment_exactly_preserved": true,
+  "wait_identities_exactly_preserved": true,
+  "v24_gpu_started": false,
+  "order": ["predictive_h2d", "native"],
+  "tool_offload_wait_ms": 1000,
+  "tool_offload_window_return_probability_max": 0.1,
+  "quantile_only_tool_offload_remaining_p10_min_ms": 1000,
+  "tool_offload_policy_commit": "1f75f554a5d9cbafa6231f65aaf3c8b2f7544848",
+  "cold_reclaim_scan_fix_commit": "f7b777ca1a197b38076e78d14ac1369defa1fa11",
+  "threshold_only_tests_added": false,
+  "related_real_cpu_native_checks_passed": 95,
+  "performance_goal_complete": false
+}

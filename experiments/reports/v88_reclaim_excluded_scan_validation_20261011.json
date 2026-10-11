@@ -52,7 +52,9 @@
   "deployment": {
     "live_v23_preserved": true,
     "next_pair": "V24",
-    "target_registration_update_pending": true,
+    "target_registration_update_pending": false,
+    "target_revision": "56ff3c26768ac844f9c90f994f5ae5a09f8ec90f",
+    "registration_receipt": "v88_v24_reclaim_exclusions_registration_20261011.json",
     "order": ["predictive_h2d", "native"]
   },
   "limitations": [
