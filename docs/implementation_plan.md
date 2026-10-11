@@ -2,6 +2,26 @@
 
 Status date: 2026-10-12.
 
+V112 commits fa6f6c8. First-service prefetch and background same-session
+prefix audits compare long q-arrays without temporary token slices, using
+native RadixKey's GIL-retaining memory comparison. Retain exact token
+divergence, short/different-type array behavior, immutable snapshots and
+all physical FULL/Mamba reuse checks. The 122 related checks pass.
+Thirty-two first-service and 36 writer CPU cases preserve records/state,
+with 100 alternating trials each. Matching 32K/128K, 16-command means
+fall 0.472/1.198 to 0.341/0.657ms; the 32K array writer falls 0.099 to
+0.069ms. Keep short-array costs and the 8K/16-command mean regression.
+The complete V27 600-900s window records 4218 prefix comparisons across
+1040 requests, median 14080 tokens. Geometry is not a measured CPU/JCT
+saving. Include V112 in the cold V28 target; keep live V27 frozen and
+the full throughput, JCT, early-FULL and residual-native objective active.
+
+The 76 stopped V19b workspaces now have a lossless 2.81GiB archive.
+GNU tar compared the original files before removing uncompressed copies;
+raw traces, outcomes and models remain available with a restore pointer.
+Archive/CPU maintenance after 04:08 CST overlaps later V27 native windows.
+Preserve this qualification when reporting late-window performance.
+
 V111 commits efcda87. In the same-version V27 600-900s window,
 all 2030/2159 Host-hit records repeat three identical identity paths.
 Read an identical integer anchor once within that first-service

@@ -4,6 +4,31 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-10-12 verified workspace compression
+
+Archive: `experiments/archive/20261012/v19b_partial_workspaces.tar.zst`
+
+SHA256: `502cc37b0902f553b6bb2074e17bba9d9038a689ec7bd5a9fd489792f18e2536`
+
+The 3,014,713,292-byte archive preserves all 76 remaining V19b workspaces.
+GNU tar compared the archived files against their sources before removal.
+Raw traces, outcomes, manifests and model artifacts remain in place; an
+`ARCHIVED.md` restore pointer is present in the stopped raw run. The source
+workspace allocation was 23,633,416,192 bytes. Compression uses one zstd
+thread, nice 19, idle I/O priority and a long window to deduplicate repeated
+compressed Git objects. Restore from the repository root:
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261012/v19b_partial_workspaces.tar.zst \
+  --directory experiments/raw
+```
+
+Receipt: `experiments/reports/v112_v19b_workspace_archive_20261012.json`.
+Maintenance after 04:08 CST overlaps later V27 native collection windows.
+This archive is evidence preservation and disk cleanup, not a performance
+optimization or proof of GPU/JCT improvement.
+
 ## 2026-10-11 verified compression and snapshot deduplication
 
 Current archive:
