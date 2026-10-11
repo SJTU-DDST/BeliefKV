@@ -1,0 +1,58 @@
+{
+  "scope": "Read-only validation of the next native patch transition with transient git indexes; no live source, index or running process changed.",
+  "previous_queued_revision": "d6d64706b114d5587541958bff8f2a0e7bf98bb9",
+  "previous_queued_patch_sha256": "498a2e8219f0d454776c7b967b87a82e7b49e3e75831389e08a9daabfb29998e",
+  "new_patch_sha256": "fb6aecfc1f72f4ad82e8ca83a8379980ba036883573dd59d9875458ba4989100",
+  "queued_delta_native_paths": [
+    "python/sglang/srt/mem_cache/radix_cache.py",
+    "test/srt/test_beliefkv_radix_prefix.py"
+  ],
+  "queued_delta_sha256": "36d081cb7904ca0c390ddd0814c059062d1ec3ef6636c0a9780f386a3cf66523",
+  "deployed_delta_apply_check_passed": true,
+  "deployed_delta_sha256": "229f30c21616256ff9afc54c075440e2c4665997017b8174443ffe675cce9413",
+  "deployed_canonical_engine_state": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83",
+    "expected_tree": "63d91509bee139b2d6a2285eb44b193a67a9e008",
+    "actual_tree": "63d91509bee139b2d6a2285eb44b193a67a9e008",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "native_checks": {
+    "passed": 131,
+    "source_pythonpath": "/tmp/sglang-v60-prefix-lengths-20261011/python",
+    "initial_installed_package_import_failure_corrected": true
+  },
+  "beliefkv_checks": {
+    "passed": 304,
+    "initial_successes": 297,
+    "corrected_materialization_cases_passed": 7,
+    "materialization_native_source": "/tmp/sglang-v60-prefix-lengths-20261011/python/sglang/srt",
+    "initial_uninitialized_worktree_submodule_path_failures_corrected": true,
+    "suites": [
+      "tests/test_execution_handoff.py",
+      "tests/test_native_reentry_materialization.py",
+      "tests/test_terminal_child_capacity.py",
+      "tests/test_sglang_v0520_physical.py",
+      "tests/test_tool_predictive_transfers.py"
+    ]
+  },
+  "benchmark": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v60_reentry_prefix_lengths_cpu_20261011.json",
+    "sha256": "81c44e203bb2bb7f24a9db23dbab23c3eaa020d8c9be3a1213ab8ed3e51abb7b",
+    "outputs_equal": true,
+    "samples_per_case": 31,
+    "iterations_per_sample": 100
+  },
+  "contract": {
+    "read_current_token_buffer": true,
+    "cross_call_cache_added": false,
+    "residency_forecast_and_admission_changes": false,
+    "queued_single_spec_load_and_summary_residence_fixes_retained": true,
+    "gpu_improvement_verified": false
+  }
+}

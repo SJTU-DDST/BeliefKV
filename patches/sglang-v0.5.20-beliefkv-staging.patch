@@ -1514,7 +1514,7 @@ index 006b52a..83c96cf 100644
      kv_host_pool = build_kv_host_pool(
          kv_pool=kv_pool,
 diff --git a/python/sglang/srt/mem_cache/radix_cache.py b/python/sglang/srt/mem_cache/radix_cache.py
-index e7bee63..1f5787a 100644
+index e7bee63..ffc30a0 100644
 --- a/python/sglang/srt/mem_cache/radix_cache.py
 +++ b/python/sglang/srt/mem_cache/radix_cache.py
 @@ -21,6 +21,7 @@ limitations under the License.
@@ -1537,7 +1537,7 @@ index e7bee63..1f5787a 100644
      def __init__(
          self,
          token_ids: array[int],
-@@ -219,6 +225,34 @@ class RadixKey:
+@@ -219,6 +225,35 @@ class RadixKey:
              return matched_tokens
          return (matched_tokens // page_size) * page_size
  
@@ -1546,7 +1546,8 @@ index e7bee63..1f5787a 100644
 +        self._check_compatible(other)
 +        if self.is_bigram != other.is_bigram:
 +            raise ValueError("RadixKey operations require matching bigram modes")
-+        if offset < 0 or offset > len(other):
++        other_len = len(other)
++        if offset < 0 or offset > other_len:
 +            raise IndexError(f"RadixKey offset out of range: {offset}")
 +        t0, t1 = self.token_ids, other.token_ids
 +        assert type(t0) is type(t1), (type(t0), type(t1))
@@ -1557,8 +1558,8 @@ index e7bee63..1f5787a 100644
 +            return False
 +        if not logical_len:
 +            return True
-+        raw_len = self._raw_len()
-+        if raw_len > other._raw_len() - offset or t0[0] != t1[offset]:
++        raw_len = logical_len + 1 if self.is_bigram else logical_len
++        if logical_len > other_len - offset or t0[0] != t1[offset]:
 +            return False
 +        if raw_len >= 2048 and type(t0) is array and t0.typecode == t1.typecode == "q":
 +            return self._token_memcmp(
@@ -5254,10 +5255,10 @@ index 0000000..0f6eaa2
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_radix_prefix.py b/test/srt/test_beliefkv_radix_prefix.py
 new file mode 100644
-index 0000000..038df8f
+index 0000000..7c61304
 --- /dev/null
 +++ b/test/srt/test_beliefkv_radix_prefix.py
-@@ -0,0 +1,164 @@
+@@ -0,0 +1,191 @@
 +"""CPU equivalence checks for complete-segment matching in reentry inspection."""
 +
 +import ast
@@ -5422,6 +5423,33 @@ index 0000000..038df8f
 +    assert left.is_prefix_at(other, 1)
 +    other.token_ids[2049] = -2
 +    assert not left.is_prefix_at(other, 1)
++
++
++@pytest.mark.parametrize("container", (list, lambda tokens: array("q", tokens)))
++@pytest.mark.parametrize("bigram", (False, True))
++@pytest.mark.parametrize("raw_length", (0, 1, 2, 8))
++def test_complete_segment_keeps_empty_and_short_right_boundary_semantics(
++    container, bigram, raw_length,
++):
++    left = key([10, 11], container=container, is_bigram=bigram)
++    for right_limit in (None, 0, 1, raw_length + 2):
++        other = key(
++            [10, 11, 12, 13, 14, 15, 16, 17][:raw_length],
++            container=container, is_bigram=bigram, limit=right_limit,
++        )
++        for offset in range(len(other) + 1):
++            for page_size in (1, 2, 16):
++                assert left.is_prefix_at(other, offset, page_size) == (
++                    left.match_at(other, offset, page_size) >= len(left)
++                )
++
++
++@pytest.mark.parametrize("bad_side", ("left", "right"))
++def test_negative_logical_length_preserves_builtin_length_error(bad_side):
++    left, other = RadixKey([10, 11]), RadixKey([10, 11, 12])
++    (left if bad_side == "left" else other).limit = -1
++    with pytest.raises(ValueError, match="__len__"):
++        left.is_prefix_at(other, 0)
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
 index 0000000..dd65055

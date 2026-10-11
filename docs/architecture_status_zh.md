@@ -2,6 +2,27 @@
 
 更新日期：2026-10-11。
 
+child-to-parent容量交接的四步实现继续保留。本轮进一步降低其
+完整前缀检查成本：RadixKey.is_prefix_at在一次调用内复用左右
+逻辑长度，避免重复计算；仍读取当前token buffer，保留命名空间、
+bigram边界、limit、offset及page对齐语义，没有跨调用驻留缓存。
+15组合成radix路径使用真实RadixKey、交替31组且每组100次完整
+reentry观察，返回结果全部一致；P50墙钟减少1.6%-9.1%。256层
+单叶/8叶由441.17/488.04降至410.25/450.44微秒，1024层由
+1685.72/1815.14降至1532.07/1698.89微秒。基准使用perf_counter，
+字段p50_cpu_us表示CPU fixture的墙钟，不能解释为线程CPU、
+CUDA时间或实测吞吐收益。证据见v60_reentry_prefix_lengths_cpu_
+20261011.json及v60_prefix_native_delta_validation_20261011.json。
+
+实际patched原生源码131项检查通过，BeliefKV相关304项通过；
+其中7项materialization检查显式使用隔离原生源码，修正了未初始化
+worktree子模块导致的文件路径失败。相对等待中的d6d6470原生差异
+仅radix_cache.py及其prefix测试；从运行V22到新patch的只读
+git apply --check通过，运行引擎仍匹配既有canonical tree。
+新patch SHA256为fb6aecfc1f72f4ad82e8ca83a8379980ba036883573dd59d9875458ba4989100。
+此修改计划纳入下一轮V23，当前V22及其同版本native保持冻结。
+容量回收和前缀检查的局部证据尚不能证明native相对性能目标已达成。
+
 补齐容量交接的最新局部证据及一个真实驻留失效原因，保存在
 v58_v22_child_parent_capacity_and_summary_gap_20261011.json。来源为
 10:29:41 CST的V22生命周期审计并保留SHA256；仍是多路运行中日志

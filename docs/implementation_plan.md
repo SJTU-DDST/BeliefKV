@@ -2,6 +2,29 @@
 
 Status date: 2026-10-11.
 
+Retain the four-step terminal-child capacity handoff and reduce complete-prefix
+inspection cost. Within each RadixKey.is_prefix_at call, reuse logical lengths
+while preserving namespaces, bigram boundaries, limit/offset/page semantics and
+current token-buffer reads. Add no cross-call residency cache.
+Keepv60_reentry_prefix_lengths_cpu_20261011.json:15 synthetic complete-reentry
+cases with actual RadixKey,31 alternating samples and100 calls per sample all
+return equal observations. Median wall reductions are1.6%-9.1%;256-depth one/eight
+leaves are441.17/488.04 to410.25/450.44us, and1024-depth are1685.72/1815.14
+to1532.07/1698.89us. The perf_counter measurements andp50_cpu_us labels are
+CPU-fixture wall intervals, not thread CPU, CUDA or measured GPU throughput.
+
+Actual patched native checks:131 passed. Related BeliefKV checks:304 passed
+across the initial297 successes and the corrected7 materialization cases;
+explicitly use the isolated native source for that module because this worktree's
+submodule is uninitialized. Keepv60_prefix_native_delta_validation_20261011.json.
+The queued d6d6470 native delta touches onlyradix_cache.py and its prefix test;
+the read-only deployed-V22-to-new-patch git apply --check passes and the live
+canonical engine tree remains unchanged. New patch SHA256:
+fb6aecfc1f72f4ad82e8ca83a8379980ba036883573dd59d9875458ba4989100.
+Commit and include this bounded change in the next waiting V23 target, preserving
+the frozen V22 pair and configuration. Capacity release, equal outputs and CPU
+cost reductions do not complete the native-relative performance goal.
+
 Keepv58_v22_child_parent_capacity_and_summary_gap_20261011.json with the
 10:29:41 CST lifecycle-audit SHA256 and independent client-event SHA256.
 The partial live V22 audit has364 confirmed dynamic children with cumulative
