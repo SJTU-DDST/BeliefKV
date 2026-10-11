@@ -30,6 +30,19 @@ actual start horizon, live capacity and admission before selecting a policy
 change. Qualify windows overlapping this audit/CPU development. The full
 same-version native performance goal remains active.
 
+V120's same-prefix tool-window analysis selects only recorded online fields:
+positive FULL plans rejected before_start_window with forecast0-500ms.
+Sixteen independent events fit the current free lists, totaling537.293MB;
+forecast remaining P50 is388.938ms versus an actual start horizon P50 of
+167.668ms. True lead P50 is484.391ms: nine within0-500ms, five500-1000ms,
+two over1s. Three already have early reuse at another observation. The
+reclaim-unverified group has1207 events and99.433GB planned;887 have true lead
+0-500ms and51 are observed after their completion boundary. Keep
+v120_tool_start_window_evidence. This is observed candidate analysis, not
+closed-loop policy/DMA/reuse or gain. Capacity groups can overlap within one
+episode and must not be added. Verify reclaim, protection and service
+consumption together before treating the existing500ms allowance as usable.
+
 V119 retains V29's complete300-600s pipeline window against historical
 V27 native as cross-version development evidence. Matched48-request
 CUDA-graph decode mean ratios are0.9963-1.0028. Single-request small
