@@ -2,6 +2,33 @@
 
 Status date: 2026-10-11.
 
+V88 excludes the restoring checkpoint's own nodes before spending the
+existing eight-candidate quota in both generic FULL-leaf and Mamba-LRU
+capacity scans. Otherwise eight protected entries can hide a safe cold
+duplicate. Preserve Host-copy, reference, lock, pending-transfer and actual
+allocator checks; Mamba-only reclamation retains FULL. Four real CPU
+hybrid-allocator regressions with8/16 excluded entries fail before the fix
+and pass after it;95 scoped native checks pass. Target values remain intact
+and no new D2H is submitted. The canonical patch matches the isolated tree
+and passes reverse application, SHA256
+826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65.
+Include this committed correction in still-waiting V24 with the existing
+one-second tool-offload policy. Preserve the frozen V23 pair and do not
+attribute all no_cold_capacity events or a GPU gain to these fixtures.
+Keepv88_reclaim_excluded_scan_validation_20261011.json.
+
+Additional complete same-version V23 windows give predictive/native
+1203.647/1101.067 decode token/s at1800-2100s and1162.577/1185.957
+at2100-2400s. Preserve both the9.32% advantage and1.97% deficit.
+The first window has nearly equal weighted batch47.413/47.353,
+visible context23168/23503 tokens and H2D28.065/204.488GB.
+Predictive instrumented exclusive wall is36.490s, including11.302s
+reentry,3.535s control_drain and2.766s opportunity sampling. These
+windows precede documented disk maintenance, but different live demand
+and unknown graph replay prevent isolated prefetch causality. Keep both
+V88 window reports; wait for the complete native pair and retain the
+active throughput/JCT goal.
+
 At18:42:32 CST, waiting V24 was updated to frozen
 d73e292c6781e2dd6732dd5302c784302f79fa62 in
 beliefkv-v87-eviction-index-20261011. This includes the one-second

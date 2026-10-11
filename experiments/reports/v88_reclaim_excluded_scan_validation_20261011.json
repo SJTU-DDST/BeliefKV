@@ -1,0 +1,64 @@
+{
+  "date": "2026-10-11",
+  "scope": "Real CPU allocator correction; not GPU throughput, prefetch coverage or isolated policy benefit",
+  "baseline_revision": "eebb293",
+  "upstream_revision": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
+  "policy": {
+    "tool_offload_wait_ms": 1000,
+    "tool_offload_window_return_probability_max": 0.1,
+    "tool_offload_policy_commit": "1f75f554a5d9cbafa6231f65aaf3c8b2f7544848",
+    "threshold_only_tests_added": false
+  },
+  "correction": {
+    "method": "UnifiedRadixCache.reclaim_beliefkv_handoff_capacity",
+    "affected_scans": ["FULL evictable device leaves", "Mamba LRU state"],
+    "restoration_target_nodes_spend_candidate_quota": false,
+    "non_excluded_candidate_quota_per_scan": 8,
+    "native_copy_reference_lock_and_pending_transfer_checks_preserved": true,
+    "mamba_only_reclaim_preserves_full": true
+  },
+  "validation": {
+    "fixture": "Actual CPU UnifiedRadixCache, FULL page allocator and hybrid Mamba allocator",
+    "new_cases": {
+      "excluded_nodes": [8, 16],
+      "components": ["FULL", "Mamba"],
+      "baseline_failures": 4,
+      "after_fix_passes": 4,
+      "target_device_and_host_values_preserved": true,
+      "safe_non_target_capacity_reclaimed": true,
+      "additional_d2h_calls": 0
+    },
+    "initial_collection_attempt": {
+      "result": "failed before fixtures",
+      "reason": "Sparse source omitted Python package entry points and CUDA_HOME was unset",
+      "resolution": "Hydrated the isolated upstream Python source and used the existing environment CUDA_HOME; live engine unchanged"
+    },
+    "related_native_checks": {
+      "passed": 95,
+      "files": [
+        "test/srt/test_beliefkv_terminal_capacity.py",
+        "test/srt/test_beliefkv_execution_handoff.py",
+        "test/srt/test_beliefkv_latest_mamba_state.py",
+        "test/srt/test_beliefkv_session_anchors.py"
+      ]
+    },
+    "canonical_patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+    "expected_tree": "6e1dc30d83e05cbca3d470892d7cde1000e19ad9",
+    "actual_tree": "6e1dc30d83e05cbca3d470892d7cde1000e19ad9",
+    "canonical_patch_matches_isolated_source": true,
+    "forward_cached_application_checked": true,
+    "reverse_application_checked": true
+  },
+  "deployment": {
+    "live_v23_preserved": true,
+    "next_pair": "V24",
+    "target_registration_update_pending": true,
+    "order": ["predictive_h2d", "native"]
+  },
+  "limitations": [
+    "This does not attribute every V23 no_cold_capacity event to excluded scan entries",
+    "Real DMA, feasible early-prefetch coverage and busy-window throughput/JCT remain to be measured",
+    "Timing-qualified one-second tool candidates are not actual offloads or LRU superiority"
+  ],
+  "performance_goal_complete": false
+}

@@ -2,6 +2,18 @@
 
 Updated: 2026-10-11.
 
+Generic handoff capacity scans skip restoration-target exclusions before
+spending their existing eight-candidate quota, for both FULL leaves and
+Mamba LRU state. Four real CPU hybrid allocator regressions cover8/16
+excluded target nodes preceding a safe cold victim. They fail before the
+fix and pass afterward with95 related checks; target device/Host values
+remain intact and no additional D2H is issued. Mamba-only reclaim retains
+FULL. The canonical patch matches the isolated source and passes reverse
+application, SHA256
+826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65.
+Deploy after the frozen V23 pair through the updated waiting V24 target;
+these allocator checks do not establish GPU throughput or JCT improvement.
+
 Terminal close and child retirement retain every valid indexed session leaf.
 The former 64-anchor fallback to only the latest branch lost historical private
 suffixes after releasing their references. Reclamation still uses bounded native
