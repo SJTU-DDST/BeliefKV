@@ -142,11 +142,23 @@ def evaluate(lifecycle: dict, records) -> dict:
                 else "missed_recorded_window" if actual_ready
                 else "not_yet_due"
             )
+            service_ms = row.get("h2d_p90_ms")
+            service_known = finite(service_ms) and service_ms >= 0
             group["plans"].append({
                 "ts_ms": accepted, "category": category, "full_bytes": amount,
                 "actual_remaining_ms": lead, "predicted_remaining_ms": predicted,
                 "start_window_ms": horizon, "reason": row.get("reason"),
                 "fits_current_free_lists": row.get("fits_current_free_lists"),
+                "h2d_p90_ms": service_ms if service_known else None,
+                "actual_lead_minus_h2d_p90_ms": lead - service_ms if service_known else None,
+                "predicted_lead_minus_h2d_p90_ms": (
+                    predicted - service_ms if service_known else None
+                ),
+                "service_category": (
+                    "recorded_h2d_p90_unavailable" if not service_known
+                    else "actual_lead_below_recorded_h2d_p90" if lead < service_ms
+                    else "actual_lead_at_least_recorded_h2d_p90"
+                ),
             })
     rows = []
     for group in groups.values():
@@ -201,25 +213,29 @@ def evaluate(lifecycle: dict, records) -> dict:
             "first_500ms_window_more_than_500ms_early": sum(value > 500. for value in leads),
         }
 
-    plan_categories = {}
-    for category in ("timely_candidate", "predicted_too_early", "missed_recorded_window", "not_yet_due"):
-        for free_only in (False, True):
-            selected = {}
-            snapshots = 0
-            for row in rows:
-                matched = [
-                    plan for plan in row["positive_full_plans_with_timing"]
-                    if plan["category"] == category
-                    and (not free_only or plan["fits_current_free_lists"] is True)
-                ]
-                if matched:
-                    selected[identity(row)] = max(plan["full_bytes"] for plan in matched)
-                    snapshots += len(matched)
-            name = category + ("_with_observed_free_capacity" if free_only else "")
-            plan_categories[name] = {
-                "snapshots": snapshots, "independent_tool_rounds": len(selected),
-                "sum_per_round_max_observed_full_bytes": sum(selected.values()),
-            }
+    def plan_summary(categories, *, service_only=False):
+        result = {}
+        for category in categories:
+            for free_only in (False, True):
+                selected = {}
+                snapshots = 0
+                for row in rows:
+                    matched = [
+                        plan for plan in row["positive_full_plans_with_timing"]
+                        if plan["service_category" if service_only else "category"] == category
+                        and (not service_only or plan["category"] == "timely_candidate")
+                        and (not free_only or plan["fits_current_free_lists"] is True)
+                    ]
+                    if matched:
+                        selected[identity(row)] = max(plan["full_bytes"] for plan in matched)
+                        snapshots += len(matched)
+                name = category + ("_with_observed_free_capacity" if free_only else "")
+                result[name] = {
+                    "snapshots": snapshots, "independent_tool_rounds": len(selected),
+                    "sum_per_round_max_observed_full_bytes": sum(selected.values()),
+                }
+        return result
+
     return {
         "scope": (
             "Fixed-trace diagnostic at forecast acceptance and recorded FULL-plan times. "
@@ -227,6 +243,11 @@ def evaluate(lifecycle: dict, records) -> dict:
             "whole-tool-round completion as evaluation labels only. Single-call rounds "
             "are reported separately from sequential/parallel multi-call rounds. Plan "
             "samples are selected by the recorded runtime, not continuous coverage. "
+            "A timely candidate means both leads are inside the upper start window; "
+            "the service categories separately compare actual lead with recorded H2D "
+            "P90. This estimate excludes planning/enqueue time and is not actual "
+            "transfer completion or proof of feasible restoration. Missing service "
+            "estimates remain unknown, not zero. "
             "Categories overlap across snapshots of one round. Per-round maximum FULL "
             "bytes may share pages and do not establish achievable unique bytes, actual "
             "transfers, residence, admission, hidden stalls, heldout accuracy or speedup."
@@ -239,7 +260,14 @@ def evaluate(lifecycle: dict, records) -> dict:
         "multi_tool_round_forecast_timing": forecast_summary([
             row for row in rows if (row["observed_tool_call_count"] or 0) > 1
         ]),
-        "positive_full_plan_window_categories": plan_categories, "rows": rows,
+        "positive_full_plan_window_categories": plan_summary((
+            "timely_candidate", "predicted_too_early", "missed_recorded_window", "not_yet_due",
+        )),
+        "timely_full_plan_service_categories": plan_summary((
+            "actual_lead_at_least_recorded_h2d_p90",
+            "actual_lead_below_recorded_h2d_p90", "recorded_h2d_p90_unavailable",
+        ), service_only=True),
+        "rows": rows,
     }
 
 
@@ -248,7 +276,10 @@ def main() -> None:
     parser.add_argument("--lifecycle-audit", type=Path, required=True)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--summary-output", type=Path)
+    parser.add_argument("--opportunity-read-bytes", type=int)
     args = parser.parse_args()
+    if args.opportunity_read_bytes is not None and args.opportunity_read_bytes < 1:
+        parser.error("--opportunity-read-bytes must be positive")
     for output in (args.output, args.summary_output):
         if output is not None and output.exists():
             raise FileExistsError(output)
@@ -270,9 +301,21 @@ def main() -> None:
             for line in stream:
                 if not line.endswith(b"\n"):
                     raise ValueError("incomplete opportunity evidence line")
+                if (
+                    args.opportunity_read_bytes is not None
+                    and read_bytes + len(line) > args.opportunity_read_bytes
+                ):
+                    raise ValueError("opportunity read limit splits an evidence line")
                 digest.update(line)
                 read_bytes += len(line)
                 yield json.loads(line)
+                if read_bytes == args.opportunity_read_bytes:
+                    break
+        if (
+            args.opportunity_read_bytes is not None
+            and read_bytes != args.opportunity_read_bytes
+        ):
+            raise ValueError("opportunity source is shorter than the requested prefix")
 
     result = evaluate(lifecycle, records())
     result["sources"] = {
@@ -280,6 +323,7 @@ def main() -> None:
         "lifecycle_audit_sha256": hashlib.sha256(audit_bytes).hexdigest(),
         "opportunities": str(source), "opportunities_sha256": digest.hexdigest(),
         "opportunities_read_bytes": read_bytes,
+        "opportunities_read_bytes_limit": args.opportunity_read_bytes,
         "audit_script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
     }
     args.output.parent.mkdir(parents=True, exist_ok=True)

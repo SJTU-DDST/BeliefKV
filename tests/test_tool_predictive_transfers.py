@@ -89,6 +89,75 @@ def test_tool_h2d_uses_same_wait_identity_and_does_not_admit_agent():
         assert issue.call_count == 1
 
 
+@pytest.mark.parametrize("reclaim_succeeds,rechecked_window,select_first", (
+    (False, TransferStartWindow(200., 0., 500.), False),
+    (True, TransferStartWindow(200., 0., 500.), True),
+    (True, None, False),
+    (True, TransferStartWindow(50., 0., 100.), False),
+))
+def test_capacity_blocked_tool_candidate_does_not_hide_a_restorable_candidate(
+    reclaim_succeeds, rechecked_window, select_first,
+):
+    runtime, first = tool_runtime()
+    other = req("other")
+    other.session_id, other.session_generation = "other-session", 1
+    runtime.register_visible_request(other)
+    runtime.on_events((
+        event(3, RuntimeEventKind.INVOCATION_CREATE, invocation_id="other",
+              context_id="ctx-other", agent_definition_id="child", agent_instance_id="other"),
+        event(4, RuntimeEventKind.TOOL_START, invocation_id="other",
+              attributes={"tool_family": "shell", "tool_run_id": "other-tool"}),
+    ))
+    second = replace(
+        first, key=runtime.context_sessions["ctx-other"],
+        wait_p50_ms=350., invocation_revision_ts_ms=4.,
+    )
+    runtime.tool_wait_hints["ctx-other"] = second
+    first_step = PrefetchLoadStep(first.key, 11, 4, 11, 4)
+    second_step = PrefetchLoadStep(second.key, 12, 4, 12, 4)
+    blocked = NS(step=first_step, fits_current_free_lists=False)
+    reclaimed = NS(step=first_step, fits_current_free_lists=reclaim_succeeds)
+    ready = NS(step=second_step, fits_current_free_lists=True)
+
+    def reclaim(key, opportunity, *, source):
+        assert source == "tool_wait"
+        return reclaimed if key == first.key else opportunity
+
+    def selected_step(**kwargs):
+        return first_step if runtime._tool_ticket.key == first.key else second_step
+
+    def start_window(opportunity):
+        return (
+            rechecked_window if opportunity is reclaimed
+            else TransferStartWindow(200., 0., 500.)
+        )
+
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity",
+                          side_effect=lambda **kwargs: (
+                              blocked if kwargs["context_id"] == first.key.context_id else ready
+                          )), \
+             patch.object(runtime, "_h2d_start_window",
+                          side_effect=start_window), \
+             patch.object(runtime, "_reclaim_wait_prefetch_capacity",
+                          side_effect=reclaim) as reclaim_capacity, \
+             patch.object(runtime, "refreshed_prefetch_gpu_step",
+                          side_effect=selected_step), \
+             patch.object(runtime, "issue_prefetch_gpu_step", return_value="load") as issue:
+            runtime.dispatch_tool_prefetch()
+        selected = first.key if select_first else second.key
+        assert runtime._tool_ticket.key == selected
+        issue.assert_called_once_with(
+            first_step if select_first else second_step, source="tool_wait",
+        )
+        assert reclaim_capacity.call_args_list[0].args == (first.key, blocked)
+        assert runtime.counts["tool_prefetch_no_free_capacity"] == int(not reclaim_succeeds)
+        assert runtime.graph.invocations["tool"].state is InvocationState.WAIT_TOOL
+        assert runtime.graph.invocations["other"].state is InvocationState.WAIT_TOOL
+    finally:
+        runtime.close()
+
+
 def test_completed_prepare_reopens_a_cached_missing_tool_restore_target():
     runtime, hint = tool_runtime()
     step = PrefetchLoadStep(hint.key, 11, 4, 11, 4)

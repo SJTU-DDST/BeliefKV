@@ -2,6 +2,35 @@
 
 Status date: 2026-10-11.
 
+Fix capacity blocking between tool-prefetch candidates in the isolated follow-up.
+Previously the nearest-ending tool took the sole ticket before reclaim was checked;
+when capacity remained insufficient, the dispatch ended and a later restorable
+candidate waited for another scan. Perform the existing cold-duplicate reclaim
+before selecting that ticket, continue on insufficient capacity or a vanished
+target, and re-estimate service/window after reclaim changes the bounded payload.
+Retain dispatch-time revalidation, forecast quantiles,500ms configuration, pool
+budgets and native dependencies. Four two-candidate cases and447 relevant checks
+pass. Actual frequency, control cost and throughput benefit require the next GPU
+pair; these checks do not demonstrate the goal.
+
+Keepv54_v22_tool_service_window_fixedprefix_20261011.json and its local detailed
+artifact. Re-read exactly the same817177733-byte opportunity prefix and lifecycle
+labels asv48; input SHA256, original forecast errors and window categories match.
+Add recorded-H2D-P90 service slack without turning it into a runtime gate. Of655
+timely-window snapshots,361 have actual lead below recorded H2D P90. Among100
+snapshots with observed free capacity,56 are below it. Only44 snapshots/42 tool
+rounds have free capacity and actual lead at least that estimate; their summed
+per-round maximum observed FULL is732037120 bytes, neither unique transfers nor
+achievable savings. Categories overlap across snapshots. Service P90 excludes
+planning/enqueue time and is not actual completion. Timely-plan actual lead P50
+is83.50ms versus87.97ms median recorded H2D P90. For xarray-7393 child epoch57,
+an80.630MB plan has5.052ms true lead against87.966ms recorded H2D P90.
+Usev47 native transfer submit:9.271ms after the plan and4.220ms after completion.
+The later control-record timestamp's17.510ms gap is not native submit latency.
+Improve forecast/notification lead,
+capacity and first consumption separately; the selected last-second prediction
+error alone does not prove usable anticipation. V22 remains frozen.
+
 Continue terminal-child capacity handoff by fixing candidate coverage before
 bounded native reclaim. JOIN/tool anticipation and queued execution handoff
 previously published eight candidates per pool before native excluded the target

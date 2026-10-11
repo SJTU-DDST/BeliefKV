@@ -1,3 +1,5 @@
+import pytest
+
 from scripts.audit_tool_forecast_windows import evaluate
 
 
@@ -84,3 +86,42 @@ def test_multi_call_rounds_are_reported_separately_and_unknown_timing_is_not_zer
     assert result["multi_tool_round_forecast_timing"]["rounds_with_pre_completion_forecasts"] == 1
     assert result["single_tool_round_forecast_timing"]["independent_tool_rounds"] == 0
     assert result["counts"]["positive_full_plans_without_timing"] == 1
+
+
+def test_timely_window_does_not_imply_enough_recorded_h2d_service_time():
+    result = evaluate(labels(), records(
+        {**plan(predicted=100., ts=1800.), "h2d_p90_ms": 150.},
+        {**plan(predicted=5., ts=1995.), "h2d_p90_ms": 150.},
+        {**plan(predicted=100., ts=1801., fits=False), "h2d_p90_ms": 150.},
+        {**plan(predicted=100., ts=1600.), "h2d_p90_ms": 150.},
+        {**plan(predicted=400., ts=1800.), "h2d_p90_ms": 150.},
+    ))
+    categories = result["timely_full_plan_service_categories"]
+    assert categories["actual_lead_at_least_recorded_h2d_p90"] == {
+        "snapshots": 2, "independent_tool_rounds": 1,
+        "sum_per_round_max_observed_full_bytes": 100,
+    }
+    assert categories["actual_lead_at_least_recorded_h2d_p90_with_observed_free_capacity"][
+        "snapshots"
+    ] == 1
+    assert categories["actual_lead_below_recorded_h2d_p90_with_observed_free_capacity"] == {
+        "snapshots": 1, "independent_tool_rounds": 1,
+        "sum_per_round_max_observed_full_bytes": 100,
+    }
+    plans = result["rows"][0]["positive_full_plans_with_timing"]
+    assert plans[0]["actual_lead_minus_h2d_p90_ms"] == 50.
+    assert plans[0]["predicted_lead_minus_h2d_p90_ms"] == -50.
+    assert plans[1]["actual_lead_minus_h2d_p90_ms"] == -145.
+
+
+@pytest.mark.parametrize("service", (None, -1., float("nan"), float("inf"), True))
+def test_missing_or_invalid_h2d_service_estimate_is_unknown(service):
+    result = evaluate(labels(), records({
+        **plan(predicted=100.), "h2d_p90_ms": service,
+    }))
+    row = result["rows"][0]["positive_full_plans_with_timing"][0]
+    assert row["h2d_p90_ms"] is None
+    assert row["actual_lead_minus_h2d_p90_ms"] is None
+    assert result["timely_full_plan_service_categories"][
+        "recorded_h2d_p90_unavailable"
+    ]["independent_tool_rounds"] == 1

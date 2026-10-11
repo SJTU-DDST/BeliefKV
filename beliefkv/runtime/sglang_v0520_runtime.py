@@ -4545,6 +4545,39 @@ class NativeAdmissionRuntime:
                     remaining_ms=hint.remaining_quantile(.5, now_ms=now_ms),
                 )
                 continue
+            if opportunity.fits_current_free_lists is not True:
+                opportunity = self._reclaim_wait_prefetch_capacity(
+                    hint.key, opportunity, source="tool_wait",
+                )
+                from_cache = False
+                if opportunity is None or opportunity.step is None:
+                    self.counts["tool_prefetch_no_restore_target"] += 1
+                    self._record_wait_prefetch_plan(
+                        "tool_wait", hint.key, opportunity,
+                        reason="no_restore_plan", window=window,
+                        remaining_ms=hint.remaining_quantile(.5, now_ms=now_ms),
+                    )
+                    continue
+                if opportunity.fits_current_free_lists is not True:
+                    self.counts["tool_prefetch_no_free_capacity"] += 1
+                    self._record_wait_prefetch_plan(
+                        "tool_wait", hint.key, opportunity,
+                        reason="no_cold_capacity", window=window,
+                        remaining_ms=hint.remaining_quantile(.5, now_ms=now_ms),
+                    )
+                    continue
+                window = self._h2d_start_window(opportunity)
+                if window is None or not self._tool_prefetch_ready(
+                    hint, horizon_ms=window.horizon_ms,
+                ):
+                    self.counts["tool_prefetch_reclaimed_plan_timing_changed"] += 1
+                    self._record_wait_prefetch_plan(
+                        "tool_wait", hint.key, opportunity,
+                        reason="service_unsupported" if window is None else "before_start_window",
+                        window=window, remaining_ms=hint.remaining_quantile(.5, now_ms=now_ms),
+                    )
+                    continue
+                horizon = window.horizon_ms
             self._record_wait_prefetch_plan(
                 "tool_wait", hint.key, opportunity, reason="start_window",
                 window=window, remaining_ms=hint.remaining_quantile(.5, now_ms=now_ms),
