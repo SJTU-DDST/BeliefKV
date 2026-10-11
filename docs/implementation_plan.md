@@ -1,6 +1,30 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-11.
+Status date: 2026-10-12.
+
+V99: compare interrupted V26 predictive with the latest completed V23
+native using complete monitor-aligned windows300-600,600-2400 and
+4200-4800s, excluding V26 stack profiling. Decode throughput is
+1065.18/1246.94,1086.56/1113.47 and922.63/1102.59 token/s:
+predictive remains14.58%,2.42% and16.32% lower. Both weighted decode
+batches remain about47. In600-2400s, total H2D is1.723/2.391TB, but
+prefill worker wall is336.57/271.87s. Keep5.661GB JOIN/tool tagged FULL
+separate from66.866GB demand-handoff FULL; source tags alone do not
+prove anticipation and reuse.
+
+Workload, arrivals, capacities and model artifacts match, while code,
+engine patch and realized traces differ. Retain50 administratively
+censored V26 tasks; do not compare its106-completion subset with native's
+full156-workflow JCT. The rough result does not meet the performance goal.
+V27 continues frozen collection before its same-version native.
+
+The existing body_progress_v2 candidate keeps phase scores identical in
+the sealed V26 replay. Median absolute token error on46 natural pre-EOS
+last snapshots falls39.04 to30.19; CPU batch P50 is116.70/116.45ms.
+However,500ms first triggers rise5 to7 with zero0-500ms hits in either
+arm; all7 candidate triggers lead by more than2s. Retain development
+evidence without deployment. No project-disjoint validation, allocator
+replay or candidate delivery-latency simulation establishes useful H2D.
 
 V98: commit8f8ce45 replaces strict background record serialization with
 ujson5.12.1, retaining decoded fields, ASCII escapes, nonfinite rejection,
@@ -31,7 +55,7 @@ FULL consumption still require validation; the full objective stays active.
 Reject deployment of the latest128-token work-only candidate5c98ca9.
 Reconstruct8404 of8406 sealed V26 inputs, keeping2 missing-content records.
 Phase scores are unchanged, but46 natural pre-EOS last snapshots worsen
-token MAE39.04 to43.19;4-item CPU batch P50 rises129.85 to191.43ms.
+median absolute token error39.04 to43.19;4-item CPU batch P50 rises129.85 to191.43ms.
 The500ms sampled replay yields5 triggers for each model and zero0-500ms
 hits. Host/capacity and extra candidate latency were not replayed.
 Retain V7. Original training has10310 notice-active snapshots/200 requests,
