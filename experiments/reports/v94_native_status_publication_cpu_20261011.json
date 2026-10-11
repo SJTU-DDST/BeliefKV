@@ -1,0 +1,212 @@
+{
+  "scope": "CPU status publication and pending-counter mutation with unchanged evidence; no disk, concurrent writer/scheduler, GIL contention or GPU/JCT measurement.",
+  "baseline_revision": "b85277a",
+  "baseline_source_sha256": "14709a9ffc12cded9c8f43c600f0dc9925cca2f272a1532a33d6795c5ad1d82c",
+  "optimized_source_sha256": "9b72c1b83b3f19e268a1364c79cbcb82791999804db6b287c00db5e006ab3d04",
+  "benchmark_source_sha256": "485f35998437b3d5f2df70e00fa91a07711ae4b1a016bbee81c468283b44c839",
+  "iterations_per_case": 80,
+  "warmup_iterations": 10,
+  "deployed": false,
+  "cases": [
+    {
+      "scenario": "status_publication",
+      "pending_entries": 0,
+      "parsed_status_equal_except_snapshot_timestamps": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 80,
+            "mean_ms": 0.1031975,
+            "p50_ms": 0.09986249999999999,
+            "p90_ms": 0.103775,
+            "max_ms": 0.185943
+          },
+          "thread_cpu": {
+            "samples": 80,
+            "mean_ms": 0.103336225,
+            "p50_ms": 0.100018,
+            "p90_ms": 0.103835,
+            "max_ms": 0.186137
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 80,
+            "mean_ms": 0.101249,
+            "p50_ms": 0.09641949999999999,
+            "p90_ms": 0.103092,
+            "max_ms": 0.181729
+          },
+          "thread_cpu": {
+            "samples": 80,
+            "mean_ms": 0.1014533375,
+            "p50_ms": 0.096605,
+            "p90_ms": 0.103338,
+            "max_ms": 0.181966
+          }
+        }
+      },
+      "scope": "Whole status construction and JSON serialization with identical pending records and real telemetry state; in-memory publication excludes disk, concurrent scheduler/GIL contention and GPU/JCT performance."
+    },
+    {
+      "scenario": "status_publication",
+      "pending_entries": 1024,
+      "parsed_status_equal_except_snapshot_timestamps": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 80,
+            "mean_ms": 0.5005058,
+            "p50_ms": 0.4970405,
+            "p90_ms": 0.507381,
+            "max_ms": 0.583247
+          },
+          "thread_cpu": {
+            "samples": 80,
+            "mean_ms": 0.5007580375,
+            "p50_ms": 0.4973035,
+            "p90_ms": 0.507659,
+            "max_ms": 0.5836
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 80,
+            "mean_ms": 0.1082439125,
+            "p50_ms": 0.10503100000000001,
+            "p90_ms": 0.108702,
+            "max_ms": 0.196809
+          },
+          "thread_cpu": {
+            "samples": 80,
+            "mean_ms": 0.1084560375,
+            "p50_ms": 0.1052485,
+            "p90_ms": 0.108947,
+            "max_ms": 0.197086
+          }
+        }
+      },
+      "scope": "Whole status construction and JSON serialization with identical pending records and real telemetry state; in-memory publication excludes disk, concurrent scheduler/GIL contention and GPU/JCT performance."
+    },
+    {
+      "scenario": "status_publication",
+      "pending_entries": 32768,
+      "parsed_status_equal_except_snapshot_timestamps": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 80,
+            "mean_ms": 15.2960353,
+            "p50_ms": 15.2991575,
+            "p90_ms": 15.444454,
+            "max_ms": 15.703734
+          },
+          "thread_cpu": {
+            "samples": 80,
+            "mean_ms": 15.2971691,
+            "p50_ms": 15.301306,
+            "p90_ms": 15.446481,
+            "max_ms": 15.705761
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 80,
+            "mean_ms": 0.1317543125,
+            "p50_ms": 0.12869150000000001,
+            "p90_ms": 0.136293,
+            "max_ms": 0.239621
+          },
+          "thread_cpu": {
+            "samples": 80,
+            "mean_ms": 0.131990475,
+            "p50_ms": 0.1288865,
+            "p90_ms": 0.136465,
+            "max_ms": 0.240693
+          }
+        }
+      },
+      "scope": "Whole status construction and JSON serialization with identical pending records and real telemetry state; in-memory publication excludes disk, concurrent scheduler/GIL contention and GPU/JCT performance."
+    },
+    {
+      "prior_input_tokens": 1024,
+      "scenario": "block_eviction",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "365172a09db2b5c558237a6b665e27f6d396b74df43974c9434d78af42577701",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 80,
+            "mean_ms": 0.048031575,
+            "p50_ms": 0.047813,
+            "p90_ms": 0.049604,
+            "max_ms": 0.053878
+          },
+          "thread_cpu": {
+            "samples": 80,
+            "mean_ms": 0.048192875,
+            "p50_ms": 0.0479825,
+            "p90_ms": 0.049724,
+            "max_ms": 0.054196
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 80,
+            "mean_ms": 0.0491778875,
+            "p50_ms": 0.048955,
+            "p90_ms": 0.051375,
+            "max_ms": 0.067781
+          },
+          "thread_cpu": {
+            "samples": 80,
+            "mean_ms": 0.0493454875,
+            "p50_ms": 0.0491065,
+            "p90_ms": 0.051551,
+            "max_ms": 0.068027
+          }
+        }
+      }
+    },
+    {
+      "prior_input_tokens": 1024,
+      "scenario": "block_many_matches",
+      "records_hashes_counters_history_and_pending_equal": true,
+      "canonical_output_sha256": "a5088b92fad5daf2d25aa8d90eae5e32a99a152cc1075cbd1f1546d851345673",
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 80,
+            "mean_ms": 7.2616886125,
+            "p50_ms": 6.5559955,
+            "p90_ms": 8.256641,
+            "max_ms": 8.383319
+          },
+          "thread_cpu": {
+            "samples": 80,
+            "mean_ms": 7.261169225,
+            "p50_ms": 6.556353,
+            "p90_ms": 8.25717,
+            "max_ms": 8.384005
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 80,
+            "mean_ms": 7.6984282625,
+            "p50_ms": 6.997129,
+            "p90_ms": 8.709911,
+            "max_ms": 8.847443
+          },
+          "thread_cpu": {
+            "samples": 80,
+            "mean_ms": 7.6973341375,
+            "p50_ms": 6.9849865,
+            "p90_ms": 8.710237,
+            "max_ms": 8.847787
+          }
+        }
+      }
+    }
+  ]
+}

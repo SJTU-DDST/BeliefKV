@@ -14,6 +14,7 @@ from pathlib import Path
 import statistics
 import subprocess
 import sys
+from tempfile import TemporaryDirectory
 import time
 
 
@@ -25,6 +26,7 @@ SOURCE = Path("beliefkv/runtime/v0520_native_telemetry.py")
 METHODS = (
     "_write_context_prefix", "_write_block_request_probe",
     "_write_block_eviction", "_remove_block_eviction_index",
+    "_remove_pending_block_totals", "_write_status",
 )
 
 
@@ -57,6 +59,8 @@ def fixture(tokens: int, scenario: str, writer: type):
     audit._context_prefix_counts = Counter()
     audit._host_pool_geometry = {"full": {"bytes_per_unit": 20480}}
     audit._pending_block_evictions = OrderedDict()
+    audit._pending_block_counts = Counter()
+    audit._pending_block_latest_units = Counter()
     audit._block_eviction_index = {}
     audit._block_eviction_routes = {}
     audit._block_eviction_route_lengths = {}
@@ -165,6 +169,8 @@ def pressure_fixture(audit, prior, scenario, record):
     audit._next_block_eviction_id = audit._host_block_eviction_count = len(lengths)
     audit._block_attribution_counts["full_evictions"] = len(lengths)
     audit._block_attribution_evicted_units["full"] = len(lengths)
+    audit._pending_block_counts["full"] = len(lengths)
+    audit._pending_block_latest_units["full"] = len(lengths)
     if scenario == "block_pressure_eviction":
         audit._block_eviction_index_limit = len(lengths)
         return audit, [{
@@ -230,6 +236,16 @@ def measure(writers: dict, *, tokens: int, scenario: str, iterations: int) -> di
                 for namespace, lengths in audit._block_eviction_lengths.items()
             }:
                 raise AssertionError("sorted prefix index diverged from live lengths")
+            if name == "optimized":
+                blocks, units = Counter(), Counter()
+                for identity, pending in audit._pending_block_evictions.items():
+                    blocks[identity[0]] += 1
+                    units[identity[0]] += int(pending["last_evicted_units"])
+                if (
+                    audit._pending_block_counts != blocks
+                    or audit._pending_block_latest_units != units
+                ):
+                    raise AssertionError("pending status totals diverged from live records")
             if iteration >= 10:
                 for clock, value in elapsed.items():
                     samples[name][clock].append(value)
@@ -277,6 +293,81 @@ def observed_prefix_work(path: Path) -> dict:
     }
 
 
+class StatusSink:
+    """Keep the real status serialization in memory for the CPU comparison."""
+
+    def __init__(self):
+        self.text = ""
+
+    def __truediv__(self, filename):
+        return self
+
+    def with_suffix(self, suffix):
+        return self
+
+    def write_text(self, text, *, encoding):
+        self.text = text
+
+    def replace(self, destination):
+        return self
+
+
+def status_publication_case(writers: dict, *, entries: int, iterations: int) -> dict:
+    variants = {}
+    with TemporaryDirectory(prefix="beliefkv-status-cpu-") as directory:
+        for name, writer in writers.items():
+            audit = writer(Path(directory) / name)
+            audit.close()
+            sink = StatusSink()
+            audit.directory = sink
+            for index in range(entries):
+                pool = "mamba" if index % 4 == 0 else "full"
+                units = 1 if pool == "mamba" else 256 + index % 1024
+                audit._pending_block_evictions[pool, "namespace", index, str(index)] = {
+                    "last_evicted_units": units,
+                }
+                audit._pending_block_counts[pool] += 1
+                audit._pending_block_latest_units[pool] += units
+            variants[name] = audit, sink
+        samples = {
+            name: {"wall": [], "thread_cpu": []} for name in variants
+        }
+        for iteration in range(iterations + 10):
+            order = list(variants)
+            if iteration % 2:
+                order.reverse()
+            outputs = {}
+            for name in order:
+                audit, sink = variants[name]
+                wall_start, cpu_start = time.perf_counter_ns(), time.thread_time_ns()
+                audit._write_status()
+                elapsed = {
+                    "wall": (time.perf_counter_ns() - wall_start) / 1e6,
+                    "thread_cpu": (time.thread_time_ns() - cpu_start) / 1e6,
+                }
+                if iteration >= 10:
+                    for clock, value in elapsed.items():
+                        samples[name][clock].append(value)
+                outputs[name] = json.loads(sink.text)
+                outputs[name].pop("snapshot_ts_ms")
+                outputs[name]["background_writer_timing"].pop("snapshot_ts_ms")
+            if outputs["baseline"] != outputs["optimized"]:
+                raise AssertionError("status evidence changed beyond snapshot timestamps")
+    return {
+        "scenario": "status_publication", "pending_entries": entries,
+        "parsed_status_equal_except_snapshot_timestamps": True,
+        "costs": {
+            name: {clock: distribution(values) for clock, values in clocks.items()}
+            for name, clocks in samples.items()
+        },
+        "scope": (
+            "Whole status construction and JSON serialization with identical pending "
+            "records and real telemetry state; in-memory publication excludes disk, "
+            "concurrent scheduler/GIL contention and GPU/JCT performance."
+        ),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-revision", required=True)
@@ -284,6 +375,7 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--observed-prefix-evidence", type=Path)
     parser.add_argument("--pressure-cases", action="store_true")
+    parser.add_argument("--status-publication-only", action="store_true")
     args = parser.parse_args()
     if args.iterations <= 0:
         parser.error("iterations must be positive")
@@ -300,6 +392,9 @@ def main() -> None:
     }
     report = {
         "scope": (
+            "CPU status publication and pending-counter mutation with unchanged evidence; "
+            "no disk, concurrent writer/scheduler, GIL contention or GPU/JCT measurement."
+            if args.status_publication_only else
             "CPU writer processing with exact array prefixes and namespaced eviction "
             "identities; no concurrent writer/scheduler, GIL contention, allocator, "
             "DMA, CUDA or end-to-end throughput measurement."
@@ -311,6 +406,12 @@ def main() -> None:
         "iterations_per_case": args.iterations, "warmup_iterations": 10,
         "deployed": False,
         "cases": [
+            status_publication_case(writers, entries=entries, iterations=args.iterations)
+            for entries in (0, 1024, 32768)
+        ] + [
+            measure(writers, tokens=1024, scenario=scenario, iterations=args.iterations)
+            for scenario in ("block_eviction", "block_many_matches")
+        ] if args.status_publication_only else [
             measure(writers, tokens=tokens, scenario=scenario, iterations=args.iterations)
             for tokens in (1024, 8192, 32768)
             for scenario in (
@@ -323,7 +424,7 @@ def main() -> None:
     }
     if args.observed_prefix_evidence is not None:
         report["observed_prefix_work"] = observed_prefix_work(args.observed_prefix_evidence)
-    if args.pressure_cases:
+    if args.pressure_cases and not args.status_publication_only:
         report["cases"].extend(
             measure(writers, tokens=tokens, scenario=scenario, iterations=args.iterations)
             for tokens in (8192, 32768)
@@ -341,7 +442,11 @@ def main() -> None:
     for case in report["cases"]:
         before = case["costs"]["baseline"]["wall"]["mean_ms"]
         after = case["costs"]["optimized"]["wall"]["mean_ms"]
-        print(f"tokens={case['prior_input_tokens']} {case['scenario']}: "
+        label = (
+            f"pending={case['pending_entries']}" if "pending_entries" in case
+            else f"tokens={case['prior_input_tokens']}"
+        )
+        print(f"{label} {case['scenario']}: "
               f"{before:.4f} -> {after:.4f} ms")
 
 

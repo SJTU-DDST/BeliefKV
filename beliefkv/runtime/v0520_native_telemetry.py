@@ -89,6 +89,8 @@ class NativeReactiveTelemetry:
         self._pending_block_evictions: OrderedDict[
             tuple[str, str, int, str], dict[str, Any]
         ] = OrderedDict()
+        self._pending_block_counts: Counter[str] = Counter()
+        self._pending_block_latest_units: Counter[str] = Counter()
         self._block_eviction_index: dict[
             tuple[str, int, str], set[tuple[str, str, int, str]]
         ] = {}
@@ -561,6 +563,13 @@ class NativeReactiveTelemetry:
                                 namespace_digest, None
                             )
 
+    def _remove_pending_block_totals(self, pool: str, units: int) -> None:
+        self._pending_block_counts[pool] -= 1
+        self._pending_block_latest_units[pool] -= units
+        if not self._pending_block_counts[pool]:
+            del self._pending_block_counts[pool]
+            del self._pending_block_latest_units[pool]
+
     def _write_block_eviction(self, record: dict[str, Any], output: Any) -> None:
         token_ids = self._key_path_tokens(record["key_path"])
         if token_ids is None:
@@ -600,8 +609,10 @@ class NativeReactiveTelemetry:
                 "bytes_per_unit", 0
             )
         )
-        pending = self._pending_block_evictions.pop(identity, None)
-        if pending is None:
+        pending = self._pending_block_evictions.get(identity)
+        new_pending = pending is None
+        previous_units = 0 if new_pending else int(pending["last_evicted_units"])
+        if new_pending:
             pending = {
                 "first_eviction_id": eviction_id,
                 "first_eviction_ts_ms": float(record["ts_ms"]),
@@ -616,6 +627,9 @@ class NativeReactiveTelemetry:
         pending["evicted_units_total"] += units
         pending["evicted_bytes_total"] += units * bytes_per_unit
         self._pending_block_evictions[identity] = pending
+        if new_pending:
+            self._pending_block_counts[identity[0]] += 1
+        self._pending_block_latest_units[identity[0]] += units - previous_units
         self._pending_block_evictions.move_to_end(identity)
         index_key = (namespace_digest, prefix_tokens, prefix_digest)
         indexed = self._block_eviction_index.get(index_key)
@@ -663,6 +677,9 @@ class NativeReactiveTelemetry:
         while len(self._pending_block_evictions) > self._block_eviction_index_limit:
             expired_identity, expired = self._pending_block_evictions.popitem(
                 last=False
+            )
+            self._remove_pending_block_totals(
+                expired_identity[0], int(expired["last_evicted_units"]),
             )
             self._remove_block_eviction_index(expired_identity)
             self._block_attribution_counts["expired_without_reaccess"] += 1
@@ -768,6 +785,9 @@ class NativeReactiveTelemetry:
                 pending = self._pending_block_evictions.pop(identity, None)
                 if pending is None:
                     continue
+                self._remove_pending_block_totals(
+                    identity[0], int(pending["last_evicted_units"]),
+                )
                 if not clear_indexes:
                     self._remove_block_eviction_index(identity)
                 pool = identity[0]
@@ -1953,18 +1973,11 @@ class NativeReactiveTelemetry:
                     finally:
                         self._writer_timing.finish(sample)
                 if self._pending_block_evictions:
-                    pending_by_pool: Counter[str] = Counter()
-                    units_by_pool: Counter[str] = Counter()
-                    for identity, pending in self._pending_block_evictions.items():
-                        pending_by_pool[identity[0]] += 1
-                        units_by_pool[identity[0]] += int(
-                            pending["last_evicted_units"]
-                        )
                     eviction_attribution.write(json.dumps({
                         "event": "host_block_eviction_unmatched_summary",
                         "ts_ms": time.time() * 1000.0,
-                        "pending_blocks_by_pool": dict(pending_by_pool),
-                        "latest_evicted_units_by_pool": dict(units_by_pool),
+                        "pending_blocks_by_pool": dict(self._pending_block_counts),
+                        "latest_evicted_units_by_pool": dict(self._pending_block_latest_units),
                         "semantics": "no matching request observed before telemetry close",
                     }, separators=(",", ":")) + "\n")
                 for handle in handles.values():
@@ -2001,13 +2014,6 @@ class NativeReactiveTelemetry:
                 key: dict(values)
                 for key, values in self._cache_request_evidence.items()
             }
-        pending_by_pool: Counter[str] = Counter()
-        pending_units_by_pool: Counter[str] = Counter()
-        for identity, pending in self._pending_block_evictions.items():
-            pending_by_pool[identity[0]] += 1
-            pending_units_by_pool[identity[0]] += int(
-                pending["last_evicted_units"]
-            )
         status = {
             "schema_version": 1,
             "source": "native_sglang_v0520",
@@ -2041,9 +2047,9 @@ class NativeReactiveTelemetry:
                 "recomputed_full_units": (
                     self._block_attribution_recomputed_units["full"]
                 ),
-                "pending_blocks_by_pool": dict(pending_by_pool),
+                "pending_blocks_by_pool": dict(self._pending_block_counts),
                 "pending_latest_evicted_units_by_pool": dict(
-                    pending_units_by_pool
+                    self._pending_block_latest_units
                 ),
                 "probe_prefix_length_overflow": (
                     self._block_attribution_probe_overflow

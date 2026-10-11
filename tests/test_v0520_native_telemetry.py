@@ -281,6 +281,66 @@ def test_eviction_route_expiry_removes_only_the_expired_prefix(tmp_path):
     assert len(audit._block_eviction_route_lengths) == 1
 
 
+def test_pending_status_tracks_replacements_reaccess_and_capacity_expiry(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "blocks")
+    audit.close()
+    audit._block_eviction_index_limit = 3
+    status_path = tmp_path / "blocks/native_telemetry_status.json"
+
+    def evict(tokens, pool, units):
+        audit._write_block_eviction({
+            "key_path": (array("q", tokens),), "pool": pool, "node_id": 1,
+            "units": units, "ts_ms": 1., "extra_key": None, "cache_salt": None,
+        }, StringIO())
+
+    def check(blocks, units):
+        audit._write_status()
+        result = json.loads(status_path.read_text())["host_block_eviction_attribution"]
+        assert result["pending_blocks_by_pool"] == blocks
+        assert result["pending_latest_evicted_units_by_pool"] == units
+
+    evict([1, 2, 3], "full", 3)
+    check({"full": 1}, {"full": 3})
+    evict([1, 2, 3], "full", 1)
+    check({"full": 1}, {"full": 1})
+    evict([1, 2, 3], "mamba", 1)
+    evict([9, 2, 3], "full", 2)
+    check({"full": 2, "mamba": 1}, {"full": 3, "mamba": 1})
+    evict([8, 2, 3], "full", 3)
+    check({"full": 2, "mamba": 1}, {"full": 5, "mamba": 1})
+    for tokens, blocks, units in (
+        ([1, 2, 3, 4], {"full": 2}, {"full": 5}),
+        ([9, 2, 3, 4], {"full": 1}, {"full": 3}),
+        ([8, 2, 3, 4], {}, {}),
+    ):
+        audit._write_block_request_probe({
+            "input_ids": tokens, "ts_ms": 2., "extra_key": None, "cache_salt": None,
+            "cached_tokens_device": 4, "cached_tokens_host": 0,
+        }, StringIO())
+        check(blocks, units)
+
+
+def test_status_publication_does_not_traverse_pending_evictions(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "blocks")
+    audit.close()
+    audit._write_block_eviction({
+        "key_path": (array("q", [1, 2, 3]),), "pool": "full", "node_id": 1,
+        "units": 3, "ts_ms": 1., "extra_key": None, "cache_salt": None,
+    }, StringIO())
+
+    class NoScan(dict):
+        def items(self):
+            raise AssertionError("status publication scanned pending records")
+
+    audit._pending_block_evictions = NoScan(audit._pending_block_evictions)
+    audit._write_status()
+    result = json.loads(
+        (tmp_path / "blocks/native_telemetry_status.json").read_text()
+    )["host_block_eviction_attribution"]
+    assert result["pending_blocks_by_pool"] == {"full": 1}
+    assert result["pending_latest_evicted_units_by_pool"] == {"full": 3}
+
+
 def test_matching_namespace_preserves_other_namespace_pending_indexes(tmp_path):
     audit = NativeReactiveTelemetry(tmp_path / "blocks")
     audit.close()

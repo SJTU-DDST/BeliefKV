@@ -1,0 +1,78 @@
+{
+  "schema_version": 1,
+  "scope": "Complete observed V24 predictive control window; exclusive instrumented wall is not thread CPU, total Python cost or removable JCT.",
+  "collection_commit": "56ff3c26768ac844f9c90f994f5ae5a09f8ec90f",
+  "patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v24/predictive_h2d",
+  "monitor_window": {
+    "time_origin_local": "2026-10-11T19:41:48.695+08:00",
+    "start_seconds": 600.0,
+    "end_seconds": 2400.0,
+    "begin_ts_ms": 1791719508695.0,
+    "end_ts_ms": 1791721308695.0,
+    "observed_through_ts_ms": 1791721308781.0
+  },
+  "control_prefix": {
+    "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v24/predictive_h2d/opportunities/admission_opportunities.jsonl",
+    "read_prefix_bytes": 509113682,
+    "read_prefix_sha256": "a3ea6907a5891405b78fb78d9cb9be590996b540a5a44a2e08b09eb2d709c2c4",
+    "boundary_state_ts_ms": [
+      1791719508694.645,
+      1791721308507.811
+    ],
+    "raw_boundary_line_sha256": [
+      "6c0a411e892ebdc75eaaedebbdec0ff48aede8e7d760b3721b5645a52edc2a17",
+      "507d272d1ba272b153f07b1332658c835262e59cb88cbe76572e8d2764990318"
+    ],
+    "observed_duration_ms": 1799813.166015625,
+    "summed_python_self_ms": 221871.891257
+  },
+  "leading_instrumented_phases": {
+    "reentry_inspection": {
+      "count": 251260,
+      "self_ms": 50889.338340999995
+    },
+    "control_drain": {
+      "count": 56438,
+      "self_ms": 20199.779306999997
+    },
+    "join_prepare": {
+      "count": 56438,
+      "self_ms": 15858.853374999999
+    },
+    "handoff_enqueue": {
+      "count": 3604,
+      "self_ms": 14757.340017
+    },
+    "admission_plan": {
+      "count": 22173,
+      "self_ms": 14575.612682
+    },
+    "opportunity_sampling": {
+      "count": 1757,
+      "self_ms": 14098.110499000002
+    }
+  },
+  "opportunity_writer_processing_samples": {
+    "sample_every": 64,
+    "cpu_clock": "thread_time_ns",
+    "wall_clock": "perf_counter_ns",
+    "sampled_cpu_ms": 239.82767900000002,
+    "sampled_wall_ms": 729.671601,
+    "boundary_snapshot_ts_ms": [
+      1791719507674.7104,
+      1791721308509.091
+    ],
+    "raw_boundary_line_sha256": [
+      "adc3678dfafc6bede982c777b6ee07048a05bcfc2a0432bd9fadf667249a56a3",
+      "507d272d1ba272b153f07b1332658c835262e59cb88cbe76572e8d2764990318"
+    ],
+    "semantics": "Measured processing samples only; do not multiply by the sampling interval or include publication, queue waiting, GIL attribution or GPU/JCT savings."
+  },
+  "limitations": [
+    "Only the six largest scheduler phases are copied here; the total includes all instrumented phases.",
+    "Status publication and other uninstrumented work remain excluded from the scheduler total.",
+    "The V24 profile exclusion at 3825.305-3851.305s does not intersect this window.",
+    "V24 same-version native remains pending; this report establishes neither a matched comparison nor causal benefit."
+  ]
+}

@@ -1,0 +1,82 @@
+{
+  "schema_version": 1,
+  "scope": "Diagnostic live GIL-held stacks; not total CPU time, GPU stall, removable JCT or isolated performance attribution.",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v24/predictive_h2d",
+  "process_id": 1495619,
+  "profiler": "py-spy 0.4.1",
+  "command": [
+    "sudo",
+    "-n",
+    "/tmp/beliefkv-perf-tools-v24/bin/py-spy",
+    "record",
+    "--pid",
+    "1495619",
+    "--duration",
+    "20",
+    "--rate",
+    "49",
+    "--nonblocking",
+    "--gil",
+    "--threads",
+    "--format",
+    "raw",
+    "--full-filenames",
+    "--output",
+    "/tmp/beliefkv-v24-scheduler-v94-20261011.raw"
+  ],
+  "capture_start_local": "2026-10-11T20:45:34+08:00",
+  "raw_file_mtime_local": "2026-10-11T20:45:54.485884+08:00",
+  "primary_performance_exclusion": {
+    "begin_local": "2026-10-11T20:45:34+08:00",
+    "end_local": "2026-10-11T20:46:00+08:00",
+    "time_origin_local": "2026-10-11T19:41:48.695+08:00",
+    "begin_seconds": 3825.305,
+    "end_seconds": 3851.305,
+    "semantics": "Conservative diagnostic interval; exclude intersecting windows from primary performance claims without changing the frozen experiment plan."
+  },
+  "raw": {
+    "path": "experiments/reports/v94_v24_scheduler_stack_samples_20261011.raw",
+    "bytes": 877052,
+    "sha256": "5c08cca228f29bfa2672b4766ddeedcb1e80491ed21a098236204afb0d8430ff",
+    "distinct_stacks": 307,
+    "valid_samples": 411,
+    "read_errors_from_profiler_console": 89,
+    "read_error_provenance": "Profiler completion output; the raw stack file does not encode read failures."
+  },
+  "thread_samples": {
+    "thread (1495619): MainThread": 345,
+    "thread (1497403): native-reactive-audit": 58,
+    "thread (1497545): admission-opportunity": 7,
+    "thread (1516420): QueueFeederThread": 1
+  },
+  "selected_inclusive_function_samples": {
+    "_write_status": 34,
+    "inspect_beliefkv_reentry": 23,
+    "drive_host_eviction": 44,
+    "get_priority": 13,
+    "iterencode": 16
+  },
+  "frozen_source": {
+    "collection_commit": "56ff3c26768ac844f9c90f994f5ae5a09f8ec90f",
+    "patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+    "engine_tree": "6e1dc30d83e05cbca3d470892d7cde1000e19ad9",
+    "engine_path_observed_in_stacks": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20",
+    "telemetry_source_sha256": "2dbeebec390adefb322d18b4655a28e4a73b96f068da44781aa9cccfd637804e"
+  },
+  "followup": {
+    "benchmark": "experiments/reports/v94_native_status_publication_cpu_20261011.json",
+    "optimized_telemetry_sha256": "9b72c1b83b3f19e268a1364c79cbcb82791999804db6b287c00db5e006ab3d04",
+    "telemetry_checks": 84,
+    "test_command": "python -m pytest -q tests/test_v0520_native_telemetry.py",
+    "test_duration_seconds": 7.42,
+    "deployed": false
+  },
+  "limitations": [
+    "Inclusive function samples overlap and must not be summed.",
+    "Nonblocking samples with read errors do not yield an unbiased total-CPU profile.",
+    "Existing SampledWriterTiming and scheduler control totals exclude status publication.",
+    "The CPU fixture isolates status construction/serialization and excludes disk and live GIL contention.",
+    "Pending-counter updates add cost to mutation paths; retain benchmark regressions.",
+    "The frozen V24 source was not edited or replaced for this diagnostic."
+  ]
+}

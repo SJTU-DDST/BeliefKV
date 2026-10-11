@@ -2,6 +2,34 @@
 
 Status date: 2026-10-11.
 
+V94: a 20-second live V24 GIL stack sample contains _write_status in
+34 of 411 valid samples, with 89 read errors. Status publication scans up
+to 32768 pending eviction records every second and is omitted from the
+existing writer/control timing. Maintain per-pool pending counts/latest
+units on insertion, replacement, expiry and reaccess; publish these totals
+without traversing records. The 84 telemetry checks pass, preserving all
+evidence. Across 80 alternating CPU trials, full status publication at
+32768 entries falls from 15.296 to 0.132 ms. Retain mutation costs:
+single eviction 0.0480 to 0.0492 ms, 512 matches 7.262 to 7.698 ms.
+These are CPU fixtures, not GPU/JCT improvement. Keep frozen V24 intact.
+
+V93: the complete V24 predictive 600-2400s window gives 1169.916 decode
+token/s, GPU 87.73%, weighted batch 47.398 and prefill worker intervals
+335.226s. Instrumented exclusive wall remains 221.872s, including 50.889s
+reentry. The 3.79%/5.07% gains against V23 predictive/native are
+cross-revision references with different realized demand; same-version
+V24 native remains pending. The 6.788GB predictive FULL transfer still
+requires event-boundary/first-use validation. Retain V93 window/control
+and V94 profile/benchmark evidence and keep the full objective active.
+
+Exclude the live profiling interval 20:45:34-20:46:00 CST, or
+3825.305-3851.305s from the first GPU sample, from primary performance
+windows. GIL stack frequencies are not total CPU, GPU stall or removable
+JCT. Actual engine frames use main third_party/sglang-v0.5.20.
+After committing this fix and preserving the new main report commits,
+register a clean frozen follow-up to wait for V24's complete pair and
+postprocessing, then run predictive first and cold same-version native.
+
 The isolated follow-up fixes prefill work measurement. The old
 req.extend_input_len defaults to zero in the current engine: V24's first
 200 prefill batches/285 request samples report zero without proving zero
