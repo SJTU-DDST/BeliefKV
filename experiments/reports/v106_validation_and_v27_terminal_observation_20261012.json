@@ -1,0 +1,159 @@
+{
+  "observed_at_local": "2026-10-12T02:13:52.803251+08:00",
+  "code_commit": "793e8ba4561ea124f9020e6caac75f30f535dcba",
+  "scope": "Functional FULL/Mamba planning and native method checks; no GPU transfer or throughput benefit measured. V27 uses its earlier frozen revision.",
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "7782651c968e41cf6cc87a1a8e7a4524bbce3462df8ac13e756f40a25e1a11a7",
+    "beliefkv/runtime/sglang_v0520_physical.py": "d745da6b5b4c36adc1756c0fab58a6caef868267675f60ae02f68d2dc2fdfcf1",
+    "tests/test_wait_prefetch_batch.py": "4d6da6a0ba3d247301c86395b53c314a974da759ceb35f7ef902590b702851fb",
+    "scripts/evaluate_wait_prefetch_capacity.py": "e52aecd82ab2e4ce8af03e54dd3cd0e2213a8b53343589b5504e4e8174d61d39"
+  },
+  "validation": {
+    "related": {
+      "command": "python -m pytest -q tests/test_wait_prefetch_batch.py tests/test_sglang_v0520_physical.py tests/test_sglang_v0520_runtime.py tests/test_tool_predictive_transfers.py tests/test_execution_handoff.py tests/test_native_transfer_policy.py",
+      "passed": 511,
+      "seconds": 1.18,
+      "exit_code": 0
+    },
+    "native": {
+      "command": "python -m pytest -q third_party/sglang-v0.5.20/test/srt/test_beliefkv_shadow_dispatch.py",
+      "passed": 45,
+      "subtests_passed": 27,
+      "seconds": 1.72,
+      "exit_code": 0,
+      "warning": "Vendor pytest config has an unknown asyncio_mode option."
+    }
+  },
+  "capacity_fixture_report": "experiments/reports/v106_full_before_mamba_capacity_20261012.json",
+  "lifecycle_prefix_report": "experiments/reports/v106_v27_sealed_prefetch_lifecycle_summary_20261012.json",
+  "v27_incomplete": {
+    "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v27/predictive_h2d/client_156/workflows/django__django-12325/result.json",
+    "source_sha256": "92a5214897121fc100918ea5ad5630a4cf38b3b43ea5caf906040e1dd8280d97",
+    "instance_id": "django__django-12325",
+    "outcome": "incomplete",
+    "natural_terminal": false,
+    "error": null,
+    "workflow_deadline": {
+      "abort_requested_count": 0,
+      "active_command_cancel_count": 0,
+      "cleanup_complete": false,
+      "enabled": true,
+      "expired": false,
+      "pending_task_cancel_count": 0,
+      "server_terminal": false,
+      "server_terminal_latency_ms": null
+    },
+    "duration_seconds": 4413.062000253238,
+    "final_text_chars": 34349,
+    "trace": {
+      "child_cancel_count": 0,
+      "dynamic_subagent_count": 2,
+      "natural_child_return_count": 2,
+      "all_subagents_returned": true,
+      "all_joins_satisfied": true,
+      "join_satisfied_count": 1,
+      "join_timeout_count": 0
+    },
+    "root_result_count": 120,
+    "root_finish_reasons": {
+      "tool_calls": 113,
+      "stop": 2,
+      "length": 5
+    },
+    "last_root_results": [
+      {
+        "event_id": "deepagents:autonomous:django__django-12325:c9cad6221839:deepagents:000004591",
+        "invocation_id": "deepagents:autonomous:django__django-12325:c9cad6221839:root",
+        "ts_ms": 5911792887.719428,
+        "attributes": {
+          "action_boundary_source": "runtime_structured_output",
+          "action_boundary_token_index": null,
+          "finish_reason": "tool_calls",
+          "invalid_tool_call_count": 0,
+          "output_chars": 5569,
+          "output_tokens": null,
+          "parser_reason": "Deep Agents exposed a complete AIMessage; incremental token boundary is unavailable",
+          "parser_status": "valid",
+          "rejected_task_call_count": 0,
+          "request_id": "beliefkv:01a12c1d-d215-78b1-9b44-023d1ff87ba0",
+          "runtime_internal": false,
+          "source": "deepagents_callback",
+          "stream_content_chunk_count": null,
+          "stream_content_counted_chars": null,
+          "stream_content_max_chunk_chars": null,
+          "stream_content_token_chars": null,
+          "structured_action_kinds": [
+            "function_call"
+          ],
+          "structured_action_names": [
+            "execute"
+          ],
+          "tool_call_count": 1
+        }
+      },
+      {
+        "event_id": "deepagents:autonomous:django__django-12325:c9cad6221839:deepagents:000004595",
+        "invocation_id": "deepagents:autonomous:django__django-12325:c9cad6221839:root",
+        "ts_ms": 5911879602.458636,
+        "attributes": {
+          "action_boundary_source": "runtime_structured_output",
+          "action_boundary_token_index": null,
+          "finish_reason": "length",
+          "invalid_tool_call_count": 0,
+          "output_chars": 0,
+          "output_tokens": null,
+          "parser_reason": "Deep Agents exposed a complete AIMessage; incremental token boundary is unavailable",
+          "parser_status": "valid",
+          "rejected_task_call_count": 0,
+          "request_id": "beliefkv:01a12c1e-1175-7e51-b995-9041b544ac29",
+          "runtime_internal": false,
+          "source": "deepagents_callback",
+          "stream_content_chunk_count": null,
+          "stream_content_counted_chars": null,
+          "stream_content_max_chunk_chars": null,
+          "stream_content_token_chars": null,
+          "structured_action_kinds": [
+            "final_answer"
+          ],
+          "structured_action_names": [],
+          "tool_call_count": 0
+        }
+      },
+      {
+        "event_id": "deepagents:autonomous:django__django-12325:c9cad6221839:deepagents:000004597",
+        "invocation_id": "deepagents:autonomous:django__django-12325:c9cad6221839:root",
+        "ts_ms": 5911970806.43123,
+        "attributes": {
+          "action_boundary_source": "runtime_structured_output",
+          "action_boundary_token_index": null,
+          "finish_reason": "length",
+          "invalid_tool_call_count": 0,
+          "output_chars": 34349,
+          "output_tokens": null,
+          "parser_reason": "Deep Agents exposed a complete AIMessage; incremental token boundary is unavailable",
+          "parser_status": "valid",
+          "rejected_task_call_count": 0,
+          "request_id": "beliefkv:01a12c1f-6179-7b61-bdb5-e4e50d69a34f",
+          "runtime_internal": false,
+          "source": "deepagents_callback",
+          "stream_content_chunk_count": null,
+          "stream_content_counted_chars": null,
+          "stream_content_max_chunk_chars": null,
+          "stream_content_token_chars": null,
+          "structured_action_kinds": [
+            "final_answer"
+          ],
+          "structured_action_names": [],
+          "tool_call_count": 0
+        }
+      }
+    ],
+    "source_prefix_seals": {
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v27/predictive_h2d/client_156/workflows/django__django-12325/runtime_events.deepagents.jsonl": {
+        "read_complete_prefix_bytes": 5780082,
+        "sha256": "46f483c733645f5cb965ce7a3b4b3906c45d89c1211da18d8f66c99740a503cb"
+      }
+    },
+    "interpretation": "The final root generation is length-truncated and repetitive. Both children returned naturally and JOIN was satisfied; there is no recorded deadline expiry, child cancellation or result error."
+  }
+}
