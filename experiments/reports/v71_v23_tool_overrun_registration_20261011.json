@@ -1,0 +1,61 @@
+{
+  "status": "waiting_for_previous_pair",
+  "registered_at_utc": "2026-10-11T05:32:18.057995+00:00",
+  "verified_at_utc": "2026-10-11T05:32:18.115252+00:00",
+  "previous_target_revision": "b854a91f75198ee2ce5cdfa1a1a181bf92fa003f",
+  "target_revision": "60c55021e097750f2faeef175d206c906279eabf",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v71-tool-overrun-20261011",
+  "target_patch_sha256": "4af68951beefdf759901d0143ca747c6893aa1ffc7124a3738158512851f7e60",
+  "previous_registration": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_b854a91_superseded_20261011.json",
+  "current_registration": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_20261011.json",
+  "launch_log": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_60c5502_20261011.log",
+  "stopped_waiting_coordinator": 773052,
+  "current_waiting_coordinator": 1024560,
+  "current_waiting_coordinator_identity": [
+    "S",
+    1024452,
+    "586700081"
+  ],
+  "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22",
+  "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v23",
+  "current_main_revision": "3aa27dd67b340236310824d80a7e6e31038ea1f9",
+  "configuration_equal": true,
+  "wait_process_identities_equal": true,
+  "native_patch_equal_to_previous_target": true,
+  "main_and_frozen_target_clean": true,
+  "new_run_directory_absent_at_verification": true,
+  "v22_processes_not_signalled": [
+    1159560,
+    1166290,
+    3330270,
+    3332034
+  ],
+  "deployed_v22_engine_canonical_patch": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83",
+    "expected_tree": "63d91509bee139b2d6a2285eb44b193a67a9e008",
+    "actual_tree": "63d91509bee139b2d6a2285eb44b193a67a9e008",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "deployed_delta_read_only_apply_check_passed": true,
+  "deployed_delta_sha256": "b224b002de7e2d47a9de2160a0c011118c1dbf34df04ece6c15881ca86ae60e3",
+  "validation_evidence": "v71_tool_history_overrun_validation_20261011.json",
+  "validation_evidence_sha256": "befb05d281558d1871da390ff44f09e05953057dec3e0cc4c0177d9fd6bc4d7f",
+  "related_checks_passed": 494,
+  "change": {
+    "historical_error_upper_point_is_not_a_certain_tool_return": true,
+    "use_operational_survival_curve_after_completed_history_overrun": true,
+    "probability_and_quantiles_use_same_distribution": true,
+    "versioned_causal_rank_reuse_preserved": true,
+    "partial_pre_boundary_join_and_tool_overlap_preserved": true,
+    "workload_configuration_changed": false,
+    "observation_configuration_changed": false,
+    "gpu_performance_verified": false
+  },
+  "deployment": "After the complete frozen V22 pair and postprocessing, deploy 60c5502 and run predictive followed by cold same-version native."
+}

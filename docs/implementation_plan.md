@@ -2,6 +2,17 @@
 
 Status date: 2026-10-11.
 
+Registered V23 at2026-10-11 13:32:18CST for committed
+60c55021e097750f2faeef175d206c906279eabf in the frozen
+beliefkv-v71-tool-overrun-20261011 checkout. At13:32:35, coordinator1024560
+has PPID1 and start identity586700081; V22 native and collection processes
+remain live, with151/156 workflows completed. Replace only waiting773052.
+Native patch, workload, observations, maximum lead500ms and wait identities
+are unchanged. Keepv71_v23_tool_overrun_registration_20261011.json.
+The mainv23_launch_after_v22_20261011.json is authoritative; archive prior
+b854a91 registration. After the complete V22 pair/postprocessing, run predictive
+then cold same-version native. GPU performance remains unverified.
+
 Correct the completed-history overrun path before the next pair. The final
 surviving point of a three-point historical prior is an error margin, not a
 certain completion. When its center has passed, use the existing operational
