@@ -29,6 +29,20 @@ Maintenance after 04:08 CST overlaps later V27 native collection windows.
 This archive is evidence preservation and disk cleanup, not a performance
 optimization or proof of GPU/JCT improvement.
 
+Archive: `experiments/archive/20261012/v26_partial_workspaces.tar.zst`
+
+SHA256: `bee0d39e5ca913b6bede50f39b8f78d2c59f84029bc7761706eb24f6086e7da4`
+
+The 2,340,329,743-byte archive preserves the 50 administratively truncated
+V26 workspaces. The source allocation was 16,142,340,096 bytes. GNU tar
+comparison passed before cleanup, and the interrupted run retains its
+traces, outcomes, manifest, frozen plan and an `ARCHIVED.md` pointer.
+Restore with the same command above, substituting the V26 archive name.
+Receipt: `experiments/reports/v112_v26_workspace_archive_20261012.json`.
+The conservative workspace archive interval is 04:08:00-04:23:32 CST.
+Available filesystem space was 56,780,939,264 bytes at the final check;
+concurrent experiment writes are included in that observation.
+
 ## 2026-10-11 verified compression and snapshot deduplication
 
 Current archive:
