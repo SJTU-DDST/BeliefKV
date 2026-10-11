@@ -2,6 +2,34 @@
 
 Status date: 2026-10-12.
 
+V120 removes a duplicate JOIN plan capture within one dispatch. Return the
+new stage plan directly; enqueue still drains causal events and refreshes the
+physical prefix, capacity and timing, with native per-node validation and
+transaction reservations unchanged. Record empty plans after reclaim and
+retain no_step_reason in independent wait attribution. Related checks pass:
+301 runtime/restore checks and 110 audit/batch checks, with overlap. Eight CPU
+cases preserve selected plans and ticket state while captures fall from three
+to two. Mean thread CPU falls about24%-35%; depth64/four leaves is6.334 to
+4.676ms. Decision time is fixed, read-only closure/planning are real, enqueue
+revalidation is mocked. No allocator/DMA/GPU or throughput/JCT evidence.
+Retain v120_join_dispatch_cpu; the collecting V29 remains frozen.
+
+The07:20:48-07:21:24 CST sealed-prefix audit observes95 independent JOINs
+with start-window records;13 submit21 node commands. Twelve events start
+early and reuse376.996MB FULL. Fifteen tool events reuse639.918MB early;
+95.894GB handoff FULL reuse remains demand recovery. Per-event last-ACK-
+to-service P90 is541.163ms for JOIN and1565.680ms for tool.22 JOIN completion
+boundaries remain unknown. Later planning reasons overlap; frozen V29 lacks
+empty-plan details, so do not invent exclusive rejection causes. Keep the
+compressed event/action and JOIN-plan rows, input lengths/SHA256 and final
+runtime-state row in v120_v29_sealed_prefetch_lifecycle. Its independent
+prefixes are not atomic.721.439GB next-request native tool FULL Host hits are
+not an oracle denominator. Of1407 positive-FULL-plan tool events,1228 record
+before_start_window; investigate the intersection of forecast residuals,
+actual start horizon, live capacity and admission before selecting a policy
+change. Qualify windows overlapping this audit/CPU development. The full
+same-version native performance goal remains active.
+
 V119 retains V29's complete300-600s pipeline window against historical
 V27 native as cross-version development evidence. Matched48-request
 CUDA-graph decode mean ratios are0.9963-1.0028. Single-request small
