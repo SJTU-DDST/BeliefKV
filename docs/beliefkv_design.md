@@ -97,6 +97,18 @@ Device/Host 余量，不用总体显存占用代替可行动容量，不为制�
 sibling 的真实释放供最终 child 返回前预取使用时，仍按独立
 完成边界、实际 submit/ACK 和 FULL 复用证明计算预测覆盖。
 
+容量交接的验收还包含同版本忙碌窗口的服务成本。V22 已观察到
+child 私有容量释放与 JOIN 前 FULL 复用，但 600–900 秒窗口
+predictive/native 吞吐仍为 1019.20/1219.52 token/s，时间加权
+decode batch 接近 47。完整 batch 的相近上下文桶 worker 区间
+接近，补入请求阶段的区间则更长；该窗口 predictive Python
+独占墙钟计数累计约 46.4 秒。因此应同时核验恢复规划、前缀
+检查、控制交付与 prefill 路径，不能只增加回收或预取次数。
+worker 墙钟包含调度与 overlap，不等于 kernel 时间；请求轨迹
+未固定，也不能将局部计数直接解释为可消除的端到端耗时。
+具体证据见 v64_v22_busy_context_600_900_20261011.json 和
+v64_v22_busy_window_same_version_20261011.json，性能目标仍有效。
+
 若最后child的收尾通知先于sibling RETURN，保留该通知及其
 下一请求绑定，在sibling真正RETURN、JOIN只剩一个child时
 立即建立恢复阶段，并接续已经观察到的decode进度。检查同一

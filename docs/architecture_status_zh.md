@@ -29,6 +29,32 @@ v63_child_parent_capacity_handoff_complete_20261011.json。
 当前只能确认联动已实现且发生了释放与提前复用，不能据此宣称
 相对 native 的吞吐/JCT 目标已达成。
 
+V22 native 已覆盖三个完整对照窗口，现已收集同版本忙碌阶段分析，
+保存在 v64_v22_busy_window_same_version_20261011.json 和
+v64_v22_busy_context_600_900_20261011.json。600–900 秒窗口，
+predictive/native 输出吞吐为 1019.20/1219.52 token/s，GPU 利用率
+76.68%/89.81%，decode 时间加权 batch 为 47.27/47.38；
+1200–1500 秒吞吐为 1042.79/1197.59 token/s。容量交接和提前
+复用已发生，但当前冻结版本的忙碌阶段仍未取得性能优势。
+
+600–900 秒的可见 decode 上下文均值为 23068/24068 token，
+predictive 并没有更长的平均上下文。batch=48、平均上下文落在
+22528–24575 token 桶内时，worker 区间均值为 22.07/21.90 ms；
+batch=47、同一上下文桶为 86.79/71.38 ms；整个窗口的 prefill
+区间均值为 28.81/18.51 ms。这些是完成事件的 worker 墙钟区间，
+包含调度与 overlap 处理，不是 CUDA kernel 计时或相同请求回放。
+证据支持继续检查补入请求、恢复与控制路径，不能将全部差距归因
+于模型轨迹，也不能直接断言具体函数造成了多少 GPU 空转。
+
+该窗口 predictive 控制计数的 Python 独占墙钟累计 46.428 秒，
+前列为 admission_plan 6.338 秒、reentry_inspection 5.618 秒、
+join_prepare 4.724 秒、control_drain 4.149 秒和 handoff_enqueue
+3.510 秒。writer 的采样 CPU/墙钟用其自身快照时钟单独报告，
+没有乘以采样间隔、算成全量成本或直接扣除 JCT。下一轮 V23 已
+包含工具预测、完整前缀检查、身份复用和终态分支回收等减负；
+保持当前 V22 native、V23 登记及冻结配置不变，在实际 GPU 对照
+中核验这些修改，性能主目标继续有效。
+
 本次继续修复终态回收的真实覆盖缺口：同一 session 超过 64 个
 component 叶锚点时，直接 RETURN 与 close-before-RETURN 都退回
 仅最新锚点，释放全部 session 引用后丢失历史私有分支的回收来源。

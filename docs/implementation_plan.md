@@ -26,6 +26,30 @@ Restore after the last child's RETURN remains demand recovery. No actual
 capacity-retry rearm is observed. Wait for the same-version native comparison
 before any throughput/JCT claim. V23 is queued at the 11:41 e82ad88 target.
 
+Keep the now-complete V22 busy-window evidence in
+v64_v22_busy_window_same_version_20261011.json and
+v64_v22_busy_context_600_900_20261011.json. Native has covered all three
+requested windows, although the complete arm and pair are still running.
+At600-900s, predictive/native decode throughput is1019.20/1219.52 token/s,
+GPU utilization76.68%/89.81%, and time-weighted decode batch47.27/47.38.
+At1200-1500s, throughput is1042.79/1197.59 token/s. Terminal recycling
+and useful pre-boundary restoration do not establish a native-relative gain.
+
+Inspect replacement-prefill and control-path costs using the measured geometry:
+mean visible decode context23068/24068 tokens; batch48 in the22528-24575
+mean-context bucket has worker mean22.07/21.90ms, while batch47 in that
+bucket has86.79/71.38ms. Window-wide prefill mean is28.81/18.51ms.
+These worker intervals include scheduler/overlap work and are not CUDA
+kernel timings or matched-demand causal estimates. Predictive's exclusive
+Python wall counters total46.428s over the preceding300.344s control
+snapshots: admission6.338s, reentry5.618s, JOIN PREPARE4.724s,
+control drain4.149s and handoff enqueue3.510s lead the measured phases.
+Do not extrapolate writer samples or subtract these counters from JCT.
+Validate the already queued V23 cost reductions and complete terminal-anchor
+recycling on the GPU pair. Preserve the running V22 native and current V23
+registration; keep the performance goal active until actual improvements
+are verified.
+
 Fix the demonstrated terminal-history coverage loss before the next V23 launch.
 More than 64 indexed component anchors previously forced latest-only provenance
 in both direct retirement and close-before-RETURN, then released all references
