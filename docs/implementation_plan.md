@@ -2,6 +2,34 @@
 
 Status date: 2026-10-11.
 
+Keep the complete replenishment-window regression in the acceptance evidence:
+v68_v22_replenished_busy_windows_20261011.json and
+v68_v22_busy_context_4200_4500_20261011.json. At3600-3900s,
+predictive/native decode throughput is894.99/1015.65token/s and GPU
+utilization62.35%/72.99%; at4200-4500s,621.67/881.84token/s and
+51.54%/68.99%. In the latter window, weighted decode batch47.06/47.27,
+visible mean context22665.93/23807.54tokens and H2D transfer-stream
+6.521/6.523s do not support a longer-context or transfer-time-only explanation.
+For batch48 in the22528-24575token bucket, worker means23.06/22.98ms;
+batch47 means172.17/121.38ms. Window-wide prefill means45.32/33.41ms.
+Worker intervals include scheduler/overlap work; binned geometry does not
+match exact demand or prove a kernel-level cause.
+
+The predictive control snapshots cover300.151s and record32.381s exclusive
+Python wall time. Opportunity sampling4.259s, reentry inspection4.092s,
+control drain4.068s, JOIN PREPARE4.021s and handoff enqueue3.047s lead the
+measured phases. Keep writer samples on their own clocks without extrapolating
+to whole-population cost or subtracting counters from JCT. Demand handoff FULL
+9.562GB and predictive-source FULL0.150GB remain separate.
+
+Verify the queued V23 normal-prefix, identity, native-load construction,
+tool-prediction and exact-writer reductions in the actual same-version GPU pair.
+Preserve live V22 and frozen V23 workload, observations and maximum lead500ms.
+The earlier2400-2700s local advantage does not satisfy the performance goal.
+Later formal performance pairs may use matched minimal common observations
+and separate diagnostic pairs; required control, prediction inputs, physical
+dependencies and transfer/first-use evidence remain part of normal execution.
+
 Allow partial pre-boundary JOIN/tool H2D overlap. Remove the rejection when
 estimated submit-to-ACK P90 plus enqueue P90 exceeds maximum lead; continue
 clipping the start horizon to that configured lead. A 100ms remaining interval
