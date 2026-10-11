@@ -2,6 +2,25 @@
 
 更新日期：2026-10-11。
 
+继续降低准入身份解析成本。CPU profile在108个等待请求、保留
+16轮历史的合成场景中定位到_request_key的重复身份对象分配。
+现在准入规划、终态队列检查、恢复读取及有驻留租约的首次服务
+路径可复用runtime.visible中的既有身份对象；每次仍读取并检查
+当前request/workflow/invocation/context/epoch/attempt/session/
+generation。任何字段改变都生成新身份或拒绝无效输入，没有
+跨调用缓存元数据或物理驻留，也没有增加调度门槛。
+
+328项准入、runtime、handoff、终态容量和tool检查通过，包含
+14种逐字段修改或无效值及普通/streaming session规范化。
+v61_bound_identity_admission_cpu_20261011.json以2252bbc原始
+planner、请求解析器和frontier为基线，保留各源码SHA256。
+四组合成准入周期、各61轮交替测量，平均墙钟减少10.6%-15.0%；
+156请求的两次规划由2.830降至2.427ms，108请求并启用驻留/
+parent容量交接/语义进度的两次规划由2.237降至1.902ms。
+队列顺序、原生检查次数和batch完成状态均相同；resident观察器
+为stub，不包含真实物理恢复、IPC、DMA或GPU，不能据此声称吞吐
+提高。本修改将纳入仍未启动的V23，V22完整pair继续冻结。
+
 child-to-parent容量交接的四步实现继续保留。本轮进一步降低其
 完整前缀检查成本：RadixKey.is_prefix_at在一次调用内复用左右
 逻辑长度，避免重复计算；仍读取当前token buffer，保留命名空间、

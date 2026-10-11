@@ -8,7 +8,7 @@ PrefillAdder remains the sole authority for resource admission and load-back.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Sequence, TypeVar
+from typing import Mapping, Sequence, TypeVar
 
 
 ReqT = TypeVar("ReqT")
@@ -38,7 +38,10 @@ class NativePrefillSelection:
     rejected: tuple[tuple[str, str], ...]
 
 
-def _request_key(req: object) -> PrefillCandidateKey | None:
+def _request_key(
+    req: object, *, known_keys: Mapping[str, PrefillCandidateKey] | None = None,
+) -> PrefillCandidateKey | None:
+    """Recheck current fields and reuse an unchanged runtime-bound identity."""
     metadata = getattr(req, "beliefkv_metadata", None)
     handle = getattr(req, "cache_request_handle", None)
     request_id = getattr(req, "rid", None)
@@ -76,6 +79,17 @@ def _request_key(req: object) -> PrefillCandidateKey | None:
         )
     ):
         return None
+    if known_keys is not None:
+        known = known_keys.get(request_id)
+        if known is not None and (
+            known.request_id, known.root_workflow_id, known.invocation_id,
+            known.context_id, known.context_epoch, known.attempt_id,
+            known.session_id, known.session_generation,
+        ) == (
+            request_id, workflow_id, invocation_id, context_id,
+            epoch, attempt, session_id, session_generation,
+        ):
+            return known
     return PrefillCandidateKey(
         request_id, workflow_id, invocation_id, context_id,
         epoch, attempt, session_id, session_generation,

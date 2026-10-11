@@ -5642,7 +5642,7 @@ class NativeAdmissionRuntime:
         )
 
     def _executable_waiting_key(self, req: object) -> PrefillCandidateKey | None:
-        key = _request_key(req)
+        key = _request_key(req, known_keys=self.visible)
         if (
             key is None or self.visible.get(key.request_id) != key
             or self.context_sessions.get(key.context_id) != key
@@ -6274,7 +6274,7 @@ class NativeAdmissionRuntime:
         return tuple(
             key.request_id
             for req in native_order
-            if (key := _request_key(req)) is not None
+            if (key := _request_key(req, known_keys=self.visible)) is not None
             and key.request_id in self.visible
             and self._terminal(key)
         )
@@ -6418,7 +6418,10 @@ class NativeAdmissionRuntime:
             tagged.append((index, req))
         if len(native_order) > 512:
             self.counts["candidate_bound"] += 1
-        keys = {index: _request_key(req) for index, req in tagged}
+        keys = {
+            index: _request_key(req, known_keys=self.visible)
+            for index, req in tagged
+        }
         ranks = self._prefill_causal_ranks(tagged, keys)
         now_ms = time.monotonic() * 1000
         valid_hints: dict[int, NativeDemandHint] = {}
@@ -6810,7 +6813,7 @@ class NativeAdmissionRuntime:
                 context_id = metadata.get("context_id") if isinstance(metadata, dict) else None
                 if (
                     isinstance(context_id, str) and context_id in lease_contexts
-                    and (key := _request_key(req)) is not None
+                    and (key := _request_key(req, known_keys=self.visible)) is not None
                 ):
                     for command, lease in tuple(self._prefetch_service_leases.items()):
                         target = lease.key

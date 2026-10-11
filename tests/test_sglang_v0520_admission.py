@@ -9,6 +9,7 @@ import pytest
 from beliefkv.runtime.sglang_v0520_admission import (
     NativePrefillPlan,
     PrefillCandidateKey,
+    _request_key,
     compile_native_prefill_plan,
     select_native_prefill_candidates,
 )
@@ -44,6 +45,50 @@ def _key(req) -> PrefillCandidateKey:
         session_id=req.session_id,
         session_generation=req.session_generation,
     )
+
+
+@pytest.mark.parametrize("streaming_session", (False, True))
+def test_live_identity_reuses_the_bound_key_after_session_normalization(streaming_session):
+    request = _req("tagged")
+    request.session_generation = 3
+    if streaming_session:
+        request.session = NS(session_id="session")
+    else:
+        request.session_id = "session"
+    bound = _request_key(request)
+    known = {request.rid: bound}
+    assert _request_key(request, known_keys=known) is bound
+    assert _request_key(request, known_keys={}) == bound
+    request.beliefkv_metadata["unrelated"] = "changed"
+    assert _request_key(request, known_keys=known) is bound
+
+
+@pytest.mark.parametrize("change", (
+    lambda req: setattr(req, "rid", "new-request"),
+    lambda req: req.beliefkv_metadata.update(root_workflow_id="new-workflow"),
+    lambda req: req.beliefkv_metadata.update(invocation_id="new-invocation"),
+    lambda req: req.beliefkv_metadata.update(context_id="new-context"),
+    lambda req: req.beliefkv_metadata.update(context_epoch=1),
+    lambda req: setattr(req.cache_request_handle, "attempt_id", 1),
+    lambda req: setattr(req, "session_id", "new-session"),
+    lambda req: setattr(req, "session_generation", 4),
+    lambda req: req.beliefkv_metadata.update(context_epoch=True),
+    lambda req: setattr(req.cache_request_handle, "attempt_id", -1),
+    lambda req: setattr(req, "session_generation", True),
+    lambda req: setattr(req, "session", NS(session_id="conflicting-session")),
+    lambda req: setattr(req, "rid", []),
+    lambda req: setattr(req, "beliefkv_metadata", None),
+))
+def test_bound_identity_still_observes_every_changed_or_invalid_live_field(change):
+    request = _req("tagged")
+    request.session_id, request.session_generation = "session", 3
+    bound = _request_key(request)
+    known = {request.rid: bound}
+    change(request)
+    current = _request_key(request, known_keys=known)
+    assert current == _request_key(request)
+    assert current is not bound
+    assert known["tagged"] is bound
 
 
 def test_prioritizes_tagged_without_changing_untagged_positions_or_native_queue() -> None:

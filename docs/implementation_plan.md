@@ -2,6 +2,25 @@
 
 Status date: 2026-10-11.
 
+Reduce repeated request-identity allocations after a CPU profile of108 waiting
+requests with16 retained rounds identifies_request_key cost. Admission planning,
+terminal queue checks, reentry reads and lease first-service processing may reuse
+the existing runtime.visible identity only after checking every current request,
+workflow, invocation, context, epoch, attempt, session and generation field.
+Changed fields still produce a new identity or reject malformed input. Add no
+cross-call metadata/residency cache or scheduling guard.
+
+The328 related admission/runtime/handoff/terminal/tool checks pass, including14
+changed/invalid-field cases and ordinary/streaming session normalization.
+Keepv61_bound_identity_admission_cpu_20261011.json with pinned2252bbc planner,
+identity-parser and frontier sources. Four synthetic admission cases,61 alternating
+samples each, reduce mean wall10.6%-15.0%. Two plans over156 requests are2.830
+to2.427ms; over108 with resident ordering, parent handoffs and semantic progress,
+2.237 to1.902ms. Queue order, native inspection counts and completed-batch state
+are equal. Resident inspection is a stub; physical restoration, IPC, DMA and GPU
+are excluded. Commit and include the change in the still-waiting V23, preserving
+the frozen V22 pair; CPU improvements do not prove native-relative performance.
+
 Retain the four-step terminal-child capacity handoff and reduce complete-prefix
 inspection cost. Within each RadixKey.is_prefix_at call, reuse logical lengths
 while preserving namespaces, bigram boundaries, limit/offset/page semantics and

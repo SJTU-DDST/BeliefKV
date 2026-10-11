@@ -44,6 +44,7 @@ def baseline_classes(revision: str):
     paths = (
         "beliefkv/runtime/sglang_v0520_runtime.py",
         "beliefkv/policy/causal_frontier.py",
+        "beliefkv/runtime/sglang_v0520_admission.py",
     )
     sources = [
         subprocess.check_output(["git", "show", f"{revision}:{path}"], cwd=ROOT, text=True)
@@ -56,6 +57,7 @@ def baseline_classes(revision: str):
         "_causal_rank", "plan_native_prefill", "_local_frontier_features",
         "_prefill_causal_ranks", "on_batch_completed", "dispatch_execution_handoff",
         "_capture_semantic_text", "_poll_semantic_reports",
+        "_executable_waiting_key", "terminal_waiting_request_ids",
     }
     original.name = "BaselineRuntime"
     original.bases = [ast.Name(id="NativeAdmissionRuntime", ctx=ast.Load())]
@@ -65,6 +67,20 @@ def baseline_classes(revision: str):
         method.decorator_list = []
     module = ast.fix_missing_locations(ast.Module(body=[original], type_ignores=[]))
     namespace = dict(vars(runtime_module))
+    request_key = next(
+        item for item in ast.parse(sources[2]).body
+        if isinstance(item, ast.FunctionDef) and item.name == "_request_key"
+    )
+    identity_module = ast.Module(body=[
+        ast.ImportFrom(
+            module="__future__", names=[ast.alias(name="annotations")], level=0,
+        ),
+        request_key,
+    ], type_ignores=[])
+    exec(
+        compile(ast.fix_missing_locations(identity_module), f"{revision}:{paths[2]}", "exec"),
+        namespace,
+    )
     exec(compile(module, f"{revision}:{paths[0]}", "exec"), namespace)
     frontier_namespace = dict(vars(frontier_module))
     exec(compile(sources[1], f"{revision}:{paths[1]}", "exec"), frontier_namespace)
