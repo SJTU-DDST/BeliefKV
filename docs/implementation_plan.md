@@ -79,14 +79,21 @@ change1.046/1.040/1.918→0.508/0.625/1.463ms; all-matching cases change
 the prior regression; single eviction registration adds about2–4 microseconds for
 the auxiliary route. The156 telemetry/lifecycle/writer/window checks pass.
 These fixtures exclude real scheduler concurrency, DMA and GPU, and do not
-establish throughput improvement. Code and evidence are committed asfe06e06.
-At2026-10-11 08:27:31 CST, same-configuration V23 is registered as
-waiting_for_previous_pair with coordinator1785294. Its frozen checkout is
-beliefkv-v41-prefix-writer-20261011, target revision
-fe06e06682485e642c759b40ad5c9885c67cb70b and canonical patch SHA256 remains
+establish throughput improvement. Writer code and evidence are committed asfe06e06.
+The initial2026-10-11 08:27:31 CST V23 registration is preserved in
+v23_launch_after_v22_fe06e06_superseded_20261011.json.
+At2026-10-11 08:46:35 CST, replace the not-yet-started registration with the
+combined writer-index and admission-binding revision73c9ac1. Same-configuration
+V23 is waiting_for_previous_pair with coordinator2167234. Its frozen checkout is
+beliefkv-v45-admission-binding-20261011, target revision
+73c9ac13af382f63be37b2fd47d68be6036b1edf and canonical patch SHA256 remains
 03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83.
 Keep the live registration in the main workspace's
-experiments/reports/v23_launch_after_v22_20261011.json. Captured wait identities
+experiments/reports/v23_launch_after_v22_20261011.json. Preserve the old
+registration, logs and checkout, plus
+v23_supersession_fe06e06_to_73c9ac1_20261011.json. Only the old waiting
+coordinator1785294 was signalled; no V22 coordinator, driver, server, scheduler
+or client was signalled. Captured wait identities
 are V22 coordinator1159560 and driver1166290. Deploy only after the full pair and
 postprocessing complete, then run predictive first and cold native second,
 preserving workload and prediction windows. V22 source and processes remain
@@ -115,8 +122,9 @@ groups of200 alternating iterations with identical plans, counters, promotion
 metadata and native inspection counts. Mean wall for two planning calls falls
 6.6%–14.7%;48 requests/4 leases changes1.216→1.101ms and156 requests/16 leases
 changes2.510→2.216ms. These fixtures exclude real allocator, DMA and GPU.
-Integrate the isolated change into the next frozen registration before claiming
-any actual service-performance benefit.
+Code and evidence are committed as73c9ac1 and included in the V23 frozen
+registration above. Actual GPU execution and same-version native comparison
+remain pending before any service-performance claim.
 
 Reject the RadixKey raw-length reuse candidate after whole-inspector measurement.
 Keepv43_reentry_length_reuse_cpu_20261011.json:15 groups of15 samples with100

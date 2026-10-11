@@ -74,13 +74,21 @@ v39_eviction_route_single_pass_cpu_20261011.json，均未部署。
 没有再出现先前退化；单条驱逐登记因辅助路由增加约2–4微秒。
 156项telemetry/lifecycle/writer/window检查通过，CPU夹具不包含
 真实scheduler并发、DMA或GPU，不能由此声称吞吐提升。
-上述代码与证据已提交为fe06e06。2026-10-11 08:27:31 CST已登记
-同配置V23，状态waiting_for_previous_pair，协调器PID1785294；
-冻结checkout为beliefkv-v41-prefix-writer-20261011，完整目标revision
-为fe06e06682485e642c759b40ad5c9885c67cb70b，原生patch SHA256仍为
+上述writer代码与证据已提交为fe06e06。V23最初于2026-10-11
+08:27:31 CST登记该版本，原登记保存在
+v23_launch_after_v22_fe06e06_superseded_20261011.json。
+2026-10-11 08:46:35 CST已将尚未启动的V23替换为同时包含writer
+索引和准入身份绑定减负的73c9ac1，状态waiting_for_previous_pair，
+协调器PID2167234；冻结checkout为
+beliefkv-v45-admission-binding-20261011，完整目标revision为
+73c9ac13af382f63be37b2fd47d68be6036b1edf，原生patch SHA256仍为
 03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83。
 实际登记位于主工作区experiments/reports/
-v23_launch_after_v22_20261011.json。协调器已捕获V22 coordinator
+v23_launch_after_v22_20261011.json；替换回执为
+v23_supersession_fe06e06_to_73c9ac1_20261011.json，旧登记、日志和
+冻结checkout保留。只停止旧waiting coordinator1785294；
+V22 coordinator/driver/server/scheduler/client均未发送信号。
+协调器已捕获V22 coordinator
 1159560及driver1166290的进程身份，等待整个pair及后处理完成再
 部署；仍为predictive先行、冷native随后，不改变workload或预测
 窗口。当前V22源码和运行进程保持冻结，V23尚未启动；性能目标仍
@@ -108,7 +116,8 @@ v45_request_binding_plan_light_clock_cpu_20261011.json包含17组
 顺序、计数、提升元数据和原生驻留检查次数均一致；48-request/
 4-lease场景为1.216→1.101ms，156-request/16-lease场景为
 2.510→2.216ms。该夹具没有真实allocator、DMA或GPU，
-不代表端到端吞吐收益；隔离改动待合并到下一轮冻结登记。
+不代表端到端吞吐收益。改动与证据已提交为73c9ac1，并纳入上述
+V23冻结登记，等待真正GPU运行及同版本native对照。
 
 同时验证并撤回仅在RadixKey中复用原始长度的候选优化。
 v43_reentry_length_reuse_cpu_20261011.json记录15组各15轮、
