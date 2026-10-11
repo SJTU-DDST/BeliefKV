@@ -14,6 +14,7 @@ from threading import Thread
 from typing import Any
 
 from beliefkv.runtime.writer_timing import SampledWriterTiming
+from beliefkv.runtime.record_json import encode_record
 
 
 class NativeOpportunityTelemetry:
@@ -54,9 +55,7 @@ class NativeOpportunityTelemetry:
                         }
                     sample = self._writer_timing.begin(row["event"])
                     try:
-                        stream.write(
-                            json.dumps(row, separators=(",", ":"), allow_nan=False) + "\n"
-                        )
+                        stream.write(encode_record(row) + "\n")
                     finally:
                         self._writer_timing.finish(sample)
         except BaseException as exc:

@@ -5,6 +5,7 @@ from __future__ import annotations
 from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
 from beliefkv.runtime.restore_wait_probe import RestoreWaitProbe
 from beliefkv.runtime.writer_timing import SampledWriterTiming
+from beliefkv.runtime.record_json import encode_record
 
 import atexit
 from array import array
@@ -510,7 +511,7 @@ class NativeReactiveTelemetry:
         self._context_prefix_counts["previously_served_prefix_recompute_proxy_tokens"] += lost
         self._context_prefix_counts["new_or_changed_prompt_tokens"] += new
         self._context_prefix_counts["requests_with_prefix_recompute_proxy"] += int(lost > 0)
-        output.write(json.dumps({
+        output.write(encode_record({
             "event": "context_prefix_reuse_probe", "ts_ms": record["ts_ms"],
             **{name: record[name] for name in (
                 "workflow_id", "invocation_id", "context_id", "context_epoch", "request_id",
@@ -526,7 +527,7 @@ class NativeReactiveTelemetry:
                 "but absent from current native cache-hit counters. Not a per-layer "
                 "kernel-work measurement or proof of eviction cause; excludes new input."
             ),
-        }, separators=(",", ":"), allow_nan=False) + "\n")
+        }) + "\n")
 
     def _remove_block_eviction_index(
         self, identity: tuple[str, str, int, str]
@@ -1919,11 +1920,11 @@ class NativeReactiveTelemetry:
                     if time.monotonic() >= next_status:
                         for handle in handles.values():
                             handle.flush()
-                        audit.write(json.dumps({
+                        audit.write(encode_record({
                             "event": "background_writer_timing",
                             "ts_ms": time.time() * 1000.,
                             "timing": self._writer_timing.snapshot(),
-                        }, separators=(",", ":"), allow_nan=False) + "\n")
+                        }) + "\n")
                         self._counts["audit"] += 1
                         self._write_status()
                         next_status = time.monotonic() + 1.0
@@ -1960,11 +1961,7 @@ class NativeReactiveTelemetry:
                                 ):
                                     self._write_context_prefix(record, eviction_attribution)
                                 else:
-                                    eviction_attribution.write(
-                                        json.dumps(
-                                            record, separators=(",", ":"), allow_nan=False,
-                                        ) + "\n"
-                                    )
+                                    eviction_attribution.write(encode_record(record) + "\n")
                             except Exception as exc:
                                 self._block_attribution_counts[
                                     "processing_errors"
@@ -1978,11 +1975,7 @@ class NativeReactiveTelemetry:
                                 }, separators=(",", ":")) + "\n")
                             self._counts[stream] += 1
                             continue
-                        handles[stream].write(
-                            json.dumps(
-                                record, separators=(",", ":"), allow_nan=False,
-                            ) + "\n"
-                        )
+                        handles[stream].write(encode_record(record) + "\n")
                         self._counts[stream] += 1
                         if stream in ("action_ack", "action_use"):
                             handles[stream].flush()

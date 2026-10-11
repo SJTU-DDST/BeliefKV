@@ -13,7 +13,7 @@ classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: Apache Software License",
 ]
-dependencies = ["cloudpickle>=3.0"]
+dependencies = ["cloudpickle>=3.0", "ujson==5.12.1"]
 
 [project.optional-dependencies]
 dev = ["pytest"]
