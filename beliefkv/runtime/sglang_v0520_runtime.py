@@ -1418,7 +1418,8 @@ class NativeAdmissionRuntime:
         now_ms = time.monotonic() * 1000
         if self._terminal_child_reclaims and now_ms >= self._terminal_child_reclaim_next_ms:
             self._retry_terminal_child_reclaims(now_ms=now_ms)
-        self._poll_semantic_reports(now_ms)
+        if self._semantic_worker is not None:
+            self._poll_semantic_reports(now_ms)
         for join_id, stage in tuple(self._final_stages.items()):
             if not self._live_final_stage(stage):
                 self._clear_final_stage(join_id)
@@ -1525,8 +1526,14 @@ class NativeAdmissionRuntime:
                 "expired" if time.monotonic() >= ticket.expires_at
                 else "safe_point_invalidated"
             )
-        self._sample_h2d_opportunities(waiting_queue, now_ms=now_ms)
-        self._sample_terminal_cache(now_ms=now_ms)
+        if self._opportunity_writer is not None:
+            if now_ms >= self._opportunity_next_ms:
+                self._sample_h2d_opportunities(waiting_queue, now_ms=now_ms)
+            if (
+                self._terminal_cache_diagnostics
+                and now_ms >= self._terminal_cache_next_ms
+            ):
+                self._sample_terminal_cache(now_ms=now_ms)
         if self._opportunity_writer is not None and now_ms >= self._runtime_state_next_ms:
             self._runtime_state_next_ms = now_ms + 1_000
             self._record_runtime_state()

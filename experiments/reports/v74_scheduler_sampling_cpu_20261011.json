@@ -1,0 +1,1043 @@
+{
+  "scope": "CPU-only full scheduler maintenance with profiling enabled, real causal graphs and a 1ms logical cycle. The baseline retains its timing decorator. Observation sinks and idle semantic workers are stubs; no native socket, allocator, decode, DMA or GPU throughput is measured. Only sample_wall_ms and shared_path_timing are excluded from policy-row equality.",
+  "baseline_revision": "e317b68",
+  "baseline_runtime_sha256": "3f75bfc84ecd341b1d0f0eda68e4d0e898bb6e122d84fe19c4e6f84ee2f0faf0",
+  "updated_runtime_sha256": "77e1d3e4bd8b81f546a6bfef9897f45904edb0ec7b32c1cbe1fb9aae0d4aa694",
+  "samples_per_case": 31,
+  "cycles_per_sample": 128,
+  "warmup_samples": 5,
+  "cases": [
+    {
+      "configuration": "no_observation_worker",
+      "queue_size": 48,
+      "retained_rounds": 1,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 0,
+      "semantic_polls": 0,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.010811580897177419,
+            "p50_ms": 0.0108318203125,
+            "p99_ms": 0.0116943203125,
+            "max_ms": 0.0116943203125
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.010805690776209678,
+            "p50_ms": 0.0108263203125,
+            "p99_ms": 0.0116848125,
+            "max_ms": 0.0116848125
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.004927332157258065,
+            "p50_ms": 0.0048820703125,
+            "p99_ms": 0.00541703125,
+            "max_ms": 0.00541703125
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.004921719254032258,
+            "p50_ms": 0.00487721875,
+            "p99_ms": 0.0054076328125,
+            "max_ms": 0.0054076328125
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.5445252547048498
+    },
+    {
+      "configuration": "semantic_worker_only",
+      "queue_size": 48,
+      "retained_rounds": 1,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 0,
+      "semantic_polls": 4608,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.012029269909274193,
+            "p50_ms": 0.0120383828125,
+            "p99_ms": 0.012767546875,
+            "max_ms": 0.012767546875
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.012019922127016129,
+            "p50_ms": 0.0120317109375,
+            "p99_ms": 0.0127598984375,
+            "max_ms": 0.0127598984375
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.008061707661290322,
+            "p50_ms": 0.0080076015625,
+            "p99_ms": 0.0085005390625,
+            "max_ms": 0.0085005390625
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.008054908518145162,
+            "p50_ms": 0.008001328125,
+            "p99_ms": 0.0084915625,
+            "max_ms": 0.0084915625
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.3298701578073582
+    },
+    {
+      "configuration": "opportunities",
+      "queue_size": 48,
+      "retained_rounds": 1,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 0,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.011390169354838709,
+            "p50_ms": 0.01122415625,
+            "p99_ms": 0.0136152421875,
+            "max_ms": 0.0136152421875
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.011383577620967741,
+            "p50_ms": 0.01121809375,
+            "p99_ms": 0.0136068203125,
+            "max_ms": 0.0136068203125
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.0052580685483870964,
+            "p50_ms": 0.0050443828125,
+            "p99_ms": 0.006980203125,
+            "max_ms": 0.006980203125
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.005252208921370968,
+            "p50_ms": 0.0050387734375,
+            "p99_ms": 0.006973078125,
+            "max_ms": 0.006973078125
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.5386152669880537
+    },
+    {
+      "configuration": "opportunities_and_semantic",
+      "queue_size": 48,
+      "retained_rounds": 1,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 4608,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.012314305191532258,
+            "p50_ms": 0.0120949765625,
+            "p99_ms": 0.0141046953125,
+            "max_ms": 0.0141046953125
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.012307390625,
+            "p50_ms": 0.0120875,
+            "p99_ms": 0.0140976953125,
+            "max_ms": 0.0140976953125
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.008391532006048388,
+            "p50_ms": 0.0081328046875,
+            "p99_ms": 0.0102032109375,
+            "max_ms": 0.0102032109375
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.008384905493951614,
+            "p50_ms": 0.0081261953125,
+            "p99_ms": 0.010195921875,
+            "max_ms": 0.010195921875
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.318709729020922
+    },
+    {
+      "configuration": "terminal_and_opportunities",
+      "queue_size": 48,
+      "retained_rounds": 1,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 0,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.01116996396169355,
+            "p50_ms": 0.0109854765625,
+            "p99_ms": 0.0129683125,
+            "max_ms": 0.0129683125
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.011163732610887097,
+            "p50_ms": 0.01097896875,
+            "p99_ms": 0.0129613671875,
+            "max_ms": 0.0129613671875
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.005322757308467742,
+            "p50_ms": 0.0050963828125,
+            "p99_ms": 0.007292703125,
+            "max_ms": 0.007292703125
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.005317001512096774,
+            "p50_ms": 0.00509109375,
+            "p99_ms": 0.0072852578125,
+            "max_ms": 0.0072852578125
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.5237254691220814
+    },
+    {
+      "configuration": "all_observations",
+      "queue_size": 48,
+      "retained_rounds": 1,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 4608,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.012422927671370968,
+            "p50_ms": 0.0122174375,
+            "p99_ms": 0.0141820546875,
+            "max_ms": 0.0141820546875
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.012416183215725806,
+            "p50_ms": 0.012210984375,
+            "p99_ms": 0.0141748515625,
+            "max_ms": 0.0141748515625
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.00852884400201613,
+            "p50_ms": 0.008274640625,
+            "p99_ms": 0.0101133671875,
+            "max_ms": 0.0101133671875
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.008522183467741936,
+            "p50_ms": 0.0082690390625,
+            "p99_ms": 0.01010596875,
+            "max_ms": 0.01010596875
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.3136229290698527
+    },
+    {
+      "configuration": "no_observation_worker",
+      "queue_size": 48,
+      "retained_rounds": 8,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 0,
+      "semantic_polls": 0,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.011327956401209677,
+            "p50_ms": 0.0113426953125,
+            "p99_ms": 0.011671109375,
+            "max_ms": 0.011671109375
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.01132165625,
+            "p50_ms": 0.011336875,
+            "p99_ms": 0.0116632890625,
+            "max_ms": 0.0116632890625
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.00505911189516129,
+            "p50_ms": 0.005067484375,
+            "p99_ms": 0.0053299375,
+            "max_ms": 0.0053299375
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.005052972782258065,
+            "p50_ms": 0.005061125,
+            "p99_ms": 0.0053225390625,
+            "max_ms": 0.0053225390625
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.5536896130141679
+    },
+    {
+      "configuration": "semantic_worker_only",
+      "queue_size": 48,
+      "retained_rounds": 8,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 0,
+      "semantic_polls": 4608,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.011998068296370968,
+            "p50_ms": 0.012014828125,
+            "p99_ms": 0.0123482265625,
+            "max_ms": 0.0123482265625
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.011991383820564517,
+            "p50_ms": 0.0120078046875,
+            "p99_ms": 0.0123423671875,
+            "max_ms": 0.0123423671875
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.008011991683467742,
+            "p50_ms": 0.0080230703125,
+            "p99_ms": 0.0083306875,
+            "max_ms": 0.0083306875
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.008005558719758065,
+            "p50_ms": 0.00801634375,
+            "p99_ms": 0.0083245078125,
+            "max_ms": 0.0083245078125
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.33239075326493983
+    },
+    {
+      "configuration": "opportunities",
+      "queue_size": 48,
+      "retained_rounds": 8,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 0,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.011295050151209678,
+            "p50_ms": 0.011138828125,
+            "p99_ms": 0.0131826171875,
+            "max_ms": 0.0131826171875
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.011288730846774194,
+            "p50_ms": 0.0111301875,
+            "p99_ms": 0.0131753046875,
+            "max_ms": 0.0131753046875
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.005371254032258065,
+            "p50_ms": 0.005148609375,
+            "p99_ms": 0.0076252421875,
+            "max_ms": 0.0076252421875
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.005365068800403226,
+            "p50_ms": 0.0051418828125,
+            "p99_ms": 0.007618375,
+            "max_ms": 0.007618375
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.5247411889586934
+    },
+    {
+      "configuration": "opportunities_and_semantic",
+      "queue_size": 48,
+      "retained_rounds": 8,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 4608,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.012485188508064515,
+            "p50_ms": 0.01225396875,
+            "p99_ms": 0.014416296875,
+            "max_ms": 0.014416296875
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.012477917338709678,
+            "p50_ms": 0.01224540625,
+            "p99_ms": 0.014408171875,
+            "max_ms": 0.014408171875
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.008391706149193549,
+            "p50_ms": 0.008138046875,
+            "p99_ms": 0.01021196875,
+            "max_ms": 0.01021196875
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.008384742439516129,
+            "p50_ms": 0.00813109375,
+            "p99_ms": 0.0102043359375,
+            "max_ms": 0.0102043359375
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.32803350014953847
+    },
+    {
+      "configuration": "terminal_and_opportunities",
+      "queue_size": 48,
+      "retained_rounds": 8,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 0,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.011192378528225806,
+            "p50_ms": 0.0110168359375,
+            "p99_ms": 0.012711078125,
+            "max_ms": 0.012711078125
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.011186119203629032,
+            "p50_ms": 0.011011828125,
+            "p99_ms": 0.012703734375,
+            "max_ms": 0.012703734375
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.005266691280241935,
+            "p50_ms": 0.0050300234375,
+            "p99_ms": 0.0074118984375,
+            "max_ms": 0.0074118984375
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.0052605798891129036,
+            "p50_ms": 0.00502375,
+            "p99_ms": 0.007403796875,
+            "max_ms": 0.007403796875
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.5297225254486604
+    },
+    {
+      "configuration": "all_observations",
+      "queue_size": 48,
+      "retained_rounds": 8,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 4608,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.01246130443548387,
+            "p50_ms": 0.0122602109375,
+            "p99_ms": 0.0144453984375,
+            "max_ms": 0.0144453984375
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.012451992943548387,
+            "p50_ms": 0.0122527578125,
+            "p99_ms": 0.014438625,
+            "max_ms": 0.014438625
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.008449678175403225,
+            "p50_ms": 0.0081647578125,
+            "p99_ms": 0.01052259375,
+            "max_ms": 0.01052259375
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.008442806451612904,
+            "p50_ms": 0.0081576171875,
+            "p99_ms": 0.010514078125,
+            "max_ms": 0.010514078125
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.3219714715637322
+    },
+    {
+      "configuration": "no_observation_worker",
+      "queue_size": 108,
+      "retained_rounds": 1,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 0,
+      "semantic_polls": 0,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.011141116431451614,
+            "p50_ms": 0.011140125,
+            "p99_ms": 0.0114123203125,
+            "max_ms": 0.0114123203125
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.011134746219758065,
+            "p50_ms": 0.0111332734375,
+            "p99_ms": 0.0114068515625,
+            "max_ms": 0.0114068515625
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.004998916330645161,
+            "p50_ms": 0.004950265625,
+            "p99_ms": 0.0053295703125,
+            "max_ms": 0.0053295703125
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.0049916756552419355,
+            "p50_ms": 0.004944796875,
+            "p99_ms": 0.0053232421875,
+            "max_ms": 0.0053232421875
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.5517027908202838
+    },
+    {
+      "configuration": "semantic_worker_only",
+      "queue_size": 108,
+      "retained_rounds": 1,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 0,
+      "semantic_polls": 4608,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.012118384828629033,
+            "p50_ms": 0.0121493828125,
+            "p99_ms": 0.0124923046875,
+            "max_ms": 0.0124923046875
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.012111331905241935,
+            "p50_ms": 0.0121424609375,
+            "p99_ms": 0.012486296875,
+            "max_ms": 0.012486296875
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.00807291179435484,
+            "p50_ms": 0.0080809296875,
+            "p99_ms": 0.008390390625,
+            "max_ms": 0.008390390625
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.008063959425403226,
+            "p50_ms": 0.0080730859375,
+            "p99_ms": 0.008384703125,
+            "max_ms": 0.008384703125
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.33418062616936095
+    },
+    {
+      "configuration": "opportunities",
+      "queue_size": 108,
+      "retained_rounds": 1,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 0,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.011296554435483872,
+            "p50_ms": 0.0108481484375,
+            "p99_ms": 0.01454525,
+            "max_ms": 0.01454525
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.011289966733870968,
+            "p50_ms": 0.0108416484375,
+            "p99_ms": 0.014537421875,
+            "max_ms": 0.014537421875
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.005477576612903226,
+            "p50_ms": 0.00507353125,
+            "p99_ms": 0.0087963515625,
+            "max_ms": 0.0087963515625
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.005471167338709677,
+            "p50_ms": 0.005066890625,
+            "p99_ms": 0.008788734375,
+            "max_ms": 0.008788734375
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.5153956191654969
+    },
+    {
+      "configuration": "opportunities_and_semantic",
+      "queue_size": 108,
+      "retained_rounds": 1,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 4608,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.012733951360887097,
+            "p50_ms": 0.0123407890625,
+            "p99_ms": 0.015802578125,
+            "max_ms": 0.015802578125
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.01272692943548387,
+            "p50_ms": 0.012334890625,
+            "p99_ms": 0.015795421875,
+            "max_ms": 0.015795421875
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.008754176663306452,
+            "p50_ms": 0.008330640625,
+            "p99_ms": 0.0117704765625,
+            "max_ms": 0.0117704765625
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.008746880796370968,
+            "p50_ms": 0.0083226640625,
+            "p99_ms": 0.0117621875,
+            "max_ms": 0.0117621875
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.3127265425088439
+    },
+    {
+      "configuration": "terminal_and_opportunities",
+      "queue_size": 108,
+      "retained_rounds": 1,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 0,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.011411095514112903,
+            "p50_ms": 0.01101521875,
+            "p99_ms": 0.014404765625,
+            "max_ms": 0.014404765625
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.011404548387096774,
+            "p50_ms": 0.011008296875,
+            "p99_ms": 0.0143971796875,
+            "max_ms": 0.0143971796875
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.0055985564516129035,
+            "p50_ms": 0.0052646796875,
+            "p99_ms": 0.008778859375,
+            "max_ms": 0.008778859375
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.0055922822580645164,
+            "p50_ms": 0.0052596484375,
+            "p99_ms": 0.0087707265625,
+            "max_ms": 0.0087707265625
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.5096445673910521
+    },
+    {
+      "configuration": "all_observations",
+      "queue_size": 108,
+      "retained_rounds": 1,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 4608,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.012510647933467742,
+            "p50_ms": 0.012033765625,
+            "p99_ms": 0.015465859375,
+            "max_ms": 0.015465859375
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.0125015703125,
+            "p50_ms": 0.01202665625,
+            "p99_ms": 0.01545640625,
+            "max_ms": 0.01545640625
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.008589345514112903,
+            "p50_ms": 0.0080970859375,
+            "p99_ms": 0.01197503125,
+            "max_ms": 0.01197503125
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.008582243951612903,
+            "p50_ms": 0.00808859375,
+            "p99_ms": 0.0119666953125,
+            "max_ms": 0.0119666953125
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.31350672458869133
+    },
+    {
+      "configuration": "no_observation_worker",
+      "queue_size": 108,
+      "retained_rounds": 8,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 0,
+      "semantic_polls": 0,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.011234415322580646,
+            "p50_ms": 0.011285328125,
+            "p99_ms": 0.0115609609375,
+            "max_ms": 0.0115609609375
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.011227991179435483,
+            "p50_ms": 0.0112795859375,
+            "p99_ms": 0.011555171875,
+            "max_ms": 0.011555171875
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.0049876864919354835,
+            "p50_ms": 0.0049800078125,
+            "p99_ms": 0.005308421875,
+            "max_ms": 0.005308421875
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.004981699092741936,
+            "p50_ms": 0.004972296875,
+            "p99_ms": 0.00530265625,
+            "max_ms": 0.00530265625
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.5563143029657773
+    },
+    {
+      "configuration": "semantic_worker_only",
+      "queue_size": 108,
+      "retained_rounds": 8,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 0,
+      "semantic_polls": 4608,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.01259642741935484,
+            "p50_ms": 0.0126287421875,
+            "p99_ms": 0.013043515625,
+            "max_ms": 0.013043515625
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.012589864919354838,
+            "p50_ms": 0.012621359375,
+            "p99_ms": 0.0130366640625,
+            "max_ms": 0.0130366640625
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.008267689264112903,
+            "p50_ms": 0.0082719296875,
+            "p99_ms": 0.008637859375,
+            "max_ms": 0.008637859375
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.008261116683467741,
+            "p50_ms": 0.0082648125,
+            "p99_ms": 0.008632171875,
+            "max_ms": 0.008632171875
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.3438280127400224
+    },
+    {
+      "configuration": "opportunities",
+      "queue_size": 108,
+      "retained_rounds": 8,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 0,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.01137574470766129,
+            "p50_ms": 0.01097515625,
+            "p99_ms": 0.0145067734375,
+            "max_ms": 0.0145067734375
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.011369258316532259,
+            "p50_ms": 0.0109682890625,
+            "p99_ms": 0.014499546875,
+            "max_ms": 0.014499546875
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.005438222026209677,
+            "p50_ms": 0.005042109375,
+            "p99_ms": 0.008839359375,
+            "max_ms": 0.008839359375
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.005431884576612903,
+            "p50_ms": 0.0050356640625,
+            "p99_ms": 0.00883109375,
+            "max_ms": 0.00883109375
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.5222305250365986
+    },
+    {
+      "configuration": "opportunities_and_semantic",
+      "queue_size": 108,
+      "retained_rounds": 8,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 4608,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.012576689264112904,
+            "p50_ms": 0.012077890625,
+            "p99_ms": 0.0161690703125,
+            "max_ms": 0.0161690703125
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.012569527721774193,
+            "p50_ms": 0.0120709453125,
+            "p99_ms": 0.016159640625,
+            "max_ms": 0.016159640625
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.00866594027217742,
+            "p50_ms": 0.0082911953125,
+            "p99_ms": 0.011929859375,
+            "max_ms": 0.011929859375
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.008658977066532259,
+            "p50_ms": 0.008284328125,
+            "p99_ms": 0.01192084375,
+            "max_ms": 0.01192084375
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.31111357099500936
+    },
+    {
+      "configuration": "terminal_and_opportunities",
+      "queue_size": 108,
+      "retained_rounds": 8,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 0,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.011298192288306452,
+            "p50_ms": 0.0108865390625,
+            "p99_ms": 0.0145738671875,
+            "max_ms": 0.0145738671875
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.011291911794354839,
+            "p50_ms": 0.0108805078125,
+            "p99_ms": 0.0145658828125,
+            "max_ms": 0.0145658828125
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.005463626008064516,
+            "p50_ms": 0.005035015625,
+            "p99_ms": 0.00902046875,
+            "max_ms": 0.00902046875
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.005451186491935484,
+            "p50_ms": 0.0050284453125,
+            "p99_ms": 0.0090125234375,
+            "max_ms": 0.0090125234375
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.5172485765731278
+    },
+    {
+      "configuration": "all_observations",
+      "queue_size": 108,
+      "retained_rounds": 8,
+      "policy_rows_counters_and_semantic_cadence_equal": true,
+      "observed_rows": 90,
+      "semantic_polls": 4608,
+      "costs_per_cycle": {
+        "baseline": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.012462924899193548,
+            "p50_ms": 0.012071640625,
+            "p99_ms": 0.015687296875,
+            "max_ms": 0.015687296875
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.012455780745967742,
+            "p50_ms": 0.012065640625,
+            "p99_ms": 0.0156782890625,
+            "max_ms": 0.0156782890625
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 31,
+            "mean_ms": 0.008577565776209677,
+            "p50_ms": 0.008167015625,
+            "p99_ms": 0.011907375,
+            "max_ms": 0.011907375
+          },
+          "thread_cpu_ms": {
+            "count": 31,
+            "mean_ms": 0.008570219254032257,
+            "p50_ms": 0.0081583046875,
+            "p99_ms": 0.0118988359375,
+            "max_ms": 0.0118988359375
+          }
+        }
+      },
+      "mean_thread_cpu_reduction_fraction": 0.31194844957377255
+    }
+  ]
+}

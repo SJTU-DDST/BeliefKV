@@ -1,0 +1,49 @@
+{
+  "scope": "Skip decorated dormant scheduler sampling calls with existing due-time and worker conditions; CPU validation, no GPU performance claim.",
+  "baseline_revision": "e317b68",
+  "updated_runtime_sha256": "77e1d3e4bd8b81f546a6bfef9897f45904edb0ec7b32c1cbe1fb9aae0d4aa694",
+  "change": {
+    "semantic_poll_requires_existing_worker": true,
+    "opportunity_sampling_requires_existing_writer_and_due_time": true,
+    "terminal_sampling_requires_existing_diagnostics_writer_and_due_time": true,
+    "helper_checks_retained_for_direct_callers": true,
+    "sampling_frequency_or_policy_changed": false,
+    "native_patch_changed": false,
+    "frozen_v23_modified": false
+  },
+  "checks": {
+    "passed": 342,
+    "skipped": 1,
+    "suites": [
+      "tests/test_sglang_v0520_runtime.py",
+      "tests/test_execution_handoff.py",
+      "tests/test_wait_prefetch_batch.py",
+      "tests/test_tool_predictive_transfers.py",
+      "tests/test_terminal_child_capacity.py",
+      "tests/test_hotpath_timing.py",
+      "tests/test_sglang_v0520_prediction.py",
+      "tests/test_semantic_report_worker.py"
+    ],
+    "skip": {
+      "test": "test_process_worker_loads_pinned_model_and_wakes_without_scheduler_inference",
+      "reason": "The local pinned encoder artifact is absent; the live V23 worker uses its separately configured artifact."
+    },
+    "python": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python"
+  },
+  "benchmark": {
+    "report": "v74_scheduler_sampling_cpu_20261011.json",
+    "cases": 24,
+    "alternating_samples_per_case": 31,
+    "cycles_per_sample": 128,
+    "warmup_samples": 5,
+    "waiting_request_counts": [48, 108],
+    "retained_round_counts": [1, 8],
+    "logical_cycle_ms": 1,
+    "profiling_enabled": true,
+    "policy_rows_counters_and_semantic_cadence_equal": true,
+    "semantic_worker_cpu_reduction_fraction_range": [0.3111, 0.3438],
+    "no_worker_cpu_reduction_fraction_range": [0.5096, 0.5563],
+    "native_socket_allocator_dma_or_gpu_measured": false
+  },
+  "deployment": "Commit in the isolated follow-up; do not modify the running frozen V23 predictive/native pair. No subsequent pair has been registered."
+}

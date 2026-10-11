@@ -2,18 +2,47 @@
 
 更新日期：2026-10-11。
 
-V23 早期卸载审计完成于 2026-10-11 14:14:39 CST。工具 PREPARE
-为 41 次批量决策、270 次节点 ACK、2.188 GB FULL，覆盖 19 次
-独立工具等待；真实 HBM 回收为 18 条节点事件、6 个 context、
-7 次独立工具等待，累计释放 0.141 GB FULL 与 0.708 GB Mamba。
-首次卸载后实际仍等待至少 2 秒的是 6/7；这些调用全部为 glob，
-不能用这 7 个样本宣布整体精确率达到 85.7%。JOIN PREPARE 为
-104 次决策、167 次 ACK、2.113 GB FULL，覆盖 103 个 parent；
-真实回收为 37 条节点事件、37 个 parent，释放 0.549 GB FULL
-与 2.318 GB Mamba。备份、节点回收、完整 agent 卸载仍须区分。
+V23 卸载审计更新于 2026-10-11 14:35:10 CST。工具 PREPARE
+为 82 次批量决策、456 次节点 ACK、3.811 GB FULL，覆盖 58 次
+独立工具等待；真实 HBM 回收为 19 条节点事件、7 个 context、
+8 次独立工具等待，累计释放 0.145 GB FULL 与 0.773 GB Mamba。
+首次卸载后实际仍等待至少 2 秒的是 7/8=87.5%；调用中 7 次
+为 glob、1 次为 execute，样本不足以宣布整体预测可靠。首次
+PREPARE 的同一精确率为 38/58=65.5%。卸载动作只有 1 条有效
+P50 点预测，不能给出有代表性的 RETURN 时间误差分布。
+JOIN PREPARE 为 105 次决策、168 次 ACK、2.142 GB FULL，
+覆盖 103 个 parent；真实回收为 43 条节点事件、42 个 parent，
+释放 0.549 GB FULL 与 2.318 GB Mamba。备份、节点回收、
+完整 agent 卸载仍须区分。当前没有工具开始前主动卸载或每次
+spawn 后无条件卸载；WAIT_TOOL/WAIT_JOIN 备份后，原生 allocator
+只在真实短缺时回收合格冷页。
 数据来自正在追加的日志逐文件读取，不是同一时刻的原子快照；
 逐次工具边界与读取前缀 SHA256 保存在
-v73_v23_wait_offload_live_20261011.json。
+v75_v23_wait_offload_live_20261011.json；14:14 的历史审计保留。
+
+V23 的 600-900 秒完整服务窗口 decode 吞吐为 1143.43 token/s，
+GPU 利用率 86.03%，时间加权 decode batch 47.35，worker
+墙钟区间均值 34.61 ms。V22 predictive/native 的对应窗口为
+1019.20/1219.52 token/s、76.68%/89.81%。这是跨版本诊断，
+尚无 V23 同版本 native 对照，不能证明策略收益。窗口内已埋点
+Python 独占墙钟累计 40.985 秒，其中 reentry 5.641 秒、准入
+规划 4.131 秒、JOIN PREPARE 3.719 秒、handoff enqueue
+3.143 秒、机会采样 2.520 秒。累计时间不是可直接扣除的 JCT。
+保留 v74_v23_busy_window_600_900_20261011.json 与
+v74_v23_control_600_900_20261011.json。
+
+隔离后续工作区已减少每个 scheduler_step 进入无工作函数的成本：
+没有 semantic worker 时跳过 poll；机会和终态采样仅在已有 writer、
+诊断条件及既有 deadline 满足时进入计时函数。helper 自身检查保留，
+不改变采样频率、预测输入、物理动作、阈值或 native patch。
+342 项相关检查通过、1 项因本地固定 encoder 产物缺失而跳过。
+固定 e317b68 的 24 组交替 CPU 夹具确认策略记录、计数与 poll
+时序一致；有 worker 时完整空闲维护循环 CPU 降低 31.1%-34.4%，
+无 worker 时降低 51.0%-55.6%。这些是约 5-13 微秒的维护循环，
+writer/worker 为 stub，未测量 native allocator、DMA、GPU 或 JCT。
+保留 v74_scheduler_sampling_cpu_20261011.json 和验证回执。
+该改动尚未部署到冻结 V23；后续仍优先优化实际 reentry、准入、
+备份与恢复成本，主性能目标未完成。
 
 14:15:42 的 V23 生命周期审计记录 9 个 JOIN 和 87 个工具等待
 在完成边界前启动、且由下一请求复用 FULL，分别为

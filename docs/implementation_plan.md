@@ -2,17 +2,47 @@
 
 Status date: 2026-10-11.
 
-Early V23 evidence was read at 2026-10-11 14:14:39-14:15:42 CST.
-Tool PREPARE has 41 burst decisions, 270 node ACKs and 2.188 GB FULL
-across 19 independent waits. Actual HBM demotion has 18 node events,
-6 contexts and 7 independent tool waits, releasing 0.141 GB FULL and
-0.708 GB Mamba cumulatively. Six of seven first demotions still have at
-least 2 seconds remaining; all seven calls are glob, so this is not overall
-precision. JOIN PREPARE covers 103 parents; actual demotion covers 37,
+V23 wait-offload evidence was updated at 2026-10-11 14:35:10 CST.
+Tool PREPARE has 82 burst decisions, 456 node ACKs and 3.811 GB FULL
+across 58 independent waits. Actual HBM demotion has 19 node events,
+7 contexts and 8 independent tool waits, releasing 0.145 GB FULL and
+0.773 GB Mamba cumulatively. Seven of eight first demotions still have at
+least 2 seconds remaining; seven calls are glob and one is execute, so this
+is not overall prediction accuracy. First-tool PREPARE precision is38/58.
+Only one demotion has a valid P50 point estimate; no representative RETURN
+time-error distribution is established. JOIN PREPARE covers103 parents,
+with105 bursts,168 ACKs and2.142GB FULL; actual demotion covers42 parents,
 releasing 0.549 GB FULL and 2.318 GB Mamba. Preserve backup/demotion and
-node/agent distinctions. Keep v73_v23_wait_offload_live_20261011.json.
+node/agent distinctions. Keep v75_v23_wait_offload_live_20261011.json and
+the prior v73 read. There is no unconditional pre-tool or post-spawn offload.
+WAIT_TOOL/WAIT_JOIN backups enable native reclamation at real shortfalls.
+Sequential live-file reads seal observed prefixes, not an atomic snapshot.
 
-The lifecycle read has 9 JOIN and 87 tool waits with early-started,
+The complete V23 predictive600-900s service window has1143.43 decode token/s,
+86.03% GPU utilization,47.35 weighted decode batch and34.61ms mean worker
+wall interval. V22 predictive/native are1019.20/1219.52token/s and
+76.68%/89.81%. Keepv74_v23_busy_window_600_900_20261011.json. This
+cross-version diagnostic does not replace the pending same-version V23 native.
+Keepv74_v23_control_600_900_20261011.json:40.985s instrumented exclusive
+Python wall in299.703s, including reentry5.641s,admission self4.131s,
+JOIN PREPARE3.719s,handoff enqueue3.143s and opportunity sampling2.520s.
+These sums are not removable JCT or isolated CPU cycles.
+
+The isolated follow-up skips decorated no-op polling/sampling calls in
+scheduler_step, using existing worker,writer,diagnostic and due-time conditions.
+Helpers retain their own checks. Sampling cadence,prediction inputs,physical
+actions,thresholds,native patch and frozen V23 configuration are unchanged.
+The342 related checks pass; one existing worker test skips because the local
+pinned encoder artifact is absent. Keepv74_scheduler_sampling_validation_20261011.json
+andv74_scheduler_sampling_cpu_20261011.json. The24 alternating CPU cases use
+real causal graphs,profiling and1ms logical cycles with stub sinks/idle workers;
+policy rows,counters and semantic cadence match. Full dormant maintenance
+CPU falls31.1%-34.4% with a worker and51.0%-55.6% without, at microsecond
+scale. Allocator,DMA,GPU throughput and JCT are excluded. Commit this work,
+preserve the started V23 pair and continue measured reentry/admission/prepare/
+recovery reductions. No subsequent GPU pair is registered by this update.
+
+The earlier14:15:42 lifecycle read has 9 JOIN and 87 tool waits with early-started,
 next-request-reused FULL of 0.105/1.188 GB. The 20.646 GB handoff FULL
 reuse remains demand recovery. Independent-wait last-ACK-to-service
 P50/P90 is 533/1641 ms for JOIN and 420/819 ms for tools; JOIN has only
