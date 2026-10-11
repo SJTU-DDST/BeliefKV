@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import ast
 from collections import defaultdict
 import csv
 from datetime import datetime
@@ -151,6 +152,9 @@ def periodic_decode_graph_log(
             interval_match = _DECODE_LOG_INTERVAL.search(line)
             if interval_match:
                 interval = int(interval_match[1])
+            if b"] server_args=" in line:
+                server_args = ast.literal_eval(line.split(b"] server_args=", 1)[1].decode("utf-8"))
+                interval = server_args.get("decode_log_interval", interval)
             timestamp_match = _LOG_TIMESTAMP.match(line)
             if timestamp_match is None:
                 continue

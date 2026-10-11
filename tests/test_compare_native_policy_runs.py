@@ -6,7 +6,7 @@ import pytest
 from scripts.compare_native_policy_runs import (
     acknowledged_prefetch_sources, busy_window_statistics, h2d_source_parts,
     interval_milliseconds, last_runtime_state, percentile,
-    phase_statistics, transfer_parts, restore_wait_statistics,
+    paired_workflow_jct, phase_statistics, transfer_parts, restore_wait_statistics,
 )
 
 
@@ -96,6 +96,55 @@ def test_percentiles_use_all_observations_with_interpolation():
     assert percentile([], .5) is None
     assert percentile([4, 2], .5) == 3
     assert percentile([5], .95) == 5
+
+
+def test_paired_jct_retains_failed_and_unmatched_instances_without_biasing_means():
+    left = {"workflows": [
+        {"instance_id": "b", "outcome": "completed", "duration_seconds": 10.,
+         "native_agent_jct_eligible": True, "trace": {"llm_request_count": 5}},
+        {"instance_id": "a", "outcome": "completed", "duration_seconds": 8.,
+         "native_agent_jct_eligible": False},
+        {"instance_id": "failed", "outcome": "incomplete", "duration_seconds": 100.},
+        {"instance_id": "left_only", "outcome": "completed", "duration_seconds": 1.},
+    ]}
+    right = {"workflows": [
+        {"instance_id": "a", "outcome": "completed", "duration_seconds": 4.},
+        {"instance_id": "b", "outcome": "completed", "duration_seconds": 12.,
+         "native_agent_jct_eligible": True, "trace": {"llm_request_count": 7}},
+        {"instance_id": "failed", "outcome": "completed", "duration_seconds": 1000.},
+        {"instance_id": "right_only", "outcome": "completed", "duration_seconds": 500.},
+    ]}
+    result = paired_workflow_jct(left, right)
+    assert result["shared_instances"] == 3
+    assert result["shared_outcome_pairs"] == {"completed/completed": 2, "incomplete/completed": 1}
+    assert result["paired_completed_workflows"] == 2
+    assert result["paired_completed_with_explicit_jct_eligibility"] == 1
+    assert result["unpaired_completed_instances"] == {
+        "left": ["left_only"], "right": ["failed", "right_only"],
+    }
+    assert result["duration_seconds"]["left"]["mean"] == 9.
+    assert result["duration_seconds"]["right"]["mean"] == 8.
+    assert result["mean_delta_seconds"] == 1.
+    assert result["left_shorter_workflows"] == result["right_shorter_workflows"] == 1
+    assert result["tied_workflows"] == 0
+    assert [row["instance_id"] for row in result["rows"]] == ["a", "b"]
+    assert result["rows"][1]["left_llm_request_count"] == 5
+    assert result["rows"][1]["right_llm_request_count"] == 7
+
+
+def test_empty_paired_jct_cohort_remains_unknown_instead_of_zero_latency():
+    result = paired_workflow_jct(
+        {"workflows": [{"instance_id": "a", "outcome": "incomplete", "duration_seconds": 1.}]},
+        {"workflows": [{"instance_id": "a", "outcome": "completed", "duration_seconds": 2.}]},
+    )
+    assert result["paired_completed_workflows"] == 0
+    assert result["duration_seconds"] == {
+        "left": {"mean": None, "p50": None, "p95": None},
+        "right": {"mean": None, "p50": None, "p95": None},
+    }
+    assert result["mean_delta_seconds"] is None
+    assert result["rows"] == []
+    assert result["unpaired_completed_instances"]["right"] == ["a"]
 
 
 def test_restore_dependency_wait_summary_never_counts_transfer_ack_as_stall():

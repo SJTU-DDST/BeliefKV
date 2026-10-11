@@ -8,6 +8,7 @@ from collections import Counter, defaultdict
 import csv
 from datetime import datetime
 import gzip
+from itertools import combinations
 import json
 from pathlib import Path
 from statistics import mean, median
@@ -41,6 +42,75 @@ def percentile(values: list[float], probability: float) -> float | None:
     lower = int(position)
     upper = min(lower + 1, len(ordered) - 1)
     return ordered[lower] + (ordered[upper] - ordered[lower]) * (position - lower)
+
+
+def paired_workflow_jct(left_summary: dict, right_summary: dict) -> dict:
+    left = {row["instance_id"]: row for row in left_summary["workflows"]}
+    right = {row["instance_id"]: row for row in right_summary["workflows"]}
+    shared = left.keys() & right.keys()
+    completed = sorted(
+        instance for instance in shared
+        if left[instance]["outcome"] == right[instance]["outcome"] == "completed"
+    )
+    rows = []
+    for instance in completed:
+        before, after = left[instance], right[instance]
+        rows.append({
+            "instance_id": instance,
+            "left_seconds": before["duration_seconds"],
+            "right_seconds": after["duration_seconds"],
+            "delta_seconds": before["duration_seconds"] - after["duration_seconds"],
+            "left_jct_eligible": before.get("native_agent_jct_eligible"),
+            "right_jct_eligible": after.get("native_agent_jct_eligible"),
+            **{
+                f"{name}_{metric}": (source.get("trace") or {}).get(metric)
+                for name, source in (("left", before), ("right", after))
+                for metric in ("llm_request_count", "tool_call_count", "delegation_round_count")
+            },
+        })
+    deltas = [row["delta_seconds"] for row in rows]
+    durations = {}
+    for name in ("left", "right"):
+        values = [row[f"{name}_seconds"] for row in rows]
+        durations[name] = {
+            "mean": mean(values) if values else None,
+            "p50": percentile(values, .5),
+            "p95": percentile(values, .95),
+        }
+    return {
+        "shared_instances": len(shared),
+        "shared_outcome_pairs": dict(sorted(Counter(
+            f'{left[instance]["outcome"]}/{right[instance]["outcome"]}'
+            for instance in shared
+        ).items())),
+        "paired_completed_workflows": len(rows),
+        "paired_completed_with_explicit_jct_eligibility": sum(
+            row["left_jct_eligible"] is True and row["right_jct_eligible"] is True
+            for row in rows
+        ),
+        "unpaired_completed_instances": {
+            name: sorted(
+                instance for instance, row in source.items()
+                if row["outcome"] == "completed" and instance not in completed
+            )
+            for name, source in (("left", left), ("right", right))
+        },
+        "duration_seconds": durations,
+        "mean_delta_seconds": mean(deltas) if deltas else None,
+        "p50_delta_seconds": percentile(deltas, .5),
+        "p95_delta_seconds": percentile(deltas, .95),
+        "left_shorter_workflows": sum(delta < 0 for delta in deltas),
+        "right_shorter_workflows": sum(delta > 0 for delta in deltas),
+        "tied_workflows": sum(delta == 0 for delta in deltas),
+        "rows": rows,
+        "semantics": (
+            "The same instances completed in both arms; negative deltas favor left. "
+            "Unpaired completions and shared outcome differences remain explicit. "
+            "Eligibility flags are reported without silently changing this outcome-based "
+            "cohort. Request, tool and delegation counts describe realized demand; "
+            "matching tasks does not match execution traces or establish causal speedup."
+        ),
+    }
 
 
 def transfer_parts(
@@ -766,6 +836,17 @@ def main() -> None:
         json.dumps(run["native_pool_capacity"], sort_keys=True)
         for run in report["runs"].values()
     }) == 1
+    summaries = {
+        name: json.loads(next(Path(path).glob("client_*/summary.json")).read_text())
+        for name, path in arms.items()
+    }
+    report["paired_completed_jct"] = {
+        f"{left}_vs_{right}": {
+            "left_arm": left, "right_arm": right,
+            **paired_workflow_jct(summaries[left], summaries[right]),
+        }
+        for left, right in combinations(arms, 2)
+    }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, ensure_ascii=False) + "\n")
     print(f"Saved {args.output}")

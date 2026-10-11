@@ -155,9 +155,13 @@ def test_native_writer_coverage_can_follow_the_last_gpu_row(tmp_path, collect_wr
         assert writer["reason"] == "writer_timing_not_collected"
 
 
-def test_periodic_graph_log_keeps_boundary_and_unknown_samples_separate(tmp_path):
+@pytest.mark.parametrize("configuration", [
+    b"ServerArgs(decode_log_interval=40)",
+    b"server_args={'decode_log_interval': 40, 'cuda_graph_config': {'decode': {'bs': [40, 48]}}}",
+])
+def test_periodic_graph_log_keeps_boundary_and_unknown_samples_separate(tmp_path, configuration):
     lines = [
-        b"[2026-10-11 16:42:00] ServerArgs(decode_log_interval=40)\n",
+        b"[2026-10-11 16:42:00] " + configuration + b"\n",
         b"[2026-10-11 16:42:01] Decode batch, #running-req: 47, cuda graph: False\n",
         b"[2026-10-11 16:42:02] Decode batch [80], #running-req: 47, cuda graph: True\n",
         b"[2026-10-11 16:42:03] Decode batch. #running-req: 47, cuda graph: False\n",

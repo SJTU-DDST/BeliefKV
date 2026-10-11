@@ -2,17 +2,65 @@
 
 更新日期：2026-10-11。
 
+V91：V24 已覆盖 600-900 秒完整窗口，decode 吞吐为 1152.66
+token/s、GPU 88.30%、时间加权 batch 47.351；原生/需求 handoff/
+预测 H2D 为 651.143/21.761/2.652 GB，其中预测 FULL 为 1.428 GB，
+尚未在这份窗口报告中核对独立提前量及首次复用。prefill worker
+区间仍为 50.639 秒，已埋点 Python 独占墙钟为 40.760 秒，
+reentry/admission/handoff_enqueue 分别为 5.888/3.855/3.592 秒。
+与 V23 predictive 的 40.985 秒相比，共用控制成本尚无明显下降；
+执行需求与版本不同，不能把接近的累计值视为隔离的优化效果。
+
+V24 的逐批 decode 记录均标记 graph=true，周期日志也有 181 个
+true 样本；46/47 请求的较长 worker 区间仍存在，不能继续归因
+于缺少专用 capture bucket。跨版本开发参照中，V23 predictive/
+native 同窗口 decode 吞吐为 1143.43/1250.53 token/s，V24 比
+旧 predictive 高约 0.81%，仍比旧 native 低约 7.83%。V24 同版本
+native 尚未运行，该参照不能替代成对验收。保留两份 V91 报告的
+版本、原始前缀哈希与不利证据，当前主性能目标仍 active。
+
+V90：V23 两臂及后处理已全部结束，native 为 156 completed、
+10375.010 秒；predictive 为 154 completed、2 incomplete、
+8984.588 秒，两侧 HTML 均已生成。现有对比脚本增加相同成功
+任务的配对 JCT、逐任务差值和实现出的请求/工具调用数，保留
+不配对的成功与失败。154 个共同成功任务中 predictive/native
+平均 JCT 为 2660.539/2971.673 秒，平均差 -311.133 秒，
+配对差值 P50 -204.284 秒；86 个更快、68 个更慢，差值 P95
+仍为 +2854.574 秒。轨迹、需求与工具尾部不同，不据此宣布
+预测迁移的因果收益或完整目标完成。
+
+600-2400 秒完整繁忙窗口早于磁盘维护，两侧 decode 吞吐为
+1127.156/1113.470 token/s，predictive 高约 1.23%；加权 batch
+47.378/47.343、GPU 84.12%/84.99%。H2D 为 2.019/2.391 TB，
+但 prefill worker 区间为 331.559/271.875 秒，多 59.684 秒，
+未缓存 prompt 为 10.903/10.576 百万 token。prefill 差值、
+控制成本和真实提前 FULL 覆盖仍是下一轮重点，迁移累计时间
+不能直接作为可减少的 JCT。保留 V90 完整配对及繁忙窗口报告。
+
+V24 已于 19:38:08 CST 自动部署冻结 56ff3c2，规范 patch
+826993c1 与引擎源树 6e1dc30 完全匹配，predictive 服务已
+健康且开始提交真实任务。协调器/server/scheduler/client 为
+1418070/1495239/1495619/1497799，具体启动身份见 V90 回执；
+旧 V23 driver/server/client 均已退出。配置保持 156 任务、
+108+48 到达、running48、工具180秒、workflow14400秒、
+Host200GB80:20、HBM比0.9及提前500ms。运行期 forecast 已记录
+tool_offload_wait_ms=1000，逐 batch graph 标记已经产生。
+一次运行期状态计数为 JOIN/tool ACK 25/483、physical_disabled=false；
+这些计数尚不证明提前量或复用。当前登记不再是等待状态，
+后续仍为同版本冷 native，主吞吐/JCT 目标保持 active。
+
 V89 核对工具卸载 1 秒规则已由 1f75f55 提交并纳入下方
 V24 登记，PREPARE 与等待页回收共用；冻结 V23 仍使用旧
-2 秒规则。当前 V23 predictive 为 154 completed、2 incomplete，
-native 为 154 completed，django-11265 与 django-11885 尚未
-结束，V24 协调器 1418070 的启动身份仍为 588699021。
+2 秒规则。V23 已结束，V24 运行状态以上方 V90 和主工作区
+v24_launch_after_v23_20261011.json 为准。
 
 补齐现有分析脚本对周期 decode 日志的独立统计，不增加运行期
 埋点。600-900 秒内 predictive/native 的 180/197 个日志样本
 均记录 graph=true；其中 batch 46/47 为 5/44 与 2/35 个。
 标记来自完成结果，经 report_decode_stats 交付，源码按 decode
-日志周期抽样；日志未给出实际周期配置。秒级时间边界样本单列，
+日志周期抽样。V90 修正字典格式启动配置的读取，确认实际
+decode_log_interval=40；旧 V89 的 null 字段及报告保留，新
+V90 graph 报告保存相同原始前缀和样本。秒级时间边界样本单列，
 保存读前缀 SHA256，不回填旧 runtime_audit 的逐批未知标记。
 相近上下文的部分 46/47 worker 区间仍慢约 2%-15%，现有
 证据不支持直接归因于未回放 graph。已埋点 Python 独占墙钟

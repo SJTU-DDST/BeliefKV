@@ -2,17 +2,66 @@
 
 Status date: 2026-10-11.
 
+V91: the complete V24 predictive600-900s window gives1152.66 decode
+token/s, GPU88.30% and weighted batch47.351. Native/handoff/predictive
+H2D are651.143/21.761/2.652GB; predictive FULL is1.428GB, without an
+independent early-start/reuse audit in this window report. Prefill worker
+intervals remain50.639s. Instrumented exclusive Python wall is40.760s,
+including reentry5.888s, admission3.855s andhandoff_enqueue3.592s.
+Against V23 predictive's40.985s, aggregate control cost has not clearly
+fallen; revision and realized demand differ, so this is not isolated
+optimization attribution.
+
+All observed V24 per-batch decode flags aretrue; periodic logs also
+have181 true samples. Longer46/47 worker intervals remain and cannot
+be attributed to missing exact capture buckets. The V23 predictive/
+native reference window gives1143.43/1250.53 token/s: V24 is0.81%
+above the old predictive and7.83% below the old native. This is explicitly
+a cross-revision development comparison; V24 same-version native is
+still pending. Preserve both V91 reports, revisions, prefix seals and
+unfavorable evidence. Keep the full performance objective active.
+
+V90: V23 and postprocessing are complete. Native has156 completed in
+10375.010s; predictive has154 completed/2 incomplete in8984.588s.
+Both HTML timelines exist. Extend the existing comparison script with
+same-instance completed-pair JCT, per-task deltas and realized request/
+tool counts, retaining unmatched completions and failure differences.
+Across154 common successes, mean predictive/native JCT is2660.539/
+2971.673s, mean delta-311.133s and median paired delta-204.284s.
+Predictive is faster for86 and slower for68; paired-delta P95 is still
++2854.574s. Different demand and tools prevent isolated migration credit.
+
+The complete600-2400s window precedes maintenance and gives1127.156/
+1113.470 decode token/s (+1.23%), weighted batch47.378/47.343 and
+GPU84.12%/84.99%. H2D is2.019/2.391TB, but predictive prefill worker
+intervals are331.559/271.875s, +59.684s, with10.903/10.576 million
+uncached prompt tokens. Preserve this remaining cost and actual early FULL
+coverage as V24 priorities. Transfer totals are not removable JCT.
+
+V24 deployed frozen56ff3c2 at19:38:08 CST. Patch826993c1 matches
+engine tree6e1dc30 exactly. Health passes and actual workload requests
+have started. Coordinator/server/scheduler/client are1418070/1495239/
+1495619/1497799, with start identities in the V90 receipt; old V23
+collection processes are absent. Keep the156-task108+48 arrivals,
+running48,tool180s,workflow14400s,Host200GB80:20,HBM0.9 and500ms lead.
+Live forecasts explicitly record1000ms tool offload; per-batch graph
+flags are present. One observed runtime state hasJOIN/tool ACK25/483
+andphysical_disabled=false, not proof of lead/reuse or throughput.
+The authoritative registration is nowrunning_new_pair; cold same-version
+native follows. Preserve the full active performance objective.
+
 V89 confirms committed1f75f55's one-second tool-offload rule is already
 included in the V24 registration below for both PREPARE and waiting-page
-reclamation. Frozen V23 retains two seconds. Predictive has154 completed
-and2 incomplete; native has154 completed withdjango-11265 anddjango-11885
-pending. Waiting coordinator1418070 still has start identity588699021.
+reclamation. Frozen V23 retained two seconds and has finished. Use the
+V90 receipt and authoritative main launch state for current V24 status.
 
 Analyze existing periodic decode graph logs separately from per-batch
 audit flags. In600-900s, all180/197 predictive/native log samples report
 true; batch46/47 contribute5/44 and2/35 samples. Trace flags from the
-completed result throughreport_decode_stats. The source emits periodic
-samples; the logs do not specify the configured interval. Preserve prefix
+completed result throughreport_decode_stats. V90 fixes dictionary-format
+startup configuration parsing and confirmsdecode_log_interval=40.
+Keep the original V89 null field/report and the V90 graph report with
+identical prefixes and samples. Preserve prefix
 hashes and second-resolution boundary exclusions, and keep legacy audit
 flags unknown. Some context-matched46/47 worker cohorts remain2%-15%
 slower, so absent graph replay is not established as the cause. Predictive
