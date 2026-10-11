@@ -27,6 +27,7 @@ from scripts.resume_predictive_after_native import (
     write_json,
 )
 from scripts.resume_semantic_h2d_ab import resume_environment
+from scripts.summarize_semantic_h2d_ab import verify_frozen_execution_source
 
 
 def fresh_pair_environment(
@@ -108,8 +109,7 @@ def main() -> None:
     plan_path = previous / "ab_plan.json"
     original = json.loads(plan_path.read_text())
     revision = git(target, "rev-parse", "HEAD").decode().strip()
-    if git(repo, "rev-parse", "HEAD").decode().strip() != original["code_commit"]:
-        raise ValueError("main checkout is no longer the previous frozen revision")
+    previous_source = verify_frozen_execution_source(repo, original["code_commit"])
     _require_clean(repo)
     _require_clean(target)
     git(repo, "merge-base", "--is-ancestor", original["code_commit"], revision)
@@ -124,6 +124,7 @@ def main() -> None:
         "previous_run": str(previous),
         "previous_code_commit": original["code_commit"],
         "previous_patch_sha256": original["sglang_patch_sha256"],
+        "previous_execution_verification": previous_source,
         "target_checkout": str(target),
         "target_revision": revision,
         "target_patch_sha256": patch_sha,
@@ -144,6 +145,9 @@ def main() -> None:
             raise ValueError("the scheduled target revision changed")
         _require_clean(repo)
         _require_clean(target)
+        state["previous_execution_verification"] = verify_frozen_execution_source(
+            repo, original["code_commit"],
+        )
         if run_root.exists():
             raise ValueError("the new experiment directory was created by another process")
         if hashlib.sha256(patch.read_bytes()).hexdigest() != patch_sha:
