@@ -1,0 +1,20 @@
+{
+  "observed_at_local": "2026-10-12T02:17:04.843507+08:00",
+  "execution_verification": {
+    "collection_code_commit": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+    "verification_code_commit": "0cf235fadf0b4b6abb7f6514ba088f93c681f397",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": [
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md"
+    ]
+  }
+}
