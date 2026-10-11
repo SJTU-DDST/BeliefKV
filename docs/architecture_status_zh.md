@@ -2,6 +2,20 @@
 
 更新日期：2026-10-11。
 
+2026-10-11 15:48:41 CST 已将等待中的 V24 更新为工具卸载
+1 秒窗口修订 1f75f554a5d9cbafa6231f65aaf3c8b2f7544848，
+冻结 checkout 为 beliefkv-v80-tool-offload-20261011。
+15:49:13 核验新协调器 PID 2996799、PPID=1、启动身份
+587518374；旧等待协调器 2684310 已退出，原登记与日志归档
+为 v24_launch_after_v23_f61fc05_superseded_20261011。V23
+协调器、server/client 保持运行，主代码仍冻结在 a6dd627。
+V24 环境、原生 patch、到达流、模型产物与原登记完全一致，
+只有等待目标代码更新。完整 V23 pair 及后处理后部署，再先
+predictive 后同版本冷 native；V24 GPU 尚未启动。权威状态仍为
+主工作区 v24_launch_after_v23_20261011.json，保留
+v80_v24_tool_offload_registration_20261011.json。下方 15:29
+的 f61fc05 登记作为历史记录，新规则尚无 GPU 性能收益证明。
+
 后续工具卸载的长等待窗口从 2000 ms 降为 1000 ms：有 CDF
 时要求未来 1 秒内返回概率不超过 0.1，无 CDF 时要求残余
 P10 至少 1 秒。PREPARE 候选选择和等待页回收资格共用该条件，

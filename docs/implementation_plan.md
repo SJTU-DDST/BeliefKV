@@ -2,6 +2,20 @@
 
 Status date: 2026-10-11.
 
+At 15:48:41 CST, waiting V24 was updated to committed
+1f75f554a5d9cbafa6231f65aaf3c8b2f7544848 in the frozen
+beliefkv-v80-tool-offload-20261011 checkout. Coordinator2996799 has
+PPID1 and start identity587518374; old waiting coordinator2684310 is
+absent. Archive its f61fc05 state and log. V23 coordinator, server and client
+remain live; main stays at frozen a6dd627. The environment, native patch,
+arrival flow and model artifacts exactly match the superseded registration.
+Only the waiting target code changes. After the complete V23 pair and
+postprocessing, deploy the one-second tool-offload policy, run predictive
+then cold same-version native. Keep authoritative main state
+v24_launch_after_v23_20261011.json and receipt
+v80_v24_tool_offload_registration_20261011.json. No V24 GPU arm or
+performance proof exists yet; the15:29 f61fc05 registration below is historical.
+
 Reduce the subsequent tool-offload horizon from 2000ms to 1000ms.
 The return-within-window probability remains at most0.1, or the residual
 P10 must be at least1000ms when no CDF is available. PREPARE selection
