@@ -1,0 +1,27 @@
+{
+  "schema_version": 1,
+  "scope": "Completed V27 predictive per-workflow control-delivery summaries; percentile-of-percentiles is not a pooled event latency distribution or a demonstrated coalescing gain.",
+  "source_glob": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v27/predictive_h2d/client_156/workflows/*/result.json",
+  "source_field": "runtime_control_delivery_timing",
+  "collection_revision": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+  "workflow_count": 156,
+  "counts": {
+    "tool_start": 47977,
+    "reentry": 98451,
+    "llm_result": 49116
+  },
+  "count_semantics": "Timing categories can overlap within a delivery; do not sum them as independent transport messages.",
+  "aggregation": "Sort each available per-workflow statistic and select index floor(workflow_count / 2).",
+  "upper_median_of_per_workflow_statistics_ms": {
+    "queue_p50_ms": 33.863673,
+    "queue_p95_ms": 114.502668,
+    "ack_p50_ms": 16.654889,
+    "reentry_queue_p50_ms": 12.098778,
+    "reentry_queue_p95_ms": 112.024527,
+    "reentry_ack_p50_ms": 17.305548,
+    "llm_result_queue_p50_ms": 16.635476,
+    "llm_result_queue_p95_ms": 90.936744,
+    "llm_result_ack_p50_ms": 21.155718
+  },
+  "performance_goal_met": false
+}

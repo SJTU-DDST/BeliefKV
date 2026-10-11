@@ -1,0 +1,536 @@
+{
+  "scope": "already-queued control delivery on CPU with fixture receiver and simulated ACK delay; no real socket syscall, GPU or throughput claim",
+  "baseline_revision": "00d2a98",
+  "baseline_source_sha256": "b1820da2977b7b840daee46a127ce65f3126bb8b7bf841342c060b0b16c43971",
+  "updated_source_sha256": "305c40ea1af46dd8d55a87921fafe12fc452dc3478b6e4e2276f224fc5d1bafe",
+  "benchmark_source_sha256": "ad7ce3fca46ac7f65882827c2f967a1aa1f921de28a5c3038e251b99a662a711",
+  "started_at_utc": "2026-10-11T21:01:08.962174+00:00",
+  "cases": [
+    {
+      "pending_batches": 1,
+      "events_per_batch": 2,
+      "text_chars_per_event": 256,
+      "simulated_ack_delay_ms": 0,
+      "samples": 5,
+      "batch_order_and_boundaries_equal": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 5,
+            "mean_ms": 0.255043,
+            "p50_ms": 0.276097,
+            "p99_ms": 0.297943,
+            "max_ms": 0.297943
+          },
+          "worker_thread_cpu": {
+            "count": 5,
+            "mean_ms": 0.3394954,
+            "p50_ms": 0.369474,
+            "p99_ms": 0.407857,
+            "max_ms": 0.407857
+          },
+          "queue_p95": {
+            "count": 5,
+            "mean_ms": 0.1378758,
+            "p50_ms": 0.150895,
+            "p99_ms": 0.171682,
+            "max_ms": 0.171682
+          }
+        },
+        "updated": {
+          "wall": {
+            "count": 5,
+            "mean_ms": 0.2619824,
+            "p50_ms": 0.265822,
+            "p99_ms": 0.30002,
+            "max_ms": 0.30002
+          },
+          "worker_thread_cpu": {
+            "count": 5,
+            "mean_ms": 0.3483922,
+            "p50_ms": 0.33785,
+            "p99_ms": 0.407873,
+            "max_ms": 0.407873
+          },
+          "queue_p95": {
+            "count": 5,
+            "mean_ms": 0.137209,
+            "p50_ms": 0.139314,
+            "p99_ms": 0.164009,
+            "max_ms": 0.164009
+          }
+        }
+      },
+      "receipts": {
+        "baseline": {
+          "transport_messages": 2,
+          "max_payload_bytes": 1651,
+          "applied_batches": 2,
+          "timing_summary": {
+            "tool_start_count": 0,
+            "queue_p50_ms": null,
+            "queue_p95_ms": null,
+            "ack_p50_ms": null,
+            "ack_p95_ms": null,
+            "reentry_count": 2,
+            "reentry_queue_p50_ms": 0.109262,
+            "reentry_queue_p95_ms": 0.109262,
+            "reentry_ack_p50_ms": 0.160942,
+            "reentry_ack_p95_ms": 0.160942,
+            "llm_result_count": 2,
+            "llm_result_queue_p50_ms": 0.109262,
+            "llm_result_queue_p95_ms": 0.109262,
+            "llm_result_ack_p50_ms": 0.160942,
+            "llm_result_ack_p95_ms": 0.160942
+          }
+        },
+        "updated": {
+          "transport_messages": 2,
+          "max_payload_bytes": 1651,
+          "applied_batches": 2,
+          "timing_summary": {
+            "transport_message_count": 2,
+            "coalesced_message_count": 0,
+            "accepted_batch_count": 2,
+            "tool_start_count": 0,
+            "queue_p50_ms": null,
+            "queue_p95_ms": null,
+            "ack_p50_ms": null,
+            "ack_p95_ms": null,
+            "reentry_count": 2,
+            "reentry_queue_p50_ms": 0.10375,
+            "reentry_queue_p95_ms": 0.10375,
+            "reentry_ack_p50_ms": 0.144969,
+            "reentry_ack_p95_ms": 0.144969,
+            "llm_result_count": 2,
+            "llm_result_queue_p50_ms": 0.10375,
+            "llm_result_queue_p95_ms": 0.10375,
+            "llm_result_ack_p50_ms": 0.144969,
+            "llm_result_ack_p95_ms": 0.144969
+          }
+        }
+      }
+    },
+    {
+      "pending_batches": 32,
+      "events_per_batch": 2,
+      "text_chars_per_event": 256,
+      "simulated_ack_delay_ms": 0,
+      "samples": 5,
+      "batch_order_and_boundaries_equal": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 5,
+            "mean_ms": 3.0655268,
+            "p50_ms": 3.066351,
+            "p99_ms": 3.105926,
+            "max_ms": 3.105926
+          },
+          "worker_thread_cpu": {
+            "count": 5,
+            "mean_ms": 2.9235518000000003,
+            "p50_ms": 2.924117,
+            "p99_ms": 3.001037,
+            "max_ms": 3.001037
+          },
+          "queue_p95": {
+            "count": 5,
+            "mean_ms": 2.6793062,
+            "p50_ms": 2.676416,
+            "p99_ms": 2.720106,
+            "max_ms": 2.720106
+          }
+        },
+        "updated": {
+          "wall": {
+            "count": 5,
+            "mean_ms": 2.5731838000000002,
+            "p50_ms": 2.571451,
+            "p99_ms": 2.626504,
+            "max_ms": 2.626504
+          },
+          "worker_thread_cpu": {
+            "count": 5,
+            "mean_ms": 2.4441268,
+            "p50_ms": 2.436526,
+            "p99_ms": 2.510495,
+            "max_ms": 2.510495
+          },
+          "queue_p95": {
+            "count": 5,
+            "mean_ms": 1.1050386,
+            "p50_ms": 1.103664,
+            "p99_ms": 1.146324,
+            "max_ms": 1.146324
+          }
+        }
+      },
+      "receipts": {
+        "baseline": {
+          "transport_messages": 33,
+          "max_payload_bytes": 1655,
+          "applied_batches": 33,
+          "timing_summary": {
+            "tool_start_count": 0,
+            "queue_p50_ms": null,
+            "queue_p95_ms": null,
+            "ack_p50_ms": null,
+            "ack_p95_ms": null,
+            "reentry_count": 33,
+            "reentry_queue_p50_ms": 1.505499,
+            "reentry_queue_p95_ms": 2.652695,
+            "reentry_ack_p50_ms": 0.076793,
+            "reentry_ack_p95_ms": 0.091082,
+            "llm_result_count": 33,
+            "llm_result_queue_p50_ms": 1.505499,
+            "llm_result_queue_p95_ms": 2.652695,
+            "llm_result_ack_p50_ms": 0.076793,
+            "llm_result_ack_p95_ms": 0.091082
+          }
+        },
+        "updated": {
+          "transport_messages": 2,
+          "max_payload_bytes": 50476,
+          "applied_batches": 33,
+          "timing_summary": {
+            "transport_message_count": 2,
+            "coalesced_message_count": 1,
+            "accepted_batch_count": 33,
+            "tool_start_count": 0,
+            "queue_p50_ms": null,
+            "queue_p95_ms": null,
+            "ack_p50_ms": null,
+            "ack_p95_ms": null,
+            "reentry_count": 33,
+            "reentry_queue_p50_ms": 0.985307,
+            "reentry_queue_p95_ms": 1.088513,
+            "reentry_ack_p50_ms": 1.391253,
+            "reentry_ack_p95_ms": 1.391253,
+            "llm_result_count": 33,
+            "llm_result_queue_p50_ms": 0.985307,
+            "llm_result_queue_p95_ms": 1.088513,
+            "llm_result_ack_p50_ms": 1.391253,
+            "llm_result_ack_p95_ms": 1.391253
+          }
+        }
+      }
+    },
+    {
+      "pending_batches": 4,
+      "events_per_batch": 2,
+      "text_chars_per_event": 256,
+      "simulated_ack_delay_ms": 20,
+      "samples": 5,
+      "batch_order_and_boundaries_equal": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 5,
+            "mean_ms": 101.1492476,
+            "p50_ms": 100.975985,
+            "p99_ms": 101.892472,
+            "max_ms": 101.892472
+          },
+          "worker_thread_cpu": {
+            "count": 5,
+            "mean_ms": 0.9741116,
+            "p50_ms": 0.822495,
+            "p99_ms": 1.834658,
+            "max_ms": 1.834658
+          },
+          "queue_p95": {
+            "count": 5,
+            "mean_ms": 80.9057686,
+            "p50_ms": 80.775343,
+            "p99_ms": 81.5628,
+            "max_ms": 81.5628
+          }
+        },
+        "updated": {
+          "wall": {
+            "count": 5,
+            "mean_ms": 40.7513872,
+            "p50_ms": 40.711618,
+            "p99_ms": 40.986123,
+            "max_ms": 40.986123
+          },
+          "worker_thread_cpu": {
+            "count": 5,
+            "mean_ms": 0.7562994000000001,
+            "p50_ms": 0.765025,
+            "p99_ms": 1.055649,
+            "max_ms": 1.055649
+          },
+          "queue_p95": {
+            "count": 5,
+            "mean_ms": 20.4084254,
+            "p50_ms": 20.363173,
+            "p99_ms": 20.626543,
+            "max_ms": 20.626543
+          }
+        }
+      },
+      "receipts": {
+        "baseline": {
+          "transport_messages": 5,
+          "max_payload_bytes": 1651,
+          "applied_batches": 5,
+          "timing_summary": {
+            "tool_start_count": 0,
+            "queue_p50_ms": null,
+            "queue_p95_ms": null,
+            "ack_p50_ms": null,
+            "ack_p95_ms": null,
+            "reentry_count": 5,
+            "reentry_queue_p50_ms": 40.558131,
+            "reentry_queue_p95_ms": 80.858595,
+            "reentry_ack_p50_ms": 20.171776,
+            "reentry_ack_p95_ms": 20.421792,
+            "llm_result_count": 5,
+            "llm_result_queue_p50_ms": 40.558131,
+            "llm_result_queue_p95_ms": 80.858595,
+            "llm_result_ack_p50_ms": 20.171776,
+            "llm_result_ack_p95_ms": 20.421792
+          }
+        },
+        "updated": {
+          "transport_messages": 2,
+          "max_payload_bytes": 6386,
+          "applied_batches": 5,
+          "timing_summary": {
+            "transport_message_count": 2,
+            "coalesced_message_count": 1,
+            "accepted_batch_count": 5,
+            "tool_start_count": 0,
+            "queue_p50_ms": null,
+            "queue_p95_ms": null,
+            "ack_p50_ms": null,
+            "ack_p95_ms": null,
+            "reentry_count": 5,
+            "reentry_queue_p50_ms": 20.577802,
+            "reentry_queue_p95_ms": 20.626543,
+            "reentry_ack_p50_ms": 20.319948,
+            "reentry_ack_p95_ms": 20.691197,
+            "llm_result_count": 5,
+            "llm_result_queue_p50_ms": 20.577802,
+            "llm_result_queue_p95_ms": 20.626543,
+            "llm_result_ack_p50_ms": 20.319948,
+            "llm_result_ack_p95_ms": 20.691197
+          }
+        }
+      }
+    },
+    {
+      "pending_batches": 32,
+      "events_per_batch": 2,
+      "text_chars_per_event": 256,
+      "simulated_ack_delay_ms": 20,
+      "samples": 5,
+      "batch_order_and_boundaries_equal": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 5,
+            "mean_ms": 670.34222,
+            "p50_ms": 670.304491,
+            "p99_ms": 670.833235,
+            "max_ms": 670.833235
+          },
+          "worker_thread_cpu": {
+            "count": 5,
+            "mean_ms": 8.184804,
+            "p50_ms": 8.163053,
+            "p99_ms": 8.713577,
+            "max_ms": 8.713577
+          },
+          "queue_p95": {
+            "count": 5,
+            "mean_ms": 629.1134958,
+            "p50_ms": 629.033738,
+            "p99_ms": 629.636449,
+            "max_ms": 629.636449
+          }
+        },
+        "updated": {
+          "wall": {
+            "count": 5,
+            "mean_ms": 43.2773978,
+            "p50_ms": 43.245236,
+            "p99_ms": 43.412631,
+            "max_ms": 43.412631
+          },
+          "worker_thread_cpu": {
+            "count": 5,
+            "mean_ms": 2.750719,
+            "p50_ms": 2.752283,
+            "p99_ms": 2.946834,
+            "max_ms": 2.946834
+          },
+          "queue_p95": {
+            "count": 5,
+            "mean_ms": 21.683525200000002,
+            "p50_ms": 21.663768,
+            "p99_ms": 21.801855,
+            "max_ms": 21.801855
+          }
+        }
+      },
+      "receipts": {
+        "baseline": {
+          "transport_messages": 33,
+          "max_payload_bytes": 1655,
+          "applied_batches": 33,
+          "timing_summary": {
+            "tool_start_count": 0,
+            "queue_p50_ms": null,
+            "queue_p95_ms": null,
+            "ack_p50_ms": null,
+            "ack_p95_ms": null,
+            "reentry_count": 33,
+            "reentry_queue_p50_ms": 325.28411,
+            "reentry_queue_p95_ms": 629.636449,
+            "reentry_ack_p50_ms": 20.294351,
+            "reentry_ack_p95_ms": 20.507241,
+            "llm_result_count": 33,
+            "llm_result_queue_p50_ms": 325.28411,
+            "llm_result_queue_p95_ms": 629.636449,
+            "llm_result_ack_p50_ms": 20.294351,
+            "llm_result_ack_p95_ms": 20.507241
+          }
+        },
+        "updated": {
+          "transport_messages": 2,
+          "max_payload_bytes": 50476,
+          "applied_batches": 33,
+          "timing_summary": {
+            "transport_message_count": 2,
+            "coalesced_message_count": 1,
+            "accepted_batch_count": 33,
+            "tool_start_count": 0,
+            "queue_p50_ms": null,
+            "queue_p95_ms": null,
+            "ack_p50_ms": null,
+            "ack_p95_ms": null,
+            "reentry_count": 33,
+            "reentry_queue_p50_ms": 21.359015,
+            "reentry_queue_p95_ms": 21.646139,
+            "reentry_ack_p50_ms": 21.47329,
+            "reentry_ack_p95_ms": 21.47329,
+            "llm_result_count": 33,
+            "llm_result_queue_p50_ms": 21.359015,
+            "llm_result_queue_p95_ms": 21.646139,
+            "llm_result_ack_p50_ms": 21.47329,
+            "llm_result_ack_p95_ms": 21.47329
+          }
+        }
+      }
+    },
+    {
+      "pending_batches": 32,
+      "events_per_batch": 2,
+      "text_chars_per_event": 2048,
+      "simulated_ack_delay_ms": 20,
+      "samples": 5,
+      "batch_order_and_boundaries_equal": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 5,
+            "mean_ms": 671.208298,
+            "p50_ms": 671.253183,
+            "p99_ms": 671.320299,
+            "max_ms": 671.320299
+          },
+          "worker_thread_cpu": {
+            "count": 5,
+            "mean_ms": 9.1119826,
+            "p50_ms": 9.150487,
+            "p99_ms": 9.197943,
+            "max_ms": 9.197943
+          },
+          "queue_p95": {
+            "count": 5,
+            "mean_ms": 629.9245748,
+            "p50_ms": 629.969337,
+            "p99_ms": 629.994592,
+            "max_ms": 629.994592
+          }
+        },
+        "updated": {
+          "wall": {
+            "count": 5,
+            "mean_ms": 84.4565856,
+            "p50_ms": 84.424031,
+            "p99_ms": 84.76367,
+            "max_ms": 84.76367
+          },
+          "worker_thread_cpu": {
+            "count": 5,
+            "mean_ms": 3.7913368,
+            "p50_ms": 3.785113,
+            "p99_ms": 3.962488,
+            "max_ms": 3.962488
+          },
+          "queue_p95": {
+            "count": 5,
+            "mean_ms": 63.2427518,
+            "p50_ms": 63.184375,
+            "p99_ms": 63.543157,
+            "max_ms": 63.543157
+          }
+        }
+      },
+      "receipts": {
+        "baseline": {
+          "transport_messages": 33,
+          "max_payload_bytes": 5239,
+          "applied_batches": 33,
+          "timing_summary": {
+            "tool_start_count": 0,
+            "queue_p50_ms": null,
+            "queue_p95_ms": null,
+            "ack_p50_ms": null,
+            "ack_p95_ms": null,
+            "reentry_count": 33,
+            "reentry_queue_p50_ms": 324.953998,
+            "reentry_queue_p95_ms": 629.969337,
+            "reentry_ack_p50_ms": 20.331862,
+            "reentry_ack_p95_ms": 20.365386,
+            "llm_result_count": 33,
+            "llm_result_queue_p50_ms": 324.953998,
+            "llm_result_queue_p95_ms": 629.969337,
+            "llm_result_ack_p50_ms": 20.331862,
+            "llm_result_ack_p95_ms": 20.365386
+          }
+        },
+        "updated": {
+          "transport_messages": 4,
+          "max_payload_bytes": 56851,
+          "applied_batches": 33,
+          "timing_summary": {
+            "transport_message_count": 4,
+            "coalesced_message_count": 3,
+            "accepted_batch_count": 33,
+            "tool_start_count": 0,
+            "queue_p50_ms": null,
+            "queue_p95_ms": null,
+            "ack_p50_ms": null,
+            "ack_p95_ms": null,
+            "reentry_count": 33,
+            "reentry_queue_p50_ms": 42.522923,
+            "reentry_queue_p95_ms": 63.543157,
+            "reentry_ack_p50_ms": 20.769781,
+            "reentry_ack_p95_ms": 20.80236,
+            "llm_result_count": 33,
+            "llm_result_queue_p50_ms": 42.522923,
+            "llm_result_queue_p95_ms": 63.543157,
+            "llm_result_ack_p50_ms": 20.769781,
+            "llm_result_ack_p95_ms": 20.80236
+          }
+        }
+      }
+    }
+  ],
+  "completed_at_utc": "2026-10-11T21:01:20.366578+00:00"
+}

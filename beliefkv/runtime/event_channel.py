@@ -10,7 +10,7 @@ import uuid
 from collections import OrderedDict
 from dataclasses import dataclass, field
 from pathlib import Path
-from queue import Full, Queue
+from queue import Empty, Full, Queue
 from typing import Callable
 
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
@@ -22,6 +22,29 @@ MAX_EVENTS_PER_MESSAGE = 64
 MAX_DATAGRAM_BYTES = 60_000
 MAX_UNIX_PATH_BYTES = 103
 CONTROL_TIMING_SAMPLE_EVERY = 64
+
+
+def _encode_event_message(
+    message_id: str, batches: tuple[tuple[RuntimeEvent, ...], ...],
+) -> bytes:
+    message = {
+        "schema_version": SCHEMA_VERSION,
+        "message_id": message_id,
+        "events": [event.to_dict() for batch in batches for event in batch],
+    }
+    if len(batches) > 1:
+        message["batch_lengths"] = [len(batch) for batch in batches]
+    return json.dumps(message, sort_keys=True, allow_nan=False).encode("utf-8")
+
+
+_EMPTY_EVENT_MESSAGE_BYTES = len(_encode_event_message("0" * 32, ((),)))
+_EMPTY_BATCH_LENGTHS_BYTES = len(json.dumps({"batch_lengths": []}).encode("utf-8"))
+
+
+class _RuntimeEventBatchRejection(RuntimeError):
+    def __init__(self, error: str, accepted_batch_count: int) -> None:
+        super().__init__(f"runtime event batch rejected: {error}")
+        self.accepted_batch_count = accepted_batch_count
 
 
 def _validate_socket_path(path: Path) -> None:
@@ -151,6 +174,8 @@ class RuntimeEventDatagramServer:
     ) -> tuple[RuntimeEventDelivery, bytes]:
         message_id = "unknown"
         timing = self._timing
+        accepted_batch_count: int | None = None
+        accepted_event_count = 0
         try:
             decode_frame = timing.begin("control_json_decode_sample") if profiled else None
             try:
@@ -184,18 +209,45 @@ class RuntimeEventDatagramServer:
                 raise ValueError("events must be a non-empty list")
             if len(raw_events) > MAX_EVENTS_PER_MESSAGE:
                 raise ValueError("event batch exceeds channel limit")
-            event_frame = timing.begin("control_event_decode_sample") if profiled else None
-            try:
-                events = tuple(RuntimeEvent.from_dict(item) for item in raw_events)
-            finally:
-                if event_frame is not None:
-                    timing.finish(event_frame)
-            self.handler(events)
-            delivery = RuntimeEventDelivery(message_id, len(events), True)
+            batch_lengths = raw.get("batch_lengths")
+            if batch_lengths is None:
+                batch_lengths = [len(raw_events)]
+            else:
+                if (
+                    not isinstance(batch_lengths, list)
+                    or len(batch_lengths) < 2
+                    or any(type(length) is not int or length <= 0 for length in batch_lengths)
+                    or sum(batch_lengths) != len(raw_events)
+                ):
+                    raise ValueError("invalid event batch lengths")
+                accepted_batch_count = 0
+            offset = 0
+            for length in batch_lengths:
+                event_frame = (
+                    timing.begin("control_event_decode_sample") if profiled else None
+                )
+                try:
+                    raw_batch = (
+                        raw_events if length == len(raw_events)
+                        else raw_events[offset:offset + length]
+                    )
+                    events = tuple(
+                        RuntimeEvent.from_dict(item)
+                        for item in raw_batch
+                    )
+                finally:
+                    if event_frame is not None:
+                        timing.finish(event_frame)
+                self.handler(events)
+                offset += length
+                accepted_event_count += length
+                if accepted_batch_count is not None:
+                    accepted_batch_count += 1
+            delivery = RuntimeEventDelivery(message_id, accepted_event_count, True)
         except Exception as error:
             delivery = RuntimeEventDelivery(
                 message_id=message_id,
-                event_count=0,
+                event_count=accepted_event_count,
                 accepted=False,
                 error=f"{type(error).__name__}: {error}",
             )
@@ -206,6 +258,8 @@ class RuntimeEventDatagramServer:
             "event_count": delivery.event_count,
             "error": delivery.error,
         }
+        if accepted_batch_count is not None:
+            ack_payload["accepted_batch_count"] = accepted_batch_count
         ack_frame = timing.begin("control_ack_encode_sample") if profiled else None
         try:
             ack = json.dumps(ack_payload, sort_keys=True).encode("utf-8")
@@ -262,18 +316,18 @@ class UnixDatagramRuntimeEventSink:
     def emit_batch(self, events: tuple[RuntimeEvent, ...]) -> None:
         if not events:
             return
-        if len(events) > MAX_EVENTS_PER_MESSAGE:
+        self.emit_batches((events,))
+
+    def emit_batches(self, batches: tuple[tuple[RuntimeEvent, ...], ...]) -> None:
+        if not batches:
+            return
+        if any(not batch for batch in batches):
+            raise ValueError("event batch must not be empty")
+        event_count = sum(len(batch) for batch in batches)
+        if event_count > MAX_EVENTS_PER_MESSAGE:
             raise ValueError("event batch exceeds channel limit")
         message_id = uuid.uuid4().hex
-        payload = json.dumps(
-            {
-                "schema_version": SCHEMA_VERSION,
-                "message_id": message_id,
-                "events": [event.to_dict() for event in events],
-            },
-            sort_keys=True,
-            allow_nan=False,
-        ).encode("utf-8")
+        payload = _encode_event_message(message_id, batches)
         if len(payload) > MAX_DATAGRAM_BYTES:
             raise ValueError("serialized event batch exceeds datagram limit")
 
@@ -293,12 +347,25 @@ class UnixDatagramRuntimeEventSink:
                             break
                 except socket.timeout:
                     continue
-                if ack.get("status") != "accepted":
-                    raise RuntimeError(
-                        f"runtime event batch rejected: {ack.get('error', 'unknown')}"
-                    )
-                if int(ack.get("event_count", -1)) != len(events):
+                accepted_batches = int(ack.get(
+                    "accepted_batch_count",
+                    len(batches) if ack.get("status") == "accepted" else 0,
+                ))
+                if not 0 <= accepted_batches <= len(batches):
+                    raise RuntimeError("runtime event ACK batch count mismatch")
+                expected_count = sum(len(batch) for batch in batches[:accepted_batches])
+                if int(ack.get("event_count", -1)) != expected_count:
                     raise RuntimeError("runtime event ACK count mismatch")
+                if ack.get("status") != "accepted":
+                    if len(batches) == 1:
+                        raise RuntimeError(
+                            f"runtime event batch rejected: {ack.get('error', 'unknown')}"
+                        )
+                    raise _RuntimeEventBatchRejection(
+                        str(ack.get("error", "unknown")), accepted_batches,
+                    )
+                if accepted_batches != len(batches):
+                    raise RuntimeError("runtime event ACK batch count mismatch")
                 return
         if last_error is not None:
             raise ConnectionError(
@@ -329,6 +396,7 @@ class _QueuedDelivery:
     llm_result: bool = False
     finished: threading.Event = field(default_factory=threading.Event)
     error: Exception | None = None
+    serialized_size: int | None = None
 
     def wait(self) -> None:
         self.finished.wait()
@@ -345,6 +413,7 @@ class QueuedRuntimeEventSink:
         if max_pending <= 0:
             raise ValueError("max_pending must be positive")
         self._sink = sink
+        self._emit_batches = getattr(sink, "emit_batches", None)
         self._queue: Queue[_QueuedDelivery | None] = Queue(maxsize=max_pending)
         self._lock = threading.Lock()
         self._stats_lock = threading.Lock()
@@ -356,6 +425,9 @@ class QueuedRuntimeEventSink:
         self._reentry_ack_ms: list[float] = []
         self._llm_result_queue_ms: list[float] = []
         self._llm_result_ack_ms: list[float] = []
+        self._transport_message_count = 0
+        self._coalesced_message_count = 0
+        self._accepted_batch_count = 0
         self._worker = threading.Thread(
             target=self._deliver, name="beliefkv-runtime-events", daemon=True
         )
@@ -393,51 +465,116 @@ class QueuedRuntimeEventSink:
     def emit_tool_start(self, events: tuple[RuntimeEvent, ...]) -> None:
         self.submit_batch(events, tool_start=True)
 
+    @staticmethod
+    def _delivery_size(delivery: _QueuedDelivery) -> int:
+        if delivery.serialized_size is None:
+            delivery.serialized_size = len(
+                _encode_event_message("0" * 32, (delivery.events,))
+            )
+        return delivery.serialized_size
+
+    def _coalesce(
+        self, first: _QueuedDelivery,
+    ) -> tuple[list[_QueuedDelivery], _QueuedDelivery | None, bool]:
+        deliveries = [first]
+        event_count = len(first.events)
+        body_bytes: int | None = None
+        length_value_bytes = len(str(event_count))
+        deferred = None
+        stopping = False
+        while event_count < MAX_EVENTS_PER_MESSAGE:
+            try:
+                following = self._queue.get_nowait()
+            except Empty:
+                break
+            if following is None:
+                self._queue.task_done()
+                stopping = True
+                break
+            if event_count + len(following.events) > MAX_EVENTS_PER_MESSAGE:
+                deferred = following
+                break
+            try:
+                if body_bytes is None:
+                    body_bytes = self._delivery_size(first) - _EMPTY_EVENT_MESSAGE_BYTES
+                next_body_bytes = (
+                    body_bytes + 2
+                    + self._delivery_size(following) - _EMPTY_EVENT_MESSAGE_BYTES
+                )
+                next_length_bytes = length_value_bytes + len(str(len(following.events)))
+                header_bytes = (
+                    _EMPTY_BATCH_LENGTHS_BYTES + next_length_bytes + 2 * len(deliveries)
+                )
+            except Exception:
+                # Keep a malformed delivery at its original failure boundary.
+                deferred = following
+                break
+            if _EMPTY_EVENT_MESSAGE_BYTES + next_body_bytes + header_bytes > MAX_DATAGRAM_BYTES:
+                deferred = following
+                break
+            deliveries.append(following)
+            event_count += len(following.events)
+            body_bytes = next_body_bytes
+            length_value_bytes = next_length_bytes
+        return deliveries, deferred, stopping
+
     def _deliver(self) -> None:
+        deferred = None
         while True:
-            delivery = self._queue.get()
+            delivery = deferred if deferred is not None else self._queue.get()
+            deferred = None
             if delivery is None:
                 self._queue.task_done()
                 return
+            with self._lock:
+                failure = self._failure
+            deliveries = [delivery]
+            stopping = False
+            if failure is None and self._emit_batches is not None:
+                deliveries, deferred, stopping = self._coalesce(delivery)
             started_ns = time.perf_counter_ns()
+            error = None
+            accepted_count = 0
             try:
-                with self._lock:
-                    failure = self._failure
                 if failure is not None:
                     raise failure
-                self._sink.emit_batch(delivery.events)
-            except Exception as error:
-                delivery.error = error
+                with self._stats_lock:
+                    self._transport_message_count += 1
+                    self._coalesced_message_count += int(len(deliveries) > 1)
+                if len(deliveries) > 1:
+                    self._emit_batches(tuple(item.events for item in deliveries))
+                else:
+                    self._sink.emit_batch(delivery.events)
+                accepted_count = len(deliveries)
+            except Exception as caught:
+                error = caught
+                if isinstance(caught, _RuntimeEventBatchRejection):
+                    accepted_count = caught.accepted_batch_count
                 with self._lock:
-                    self._failure = error
+                    self._failure = caught
             finally:
                 finished_ns = time.perf_counter_ns()
-                if delivery.tool_start:
-                    with self._stats_lock:
-                        self._tool_queue_ms.append(
-                            (started_ns - delivery.submitted_ns) / 1_000_000.0
-                        )
-                        self._tool_ack_ms.append(
-                            (finished_ns - started_ns) / 1_000_000.0
-                        )
-                if delivery.reentry:
-                    with self._stats_lock:
-                        self._reentry_queue_ms.append(
-                            (started_ns - delivery.submitted_ns) / 1_000_000.0
-                        )
-                        self._reentry_ack_ms.append(
-                            (finished_ns - started_ns) / 1_000_000.0
-                        )
-                if delivery.llm_result:
-                    with self._stats_lock:
-                        self._llm_result_queue_ms.append(
-                            (started_ns - delivery.submitted_ns) / 1_000_000.0
-                        )
-                        self._llm_result_ack_ms.append(
-                            (finished_ns - started_ns) / 1_000_000.0
-                        )
-                delivery.finished.set()
-                self._queue.task_done()
+                with self._stats_lock:
+                    self._accepted_batch_count += accepted_count
+                    for item in deliveries:
+                        queue_ms = (started_ns - item.submitted_ns) / 1_000_000.0
+                        ack_ms = (finished_ns - started_ns) / 1_000_000.0
+                        if item.tool_start:
+                            self._tool_queue_ms.append(queue_ms)
+                            self._tool_ack_ms.append(ack_ms)
+                        if item.reentry:
+                            self._reentry_queue_ms.append(queue_ms)
+                            self._reentry_ack_ms.append(ack_ms)
+                        if item.llm_result:
+                            self._llm_result_queue_ms.append(queue_ms)
+                            self._llm_result_ack_ms.append(ack_ms)
+                for index, item in enumerate(deliveries):
+                    if index >= accepted_count:
+                        item.error = error
+                    item.finished.set()
+                    self._queue.task_done()
+            if stopping:
+                return
 
     def flush(self) -> None:
         """Wait for accepted events at explicit shutdown/observation boundaries."""
@@ -455,6 +592,9 @@ class QueuedRuntimeEventSink:
 
         with self._stats_lock:
             return {
+                "transport_message_count": self._transport_message_count,
+                "coalesced_message_count": self._coalesced_message_count,
+                "accepted_batch_count": self._accepted_batch_count,
                 "tool_start_count": len(self._tool_ack_ms),
                 "queue_p50_ms": percentile(self._tool_queue_ms, 0.50),
                 "queue_p95_ms": percentile(self._tool_queue_ms, 0.95),
