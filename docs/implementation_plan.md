@@ -2,6 +2,36 @@
 
 Status date: 2026-10-11.
 
+V98: commit8f8ce45 replaces strict background record serialization with
+ujson5.12.1, retaining decoded fields, ASCII escapes, nonfinite rejection,
+queue and ACK/use flush semantics. Identity/HMAC serialization is unchanged.
+The236 relevant checks pass. All259 real records decode identically;
+60 alternating CPU trials reduce combined encoding means from2.916485
+to1.267997ms,56.5%. This does not measure filesystem, queue or GPU/JCT
+savings. Prepare a cold V27 deployment together with553fa7c after stopping
+V26 administratively; preserve frozen plans, traces and partial workspaces.
+V26 still executes frozen2d25850, without live code replacement.
+
+Reject deployment of the latest128-token work-only candidate5c98ca9.
+Reconstruct8404 of8406 sealed V26 inputs, keeping2 missing-content records.
+Phase scores are unchanged, but46 natural pre-EOS last snapshots worsen
+token MAE39.04 to43.19;4-item CPU batch P50 rises129.85 to191.43ms.
+The500ms sampled replay yields5 triggers for each model and zero0-500ms
+hits. Host/capacity and extra candidate latency were not replayed.
+Retain V7. Original training has10310 notice-active snapshots/200 requests,
+but selector/interval/evaluation303/356/445 snapshots all lack notice-active
+examples. Next, collect project-disjoint announced final-report calibration
+coverage, retain phase stability and compare conditional remaining work
+and causal rolling lead. Do not apply a blanket fixed-seconds shift.
+
+The20s nonblocking GIL profile has470 valid samples and101 read errors:
+390 main-thread,80 background-thread samples and50 standard iterencode
+leaf frames. Retain raw evidence. Conservatively exclude2026-10-11
+23:22:25-23:22:54 CST from primary performance windows; the exact start
+was not separately logged. Do not extrapolate samples to total CPU/JCT.
+V98 reports remain evidence, not completion of the active performance goal.
+The V97 and earlier deployment entries below describe historical states.
+
 V97: commit553fa7c checks existing native locks before capturing a restore
 closure. A same-key exact target or descendant lock covers the FULL prefix;
 new/deeper locks still capture the complete closure, check the live budget,
