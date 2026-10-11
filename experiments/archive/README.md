@@ -6,6 +6,29 @@ tracked inventory.
 
 ## 2026-10-12 verified workspace compression
 
+Archive: `experiments/archive/20261012/v28_development_workspaces.tar.zst`
+
+SHA256: `1100e67fdbf7b5a6522e746d3c0b66399bd6822bfe5e7442ca4c9e1b00b781aa`
+
+All 156 V28 workspaces are preserved in this 4,289,396,535-byte archive.
+The source allocation was 38,987,358,208 bytes. GNU tar comparison passed
+before removing the uncompressed copies; raw traces, written outcomes and
+the frozen plan remain, with an `ARCHIVED.md` restore pointer. V28 was
+administratively stopped at 06:27:24 CST with 112 completed and 44 censored
+workflows; it is not a completed comparison. Restore from the repository root:
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261012/v28_development_workspaces.tar.zst \
+  --directory experiments/raw
+```
+
+Receipt: `experiments/reports/v118_v28_workspace_archive_20261012.json`.
+One compression thread, nice 19 and idle I/O were used. Maintenance at
+06:29:52-06:33:04 CST overlaps V29 loading and initial service, which must
+be qualified in early performance windows. Available space at cleanup
+verification was 61,463,670,784 bytes, including concurrent V29 writes.
+
 Archive: `experiments/archive/20261012/v19b_partial_workspaces.tar.zst`
 
 SHA256: `502cc37b0902f553b6bb2074e17bba9d9038a689ec7bd5a9fd489792f18e2536`

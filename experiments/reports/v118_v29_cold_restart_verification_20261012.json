@@ -1,0 +1,333 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-12T06:34:36.654711+08:00",
+  "scope": "Verified cold V29 deployment and initial GPU service following an authorized interrupted development collection; no performance gain is inferred.",
+  "state_path": "/home/longhao/experiment/BeliefKV/experiments/reports/v29_launch_after_v28_20261012.json",
+  "state_snapshot": {
+    "status": "running_new_pair",
+    "previous_collection_scope": "interrupted_development",
+    "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v28",
+    "previous_code_commit": "141d3df1181009c0045b890e4ea7b733a497c42d",
+    "previous_patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+    "previous_execution_verification": {
+      "collection_code_commit": "141d3df1181009c0045b890e4ea7b733a497c42d",
+      "verification_code_commit": "e69408f8c2baf89885979add63be5708b6ef6d88",
+      "execution_source_unchanged": true,
+      "non_execution_paths": [
+        "docs/",
+        "tests/",
+        "experiments/archive/README.md",
+        "scripts/summarize_semantic_h2d_ab.py",
+        "scripts/launch_semantic_h2d_after_pair.py"
+      ],
+      "changed_committed_paths": [
+        "docs/architecture_status_zh.md",
+        "docs/beliefkv_design.md",
+        "docs/experiment_operating_notes_zh.md",
+        "docs/implementation_plan.md"
+      ]
+    },
+    "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v117-wait-reserve-20261012",
+    "target_revision": "92e47d79ef1186dde954bc489fc38600ef5022ae",
+    "target_patch_sha256": "1c3c7fc4eefc5a9ed12e18f5c99490f03cd4b79f9f58079ce08fae3d944cfc9e",
+    "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29",
+    "wait_process_identities": {
+      "883082": [
+        "S",
+        1,
+        "592099218"
+      ],
+      "965308": [
+        "S",
+        883082,
+        "592274878"
+      ],
+      "965328": [
+        "S",
+        965308,
+        "592274954"
+      ],
+      "965346": [
+        "S",
+        965328,
+        "592274966"
+      ],
+      "965696": [
+        "S",
+        965346,
+        "592276249"
+      ],
+      "965697": [
+        "R",
+        965346,
+        "592276249"
+      ],
+      "965698": [
+        "S",
+        965346,
+        "592276249"
+      ],
+      "967408": [
+        "S",
+        965697,
+        "592295499"
+      ],
+      "967474": [
+        "S",
+        965697,
+        "592295545"
+      ],
+      "967729": [
+        "S",
+        965328,
+        "592296447"
+      ],
+      "967908": [
+        "S",
+        967729,
+        "592296830"
+      ],
+      "2438057": null,
+      "2438065": null,
+      "2438142": null
+    },
+    "environment": {
+      "PYTHON": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "RUN_ROOT": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29",
+      "ROOT_COUNT": "156",
+      "ARRIVAL_BATCH_SIZE": "108",
+      "ARRIVAL_BATCH_INTERVAL_MS": "3600000",
+      "ARM_ORDER": "predictive_h2d native",
+      "RESUME_PENDING": "0",
+      "HOST_SPLIT": "80:20",
+      "PORT": "18454",
+      "SAMPLING_SEED": "21",
+      "REPETITION_ID": "0",
+      "ACTIVATION_WALL_CLOCK_SECONDS": "14400.0",
+      "SEMANTIC_REPORT_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/child_semantic_work_live_v7_quantiles/semantic_event_calibrated.json",
+      "PREPARE_HOST": "1",
+      "H2D_SEED_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/native_h2d_ack_seed_20261004.json",
+      "TOOL_TIMING_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/qwen35_native_event_horizons_20260928_calibrated.json",
+      "TRANSFER_SERVICE_SEED": "/home/longhao/experiment/BeliefKV/experiments/models/native_transfer_service_seed_v4.json",
+      "ENABLE_TOOL_TIMING": "1",
+      "PREFETCH_LEAD_MS": "500",
+      "SEMANTIC_WORK_STATISTIC": "center",
+      "EOS_PROTOCOL_WINDOW_MS": "250",
+      "FANOUT_PROFILE": "native_in_graph_2to4",
+      "CHILD_FINAL_REPORT_SHADOW": "1",
+      "WORKLOAD_MANIFEST": "/home/longhao/experiment/BeliefKV/configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json"
+    },
+    "registered_at_utc": "2026-10-11T22:22:55.542645+00:00",
+    "stale_control_socket_removed": false,
+    "deployed_engine": {
+      "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+      "sha256": "1c3c7fc4eefc5a9ed12e18f5c99490f03cd4b79f9f58079ce08fae3d944cfc9e",
+      "expected_tree": "28391605752f4bab931ea96eaef301b96b3b7f1e",
+      "actual_tree": "28391605752f4bab931ea96eaef301b96b3b7f1e",
+      "matches_worktree": true,
+      "covered_untracked_paths": [
+        "test/srt/test_beliefkv_radix_prefix.py",
+        "test/srt/test_beliefkv_terminal_capacity.py",
+        "test/srt/test_beliefkv_text_prompt_ids.py"
+      ]
+    },
+    "started_at_utc": "2026-10-11T22:28:01.576342+00:00"
+  },
+  "superseded_waiting_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v29_launch_after_v28_92e47d7_wait_pair_superseded_20261012_v118.json",
+  "superseded_waiting_state_sha256": "122cc29501088b7a72889902abcaff95366d11a3fc81d4241e071b08b679cf7a",
+  "old_stop_receipt": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v118_v28_development_stop_20261012.json",
+  "old_recorded_processes_gone": true,
+  "new_processes": {
+    "coordinator": {
+      "pid": 2492201,
+      "state": "S",
+      "ppid": 1,
+      "pgid": 2492201,
+      "sid": 2492201,
+      "start_ticks": "592763842"
+    },
+    "server": {
+      "pid": 2573233,
+      "state": "R",
+      "ppid": 2573215,
+      "pgid": 2573233,
+      "sid": 2573233,
+      "start_ticks": "592794548"
+    },
+    "scheduler": {
+      "pid": 2573647,
+      "state": "R",
+      "ppid": 2573233,
+      "pgid": 2573233,
+      "sid": 2573233,
+      "start_ticks": "592796017"
+    },
+    "client": {
+      "pid": 2575352,
+      "state": "S",
+      "ppid": 2573215,
+      "pgid": 2575352,
+      "sid": 2575352,
+      "start_ticks": "592811005"
+    }
+  },
+  "health_http_status": 200,
+  "actual_plan_differences": [
+    "code_commit",
+    "sglang_patch_sha256"
+  ],
+  "target_execution_revision": "92e47d79ef1186dde954bc489fc38600ef5022ae",
+  "engine_provenance": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "1c3c7fc4eefc5a9ed12e18f5c99490f03cd4b79f9f58079ce08fae3d944cfc9e",
+    "expected_tree": "28391605752f4bab931ea96eaef301b96b3b7f1e",
+    "actual_tree": "28391605752f4bab931ea96eaef301b96b3b7f1e",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "native_telemetry_ready": {
+    "schema_version": 1,
+    "source": "native_sglang_v0520",
+    "collection_mode": "admission_observation",
+    "scheduler_pid": 2573647,
+    "scheduler_path": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py",
+    "scheduler_sha256": "d69184248ec9e6844cc727df9f2595320eff846239ee9ea5ba263e2beec9fecc"
+  },
+  "scheduler_file_matches_ready_hash": true,
+  "scheduler_sampling_call_sites": [
+    "waiting_queue=self.waiting_queue, defer_observations=True,",
+    "beliefkv_runtime.sample_runtime_observations(self.waiting_queue)",
+    "runtime.sample_runtime_observations(self.waiting_queue)"
+  ],
+  "scheduler_beliefkv_environment": {
+    "BELIEFKV_TRANSFER_SERVICE_SEED_SHA256": "da149a32fe8b4ff8ea88387cac5be2c1e9929a0721778768b92b3d11a54a49f5",
+    "BELIEFKV_H2D_SEED": "/home/longhao/experiment/BeliefKV/experiments/models/native_h2d_ack_seed_20261004.json",
+    "BELIEFKV_H2D_SEED_SHA256": "76fbfd712963a2b3ca4dcc2a4a3629f74e36d61e7cb8044a69a75926991d2fcd",
+    "BELIEFKV_TOOL_TIMING_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/qwen35_native_event_horizons_20260928_calibrated.json",
+    "BELIEFKV_ADMISSION_OPPORTUNITY_DIR": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29/predictive_h2d/opportunities",
+    "BELIEFKV_ADMISSION_TELEMETRY_DIR": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29/predictive_h2d/server",
+    "BELIEFKV_ENABLE_TOOL_PREFETCH": "1",
+    "BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH": "1",
+    "BELIEFKV_TERMINAL_CACHE_DIAGNOSTICS": "1",
+    "BELIEFKV_EMIT_SEMANTIC_TEXT": "1",
+    "BELIEFKV_SEMANTIC_WORK_STATISTIC": "center",
+    "BELIEFKV_ENABLE_RESIDENT_FIRST": "1",
+    "BELIEFKV_PREFETCH_LEAD_MS": "500",
+    "BELIEFKV_ENABLE_EXECUTION_HANDOFF": "1",
+    "BELIEFKV_TOOL_TIMING_SHA256": "55ea6fdc3307ecbbc4bb06020dbc961801cf7d5da3a3c13ad09a619276c64e80",
+    "BELIEFKV_ENABLE_PREPARE_HOST": "1",
+    "BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY": "1",
+    "BELIEFKV_FULL_MAMBA_HOST_SPLIT": "80:20",
+    "BELIEFKV_SEMANTIC_REPORT_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/child_semantic_work_live_v7_quantiles/semantic_event_calibrated.json",
+    "BELIEFKV_EOS_PROTOCOL_WINDOW_MS": "250"
+  },
+  "initial_service_samples": [
+    {
+      "sample_id": "native-service-000000001",
+      "phase": "prefill",
+      "batch_size": 1,
+      "launch_monotonic_ms": 5928162349.677016,
+      "launch_timestamp_semantics": "scheduler.run_batch entry; not CUDA submission or kernel start",
+      "service_start_monotonic_ms": 5928162349.677016,
+      "complete_monotonic_ms": 5928162828.551724
+    },
+    {
+      "sample_id": "native-service-000000002",
+      "phase": "prefill",
+      "batch_size": 1,
+      "launch_monotonic_ms": 5928162797.82288,
+      "launch_timestamp_semantics": "scheduler.run_batch entry; not CUDA submission or kernel start",
+      "service_start_monotonic_ms": 5928162828.551724,
+      "complete_monotonic_ms": 5928166239.196365
+    },
+    {
+      "sample_id": "native-service-000000003",
+      "phase": "prefill",
+      "batch_size": 2,
+      "launch_monotonic_ms": 5928162888.021287,
+      "launch_timestamp_semantics": "scheduler.run_batch entry; not CUDA submission or kernel start",
+      "service_start_monotonic_ms": 5928166239.196365,
+      "complete_monotonic_ms": 5928166338.769568
+    },
+    {
+      "sample_id": "native-service-000000004",
+      "phase": "prefill",
+      "batch_size": 3,
+      "launch_monotonic_ms": 5928166301.904348,
+      "launch_timestamp_semantics": "scheduler.run_batch entry; not CUDA submission or kernel start",
+      "service_start_monotonic_ms": 5928166338.769568,
+      "complete_monotonic_ms": 5928166435.599639
+    },
+    {
+      "sample_id": "native-service-000000005",
+      "phase": "prefill",
+      "batch_size": 1,
+      "launch_monotonic_ms": 5928166398.599324,
+      "launch_timestamp_semantics": "scheduler.run_batch entry; not CUDA submission or kernel start",
+      "service_start_monotonic_ms": 5928166435.599639,
+      "complete_monotonic_ms": 5928166488.875831
+    },
+    {
+      "sample_id": "native-service-000000006",
+      "phase": "decode",
+      "batch_size": 4,
+      "launch_monotonic_ms": 5928166437.194505,
+      "launch_timestamp_semantics": "scheduler.run_batch entry; not CUDA submission or kernel start",
+      "service_start_monotonic_ms": 5928166488.875831,
+      "complete_monotonic_ms": 5928166492.4504595
+    },
+    {
+      "sample_id": "native-service-000000007",
+      "phase": "decode",
+      "batch_size": 4,
+      "launch_monotonic_ms": 5928166490.182737,
+      "launch_timestamp_semantics": "scheduler.run_batch entry; not CUDA submission or kernel start",
+      "service_start_monotonic_ms": 5928166492.4504595,
+      "complete_monotonic_ms": 5928166496.900601
+    },
+    {
+      "sample_id": "native-service-000000008",
+      "phase": "decode",
+      "batch_size": 4,
+      "launch_monotonic_ms": 5928166493.682346,
+      "launch_timestamp_semantics": "scheduler.run_batch entry; not CUDA submission or kernel start",
+      "service_start_monotonic_ms": 5928166496.900601,
+      "complete_monotonic_ms": 5928166501.360449
+    }
+  ],
+  "first_request": {
+    "kind": "llm_submit",
+    "ts_ms": 1791757899246.9321,
+    "request_id": "beliefkv:01a12d17-d13f-71f0-a34a-ff1efe760b84"
+  },
+  "telemetry_status": {
+    "snapshot_ts_ms": 1791758075177.6086,
+    "record_counts": {
+      "audit": 8109,
+      "events": 3996,
+      "eviction_attribution": 3996,
+      "host_pool": 169,
+      "transfer": 5
+    },
+    "writer_error": null,
+    "dropped_records": 0,
+    "failed_records": 0,
+    "writer_queue_depth": 0
+  },
+  "client_config": {
+    "subagent_fanout_profile": "native_in_graph_2to4",
+    "workflow_arrival_batch_size": 108,
+    "workflow_arrival_batch_interval_ms": 3600000.0,
+    "sampling_seed": 21,
+    "sandbox_command_timeout_s": 180,
+    "child_final_report_shadow": true,
+    "completion_gate_enabled": false
+  },
+  "native_arm_started": false,
+  "performance_goal_met": false,
+  "maintenance_qualification": "V28 workspace archiving overlaps V29 loading/initial service. Record the completed archive receipt interval when auditing early windows."
+}

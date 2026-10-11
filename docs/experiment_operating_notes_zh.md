@@ -4,6 +4,27 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+V118 已按开发重启约定停止 V28：2026-10-12 06:27:24
+CST 截点为 112 completed、44 个主动截断任务。workflow
+状态取 result.json.outcome；final_status 是 Git workspace
+状态，不能据其统计 completed/error。停止后 drain/abort
+记录属于管理操作，不计为模型异常。只移除经 /workspace
+绑定路径确认属于旧轮的容器，不使用广泛 pkill 或容器前缀。
+
+V29 于 06:28:01 CST 冷部署 92e47d7，06:34:36 已确认
+实际服务和客户端、health 200、新 launch 字段及零遥测
+错误/丢失/失败。V113/V115/V117 与 patch 1c3c7fc4 生效，
+冻结计划仅代码及 patch 哈希改变。旧等待登记保留为历史
+回执，当前先 predictive 后同版本冷 native；注册的目标
+checkout 仍不可推进，运行源码与配置继续冻结。
+
+V28 的 156 个 workspace 归档通过 GNU tar 比较后才移除，
+raw 保留 ARCHIVED.md、trace、终态与计划。恢复/比较均用
+zstd --long=30。维护区间 06:29:52-06:33:04 CST 与 V29
+加载和早期服务重叠，不能把磁盘维护影响算作调度变化。
+具体停止、部署、归档证据见 v118 三份回执；尚无本轮
+完整同版本吞吐/JCT 或提前 FULL 复用达标证明。
+
 V117 统一等待恢复的容量口径：直接 fit 与最终入队均扣除
 下一批原生预留，回收所需容量同时包含该预留。不要只按
 恢复量检查 free，导致前规划跳过回收、入队又取消整批；

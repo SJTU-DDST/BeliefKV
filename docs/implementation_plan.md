@@ -2,6 +2,31 @@
 
 Status date: 2026-10-12.
 
+V118 executes the authorized development restart. Stop V28 at06:27:24
+CST with112 completed and44 administratively censored workflows.
+The verified controller/client/server exit; remove only the44 containers
+whose workspace mounts belong to V28. Preserve the frozen plan, traces,
+written outcomes and stop receipt. Retain the superseded V29 waiting-pair
+registration/log; its historical receipt no longer describes current state.
+
+V29 cold-deploys92e47d7 at06:28:01 CST, including V113/V115/V117.
+At06:34:36 verify the actual server/scheduler/client identities, health200,
+submitted requests, GPU service samples and raw launch_monotonic_ms.
+Deferred observation call sites and JOIN/tool/PREPARE flags are active;
+writer error/dropped/failed records are zero. Engine tree matches patch
+1c3c7fc4; frozen plans differ only in code_commit and patch hash.
+Keep predictive first, then same-version cold native, with unchanged
+arrivals/workload/model settings. Preserve
+v118_v29_cold_restart_verification_20261012.json and the immutable target.
+
+Losslessly archive all156 stopped V28 workspaces to4,289,396,535 bytes,
+compare with GNU tar before removal, and keep the raw restore pointer.
+Source allocation38,987,358,208 bytes gives about32.3GiB net file reduction.
+Archive maintenance at06:29:52-06:33:04 CST overlaps V29 loading/initial
+service; qualify those windows. Full same-version busy throughput/JCT,
+attributable early FULL reuse and residual native recovery remain active
+acceptance criteria. Deployment and cleanup are not performance gains.
+
 V117 makes wait planning, cold reclaim and enqueue use the same native
 prefill/decode reserve. Subtract the reserve from the direct-fit verdict
 and include it in the desired free capacity for bounded cold reclaim.

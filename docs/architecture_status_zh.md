@@ -2,6 +2,30 @@
 
 更新日期：2026-10-12。
 
+V118 已执行开发重启。V28 在 06:27:24 CST 主动停止，
+截点有 112 completed、44 个未结束任务；后者单列行政
+截断，不计为模型 error/incomplete。旧 controller/client/
+server 已退出，按 workspace 绑定路径确认的 44 个容器
+已移除。保留冻结计划、全部 trace、已写终态和停止回执。
+原 V29 等待整轮 pair 的登记及日志保留为 superseded。
+
+V29 于 06:28:01 CST 冷部署 92e47d7，合入 V113/V115/
+V117。06:34:36 已核对实际 server/scheduler/client 身份、
+health 200、请求及 GPU 服务；新 launch_monotonic_ms
+存在，诊断延期调用及 JOIN/tool/PREPARE 开关已启用，
+writer error、丢失及失败记录均为零。引擎内容树与 patch
+1c3c7fc4 相符。冻结计划仅 code_commit/patch 哈希变化，
+继续先 predictive 后同版本冷 native，不推进冻结目标。
+回执为 v118_v29_cold_restart_verification_20261012.json；
+原登记回执是历史状态，不能据其判断当前仍在等待。
+
+V28 的 156 个 workspace 已无损归档为 4,289,396,535
+字节，GNU tar 比较通过后清理原副本，净减少约 32.3 GiB
+文件占用。raw 留有恢复指针，trace/终态/计划保留。
+06:29:52-06:33:04 CST 的归档与 V29 加载及早期服务重叠，
+分析对应窗口须标注维护影响。停止、部署、清理回执已保存；
+繁忙阶段吞吐/JCT 与有效提前 FULL 目标仍未达到。
+
 V117 修复 JOIN/tool 恢复的容量口径不一致：前规划的
 fits_current_free_lists 现在与入队重检一样扣除下一批原生
 预留；冷页回收目标包含同一预留。保留排除目标前缀、
