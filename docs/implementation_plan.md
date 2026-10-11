@@ -2,6 +2,25 @@
 
 Status date: 2026-10-11.
 
+At18:42:32 CST, waiting V24 was updated to frozen
+d73e292c6781e2dd6732dd5302c784302f79fa62 in
+beliefkv-v87-eviction-index-20261011. This includes the one-second
+tool-offload policy, subsequent CPU reductions and reporting-aware
+execution verification. Coordinator1263690 has PPID1/start588561543;
+old506123 is absent, with itsddeda0b state/log archived under
+v24_launch_after_v23_ddeda0b_superseded_20261011_v87.
+Environment and wait identities match exactly. Main is ate99c1a2,
+but execution code still matches frozen V23a6dd627 and the live engine
+matches its patch. Preserve the user's monthly-report commit and untracked
+PPTX without local ignores or relocation. Untracked docs do not block
+follow-up deployment; tracked edits and untracked execution files still
+prevent overwrite. Record collection and verification revisions separately.
+The37 existing launcher/postprocessing/resume checks pass. Keep authoritative
+main state andv87_v24_eviction_index_registration_20261011.json.
+Wait for the complete V23 pair and postprocessing, then predictive followed
+by cold same-version native. No V24 GPU arm has started; the performance
+goal remains active. The17:58 registration below is superseded history.
+
 V87 maintains sorted namespace prefix lengths on eviction-index mutation,
 then bisects the eligible range per request. Keep eviction-recency
 selection for truncated probes, original hashes/output/coverage and the
@@ -15,7 +34,7 @@ matches live lengths. The4096/16384-entry fixtures reduce unmatched
 query median thread CPU by71.30%/74.13% and partial matches by37.11%/
 33.18%, while bounded insertion/expiry costs7.8/9.1 microseconds more.
 Keep all results and validate actual weighted writer/GPU/JCT effects.
-Commit and include this in still-waiting V24; preserve frozen V23.
+Committed and included in still-waiting V24; preserve frozen V23.
 
 The complete same-version V23 window at3600-3900s has predictive/native
 1055.21/1055.75 decode token/s, GPU77.01%/75.08% and weighted batch

@@ -1,0 +1,55 @@
+{
+  "status": "waiting_for_previous_pair",
+  "registered_at_utc": "2026-10-11T10:42:32.791821+00:00",
+  "authoritative_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v24_launch_after_v23_20261011.json",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v87-eviction-index-20261011",
+  "target_revision": "d73e292c6781e2dd6732dd5302c784302f79fa62",
+  "target_patch_sha256": "c9195d79d6598c43013d02f04773fb92336651794e9c79005010a9a2b9ec7500",
+  "coordinator": {
+    "pid": 1263690,
+    "ppid": 1,
+    "start_identity": "588561543"
+  },
+  "superseded": {
+    "target_revision": "ddeda0b8d788a974895a7ab7e7f9c010a2eeec84",
+    "coordinator_pid": 506123,
+    "coordinator_absent": true,
+    "archived_state": "v24_launch_after_v23_ddeda0b_superseded_20261011_v87.json",
+    "archived_log": "v24_launch_after_v23_ddeda0b_superseded_20261011_v87.log"
+  },
+  "v23_preserved": {
+    "main_revision": "e99c1a26ac6c8b9f8643fb0565936a5706b79f1e",
+    "collection_revision": "a6dd627587827f376bed7022d15e538100c0c775",
+    "tracked_main_clean": true,
+    "execution_source_unchanged": true,
+    "user_untracked_report_preserved": true,
+    "local_ignore_added": false,
+    "live_engine_matches_frozen_patch": true,
+    "live_engine_patch_sha256": "4af68951beefdf759901d0143ca747c6893aa1ffc7124a3738158512851f7e60",
+    "coordinator_pid": 1083828,
+    "coordinator_start_identity": "586838240",
+    "native_server": {
+      "pid": 3387765,
+      "start_identity": "587818316"
+    },
+    "native_client": {
+      "pid": 3389704,
+      "start_identity": "587834675"
+    }
+  },
+  "target_clean": true,
+  "target_contains_current_main": true,
+  "environment_exactly_preserved": true,
+  "wait_identities_exactly_preserved": true,
+  "v24_gpu_started": false,
+  "order": ["predictive_h2d", "native"],
+  "tool_offload_wait_ms": 1000,
+  "tool_offload_window_return_probability_max": 0.1,
+  "quantile_only_tool_offload_remaining_p10_min_ms": 1000,
+  "tool_offload_policy_commit": "1f75f554a5d9cbafa6231f65aaf3c8b2f7544848",
+  "reporting_verification_commit": "fac805d",
+  "untracked_report_launch_fix_commit": "e99c1a26ac6c8b9f8643fb0565936a5706b79f1e",
+  "existing_launcher_postprocess_resume_checks_passed": 37,
+  "new_threshold_only_tests_added": false,
+  "performance_goal_complete": false
+}
