@@ -1,0 +1,46 @@
+{
+  "scope": "Derived eviction-length index equivalence and bounded CPU processing; no production writer, GIL, prediction-accuracy or GPU-performance claim.",
+  "baseline_revision": "6c8f347",
+  "source": "beliefkv/runtime/v0520_native_telemetry.py",
+  "source_sha256": "2dbeebec390adefb322d18b4655a28e4a73b96f068da44781aa9cccfd637804e",
+  "benchmark": "scripts/benchmark_native_prefix_writer_cpu.py",
+  "benchmark_sha256": "df59b2141aa19c484eaf8384f260fea30ab9d3a345ec8a51002b5180e04b41da",
+  "tests_sha256": "51777889eacc0d057d6d7b2fd9589cdc7ae349d788a3c4e8cfe1ee621bb6ba81",
+  "benchmark_report": "experiments/reports/v87_eviction_sorted_lengths_writer_cpu_20261011.json",
+  "checks": {
+    "initial_command": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python -m pytest -q tests/test_v0520_native_telemetry.py tests/test_writer_timing.py",
+    "initial_passed": 82,
+    "initial_failed": 1,
+    "initial_failure": "New fixture kept cached_tokens_device=4 when its final simulated input grew to 5; its device-hit expectation was inconsistent. Production code was unchanged.",
+    "corrected_command": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python -m pytest -q tests/test_v0520_native_telemetry.py -k short_overflow_probe",
+    "corrected_passed": 1,
+    "corrected_failed": 0,
+    "validated_distinct_checks": 83,
+    "broad_repetition_after_fixture_only_correction": false
+  },
+  "cpu_benchmark": {
+    "cases": 42,
+    "alternating_measurements_per_case": 25,
+    "warmup_measurements_per_case": 10,
+    "records_hashes_counters_history_pending_equal": true,
+    "derived_sorted_index_consistent": true,
+    "pressure_fixture_entry_counts": [4096, 16384],
+    "unmatched_median_thread_cpu_reduction_percent": [71.30112812073706, 74.12950500227234],
+    "partial_median_thread_cpu_reduction_percent": [37.10715071633732, 33.18323088667573],
+    "bounded_insert_and_expiry_thread_cpu_increase_us": [7.803, 9.092]
+  },
+  "semantics_preserved": {
+    "namespace_and_full_prefix_hashes": true,
+    "cross_pool_references": true,
+    "truncated_probe_eviction_recency": true,
+    "candidate_and_omitted_counts": true,
+    "matched_output_order": true,
+    "existing_index_limit": 32768,
+    "sampling_frequency": true,
+    "physical_policy": true
+  },
+  "canonical_patch_sha256": "c9195d79d6598c43013d02f04773fb92336651794e9c79005010a9a2b9ec7500",
+  "live_v23_modified": false,
+  "gpu_gain_verified": false,
+  "performance_goal_complete": false
+}

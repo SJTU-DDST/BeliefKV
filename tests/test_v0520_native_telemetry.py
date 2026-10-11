@@ -307,6 +307,7 @@ def test_matching_namespace_preserves_other_namespace_pending_indexes(tmp_path):
     assert not audit._block_eviction_routes
     assert not audit._block_eviction_route_lengths
     assert not audit._block_eviction_lengths
+    assert not audit._block_eviction_sorted_lengths
     assert not audit._block_eviction_length_refs
 
 
@@ -330,6 +331,39 @@ def test_eviction_routes_preserve_existing_overflow_and_candidate_count(tmp_path
     assert summary["matched_evicted_blocks"] == 0
     assert audit._block_attribution_probe_overflow == 1
     assert len(audit._pending_block_evictions) == 3
+
+
+def test_short_overflow_probe_selects_recent_lengths_then_tracks_remaining_matches(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "blocks")
+    audit.close()
+    audit._max_prefix_lengths_per_probe = 2
+    for length in (5, 2, 4, 1, 3):
+        audit._write_block_eviction({
+            "key_path": (array("q", range(length)),), "pool": "full",
+            "node_id": length, "units": 1, "ts_ms": 1.,
+            "extra_key": None, "cache_salt": None,
+        }, StringIO())
+    output = StringIO()
+    record = {
+        "input_ids": list(range(4)), "ts_ms": 2.,
+        "cached_tokens_device": 4, "cached_tokens_host": 0,
+        "extra_key": None, "cache_salt": None,
+    }
+    audit._write_block_request_probe(record, output)
+    rows = [json.loads(line) for line in output.getvalue().splitlines()]
+    assert [row["prefix_tokens"] for row in rows[:-1]] == [1, 3]
+    assert rows[-1]["omitted_prefix_lengths"] == 2
+    output = StringIO()
+    audit._write_block_request_probe({**record, "input_ids": list(range(3))}, output)
+    rows = [json.loads(line) for line in output.getvalue().splitlines()]
+    assert [row["prefix_tokens"] for row in rows[:-1]] == [2]
+    assert rows[-1]["omitted_prefix_lengths"] == 0
+    audit._write_block_request_probe(
+        {**record, "input_ids": list(range(5)), "cached_tokens_device": 5}, StringIO(),
+    )
+    assert audit._block_attribution_counts["full_device_hit"] == 5
+    assert not audit._pending_block_evictions
+    assert not audit._block_eviction_sorted_lengths
 
 
 def _read(path: Path) -> list[dict]:

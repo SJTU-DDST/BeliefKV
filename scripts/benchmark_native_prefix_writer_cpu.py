@@ -61,6 +61,7 @@ def fixture(tokens: int, scenario: str, writer: type):
     audit._block_eviction_routes = {}
     audit._block_eviction_route_lengths = {}
     audit._block_eviction_lengths = {}
+    audit._block_eviction_sorted_lengths = {}
     audit._block_eviction_length_refs = Counter()
     audit._block_eviction_index_limit = 32768
     audit._max_prefix_lengths_per_probe = 32768
@@ -81,6 +82,8 @@ def fixture(tokens: int, scenario: str, writer: type):
         "cached_tokens_device": tokens // 2, "cached_tokens_host": tokens // 4,
         "mamba_host_hit_slots": 0,
     }
+    if scenario.startswith("block_pressure_"):
+        return pressure_fixture(audit, prior, scenario, record)
     if scenario.startswith("context_"):
         if scenario == "context_middle_diverge":
             current[tokens // 2] = -1
@@ -128,6 +131,47 @@ def fixture(tokens: int, scenario: str, writer: type):
     elif scenario == "block_other_namespace":
         record["extra_key"] = "other"
     return audit, [{**record, "input_ids": current}], "_write_block_request_probe"
+
+
+def pressure_fixture(audit, prior, scenario, record):
+    """Seed a large namespaced index outside the timed query or eviction."""
+    token_ids = array("q", prior)
+    unrelated = array("q", prior)
+    unrelated[0] = -1
+    lengths = list(range(len(prior) // 2, len(prior)))
+    namespace = audit._namespace_digest(None, None)
+    unrelated_digests = audit._prefix_digests(None, None, unrelated, lengths)
+    matching_digests = audit._prefix_digests(None, None, token_ids, lengths)
+    boundary = lengths[0]
+    for position, length in enumerate(lengths[::2] + lengths[1::2], 1):
+        matched = scenario == "block_pressure_partial" and length % 1024 == 0
+        digests = matching_digests if matched else unrelated_digests
+        digest = digests[length]
+        identity = ("full", namespace, length, digest)
+        index_key = (namespace, length, digest)
+        route = (namespace, boundary, digests[boundary])
+        audit._pending_block_evictions[identity] = {
+            "first_eviction_id": position, "last_eviction_id": position,
+            "first_eviction_ts_ms": 1., "last_eviction_ts_ms": 1.,
+            "last_evicted_units": 1, "eviction_count": 1,
+            "evicted_units_total": 1, "evicted_bytes_total": 20480,
+        }
+        audit._block_eviction_index[index_key] = {identity}
+        audit._block_eviction_routes[index_key] = route
+        audit._block_eviction_route_lengths.setdefault(route, Counter())[length] += 1
+        audit._block_eviction_length_refs[(namespace, length)] += 1
+        audit._block_eviction_lengths.setdefault(namespace, OrderedDict())[length] = None
+    audit._block_eviction_sorted_lengths[namespace] = lengths
+    audit._next_block_eviction_id = audit._host_block_eviction_count = len(lengths)
+    audit._block_attribution_counts["full_evictions"] = len(lengths)
+    audit._block_attribution_evicted_units["full"] = len(lengths)
+    if scenario == "block_pressure_eviction":
+        audit._block_eviction_index_limit = len(lengths)
+        return audit, [{
+            "key_path": (token_ids,), "pool": "full", "node_id": len(prior),
+            "units": 1, "ts_ms": 2., "extra_key": None, "cache_salt": None,
+        }], "_write_block_eviction"
+    return audit, [{**record, "input_ids": token_ids}], "_write_block_request_probe"
 
 
 def state(audit) -> dict:
@@ -181,6 +225,11 @@ def measure(writers: dict, *, tokens: int, scenario: str, iterations: int) -> di
                 "thread_cpu": (time.thread_time_ns() - cpu_start) / 1e6,
             }
             outputs[name] = (output.getvalue(), state(audit))
+            if name == "optimized" and audit._block_eviction_sorted_lengths != {
+                namespace: sorted(lengths)
+                for namespace, lengths in audit._block_eviction_lengths.items()
+            }:
+                raise AssertionError("sorted prefix index diverged from live lengths")
             if iteration >= 10:
                 for clock, value in elapsed.items():
                     samples[name][clock].append(value)
@@ -234,6 +283,7 @@ def main() -> None:
     parser.add_argument("--iterations", type=int, default=100)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--observed-prefix-evidence", type=Path)
+    parser.add_argument("--pressure-cases", action="store_true")
     args = parser.parse_args()
     if args.iterations <= 0:
         parser.error("iterations must be positive")
@@ -273,6 +323,19 @@ def main() -> None:
     }
     if args.observed_prefix_evidence is not None:
         report["observed_prefix_work"] = observed_prefix_work(args.observed_prefix_evidence)
+    if args.pressure_cases:
+        report["cases"].extend(
+            measure(writers, tokens=tokens, scenario=scenario, iterations=args.iterations)
+            for tokens in (8192, 32768)
+            for scenario in (
+                "block_pressure_unrelated", "block_pressure_partial", "block_pressure_eviction",
+            )
+        )
+        report["pressure_fixture_scope"] = (
+            "Directly seeded 4096/16384-entry namespaced CPU indexes. "
+            "Setup and derived-index checks are outside measurement. "
+            "Query and bounded-expiry mutation outputs and evidence states are compared."
+        )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     for case in report["cases"]:

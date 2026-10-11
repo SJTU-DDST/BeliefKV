@@ -2,6 +2,32 @@
 
 Status date: 2026-10-11.
 
+V87 maintains sorted namespace prefix lengths on eviction-index mutation,
+then bisects the eligible range per request. Keep eviction-recency
+selection for truncated probes, original hashes/output/coverage and the
+existing32768-entry bound. This derived view is maintained by the single
+background writer; no physical policy or sampling change. The82 existing
+checks pass; the new short-overflow/continuing-probe case passes after
+correcting its last simulated cache length. Against6c8f347, all42 CPU
+cases preserve records, hashes, counters, history and pending state over
+25 alternating measurements plus10 warmups. Derived sorted state also
+matches live lengths. The4096/16384-entry fixtures reduce unmatched
+query median thread CPU by71.30%/74.13% and partial matches by37.11%/
+33.18%, while bounded insertion/expiry costs7.8/9.1 microseconds more.
+Keep all results and validate actual weighted writer/GPU/JCT effects.
+Commit and include this in still-waiting V24; preserve frozen V23.
+
+The complete same-version V23 window at3600-3900s has predictive/native
+1055.21/1055.75 decode token/s, GPU77.01%/75.08% and weighted batch
+43.603/43.963. H2D is only0.073/0.142GB. Shorter predictive mean
+decode worker intervals (30.14/33.48ms) do not imply throughput or
+prefetch gains. Instrumented predictive exclusive wall is30.672s,
+including6.328s reentry,4.347s control_drain,3.032s admission and
+3.014s opportunity sampling. Measured writer CPU samples are275.7/
+381.7ms; do not extrapolate by sampling interval. This window ends
+before this continuation's disk-maintenance bounds. Graph flags remain
+unknown; the completed native pair and full performance goal are pending.
+
 V86 reclaims about35.73GiB through verified immutable-log deduplication
 (7.22GiB) and compression of two obsolete failed repeat exports
 (28.51GiB net). The493.6MB archive passes full tar/source comparison

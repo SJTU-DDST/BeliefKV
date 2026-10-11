@@ -8,9 +8,10 @@ from beliefkv.runtime.writer_timing import SampledWriterTiming
 
 import atexit
 from array import array
-from bisect import bisect_left
+from bisect import bisect_left, bisect_right, insort
 from collections import Counter, OrderedDict
 import hashlib
+from itertools import islice
 import json
 import math
 import os
@@ -94,6 +95,7 @@ class NativeReactiveTelemetry:
         self._block_eviction_routes: dict[tuple[str, int, str], tuple[str, int, str]] = {}
         self._block_eviction_route_lengths: dict[tuple[str, int, str], Counter[int]] = {}
         self._block_eviction_lengths: dict[str, OrderedDict[int, None]] = {}
+        self._block_eviction_sorted_lengths: dict[str, list[int]] = {}
         self._block_eviction_length_refs: Counter[tuple[str, int]] = Counter()
         self._block_eviction_index_limit = 32768
         # The index is bounded already; probing only its newest 1024 lengths
@@ -547,6 +549,10 @@ class NativeReactiveTelemetry:
                 self._block_eviction_length_refs[length_key] -= 1
                 if self._block_eviction_length_refs[length_key] <= 0:
                     self._block_eviction_length_refs.pop(length_key, None)
+                    ordered = self._block_eviction_sorted_lengths[namespace_digest]
+                    ordered.pop(bisect_left(ordered, prefix_tokens))
+                    if not ordered:
+                        del self._block_eviction_sorted_lengths[namespace_digest]
                     lengths = self._block_eviction_lengths.get(namespace_digest)
                     if lengths is not None:
                         lengths.pop(prefix_tokens, None)
@@ -623,9 +629,13 @@ class NativeReactiveTelemetry:
                 route_lengths = Counter()
                 self._block_eviction_route_lengths[route] = route_lengths
             route_lengths[prefix_tokens] += 1
-            self._block_eviction_length_refs[
-                (namespace_digest, prefix_tokens)
-            ] += 1
+            length_key = (namespace_digest, prefix_tokens)
+            if not self._block_eviction_length_refs[length_key]:
+                insort(
+                    self._block_eviction_sorted_lengths.setdefault(namespace_digest, []),
+                    prefix_tokens,
+                )
+            self._block_eviction_length_refs[length_key] += 1
         lengths = self._block_eviction_lengths.setdefault(
             namespace_digest, OrderedDict()
         )
@@ -675,20 +685,21 @@ class NativeReactiveTelemetry:
         lengths = self._block_eviction_lengths.get(namespace_digest)
         if not lengths or not token_ids:
             return
-        available_lengths = [
-            length for length in reversed(lengths)
-            if length <= len(token_ids)
-        ]
+        ordered_lengths = self._block_eviction_sorted_lengths[namespace_digest]
+        available_count = bisect_right(ordered_lengths, len(token_ids))
         overflow = max(
-            0, len(available_lengths) - self._max_prefix_lengths_per_probe
+            0, available_count - self._max_prefix_lengths_per_probe
         )
         if overflow:
-            available_lengths = available_lengths[
-                :self._max_prefix_lengths_per_probe
-            ]
+            # A truncated probe still selects the most recently evicted lengths.
+            prefix_lengths = sorted(islice(
+                (length for length in reversed(lengths) if length <= len(token_ids)),
+                self._max_prefix_lengths_per_probe,
+            ))
             self._block_attribution_probe_overflow += overflow
             self._block_attribution_counts["probe_prefix_length_overflow"] += overflow
-        prefix_lengths = sorted(available_lengths)
+        else:
+            prefix_lengths = ordered_lengths[:available_count]
         candidate_prefix_lengths = len(prefix_lengths)
         if candidate_prefix_lengths <= 32:
             prefix_digests = self._prefix_digests(
@@ -855,6 +866,7 @@ class NativeReactiveTelemetry:
             self._block_eviction_routes.clear()
             self._block_eviction_route_lengths.clear()
             self._block_eviction_lengths.clear()
+            self._block_eviction_sorted_lengths.clear()
             self._block_eviction_length_refs.clear()
         if overflow or matches:
             output.write(json.dumps({
