@@ -58,6 +58,7 @@ def baseline_classes(revision: str):
         "_prefill_causal_ranks", "on_batch_completed", "dispatch_execution_handoff",
         "_capture_semantic_text", "_poll_semantic_reports",
         "_executable_waiting_key", "terminal_waiting_request_ids",
+        "scheduler_step",
     }
     original.name = "BaselineRuntime"
     original.bases = [ast.Name(id="NativeAdmissionRuntime", ctx=ast.Load())]
@@ -415,6 +416,117 @@ def benchmark_handoff_frontier(
     }
 
 
+def benchmark_causal_reuse(
+    *, revision: str, workflows: int, rounds: int, iterations: int,
+    planning_calls: int, clock: list[float],
+) -> dict:
+    baseline, frontier, digests = baseline_classes(revision)
+    for method, phase in (
+        ("scheduler_step", "scheduler_maintenance"),
+        ("plan_native_prefill", "admission_plan"),
+    ):
+        setattr(baseline, method, runtime_module.timed_runtime(phase)(getattr(baseline, method)))
+    results = []
+    for queue_size in sorted({48, workflows}):
+        for retained_rounds in sorted({1, rounds}):
+            for calls in sorted({1, planning_calls}):
+                for graph_interval in (1, 4, 16):
+                    variants = {
+                        "baseline": synthetic_runtime(baseline, frontier, queue_size, retained_rounds),
+                        "optimized": synthetic_runtime(
+                            NativeAdmissionRuntime, CausalFrontierScheduler, queue_size, retained_rounds,
+                        ),
+                    }
+                    samples = {name: {"wall_ms": [], "thread_cpu_ms": []} for name in variants}
+                    inspections = {name: Counter() for name in variants}
+                    try:
+                        for name, (runtime, queue) in variants.items():
+                            runtime.enable_resident_first = True
+                            runtime._visible_since = {request.rid: clock[0] for request in queue}
+                            positions = {request.rid: position for position, request in enumerate(queue)}
+
+                            def inspect(request, *, name=name, positions=positions):
+                                inspections[name][request.rid] += 1
+                                resident = (positions[request.rid] + int(clock[0] * 20)) % 3 == 0
+                                return {
+                                    "missing_full_tokens": 0 if resident else 256,
+                                    "missing_mamba_slots": int(not resident),
+                                    "device_checkpoint_tokens": 1024 if resident else 0,
+                                }
+
+                            runtime.attach_native_cache(NS(inspect_beliefkv_reentry=inspect))
+                        for iteration in range(iterations + 5):
+                            clock[0] += .051
+                            outputs = {}
+                            order = list(variants)
+                            if iteration % 2:
+                                order.reverse()
+                            for name in order:
+                                runtime, queue = variants[name]
+                                if iteration % graph_interval == 0:
+                                    runtime.graph._graph_version += 1
+                                started_wall, started_cpu = time.perf_counter_ns(), time.thread_time_ns()
+                                runtime.scheduler_step(queue)
+                                plans = tuple(runtime.plan_native_prefill(
+                                    queue, running_batch=None, adder=None if call == 0 else NS(),
+                                ) for call in range(calls))
+                                costs = {
+                                    "thread_cpu_ms": (time.thread_time_ns() - started_cpu) / 1_000_000,
+                                    "wall_ms": (time.perf_counter_ns() - started_wall) / 1_000_000,
+                                }
+                                outputs[name] = (
+                                    plans,
+                                    {key: value for key, value in runtime.counts.items()
+                                     if key != "admission_causal_cache_hits"},
+                                    dict(runtime._reentry_observations),
+                                    runtime._residency_scan_cursor,
+                                )
+                                if iteration >= 5:
+                                    for metric, value in costs.items():
+                                        samples[name][metric].append(value)
+                            if outputs["baseline"] != outputs["optimized"]:
+                                raise AssertionError((queue_size, retained_rounds, calls, graph_interval, iteration))
+                            if inspections["baseline"] != inspections["optimized"]:
+                                raise AssertionError("native residency inspection changed")
+                        costs = {
+                            name: {metric: distribution(values) for metric, values in measurements.items()}
+                            for name, measurements in samples.items()
+                        }
+                        results.append({
+                            "queue_size": queue_size, "retained_rounds": retained_rounds,
+                            "planning_calls_per_cycle": calls, "graph_change_interval": graph_interval,
+                            "plans_and_live_residency_equal": True,
+                            "native_inspection_counts_equal": True,
+                            "native_inspection_count": sum(inspections["baseline"].values()),
+                            "causal_cache_hits": {
+                                name: runtime.counts["admission_causal_cache_hits"]
+                                for name, (runtime, _) in variants.items()
+                            },
+                            "costs": costs,
+                            "mean_wall_reduction_fraction": (
+                                1 - costs["optimized"]["wall_ms"]["mean_ms"]
+                                / costs["baseline"]["wall_ms"]["mean_ms"]
+                            ),
+                        })
+                    finally:
+                        for runtime, _ in variants.values():
+                            runtime.close()
+    return {
+        "scope": (
+            "CPU scheduler maintenance plus complete causal/resident-first admission cycles; "
+            "real versioned causal graph and request identities, alternating execution order, "
+            "changing stub residency beyond its observation expiry and graph changes every "
+            "1/4/16 cycles. Native inspection traces, live observations, plans and non-cache "
+            "policy counters must agree. No physical allocator, DMA or GPU/JCT measurement."
+        ),
+        "baseline_revision": revision, "baseline_source_sha256": digests,
+        "optimized_runtime_source": str(runtime_source_path()),
+        "optimized_runtime_source_sha256": hashlib.sha256(runtime_source_path().read_bytes()).hexdigest(),
+        "iterations_per_case": iterations, "warmup_iterations": 5,
+        "logical_cycle_ms": 51., "cases": results,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-revision", default="7055901")
@@ -423,6 +535,7 @@ def main():
     parser.add_argument("--iterations", type=int, default=200)
     parser.add_argument("--planning-calls", type=int, choices=(1, 2), default=1)
     parser.add_argument("--handoff-frontier", action="store_true")
+    parser.add_argument("--causal-reuse", action="store_true")
     parser.add_argument("--resident-first", action="store_true",
                         help="Use mixed residency observations and check identical native reads.")
     parser.add_argument("--parent-handoffs", type=int, default=0,
@@ -438,7 +551,17 @@ def main():
         raise ValueError("parent handoffs must fit the synthetic workflow count")
     if args.handoff_frontier and (args.parent_handoffs or args.semantic_progress):
         raise ValueError("completed-batch tracking options do not apply to handoff frontier")
-    if args.handoff_frontier:
+    if args.causal_reuse:
+        if args.handoff_frontier or args.parent_handoffs or args.semantic_progress:
+            raise ValueError("causal reuse measures scheduler/admission cycles only")
+        clock = [1000.]
+        with patch.object(runtime_module.time, "monotonic", new=lambda: clock[0]):
+            report = benchmark_causal_reuse(
+                revision=args.baseline_revision, workflows=args.workflows,
+                rounds=args.rounds, iterations=args.iterations,
+                planning_calls=args.planning_calls, clock=clock,
+            )
+    elif args.handoff_frontier:
         report = benchmark_handoff_frontier(
             revision=args.baseline_revision, workflows=args.workflows,
             rounds=args.rounds, iterations=args.iterations,
@@ -452,7 +575,17 @@ def main():
                            semantic_progress=args.semantic_progress)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
-    if args.handoff_frontier:
+    if args.causal_reuse:
+        for case in report["cases"]:
+            print(
+                f"queue={case['queue_size']} rounds={case['retained_rounds']} "
+                f"plans={case['planning_calls_per_cycle']} "
+                f"graph_interval={case['graph_change_interval']}: "
+                f"{case['costs']['baseline']['wall_ms']['mean_ms']:.6f} -> "
+                f"{case['costs']['optimized']['wall_ms']['mean_ms']:.6f} ms "
+                f"({case['mean_wall_reduction_fraction'] * 100:.2f}% lower)"
+            )
+    elif args.handoff_frontier:
         print(json.dumps({"scope": report["scope"], "scenarios": report["scenarios"]}, indent=2))
     else:
         print(json.dumps({key: report[key] for key in (

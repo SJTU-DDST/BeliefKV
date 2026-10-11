@@ -1,0 +1,44 @@
+{
+  "scope": "Versioned causal admission rank reuse across scheduler iterations; CPU validation only, no GPU performance claim.",
+  "baseline_revision": "1cf901f",
+  "change": {
+    "clear_causal_cache_each_scheduler_iteration": false,
+    "existing_semantic_graph_queue_object_identity_signature_retained": true,
+    "residency_capacity_hint_expiry_aging_and_priority_checked_live": true,
+    "changed_decode_inputs_still_submitted": true,
+    "new_policy_switch_or_threshold": false,
+    "frozen_v22_modified": false
+  },
+  "old_behavior_reproduced": {
+    "unchanged_scheduler_iterations": 2,
+    "request_count": 2,
+    "old_classification_calls": 4,
+    "new_classification_calls": 2,
+    "residency_and_aging_refresh_checked": true
+  },
+  "checks": {
+    "passed": 349,
+    "suites": [
+      "tests/test_execution_handoff.py",
+      "tests/test_sglang_v0520_runtime.py",
+      "tests/test_sglang_v0520_admission.py",
+      "tests/test_terminal_child_capacity.py",
+      "tests/test_tool_predictive_transfers.py",
+      "tests/test_wait_prefetch_batch.py"
+    ],
+    "python": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python"
+  },
+  "benchmark": {
+    "report": "v69_causal_reuse_admission_cpu_20261011.json",
+    "cases": 24,
+    "alternating_samples_per_case": 61,
+    "plans_and_native_residency_reads_equal": true,
+    "graph_change_intervals": [1, 4, 16],
+    "waiting_request_counts": [48, 156],
+    "retained_round_counts": [1, 4],
+    "planning_calls_per_cycle": [1, 2],
+    "logical_cycle_ms": 51.0,
+    "real_allocator_dma_and_gpu_measured": false
+  },
+  "deployment": "Commit and register for the still-waiting V23 predictive-first same-version pair without changing its workload or observations."
+}

@@ -1411,7 +1411,6 @@ class NativeAdmissionRuntime:
     @timed_runtime("scheduler_maintenance")
     def scheduler_step(self, waiting_queue: Sequence[object] = ()) -> None:
         self._prefill_cycle_active = True
-        self._prefill_causal_cache = None
         if self.event_server is not None:
             with self._hotpath_timing.measure("control_drain"):
                 self.event_server.drain(max_messages=128)
@@ -6422,6 +6421,7 @@ class NativeAdmissionRuntime:
             index: _request_key(req, known_keys=self.visible)
             for index, req in tagged
         }
+        # Reuse only versioned causal ranks across unchanged scheduler iterations.
         ranks = self._prefill_causal_ranks(tagged, keys)
         now_ms = time.monotonic() * 1000
         valid_hints: dict[int, NativeDemandHint] = {}

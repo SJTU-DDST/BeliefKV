@@ -2,6 +2,29 @@
 
 Status date: 2026-10-11.
 
+Reuse pure causal admission ranks across unchanged scheduler iterations instead
+of clearing them every GPU step. Preserve the existing signature of semantic
+revision, graph version, queue order, request object and full current identity.
+Graph, queue or identity changes still recompute classification. Residency,
+capacity, hint expiry, aging, restoration/final-stage quotas and predictor inputs
+remain live; do not cache complete plans or add a policy switch.
+
+The349 related runtime/admission/handoff/terminal/tool/burst checks pass,
+including changing residency and age across iterations, hint expiry, new decode
+inputs, graph events and queue/object/identity invalidation. The old scheduler
+reproduces four classification calls across two unchanged cycles; the new one
+performs two while native reads and ordering still update. Keep
+v69_causal_reuse_admission_cpu_20261011.json:24 complete scheduler/admission
+CPU cases,61 alternating samples each,48/156 requests,1/4 retained rounds,
+one/two planning calls,graph changes every1/4/16cycles,51ms logical progress.
+Native observations/plans/non-cache counters agree. Graph changes every4/16
+cycles reduce mean wall16.8%-31.6%/20.8%-39.3%; every-cycle invalidation is
+approximately unchanged at0.5%-2.1% variation. Residency is a changing stub;
+actual allocator,DMA,GPU throughput and JCT are excluded.
+Commit and register only for the genuinely waiting V23; preserve frozen V22
+and all workload/observation settings. Validate actual GPU benefit before
+accepting this CPU evidence as progress toward the full performance goal.
+
 Keep the complete replenishment-window regression in the acceptance evidence:
 v68_v22_replenished_busy_windows_20261011.json and
 v68_v22_busy_context_4200_4500_20261011.json. At3600-3900s,
