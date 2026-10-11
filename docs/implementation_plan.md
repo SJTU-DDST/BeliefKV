@@ -2,6 +2,36 @@
 
 Status date: 2026-10-12.
 
+V121 commits19a83b1: include survival-conditioned tool remaining P50-P10
+in the service/enqueue/observation start window, capped by the existing500ms
+residence allowance. Initial selection, post-reclaim planning and final
+enqueue use the same calculation. Preserve causal drain, fresh physical
+prefix validation, native FULL/Mamba reserve and transactions. JOIN does not
+inherit the tool margin. Record prediction_early_ms separately from physical
+service time. The actual observation interval constant is100ms; the previous
+approximately165ms horizon is an observed combined value.
+
+Related596 checks pass. Sixteen same-input CPU fixtures change formerly
+rejected300/380ms tool opportunities with P10=100ms into four-node bursts
+when free/reclaimable, one continuous FULL extent when only partial capacity
+fits, and zero when unavailable. Point forecasts and already actionable80ms
+cases retain their payload. Window thread-CPU P50 increases from about25 to
+45us; this is added computation, not a performance saving. Native allocator,
+headroom and enqueue are mocked. No DMA/ACK/early reuse/GPU/JCT gain is proven.
+Keepv121_tool_prefetch_window_cpu. Freeze V30 with V120/V121 and queue it
+after the complete V29 predictive/native pair and postprocessing; predictive
+first, then same-version cold native. Do not change collecting V29. Verify
+actual reclaim, early FULL reuse and service throughput before accepting
+the timing policy; the full native-performance goal remains active.
+
+Losslessly archive the76 remaining censored V16b workspaces to3,202,382,046
+bytes; GNU tar comparison passes before source removal. Remove76 containers
+verified by their old /workspace mounts. Source allocation24,619,732,992
+bytes yields about19.95GiB net reclamation; keep traces, outcomes, plan and
+restore pointer. Maintenance07:45:42-07:47:55 CST overlaps V29 and must be
+qualified in performance windows. Free space at verification60,490,625,024
+bytes includes concurrent experiment writes. Keepv121_v16b_workspace_archive.
+
 V120 removes a duplicate JOIN plan capture within one dispatch. Return the
 new stage plan directly; enqueue still drains causal events and refreshes the
 physical prefix, capacity and timing, with native per-node validation and
