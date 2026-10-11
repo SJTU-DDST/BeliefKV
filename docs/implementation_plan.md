@@ -29,6 +29,15 @@ Retain V97 CPU/window/lifecycle receipts. Continue frozen V26 collection,
 inspect JOIN tails and shared costs; the development-restart option remains
 available for important committed fixes and the full objective stays active.
 
+The same sealed prefix contains8 nonreused JOIN FULL commands across3
+JOINs, actually started1.578-15.157s before complete JOIN. All have observed
+roughly1.5s residency expiry; corresponding native-arrival-to-service is
+only116-427ms, with one client-to-native interval866ms. Do not attribute
+these tails entirely to parent admission. Inspect underestimated remaining
+child work and repeated early recovery together; expiry is an association,
+not a demonstrated sole cause. Retain the V97 JOIN-miss diagnostic receipt,
+and avoid an arbitrary fixed-seconds adjustment to the forecasts.
+
 V96: optimize the synchronous first-service proof for native token arrays
 using array comparisons and divergence search; retain the list shared-prefix
 walk, independent ACK snapshots and FULL/Mamba allocation identity checks.
