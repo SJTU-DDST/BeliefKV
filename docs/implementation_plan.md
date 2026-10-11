@@ -2,6 +2,37 @@
 
 Status date: 2026-10-11.
 
+Use a fitting continuous prefix after bounded cold reclaim for JOIN/tool
+prefetch. Previously the refreshed plan included global evictable capacity
+and required the entire burst to fit, even when some FULL ancestors were
+already loadable. Reuse the existing physical fitting-prefix planner and
+leave the unavailable tail to a later predictive or native load. Revalidate
+after causal event delivery with the selected node count, so newly freed
+capacity cannot inflate the time estimate or submitted-byte attribution.
+Keep native allocation, dependency and reserve checks. Native patch,
+workload, observations and maximum lead500ms are unchanged.
+
+579 related checks pass. Keep the baseline-fd4a13c CPU comparison in
+v72_wait_prefetch_capacity_cpu_20261011.json and validation receipt in
+v72_wait_prefetch_capacity_validation_20261011.json. Both JOIN/tool fixtures
+need16 FULL units and one Mamba slot for four nodes. Free FULL10/Mamba0
+changes0 to2 submitted nodes; FULL16/Mamba0 changes0 to3. Full capacity
+keeps4 nodes; a first ancestor that cannot fit keeps0. These use mock native
+enqueue and do not establish pre-boundary physical transfer or GPU benefit.
+
+The completed V22 audit observes no_cold_capacity in54 JOIN and695 tool
+waits; next-request FULL Host-hit associations are0.485/187.167GB.
+Do not treat those bytes as feasible early recovery or an oracle saving.
+The new code still requires same-version early reuse, exposed recovery
+wait and busy-window throughput/JCT validation. Register it only while
+V23 is genuinely waiting; preserve a started pair.
+
+V22 native django__django-11885 is incomplete after two length-terminated
+root results with repetitive text. Both children returned, JOIN was satisfied,
+the deadline did not expire, no guard intervened and runtime delivery did
+not fail. Retain it as an incomplete result, not a GPU policy benefit.
+The current waiting registration remains60c5502 until explicitly replaced.
+
 Registered V23 at2026-10-11 13:32:18CST for committed
 60c55021e097750f2faeef175d206c906279eabf in the frozen
 beliefkv-v71-tool-overrun-20261011 checkout. At13:32:35, coordinator1024560
@@ -60,8 +91,9 @@ The1810 tools with total duration at least2000ms are descriptive, not a feasible
 offload denominator. Current policy starts after actual WAIT_TOOL or WAIT_JOIN;
 there is no unconditional pre-tool or post-spawn COMMIT_CPU. Treat precision,
 coverage, backup/demotion and subsequent consumption as separate evidence.
-This audit does not change the waiting V23b854a91 target or frozen workload;
-the same-version busy-window performance objective remains active.
+This audit does not change the frozen workload; the current V23 revision
+is the latest page-top registration and authoritative main state. The
+same-version busy-window performance objective remains active.
 
 Reuse pure causal admission ranks across unchanged scheduler iterations instead
 of clearing them every GPU step. Preserve the existing signature of semantic

@@ -3520,6 +3520,7 @@ class NativeAdmissionRuntime:
 
     def _wait_prefetch_opportunity(
         self, key: PrefillCandidateKey,
+        *, max_steps: int = 16, fit_current_capacity: bool = False,
     ) -> SessionH2DOpportunity | None:
         batched = callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
         slots = self.physical_ledger.max_pending - self.physical_ledger.pending_count
@@ -3527,7 +3528,8 @@ class NativeAdmissionRuntime:
             return None
         opportunity = self.inspect_context_h2d_opportunity(
             context_id=key.context_id, context_epoch=key.context_epoch,
-            max_steps=min(16, slots) if batched else 1,
+            max_steps=min(max_steps, slots) if batched else 1,
+            fit_current_capacity=fit_current_capacity,
         )
         if opportunity is None or opportunity.step is None:
             return opportunity
@@ -3733,7 +3735,9 @@ class NativeAdmissionRuntime:
                     "context_epoch": key.context_epoch, "freed_units": freed,
                     "victims": getattr(self._native_cache, "beliefkv_handoff_last_victims", ()),
                 })
-        return self._wait_prefetch_opportunity(key)
+        # Bounded reclaim need not fit the whole checkpoint. Restore the
+        # continuous prefix that fits now and leave the tail for a later load.
+        return self._wait_prefetch_opportunity(key, fit_current_capacity=True)
 
     def refreshed_shadow_backup_step(
         self, *, context_id: str | None = None, source: str = "tool_wait",
@@ -4976,7 +4980,9 @@ class NativeAdmissionRuntime:
             return ()
         # Capture once after draining causal events. Native rechecks allocation,
         # ancestry and generation for every node in this same ordered burst.
-        fresh = self._wait_prefetch_opportunity(key)
+        fresh = self._wait_prefetch_opportunity(
+            key, max_steps=len(steps), fit_current_capacity=True,
+        )
         if (
             fresh is None or fresh.fits_current_free_lists is not True
             or tuple(fresh.steps[:len(steps)]) != steps

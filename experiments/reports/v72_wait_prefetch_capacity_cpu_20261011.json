@@ -1,0 +1,200 @@
+{
+  "baseline_revision": "fd4a13c",
+  "baseline_source_sha256": "717ecb5b3a4bc3978c68ddf4985014c30e95173fb910749e93698245c6e1a185",
+  "updated_source_sha256": "3f75bfc84ecd341b1d0f0eda68e4d0e898bb6e122d84fe19c4e6f84ee2f0faf0",
+  "scope": "CPU fixtures with a real physical prefix planner and runtime action ledger; native allocation, enqueue and closure observations are stubs. The whole checkpoint needs 16 FULL units and one Mamba slot; global evictable capacity exceeds the bounded reclaimer, which releases nothing. JOIN fixtures use a confirmed ticket. No real transfer, pre-boundary timing, throughput, recoverable trace bytes or JCT saving is measured.",
+  "cases": [
+    {
+      "source": "join_ticket",
+      "device_free_full_tokens": 10,
+      "device_free_mamba_slots": 0,
+      "baseline": {
+        "planned_nodes": 4,
+        "planned_full_tokens": 16,
+        "planned_mamba_slots": 1,
+        "fits_current_capacity": false,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {}
+      },
+      "updated": {
+        "planned_nodes": 2,
+        "planned_full_tokens": 8,
+        "planned_mamba_slots": 0,
+        "fits_current_capacity": true,
+        "submitted_node_commands": 2,
+        "submitted_pool_bytes": {
+          "kv": 80,
+          "mamba": 0
+        }
+      }
+    },
+    {
+      "source": "join_ticket",
+      "device_free_full_tokens": 16,
+      "device_free_mamba_slots": 0,
+      "baseline": {
+        "planned_nodes": 4,
+        "planned_full_tokens": 16,
+        "planned_mamba_slots": 1,
+        "fits_current_capacity": false,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {}
+      },
+      "updated": {
+        "planned_nodes": 3,
+        "planned_full_tokens": 12,
+        "planned_mamba_slots": 0,
+        "fits_current_capacity": true,
+        "submitted_node_commands": 3,
+        "submitted_pool_bytes": {
+          "kv": 120,
+          "mamba": 0
+        }
+      }
+    },
+    {
+      "source": "join_ticket",
+      "device_free_full_tokens": 20,
+      "device_free_mamba_slots": 1,
+      "baseline": {
+        "planned_nodes": 4,
+        "planned_full_tokens": 16,
+        "planned_mamba_slots": 1,
+        "fits_current_capacity": true,
+        "submitted_node_commands": 4,
+        "submitted_pool_bytes": {
+          "kv": 160,
+          "mamba": 20
+        }
+      },
+      "updated": {
+        "planned_nodes": 4,
+        "planned_full_tokens": 16,
+        "planned_mamba_slots": 1,
+        "fits_current_capacity": true,
+        "submitted_node_commands": 4,
+        "submitted_pool_bytes": {
+          "kv": 160,
+          "mamba": 20
+        }
+      }
+    },
+    {
+      "source": "join_ticket",
+      "device_free_full_tokens": 3,
+      "device_free_mamba_slots": 1,
+      "baseline": {
+        "planned_nodes": 4,
+        "planned_full_tokens": 16,
+        "planned_mamba_slots": 1,
+        "fits_current_capacity": false,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {}
+      },
+      "updated": {
+        "planned_nodes": 1,
+        "planned_full_tokens": 4,
+        "planned_mamba_slots": 0,
+        "fits_current_capacity": false,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {}
+      }
+    },
+    {
+      "source": "tool_wait",
+      "device_free_full_tokens": 10,
+      "device_free_mamba_slots": 0,
+      "baseline": {
+        "planned_nodes": 4,
+        "planned_full_tokens": 16,
+        "planned_mamba_slots": 1,
+        "fits_current_capacity": false,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {}
+      },
+      "updated": {
+        "planned_nodes": 2,
+        "planned_full_tokens": 8,
+        "planned_mamba_slots": 0,
+        "fits_current_capacity": true,
+        "submitted_node_commands": 2,
+        "submitted_pool_bytes": {
+          "kv": 80,
+          "mamba": 0
+        }
+      }
+    },
+    {
+      "source": "tool_wait",
+      "device_free_full_tokens": 16,
+      "device_free_mamba_slots": 0,
+      "baseline": {
+        "planned_nodes": 4,
+        "planned_full_tokens": 16,
+        "planned_mamba_slots": 1,
+        "fits_current_capacity": false,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {}
+      },
+      "updated": {
+        "planned_nodes": 3,
+        "planned_full_tokens": 12,
+        "planned_mamba_slots": 0,
+        "fits_current_capacity": true,
+        "submitted_node_commands": 3,
+        "submitted_pool_bytes": {
+          "kv": 120,
+          "mamba": 0
+        }
+      }
+    },
+    {
+      "source": "tool_wait",
+      "device_free_full_tokens": 20,
+      "device_free_mamba_slots": 1,
+      "baseline": {
+        "planned_nodes": 4,
+        "planned_full_tokens": 16,
+        "planned_mamba_slots": 1,
+        "fits_current_capacity": true,
+        "submitted_node_commands": 4,
+        "submitted_pool_bytes": {
+          "kv": 160,
+          "mamba": 20
+        }
+      },
+      "updated": {
+        "planned_nodes": 4,
+        "planned_full_tokens": 16,
+        "planned_mamba_slots": 1,
+        "fits_current_capacity": true,
+        "submitted_node_commands": 4,
+        "submitted_pool_bytes": {
+          "kv": 160,
+          "mamba": 20
+        }
+      }
+    },
+    {
+      "source": "tool_wait",
+      "device_free_full_tokens": 3,
+      "device_free_mamba_slots": 1,
+      "baseline": {
+        "planned_nodes": 4,
+        "planned_full_tokens": 16,
+        "planned_mamba_slots": 1,
+        "fits_current_capacity": false,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {}
+      },
+      "updated": {
+        "planned_nodes": 1,
+        "planned_full_tokens": 4,
+        "planned_mamba_slots": 0,
+        "fits_current_capacity": false,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {}
+      }
+    }
+  ]
+}

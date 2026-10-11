@@ -2,6 +2,40 @@
 
 更新日期：2026-10-11。
 
+JOIN/tool 预取补齐按实际空闲容量恢复部分前缀的路径。有限冷页
+回收后，原逻辑重建包含全局可驱逐容量的整批计划，再要求整批
+全部放得下；即使连续祖先 FULL 已可容纳，也会拒绝提交。
+现在沿用已有 physical planner 的 fitting-prefix 逻辑，恢复
+当前能容纳的连续前缀，必要 Mamba 只随可容纳的 checkpoint
+恢复；未恢复尾部仍由后续预取或原生需求路径处理。
+
+提交前在交付因果事件后重新读取容量，并将规划节点数限定到
+实际选择的数量，避免新释放容量重新扩大计划、令 H2D 时机和
+提交字节归因包含未提交尾部。原生分配、祖先顺序、Host 副本、
+引用、分池 reserve 与驻留预算仍有效；未增加策略开关、
+提前量、采样事件或传输门槛，原生 patch 未变。
+
+579 项 runtime/physical/tool/准入/恢复/终态容量检查通过。
+在固定 fd4a13c 的同一 CPU 夹具中，四节点 checkpoint 需要
+16 FULL 单位和 1 个 Mamba slot；有限回收未释放空间时，
+free FULL=10、Mamba=0 的旧/新提交为 0/2 个节点，
+free FULL=16、Mamba=0 为 0/3；完整容量为 4/4，首祖先
+都放不下为 0/0。JOIN/tool 均验证；仅使用 mock native
+enqueue，不是实际 DMA、完成前提前量或吞吐证明。保留
+v72_wait_prefetch_capacity_cpu_20261011.json 与
+v72_wait_prefetch_capacity_validation_20261011.json。
+
+冻结 V22 的独立等待审计中，54 个 JOIN、695 个工具等待曾
+观察 no_cold_capacity，下一请求关联 FULL Host-hit 分别为
+0.485/187.167 GB；这是关联残余需求，不是可提前恢复量、
+实际传输字节或 oracle 收益。修复目标是利用可容纳前缀，
+是否增加提前复用和减少首次恢复等待，仍须 V23 同版本对照。
+V22 native 新增 django__django-11885 incomplete：两个 child
+均自然返回、JOIN 满足，root 最后两次 llm_result 为 length，
+正文出现重复解释，deadline 未到期、guard 未干预、控制
+交付未失败；不得将该工具/模型轨迹终态算成 GPU 性能收益。
+以上修改尚待登记到 V23，当前登记仍为下面的 60c5502。
+
 2026-10-11 13:32:18 CST 已将尚未启动 V23 的目标更新为
 60c55021e097750f2faeef175d206c906279eabf，冻结 checkout 为
 beliefkv-v71-tool-overrun-20261011。13:32:35 核验等待协调器
@@ -66,8 +100,8 @@ TOOL_END 后约 15–119 ms 才发出，提示结束事件交付滞后；
 在真实短缺时回收无运行引用的已备份页。尚没有工具开始前主动
 COMMIT_CPU 或每次 spawn 后无条件卸载整个 parent。42 个实际
 卸载 parent 与 136 个备份 parent 的差异必须保留，不能把
-PREPARE ACK 当成 host-only 迁移或预取机会。本轮为审计与文档
-修正；性能主目标及等待中的 V23 b854a91 登记继续有效。
+PREPARE ACK 当成 host-only 迁移或预取机会。性能主目标保持
+不变；V23 当前目标以页首登记和主工作区权威状态为准。
 
 进一步减少补入请求时重复执行的准入分类。scheduler_step 不再每个
 GPU 调度迭代清空因果 rank 缓存；沿用已有 semantic revision、

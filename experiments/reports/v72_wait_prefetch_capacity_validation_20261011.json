@@ -1,0 +1,45 @@
+{
+  "status": "validated_pending_gpu_pair",
+  "baseline_revision": "fd4a13c",
+  "scope": "Remove all-or-nothing capacity rejection of JOIN/tool prefix recovery after bounded cold reclaim. Source-hashed CPU fixtures and checks do not prove actual pre-boundary DMA, available trace bytes, throughput or JCT improvement.",
+  "checks": {
+    "passed": 579,
+    "command": "python -m pytest -q tests/test_wait_prefetch_batch.py tests/test_tool_predictive_transfers.py tests/test_sglang_v0520_physical.py tests/test_native_transfer_policy.py tests/test_execution_handoff.py tests/test_sglang_v0520_runtime.py tests/test_terminal_child_capacity.py tests/test_sglang_v0520_admission.py",
+    "python_compilation_passed": true,
+    "diff_check_passed": true
+  },
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "3f75bfc84ecd341b1d0f0eda68e4d0e898bb6e122d84fe19c4e6f84ee2f0faf0",
+    "tests/test_wait_prefetch_batch.py": "34a8313325f6340e350c9968e87d04cf8e295f17235512fde7dca9c440a2d78c",
+    "tests/test_sglang_v0520_runtime.py": "91e6b9169385669cb6af29f220e9e7d3b8c27dbf7ca33d9b76dedfa76de4f8eb",
+    "scripts/evaluate_wait_prefetch_capacity.py": "26130da5e26919dc9091726ffb1367108a41e393303b46275393dcb1f05ed910"
+  },
+  "evidence_sha256": {
+    "v72_wait_prefetch_capacity_cpu_20261011.json": "6fb108d29bac180199713b205f4a6d71cec799404b421c1a84f73dd00edd7a38",
+    "v63_v22_terminal_capacity_complete_20261011.json": "89efb4b91379c9f176b7e2638aae59e19a6698a56587c3b4f27e9c433bfbd4b4"
+  },
+  "cpu_fixture_comparison": {
+    "sources": ["join_ticket", "tool_wait"],
+    "checkpoint_full_units": 16,
+    "checkpoint_mamba_slots": 1,
+    "checkpoint_nodes": 4,
+    "bounded_reclaim_freed_units": {},
+    "free_full_10_mamba_0_submitted_nodes": {"baseline": 0, "updated": 2},
+    "free_full_16_mamba_0_submitted_nodes": {"baseline": 0, "updated": 3},
+    "complete_capacity_submitted_nodes": {"baseline": 4, "updated": 4},
+    "first_ancestor_does_not_fit_submitted_nodes": {"baseline": 0, "updated": 0},
+    "native_enqueue_is_stubbed": true
+  },
+  "v22_observed_capacity_gap": {
+    "join_wait_events_observing_no_cold_capacity": 54,
+    "tool_wait_events_observing_no_cold_capacity": 695,
+    "join_next_request_full_host_hit_bytes": 485457920,
+    "tool_next_request_full_host_hit_bytes": 187167375360,
+    "semantics": "Independent waits per observed reason; categories can overlap. Host-hit bytes are residual next-request associations, not actual transfer bytes, proven pre-boundary opportunity or oracle benefit."
+  },
+  "native_patch_sha256": "4af68951beefdf759901d0143ca747c6893aa1ffc7124a3738158512851f7e60",
+  "native_patch_changed": false,
+  "workload_configuration_changed": false,
+  "observation_configuration_changed": false,
+  "gpu_performance_verified": false
+}
