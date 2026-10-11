@@ -1,0 +1,652 @@
+{
+  "scope": "Identical causal tool hints and real CPU prefix planner/action ledger. Native allocation, headroom and enqueue are mocked; reclaimable capacity is supplied by the fixture. No GPU, DMA, ACK, early reuse, eviction cost or throughput/JCT improvement is measured.",
+  "baseline_revision": "c8f5099",
+  "baseline_source_sha256": "57d836a21ea06ba918938cb9afb9508d81c08a65b2e1d6434a0abdec8b3cd9b7",
+  "updated_runtime_sha256": "d5cae4d051cdb9f513b1f7ea613f480cf3b03af5502f4f2b2b2ec91552a8cb42",
+  "updated_policy_sha256": "793c56fb2194c71f7afb72132de53152464b6813182499fd9f3186989fcb129f",
+  "max_lead_ms": 500.0,
+  "observation_spacing_ms": 100.0,
+  "policy_plan_expectations_checked": true,
+  "cases": [
+    {
+      "remaining_p50_ms": 300.0,
+      "remaining_p10_ms": 100.0,
+      "capacity": "free",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.025706,
+        "window_thread_cpu_mean_ms": 0.026438515
+      },
+      "updated": {
+        "initial_horizon_ms": 315.00000416666666,
+        "prediction_early_ms": 200.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 4,
+        "submitted_pool_bytes": {
+          "kv": 160,
+          "mamba": 20
+        },
+        "planned_rejections": [
+          "start_window",
+          "submitted"
+        ],
+        "selected_node_ids": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "selected_mamba_nodes": [
+          4
+        ],
+        "window_thread_cpu_p50_ms": 0.0461925,
+        "window_thread_cpu_mean_ms": 0.04769596
+      }
+    },
+    {
+      "remaining_p50_ms": 300.0,
+      "remaining_p10_ms": 100.0,
+      "capacity": "reclaimable",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.025042500000000002,
+        "window_thread_cpu_mean_ms": 0.02550613
+      },
+      "updated": {
+        "initial_horizon_ms": 315.00000416666666,
+        "prediction_early_ms": 200.0,
+        "reclaim_calls": 1,
+        "submitted_node_commands": 4,
+        "submitted_pool_bytes": {
+          "kv": 160,
+          "mamba": 20
+        },
+        "planned_rejections": [
+          "start_window",
+          "submitted"
+        ],
+        "selected_node_ids": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "selected_mamba_nodes": [
+          4
+        ],
+        "window_thread_cpu_p50_ms": 0.04603,
+        "window_thread_cpu_mean_ms": 0.047041215
+      }
+    },
+    {
+      "remaining_p50_ms": 300.0,
+      "remaining_p10_ms": 100.0,
+      "capacity": "partial",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.024848000000000002,
+        "window_thread_cpu_mean_ms": 0.02517949
+      },
+      "updated": {
+        "initial_horizon_ms": 315.00000416666666,
+        "prediction_early_ms": 200.0,
+        "reclaim_calls": 1,
+        "submitted_node_commands": 1,
+        "submitted_pool_bytes": {
+          "kv": 40,
+          "mamba": 0
+        },
+        "planned_rejections": [
+          "start_window",
+          "submitted"
+        ],
+        "selected_node_ids": [
+          1
+        ],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.044773,
+        "window_thread_cpu_mean_ms": 0.04857042
+      }
+    },
+    {
+      "remaining_p50_ms": 300.0,
+      "remaining_p10_ms": 100.0,
+      "capacity": "unavailable",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.025998,
+        "window_thread_cpu_mean_ms": 0.026194305
+      },
+      "updated": {
+        "initial_horizon_ms": 315.00000416666666,
+        "prediction_early_ms": 200.0,
+        "reclaim_calls": 1,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "no_restore_plan"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.0447725,
+        "window_thread_cpu_mean_ms": 0.04552824
+      }
+    },
+    {
+      "remaining_p50_ms": 380.0,
+      "remaining_p10_ms": 100.0,
+      "capacity": "free",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.025269,
+        "window_thread_cpu_mean_ms": 0.025645465
+      },
+      "updated": {
+        "initial_horizon_ms": 395.00000416666666,
+        "prediction_early_ms": 280.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 4,
+        "submitted_pool_bytes": {
+          "kv": 160,
+          "mamba": 20
+        },
+        "planned_rejections": [
+          "start_window",
+          "submitted"
+        ],
+        "selected_node_ids": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "selected_mamba_nodes": [
+          4
+        ],
+        "window_thread_cpu_p50_ms": 0.0471265,
+        "window_thread_cpu_mean_ms": 0.048206565
+      }
+    },
+    {
+      "remaining_p50_ms": 380.0,
+      "remaining_p10_ms": 100.0,
+      "capacity": "reclaimable",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.0253175,
+        "window_thread_cpu_mean_ms": 0.025626375
+      },
+      "updated": {
+        "initial_horizon_ms": 395.00000416666666,
+        "prediction_early_ms": 280.0,
+        "reclaim_calls": 1,
+        "submitted_node_commands": 4,
+        "submitted_pool_bytes": {
+          "kv": 160,
+          "mamba": 20
+        },
+        "planned_rejections": [
+          "start_window",
+          "submitted"
+        ],
+        "selected_node_ids": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "selected_mamba_nodes": [
+          4
+        ],
+        "window_thread_cpu_p50_ms": 0.045189,
+        "window_thread_cpu_mean_ms": 0.09457046000000001
+      }
+    },
+    {
+      "remaining_p50_ms": 380.0,
+      "remaining_p10_ms": 100.0,
+      "capacity": "partial",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.025814,
+        "window_thread_cpu_mean_ms": 0.0260944
+      },
+      "updated": {
+        "initial_horizon_ms": 395.00000416666666,
+        "prediction_early_ms": 280.0,
+        "reclaim_calls": 1,
+        "submitted_node_commands": 1,
+        "submitted_pool_bytes": {
+          "kv": 40,
+          "mamba": 0
+        },
+        "planned_rejections": [
+          "start_window",
+          "submitted"
+        ],
+        "selected_node_ids": [
+          1
+        ],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.045238,
+        "window_thread_cpu_mean_ms": 0.0462725
+      }
+    },
+    {
+      "remaining_p50_ms": 380.0,
+      "remaining_p10_ms": 100.0,
+      "capacity": "unavailable",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.0254965,
+        "window_thread_cpu_mean_ms": 0.025779525
+      },
+      "updated": {
+        "initial_horizon_ms": 395.00000416666666,
+        "prediction_early_ms": 280.0,
+        "reclaim_calls": 1,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "no_restore_plan"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.045002,
+        "window_thread_cpu_mean_ms": 0.045865835
+      }
+    },
+    {
+      "remaining_p50_ms": 300.0,
+      "remaining_p10_ms": 300.0,
+      "capacity": "free",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.026142,
+        "window_thread_cpu_mean_ms": 0.02639809
+      },
+      "updated": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.0445705,
+        "window_thread_cpu_mean_ms": 0.045819705
+      }
+    },
+    {
+      "remaining_p50_ms": 300.0,
+      "remaining_p10_ms": 300.0,
+      "capacity": "reclaimable",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.025932499999999997,
+        "window_thread_cpu_mean_ms": 0.026203895
+      },
+      "updated": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.045619,
+        "window_thread_cpu_mean_ms": 0.046790625
+      }
+    },
+    {
+      "remaining_p50_ms": 300.0,
+      "remaining_p10_ms": 300.0,
+      "capacity": "partial",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.0257975,
+        "window_thread_cpu_mean_ms": 0.025969915
+      },
+      "updated": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.044883000000000006,
+        "window_thread_cpu_mean_ms": 0.04939458
+      }
+    },
+    {
+      "remaining_p50_ms": 300.0,
+      "remaining_p10_ms": 300.0,
+      "capacity": "unavailable",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.0259665,
+        "window_thread_cpu_mean_ms": 0.02616118
+      },
+      "updated": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "before_start_window"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.0455855,
+        "window_thread_cpu_mean_ms": 0.04645627
+      }
+    },
+    {
+      "remaining_p50_ms": 80.0,
+      "remaining_p10_ms": 60.0,
+      "capacity": "free",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 4,
+        "submitted_pool_bytes": {
+          "kv": 160,
+          "mamba": 20
+        },
+        "planned_rejections": [
+          "start_window",
+          "submitted"
+        ],
+        "selected_node_ids": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "selected_mamba_nodes": [
+          4
+        ],
+        "window_thread_cpu_p50_ms": 0.0260395,
+        "window_thread_cpu_mean_ms": 0.026245345
+      },
+      "updated": {
+        "initial_horizon_ms": 135.00000416666666,
+        "prediction_early_ms": 20.0,
+        "reclaim_calls": 0,
+        "submitted_node_commands": 4,
+        "submitted_pool_bytes": {
+          "kv": 160,
+          "mamba": 20
+        },
+        "planned_rejections": [
+          "start_window",
+          "submitted"
+        ],
+        "selected_node_ids": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "selected_mamba_nodes": [
+          4
+        ],
+        "window_thread_cpu_p50_ms": 0.0447555,
+        "window_thread_cpu_mean_ms": 0.045856345
+      }
+    },
+    {
+      "remaining_p50_ms": 80.0,
+      "remaining_p10_ms": 60.0,
+      "capacity": "reclaimable",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 1,
+        "submitted_node_commands": 4,
+        "submitted_pool_bytes": {
+          "kv": 160,
+          "mamba": 20
+        },
+        "planned_rejections": [
+          "start_window",
+          "submitted"
+        ],
+        "selected_node_ids": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "selected_mamba_nodes": [
+          4
+        ],
+        "window_thread_cpu_p50_ms": 0.025812,
+        "window_thread_cpu_mean_ms": 0.026001705
+      },
+      "updated": {
+        "initial_horizon_ms": 135.00000416666666,
+        "prediction_early_ms": 20.0,
+        "reclaim_calls": 1,
+        "submitted_node_commands": 4,
+        "submitted_pool_bytes": {
+          "kv": 160,
+          "mamba": 20
+        },
+        "planned_rejections": [
+          "start_window",
+          "submitted"
+        ],
+        "selected_node_ids": [
+          1,
+          2,
+          3,
+          4
+        ],
+        "selected_mamba_nodes": [
+          4
+        ],
+        "window_thread_cpu_p50_ms": 0.0451465,
+        "window_thread_cpu_mean_ms": 0.050165535
+      }
+    },
+    {
+      "remaining_p50_ms": 80.0,
+      "remaining_p10_ms": 60.0,
+      "capacity": "partial",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 1,
+        "submitted_node_commands": 1,
+        "submitted_pool_bytes": {
+          "kv": 40,
+          "mamba": 0
+        },
+        "planned_rejections": [
+          "start_window",
+          "submitted"
+        ],
+        "selected_node_ids": [
+          1
+        ],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.025814,
+        "window_thread_cpu_mean_ms": 0.02611827
+      },
+      "updated": {
+        "initial_horizon_ms": 135.00000416666666,
+        "prediction_early_ms": 20.0,
+        "reclaim_calls": 1,
+        "submitted_node_commands": 1,
+        "submitted_pool_bytes": {
+          "kv": 40,
+          "mamba": 0
+        },
+        "planned_rejections": [
+          "start_window",
+          "submitted"
+        ],
+        "selected_node_ids": [
+          1
+        ],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.045228000000000004,
+        "window_thread_cpu_mean_ms": 0.04611007
+      }
+    },
+    {
+      "remaining_p50_ms": 80.0,
+      "remaining_p10_ms": 60.0,
+      "capacity": "unavailable",
+      "baseline": {
+        "initial_horizon_ms": 115.00000416666667,
+        "prediction_early_ms": 0.0,
+        "reclaim_calls": 1,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "no_restore_plan"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.026078999999999998,
+        "window_thread_cpu_mean_ms": 0.02641073
+      },
+      "updated": {
+        "initial_horizon_ms": 135.00000416666666,
+        "prediction_early_ms": 20.0,
+        "reclaim_calls": 1,
+        "submitted_node_commands": 0,
+        "submitted_pool_bytes": {},
+        "planned_rejections": [
+          "no_restore_plan"
+        ],
+        "selected_node_ids": [],
+        "selected_mamba_nodes": [],
+        "window_thread_cpu_p50_ms": 0.045718999999999996,
+        "window_thread_cpu_mean_ms": 0.0501385
+      }
+    }
+  ]
+}

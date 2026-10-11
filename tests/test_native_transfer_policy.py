@@ -148,6 +148,29 @@ def test_one_hundred_ms_lead_does_not_require_a_complete_early_transfer():
     assert window.horizon_ms == 100.
 
 
+@pytest.mark.parametrize("early,expected_horizon", [(0., 165.), (200., 365.), (1000., 500.)])
+def test_start_window_includes_completion_uncertainty_within_existing_allowance(
+    early, expected_horizon,
+):
+    estimate = NativeServiceEstimate(10., 15., 0., 8, "matched_pool_shape_and_size")
+    window = transfer_start_window(
+        estimate, max_lead_ms=500., observation_spacing_ms=150.,
+        prediction_early_ms=early,
+    )
+    assert window.horizon_ms == expected_horizon
+    assert window.prediction_early_ms == early
+    assert window.service_ms == 15.
+
+
+@pytest.mark.parametrize("early", [-1., float("inf"), float("nan")])
+def test_invalid_completion_uncertainty_is_not_a_transfer_window(early):
+    estimate = NativeServiceEstimate(10., 15., 0., 8, "matched_pool_shape_and_size")
+    assert transfer_start_window(
+        estimate, max_lead_ms=500., observation_spacing_ms=150.,
+        prediction_early_ms=early,
+    ) is None
+
+
 def test_runtime_reads_native_limits_instead_of_treating_idle_memory_as_slots():
     runtime, *_ = locked_runtime()
     runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
@@ -1269,7 +1292,11 @@ def test_full_only_pressure_candidate_can_save_missing_mamba_at_actual_eviction(
 
 
 def test_tool_latest_start_waits_until_measured_small_transfer_window():
+    from dataclasses import replace
+
     runtime, hint = tool_runtime()
+    hint = replace(hint, wait_p10_ms=300., wait_p90_ms=300.)
+    runtime.tool_wait_hints[hint.key.context_id] = hint
     runtime._native_cache = NS(cache_controller=NS(mem_pool_host=NS(entry_map={
         "kv": NS(host_pool=NS(size_per_token=10)),
         "mamba": NS(host_pool=NS(size_per_token=100)),

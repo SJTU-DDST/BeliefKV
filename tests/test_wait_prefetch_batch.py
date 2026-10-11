@@ -752,6 +752,121 @@ def test_tool_window_estimates_entire_prefix_payload():
     assert [call.args[1] for call in estimate.call_args_list] == [180, 180]
 
 
+@pytest.mark.parametrize("requires_reclaim", [False, True])
+def test_uncertain_tool_window_reaches_reclaim_and_revalidated_batch_submission(
+    requires_reclaim,
+):
+    runtime, key, opportunity, cache, _ = batch_fixture("tool_wait")
+    hint = runtime.tool_wait_hints[key.context_id]
+    runtime._h2d_samples.extend(((180, 15.),) * 3)
+    budget = PrefetchResidencyBudget(
+        1, 1024, reserve_full_tokens=8, reserve_mamba_slots=1,
+        evictable_full_tokens=16, evictable_mamba_slots=1,
+    )
+    headroom = [replace(
+        opportunity.headroom,
+        device_full_free_tokens=20 if requires_reclaim else 24,
+        device_mamba_free_slots=1 if requires_reclaim else 2,
+    )]
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+
+    def reclaim(**kwargs):
+        headroom[0] = replace(
+            headroom[0], device_full_free_tokens=kwargs["full_tokens"],
+            device_mamba_free_slots=kwargs["mamba_slots"],
+        )
+        return {0: 4, 2: 1}
+
+    cache.reclaim_beliefkv_handoff_capacity = Mock(side_effect=reclaim)
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                   return_value=hint.issued_monotonic_ms / 1000.), \
+            patch.object(runtime, "inspect_context_h2d_opportunity", side_effect=lambda **kwargs:
+                          replace(opportunity, headroom=headroom[0])), \
+            patch.object(runtime, "_current_residency_budget", return_value=budget), \
+            patch.object(runtime, "_publish_parent_pressure_candidates"):
+            runtime.dispatch_tool_prefetch()
+        assert cache.reclaim_beliefkv_handoff_capacity.call_count == int(requires_reclaim)
+        if requires_reclaim:
+            cache.reclaim_beliefkv_handoff_capacity.assert_called_once_with(
+                full_tokens=24, mamba_slots=2, exclude_node_ids=(0, 1, 2, 3, 4),
+            )
+        cache.prefetch_gpu_session_nodes.assert_called_once()
+        assert runtime.physical_ledger.pending_count == 4
+        assert headroom[0].device_full_free_tokens - 16 == budget.reserve_full_tokens
+        assert headroom[0].device_mamba_free_slots - 1 == budget.reserve_mamba_slots
+        window = next(row for row in records if row["event"] == "tool_prefetch_latest_start")
+        assert window["remaining_p50_ms"] == 300.
+        assert window["prediction_early_ms"] == 200.
+        assert window["start_window_ms"] == 315.
+        assert runtime.graph.invocations[key.invocation_id].state.value == "wait_tool"
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("change", ["forecast_narrowed", "tool_finished"])
+def test_tool_uncertainty_cannot_bypass_final_forecast_or_causal_revalidation(change):
+    runtime, key, opportunity, cache, _ = batch_fixture("tool_wait")
+    hint = runtime.tool_wait_hints[key.context_id]
+    runtime._h2d_samples.extend(((180, 15.),) * 3)
+
+    def drain(**kwargs):
+        if change == "forecast_narrowed":
+            runtime.tool_wait_hints[key.context_id] = replace(
+                hint, wait_p10_ms=300., wait_p50_ms=300., wait_p90_ms=300.,
+            )
+        else:
+            runtime.on_events((event(
+                7, RuntimeEventKind.TOOL_END, invocation_id=key.invocation_id,
+                attributes={"tool_run_id": "long"},
+            ),))
+
+    runtime.event_server = NS(drain=drain, close=lambda: None)
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                   return_value=hint.issued_monotonic_ms / 1000.), \
+            patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity):
+            runtime.dispatch_tool_prefetch()
+        cache.prefetch_gpu_session_nodes.assert_not_called()
+        assert runtime.physical_ledger.pending_count == 0
+        if change == "forecast_narrowed":
+            assert runtime.counts["wait_prefetch_batch_timing_changed"] == 1
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
+def test_tool_window_uses_surviving_cdf_and_join_keeps_its_service_window():
+    runtime, key, opportunity, _, _ = batch_fixture("tool_wait")
+    hint = replace(
+        runtime.tool_wait_hints[key.context_id],
+        release_cdf=((100., .1), (400., .5), (800., .9), (1000., 1.)),
+    )
+    runtime.tool_wait_hints[key.context_id] = hint
+    runtime._h2d_samples.extend(((180, 15.),) * 3)
+    now_ms = hint.issued_monotonic_ms + 200.
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                   return_value=now_ms / 1000.):
+            window = runtime._h2d_start_window(opportunity)
+            center = hint.remaining_quantile(.5, now_ms=now_ms)
+            lower = hint.remaining_quantile(.1, now_ms=now_ms)
+        assert window.prediction_early_ms == pytest.approx(center - lower)
+        assert window.horizon_ms == pytest.approx(min(500., 115. + center - lower))
+        assert window.prediction_early_ms != hint.wait_p50_ms - hint.wait_p10_ms
+    finally:
+        runtime.close()
+    runtime, _, opportunity, _, _ = batch_fixture("join_ticket")
+    runtime._h2d_samples.extend(((180, 15.),) * 3)
+    try:
+        window = runtime._h2d_start_window(opportunity)
+        assert window.horizon_ms == 115.
+        assert window.prediction_early_ms == 0.
+    finally:
+        runtime.close()
+
+
 def test_join_batch_window_rechecks_live_work_progress_and_service_availability():
     runtime, key, opportunity, _, _ = batch_fixture("join_ticket")
     runtime._join_ticket.phase = "provisional"

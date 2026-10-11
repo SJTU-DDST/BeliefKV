@@ -3706,6 +3706,7 @@ class NativeAdmissionRuntime:
             "predicted_remaining_ms": remaining_ms,
             "start_window_ms": window.horizon_ms if window else None,
             "h2d_p90_ms": window.service_ms if window else None,
+            "prediction_early_ms": window.prediction_early_ms if window else None,
             "scope": "bounded reusable checkpoint plan; not a reservation or oracle",
         })
 
@@ -4658,6 +4659,7 @@ class NativeAdmissionRuntime:
                     "start_window_ms": horizon,
                     "h2d_ms": window.service_ms,
                     "enqueue_to_submit_p90_ms": window.enqueue_ms,
+                    "prediction_early_ms": window.prediction_early_ms,
                 })
             return None if from_cache else opportunity
 
@@ -4686,10 +4688,21 @@ class NativeAdmissionRuntime:
             self._native_service_samples, size,
             shape=pool_shape(opportunity.required_full_tokens, opportunity.required_mamba_slots),
         ) or estimate_native_service(self._h2d_samples, size)
+        if estimate is None:
+            return None
+        prediction_early_ms = 0.
+        hint = self._live_tool_hint(opportunity.step.key) if opportunity.step is not None else None
+        if hint is not None:
+            now_ms = time.monotonic() * 1000.
+            lower = hint.remaining_quantile(.1, now_ms=now_ms)
+            center = hint.remaining_quantile(.5, now_ms=now_ms)
+            if lower is not None and center is not None:
+                prediction_early_ms = max(0., center - lower)
         return transfer_start_window(
             estimate, max_lead_ms=self.prefetch_lead_ms,
             observation_spacing_ms=SEMANTIC_FRAME_INTERVAL_MS,
-        ) if estimate is not None else None
+            prediction_early_ms=prediction_early_ms,
+        )
 
     @timed_runtime("tool_prefetch")
     def dispatch_tool_prefetch(self) -> None:
