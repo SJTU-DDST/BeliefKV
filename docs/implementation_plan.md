@@ -2,6 +2,24 @@
 
 Status date: 2026-10-11.
 
+V23 predictive started at2026-10-11 14:01:40CST after the complete V22
+pair, HTML export, workspace cleanup and performance comparison. At14:05:25
+server1088402 and client1090250 are live; health succeeds and client requests
+are submitted. Main and V23 ab_plan are pinned toa6dd627. The native patch,
+156 tasks,108+48 arrivals,running48,Host80:20,tool180s and maximum lead500ms
+match the registered frozen configuration. Preserve this running pair.
+
+The complete V22 arms both have155 completed and1 incomplete. Predictive/
+native wall duration is11779.026/9710.655s; completed throughput is
+47.372/57.463 workflow/h, predictive down17.56%. The154 paired completed
+workflows have mean JCT3428.161/2909.736s, predictive up17.82%.
+Full-run output throughput is747.283/886.549token/s and GPU utilization
+67.066%/82.096%. Dynamic traces differ and task correctness is not independently
+graded; isolated_policy_effect_verified=false. Keepcomparison.json,
+native_policy_comparison.json and both arm HTML exports. The performance goal
+is unmet. Require actual early FULL reuse, exposed recovery wait and busy-window
+throughput/JCT evidence from V23; CPU fixtures and extra ACKs do not suffice.
+
 V23 registration at2026-10-11 13:55:19CST now targets committed
 a6dd627587827f376bed7022d15e538100c0c775 in the frozen
 beliefkv-v72-prefix-capacity-20261011 checkout. At13:55:51, new waiting

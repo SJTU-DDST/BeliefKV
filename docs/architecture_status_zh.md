@@ -2,6 +2,26 @@
 
 更新日期：2026-10-11。
 
+2026-10-11 14:01:40 CST，V22 完整 pair、HTML、workspace 清理
+和性能导出完成后，协调器已部署 a6dd627 并开始 V23 predictive。
+14:05:25 核验 server PID 1088402、client PID 1090250 存活，
+服务健康检查通过，客户端已经提交请求；V23 ab_plan 的代码、
+原生 patch、156 个任务、108+48 到达、running=48、Host 80:20、
+工具 180 秒及最大提前量 500 ms 均符合冻结配置。主工作区当前
+HEAD 为 a6dd627；运行 pair 保持冻结，后续为同版本冷 native。
+
+V22 两臂最终均为 155 completed、1 incomplete。完整对照的
+predictive/native 运行时长为 11779.026/9710.655 秒，完成吞吐
+47.372/57.463 workflow/h，predictive 低 17.56%。154 个配对
+completed workflow 的平均 JCT 为 3428.161/2909.736 秒，
+predictive 高 17.82%；全程输出吞吐为 747.283/886.549 token/s，
+GPU 利用率为 67.066%/82.096%。任务正确性未独立评测，动态
+轨迹不同，isolated_policy_effect_verified=false；不能将全部
+差距归因给单一策略，也不能宣称当前性能目标完成。保留 V22
+comparison.json、native_policy_comparison.json 与两臂 HTML。
+V23 必须验证上述代码能否改善实际提前 FULL 复用、暴露恢复
+等待及繁忙窗口吞吐/JCT，CPU 夹具和更多 ACK 不作为达标证据。
+
 2026-10-11 13:55:19 CST 将尚未启动 V23 更新为
 a6dd627587827f376bed7022d15e538100c0c775，冻结 checkout 为
 beliefkv-v72-prefix-capacity-20261011。13:55:51 核验新等待
