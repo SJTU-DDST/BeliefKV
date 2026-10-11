@@ -781,7 +781,8 @@ def test_prefetch_diagnostic_separates_input_divergence_from_mamba_boundary(
     assert use["native_mamba_branching_seqlen"] == 8
 
 
-def test_prefetch_prefix_evidence_reuse_handles_shorter_and_divergent_targets(tmp_path):
+@pytest.mark.parametrize("native_array", [False, True])
+def test_prefetch_prefix_evidence_reuse_handles_shorter_and_divergent_targets(tmp_path, native_array):
     audit = NativeReactiveTelemetry(tmp_path / "prefixes")
     targets = [
         list(range(8)),
@@ -804,6 +805,8 @@ def test_prefetch_prefix_evidence_reuse_handles_shorter_and_divergent_targets(tm
         )
     inputs = list(range(12))
     inputs[10] = 90
+    if native_array:
+        inputs = array("q", inputs)
     audit._record_prefetch_first_service(SimpleNamespace(
         rid="next", origin_input_ids=inputs, prefix_indices=[],
         last_node=0, cached_tokens_device=0, extra_key="ns",

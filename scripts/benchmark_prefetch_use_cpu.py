@@ -40,7 +40,7 @@ def load_method(source: str, label: str):
     return namespace[method.name]
 
 
-def fixture(tokens: int, extents: int, mismatch: bool):
+def fixture(tokens: int, extents: int, mismatch: str, native_array: bool):
     audit = telemetry.NativeReactiveTelemetry.__new__(telemetry.NativeReactiveTelemetry)
     emitted = []
     audit._emit_prefetch_use = emitted.append
@@ -64,8 +64,10 @@ def fixture(tokens: int, extents: int, mismatch: bool):
         )
     audit._cache = NS(tree_core=NS(node_by_id=nodes.__getitem__))
     inputs = list(range(tokens + 1))
-    if mismatch:
-        inputs[tokens // 2] = -1
+    if mismatch != "none":
+        inputs[{"first": 0, "middle": tokens // 2, "last": tokens - 1}[mismatch]] = -1
+    if native_array:
+        inputs = array("q", inputs)
     request = NS(
         rid="next", last_node=extents, origin_input_ids=inputs,
         prefix_indices=range(tokens), cached_tokens_device=tokens,
@@ -83,7 +85,8 @@ def distribution(values):
     }
 
 
-def measure(methods, *, tokens: int, extents: int, mismatch: bool, iterations: int):
+def measure(methods, *, tokens: int, extents: int, mismatch: str,
+            native_array: bool, iterations: int):
     samples = {name: {"wall": [], "thread_cpu": []} for name in methods}
     canonical = None
     with patch.object(telemetry.time, "time", return_value=.2):
@@ -93,7 +96,7 @@ def measure(methods, *, tokens: int, extents: int, mismatch: bool, iterations: i
             if iteration % 2:
                 names.reverse()
             for name in names:
-                audit, request, emitted = fixture(tokens, extents, mismatch)
+                audit, request, emitted = fixture(tokens, extents, mismatch, native_array)
                 wall_start, cpu_start = time.perf_counter_ns(), time.thread_time_ns()
                 candidates = methods[name](
                     audit, request, {"context_id": "ctx", "context_epoch": 3},
@@ -112,7 +115,9 @@ def measure(methods, *, tokens: int, extents: int, mismatch: bool, iterations: i
                 raise AssertionError("first-service records were lost")
             canonical = json.dumps(outputs["optimized"], sort_keys=True)
     return {
-        "input_tokens": tokens, "restore_extents": extents, "input_mismatch": mismatch,
+        "input_tokens": tokens, "restore_extents": extents,
+        "input_mismatch": mismatch != "none", "mismatch_position": mismatch,
+        "input_storage": "native_array" if native_array else "list",
         "records_and_consumed_commands_equal": True,
         "canonical_output_sha256": hashlib.sha256(canonical.encode()).hexdigest(),
         "costs": {
@@ -204,9 +209,10 @@ def main() -> None:
         "iterations_per_case": args.iterations, "warmup_iterations": 10, "deployed": False,
         "cases": [
             measure(methods, tokens=tokens, extents=extents, mismatch=mismatch,
-                    iterations=args.iterations)
+                    native_array=native_array, iterations=args.iterations)
             for tokens in (1024, 8192, 32768)
-            for extents in (1, 16) for mismatch in (False, True)
+            for extents in (1, 16) for mismatch in ("none", "first", "middle", "last")
+            for native_array in (False, True)
         ],
     }
     if args.observed_action_use is not None:
@@ -217,7 +223,8 @@ def main() -> None:
         before = case["costs"]["baseline"]["wall"]["mean_ms"]
         after = case["costs"]["optimized"]["wall"]["mean_ms"]
         print(f"tokens={case['input_tokens']} extents={case['restore_extents']} "
-              f"mismatch={case['input_mismatch']}: {before:.4f} -> {after:.4f} ms")
+              f"mismatch={case['mismatch_position']} storage={case['input_storage']}: "
+              f"{before:.4f} -> {after:.4f} ms")
     if "observed_prefix_work" in report:
         print(json.dumps(report["observed_prefix_work"], indent=2))
 
