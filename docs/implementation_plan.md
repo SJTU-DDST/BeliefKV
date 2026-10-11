@@ -2,6 +2,29 @@
 
 Status date: 2026-10-12.
 
+V117 makes wait planning, cold reclaim and enqueue use the same native
+prefill/decode reserve. Subtract the reserve from the direct-fit verdict
+and include it in the desired free capacity for bounded cold reclaim.
+Preserve target exclusions, prefix continuity and deferred-Mamba loads.
+The430 related checks pass. Eight CPU fixture variants compare4a644d2:
+with20 FULL/1 Mamba free,8/1 reserved and16/1 to restore, the old
+direct-fit verdict leads to zero commands; revised reclaim targets24/2,
+submits four nodes and keeps8/1 reserved. Already-fitting variants are
+unchanged. Keepv117_wait_prefetch_reserve_consistency_20261012.json;
+no allocator/DMA, GPU throughput or JCT gain is measured.
+
+V116 captures223 independent V28 JSONL prefixes at06:00:29-06:01:01
+CST, retaining complete lengths/SHA256 and the terminal control row.
+Eight JOIN and eight tool events start early and reuse269.496/182.006MB
+FULL;96.821GB handoff FULL reuse remains demand recovery. Last-ACK-to-
+service P90 is738.282/808.372ms. Tool next-request native FULL Host
+hits total619.726GB, not a proven anticipatory denominator or oracle.
+The recorded control prefix has462 changed-plan rejects, without each
+reject's detailed cause; do not assign all of them to V117. Keep unknown
+completion boundaries and cross-file non-atomic scope. Replace only the
+still-waiting V29 registration to include V117, retaining its prior974b3db
+target/state/log. The full same-version performance goal stays active.
+
 V115 moves periodic opportunity, terminal-cache and runtime-state
 observations to batch-result processing. Native overlap submits the next
 forward first; idle selection still samples the current waiting queue.

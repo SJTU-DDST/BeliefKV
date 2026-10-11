@@ -3626,8 +3626,10 @@ class NativeAdmissionRuntime:
             required_full_tokens=full, required_mamba_slots=mamba,
             deferred_mamba_slots=deferred_mamba,
             fits_current_free_lists=(
-                full <= headroom.device_full_free_tokens
-                and mamba <= headroom.device_mamba_free_slots
+                full <= max(0, headroom.device_full_free_tokens - budget.reserve_full_tokens)
+                and mamba <= max(
+                    0, headroom.device_mamba_free_slots - budget.reserve_mamba_slots,
+                )
             ),
         )
 
@@ -3763,10 +3765,11 @@ class NativeAdmissionRuntime:
         if not callable(reclaim) or candidate is None:
             return opportunity
         excluded = tuple(node.node_id for node in candidate.nodes)
+        budget = self._current_residency_budget(include_evictable=True)
         self._publish_parent_pressure_candidates(exclude_node_ids=excluded)
         freed = reclaim(
-            full_tokens=opportunity.required_full_tokens,
-            mamba_slots=opportunity.required_mamba_slots,
+            full_tokens=opportunity.required_full_tokens + budget.reserve_full_tokens,
+            mamba_slots=opportunity.required_mamba_slots + budget.reserve_mamba_slots,
             exclude_node_ids=excluded,
         )
         if freed:

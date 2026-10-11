@@ -282,6 +282,61 @@ def test_cold_reclaim_excludes_every_node_in_the_target_prefix():
 
 
 @pytest.mark.parametrize("source", ["join_ticket", "tool_wait"])
+def test_wait_restore_keeps_native_reserve_from_planning_through_enqueue(source):
+    runtime, key, opportunity, cache, _ = batch_fixture(source)
+    headroom = [
+        replace(opportunity.headroom, device_full_free_tokens=20, device_mamba_free_slots=1)
+    ]
+    budget = PrefetchResidencyBudget(
+        1, 1024, reserve_full_tokens=8, reserve_mamba_slots=1,
+        evictable_full_tokens=16, evictable_mamba_slots=1,
+    )
+
+    def reclaim(**kwargs):
+        headroom[0] = replace(
+            headroom[0], device_full_free_tokens=kwargs["full_tokens"],
+            device_mamba_free_slots=kwargs["mamba_slots"],
+        )
+        return {0: 4, 2: 1}
+
+    cache.reclaim_beliefkv_handoff_capacity = Mock(side_effect=reclaim)
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity", side_effect=lambda **kwargs:
+                          replace(opportunity, headroom=headroom[0])), \
+            patch.object(runtime, "_current_residency_budget", return_value=budget), \
+            patch.object(runtime, "_publish_parent_pressure_candidates"), \
+            patch.object(runtime, "_h2d_start_window",
+                         return_value=TransferStartWindow(200., 0., 500.)):
+            if source == "tool_wait":
+                runtime._roll_tool_prefetch()
+            else:
+                planned = runtime._wait_prefetch_opportunity(key)
+                assert planned.required_full_tokens == 16
+                assert planned.required_mamba_slots == 1
+                assert planned.fits_current_free_lists is False
+            plan = runtime._reclaim_wait_prefetch_capacity(
+                key, runtime._wait_prefetch_opportunity(key), source=source,
+            )
+            commands = runtime._issue_wait_prefetch_steps(key, plan.steps, source=source)
+        cache.reclaim_beliefkv_handoff_capacity.assert_called_once_with(
+            full_tokens=24, mamba_slots=2, exclude_node_ids=(0, 1, 2, 3, 4),
+        )
+        assert len(commands) == 4
+        assert runtime.physical_ledger.pending_count == 4
+        assert runtime.counts["prefetch_burst_plan_changed"] == 0
+        assert headroom[0].device_full_free_tokens - plan.required_full_tokens == 8
+        assert headroom[0].device_mamba_free_slots - plan.required_mamba_slots == 1
+        assert next(
+            row for row in records
+            if row["event"] == "wait_prefetch_plan" and row["reason"] == "submitted"
+        )["planned_pool_bytes"] == {"kv": 160, "mamba": 20}
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("source", ["join_ticket", "tool_wait"])
 @pytest.mark.parametrize(
     "free_full,free_mamba,expected_nodes",
     [(10, 0, 2), (16, 0, 4), (20, 1, 4)],
