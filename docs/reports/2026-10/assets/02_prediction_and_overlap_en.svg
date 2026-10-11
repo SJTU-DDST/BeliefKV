@@ -1,0 +1,96 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="7.2in" height="5.050000in" viewBox="0 0 1440 1010" role="img" aria-labelledby="title">
+<title id="title">Prediction and Scheduling Coordination</title>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#263746"/></marker>
+<marker id="blue-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3d6f9f"/></marker>
+<marker id="teal-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#357b73"/></marker>
+<marker id="amber-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#a96f1f"/></marker>
+</defs>
+<style>text{font-family:"DejaVu Sans",Arial,sans-serif;font-style:normal}.hair{stroke:#d4dbe0;stroke-width:1}</style>
+<style>text{font-family:'DejaVu Sans';letter-spacing:0}path,line{stroke-linejoin:round;stroke-linecap:round}</style>
+<text x="40" y="49" font-size="34" fill="#263746" font-weight="700" text-anchor="start">From Completion Signals to Useful Prefetch</text>
+<text x="40" y="82" font-size="22" fill="#687680" font-weight="400" text-anchor="start">Separate remaining work, scheduling opportunity and physical data dependencies</text>
+<rect x="40" y="121" width="357" height="129" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="41" y1="122" x2="396" y2="122" stroke="#3d6f9f" stroke-width="3"/>
+<text x="62" y="161" font-size="26" fill="#3d6f9f" font-weight="700" text-anchor="start">Child observations</text>
+<text x="63" y="200" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Notice, text, decode progress</text>
+<text x="63" y="230" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Already delivered information</text>
+<rect x="473" y="121" width="379" height="129" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="474" y1="122" x2="851" y2="122" stroke="#a96f1f" stroke-width="3"/>
+<text x="495" y="161" font-size="26" fill="#a96f1f" font-weight="700" text-anchor="start">Phase / work model</text>
+<text x="496" y="200" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Final report or further tool use</text>
+<text x="496" y="230" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Conditional remaining work</text>
+<rect x="928" y="121" width="472" height="129" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="929" y1="122" x2="1399" y2="122" stroke="#a96f1f" stroke-width="3"/>
+<text x="950" y="161" font-size="26" fill="#a96f1f" font-weight="700" text-anchor="start">Advisory output</text>
+<text x="951" y="200" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Stage score + remaining-token bounds</text>
+<text x="951" y="230" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Observed EOS: separate signal</text>
+<path d="M397 200 L472 200" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<path d="M852 200 L927 200" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<path d="M1400 200 L1420 200 L1420 427 L1260 427 L1260 447" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<rect x="40" y="283" width="357" height="122" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="41" y1="284" x2="396" y2="284" stroke="#3d6f9f" stroke-width="3"/>
+<text x="62" y="323" font-size="26" fill="#3d6f9f" font-weight="700" text-anchor="start">Tool observations</text>
+<text x="63" y="356" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Type, elapsed time, history</text>
+<text x="63" y="386" font-size="21" fill="#263746" font-weight="400" text-anchor="start">History of completed calls</text>
+<rect x="473" y="283" width="379" height="122" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="474" y1="284" x2="851" y2="284" stroke="#a96f1f" stroke-width="3"/>
+<text x="495" y="323" font-size="26" fill="#a96f1f" font-weight="700" text-anchor="start">Residual-time model</text>
+<text x="496" y="356" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Given the tool is still running</text>
+<text x="496" y="386" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Update as observations arrive</text>
+<rect x="928" y="283" width="472" height="122" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="929" y1="284" x2="1399" y2="284" stroke="#a96f1f" stroke-width="3"/>
+<text x="950" y="323" font-size="26" fill="#a96f1f" font-weight="700" text-anchor="start">Advisory output</text>
+<text x="951" y="356" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Residual CDF / timing bounds</text>
+<text x="951" y="386" font-size="21" fill="#263746" font-weight="400" text-anchor="start">No learned net-benefit decision</text>
+<path d="M397 356 L472 356" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<path d="M852 356 L927 356" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<path d="M1164 405 L1164 447" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<rect x="40" y="449" width="1360" height="138" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="41" y1="450" x2="1399" y2="450" stroke="#357b73" stroke-width="3"/>
+<text x="62" y="489" font-size="26" fill="#357b73" font-weight="700" text-anchor="start">(a) Runtime turns hints into bounded actions</text>
+<text x="63" y="531" font-size="23" fill="#357b73" font-weight="600" text-anchor="start">Causal readiness</text>
+<text x="63" y="563" font-size="20" fill="#687680" font-weight="400" text-anchor="start">JOIN / tool state</text>
+<text x="391" y="531" font-size="23" fill="#357b73" font-weight="600" text-anchor="start">Reusable checkpoint</text>
+<text x="391" y="563" font-size="20" fill="#687680" font-weight="400" text-anchor="start">Valid missing Host pages</text>
+<text x="732" y="531" font-size="23" fill="#357b73" font-weight="600" text-anchor="start">Capacity and cost</text>
+<text x="732" y="563" font-size="20" fill="#687680" font-weight="400" text-anchor="start">FULL / Mamba / H2D</text>
+<text x="1072" y="531" font-size="23" fill="#357b73" font-weight="600" text-anchor="start">Service opportunity</text>
+<text x="1072" y="563" font-size="20" fill="#687680" font-weight="400" text-anchor="start">Admission + residency</text>
+<text x="40" y="639" font-size="26" fill="#3d6f9f" font-weight="700" text-anchor="start">(b) Overlap with the observed wait or final-generation interval</text>
+<line x1="982" y1="674" x2="982" y2="936" stroke="#89959d" stroke-width="1.8" stroke-dasharray="7 6"/>
+<line x1="1050" y1="748" x2="1050" y2="850" stroke="#357b73" stroke-width="1.6" stroke-dasharray="4 5"/>
+<text x="982" y="669" font-size="20" fill="#263746" font-weight="700" text-anchor="middle">RETURN / TOOL_END</text>
+<text x="44" y="726" font-size="24" fill="#263746" font-weight="600" text-anchor="start">Child / tool</text>
+<text x="44" y="817" font-size="24" fill="#357b73" font-weight="600" text-anchor="start">Predictive path</text>
+<text x="44" y="908" font-size="24" fill="#89959d" font-weight="600" text-anchor="start">Demand path</text>
+<line x1="315" y1="713" x2="1380" y2="713" stroke="#d4dbe0" stroke-width="1.2"/>
+<line x1="315" y1="804" x2="1380" y2="804" stroke="#d4dbe0" stroke-width="1.2"/>
+<line x1="315" y1="895" x2="1380" y2="895" stroke="#d4dbe0" stroke-width="1.2"/>
+<rect x="315" y="688" width="667" height="43" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.7"/>
+<text x="648.5" y="716" font-size="22" fill="#3d6f9f" font-weight="400" text-anchor="middle">Final generation / external tool execution</text>
+<circle cx="382" cy="754" r="4.5" fill="#a96f1f" stroke="#a96f1f" stroke-width="1"/>
+<circle cx="465" cy="754" r="4.5" fill="#a96f1f" stroke="#a96f1f" stroke-width="1"/>
+<circle cx="548" cy="754" r="4.5" fill="#a96f1f" stroke="#a96f1f" stroke-width="1"/>
+<circle cx="631" cy="754" r="4.5" fill="#a96f1f" stroke="#a96f1f" stroke-width="1"/>
+<path d="M649 754 L704 754" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<text x="375" y="780" font-size="20" fill="#a96f1f" font-weight="400" text-anchor="start">Rolling observations</text>
+<rect x="720" y="780" width="330" height="50" rx="2" fill="#eaf3f1" stroke="#357b73" stroke-width="1.8"/>
+<text x="885.0" y="812" font-size="22" fill="#357b73" font-weight="400" text-anchor="middle">Missing-page H2D</text>
+<rect x="1050" y="780" width="100" height="50" rx="1" fill="#f2f4f5" stroke="#d4dbe0" stroke-width="1.4"/>
+<rect x="1150" y="780" width="230" height="50" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.8"/>
+<text x="1265.0" y="812" font-size="22" fill="#3d6f9f" font-weight="400" text-anchor="middle">GPU service</text>
+<text x="1050" y="857" font-size="19" fill="#357b73" font-weight="400" text-anchor="middle">ACK</text>
+<text x="1163" y="855" font-size="20" fill="#3d6f9f" font-weight="400" text-anchor="start">First reuse</text>
+<line x1="720" y1="760" x2="982" y2="760" stroke="#357b73" stroke-width="2"/>
+<line x1="720" y1="754" x2="720" y2="766" stroke="#357b73" stroke-width="2"/>
+<line x1="982" y1="754" x2="982" y2="766" stroke="#357b73" stroke-width="2"/>
+<text x="851.0" y="750" font-size="19" fill="#357b73" font-weight="400" text-anchor="middle">Advance</text>
+<rect x="982" y="871" width="313" height="50" rx="2" fill="#f2f4f5" stroke="#89959d" stroke-width="1.8"/>
+<text x="1138.5" y="904" font-size="22" fill="#687680" font-weight="400" text-anchor="middle">Demand H2D</text>
+<rect x="1295" y="871" width="85" height="50" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.8"/>
+<text x="1337.5" y="902" font-size="19" fill="#3d6f9f" font-weight="400" text-anchor="middle">Serve</text>
+<text x="40" y="970" font-size="22" fill="#263746" font-weight="400" text-anchor="start">Schematic, not measured speedup. Partial overlap is useful; native data dependencies govern execution.</text>
+</svg>

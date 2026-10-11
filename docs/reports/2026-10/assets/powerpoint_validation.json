@@ -1,0 +1,70 @@
+{
+  "checked_at": "2026-10-11T16:29:15.716757+08:00",
+  "reported_period": "2026-08-15 through 2026-10-11",
+  "generator_sha256": "684baf64a75d2cdbf7347c895d15347819aad69e27ffeb5e4a9989195649677f",
+  "powerpoints": [
+    {
+      "file": "beliefkv_architecture_editable_zh.pptx",
+      "sha256": "76dec0c6af41b2ff0e7dc514c48caf26e21186c9a34993c0e1c99104716c6ad0",
+      "slides": [
+        {
+          "editable_objects": 82,
+          "editable_text_objects": 44,
+          "text_matches_svg": true,
+          "all_objects_within_slide": true,
+          "picture_objects": 0
+        },
+        {
+          "editable_objects": 83,
+          "editable_text_objects": 44,
+          "text_matches_svg": true,
+          "all_objects_within_slide": true,
+          "picture_objects": 0
+        },
+        {
+          "editable_objects": 106,
+          "editable_text_objects": 57,
+          "text_matches_svg": true,
+          "all_objects_within_slide": true,
+          "picture_objects": 0
+        }
+      ],
+      "office_render_pdf_sha256": "a7f018e10400923f60ffc16f61a9bd89e205c6131e0061d498a38a160b437e75",
+      "office_render_pages": 3
+    },
+    {
+      "file": "beliefkv_architecture_editable_en.pptx",
+      "sha256": "4632749e097a0e03db734551640264b7a7f71d81146f5680236eb1bc87e64f2c",
+      "slides": [
+        {
+          "editable_objects": 82,
+          "editable_text_objects": 44,
+          "text_matches_svg": true,
+          "all_objects_within_slide": true,
+          "picture_objects": 0
+        },
+        {
+          "editable_objects": 83,
+          "editable_text_objects": 44,
+          "text_matches_svg": true,
+          "all_objects_within_slide": true,
+          "picture_objects": 0
+        },
+        {
+          "editable_objects": 106,
+          "editable_text_objects": 57,
+          "text_matches_svg": true,
+          "all_objects_within_slide": true,
+          "picture_objects": 0
+        }
+      ],
+      "office_render_pdf_sha256": "3847906c4388115e01820dfea8e2ed99364647fb1cf39d2747af5a0c500d932b",
+      "office_render_pages": 3
+    }
+  ],
+  "png_count": 6,
+  "png_dpi": 600,
+  "vector_pdf_pages": 6,
+  "office_renderer": "LibreOffice 24.2.7 in isolated temporary directory",
+  "office_render_check": "passed: all six slides rendered and visually reviewed"
+}

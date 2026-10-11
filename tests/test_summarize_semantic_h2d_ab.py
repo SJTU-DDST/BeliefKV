@@ -1,12 +1,53 @@
 import json
+import subprocess
 import sys
 
 import pytest
 
 from scripts.summarize_semantic_h2d_ab import (
     cleanup_workspaces, main, paired_trajectory_report, summarize,
-    workflow_trajectory_audit, workload_balance,
+    verify_frozen_execution_source, workflow_trajectory_audit, workload_balance,
 )
+
+
+@pytest.mark.parametrize("committed", (False, True))
+@pytest.mark.parametrize("path,allowed", (
+    ("docs/report.md", True),
+    ("tests/report_fixture.py", True),
+    ("scripts/summarize_semantic_h2d_ab.py", True),
+    ("scripts/launch_semantic_h2d_after_pair.py", True),
+    ("beliefkv/runtime/runtime.py", False),
+    ("configs/workload.json", False),
+    ("scripts/run_deepagents_swebench.py", False),
+))
+def test_frozen_execution_keeps_collection_revision_and_rejects_runtime_changes(
+    tmp_path, committed, path, allowed,
+):
+    def git(*args):
+        return subprocess.check_output(
+            ["git", *args], cwd=tmp_path, text=True, stderr=subprocess.STDOUT,
+        ).strip()
+
+    git("init", "-q")
+    target = tmp_path / path
+    target.parent.mkdir(parents=True)
+    target.write_text("original\n")
+    git("add", ".")
+    commit_options = ("-c", "user.name=Fixture", "-c", "user.email=fixture@example.invalid")
+    git(*commit_options, "commit", "-qm", "collection")
+    frozen = git("rev-parse", "HEAD")
+    target.write_text("changed\n")
+    if committed:
+        git(*commit_options, "commit", "-qam", "follow-up")
+    if not allowed:
+        with pytest.raises(ValueError, match="execution source changed"):
+            verify_frozen_execution_source(tmp_path, frozen)
+        return
+    result = verify_frozen_execution_source(tmp_path, frozen)
+    assert result["collection_code_commit"] == frozen
+    assert result["verification_code_commit"] == git("rev-parse", "HEAD")
+    assert result["execution_source_unchanged"] is True
+    assert result["changed_committed_paths"] == ([path] if committed else [])
 
 
 def fixture(arm):

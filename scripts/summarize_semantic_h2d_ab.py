@@ -16,6 +16,44 @@ import subprocess
 
 from beliefkv.experiments.arrival_schedule import build_workflow_arrivals
 
+
+NON_EXECUTION_SOURCE_PATHS = (
+    "docs/",
+    "tests/",
+    "scripts/summarize_semantic_h2d_ab.py",
+    "scripts/launch_semantic_h2d_after_pair.py",
+)
+
+
+def verify_frozen_execution_source(root: Path, frozen_revision: str) -> dict:
+    """Allow reporting changes while preserving the collected execution source."""
+    revision = subprocess.check_output(
+        ["git", "rev-parse", "HEAD"], cwd=root, text=True,
+    ).strip()
+    subprocess.run(
+        ["git", "merge-base", "--is-ancestor", frozen_revision, revision],
+        cwd=root, check=True,
+    )
+    paths = [".", *(f":(exclude){path}" for path in NON_EXECUTION_SOURCE_PATHS)]
+    for comparison in ((frozen_revision, revision), ("HEAD",)):
+        changed = subprocess.check_output(
+            ["git", "diff", "--name-only", *comparison, "--", *paths],
+            cwd=root, text=True,
+        ).strip()
+        if changed:
+            raise ValueError(f"execution source changed between policy arms: {changed}")
+    return {
+        "collection_code_commit": frozen_revision,
+        "verification_code_commit": revision,
+        "execution_source_unchanged": True,
+        "non_execution_paths": list(NON_EXECUTION_SOURCE_PATHS),
+        "changed_committed_paths": subprocess.check_output(
+            ["git", "diff", "--name-only", frozen_revision, revision, "--"],
+            cwd=root, text=True,
+        ).splitlines(),
+    }
+
+
 def records(path: Path):
     if path.exists():
         with path.open() as stream:
@@ -415,12 +453,7 @@ def main() -> None:
     if args.verify_frozen_plan:
         root = Path(__file__).resolve().parents[1]
         plan = json.loads((args.run_root / "ab_plan.json").read_text())
-        revision = subprocess.check_output(
-            ["git", "rev-parse", "HEAD"], cwd=root, text=True,
-        ).strip()
-        if revision != plan["code_commit"]:
-            raise ValueError("code commit changed between policy arms")
-        subprocess.run(["git", "diff", "--exit-code", "HEAD", "--"], cwd=root, check=True)
+        verification = verify_frozen_execution_source(root, plan["code_commit"])
         paths = [
             (plan["workload_manifest"], plan["workload_sha256"]),
             (plan["semantic_artifact"], plan["semantic_artifact_sha256"]),
@@ -436,6 +469,10 @@ def main() -> None:
         for path, digest in paths:
             if hashlib.sha256(Path(path).read_bytes()).hexdigest() != digest:
                 raise ValueError(f"frozen artifact changed: {path}")
+        verification["frozen_artifact_digests_verified"] = True
+        (args.run_root / "frozen_execution_verification.json").write_text(
+            json.dumps(verification, indent=2) + "\n",
+        )
         return
     if args.cleanup_arm:
         print(json.dumps(cleanup_workspaces(
