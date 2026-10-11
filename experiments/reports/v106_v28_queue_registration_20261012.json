@@ -1,0 +1,124 @@
+{
+  "observed_at_local": "2026-10-12T02:20:49.376436+08:00",
+  "scope": "Live queued cold deployment after the complete V27 pair; no new GPU arm has started and no performance benefit is established.",
+  "queued_state_path": "/home/longhao/experiment/BeliefKV/experiments/reports/v28_launch_after_v27_20261012.json",
+  "queued_state_sha256": "0e45ae2e57c08bd5474d678c88637ae5994ef8c28f0abf9e1b83e0c9964775f2",
+  "queued_state": {
+    "status": "waiting_for_previous_pair",
+    "previous_collection_scope": "completed_pair",
+    "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v27",
+    "previous_code_commit": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+    "previous_patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+    "previous_execution_verification": {
+      "collection_code_commit": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+      "verification_code_commit": "0cf235fadf0b4b6abb7f6514ba088f93c681f397",
+      "execution_source_unchanged": true,
+      "non_execution_paths": [
+        "docs/",
+        "tests/",
+        "scripts/summarize_semantic_h2d_ab.py",
+        "scripts/launch_semantic_h2d_after_pair.py"
+      ],
+      "changed_committed_paths": [
+        "docs/architecture_status_zh.md",
+        "docs/beliefkv_design.md",
+        "docs/experiment_operating_notes_zh.md",
+        "docs/implementation_plan.md"
+      ]
+    },
+    "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v106-full-first-20261012",
+    "target_revision": "d1ce5d23319117267a4b07f7a8479808b87faa3d",
+    "target_patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+    "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v28",
+    "wait_process_identities": {
+      "1060398": [
+        "S",
+        1,
+        "590379164"
+      ]
+    },
+    "environment": {
+      "PYTHON": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "RUN_ROOT": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v28",
+      "ROOT_COUNT": "156",
+      "ARRIVAL_BATCH_SIZE": "108",
+      "ARRIVAL_BATCH_INTERVAL_MS": "3600000",
+      "ARM_ORDER": "predictive_h2d native",
+      "RESUME_PENDING": "0",
+      "HOST_SPLIT": "80:20",
+      "PORT": "18454",
+      "SAMPLING_SEED": "21",
+      "REPETITION_ID": "0",
+      "ACTIVATION_WALL_CLOCK_SECONDS": "14400.0",
+      "SEMANTIC_REPORT_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/child_semantic_work_live_v7_quantiles/semantic_event_calibrated.json",
+      "PREPARE_HOST": "1",
+      "H2D_SEED_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/native_h2d_ack_seed_20261004.json",
+      "TOOL_TIMING_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/qwen35_native_event_horizons_20260928_calibrated.json",
+      "TRANSFER_SERVICE_SEED": "/home/longhao/experiment/BeliefKV/experiments/models/native_transfer_service_seed_v4.json",
+      "ENABLE_TOOL_TIMING": "1",
+      "PREFETCH_LEAD_MS": "500",
+      "SEMANTIC_WORK_STATISTIC": "center",
+      "EOS_PROTOCOL_WINDOW_MS": "250",
+      "FANOUT_PROFILE": "native_in_graph_2to4",
+      "CHILD_FINAL_REPORT_SHADOW": "1",
+      "WORKLOAD_MANIFEST": "/home/longhao/experiment/BeliefKV/configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json"
+    },
+    "registered_at_utc": "2026-10-11T18:18:41.929713+00:00"
+  },
+  "queued_coordinator_pid": 3249369,
+  "verified_process_identities": {
+    "3249369": [
+      "S",
+      1,
+      "591298428"
+    ],
+    "1060398": [
+      "S",
+      1,
+      "590379164"
+    ],
+    "1060657": [
+      "R",
+      1060620,
+      "590379390"
+    ],
+    "1061045": [
+      "R",
+      1060657,
+      "590380729"
+    ],
+    "1062524": [
+      "S",
+      1060620,
+      "590395035"
+    ]
+  },
+  "queued_target_revision": "d1ce5d23319117267a4b07f7a8479808b87faa3d",
+  "queued_patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+  "v27_written_outcomes": {
+    "completed": 154,
+    "incomplete": 1
+  },
+  "v27_unfinished_count": 1,
+  "v27_execution_verification": {
+    "collection_code_commit": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+    "verification_code_commit": "0cf235fadf0b4b6abb7f6514ba088f93c681f397",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": [
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md"
+    ]
+  },
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "7782651c968e41cf6cc87a1a8e7a4524bbce3462df8ac13e756f40a25e1a11a7",
+    "beliefkv/runtime/sglang_v0520_physical.py": "d745da6b5b4c36adc1756c0fab58a6caef868267675f60ae02f68d2dc2fdfcf1"
+  }
+}
