@@ -257,6 +257,77 @@ def host_match_path_geometry(arm: Path, begin: float, end: float) -> dict:
     }
 
 
+def worker_interval_neighbors(markers: list[dict]) -> dict:
+    selected = [row for row in markers if row["in_window"]]
+    valid = [
+        row for row in markers
+        if type(row["start_ms"]) in (int, float)
+        and type(row["complete_ms"]) in (int, float)
+    ]
+    domains = {row["clock_domain"] for row in valid if row["clock_domain"] is not None}
+    if len(domains) > 1:
+        return {"available": False, "reason": "mixed_monotonic_clock_domains"}
+    ordered = sorted(valid, key=lambda row: row["complete_ms"])
+    cohorts = defaultdict(list)
+    examples = []
+    paired = 0
+    for current, following in zip(ordered, ordered[1:]):
+        if not current["in_window"]:
+            continue
+        boundary_gap = following["start_ms"] - current["complete_ms"]
+        elapsed = current["complete_ms"] - current["start_ms"]
+        key = (
+            current["phase"], current["batch_size"],
+            following["phase"], following["batch_size"],
+            current["geometry_cohort"],
+        )
+        cohorts[key].append((elapsed, boundary_gap))
+        paired += 1
+        if current["phase"] == "prefill" and len(examples) < 3:
+            examples.append({
+                "sample_id": current["sample_id"],
+                "next_sample_id": following["sample_id"],
+                "service_start_monotonic_ms": current["start_ms"],
+                "next_service_start_monotonic_ms": following["start_ms"],
+                "complete_monotonic_ms": current["complete_ms"],
+                "interval_ms": elapsed,
+                "next_interval_boundary_gap_ms": boundary_gap,
+            })
+    return {
+        "available": bool(cohorts),
+        "window_samples": len(selected),
+        "missing_monotonic_window_samples": sum(
+            type(row["start_ms"]) not in (int, float)
+            or type(row["complete_ms"]) not in (int, float)
+            for row in selected
+        ),
+        "paired_window_samples": paired,
+        "cohorts": {
+            f"{phase}/{size}/{next_phase}/{next_size}/{geometry}": {
+                "batches": len(values),
+                "mean_ms": mean(row[0] for row in values),
+                "median_ms": median(row[0] for row in values),
+                "next_interval_boundary_gap_mean_ms": mean(row[1] for row in values),
+                "contiguous_interval_count": sum(row[1] == 0 for row in values),
+            }
+            for (phase, size, next_phase, next_size, geometry), values in sorted(cohorts.items())
+        },
+        "examples": examples,
+        "raw_launch_timing_available": False,
+        "start_boundary": "max(batch.launch_ts, previous_processed_completion)",
+        "semantics": (
+            "Consecutive observed worker intervals in processed-completion order. "
+            "The exported service start is clipped to the previous processed completion, "
+            "so it is not a raw batch launch. A zero neighboring boundary gap follows "
+            "from that clipping; it does not prove zero result-processing cost. "
+            "These fields cannot split kernel, scheduling or overlap time. Cohorts "
+            "match current native work/context geometry and the following observed "
+            "phase/batch size, not identical work. Missing geometry or timestamps "
+            "remain unknown; unobserved native batches may exist."
+        ),
+    }
+
+
 def decode_geometry(arm: Path, begin: float, end: float) -> dict:
     path = arm / "server/runtime_audit.jsonl"
     contexts, sums, durations, batches = [], [], [], []
@@ -265,6 +336,7 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
     prefill_durations, prefill_work = [], []
     prefill_sources = Counter()
     prefill_groups = defaultdict(list)
+    interval_markers = []
     prefix, bytes_read = hashlib.sha256(), 0
     covered = False
     writer = WriterTimingWindow(begin, end)
@@ -282,6 +354,17 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
             if b'"gpu_service_sample"' not in line:
                 continue
             row = json.loads(line)
+            if row["complete_ts_ms"] >= begin and row.get("phase") in ("prefill", "decode"):
+                interval_markers.append({
+                    "sample_id": row.get("sample_id"),
+                    "phase": row["phase"],
+                    "batch_size": row["batch_size"],
+                    "start_ms": row.get("service_start_monotonic_ms"),
+                    "complete_ms": row.get("complete_monotonic_ms"),
+                    "clock_domain": row.get("monotonic_clock_domain"),
+                    "in_window": row["complete_ts_ms"] < end,
+                    "geometry_cohort": "unknown",
+                })
             if row["complete_ts_ms"] >= end:
                 covered = True
                 if not writer.collected or writer.covered:
@@ -307,6 +390,9 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
                     work = sum(item["token_delta"] for item in native)
                     context = mean(item["sequence_tokens_before"] for item in native)
                     prefill_work.append(work)
+                    interval_markers[-1]["geometry_cohort"] = (
+                        f"{work // 512 * 512}/{int(context) // 2048 * 2048}"
+                    )
                     prefill_groups[
                         row["batch_size"], work // 512, int(context) // 2048,
                     ].append(duration)
@@ -327,6 +413,9 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
             groups[(row["batch_size"], int(average) // 2048)].append(duration)
             replayed = row.get("cuda_graph_replayed")
             replay_label = "unknown" if replayed is None else str(replayed).lower()
+            interval_markers[-1]["geometry_cohort"] = (
+                f"{int(average) // 2048 * 2048}/{replay_label}"
+            )
             graph_groups[(row["batch_size"], int(average) // 2048, replay_label)].append(duration)
             batches.append((average, duration))
     if not covered or not batches:
@@ -340,6 +429,7 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
         "sequence_tokens_per_batch_sum_mean": mean(sums),
         "worker_decode_duration_mean_ms": mean(durations),
         "worker_decode_duration_median_ms": median(durations),
+        "worker_interval_neighbors": worker_interval_neighbors(interval_markers),
         "background_writer_timing": writer.summary(),
         "time_weighted_mean_request_sequence_tokens": (
             sum(average * duration for average, duration in batches) / sum(durations)
@@ -431,6 +521,10 @@ def control_profile(arm: Path, begin: float, end: float) -> dict:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--run-root", type=Path, required=True)
+    parser.add_argument(
+        "--native-run-root", type=Path,
+        help="Use a completed historical native arm for cross-version development diagnosis.",
+    )
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--start-seconds", type=float, default=600.)
     parser.add_argument("--end-seconds", type=float, default=900.)
@@ -439,9 +533,30 @@ def main() -> None:
     if not 0 <= args.start_seconds < args.end_seconds:
         parser.error("window must satisfy 0 <= start < end")
     plan = json.loads((args.run_root / "ab_plan.json").read_text())
+    native_root = args.native_run_root or args.run_root
+    native_plan = (
+        plan if native_root == args.run_root
+        else json.loads((native_root / "ab_plan.json").read_text())
+    )
+    same_version = (
+        plan["code_commit"] == native_plan["code_commit"]
+        and plan["sglang_patch_sha256"] == native_plan["sglang_patch_sha256"]
+    )
     report = {
-        "scope": "Complete observed window; not identical-demand causality or completed-pair JCT",
+        "scope": (
+            "Complete observed window; not identical-demand causality or completed-pair JCT"
+            if same_version else
+            "Cross-version complete observed window; development diagnosis, not causal speedup"
+        ),
         "code_commit": plan["code_commit"], "patch_sha256": plan["sglang_patch_sha256"],
+        "native_code_commit": native_plan["code_commit"],
+        "native_patch_sha256": native_plan["sglang_patch_sha256"],
+        "same_version": same_version,
+        "native_run_root": str(native_root),
+        "frozen_plan_changed_keys": [
+            key for key in sorted(plan.keys() | native_plan.keys())
+            if plan.get(key) != native_plan.get(key)
+        ],
         "start_seconds": args.start_seconds, "end_seconds": args.end_seconds, "arms": {},
         "semantics": [
             "Context is input plus generated tokens visible before each decode batch.",
@@ -455,7 +570,7 @@ def main() -> None:
         ],
     }
     for name in ("predictive_h2d", "native"):
-        arm = args.run_root / name
+        arm = (args.run_root if name == "predictive_h2d" else native_root) / name
         window = monitor_window(
             arm, args.start_seconds, args.end_seconds, ZoneInfo(args.timezone),
         )
@@ -485,6 +600,11 @@ def main() -> None:
             "matched_prefill_cohorts",
             predictive["prefill_geometry"]["cohorts"],
             native["prefill_geometry"]["cohorts"],
+        ),
+        (
+            "matched_worker_neighbor_cohorts",
+            predictive["worker_interval_neighbors"].get("cohorts", {}),
+            native["worker_interval_neighbors"].get("cohorts", {}),
         ),
     ):
         report[name] = {

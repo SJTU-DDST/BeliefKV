@@ -2,6 +2,18 @@
 
 Status date: 2026-10-12.
 
+V114 diagnoses V28's complete 300-600s window against prior V27 native.
+Only code_commit differs in the frozen plans; the engine patch matches.
+Retain 7680/8130 decode and 2207/2275 prefill batches with actual geometry.
+Small-prefill cohorts followed by 48-request decode still average
+9.15-11.60/5.73-7.00ms. Exported service_start_monotonic_ms is the maximum
+of launch and previous processed completion, not raw launch. Contiguous
+neighbor boundaries follow from this clipping and cannot split kernel,
+admission or result-processing cost. Keep that limitation explicit in
+the existing analyzer; preserve prior geometry/control evidence. The 17
+existing analyzer checks pass. V28 stays frozen, V29 remains waiting,
+and the full same-version throughput/JCT and early-FULL goal is unproven.
+
 V113 commits 11c8258. Coalesce only already queued control messages,
 without a batching timer. Preserve original handler/transaction boundaries,
 FIFO, event timestamps, per-submission completion, partial-prefix ACKs,
