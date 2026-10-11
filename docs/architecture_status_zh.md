@@ -20,7 +20,7 @@ worktree子模块导致的文件路径失败。相对等待中的d6d6470原生�
 仅radix_cache.py及其prefix测试；从运行V22到新patch的只读
 git apply --check通过，运行引擎仍匹配既有canonical tree。
 新patch SHA256为fb6aecfc1f72f4ad82e8ca83a8379980ba036883573dd59d9875458ba4989100。
-此修改计划纳入下一轮V23，当前V22及其同版本native保持冻结。
+此修改已提交为cc2fac4并登记到下一轮V23，当前V22及其同版本native保持冻结。
 容量回收和前缀检查的局部证据尚不能证明native相对性能目标已达成。
 
 补齐容量交接的最新局部证据及一个真实驻留失效原因，保存在
@@ -47,15 +47,16 @@ FULL未复用；这不是184秒工具执行、GPU准入等待或RETURN预测误�
 预测、准入及workload配置。相关486项检查通过；尚未部署到V22，
 不据此宣称消除摘要执行成本或取得native相对收益。
 
-该驻留修复、容量审计及文档已提交为d6d6470。2026-10-11
-10:43:32 CST将仍在等待的V23更新为
-d6d64706b114d5587541958bff8f2a0e7bf98bb9，冻结checkout为
-beliefkv-v59-summary-residency-20261011，协调器PID3317739，PPID1。
-配置、前序pair身份及canonical原生patch与6793959登记一致。
-仅停止旧等待协调器3297034，主checkout继续为干净的3aa27dd，
+该驻留修复、容量审计及文档已提交为d6d6470，前缀减负为cc2fac4。
+2026-10-11 11:00:53 CST将仍在等待的V23更新为
+cc2fac4f00009d2a778eeee7c419ed84cad1a08d，冻结checkout为
+beliefkv-v60-prefix-lengths-20261011，协调器PID3325062，PPID1。
+配置及前序pair进程身份与d6d6470登记一致；原生patch只增加上述
+两文件的已验证差异，完整部署差异只读apply检查再次通过。
+仅停止旧等待协调器3317739，主checkout继续为干净的3aa27dd，
 V22采集进程未发信号。旧登记保留为
-v23_launch_after_v22_6793959_superseded_20261011.json；
-回执为v59_v23_summary_residency_registration_20261011.json，
+v23_launch_after_v22_d6d6470_superseded_20261011.json；
+回执为v60_v23_prefix_lengths_registration_20261011.json，
 当前主工作区登记仍为v23_launch_after_v22_20261011.json。
 V23在V22完整pair及后处理结束后自动部署，predictive先、
 冷启动同版本native后。当前性能目标仍未达成。
@@ -82,7 +83,7 @@ v23_launch_after_v22_58f2097_superseded_20261011.json，当前登记仍为
 v57_v23_tool_curve_registration_20261011.json。冻结V22及运行配置
 保持原样，其完整pair及后处理结束后自动部署，predictive先、
 冷启动同版本native后；GPU收益仍待验证。
-该10:34登记已由上方10:43的d6d6470登记替换。
+该10:34登记先由d6d6470替换，当前登记为上方11:00的cc2fac4。
 
 终态child到parent的容量交接已包含在冻结V22中：child RETURN且
 context确定退休后，释放session引用，直接丢弃原生allocator确认

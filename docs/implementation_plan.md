@@ -21,7 +21,7 @@ The queued d6d6470 native delta touches onlyradix_cache.py and its prefix test;
 the read-only deployed-V22-to-new-patch git apply --check passes and the live
 canonical engine tree remains unchanged. New patch SHA256:
 fb6aecfc1f72f4ad82e8ca83a8379980ba036883573dd59d9875458ba4989100.
-Commit and include this bounded change in the next waiting V23 target, preserving
+Committed ascc2fac4 and registered in the next waiting V23 target, preserving
 the frozen V22 pair and configuration. Capacity release, equal outputs and CPU
 cost reductions do not complete the native-relative performance goal.
 
@@ -50,14 +50,15 @@ execution, prediction, admission or workload settings or extend leases.
 The486 related checks pass. Include the follow-up in the next waiting frozen
 target; V22 remains unchanged. This does not remove summary work or prove GPU benefit.
 
-The residence fix, capacity evidence and documents are committed asd6d6470.
-At2026-10-11 10:43:32 CST, register the waiting V23 target as
-d6d64706b114d5587541958bff8f2a0e7bf98bb9 in
-beliefkv-v59-summary-residency-20261011; coordinator3317739, now PPID1.
-Configuration, captured previous-pair identities and canonical engine patch match
-the6793959 registration. Stop only waiting coordinator3297034; retain its
-registration asv23_launch_after_v22_6793959_superseded_20261011.json and its log.
-Keepv59_v23_summary_residency_registration_20261011.json as the bounded receipt.
+The residence fix and capacity evidence are committed asd6d6470; prefix-length
+reuse iscc2fac4. At2026-10-11 11:00:53 CST, register the waiting V23 target as
+cc2fac4f00009d2a778eeee7c419ed84cad1a08d in
+beliefkv-v60-prefix-lengths-20261011; coordinator3325062, now PPID1.
+Configuration and captured previous-pair identities match thed6d6470 registration.
+Verify the bounded two-file native delta and repeat the full deployed transition's
+read-only apply check. Stop only waiting coordinator3317739; retain its registration
+asv23_launch_after_v22_d6d6470_superseded_20261011.json and its log.
+Keepv60_v23_prefix_lengths_registration_20261011.json as the bounded receipt.
 Main remains clean at3aa27dd, V23 has no run directory, and V22 collection processes
 are not signalled. Deploy after the complete V22 pair and postprocessing, then
 predictive followed by cold same-version native. The performance goal remains active.
@@ -86,7 +87,7 @@ v57_v23_tool_curve_registration_20261011.json as the bounded receipt; the main
 v23_launch_after_v22_20261011.json remains current. V22 collection processes are
 not signalled. Deploy after its complete pair and postprocessing, then run
 predictive followed by cold same-version native. GPU performance remains unproven.
-This10:34 registration is superseded by the10:43 d6d6470 registration above.
+This10:34 registration was superseded byd6d6470; the current11:00 target iscc2fac4.
 
 Terminal-child to parent capacity handoff is already in the frozen V22: retire
 confirmed finished contexts, release session references, and directly discard
