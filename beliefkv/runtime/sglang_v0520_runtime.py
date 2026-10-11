@@ -488,6 +488,7 @@ class NativeAdmissionRuntime:
         self._parent_capacity_handoffs: dict[str, _ParentCapacityHandoff] = {}
         self._parent_handoff_priority_promoted: str | None = None
         self._residency_scan_cursor = 0
+        self._prefill_residency_scan: tuple | None = None
         self._prefill_causal_cache: tuple | None = None
         self._prefill_cycle_active = False
         self.prefetch_issued_callback = None
@@ -614,6 +615,7 @@ class NativeAdmissionRuntime:
         for command in tuple(self._prefetch_service_leases):
             self._release_prefetch_service_lease(command, "shutdown")
         self._discard_prefetch_tracking("shutdown")
+        self._prefill_residency_scan = None
         self._prefill_causal_cache = None
         self._prefill_cycle_active = False
         self._discard_join_ticket("shutdown")
@@ -1414,6 +1416,7 @@ class NativeAdmissionRuntime:
     @timed_runtime("scheduler_maintenance")
     def scheduler_step(self, waiting_queue: Sequence[object] = ()) -> None:
         self._prefill_cycle_active = True
+        self._prefill_residency_scan = None
         if self.event_server is not None:
             with self._hotpath_timing.measure("control_drain"):
                 self.event_server.drain(max_messages=128)
@@ -6430,6 +6433,29 @@ class NativeAdmissionRuntime:
             self._prefill_causal_cache = (signature, ready_ranks, ranks)
         return ranks
 
+    def _resident_prefill_scan(
+        self, ordered: list[tuple[int, object]],
+        keys: dict[int, PrefillCandidateKey | None],
+    ) -> list[tuple[int, object]]:
+        signature = (
+            self.semantic_revision, self.graph.graph_version,
+            tuple((index, id(req), keys[index]) for index, req in ordered),
+        )
+        cached = self._prefill_residency_scan
+        if self._prefill_cycle_active and cached is not None and cached[0] == signature:
+            self.counts["admission_residency_scan_reused"] += 1
+            return cached[1]
+        count = len(ordered)
+        scan = ordered[:8] + [
+            ordered[position]
+            for offset in range(min(8, count))
+            if (position := (self._residency_scan_cursor + offset) % count) >= 8
+        ]
+        self._residency_scan_cursor = (self._residency_scan_cursor + 8) % count
+        if self._prefill_cycle_active:
+            self._prefill_residency_scan = (signature, scan)
+        return scan
+
     @timed_runtime("admission_plan")
     def plan_native_prefill(
         self, native_order: Sequence[object], *, running_batch: object, adder: object
@@ -6497,15 +6523,12 @@ class NativeAdmissionRuntime:
 
         waiting_ranks = {pair[0]: waiting_rank(pair) for pair in tagged}
         ordered = sorted(tagged, key=lambda pair: waiting_ranks[pair[0]])
-        if self.enable_resident_first and ordered:
-            count = len(ordered)
-            scan = ordered[:8] + [
-                ordered[position]
-                for offset in range(min(8, count))
-                if (position := (self._residency_scan_cursor + offset) % count) >= 8
-            ]
-            self._residency_scan_cursor = (self._residency_scan_cursor + 8) % count
-            for index, req in scan:
+        if (
+            self.enable_resident_first and ordered
+            and waiting_ranks[ordered[-1][0]][0] != -1
+        ):
+            # Handoff and admission share inspection targets, not live decisions.
+            for index, req in self._resident_prefill_scan(ordered, keys):
                 # Aging uses arrival order; a selected handoff reads its own
                 # checkpoint when restoration is actually needed.
                 if waiting_ranks[index][0] != -1:

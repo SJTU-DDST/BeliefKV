@@ -865,6 +865,63 @@ def test_handoff_and_admission_share_causal_classification_but_not_residency(mon
     assert cache.inspect_beliefkv_reentry.call_count == 2
 
 
+def test_handoff_and_admission_keep_scan_targets_then_rotate_next_iteration(monkeypatch):
+    runtime, requests, cache = runtime_with_requests(monkeypatch)
+    runtime.graph.invocations["parent"].pending_messages = 0
+    runtime._residency_scan_cursor = 8
+    clock = [time.monotonic()]
+    monkeypatch.setattr(time, "monotonic", lambda: clock[0])
+    for index in range(3, 32):
+        request = req(f"queued-{index}")
+        request.session_id, request.session_generation = f"s-{request.rid}", 1
+        runtime.register_visible_request(request)
+        runtime.on_events((RuntimeEvent(
+            f"create-{index}", float(index), RuntimeEventKind.INVOCATION_CREATE, "wf",
+            invocation_id=request.rid, context_id=f"ctx-{request.rid}",
+            agent_definition_id="agent", agent_instance_id=request.rid,
+        ),))
+        requests.append(request)
+    warm = requests[18]
+    cache.inspect_beliefkv_reentry.side_effect = lambda request: {
+        "checkpoint_tokens": 2,
+        "device_checkpoint_tokens": 2 if request is warm else 0,
+        "missing_full_tokens": 0 if request is warm else 2,
+        "missing_mamba_slots": int(request is not warm),
+    }
+    runtime.scheduler_step(requests)
+    assert select(runtime, requests).candidates == tuple(requests)
+    assert select(runtime, requests).candidates == tuple(requests)
+    assert cache.inspect_beliefkv_reentry.call_count == 16
+    assert runtime._residency_scan_cursor == 16
+    clock[0] += .06
+    runtime.scheduler_step(requests)
+    assert select(runtime, requests).candidates[0] is warm
+    assert cache.inspect_beliefkv_reentry.call_count == 32
+    assert runtime._residency_scan_cursor == 24
+    runtime.close()
+
+
+def test_shared_scan_refreshes_after_physical_change_and_queue_reorder(monkeypatch):
+    runtime, (cold, warm, _), cache = runtime_with_requests(monkeypatch)
+    runtime.scheduler_step([cold, warm])
+    assert select(runtime, [cold, warm]).candidates == (warm, cold)
+    cache.inspect_beliefkv_reentry.side_effect = lambda request: {
+        "checkpoint_tokens": 2,
+        "device_checkpoint_tokens": 2 if request is cold else 0,
+        "missing_full_tokens": 0 if request is cold else 2,
+        "missing_mamba_slots": int(request is not cold),
+    }
+    runtime._reentry_observations.clear()
+    assert select(runtime, [cold, warm]).candidates == (cold, warm)
+    assert cache.inspect_beliefkv_reentry.call_count == 4
+    assert runtime.counts["admission_residency_scan_reused"] == 1
+    assert select(runtime, [warm, cold]).candidates == (cold, warm)
+    assert runtime.counts["admission_residency_scan_reused"] == 1
+    runtime._visible_since[warm.rid] -= 11.
+    assert select(runtime, [cold, warm]).candidates == (warm, cold)
+    runtime.close()
+
+
 def test_unchanged_scheduler_iterations_keep_ranks_but_refresh_residency_and_aging(monkeypatch):
     runtime, (cold, warm, _), cache = runtime_with_requests(monkeypatch)
     clock = [time.monotonic()]

@@ -56,6 +56,7 @@ def baseline_classes(revision: str):
     methods = {
         "_causal_rank", "plan_native_prefill", "_local_frontier_features",
         "_prefill_causal_ranks", "on_batch_completed", "dispatch_execution_handoff",
+        "_resident_prefill_scan",
         "_capture_semantic_text", "_poll_semantic_reports",
         "_executable_waiting_key", "terminal_waiting_request_ids",
         "scheduler_step",
@@ -527,6 +528,118 @@ def benchmark_causal_reuse(
     }
 
 
+def benchmark_residency_scan_reuse(*, revision: str, rounds: int, iterations: int) -> dict:
+    from benchmark_native_reentry_cpu import fixture, variant
+
+    baseline, frontier, digests = baseline_classes(revision)
+    native = variant(ROOT / "third_party/sglang-v0.5.20")
+    cases = []
+    clock = [1000.]
+    with patch.object(runtime_module.time, "monotonic", new=lambda: clock[0]):
+        for size, tokens, depth, leaves, aged in (
+            (4, 32768, 8, 8, False),
+            (156, 32768, 8, 8, False),
+            (156, 98304, 24, 8, False),
+            (156, 32768, 256, 8, False),
+            (512, 32768, 8, 1, False),
+            (156, 32768, 8, 8, True),
+        ):
+            variants = {
+                "baseline": synthetic_runtime(baseline, frontier, size, rounds),
+                "optimized": synthetic_runtime(
+                    NativeAdmissionRuntime, CausalFrontierScheduler, size, rounds,
+                ),
+            }
+            inspections = Counter()
+            samples = {name: {"wall_ms": [], "thread_cpu_ms": []} for name in variants}
+            try:
+                for name, (runtime, queue) in variants.items():
+                    cache, template = fixture(native, {
+                        "tokens": tokens, "depth": depth, "leaves": leaves, "page_size": 1,
+                    })
+                    for node in cache.tree_core.node_by_id.__self__.values():
+                        if node.parent is not None:
+                            node.component_data[0].value = None
+                            node.component_data[2].value = None
+
+                    def inspect(request, *, cache=cache, name=name):
+                        inspections[name] += 1
+                        return native.inspect(cache, request)
+
+                    cache.inspect_beliefkv_reentry = inspect
+                    runtime.enable_resident_first = True
+                    runtime.attach_native_cache(cache)
+                    for request in queue:
+                        request.origin_input_ids = template.origin_input_ids
+                for iteration in range(iterations + 5):
+                    clock[0] += .06
+                    names = list(variants)
+                    if iteration % 2:
+                        names.reverse()
+                    orders = []
+                    for name in names:
+                        runtime, queue = variants[name]
+                        runtime._visible_since = {
+                            request.rid: clock[0] - (11. if aged else 0.)
+                            for request in queue
+                        }
+                        runtime.scheduler_step(queue)
+                        started, cpu_started = time.perf_counter_ns(), time.thread_time_ns()
+                        plans = tuple(
+                            runtime.plan_native_prefill(queue, running_batch=None, adder=None)
+                            for _ in range(2)
+                        )
+                        cpu_ms = (time.thread_time_ns() - cpu_started) / 1_000_000
+                        wall_ms = (time.perf_counter_ns() - started) / 1_000_000
+                        orders.append(tuple(plan.prioritized for plan in plans))
+                        if iteration >= 5:
+                            samples[name]["wall_ms"].append(wall_ms)
+                            samples[name]["thread_cpu_ms"].append(cpu_ms)
+                    if orders[0] != orders[1]:
+                        raise AssertionError("Host-only or aged queue order changed")
+                costs = {
+                    name: {metric: distribution(values) for metric, values in data.items()}
+                    for name, data in samples.items()
+                }
+                cases.append({
+                    "queue_size": size, "retained_rounds": rounds,
+                    "tokens": tokens, "depth": depth, "session_leaves": leaves,
+                    "aged": aged, "iterations": iterations, "warmup_iterations": 5,
+                    "planning_calls_per_cycle": 2, "clock_step_ms": 60,
+                    "queue_order_equal": True,
+                    "native_inspections_including_warmup": dict(inspections),
+                    "optimized_scan_reuses": variants["optimized"][0].counts[
+                        "admission_residency_scan_reused"
+                    ],
+                    "costs": costs,
+                    "mean_wall_reduction_fraction": (
+                        1 - costs["optimized"]["wall_ms"]["mean_ms"]
+                        / costs["baseline"]["wall_ms"]["mean_ms"]
+                    ),
+                })
+            finally:
+                for runtime, _ in variants.values():
+                    runtime.close()
+    return {
+        "scope": (
+            "CPU-only two-call admission cycles with the actual native reentry inspector "
+            "and RadixKey on synthetic Host-only radix fixtures; cache observations expire "
+            "before each cycle. No native allocation, DMA, GPU or throughput is measured."
+        ),
+        "baseline_revision": revision, "baseline_source_sha256": digests,
+        "optimized_runtime_source_sha256": hashlib.sha256(
+            runtime_source_path().read_bytes(),
+        ).hexdigest(),
+        "native_source_sha256": native.source_sha256,
+        "sampling_change": (
+            "Rotate once for unchanged handoff/admission targets in a scheduler cycle; "
+            "mixed-residency queues can differ because the second call no longer samples "
+            "another eight requests. Host-only and aged fixture orders are checked."
+        ),
+        "cases": cases,
+    }
+
+
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-revision", default="7055901")
@@ -536,6 +649,7 @@ def main():
     parser.add_argument("--planning-calls", type=int, choices=(1, 2), default=1)
     parser.add_argument("--handoff-frontier", action="store_true")
     parser.add_argument("--causal-reuse", action="store_true")
+    parser.add_argument("--residency-scan-reuse", action="store_true")
     parser.add_argument("--resident-first", action="store_true",
                         help="Use mixed residency observations and check identical native reads.")
     parser.add_argument("--parent-handoffs", type=int, default=0,
@@ -551,7 +665,11 @@ def main():
         raise ValueError("parent handoffs must fit the synthetic workflow count")
     if args.handoff_frontier and (args.parent_handoffs or args.semantic_progress):
         raise ValueError("completed-batch tracking options do not apply to handoff frontier")
-    if args.causal_reuse:
+    if args.residency_scan_reuse:
+        report = benchmark_residency_scan_reuse(
+            revision=args.baseline_revision, rounds=args.rounds, iterations=args.iterations,
+        )
+    elif args.causal_reuse:
         if args.handoff_frontier or args.parent_handoffs or args.semantic_progress:
             raise ValueError("causal reuse measures scheduler/admission cycles only")
         clock = [1000.]
@@ -575,7 +693,16 @@ def main():
                            semantic_progress=args.semantic_progress)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
-    if args.causal_reuse:
+    if args.residency_scan_reuse:
+        for case in report["cases"]:
+            print(
+                f"queue={case['queue_size']} tokens={case['tokens']} "
+                f"depth={case['depth']} aged={case['aged']}: "
+                f"{case['costs']['baseline']['wall_ms']['mean_ms']:.6f} -> "
+                f"{case['costs']['optimized']['wall_ms']['mean_ms']:.6f} ms; "
+                f"native_reads={case['native_inspections_including_warmup']}"
+            )
+    elif args.causal_reuse:
         for case in report["cases"]:
             print(
                 f"queue={case['queue_size']} rounds={case['retained_rounds']} "
