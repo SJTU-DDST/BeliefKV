@@ -2,6 +2,17 @@
 
 Status date: 2026-10-11.
 
+V92: the live V24 action audit confirms948 tool PREPARE node commands/
+211 bursts/9.122GB FULL and zero speculative Mamba. First backups for
+116/140 known independent tools have at least1000ms remaining.
+Tool-wait demotions release0.732GB FULL in59 native-node events across
+36 tools;32/36 remain open at least1000ms after their first release.
+Accepted forecasts record1000ms throughout. These are waiting-time
+qualification rates, not RETURN timestamp accuracy, recall or net benefit.
+Sources have separate EOF/prefix seals, not an atomic complete-run
+snapshot. Preserve unclosed boundaries and await subsequent consumption/
+same-version native performance. Keep the full objective active.
+
 V91: the complete V24 predictive600-900s window gives1152.66 decode
 token/s, GPU88.30% and weighted batch47.351. Native/handoff/predictive
 H2D are651.143/21.761/2.652GB; predictive FULL is1.428GB, without an
