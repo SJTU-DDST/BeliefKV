@@ -24,7 +24,7 @@ P50/P90 is 222.46/689.11 ms, maximum 16.312 s. This is not prediction error,
 kernel-start latency, simultaneous free capacity or exclusive parent ownership.
 Restore after the last child's RETURN remains demand recovery. No actual
 capacity-retry rearm is observed. Wait for the same-version native comparison
-before any throughput/JCT claim. Keep V23 queued at the 11:20 2aa19f2 target.
+before any throughput/JCT claim. V23 is queued at the 11:41 e82ad88 target.
 
 Fix the demonstrated terminal-history coverage loss before the next V23 launch.
 More than 64 indexed component anchors previously forced latest-only provenance
@@ -44,8 +44,9 @@ Keep v63_terminal_anchor_recycling_fix_20261011.json. New canonical patch:
 expected/actual tree a49cf2d2f643afaaf188f693cfee0c08373bba81.
 The queued native delta touches only session_ref_tracker.py, unified_radix_cache.py
 and the terminal-capacity test; forward deployed transition and reverse checks
-pass. Commit and replace only the waiting V23 target; preserve the frozen V22
-pair and all workload/model settings. Allocator coverage is not a GPU speedup.
+pass. Committed as e82ad88 and registered as the next waiting V23 target;
+preserve the frozen V22 pair and all workload/model settings.
+Allocator coverage is not a GPU speedup.
 
 Reduce repeated request-identity allocations after a CPU profile of108 waiting
 requests with16 retained rounds identifies_request_key cost. Admission planning,
@@ -115,15 +116,16 @@ The486 related checks pass. Include the follow-up in the next waiting frozen
 target; V22 remains unchanged. This does not remove summary work or prove GPU benefit.
 
 The residence fix and capacity evidence are committed asd6d6470; prefix-length
-reuse iscc2fac4 and bound-identity reuse is2aa19f2. At2026-10-11 11:20:16 CST,
-register the waiting V23 target as2aa19f28b6e257d0bb4d07ca4b47a86f536a9c7b
-inbeliefkv-v61-bound-identities-20261011; coordinator3378541.
-At11:27:33 CST, verify its reparenting to PPID1 with unchanged start identity
-585907880. Configuration, captured previous-pair identities and native patch
-match thecc2fac4 registration; the identity optimization adds no engine delta.
-Stop only waiting coordinator3325062; retain its registration as
-v23_launch_after_v22_cc2fac4_superseded_20261011.json and its log.
-Keepv61_v23_bound_identity_registration_20261011.json as the bounded receipt,
+reuse iscc2fac4, bound-identity reuse is2aa19f2 and full terminal-branch
+provenance is e82ad88. At2026-10-11 11:41:08 CST, register the waiting V23
+target as e82ad88446db6eb663c92fac47727c01308e5bb6 in
+beliefkv-v63-terminal-anchors-20261011; coordinator3756458.
+At11:41:33 CST, verify its reparenting to PPID1 with unchanged start identity
+586033093. Configuration and captured previous-pair identities match2aa19f2;
+the native delta is limited to the verified two files and terminal-capacity test.
+Stop only waiting coordinator3378541; retain its registration as
+v23_launch_after_v22_2aa19f2_superseded_20261011.json and its log.
+Keepv63_v23_terminal_anchors_registration_20261011.json as the bounded receipt,
 including the original helper-child identity and the subsequent PPID1 observation.
 Main remains clean at3aa27dd, V23 has no run directory, and V22 collection processes
 are not signalled. Deploy after the complete V22 pair and postprocessing, then
@@ -153,8 +155,8 @@ v57_v23_tool_curve_registration_20261011.json as the bounded receipt; the main
 v23_launch_after_v22_20261011.json remains current. V22 collection processes are
 not signalled. Deploy after its complete pair and postprocessing, then run
 predictive followed by cold same-version native. GPU performance remains unproven.
-This10:34 registration was superseded byd6d6470 andcc2fac4; the current11:20
-target is2aa19f2.
+This10:34 registration was superseded by later revisions; the current11:41
+target is e82ad88.
 
 Terminal-child to parent capacity handoff is already in the frozen V22: retire
 confirmed finished contexts, release session references, and directly discard
@@ -195,7 +197,8 @@ v56_v23_tool_wait_registration_20261011.json receipt; the main
 v23_launch_after_v22_20261011.json remains current. V22 collection processes are
 not signalled. Deploy after its complete pair and postprocessing, then run
 predictive followed by cold same-version native. GPU performance remains unproven.
-This10:21 registration was superseded by10:34 6793959; current target is10:43 d6d6470.
+This10:21 registration was superseded by later revisions; the current target is
+the11:41 e82ad88 registration above.
 
 Fix capacity blocking between tool-prefetch candidates in the isolated follow-up.
 Previously the nearest-ending tool took the sole ticket before reclaim was checked;
@@ -219,7 +222,8 @@ v55_v23_tool_capacity_registration_20261011.json receipt. V22 collection process
 are not signalled. The main v23_launch_after_v22_20261011.json is current.
 Deploy after the complete V22 pair and postprocessing, predictive first and cold
 same-version native second.
-This10:01 registration was superseded by10:21 58f2097; current target is10:43 d6d6470.
+This10:01 registration was superseded by later revisions; the current target is
+the11:41 e82ad88 registration above.
 
 Keepv54_v22_tool_service_window_fixedprefix_20261011.json and its local detailed
 artifact. Re-read exactly the same817177733-byte opportunity prefix and lifecycle

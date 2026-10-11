@@ -24,7 +24,7 @@ P50/P90 为 222.46/689.11 ms，最大 16.312 秒。此时延不是
 完整重算见 v63_v22_terminal_capacity_complete_20261011.json，
 紧凑证据与来源 SHA256 见
 v63_child_parent_capacity_handoff_complete_20261011.json。
-同版本 native 仍在采集；V23 保留下方 11:20 登记的 2aa19f2，
+同版本 native 仍在采集；V23 已更新为下方 11:41 登记的 e82ad88，
 待完整 V22 pair 及后处理结束后先 predictive、再冷 native。
 当前只能确认联动已实现且发生了释放与提前复用，不能据此宣称
 相对 native 的吞吐/JCT 目标已达成。
@@ -49,7 +49,8 @@ close 与 RETURN 两种顺序、共享 parent 前缀及旧分支锁/H2D
 相对等待中 2aa19f2 只改 session_ref_tracker.py、
 unified_radix_cache.py 和终态容量测试；正反向应用核验通过。
 证据见 v63_terminal_anchor_recycling_fix_20261011.json。
-本项将随下一轮 V23 部署，当前 V22 及 workload 配置继续冻结。
+本项已提交为 e82ad88 并登记到下一轮 V23，当前 V22 及 workload
+配置继续冻结。
 
 继续降低准入身份解析成本。CPU profile在108个等待请求、保留
 16轮历史的合成场景中定位到_request_key的重复身份对象分配。
@@ -116,16 +117,17 @@ FULL未复用；这不是184秒工具执行、GPU准入等待或RETURN预测误�
 不据此宣称消除摘要执行成本或取得native相对收益。
 
 该驻留修复、容量审计及文档已提交为d6d6470，前缀减负为cc2fac4，
-准入身份复用为2aa19f2。2026-10-11 11:20:16 CST将仍在等待的V23
-更新为2aa19f28b6e257d0bb4d07ca4b47a86f536a9c7b，冻结checkout为
-beliefkv-v61-bound-identities-20261011，协调器PID3378541。
-11:27:33 CST确认该进程已由登记helper的子进程转为PPID1，
-启动身份仍为585907880。配置、前序pair进程身份及原生patch与
-cc2fac4登记一致；准入身份复用没有新的原生引擎差异。
-仅停止旧等待协调器3325062，主checkout继续为干净的3aa27dd，
+准入身份复用为2aa19f2，完整终态分支回收为e82ad88。
+2026-10-11 11:41:08 CST将仍在等待的V23更新为
+e82ad88446db6eb663c92fac47727c01308e5bb6，冻结checkout为
+beliefkv-v63-terminal-anchors-20261011，协调器PID3756458。
+11:41:33 CST确认该进程已由登记helper的子进程转为PPID1，
+启动身份仍为586033093。配置及前序pair进程身份与2aa19f2
+登记一致；原生差异仅为上方已验证的两文件及终态容量测试。
+仅停止旧等待协调器3378541，主checkout继续为干净的3aa27dd，
 V22采集进程未发信号。旧登记保留为
-v23_launch_after_v22_cc2fac4_superseded_20261011.json；
-回执为v61_v23_bound_identity_registration_20261011.json，
+v23_launch_after_v22_2aa19f2_superseded_20261011.json；
+回执为v63_v23_terminal_anchors_registration_20261011.json，
 当前主工作区登记仍为v23_launch_after_v22_20261011.json。
 V23在V22完整pair及后处理结束后自动部署，predictive先、
 冷启动同版本native后。当前性能目标仍未达成。
@@ -152,7 +154,7 @@ v23_launch_after_v22_58f2097_superseded_20261011.json，当前登记仍为
 v57_v23_tool_curve_registration_20261011.json。冻结V22及运行配置
 保持原样，其完整pair及后处理结束后自动部署，predictive先、
 冷启动同版本native后；GPU收益仍待验证。
-该10:34登记先由d6d6470和cc2fac4替换，当前登记为上方11:20的2aa19f2。
+该10:34登记已由后续版本替换，当前登记为上方11:41的e82ad88。
 
 终态child到parent的容量交接已包含在冻结V22中：child RETURN且
 context确定退休后，释放session引用，直接丢弃原生allocator确认
