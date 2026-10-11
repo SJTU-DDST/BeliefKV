@@ -2,6 +2,37 @@
 
 Status date: 2026-10-11.
 
+At 14:41:13 CST, the V23 lifecycle read has 40 JOIN and 380 tool waits
+with pre-boundary-started, next-request-reused FULL of 0.515/6.132 GB.
+Demand handoff FULL reuse of 93.742 GB remains separate. Independent-wait
+last-ACK-to-service P50/P90 is 361/1772 ms for JOIN and 431/919 ms for
+tools; maxima remain 9.383/91.976 s. All observed next-tool requests have
+native-arrival-to-service P50/P90 of 7.519/14.862 s, so selected prefetch
+latencies do not describe the whole queue. Twelve JOIN FULL commands
+expire before completion. Keep v76_v23_prefetch_lifecycle_live_20261011.json.
+This live read is not an atomic snapshot, ablation or native speedup proof.
+
+The same audit has 258 independent tool waits with at least 16 observed
+planned nodes, associated with 85.362 GB residual next-request FULL Host hits.
+Inspect the fixed 16-node planning limit against existing pending, byte and
+capacity budgets next. Those associations do not establish feasible early
+bytes or gains from a larger burst; verify continuous prefixes and actual use.
+
+The isolated follow-up avoids empty-hint queue statistics in plan_native_prefill.
+Validate hint identity, expiry and invocation revision only when hints exist;
+count group coverage only when there are valid hints, and materialize length
+sort keys only for fully hinted class/depth groups. Preserve causal rank,
+aging, residency, restore priority and prediction submission semantics.
+V23 is tool_timing_only and does not generate these admission length hints.
+The 365 existing related checks pass, including full-to-partial hint expiry
+ordering. Keep v77_native_prefill_empty_hints_validation_20261011.json and
+v77_native_prefill_empty_hints_cpu_20261011.json. The 24 alternating complete
+scheduler/admission CPU cases use real graphs, live identity checks and changing
+stub residency; plans, inspection traces and non-cache counters agree.
+Average wall falls 6.18%-11.89% and thread CPU 6.26%-11.89% against f9b2f96.
+Native allocator, DMA, GPU throughput and JCT are excluded. Preserve frozen
+V23 and the full same-version performance goal.
+
 V23 wait-offload evidence was updated at 2026-10-11 14:35:10 CST.
 Tool PREPARE has 82 burst decisions, 456 node ACKs and 3.811 GB FULL
 across 58 independent waits. Actual HBM demotion has 19 node events,
@@ -38,7 +69,7 @@ andv74_scheduler_sampling_cpu_20261011.json. The24 alternating CPU cases use
 real causal graphs,profiling and1ms logical cycles with stub sinks/idle workers;
 policy rows,counters and semantic cadence match. Full dormant maintenance
 CPU falls31.1%-34.4% with a worker and51.0%-55.6% without, at microsecond
-scale. Allocator,DMA,GPU throughput and JCT are excluded. Commit this work,
+scale. Allocator,DMA,GPU throughput and JCT are excluded. Committed asf9b2f96;
 preserve the started V23 pair and continue measured reentry/admission/prepare/
 recovery reductions. No subsequent GPU pair is registered by this update.
 

@@ -1,0 +1,41 @@
+{
+  "scope": "Avoid unused admission length-hint queue statistics and precompute fully hinted group keys; CPU validation, no GPU performance claim.",
+  "baseline_revision": "f9b2f96",
+  "updated_runtime_sha256": "cb054ae3d9e7f8065abb3a112f083d3a31c14fc0cd8fa4aa3acc5e595b6690bc",
+  "change": {
+    "scan_valid_hints_only_when_hints_exist": true,
+    "count_group_coverage_only_when_valid_hints_exist": true,
+    "length_sorting_requires_all_group_members_to_have_valid_hints": true,
+    "hint_identity_expiry_and_invocation_revision_checks_retained": true,
+    "causal_aging_residency_restore_priority_or_prediction_inputs_changed": false,
+    "native_patch_changed": false,
+    "frozen_v23_modified": false
+  },
+  "checks": {
+    "passed": 365,
+    "suites": [
+      "tests/test_sglang_v0520_runtime.py",
+      "tests/test_sglang_v0520_admission.py",
+      "tests/test_execution_handoff.py",
+      "tests/test_tool_predictive_transfers.py",
+      "tests/test_wait_prefetch_batch.py",
+      "tests/test_terminal_child_capacity.py"
+    ],
+    "python": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python"
+  },
+  "benchmark": {
+    "report": "v77_native_prefill_empty_hints_cpu_20261011.json",
+    "cases": 24,
+    "iterations_per_case": 101,
+    "waiting_request_counts": [48, 108],
+    "retained_round_counts": [1, 8],
+    "planning_calls_per_cycle": [1, 2],
+    "graph_change_intervals": [1, 4, 16],
+    "logical_cycle_ms": 51,
+    "plans_and_native_residency_inspection_traces_equal": true,
+    "mean_wall_reduction_fraction_range": [0.0618, 0.1189],
+    "mean_thread_cpu_reduction_fraction_range": [0.0626, 0.1189],
+    "native_allocator_dma_or_gpu_measured": false
+  },
+  "deployment": "Commit in the isolated follow-up; do not modify the frozen running V23 predictive/native pair."
+}

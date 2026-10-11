@@ -47,6 +47,11 @@ workflow 的平均 JCT 高 17.82%。该对照的执行轨迹不同，不能
 利用率、47.35 时间加权 batch；V22 predictive/native 对应
 1019.20/1219.52 token/s、76.68%/89.81%。跨版本、不同轨迹
 只作诊断，不能替代尚未开始的 V23 同版本 native 对照。
+14:41:13 的 V23 审计确认 JOIN/tool 完成前启动并由下一请求
+复用 FULL 为 0.515/6.132 GB，需求 handoff 的 93.742 GB
+继续单列。独立等待最后 ACK 到服务 P90 为 1772/919 ms，
+仍有 9.383/91.976 秒最大值；12 个 JOIN FULL 命令在完成前
+过期。此观测不能证明触发长尾已解决或同版本吞吐目标达到。
 
 FULL 的固定前缀可复用有效 Host 副本。PREPARE 只复制缺失
 extent，新增前缀增量备份；radix 分裂保留原生 Host 索引映射。
@@ -153,6 +158,15 @@ semantic worker 不存在时跳过 poll。helper 自身检查保留，
 未测量真实 allocator、DMA 或 GPU，尚未部署到冻结 V23。
 V23 窗口已埋点独占墙钟累计 40.985 秒仍包含 reentry、准入、
 备份和恢复的实际工作，不能由该维护夹具推导全路径吞吐改善。
+
+准入没有输出长度提示时，不扫描全队列统计提示覆盖。有提示
+时仍校验实时身份、时效与 invocation revision；只有同一
+class/depth 组的全部成员有有效提示时，才生成长度排序键。
+提示失效后回到既有因果及到达排序，驻留、老化、恢复优先级
+继续独立更新。当前 tool_timing_only 实验不产生该长度提示，
+该优化用于减少共享控制工作，不替代 child/tool 时间预测。
+24 组固定 f9b2f96 的完整 CPU 周期确认等价计划及驻留读取，
+未测量真实原生分配、DMA、GPU 或 JCT，尚未部署到 V23。
 
 准入的纯因果 class/depth 可跨无变化的 scheduler 迭代复用。
 签名包含 semantic revision、graph version、原生等待队列顺序、

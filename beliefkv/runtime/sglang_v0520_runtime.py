@@ -6437,28 +6437,36 @@ class NativeAdmissionRuntime:
         # Reuse only versioned causal ranks across unchanged scheduler iterations.
         ranks = self._prefill_causal_ranks(tagged, keys)
         now_ms = time.monotonic() * 1000
-        valid_hints: dict[int, NativeDemandHint] = {}
-        members = Counter((rank[0], rank[1]) for rank in ranks.values())
-        hinted = Counter()
-        for index, req in tagged:
-            key = keys[index]
-            if key is None:
-                continue
-            hint = self.demand_hints.get(key.request_id)
-            if (
-                hint is not None
-                and hint.live(key, now_ms=now_ms)
-                and (
-                    hint.invocation_revision_ts_ms is None
-                    or getattr(
-                        self.graph.invocations.get(key.invocation_id),
-                        "updated_ts_ms",
-                        None,
-                    ) == hint.invocation_revision_ts_ms
-                )
-            ):
-                valid_hints[index] = hint
-                hinted[ranks[index][:2]] += 1
+        length_ranks: dict[int, int] = {}
+        if self.demand_hints:
+            valid_hints: dict[int, NativeDemandHint] = {}
+            for index, req in tagged:
+                key = keys[index]
+                if key is None:
+                    continue
+                hint = self.demand_hints.get(key.request_id)
+                if (
+                    hint is not None
+                    and hint.live(key, now_ms=now_ms)
+                    and (
+                        hint.invocation_revision_ts_ms is None
+                        or getattr(
+                            self.graph.invocations.get(key.invocation_id),
+                            "updated_ts_ms",
+                            None,
+                        ) == hint.invocation_revision_ts_ms
+                    )
+                ):
+                    valid_hints[index] = hint
+            if valid_hints:
+                members = Counter(rank[:2] for rank in ranks.values())
+                hinted = Counter(ranks[index][:2] for index in valid_hints)
+                length_ranks = {
+                    index: hint.next_output_tokens
+                    for index, hint in valid_hints.items()
+                    if ranks[index][0] < 5
+                    and hinted[ranks[index][:2]] == members[ranks[index][:2]]
+                }
 
         def waiting_rank(pair: tuple[int, object]) -> tuple:
             index, request = pair
@@ -6467,10 +6475,7 @@ class NativeAdmissionRuntime:
                 return (-1, since, index, index)
             return (
                 *ranks[index][:2],
-                valid_hints[index].next_output_tokens
-                if ranks[index][0] < 5
-                and hinted[ranks[index][:2]] == members[ranks[index][:2]]
-                else index,
+                length_ranks.get(index, index),
                 index,
             )
 
