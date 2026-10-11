@@ -2,6 +2,39 @@
 
 Status date: 2026-10-12.
 
+V101: commit68e656c stops scanning a pool index once its native-consumed
+pressure-candidate prefix is full. The other pool retains candidate order,
+live lock/residency checks and pending-transfer exclusion. The118 relevant
+checks pass; six100-trial alternating CPU cases retain identical native
+prefixes and node lookups. With156 candidates,4096 unrelated FULL leaves
+and sparse Mamba, publication means fall0.423741 to0.051102ms; the existing
+24-depth cases show no mean regression. This is a local CPU improvement,
+not GPU/JCT evidence. Keep V27 frozen; this small change alone does not
+justify another censored run.
+
+V100 preserves complete V27 windows300-600,600-900,900-1200s:
+decode1142.94,1126.97,1011.38token/s, GPU83.45%,85.22%,82.06% and weighted
+batch about47. Instrumented exclusive Python wall in the latter windows
+is42.668/41.613s; reentry remains5.970/6.370s and candidate publication
+1.238/1.159s. Same-version native is still required.
+
+The00:22:42-00:23:03 CST fixed, separately sealed prefixes prove advance
+FULL first reuse for428 tools/7.608GB and35 JOINs/410.952MB. Preserve46
+unknown JOIN boundaries. Last-ACK-to-service P50/P90 among39 JOIN and472
+tool events is348.69/1555.99ms and414.78/996.50ms. Investigate19 JOIN
+FULL commands/251.843MB expiring before completion without a blanket TTL
+increase or fixed-seconds prediction shift. Residual native tool FULL
+Host hits500.795GB are not proven advance opportunities or an oracle bound.
+Keep99.690GB demand-handoff FULL reuse separate. Of697 PREPARE ACKs,156
+link to an observed restore and541 are not yet linked; neither pending
+observation nor an unlinked backup proves waste.
+
+Retain V100 CPU/control, source-prefix seals, profile failure and successful
+raw stacks. Full lifecycle details are losslessly compressed and the
+uncompressed SHA256 is pinned in the summary. Continue reducing measured
+hotpaths and examining independent wait opportunities while V27 collects
+its frozen predictive/native pair. The full performance goal remains active.
+
 V99: compare interrupted V26 predictive with the latest completed V23
 native using complete monitor-aligned windows300-600,600-2400 and
 4200-4800s, excluding V26 stack profiling. Decode throughput is
