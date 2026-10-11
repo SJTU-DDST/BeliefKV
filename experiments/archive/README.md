@@ -6,6 +6,30 @@ tracked inventory.
 
 ## 2026-10-12 verified workspace compression
 
+Archive: `experiments/archive/20261012/v16b_stopped_workspaces.tar.zst`
+
+SHA256: `dc6a77c1172261af4a6e2a8dbb1167b2767cb95946607d01111dad95f7dd7223`
+
+All 76 remaining V16b workspaces are preserved in this 3,202,382,046-byte
+archive. They belong to the development run stopped on October 10; their
+unfinished workflows remain administratively censored. Source allocation was
+24,619,732,992 bytes. GNU tar compared every archived file before source
+removal. The 76 old containers were removed only after verifying their
+`/workspace` mounts belonged to this stopped run. Raw traces, outcomes,
+frozen plan and restore pointer remain. Restore from the repository root:
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261012/v16b_stopped_workspaces.tar.zst \
+  --directory experiments/raw
+```
+
+Receipt: `experiments/reports/v121_v16b_workspace_archive_20261012.json`.
+One compression thread, nice 19 and idle I/O were used. Maintenance at
+07:45:42-07:47:55 CST overlaps live V29 service and must be qualified in
+performance windows. Net reclaimed allocation is about 19.95 GiB. Available
+space at verification was 60,490,625,024 bytes, including concurrent writes.
+
 Archive: `experiments/archive/20261012/v28_development_workspaces.tar.zst`
 
 SHA256: `1100e67fdbf7b5a6522e746d3c0b66399bd6822bfe5e7442ca4c9e1b00b781aa`
