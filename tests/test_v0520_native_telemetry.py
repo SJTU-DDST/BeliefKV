@@ -837,6 +837,60 @@ def test_prefetch_prefix_evidence_reuse_handles_shorter_and_divergent_targets(tm
     ]
 
 
+@pytest.mark.parametrize("tokens", (2047, 2048, 32768))
+@pytest.mark.parametrize("mismatch", (None, 0, 1, 1023, -1))
+def test_prefetch_long_array_evidence_preserves_exact_token_boundary(
+    tmp_path, tokens, mismatch,
+):
+    audit = NativeReactiveTelemetry(tmp_path / "prefixes")
+    original = array("q", ((1 << 60) + index for index in range(tokens)))
+    inputs = array("q", original)
+    inputs.append(-1)
+    if mismatch is not None:
+        mismatch %= tokens
+        inputs[mismatch] ^= 1 << 40
+    action = SimpleNamespace(
+        command_id="restore", context_id="ctx", context_epoch=2,
+        node_ids=(1,), pool_bytes=(),
+    )
+    audit._pending_prefetch_use["restore"] = (
+        action, (), 100., {1: (original, None, None)},
+    )
+    audit._record_prefetch_first_service(SimpleNamespace(
+        rid="next", origin_input_ids=inputs, prefix_indices=[],
+        last_node=0, cached_tokens_device=0,
+    ), {"context_id": "ctx", "context_epoch": 3})
+    audit.close()
+    [record] = _read(tmp_path / "prefixes/physical_action_use.jsonl")
+    [prefix] = record["target_prefixes"]
+    assert prefix["common_input_prefix_tokens"] == (
+        tokens if mismatch is None else mismatch
+    )
+    assert prefix["complete_input_prefix"] is (mismatch is None)
+    assert prefix["same_cache_namespace"] is True
+
+
+@pytest.mark.parametrize("typecode", ("q", "i", "d"))
+def test_prefetch_array_evidence_keeps_numeric_comparison_and_short_input(tmp_path, typecode):
+    audit = NativeReactiveTelemetry(tmp_path / "prefixes")
+    action = SimpleNamespace(
+        command_id="restore", context_id="ctx", context_epoch=2,
+        node_ids=(1,), pool_bytes=(),
+    )
+    audit._pending_prefetch_use["restore"] = (
+        action, (), 100., {1: (array("q", range(4096)), None, None)},
+    )
+    audit._record_prefetch_first_service(SimpleNamespace(
+        rid="next", origin_input_ids=array(typecode, range(3072)),
+        prefix_indices=[], last_node=0, cached_tokens_device=0,
+    ), {"context_id": "ctx", "context_epoch": 3})
+    audit.close()
+    [record] = _read(tmp_path / "prefixes/physical_action_use.jsonl")
+    [prefix] = record["target_prefixes"]
+    assert prefix["common_input_prefix_tokens"] == 3072
+    assert prefix["complete_input_prefix"] is False
+
+
 def test_prefetch_reuse_observes_full_ancestor_beyond_256_nodes(tmp_path):
     audit = NativeReactiveTelemetry(tmp_path / "deep")
     nodes = {0: SimpleNamespace(id=0, creation_time=0, parent=None)}

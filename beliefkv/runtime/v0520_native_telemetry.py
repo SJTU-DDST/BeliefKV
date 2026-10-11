@@ -11,6 +11,7 @@ import atexit
 from array import array
 from bisect import bisect_left, bisect_right, insort
 from collections import Counter, OrderedDict
+import ctypes
 import hashlib
 from itertools import islice
 import json
@@ -28,6 +29,11 @@ from beliefkv.runtime.eos_shadow import (
     EOS_LOW_PROB_THRESHOLDS,
     EOS_PROB_THRESHOLDS,
 )
+
+# Like native RadixKey, retain the GIL while reading resizable token buffers.
+_TOKEN_MEMCMP = ctypes.PyDLL(None).memcmp
+_TOKEN_MEMCMP.argtypes = (ctypes.c_void_p, ctypes.c_void_p, ctypes.c_size_t)
+_TOKEN_MEMCMP.restype = ctypes.c_int
 
 
 class NativeReactiveTelemetry:
@@ -459,6 +465,42 @@ class NativeReactiveTelemetry:
                 pass
         return array("q", (int(token) for token in input_ids))
 
+    @staticmethod
+    def _common_array_prefix(left: array, right: array) -> int:
+        limit = min(len(left), len(right))
+        if not limit or left[0] != right[0]:
+            return 0
+        if limit >= 2048 and left.typecode == right.typecode == "q":
+            left_start, right_start = left.buffer_info()[0], right.buffer_info()[0]
+            stride = left.itemsize
+            if not _TOKEN_MEMCMP(left_start, right_start, limit * stride):
+                return limit
+            common, upper = 0, limit - 1
+            while common < upper:
+                middle = (common + upper + 1) // 2
+                if not _TOKEN_MEMCMP(
+                    left_start + common * stride,
+                    right_start + common * stride,
+                    (middle - common) * stride,
+                ):
+                    common = middle
+                else:
+                    upper = middle - 1
+            return common
+        if (
+            (left if limit == len(left) else left[:limit])
+            == (right if limit == len(right) else right[:limit])
+        ):
+            return limit
+        common, upper = 0, limit - 1
+        while common < upper:
+            middle = (common + upper + 1) // 2
+            if left[common:middle] == right[common:middle]:
+                common = middle
+            else:
+                upper = middle - 1
+        return common
+
     def _write_context_prefix(self, record: dict[str, Any], output: Any) -> None:
         token_ids = self._request_token_array(record["input_ids"], snapshot=True)
         namespace = self._namespace_digest(record.get("extra_key"), record.get("cache_salt"))
@@ -485,24 +527,7 @@ class NativeReactiveTelemetry:
         if record["context_epoch"] < previous["context_epoch"]:
             self._context_prefix_counts["epoch_regression"] += 1
             return
-        prior_tokens = previous["tokens"]
-        limit = min(len(token_ids), len(prior_tokens))
-        common = limit
-        if token_ids[:limit] != prior_tokens[:limit]:
-            # Check shared ranges in native code, then locate the differing token.
-            common = 0
-            while common < limit:
-                end = min(common + 1024, limit)
-                current_block = token_ids[common:end]
-                prior_block = prior_tokens[common:end]
-                if current_block == prior_block:
-                    common = end
-                    continue
-                for left, right in zip(current_block, prior_block):
-                    if left != right:
-                        break
-                    common += 1
-                break
+        common = self._common_array_prefix(token_ids, previous["tokens"])
         cached = min(len(token_ids), max(0, record["cached_tokens_device"] + record["cached_tokens_host"]))
         lost = max(0, common - cached)
         new = len(token_ids) - common
@@ -1722,22 +1747,7 @@ class NativeReactiveTelemetry:
             target_prefixes = []
             for node_id, (token_ids, extra_key, cache_salt) in prefixes.items():
                 if isinstance(input_tokens, array):
-                    limit = min(len(token_ids), len(input_tokens))
-                    common = limit
-                    if limit and token_ids[0] != input_tokens[0]:
-                        common = 0
-                    elif (
-                        (token_ids if limit == len(token_ids) else token_ids[:limit])
-                        != (input_tokens if limit == len(input_tokens) else input_tokens[:limit])
-                    ):
-                        # Locate divergence with native array comparisons.
-                        common, upper = 0, limit - 1
-                        while common < upper:
-                            middle = (common + upper + 1) // 2
-                            if token_ids[common:middle] == input_tokens[common:middle]:
-                                common = middle
-                            else:
-                                upper = middle - 1
+                    common = self._common_array_prefix(token_ids, input_tokens)
                 else:
                     common = 0
                     shared = min(len(verified_input_prefix), len(token_ids))

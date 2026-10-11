@@ -32,6 +32,7 @@ METHODS = (
     "_write_block_eviction", "_remove_block_eviction_index",
     "_remove_pending_block_totals", "_write_status",
     "_match_path", "_match_paths", "on_launch",
+    "_common_array_prefix", "_record_prefetch_first_service",
 )
 
 
@@ -465,6 +466,74 @@ def first_service_match_path_case(writers, *, depth, scenario, iterations):
     }
 
 
+def first_service_prefix_case(writers, *, tokens, commands, scenario, iterations):
+    states = {}
+    for name, writer in writers.items():
+        audit = writer.__new__(writer)
+        records = []
+        audit._cache = None
+        audit._emit_prefetch_use = records.append
+        inputs = array("q", range(tokens + 1))
+        if scenario == "middle_diverge":
+            inputs[tokens // 2] = -1
+        elif scenario == "late_diverge":
+            inputs[tokens - 1] = -1
+        elif scenario == "short_request":
+            inputs = inputs[:tokens // 2]
+        pending = OrderedDict()
+        for index in range(commands):
+            length = tokens * (index + 1) // commands
+            command = f"restore-{index}"
+            action = NS(
+                command_id=command, context_id="ctx", context_epoch=2,
+                node_ids=(index,), pool_bytes=(("kv", 20480 * length),),
+            )
+            pending[command] = (
+                action, (), 100., {index: (array("q", range(length)), None, None)},
+            )
+        request = NS(
+            rid="request", origin_input_ids=inputs, last_node=0,
+            prefix_indices=range(tokens), cached_tokens_device=tokens,
+        )
+        states[name] = audit, request, pending, records
+    samples = {name: {"wall": [], "thread_cpu": []} for name in writers}
+    with patch.object(telemetry.time, "time", return_value=1.):
+        for iteration in range(iterations + 10):
+            order = list(writers)
+            if iteration % 2:
+                order.reverse()
+            signatures = {}
+            for name in order:
+                audit, request, pending, records = states[name]
+                audit._pending_prefetch_use = pending.copy()
+                records.clear()
+                wall, cpu = time.perf_counter_ns(), time.thread_time_ns()
+                result = audit._record_prefetch_first_service(
+                    request, {"context_id": "ctx", "context_epoch": 3},
+                )
+                elapsed_cpu = (time.thread_time_ns() - cpu) / 1e6
+                elapsed_wall = (time.perf_counter_ns() - wall) / 1e6
+                signatures[name] = (result, records[:], audit._pending_prefetch_use.copy())
+                if iteration >= 10:
+                    samples[name]["wall"].append(elapsed_wall)
+                    samples[name]["thread_cpu"].append(elapsed_cpu)
+            if signatures["baseline"] != signatures["optimized"]:
+                raise AssertionError("first-service prefix evidence or pending state changed")
+    return {
+        "scenario": scenario, "prefix_tokens": tokens, "commands": commands,
+        "costs": {
+            name: {clock: distribution(values) for clock, values in clocks.items()}
+            for name, clocks in samples.items()
+        },
+        "records_and_pending_state_equal": True,
+        "scope": (
+            "Complete first-service prefetch audit with native array request input "
+            "and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba "
+            "reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+        ),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-revision", required=True)
@@ -474,6 +543,7 @@ def main() -> None:
     parser.add_argument("--pressure-cases", action="store_true")
     parser.add_argument("--status-publication-only", action="store_true")
     parser.add_argument("--first-service-match-paths", action="store_true")
+    parser.add_argument("--first-service-prefixes", action="store_true")
     args = parser.parse_args()
     if args.iterations <= 0:
         parser.error("iterations must be positive")
@@ -507,7 +577,22 @@ def main() -> None:
     }
     if args.observed_prefix_evidence is not None:
         report["observed_prefix_work"] = observed_prefix_work(args.observed_prefix_evidence)
-    if args.first_service_match_paths:
+    if args.first_service_prefixes:
+        report["scope"] = (
+            "Complete first-service prefix audit on identical native array inputs "
+            "and per-command records; alternating baseline/current order, fixed "
+            "record timestamps, no live cache or end-to-end benefit measurement."
+        )
+        report["cases"] = [
+            first_service_prefix_case(
+                writers, tokens=tokens, commands=commands,
+                scenario=scenario, iterations=args.iterations,
+            )
+            for tokens in (1024, 8192, 32768, 131072)
+            for commands in (1, 16)
+            for scenario in ("match", "middle_diverge", "late_diverge", "short_request")
+        ]
+    elif args.first_service_match_paths:
         report["scope"] = (
             "Complete first-prefill on_launch CPU comparison on identical native "
             "ancestry and request records; fixed record timestamps, alternating "
@@ -542,7 +627,10 @@ def main() -> None:
                 "block_many_matches", "block_eviction",
             )
         ]
-    if args.pressure_cases and not args.status_publication_only and not args.first_service_match_paths:
+    if (
+        args.pressure_cases and not args.status_publication_only
+        and not args.first_service_match_paths and not args.first_service_prefixes
+    ):
         report["cases"].extend(
             measure(writers, tokens=tokens, scenario=scenario, iterations=args.iterations)
             for tokens in (8192, 32768)
@@ -563,6 +651,8 @@ def main() -> None:
         after = case["costs"]["optimized"]["wall"]["mean_ms"]
         label = (
             f"depth={case['path_depth']}" if "path_depth" in case else
+            f"tokens={case['prefix_tokens']} commands={case['commands']}"
+            if "prefix_tokens" in case else
             f"pending={case['pending_entries']}" if "pending_entries" in case
             else f"tokens={case['prior_input_tokens']}"
         )
