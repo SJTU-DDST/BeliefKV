@@ -100,6 +100,8 @@ def tool_decision(
         "event": row["event"], "ts_ms": row["ts_ms"],
         "context_id": row["context_id"], "context_epoch": row["context_epoch"],
         "command_id": row.get("command_id"), "node_id": row.get("node_id"),
+        "tool_offload_wait_ms": forecast.get("tool_offload_wait_ms", 2000.)
+        if forecast is not None else 2000.,
     }
     when = row["ts_ms"] - offset
     result["decision_monotonic_ms"] = when
@@ -126,6 +128,9 @@ def tool_decision(
         result["actual_remaining_ge_2000ms"] = (
             end - when >= 2000. if end is not None else None
         )
+        result["actual_remaining_ge_offload_wait_ms"] = (
+            end - when >= result["tool_offload_wait_ms"] if end is not None else None
+        )
     else:
         result["boundary_unknown_reason"] = "no_single_active_tool_at_decision"
     if forecast is not None:
@@ -142,13 +147,17 @@ def tool_decision(
             curve_hint = replace(hint, residual_duration_mass=())
             curve_probability = curve_hint.release_probability_within(2000., now_ms=when)
             curve_p10 = curve_hint.remaining_quantile(.1, now_ms=when)
+            horizon = result["tool_offload_wait_ms"]
+            offload_probability = hint.release_probability_within(horizon, now_ms=when)
+            curve_offload_probability = curve_hint.release_probability_within(horizon, now_ms=when)
             age = when - hint.issued_monotonic_ms
             result.update({
                 "predicted_return_within_2000ms_probability": probability,
+                "predicted_return_within_offload_wait_probability": offload_probability,
                 "remaining_p10_ms": p10, "remaining_p50_ms": p50,
                 "runtime_long_wait_predicate": (
-                    probability is not None and probability <= .1
-                    if hint.release_cdf else p10 is not None and p10 >= 2000.
+                    offload_probability is not None and offload_probability <= .1
+                    if hint.release_cdf else p10 is not None and p10 >= horizon
                 ),
                 "timing_policy": forecast.get("timing_policy"),
                 "residual_support_detail": hint.residual_support_detail,
@@ -156,10 +165,11 @@ def tool_decision(
                     value > age for value, _ in hint.residual_duration_mass
                 ),
                 "cdf_return_within_2000ms_probability": curve_probability,
+                "cdf_return_within_offload_wait_probability": curve_offload_probability,
                 "cdf_long_wait_predicate": (
-                    curve_probability is not None and curve_probability <= .1
+                    curve_offload_probability is not None and curve_offload_probability <= .1
                     if hint.release_cdf
-                    else curve_p10 is not None and curve_p10 >= 2000.
+                    else curve_p10 is not None and curve_p10 >= horizon
                 ),
             })
             actual = result.get("actual_remaining_ms")
@@ -186,6 +196,19 @@ def decision_summary(rows: list[dict]) -> dict:
             row.get("tool_already_ended_on_harness") is True for row in rows
         ),
         "unique_known_tools": len(first),
+        "tool_offload_wait_ms": sorted({
+            row.get("tool_offload_wait_ms", 2000.) for row in rows
+        }),
+        "record_offload_wait_precision": (
+            sum(row.get("actual_remaining_ge_offload_wait_ms",
+                        row["actual_remaining_ge_2000ms"]) for row in known) / len(known)
+            if known else None
+        ),
+        "first_decision_per_tool_offload_wait_precision": (
+            sum(row.get("actual_remaining_ge_offload_wait_ms",
+                        row["actual_remaining_ge_2000ms"]) for row in first) / len(first)
+            if first else None
+        ),
         "records_actual_remaining_ge_2000ms": sum(
             row["actual_remaining_ge_2000ms"] for row in known
         ),
@@ -375,6 +398,8 @@ def audit(arm: Path) -> dict:
             "reconstructed predictions; subsequent tool ends are labels only. "
             "The 2000ms precision measures whether selected waits remain open long "
             "enough, not RETURN timestamp accuracy, recall, benefit or performance. "
+            "It remains a fixed reference alongside the per-record offload horizon "
+            "stored in accepted forecasts; legacy logs without that field use 2000ms. "
             "Independent-tool precision uses its first observed action in that "
             "category; per-node decision counts do not constitute independent "
             "samples. Long-tool total duration is only descriptive; it is not an "

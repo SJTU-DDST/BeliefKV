@@ -97,6 +97,9 @@ if TYPE_CHECKING:
     from beliefkv.core.events import RuntimeEvent
 
 
+TOOL_OFFLOAD_WAIT_MS = 1000.
+
+
 @dataclass
 class _AdmissionPrefetchLease:
     key: PrefillCandidateKey
@@ -2916,6 +2919,7 @@ class NativeAdmissionRuntime:
                 "context_id": key.context_id, "context_epoch": key.context_epoch,
                 "p10_ms": hint.wait_p10_ms, "p50_ms": hint.wait_p50_ms,
                 "p90_ms": hint.wait_p90_ms, "release_cdf": hint.release_cdf,
+                "tool_offload_wait_ms": TOOL_OFFLOAD_WAIT_MS,
                 "residual_duration_mass": hint.residual_duration_mass,
                 "residual_support_detail": hint.residual_support_detail,
                 "conditional_p50_ms": hint.remaining_quantile(
@@ -4391,10 +4395,10 @@ class NativeAdmissionRuntime:
             return False
         now_ms = time.monotonic() * 1000
         if hint.release_cdf:
-            probability = hint.release_probability_within(2000., now_ms=now_ms)
+            probability = hint.release_probability_within(TOOL_OFFLOAD_WAIT_MS, now_ms=now_ms)
             return probability is not None and probability <= .1
         remaining = hint.remaining_quantile(.1, now_ms=now_ms)
-        return remaining is not None and remaining >= 2000.
+        return remaining is not None and remaining >= TOOL_OFFLOAD_WAIT_MS
 
     @timed_runtime("tool_prepare")
     def dispatch_tool_prepare(

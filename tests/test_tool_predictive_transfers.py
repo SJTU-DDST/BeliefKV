@@ -323,8 +323,8 @@ def test_history_error_margin_does_not_become_a_certain_long_wait(support, curve
     runtime.tool_wait_hints[hint.key.context_id] = history
     curve_hint = replace(history, residual_duration_mass=())
     with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.2):
-        probability = curve_hint.release_probability_within(2000., now_ms=1200.)
-        assert history.release_probability_within(2000., now_ms=1200.) == probability
+        probability = curve_hint.release_probability_within(1000., now_ms=1200.)
+        assert history.release_probability_within(1000., now_ms=1200.) == probability
         assert history.remaining_quantile(.5, now_ms=1200.) == curve_hint.remaining_quantile(
             .5, now_ms=1200.,
         )

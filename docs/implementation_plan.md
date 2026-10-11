@@ -2,6 +2,27 @@
 
 Status date: 2026-10-11.
 
+Reduce the subsequent tool-offload horizon from 2000ms to 1000ms.
+The return-within-window probability remains at most0.1, or the residual
+P10 must be at least1000ms when no CDF is available. PREPARE selection
+and waiting-page reclamation use the same predicate; preserve native
+allocation, references, Host-copy dependencies and H2D timing. Record
+the horizon with each accepted forecast. Audit that policy horizon alongside
+the fixed2000ms reference; legacy records without the field retain2000ms.
+Frozen V23 retains its original policy; include the reduction in waiting V24.
+
+The SHA256-verified V79 prefixes contain55472 accepted forecasts and
+52773 matched live snapshots for a single completed tool. Timing-qualified
+independent candidates grow800 to1447; all1843 baseline-selected snapshots
+remain selected. Of647 added tools,574 actually have at least1000ms left,
+including476 in the1000-2000ms range. First-candidate precision against
+the new horizon is1319/1447=91.2%. These are timing candidates, not
+physical opportunities, actual demotions or performance evidence. The291
+existing related checks pass; CDF and quantile-only audit cases preserve
+legacy2000ms scoring and apply the recorded1000ms horizon. Keep
+v80_tool_offload_one_second_replay_20261011.json. No model refitting
+or live V23 policy change is involved.
+
 At 15:29:16 CST, V24 was registered for committed
 f61fc055620e22187c1b17b483cd8271d5b9220e in the frozen
 beliefkv-v79-restore-budget-20261011 checkout. At 15:29:33, coordinator
@@ -257,7 +278,7 @@ and6.725GB FULL;49 demotions across42 parents release0.733GB FULL and
 offload. Mamba release preserves required native write-back dependencies;
 speculative PREPARE does not back up Mamba.
 
-The existing long-wait predicate targets at least2000ms remaining. First-action
+The V22 long-wait predicate targeted at least2000ms remaining. First-action
 precision per independent tool is143/499=28.7% for PREPARE and27/49=55.1%
 for demotion; per-node demotion precision is49/77=63.6%. For71 demotions
 with valid P50 predictions, absolute error P50/P90 is719/2828ms. Four
