@@ -1,0 +1,31 @@
+{
+  "schema_version": 1,
+  "scope": "Lossless archive of the 50 administratively truncated V26 workspaces. Keep the interrupted run's raw traces, written outcomes, manifest and frozen plan.",
+  "source_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26",
+  "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v26_partial_workspaces.tar.zst",
+  "archive_sha256": "bee0d39e5ca913b6bede50f39b8f78d2c59f84029bc7761706eb24f6086e7da4",
+  "archive_bytes": 2340329743,
+  "source_workspace_allocated_bytes": 16142340096,
+  "workspace_count": 50,
+  "source_workspace_count_after_cleanup": 0,
+  "previous_stop_receipt": "experiments/reports/v98_v26_development_stop_20261011.json",
+  "previous_container_cleanup_receipt": "experiments/reports/v98_v26_container_cleanup_20261011.json",
+  "recorded_collection_processes_missing": true,
+  "comparison": {
+    "command": "tar --compare --use-compress-program='zstd -T1 --long=30' --file experiments/archive/20261012/v26_partial_workspaces.tar.zst.partial --directory experiments/raw",
+    "exit_code": 0,
+    "diagnostics": ""
+  },
+  "cleanup": {
+    "command": "find experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/*/workspace -depth -delete",
+    "exit_code": 0,
+    "filesystem_available_bytes_before_source_cleanup": 40664256512,
+    "filesystem_available_bytes_after_source_cleanup": 56780939264,
+    "semantics": "Filesystem free-space observations also include concurrent V27 writes. Source workspace allocation and archive bytes are measured separately."
+  },
+  "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v26_partial_workspaces.tar.zst --directory experiments/raw",
+  "compression_policy": "One zstd thread, idle I/O priority and nice 19, with a long window to deduplicate repeated Git objects.",
+  "verified_at_local": "2026-10-12T04:23:32+08:00",
+  "maintenance_overlap": "Conservative workspace archive interval 2026-10-12 04:08:00-04:23:32 CST. Local CPU development also overlaps later V27 native windows; early 600-900s windows precede maintenance.",
+  "performance_goal_met": false
+}
