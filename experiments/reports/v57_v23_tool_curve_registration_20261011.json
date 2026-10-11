@@ -1,0 +1,157 @@
+{
+  "status": "waiting_for_previous_pair",
+  "registered_at_utc": "2026-10-11T02:34:17.360506+00:00",
+  "verified_at_utc": "2026-10-11T02:34:17.434315+00:00",
+  "previous_target_revision": "58f2097c7a0c6c098d6a6d81abaadb69663e2522",
+  "target_revision": "6793959e6b37a03ceda2a47ed489a87cab6ccda7",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v57-tool-curve-fast-20261011",
+  "target_patch_sha256": "498a2e8219f0d454776c7b967b87a82e7b49e3e75831389e08a9daabfb29998e",
+  "previous_registration": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_58f2097_superseded_20261011.json",
+  "current_registration": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_20261011.json",
+  "launch_log": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_6793959_20261011.log",
+  "stopped_waiting_coordinator": 3255311,
+  "current_waiting_coordinator": 3297034,
+  "current_waiting_coordinator_identity": [
+    "S",
+    1,
+    "585632003"
+  ],
+  "coordinator_identity_rechecked_at_cst": "2026-10-11T10:37:01+08:00",
+  "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22",
+  "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v23",
+  "current_main_revision": "3aa27dd67b340236310824d80a7e6e31038ea1f9",
+  "configuration_equal": true,
+  "wait_process_identities_equal": true,
+  "target_engine_patch_equal": true,
+  "main_and_frozen_target_clean": true,
+  "new_run_directory_absent_at_verification": true,
+  "v22_processes_not_signalled": [
+    1159560,
+    1166290,
+    1166319,
+    1166676,
+    1168306
+  ],
+  "deployed_v22_engine_canonical_patch": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83",
+    "expected_tree": "63d91509bee139b2d6a2285eb44b193a67a9e008",
+    "actual_tree": "63d91509bee139b2d6a2285eb44b193a67a9e008",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "deployment": "After the complete V22 predictive/native pair and postprocessing, deploy 6793959 and run predictive followed by cold same-version native.",
+  "change": {
+    "first_tool_query_unconditional_delay_ms": 0,
+    "unchanged_wait_throttle_ms": [
+      150,
+      500,
+      1000
+    ],
+    "tool_only_heads": [
+      "tool_wait",
+      "prompt_growth",
+      "operational_timing"
+    ],
+    "operational_curve_active_coefficients_reused_across_knots": true,
+    "coefficient_order_and_nonfinite_terms_preserved": true,
+    "terminal_child_capacity_handoff_retained": true,
+    "prediction_contract_and_runtime_budgets_preserved": true,
+    "gpu_performance_verified": false
+  },
+  "validation": {
+    "relevant_checks_passed": 603,
+    "full_prediction_and_tool_hint_equality": true,
+    "benchmark": "v57_tool_curve_cpu_20261011.json",
+    "benchmark_sha256": "effff0a2d88c0e196e229ca898d484646aed6dc363bd7be7667cb2fc6d486773",
+    "synthetic_inputs_actual_calibrated_artifact": true,
+    "cases": {
+      "single_root": {
+        "returned_hint_count": 1,
+        "mean_reduction": {
+          "wall": 0.34489277126567164,
+          "thread_cpu": 0.34511342236198106
+        },
+        "costs_per_batch": {
+          "baseline": {
+            "wall": {
+              "count": 200,
+              "mean_ms": 1.283026195,
+              "p50_ms": 1.052837,
+              "p99_ms": 1.592241,
+              "max_ms": 1.596065
+            },
+            "thread_cpu": {
+              "count": 200,
+              "mean_ms": 1.282049875,
+              "p50_ms": 1.051987,
+              "p99_ms": 1.591288,
+              "max_ms": 1.595006
+            }
+          },
+          "tool_only": {
+            "wall": {
+              "count": 200,
+              "mean_ms": 0.840519735,
+              "p50_ms": 0.678787,
+              "p99_ms": 1.048704,
+              "max_ms": 1.05977
+            },
+            "thread_cpu": {
+              "count": 200,
+              "mean_ms": 0.839597255,
+              "p50_ms": 0.677903,
+              "p99_ms": 1.047682,
+              "max_ms": 1.058824
+            }
+          }
+        }
+      },
+      "mixed_batch_16": {
+        "returned_hint_count": 16,
+        "mean_reduction": {
+          "wall": 0.3769955070987756,
+          "thread_cpu": 0.3770276082861591
+        },
+        "costs_per_batch": {
+          "baseline": {
+            "wall": {
+              "count": 200,
+              "mean_ms": 15.211194635,
+              "p50_ms": 15.213472,
+              "p99_ms": 15.357714,
+              "max_ms": 16.257099
+            },
+            "thread_cpu": {
+              "count": 200,
+              "mean_ms": 15.209258285,
+              "p50_ms": 15.210395,
+              "p99_ms": 15.356804,
+              "max_ms": 16.255294
+            }
+          },
+          "tool_only": {
+            "wall": {
+              "count": 200,
+              "mean_ms": 9.4766426,
+              "p50_ms": 9.481876,
+              "p99_ms": 10.174693,
+              "max_ms": 11.708011
+            },
+            "thread_cpu": {
+              "count": 200,
+              "mean_ms": 9.47494801,
+              "p50_ms": 9.479631,
+              "p99_ms": 10.173362,
+              "max_ms": 11.706706
+            }
+          }
+        }
+      }
+    }
+  }
+}

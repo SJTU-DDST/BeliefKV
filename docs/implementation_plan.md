@@ -14,8 +14,18 @@ tool-only entry, shared35MB calibrated parameters and each revision's pinned
 curve function. Complete worker mean wall is1.283→0.841ms for one input and
 15.211→9.477ms for16, reducing34.5%/37.7%; full predict and nonempty hints
 are exactly equal. Inputs remain a synthetic elapsed matrix. This reduces CPU
-work, not proven GPU stalls or JCT. Include the committed change in the waiting
-V23 target while preserving the frozen V22 and its configuration.
+work, not proven GPU stalls or JCT.
+The change is committed as6793959. At2026-10-11 10:34:17 CST, update the waiting
+V23 target to6793959e6b37a03ceda2a47ed489a87cab6ccda7 in
+beliefkv-v57-tool-curve-fast-20261011; coordinator3297034, now with PPID1.
+Configuration and captured previous-pair identities match58f2097; the canonical
+engine patch is unchanged. Main remains clean at3aa27dd and V23 has no run directory.
+Stop only old waiting coordinator3255311; preserve its registration as
+v23_launch_after_v22_58f2097_superseded_20261011.json and retain its log. Keep
+v57_v23_tool_curve_registration_20261011.json as the bounded receipt; the main
+v23_launch_after_v22_20261011.json remains current. V22 collection processes are
+not signalled. Deploy after its complete pair and postprocessing, then run
+predictive followed by cold same-version native. GPU performance remains unproven.
 
 Terminal-child to parent capacity handoff is already in the frozen V22: retire
 confirmed finished contexts, release session references, and directly discard
@@ -56,6 +66,7 @@ v56_v23_tool_wait_registration_20261011.json receipt; the main
 v23_launch_after_v22_20261011.json remains current. V22 collection processes are
 not signalled. Deploy after its complete pair and postprocessing, then run
 predictive followed by cold same-version native. GPU performance remains unproven.
+This10:21 registration is superseded by the10:34 6793959 registration above.
 
 Fix capacity blocking between tool-prefetch candidates in the isolated follow-up.
 Previously the nearest-ending tool took the sole ticket before reclaim was checked;
@@ -79,7 +90,7 @@ v55_v23_tool_capacity_registration_20261011.json receipt. V22 collection process
 are not signalled. The main v23_launch_after_v22_20261011.json is current.
 Deploy after the complete V22 pair and postprocessing, predictive first and cold
 same-version native second.
-This10:01 registration is superseded by the10:21 58f2097 registration above.
+This10:01 registration was superseded by10:21 58f2097; current target is10:34 6793959.
 
 Keepv54_v22_tool_service_window_fixedprefix_20261011.json and its local detailed
 artifact. Re-read exactly the same817177733-byte opportunity prefix and lifecycle

@@ -13,7 +13,17 @@ v57_tool_curve_cpu_20261011.json以58f2097已优化tool-only入口为
 函数交替测量完整worker。单项平均墙钟1.283→0.841ms，16项
 15.211→9.477ms，减少34.5%/37.7%。完整predict和非空tool hints
 完全一致。输入仍为人工elapsed矩阵，CPU成本减少不证明GPU收益；
-该修改将继续纳入尚未启动的V23，冻结V22及运行配置保持原样。
+该修改已提交为6793959。2026-10-11 10:34:17 CST已将尚未启动的
+V23更新为6793959e6b37a03ceda2a47ed489a87cab6ccda7，冻结checkout为
+beliefkv-v57-tool-curve-fast-20261011，等待协调器PID3297034，当前
+PPID为1。运行配置及前序pair身份与58f2097登记一致；canonical
+原生patch未改变，主checkout仍为干净的3aa27dd，V23目录尚未创建。
+仅停止旧等待协调器3255311，V22采集进程未发信号。旧登记保存在
+v23_launch_after_v22_58f2097_superseded_20261011.json，当前登记仍为
+主工作区v23_launch_after_v22_20261011.json；有界回执为
+v57_v23_tool_curve_registration_20261011.json。冻结V22及运行配置
+保持原样，其完整pair及后处理结束后自动部署，predictive先、
+冷启动同版本native后；GPU收益仍待验证。
 
 终态child到parent的容量交接已包含在冻结V22中：child RETURN且
 context确定退休后，释放session引用，直接丢弃原生allocator确认
@@ -69,7 +79,7 @@ V22采集进程未发信号。旧登记及日志保留，回执为
 v55_v23_tool_capacity_registration_20261011.json；
 实际登记仍在主工作区v23_launch_after_v22_20261011.json。
 V22完整pair与后处理结束后自动部署，predictive先、冷native后。
-该10:01登记已由上方10:21的58f2097登记替换。
+该10:01登记先由10:21的58f2097登记替换，当前为10:34的6793959。
 
 补齐工具窗口离线审计的H2D服务时间比较，保存
 v54_v22_tool_service_window_fixedprefix_20261011.json及本地详细产物。
