@@ -2,6 +2,33 @@
 
 Status date: 2026-10-11.
 
+V97: commit553fa7c checks existing native locks before capturing a restore
+closure. A same-key exact target or descendant lock covers the FULL prefix;
+new/deeper locks still capture the complete closure, check the live budget,
+acquire the descendant before releasing ancestors and retain every receipt.
+The220 relevant checks pass. All12 CPU cases,60 alternating trials each,
+retain identical records, locks and counters. At depth64/512, same-node
+coverage means fall from0.5520/2.5895 to0.0674/0.0619ms. Preserve extension
+costs0.4337/2.5862 to0.4442/2.6267ms. No GPU, allocator, admission or
+end-to-end savings are measured. This revision is not deployed in V26.
+
+Complete V26 300-600/600-900s windows show1065.18/1077.11 decode token/s,
+GPU77.64%/80.57%, weighted batch47.205/47.304 and prefill worker intervals
+44.319/49.667s. Instrumented exclusive Python wall remains46.049/44.013s;
+the latter does not improve on the old V25 reference43.732s. The600-900s
+native geometry records1,571,106 extend tokens, mean decode worker36.777ms
+and mean request context22,649 tokens. Different revisions and realized
+demand remain diagnostic references; same-version V26 native has not begun.
+
+The22:43:30 CST separately sealed lifecycle audit confirms advance-started,
+next-request-reused FULL for307 tools/4.738GB and20 JOINs/152.248MB.
+Total tool/JOIN FULL first reuse is5.355/0.158GB; ACK-to-service P90 remains
+736.88/2955.47ms. Keep65 unknown JOIN completion boundaries,73.119GB
+demand-handoff reuse and370.335GB residual tool native Host hits separate.
+Retain V97 CPU/window/lifecycle receipts. Continue frozen V26 collection,
+inspect JOIN tails and shared costs; the development-restart option remains
+available for important committed fixes and the full objective stays active.
+
 V96: optimize the synchronous first-service proof for native token arrays
 using array comparisons and divergence search; retain the list shared-prefix
 walk, independent ACK snapshots and FULL/Mamba allocation identity checks.
