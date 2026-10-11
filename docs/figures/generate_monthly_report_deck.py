@@ -300,68 +300,58 @@ def import_figure(slide, source_slide, source_size, x, y, width):
     return group
 
 
-def architecture_slide(presentation, layout):
+def architecture_overview_slide(presentation, layout, figures):
     slide = add_slide(
-        presentation, layout, "关键进展",
+        presentation, layout, "关键进展：系统总体架构",
         "建议用时：25 秒。\n\n"
-        "三图分别是总体架构、预测时序和物理缓存管理。"
-        "左图连接工作流、预测、运行时与 SGLang；中图说明如何滚动选择 H2D 时机；"
-        "右图展示增量备份、必要状态恢复和 child 到 parent 的容量交接。"
+        "这张图展示已经贯通的系统架构。"
+        "工作流事件维护动态依赖，通知、正文和服务进度提供完成预测。"
+        "运行时结合有效副本、容量与准入机会决定迁移；"
+        "SGLang 负责物理缓存与实际 GPU 执行。"
     )
-    figures = Presentation(ARCHITECTURE)
+    size = (figures.slide_width, figures.slide_height)
+    import_figure(slide, figures.slides[0], size, 0.60, 1.64, 7.00)
+    text(slide, "从动态工作流到\n物理缓存与执行",
+         7.97, 1.96, 4.50, 0.91, size=25, color=BLUE, bold=True)
+    milestones = (
+        ("捕获动态执行依赖",
+         "关联子任务、工具与 JOIN 事件，\n维护上下文和当前可执行状态。"),
+        ("融合完成信号与运行进度",
+         "结合通知、正文与 decode 进度，\n滚动预测 child / tool 的完成过程。"),
+        ("连接迁移决策与原生执行",
+         "按缺失页迁移，协调驻留与准入；\n由 SGLang 管理物理数据依赖。"),
+    )
+    for index, (title, detail) in enumerate(milestones):
+        y = 3.13 + index * 1.10
+        text(slide, title, 7.97, y, 4.60, 0.42,
+             size=22, color=TEAL, bold=True)
+        text(slide, detail, 7.97, y + 0.48, 4.60, 0.67,
+             size=17.5, color=GRAY)
+
+
+def architecture_coordination_slide(presentation, layout, figures):
+    slide = add_slide(
+        presentation, layout, "关键进展：预测与迁移协同",
+        "建议用时：30 秒。\n\n"
+        "左图展示预测与调度协同：用实时完成信号滚动更新，"
+        "将剩余工作、执行机会和物理恢复依赖分开处理。\n"
+        "右图展示增量迁移与容量交接：FULL 只备份缺失部分，"
+        "Mamba 恢复必要状态；已返回 child 的私有页及时回收，"
+        "让 parent 恢复与准入衔接。"
+    )
     size = (figures.slide_width, figures.slide_height)
     captions = (
-        ("01 系统总体架构",
-         "工作流事件、完成预测与运行时决策\n连接 KV 迁移和 SGLang 原生执行。"),
-        ("02 预测与调度协同",
-         "通知、正文与服务进度滚动更新，\n结合容量与准入决定 H2D 时机。"),
-        ("03 增量迁移与容量交接",
-         "FULL 增量备份、必要状态恢复，\n衔接 child 释放容量与 parent 执行。"),
+        ("预测与调度协同", "完成信号 → 滚动预测 → 恢复与执行", BLUE),
+        ("增量迁移与容量交接", "缺失页备份 → child 回收 → parent 恢复", TEAL),
     )
-    for index, (title, caption) in enumerate(captions):
-        x = 0.65 + index * 4.15
-        text(slide, title, x, 1.93, 3.90, 0.44,
-             size=20, color=BLUE, bold=True, align=PP_ALIGN.CENTER)
-        import_figure(slide, figures.slides[index], size, x, 2.48, 3.90)
-        text(slide, caption, x + 0.04, 5.40, 3.82, 0.74,
-             size=16, color=GRAY)
-    line(slide, 0.78, 6.16, 12.49, 6.16, RULE)
-    text(slide, "完成了从工作流语义、预测时序到物理缓存与执行的系统贯通。",
-         0.78, 6.31, 11.71, 0.32, size=18, color=TEAL, bold=True)
-
-
-def findings_slide(presentation, layout):
-    slide = add_slide(
-        presentation, layout, "阶段结论与优化重点",
-        "建议用时：30 秒。\n\n"
-        "阶段认识是：先判断 child 是否收尾，再预测剩余工作；"
-        "恢复按缺失页规划，并与驻留、准入协同；评估追踪下一请求复用。\n"
-        "当前稳定吞吐优势仍待验证，瓶颈集中在控制成本、ACK 后等待与重复恢复。"
-    )
-    text(slide, "从机制贯通，走向可验证的端到端收益",
-         0.78, 1.87, 11.73, 0.55, size=24, color=BLUE, bold=True)
-    findings = (
-        ("预测：识别执行阶段，滚动估计剩余工作",
-         "结合收尾通知、正文语义与 decode 进度判断 child 是否临近 RETURN。\n"
-         "把排队等待单独交给运行时，避免与剩余生成工作混在一起。"),
-        ("迁移：按可复用缺失页恢复，协调容量与准入",
-         "实现 FULL 增量 PREPARE、必要 Mamba 状态恢复与驻留保护。\n"
-         "联动恢复感知准入与 child 容量交接，减少恢复后再次驱逐。"),
-        ("评估：追踪提前恢复与下一请求的实际复用",
-         "区分预测 H2D、需求 handoff 与原生加载，补齐首次复用归因。\n"
-         "优先降低控制开销、ACK 后等待与重复恢复，检验吞吐净收益。"),
-    )
-    for index, (title, detail) in enumerate(findings, 1):
-        y = 2.66 + (index - 1) * 1.16
-        text(slide, f"{index:02}", 0.82, y - 0.02, 0.73, 0.60,
-             size=28, color=BLUE, bold=True)
-        text(slide, title, 1.86, y, 10.60, 0.46,
-             size=22, color=NAVY, bold=True)
-        text(slide, detail, 1.86, y + 0.47, 10.60, 0.65,
-             size=18, color=GRAY)
-    line(slide, 0.78, 6.16, 12.49, 6.16, RULE)
-    text(slide, "当前：机制与证据链已具备，稳定的原生对照性能优势仍待验证。",
-         0.78, 6.31, 11.71, 0.32, size=18, color=TEAL, bold=True)
+    for index, (title, caption, color) in enumerate(captions):
+        x = 0.65 + index * 6.25
+        text(slide, title, x, 1.78, 5.80, 0.42,
+             size=22, color=color, bold=True, align=PP_ALIGN.CENTER)
+        import_figure(slide, figures.slides[index + 1], size, x, 2.24, 5.80)
+        text(slide, caption, x, 6.34, 5.80, 0.28,
+             size=16, color=GRAY, align=PP_ALIGN.CENTER)
+    line(slide, 6.68, 1.86, 6.68, 6.45, RULE, width=1)
 
 
 def goals_slide(presentation, layout):
@@ -408,8 +398,9 @@ def main():
         presentation.slides._sldIdLst.remove(slide_id)
     project_slide(presentation, layout)
     progress_slide(presentation, layout)
-    architecture_slide(presentation, layout)
-    findings_slide(presentation, layout)
+    figures = Presentation(ARCHITECTURE)
+    architecture_overview_slide(presentation, layout, figures)
+    architecture_coordination_slide(presentation, layout, figures)
     goals_slide(presentation, layout)
     presentation.core_properties.title = "BeliefKV 月度汇报"
     presentation.core_properties.subject = "2026 年 8 月 15 日至 10 月 11 日"
