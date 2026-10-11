@@ -2,6 +2,21 @@
 
 Status date: 2026-10-11.
 
+At 15:29:16 CST, V24 was registered for committed
+f61fc055620e22187c1b17b483cd8271d5b9220e in the frozen
+beliefkv-v79-restore-budget-20261011 checkout. At 15:29:33, coordinator
+2684310 has PPID 1 and start identity 587401910; it waits for the entire V23
+coordinator 1083828, including both arms and postprocessing. V23 server
+and client remain live. The new environment matches V23 except RUN_ROOT:
+156 tasks, 108+48 arrivals, running 48, Host 80:20, tool 180s, workflow 14400s,
+maximum lead 500ms and unchanged model artifacts. Main stays at a6dd627
+with the frozen V23 patch; no V24 GPU arm has started. Keep authoritative
+main state v24_launch_after_v23_20261011.json and the receipt
+v79_v24_restore_budget_registration_20261011.json. After the complete pair,
+HTML, workspace cleanup and performance export, run predictive first and
+cold same-version native. Require early reused FULL, exposed recovery waits
+and busy-window throughput/JCT evidence; the full goal remains unmet.
+
 The isolated follow-up fixes a stale next-batch restore limit. Subtracting
 the current PrefillAdder selections can cache zero after a chunked prefill
 fills max_prefill_bs, then block subsequent decode-overlap recovery. Retain
@@ -12,9 +27,9 @@ next restore slot from 0 to 1 with running48, rows6 and a filled one-request
 prefill; rows0 stays0 and the ordinary two-slot case is unchanged.
 Keep v79_next_batch_restore_budget_validation_20261011.json. Live busy
 counters do not separate row and prefill-limit factors; do not attribute every
-refusal to this defect. DMA, throughput and JCT remain unverified. Commit
-this repair with the existing validated reductions, then register the next
-predictive-first, cold same-version native pair after V23 completes.
+refusal to this defect. DMA, throughput and JCT remain unverified. This repair
+and the existing validated reductions are committed as f61fc05. The V24
+registration above will deploy them only after the complete V23 pair.
 
 At 15:25:09 CST, the V23 tool audit has232 PREPARE bursts across172
 independent waits with9.942GB FULL. Actual demotion is47 node events,

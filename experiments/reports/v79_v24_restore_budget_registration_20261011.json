@@ -1,0 +1,55 @@
+{
+  "registered_at_cst": "2026-10-11 15:29:16 CST",
+  "verified_at_cst": "2026-10-11 15:29:33 CST",
+  "status": "waiting_for_previous_pair",
+  "authoritative_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v24_launch_after_v23_20261011.json",
+  "coordinator": {
+    "pid": 2684310,
+    "ppid": 1,
+    "start_identity": "587401910",
+    "state": "S"
+  },
+  "previous_coordinator": {
+    "pid": 1083828,
+    "ppid": 1,
+    "start_identity": "586838240",
+    "covers": "V23 predictive, cold same-version native and final postprocessing"
+  },
+  "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v23",
+  "previous_revision": "a6dd627587827f376bed7022d15e538100c0c775",
+  "previous_patch_sha256": "4af68951beefdf759901d0143ca747c6893aa1ffc7124a3738158512851f7e60",
+  "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v24",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v79-restore-budget-20261011",
+  "target_revision": "f61fc055620e22187c1b17b483cd8271d5b9220e",
+  "target_patch_sha256": "16008af16a20149f24f37123cddfe46228a722fc9f7a0b4d6dee394866345817",
+  "verification": {
+    "environment_matches_previous_except_run_root": true,
+    "target_checkout_clean": true,
+    "main_still_at_previous_revision": true,
+    "main_patch_still_matches_previous": true,
+    "previous_coordinator_alive": true,
+    "previous_server_alive": true,
+    "previous_client_alive": true,
+    "previous_pair_modified": false,
+    "new_gpu_pair_started": false
+  },
+  "preserved_configuration": {
+    "root_count": 156,
+    "first_arrival_count": 108,
+    "second_arrival_count": 48,
+    "arrival_interval_seconds": 3600,
+    "max_running_requests": 48,
+    "host_full_mamba_split": "80:20",
+    "tool_timeout_seconds": 180,
+    "workflow_deadline_seconds": 14400,
+    "maximum_prefetch_lead_ms": 500,
+    "order": ["predictive_h2d", "native"]
+  },
+  "included_changes": [
+    "Skip dormant scheduler sampling dispatch",
+    "Skip unused native admission hint accounting",
+    "Plan JOIN/tool prefetch against remaining physical-ledger slots",
+    "Retain next-batch restore capacity after a filled current prefill"
+  ],
+  "performance_goal_achieved": false
+}

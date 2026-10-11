@@ -2,6 +2,22 @@
 
 更新日期：2026-10-11。
 
+2026-10-11 15:29:16 CST 已将后续优化登记为 V24，
+目标修订 f61fc055620e22187c1b17b483cd8271d5b9220e，冻结
+checkout 为 beliefkv-v79-restore-budget-20261011，原生
+patch SHA256 为 16008af16a20149f24f37123cddfe46228a722fc9f7a0b4d6dee394866345817。
+15:29:33 核验等待协调器 PID 2684310、PPID=1、启动身份
+587401910；等待的 V23 协调器 1083828、server/client 均存活。
+V24 环境除 RUN_ROOT 外与 V23 完全一致，156 个任务、108+48
+到达、running=48、Host 80:20、工具 180 秒、workflow 14400 秒
+和最大提前量 500 ms 均保持。完整 V23 两臂、HTML、workspace
+清理及性能后处理结束后，先 predictive 再冷启动同版本 native。
+主代码仍为 a6dd627，V23 仍使用冻结 patch；V24 尚未开始 GPU
+实验。权威状态为主工作区 v24_launch_after_v23_20261011.json，
+保留 v79_v24_restore_budget_registration_20261011.json。代码和
+V79 审计已提交为 f61fc05；实际提前 FULL 复用、恢复等待与繁忙
+窗口吞吐/JCT 仍须同版本 GPU 对照，主性能目标保持未完成。
+
 15:25:09 CST 刷新 V23 等待卸载审计：工具 PREPARE 为 232 次
 批量决策、172 次独立等待、9.942 GB FULL；实际 HBM 回收为
 47 条节点事件、24 次独立工具等待、14 个 context，累计释放
