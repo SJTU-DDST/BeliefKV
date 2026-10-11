@@ -1,5 +1,6 @@
 import json
 from pathlib import Path
+import socket
 from unittest.mock import Mock
 
 import pytest
@@ -86,3 +87,22 @@ def test_reused_pid_and_zombie_do_not_hold_the_next_pair(monkeypatch):
     sleep = Mock(side_effect=AssertionError("unexpected wait"))
     monkeypatch.setattr(launcher.time, "sleep", sleep)
     launcher.wait_for_processes({10: ("S", 1, "100"), 11: ("S", 2, "101")})
+
+
+def test_development_stale_socket(tmp_path):
+    path = tmp_path / "c"
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+        connection.bind(str(path))
+    assert launcher._remove_stale_control_socket(path)
+    assert not path.exists()
+    assert not launcher._remove_stale_control_socket(path)
+
+
+def test_development_live_socket(tmp_path):
+    path = tmp_path / "c"
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+        connection.bind(str(path))
+        connection.listen()
+        with pytest.raises(ValueError, match="still serving"):
+            launcher._remove_stale_control_socket(path)
+        assert path.is_socket()

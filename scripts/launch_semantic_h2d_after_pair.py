@@ -90,6 +90,21 @@ def _require_idle_port(port: int) -> None:
         raise ValueError(f"port {port} is still serving another process")
 
 
+def _remove_stale_control_socket(path: Path) -> bool:
+    with socket.socket(socket.AF_UNIX, socket.SOCK_STREAM) as connection:
+        connection.settimeout(1)
+        try:
+            connection.connect(str(path))
+        except FileNotFoundError:
+            return False
+        except ConnectionRefusedError:
+            if not path.is_socket():
+                raise ValueError(f"control path is not a socket: {path}")
+            path.unlink()
+            return True
+    raise ValueError(f"control socket is still serving another process: {path}")
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", type=Path, required=True)
@@ -173,6 +188,10 @@ def main() -> None:
             "--run-root", str(previous), "--verify-frozen-plan",
         ], cwd=repo, check=True)
         _require_idle_port(args.port)
+        if args.development_restart:
+            state["stale_control_socket_removed"] = _remove_stale_control_socket(
+                Path(f"/tmp/bkv-regime-{args.port}.sock"),
+            )
         engine = repo / "third_party/sglang-v0.5.20"
         old_patch = repo / PATCH_PATH
         git_source_state(engine, canonical_patch=old_patch)
