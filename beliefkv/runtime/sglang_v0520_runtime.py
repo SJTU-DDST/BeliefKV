@@ -5572,9 +5572,10 @@ class NativeAdmissionRuntime:
         maximum = getattr(adder, "max_running_requests", None)
         if type(maximum) is not int or maximum <= 0:
             return
-        admitted = len(getattr(adder, "can_run_list", ()))
+        # Restore budget is for the next batch; this adder's selections expire
+        # with its current prefill and must not block subsequent decode overlap.
         limits = [
-            value - admitted for name in ("max_prefill_bs", "prefill_max_requests")
+            value for name in ("max_prefill_bs", "prefill_max_requests")
             if type(value := getattr(adder, name, None)) is int and value > 0
         ]
         self._native_max_running = maximum

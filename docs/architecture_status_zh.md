@@ -2,6 +2,43 @@
 
 更新日期：2026-10-11。
 
+15:25:09 CST 刷新 V23 等待卸载审计：工具 PREPARE 为 232 次
+批量决策、172 次独立等待、9.942 GB FULL；实际 HBM 回收为
+47 条节点事件、24 次独立工具等待、14 个 context，累计释放
+0.436 GB FULL 与 2.318 GB Mamba。独立工具首次回收后仍等待
+至少 2 秒的是 22/24=91.7%，首次备份为 135/172=78.5%。
+这是已选动作的长等待精确率，既不是机会召回也不是工具返回
+时间准确率；24 次调用中 17 次 execute、7 次 glob。29 条有
+有效 P50 的节点回收预测绝对误差 P50/P90 为 224/5161 ms，
+重复节点不构成独立样本，时间尾部仍不准确。JOIN 备份覆盖
+128 个 parent context、3.950 GB FULL；真实回收覆盖 47 个
+parent、49 个 context epoch，释放 0.604 GB FULL 与 2.447 GB
+Mamba。当前仍为 WAIT_TOOL/WAIT_JOIN 备份及真实短缺时回收，
+没有工具执行前或每次 spawn 后无条件整 agent 卸载。逐次动作
+与读取前缀哈希保存在 v79_v23_wait_offload_live_20261011.json；
+运行日志分文件读取，完整同版本性能目标仍未完成。
+
+隔离后续版本修正下一批恢复额度被当前 prefill 选择数扣光的问题。
+chunked prefill 已用满当前 max_prefill_bs 时，缓存的零额度会
+沿用到 decode overlap，错误阻止下一批恢复。现保留配置额度，
+每次仍按实时 request rows、running frontier、FULL/Mamba 及
+输入/decode 预留计算预算，原生准入与分配依赖不变。281 项
+相关检查通过；固定 a5b4a83 的 CPU 夹具中，running=48、
+当前选择数=1、max_prefill_bs=1 且空闲 rows=6 时，下一恢复
+slot 从 0 变为 1；rows=0 时仍为 0；普通两槽情况保持不变。
+保留 v79_next_batch_restore_budget_validation_20261011.json。
+live budget_busy 计数没有拆分 row 与 prefill 因素，不能把所有
+拒绝都归因于此缺陷；尚无实际 DMA/吞吐证明，冻结 V23 不变。
+
+V23 2700-3000 秒完整窗口的已埋点 Python 独占墙钟累计为
+21.492 秒，control_drain/tool_prefetch/opportunity_sampling
+分别为 3.446/3.210/2.452 秒，worker decode 均值 29.730 ms。
+保留 v79_v23_control_2700_3000_20261011.json；与早期窗口的
+上下文和工作量不同，没有同版本 native，不能由此证明策略收益。
+已确认结束的 V20 中四对同内容 server/client 快照经 SHA256
+校验后共享 hardlink，释放 7.54 GiB，文件路径及数据均保留；
+活动 V23 未变。回执为 v79_v20_log_deduplication_20261011.json。
+
 14:41:13 CST 更新 V23 独立等待生命周期审计：
 40 个 JOIN、380 个工具轮次在完整完成边界前启动恢复，且下一
 请求复用 FULL，合计 0.515/6.132 GB。需求 handoff 的

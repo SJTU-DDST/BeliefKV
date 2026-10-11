@@ -97,14 +97,16 @@ V22 审计记录工具/parent 压力回收为 77/49 条节点事件，
 更多备份 ACK 代替这些证据。逐次数据与来源 SHA256 见
 `experiments/reports/v70_v22_wait_offload_20261011.json`。
 
-V23 14:35:10 CST 的审计确认该卸载路径在运行：19 条工具
-节点回收涉及 8 次独立等待，首次回收仍剩至少 2 秒的是 7 次；
-7 次为 glob、1 次为 execute，样本不足以说明整体预测可靠性。
-工具 PREPARE 覆盖 58 次独立等待，首次长等待精确率 38/58。
-只有 1 条卸载有有效 P50 点预测，不能声称 RETURN 时间误差
-已经达标。JOIN 已备份 103 个 parent，实际压力回收覆盖
-42 个 parent。逐次动作及读取前缀哈希保存在
-`experiments/reports/v75_v23_wait_offload_live_20261011.json`。继续沿用
+V23 15:25:09 CST 的审计确认该卸载路径在运行：47 条工具
+节点回收涉及 24 次独立等待，首次回收仍剩至少 2 秒的是 22 次；
+17 次为 execute、7 次为 glob，样本不足以说明整体预测可靠性。
+工具 PREPARE 覆盖 172 次独立等待，首次长等待精确率 135/172。
+29 条节点回收有有效 P50，绝对误差 P50/P90 为 224/5161 ms；
+重复节点不是独立工具样本，RETURN 时间尾部尚未达标。
+JOIN 已备份 128 个 parent context，实际压力回收覆盖 47 个
+parent。逐次动作及读取前缀哈希保存在
+`experiments/reports/v79_v23_wait_offload_live_20261011.json`；
+14:35 的历史审计保留为 v75 回执。继续沿用
 实际 WAIT_TOOL/WAIT_JOIN、缺失 FULL 备份和原生容量回收语义；
 没有加入工具执行前或每次 spawn 后的无条件卸载。
 14:15:42 已观察到 0.105/1.188 GB JOIN/tool 提前启动并复用
@@ -141,6 +143,14 @@ H2D 可以只隐藏一部分恢复依赖，无须预计在 RETURN/TOOL_END 前
 可在后续预取或需求恢复中继续加载，原生依赖、reserve 与驻留
 预算保持有效。此路径复用已有 physical fitting-prefix 规划，
 不增设传输门槛、策略开关或观测事件。
+
+恢复预算对应下一批请求，不能持久扣除当前 prefill adder 已选的
+请求数。后续 decode overlap 继续使用配置的批量上限，并以实时
+request rows、running frontier、分池容量和 prefill/decode 预留
+决定实际可恢复范围；不将有空闲字节等同于可执行 slot。V79 的
+281 项相关检查及固定 a5b4a83 CPU 夹具验证满当前 prefill 后
+下一批仍可恢复，真实 rows=0 时仍不恢复。该修复尚未部署到
+冻结 V23，live 预算拒绝仍需区分具体因素，GPU 收益尚未验证。
 
 V72 的 579 项相关检查及固定 fd4a13c CPU 对照确认原先拒绝的
 部分前缀可以提交；该对照的分配、closure 与 enqueue 为夹具，

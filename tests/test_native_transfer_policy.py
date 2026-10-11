@@ -171,6 +171,38 @@ def test_runtime_reads_native_limits_instead_of_treating_idle_memory_as_slots():
     assert budget.reserve_full_tokens == 100 + 16 * 48
 
 
+@pytest.mark.parametrize("available_rows,expected_slots", [(6, 1), (0, 0)])
+def test_completed_prefill_selections_do_not_consume_next_restore_frontier(
+    available_rows, expected_slots,
+):
+    runtime, *_ = locked_runtime()
+    runtime._native_cache.req_to_token_pool = NS(available_size=lambda: available_rows)
+    runtime._native_cache.host_pool_group.entry_map["mamba"].host_pool.size_per_token = 64
+    running = NS(reqs=[NS()] * 48)
+    runtime._observe_native_admission_capacity(
+        running_batch=running,
+        adder=NS(
+            max_running_requests=48, max_prefill_bs=1, prefill_max_requests=4,
+            can_run_list=[NS()], page_size=16, rem_input_tokens=100,
+        ),
+    )
+    runtime._observe_native_admission_capacity(running_batch=running, adder=None)
+    try:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+            return_value=StaticPoolHeadroomObservation(
+                True, device_full_free_tokens=10_000, device_mamba_free_slots=10,
+            ),
+        ):
+            budget = runtime._current_residency_budget()
+        assert runtime._native_prefill_slots == 1
+        assert budget.request_slots == expected_slots
+        assert budget.reserve_full_tokens == 100 + 16 * (48 + expected_slots)
+        assert budget.reserve_mamba_slots == expected_slots
+    finally:
+        runtime.close()
+
+
 def test_unobservable_capacity_does_not_keep_an_old_expanded_budget():
     runtime, *_ = locked_runtime()
     from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget

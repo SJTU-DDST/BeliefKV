@@ -1,0 +1,101 @@
+{
+  "scope": "CPU validation of the next-batch restore budget; no real allocator, DMA, GPU throughput or JCT claim.",
+  "baseline_revision": "a5b4a83327e6ab0ed2fa73eb9633bfafa20c2a70",
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "93975fd0164602d85862f757fd97a9c690523feacdfa651a1d928b2192cef79e",
+    "tests/test_native_transfer_policy.py": "0754707cb0f20136e2fd6f0c7d519de777f97f565f98863f33bc26001374bc9a",
+    "patches/sglang-v0.5.20-beliefkv-staging.patch": "16008af16a20149f24f37123cddfe46228a722fc9f7a0b4d6dee394866345817"
+  },
+  "change": {
+    "current_adder_selections_subtracted_from_next_batch_limit": false,
+    "live_request_rows_and_running_frontier_remain_authoritative": true,
+    "full_mamba_input_and_decode_reserves_preserved": true,
+    "native_admission_and_physical_allocator_checks_preserved": true
+  },
+  "checks": {
+    "python": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "passed": 281,
+    "duration_seconds": 0.90,
+    "suites": [
+      "tests/test_native_transfer_policy.py",
+      "tests/test_wait_prefetch_batch.py",
+      "tests/test_execution_handoff.py",
+      "tests/test_sglang_v0520_runtime.py"
+    ],
+    "counterfactual_cases": [
+      {
+        "fixture": {
+          "running": 48,
+          "available_rows": 6,
+          "max_prefill_bs": 1,
+          "prefill_max_requests": 4,
+          "current_selections": 1
+        },
+        "baseline": {
+          "cached_prefill_slots": 0,
+          "request_slots": 0,
+          "reserve_full_tokens": 868,
+          "reserve_mamba_slots": 0
+        },
+        "current": {
+          "cached_prefill_slots": 1,
+          "request_slots": 1,
+          "reserve_full_tokens": 884,
+          "reserve_mamba_slots": 1
+        }
+      },
+      {
+        "fixture": {
+          "running": 48,
+          "available_rows": 0,
+          "max_prefill_bs": 1,
+          "prefill_max_requests": 4,
+          "current_selections": 1
+        },
+        "baseline": {
+          "cached_prefill_slots": 0,
+          "request_slots": 0,
+          "reserve_full_tokens": 868,
+          "reserve_mamba_slots": 0
+        },
+        "current": {
+          "cached_prefill_slots": 1,
+          "request_slots": 0,
+          "reserve_full_tokens": 868,
+          "reserve_mamba_slots": 0
+        }
+      },
+      {
+        "fixture": {
+          "running": 46,
+          "available_rows": 6,
+          "max_prefill_bs": 8,
+          "prefill_max_requests": 4,
+          "current_selections": 1
+        },
+        "baseline": {
+          "cached_prefill_slots": 3,
+          "request_slots": 2,
+          "reserve_full_tokens": 868,
+          "reserve_mamba_slots": 2
+        },
+        "current": {
+          "cached_prefill_slots": 4,
+          "request_slots": 2,
+          "reserve_full_tokens": 868,
+          "reserve_mamba_slots": 2
+        }
+      }
+    ]
+  },
+  "evidence_limits": [
+    "Repeated live admission_budget_busy counters are not independent opportunities.",
+    "The live snapshots do not separately identify request-row and prefill-limit factors.",
+    "The repair does not establish that every live budget refusal was caused by stale selections."
+  ],
+  "deployment": {
+    "frozen_v23_modified": false,
+    "next_gpu_pair_registered_by_this_change": false,
+    "performance_goal_achieved": false
+  }
+}

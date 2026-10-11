@@ -2,6 +2,41 @@
 
 Status date: 2026-10-11.
 
+The isolated follow-up fixes a stale next-batch restore limit. Subtracting
+the current PrefillAdder selections can cache zero after a chunked prefill
+fills max_prefill_bs, then block subsequent decode-overlap recovery. Retain
+the configured positive limits; live request rows, running frontier, FULL/
+Mamba capacity and input/decode reserves still constrain the actual budget.
+The 281 related checks pass. The baseline-a5b4a83 CPU fixtures change the
+next restore slot from 0 to 1 with running48, rows6 and a filled one-request
+prefill; rows0 stays0 and the ordinary two-slot case is unchanged.
+Keep v79_next_batch_restore_budget_validation_20261011.json. Live busy
+counters do not separate row and prefill-limit factors; do not attribute every
+refusal to this defect. DMA, throughput and JCT remain unverified. Commit
+this repair with the existing validated reductions, then register the next
+predictive-first, cold same-version native pair after V23 completes.
+
+At 15:25:09 CST, the V23 tool audit has232 PREPARE bursts across172
+independent waits with9.942GB FULL. Actual demotion is47 node events,
+24 independent waits and14 contexts, releasing0.436GB FULL and2.318GB
+Mamba. First-action long-wait precision is22/24=91.7% for demotion and
+135/172=78.5% for backup; this is selected-action precision, not recall or
+RETURN-time accuracy. Calls are17 execute and7 glob. The29 node decisions
+with valid P50 have absolute-error P50/P90 of224/5161ms; repeated nodes
+are not independent tools. JOIN backup covers128 parent contexts, while
+demotion covers47 parents across49 epochs with0.604GB FULL and2.447GB
+Mamba. Keep v79_v23_wait_offload_live_20261011.json. There is no
+unconditional pre-tool or post-spawn offload; preserve the frozen pair.
+
+The V23 complete2700-3000s window has21.492s instrumented exclusive
+Python wall; control_drain/tool_prefetch/opportunity_sampling are
+3.446/3.210/2.452s, with29.730ms mean decode worker interval. Keep
+v79_v23_control_2700_3000_20261011.json. Work and context differ from
+the early window; no same-version native gain is established. Completed
+V20 server/client snapshots were SHA256-verified and hardlinked in four
+pairs, freeing7.54GiB with all paths and data retained. Active V23 was
+untouched. Keep v79_v20_log_deduplication_20261011.json.
+
 At 14:41:13 CST, the V23 lifecycle read has 40 JOIN and 380 tool waits
 with pre-boundary-started, next-request-reused FULL of 0.515/6.132 GB.
 Demand handoff FULL reuse of 93.742 GB remains separate. Independent-wait

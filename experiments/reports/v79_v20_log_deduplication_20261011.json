@@ -1,0 +1,41 @@
+{
+  "scope": "Deduplicate verified identical, completed V20 server logs and client snapshots; all data and paths retained; active V23 not modified",
+  "verified_at_local": "2026-10-11T15:20:23.427184+08:00",
+  "duplicate_file_bytes_removed": 8096596984,
+  "method": "hardlink --ignore-time --reflink=never; SHA256 compared before linking and source seal verified afterward",
+  "verified_pairs": [
+    {
+      "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v20/predictive_h2d/server/runtime_audit.jsonl",
+      "snapshot": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v20/predictive_h2d/client_156/server/runtime_audit.jsonl",
+      "bytes": 3918069210,
+      "sha256": "1aa537898a5242acba0149e6352ad7abe690ddaa25135ff39bb87c3087f13e21",
+      "same_inode": true,
+      "link_count": 2
+    },
+    {
+      "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v20/predictive_h2d/server/runtime_events.sglang.jsonl",
+      "snapshot": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v20/predictive_h2d/client_156/server/runtime_events.sglang.jsonl",
+      "bytes": 104552836,
+      "sha256": "65c21622a3c934c39e1e4cb5228df57807e846c190881e4896cab1a3ef6cb292",
+      "same_inode": true,
+      "link_count": 2
+    },
+    {
+      "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v20/native/server/runtime_audit.jsonl",
+      "snapshot": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v20/native/client_156/server/runtime_audit.jsonl",
+      "bytes": 3952559838,
+      "sha256": "ebb26ace42ad8b772aab09abb889e4973d5ffff3addf7b39f68db394455ec63e",
+      "same_inode": true,
+      "link_count": 2
+    },
+    {
+      "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v20/native/server/runtime_events.sglang.jsonl",
+      "snapshot": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v20/native/client_156/server/runtime_events.sglang.jsonl",
+      "bytes": 121415100,
+      "sha256": "8d52c82c1892203b239663769330d77c6207475ab9967cd17be33af9ba52f3f6",
+      "same_inode": true,
+      "link_count": 2
+    }
+  ],
+  "performance_goal_achieved": false
+}
