@@ -1,0 +1,90 @@
+--- a/beliefkv/runtime/sglang_v0520_physical.py
++++ b/beliefkv/runtime/sglang_v0520_physical.py
+@@ -241,0 +242,31 @@
++def _leaf_ancestry(
++    nodes: Mapping[int, UnifiedNodeSummary | _PreparePrefixNode],
++    leaves: Mapping[int, int | float],
++) -> tuple[set[int], dict[int, int], dict[int, int], set[int]] | None:
++    """Index this snapshot's shared paths once, retaining lowest-leaf provenance."""
++    paths: set[int] = set()
++    provenance: dict[int, int] = {}
++    depth: dict[int, int] = {}
++    roots: set[int] = set()
++    for leaf in sorted(leaves):
++        current = leaf
++        chain: list[int] = []
++        seen: set[int] = set()
++        while current is not None and current not in paths:
++            if current not in nodes or current in seen:
++                return None
++            seen.add(current)
++            chain.append(current)
++            current = nodes[current].parent_id
++        if current is None:
++            roots.add(chain[-1])
++            start = 0
++        else:
++            start = depth[current] + 1
++        for distance, node_id in enumerate(reversed(chain), start):
++            paths.add(node_id)
++            provenance[node_id] = leaf
++            depth[node_id] = distance
++    return paths, provenance, depth, roots
++
++
+@@ -276 +307 @@
+-                while current is not None:
++                while current is not None and current not in paths:
+@@ -435,21 +466,9 @@
+-    paths: set[int] = set()
+-    provenance: dict[int, int] = {}
+-    depth: dict[int, int] = {}
+-    roots: set[int] = set()
+-    for leaf, created in sorted(full_leaves.items()):
+-        if leaf not in nodes or nodes[leaf].creation_time != created:
+-            return ()
+-        current = leaf
+-        chain: list[int] = []
+-        seen: set[int] = set()
+-        while current is not None:
+-            if current not in nodes or current in seen:
+-                return ()
+-            seen.add(current)
+-            chain.append(current)
+-            current = nodes[current].parent_id
+-        roots.add(chain[-1])
+-        for distance, node_id in enumerate(reversed(chain)):
+-            paths.add(node_id)
+-            provenance.setdefault(node_id, leaf)
+-            depth[node_id] = distance
++    if any(
++        leaf not in nodes or nodes[leaf].creation_time != created
++        for leaf, created in full_leaves.items()
++    ):
++        return ()
++    ancestry = _leaf_ancestry(nodes, full_leaves)
++    if ancestry is None:
++        return ()
++    paths, provenance, depth, roots = ancestry
+@@ -541,17 +560,4 @@
+-    paths: set[int] = set()
+-    provenance: dict[int, int] = {}
+-    depth: dict[int, int] = {}
+-    for leaf in sorted(leaves):
+-        current = leaf
+-        chain: list[int] = []
+-        seen: set[int] = set()
+-        while current is not None:
+-            if current not in nodes or current in seen:
+-                return ()
+-            seen.add(current)
+-            chain.append(current)
+-            current = nodes[current].parent_id
+-        for distance, node_id in enumerate(reversed(chain)):
+-            paths.add(node_id)
+-            provenance.setdefault(node_id, leaf)
+-            depth[node_id] = distance
++    ancestry = _leaf_ancestry(nodes, leaves)
++    if ancestry is None:
++        return ()
++    paths, provenance, depth, _ = ancestry

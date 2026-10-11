@@ -2,6 +2,19 @@
 
 Status date: 2026-10-11.
 
+Reject the V65 shared-ancestry candidate for the current normal latest-anchor
+path. Each valid latest snapshot has one leaf per pool; a four-leaf CPU fixture
+does not represent that path. Across64 case/phase combinations with21 alternating
+samples, planning outputs match;1024-depth four-leaf H2D/PREPARE means fall
+1372.6/1219.1 to827.7/663.8us, but complete observations improve only3.8%/0.5%.
+Complete single-leaf observations do not improve consistently: H2D6103.6 to6025.9us,
+PREPARE5673.0 to5780.4us. Keepv65_checkpoint_ancestry_cpu_20261011.json and the
+source-hashedv65_checkpoint_ancestry_candidate_20261011.patch. The benchmark can
+load this rejected patch in memory; production physical.py is restored exactly
+to7432972. The496 related checks passed before reversion. Leave the V23e82ad88
+target, live V22 pair and frozen workload untouched. Prioritize measured
+normal-path costs and the actual queued GPU comparison over unused-fixture gains.
+
 The requested four-step child-to-parent capacity handoff is implemented in the
 runtime and native allocator. Reuse final-stage planning of the safe parent
 checkpoint; retire only authoritatively finished child contexts; directly discard
