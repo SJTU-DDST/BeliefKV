@@ -1052,6 +1052,75 @@ def test_pressure_publication_uses_live_pool_indexes_without_changing_candidate_
         runtime.close()
 
 
+@pytest.mark.parametrize("indexed", (False, True))
+@pytest.mark.parametrize("sparse_pool", (None, 0, 2))
+def test_pressure_publication_excludes_restore_target_before_native_pool_limits(
+    indexed, sparse_pool,
+):
+    class Node(NS):
+        __hash__ = object.__hash__
+
+    runtime, _ = tool_runtime()
+    excluded = (*range(1, 9), 17, 1024)
+    sparse_ids = {*excluded, 64}
+    nodes = {
+        number: Node(
+            id=number, creation_time=number, backuped=True,
+            write_through_pending_id=None, load_back_pending_id=None,
+            component_data=[
+                NS(value=[1], host_value=[1], lock_ref=0, session_ref=1),
+                NS(value=None, host_value=None, lock_ref=0, session_ref=0),
+                NS(
+                    value=[1] if sparse_pool != 2 or number in sparse_ids else None,
+                    host_value=[1] if sparse_pool != 2 or number in sparse_ids else None,
+                    lock_ref=0, session_ref=1,
+                ),
+            ],
+        )
+        for number in range(1, 1025)
+    }
+    lookup = []
+
+    def node_by_id(node_id):
+        lookup.append(node_id)
+        return nodes[node_id]
+
+    tree = NS(
+        node_by_id=node_by_id,
+        evictable_device_leaves={
+            node for number, node in nodes.items()
+            if sparse_pool != 0 or number in sparse_ids
+        },
+    )
+    if indexed:
+        tree.lru_lists = {2: NS(cache={
+            number: node for number, node in nodes.items()
+            if node.component_data[2].value is not None
+        })}
+    cache = NS(tree_core=tree, ongoing_write_through={})
+    runtime._native_cache = cache
+    runtime._parent_pressure_candidates = {number: (None, number) for number in nodes}
+    try:
+        runtime._publish_parent_pressure_candidates(exclude_node_ids=excluded)
+        first = tuple((n, n) for n in range(9, 17))
+        assert cache.beliefkv_join_pressure_candidates == first
+        assert cache.beliefkv_join_pressure_candidates_by_component == {
+            0: ((64, 64),) if sparse_pool == 0 else first,
+            2: ((64, 64),) if sparse_pool == 2 else first,
+        }
+        assert not set(lookup).intersection(excluded)
+        assert tuple(runtime._parent_pressure_candidates) == tuple(range(1, 1025))
+        if sparse_pool is None:
+            expected_lookup = list(range(9, 17))
+        elif indexed:
+            expected_lookup = list(range(9, 17)) + [64]
+        else:
+            expected_lookup = [n for n in range(1, 1025) if n not in excluded]
+        assert lookup == expected_lookup
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("blocked", ("none", "locked", "shared", "swa_unbacked", "pending"))
 def test_full_only_pressure_candidate_can_save_missing_mamba_at_actual_eviction(blocked):
     class Node(NS):

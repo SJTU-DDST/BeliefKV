@@ -206,12 +206,13 @@ def test_wait_batch_rechecks_causal_state_after_draining_events():
 def test_cold_reclaim_excludes_every_node_in_the_target_prefix():
     runtime, key, opportunity, cache, _ = batch_fixture("join_ticket")
     cache.reclaim_beliefkv_handoff_capacity = Mock(return_value={0: 16})
-    with patch.object(runtime, "_publish_parent_pressure_candidates"), \
+    with patch.object(runtime, "_publish_parent_pressure_candidates") as publish, \
         patch.object(runtime, "_wait_prefetch_opportunity", return_value=opportunity):
         refreshed = runtime._reclaim_wait_prefetch_capacity(
             key, replace(opportunity, fits_current_free_lists=False), source="join_ticket",
         )
     assert refreshed is opportunity
+    publish.assert_called_once_with(exclude_node_ids=(0, 1, 2, 3, 4))
     cache.reclaim_beliefkv_handoff_capacity.assert_called_once_with(
         full_tokens=16, mamba_slots=1, exclude_node_ids=(0, 1, 2, 3, 4),
     )

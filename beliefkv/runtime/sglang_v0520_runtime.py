@@ -3721,11 +3721,12 @@ class NativeAdmissionRuntime:
         candidate = getattr(opportunity, "candidate", None)
         if not callable(reclaim) or candidate is None:
             return opportunity
-        self._publish_parent_pressure_candidates()
+        excluded = tuple(node.node_id for node in candidate.nodes)
+        self._publish_parent_pressure_candidates(exclude_node_ids=excluded)
         freed = reclaim(
             full_tokens=opportunity.required_full_tokens,
             mamba_slots=opportunity.required_mamba_slots,
-            exclude_node_ids=tuple(node.node_id for node in candidate.nodes),
+            exclude_node_ids=excluded,
         )
         if freed:
             self.counts[f"{source}_cold_reclaimed"] += 1
@@ -4040,10 +4041,13 @@ class NativeAdmissionRuntime:
             })
 
     @timed_runtime("prepare_candidate_publication")
-    def _publish_parent_pressure_candidates(self) -> None:
+    def _publish_parent_pressure_candidates(
+        self, *, exclude_node_ids: tuple[int, ...] = (),
+    ) -> None:
         cache = self._native_cache
         candidates = []
         by_component = {0: [], 2: []}
+        excluded = frozenset(exclude_node_ids)
         # Native reclaim/eviction reads only the first eight entries per pool.
         limit = 8
         fallback_left = full_left = mamba_left = limit
@@ -4060,11 +4064,14 @@ class NativeAdmissionRuntime:
                     visited = set(islice(self._parent_pressure_candidates, position))
                     full_ids = {
                         node.id for node in device_leaves
-                        if node.id in self._parent_pressure_candidates and node.id not in visited
+                        if (
+                            node.id in self._parent_pressure_candidates
+                            and node.id not in visited and node.id not in excluded
+                        )
                     }
                     mamba_ids = (
                         self._parent_pressure_candidates.keys() & mamba_lru.keys()
-                    ) - visited
+                    ) - visited - excluded
                     indexed = True
             if indexed:
                 if not fallback_left and not (
@@ -4077,6 +4084,8 @@ class NativeAdmissionRuntime:
                     continue
                 full_ids.discard(node_id)
                 mamba_ids.discard(node_id)
+            if node_id in excluded:
+                continue
             try:
                 node = cache.tree_core.node_by_id(node_id)
                 full = node.component_data[0]
@@ -5872,15 +5881,16 @@ class NativeAdmissionRuntime:
         if opportunity.fits_current_free_lists is not True:
             reclaim = getattr(self._native_cache, "reclaim_beliefkv_handoff_capacity", None)
             if callable(reclaim):
-                self._publish_parent_pressure_candidates()
                 candidate = getattr(opportunity, "candidate", None)
+                excluded = (
+                    tuple(node.node_id for node in candidate.nodes)
+                    if candidate is not None else ()
+                )
+                self._publish_parent_pressure_candidates(exclude_node_ids=excluded)
                 freed = reclaim(
                     full_tokens=opportunity.required_full_tokens,
                     mamba_slots=opportunity.required_mamba_slots,
-                    exclude_node_ids=(
-                        tuple(node.node_id for node in candidate.nodes)
-                        if candidate is not None else ()
-                    ),
+                    exclude_node_ids=excluded,
                 )
                 if freed:
                     self.counts["execution_handoff_cold_reclaimed"] += 1

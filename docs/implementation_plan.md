@@ -2,6 +2,29 @@
 
 Status date: 2026-10-11.
 
+Continue terminal-child capacity handoff by fixing candidate coverage before
+bounded native reclaim. JOIN/tool anticipation and queued execution handoff
+previously published eight candidates per pool before native excluded the target
+prefix. The target's own backed nodes could fill that quota and omit eligible cold
+nodes later in the registry. Compute the complete target-node tuple once, exclude
+it before publication counters and pass the same tuple to native reclaim. Preserve
+per-pool limits, ordering, identity, live references and transfer checks. Initialize
+the sparse pool index at dictionary position16 even when that entry is excluded;
+remove target IDs from both pool index sets and retain the underlying registry for
+later targets. Six indexed/unindexed FULL/Mamba regression cases and367 related
+checks pass. The actual V22 frequency and GPU throughput contribution of this
+limitation remain unmeasured. Include the fix in the next frozen pair.
+
+Keep the complete2400–3000s V22 predictive window in the local
+v52_v22_busy_control_2400_3000_20261011.json artifact with read-prefix and boundary
+hashes. It has14015 decode batches,24406.595 mean visible context tokens and
+33.873ms mean worker interval. Instrumented Python self wall totals55.805s:
+reentry68439 calls/10.928s, control drain6.737s and opportunity sampling4.721s.
+The63 measured eviction request_probe writer samples average10.671ms thread CPU
+and11.946ms wall; do not extrapolate total/GIL cost from the sampling interval.
+Same-version native is pending. Validate the queued writer, residence and candidate
+coverage changes by actual early reuse and matched busy-window performance.
+
 The V21 pair and postprocessing have completed: predictive has 155 completed
 and one incomplete workflow; native has 156 completed. V22 revision3aa27dd
 was automatically deployed at 2026-10-11 07:49:16 CST. Predictive is running,

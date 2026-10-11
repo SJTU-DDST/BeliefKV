@@ -559,12 +559,13 @@ def test_handoff_capacity_requires_actual_reclaim_and_is_rechecked(monkeypatch):
     cache.reclaim_beliefkv_handoff_capacity = Mock(return_value={0: 2})
     with patch("beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
                side_effect=[shortage, ready]), \
-         patch.object(runtime, "_publish_parent_pressure_candidates"), \
+         patch.object(runtime, "_publish_parent_pressure_candidates") as publish, \
          patch.object(runtime, "issue_prefetch_gpu_step", return_value="load") as issue:
         runtime.dispatch_execution_handoff([cold, warm], running_batch=None)
     cache.reclaim_beliefkv_handoff_capacity.assert_called_once_with(
         full_tokens=2, mamba_slots=1, exclude_node_ids=(1, 9),
     )
+    publish.assert_called_once_with(exclude_node_ids=(1, 9))
     assert issue.call_count == 1
     assert runtime.counts["execution_handoff_cold_reclaimed"] == 1
 
