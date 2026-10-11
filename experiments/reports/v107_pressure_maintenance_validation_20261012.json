@@ -1,0 +1,91 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-12T02:43:45+08:00",
+  "scope": "Isolated CPU maintenance optimization and verified V27 arm transition; no GPU speedup or completed performance goal.",
+  "runtime_commit": "61f415d",
+  "baseline_revision": "b581fa3",
+  "changed_execution_paths": [
+    "beliefkv/runtime/sglang_v0520_runtime.py"
+  ],
+  "validation": {
+    "command": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python -m pytest -q tests/test_native_transfer_policy.py tests/test_sglang_v0520_runtime.py tests/test_tool_predictive_transfers.py",
+    "passed": 294,
+    "duration_seconds": 0.94,
+    "git_diff_check_passed": true,
+    "existing_coverage": [
+      "real lease expiry and protection",
+      "different attempt and epoch keys sharing a context",
+      "terminal workflow removal",
+      "current native candidate publication"
+    ]
+  },
+  "benchmarks": [
+    {
+      "report": "experiments/reports/v107_pressure_maintenance_cpu_depth24_20261012.json",
+      "command": "python scripts/benchmark_native_prepare_path.py --baseline-revision b581fa3 --workflows 156 --depth 24 --iterations 100 --output experiments/reports/v107_pressure_maintenance_cpu_depth24_20261012.json",
+      "alternating_trials_per_case": 100,
+      "selection_publication_and_node_reads_equal": true,
+      "backed_no_lease_join_prepare_mean_ms": {
+        "baseline": 5.84011178,
+        "optimized": 4.62229032
+      },
+      "host_only_sampling_mean_ms": {
+        "baseline": 2.63844628,
+        "optimized": 2.99018872
+      }
+    },
+    {
+      "report": "experiments/reports/v107_pressure_maintenance_cpu_depth64_20261012.json",
+      "command": "python scripts/benchmark_native_prepare_path.py --baseline-revision b581fa3 --workflows 156 --depth 64 --iterations 100 --output experiments/reports/v107_pressure_maintenance_cpu_depth64_20261012.json",
+      "alternating_trials_per_case": 100,
+      "selection_publication_and_node_reads_equal": true,
+      "backed_no_lease_join_prepare_mean_ms": {
+        "baseline": 20.76885409,
+        "optimized": 12.18133947
+      },
+      "host_only_sampling_mean_ms": {
+        "baseline": 4.68849156,
+        "optimized": 5.11970862
+      }
+    }
+  ],
+  "measurement_limits": [
+    "Native enqueue is stubbed; no actual allocator, DMA or GPU execution.",
+    "Both benchmark jobs overlapped in wall time on the same host; each alternates its own variants.",
+    "Wall means retain outliers and the negative Host-only sampling results.",
+    "Sampling code is unchanged, but no causal explanation for its timing variation is established.",
+    "CPU reductions cannot be subtracted from JCT or used as GPU throughput evidence."
+  ],
+  "v27_predictive": {
+    "collection_commit": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+    "summary_path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v27/predictive_h2d/client_156/summary.json",
+    "summary_sha256": "88352f94e49a49a12b45eb1957a12a09ca3387cfaebdb17d20b2d49b7846142f",
+    "outcomes": {
+      "completed": 155,
+      "incomplete": 1
+    },
+    "duration_seconds": 9812.319053038023,
+    "incomplete_instance": "django__django-12325",
+    "terminal_telemetry": {
+      "snapshot_ts_ms": 1791743508086.71,
+      "writer_error": null,
+      "dropped_records": 0,
+      "failed_records": 0,
+      "writer_queue_depth": 0,
+      "pending_batch_count": 0,
+      "pending_request_count": 0
+    },
+    "timeline_export_receipt_exists": true,
+    "workspace_cleanup_receipt_exists": true,
+    "removed_completed_workspaces": 155,
+    "retained_workspaces": 1
+  },
+  "v27_native": {
+    "server_pid": 3264484,
+    "scheduler_pid": 3264866,
+    "server_started_at_local": "2026-10-12T02:36:34+08:00",
+    "both_handles_verified_live": true,
+    "requests_are_being_served": true
+  },
+  "performance_goal_met": false
+}
