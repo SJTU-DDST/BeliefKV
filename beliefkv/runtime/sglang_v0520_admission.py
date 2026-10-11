@@ -170,7 +170,7 @@ def select_native_prefill_candidates(
         if request_id in seen:
             raise ValueError("duplicate tagged request ID in native queue")
         seen.add(request_id)
-        key = _request_key(req)
+        key = _request_key(req, known_keys=planned)
         reason = (
             "stale_revision"
             if stale

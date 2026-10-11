@@ -154,6 +154,117 @@ def distribution(samples: list[float]) -> dict:
     }
 
 
+def benchmark_selection(*, revision: str, iterations: int) -> dict:
+    from beliefkv.runtime import sglang_v0520_admission as admission
+
+    path = "beliefkv/runtime/sglang_v0520_admission.py"
+    before = subprocess.check_output(
+        ["git", "show", f"{revision}:{path}"], cwd=ROOT, text=True,
+    )
+    definitions = [
+        node for node in ast.parse(before).body
+        if isinstance(node, ast.FunctionDef)
+        and node.name in ("_request_key", "select_native_prefill_candidates")
+    ]
+    namespace = dict(vars(admission))
+    exec(compile(ast.fix_missing_locations(ast.Module(body=[
+        ast.ImportFrom(
+            module="__future__", names=[ast.alias(name="annotations")], level=0,
+        ), *definitions,
+    ], type_ignores=[])), f"{revision}:{path}", "exec"), namespace)
+    selectors = {
+        "baseline": namespace["select_native_prefill_candidates"],
+        "optimized": admission.select_native_prefill_candidates,
+    }
+    cases = []
+    for size in (4, 48, 156, 512):
+        for scenario in ("matching", "mixed_native", "changed_attempt", "stale_plan"):
+            runtime, queue = synthetic_runtime(
+                NativeAdmissionRuntime, CausalFrontierScheduler, size, 1,
+            )
+            try:
+                if scenario == "mixed_native":
+                    for request in queue[::5]:
+                        request.beliefkv_metadata = None
+                plan = admission.compile_native_prefill_plan(
+                    [
+                        request for request in reversed(queue)
+                        if request.beliefkv_metadata is not None
+                    ],
+                    semantic_revision=runtime.semantic_revision,
+                )
+                if scenario == "changed_attempt":
+                    for request in queue[::5]:
+                        request.cache_request_handle.attempt_id += 1
+                kwargs = {
+                    "plan": plan,
+                    "current_semantic_revision": (
+                        runtime.semantic_revision + int(scenario == "stale_plan")
+                    ),
+                }
+                samples = {
+                    name: {"wall_ms": [], "thread_cpu_ms": []}
+                    for name in selectors
+                }
+                for iteration in range(iterations + 10):
+                    names = list(selectors)
+                    if iteration % 2:
+                        names.reverse()
+                    outputs = {}
+                    for name in names:
+                        wall_start, cpu_start = time.perf_counter_ns(), time.thread_time_ns()
+                        outputs[name] = selectors[name](queue, **kwargs)
+                        elapsed = {
+                            "thread_cpu_ms": (time.thread_time_ns() - cpu_start) / 1_000_000,
+                            "wall_ms": (time.perf_counter_ns() - wall_start) / 1_000_000,
+                        }
+                        if iteration >= 10:
+                            for metric, value in elapsed.items():
+                                samples[name][metric].append(value)
+                    if outputs["baseline"] != outputs["optimized"]:
+                        raise AssertionError("native selection or rejection reasons changed")
+                allocations = {}
+                for name, selector in selectors.items():
+                    globals_ = selector.__globals__
+                    constructor = globals_["PrefillCandidateKey"]
+                    calls = [0]
+
+                    def counted_key(*args, **kwargs):
+                        calls[0] += 1
+                        return constructor(*args, **kwargs)
+
+                    globals_["PrefillCandidateKey"] = counted_key
+                    try:
+                        selector(queue, **kwargs)
+                    finally:
+                        globals_["PrefillCandidateKey"] = constructor
+                    allocations[name] = calls[0]
+                costs = {
+                    name: {metric: distribution(values) for metric, values in clocks.items()}
+                    for name, clocks in samples.items()
+                }
+                cases.append({
+                    "queue_size": size, "scenario": scenario,
+                    "iterations": iterations, "warmup_iterations": 10,
+                    "selections_and_rejections_equal": True,
+                    "identity_allocations_per_selection": allocations,
+                    "costs": costs,
+                })
+            finally:
+                runtime.close()
+    return {
+        "scope": (
+            "Complete CPU native candidate selection on identical request identities "
+            "and plans; alternating baseline/current order, with allocation counts "
+            "measured separately. No native allocator, DMA, GPU or JCT measurement."
+        ),
+        "baseline_revision": revision,
+        "baseline_source_sha256": hashlib.sha256(before.encode()).hexdigest(),
+        "optimized_source_sha256": hashlib.sha256((ROOT / path).read_bytes()).hexdigest(),
+        "cases": cases,
+    }
+
+
 def benchmark(*, revision: str, workflows: int, rounds: int, iterations: int,
               planning_calls: int = 1, resident_first: bool = False,
               parent_handoffs: int = 0, semantic_progress: bool = False) -> dict:
@@ -650,6 +761,7 @@ def main():
     parser.add_argument("--handoff-frontier", action="store_true")
     parser.add_argument("--causal-reuse", action="store_true")
     parser.add_argument("--residency-scan-reuse", action="store_true")
+    parser.add_argument("--selection", action="store_true")
     parser.add_argument("--resident-first", action="store_true",
                         help="Use mixed residency observations and check identical native reads.")
     parser.add_argument("--parent-handoffs", type=int, default=0,
@@ -665,7 +777,11 @@ def main():
         raise ValueError("parent handoffs must fit the synthetic workflow count")
     if args.handoff_frontier and (args.parent_handoffs or args.semantic_progress):
         raise ValueError("completed-batch tracking options do not apply to handoff frontier")
-    if args.residency_scan_reuse:
+    if args.selection:
+        report = benchmark_selection(
+            revision=args.baseline_revision, iterations=args.iterations,
+        )
+    elif args.residency_scan_reuse:
         report = benchmark_residency_scan_reuse(
             revision=args.baseline_revision, rounds=args.rounds, iterations=args.iterations,
         )
@@ -693,7 +809,15 @@ def main():
                            semantic_progress=args.semantic_progress)
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
-    if args.residency_scan_reuse:
+    if args.selection:
+        for case in report["cases"]:
+            print(
+                f"queue={case['queue_size']} {case['scenario']}: "
+                f"{case['costs']['baseline']['wall_ms']['mean_ms']:.6f} -> "
+                f"{case['costs']['optimized']['wall_ms']['mean_ms']:.6f} ms; "
+                f"allocations={case['identity_allocations_per_selection']}"
+            )
+    elif args.residency_scan_reuse:
         for case in report["cases"]:
             print(
                 f"queue={case['queue_size']} tokens={case['tokens']} "
