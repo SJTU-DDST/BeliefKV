@@ -1,0 +1,20 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-12T03:19:36+08:00",
+  "scope": "Replace only the verified waiting V28 coordinator with a descendant target. Keep V27 native collection running.",
+  "old_target_revision": "6a9a8de20e6dba1cc42b1ec689742a06a5b7b467",
+  "old_coordinator_pid": 3449640,
+  "old_coordinator_start_ticks": "591493077",
+  "old_status_before_termination": "waiting_for_previous_pair",
+  "old_coordinator_after_termination": null,
+  "preserved_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v28_launch_after_v27_6a9a8de_superseded_20261012_v110.json",
+  "preserved_state_sha256": "f891a85c92376e67295872958065f52cd790720c966ae5e7edcbf09a16675e93",
+  "preserved_log": "/home/longhao/experiment/BeliefKV/experiments/reports/v28_launch_after_v27_6a9a8de_superseded_20261012_v110.log",
+  "v27_live_handles_after_stop": {
+    "1060398": {"ppid": 1, "start_ticks": "590379164"},
+    "3264484": {"ppid": 3264475, "start_ticks": "591405899"},
+    "3264866": {"ppid": 3264484, "start_ticks": "591407169"}
+  },
+  "replacement_registration_required": true,
+  "performance_goal_met": false
+}

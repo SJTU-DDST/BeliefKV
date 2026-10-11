@@ -1,0 +1,40 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-12T03:19:36+08:00",
+  "scope": "Verified documentation-only main update and prepared V110 cold target; live queue registration follows this receipt.",
+  "main_revision": "981bf7e978174c766e6cd5b80d5ba036e80261cd",
+  "target_revision_before_receipt_commit": "4834d422852b85982b20777d09fa9024caec3578",
+  "main_is_ancestor_of_target": true,
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v110-native-selection-20261012",
+  "v27_execution_verification": {
+    "collection_code_commit": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+    "verification_code_commit": "981bf7e978174c766e6cd5b80d5ba036e80261cd",
+    "execution_source_unchanged": true,
+    "changed_committed_paths": [
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md"
+    ]
+  },
+  "canonical_patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+  "deployed_engine": {
+    "expected_tree": "6e1dc30d83e05cbca3d470892d7cde1000e19ad9",
+    "actual_tree": "6e1dc30d83e05cbca3d470892d7cde1000e19ad9",
+    "matches_worktree": true
+  },
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_admission.py": "092d0f2814402e2a8a8211ba6afa6fad273b2c85323d73cc5bf8f89f29cc5ecd",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "3bbc9777f9ef2be070e35d45a87de74a060e6f61a65ccf1ebe9ed5db445605ce",
+    "beliefkv/runtime/sglang_v0520_physical.py": "d745da6b5b4c36adc1756c0fab58a6caef868267675f60ae02f68d2dc2fdfcf1"
+  },
+  "runtime_optimization_commits": [
+    "68e656c",
+    "0b26516",
+    "793e8ba",
+    "61f415d",
+    "49fb704"
+  ],
+  "same_frozen_workload_configuration": true,
+  "performance_goal_met": false
+}
