@@ -2,6 +2,29 @@
 
 Status date: 2026-10-12.
 
+V108 obtains complete same-version V27 windows300-600 and600-900s.
+Both arms have actual native prefill geometry; matched cohorts number
+13 and12. In600-900s, actual extend is1.633/1.736 million tokens while
+worker intervals total48.00/37.99s. Single-request cohorts below512
+extend tokens have predictive/native mean ratios1.90-2.72. Matched
+48-request decode is nearly equal;47-request bins remain slower.
+All observed decode flags indicate CUDA graph replay. These intervals
+include overlap/result processing, not just kernels. Prioritize actual
+admission/restore costs; do not claim an identical-demand slowdown or
+subtract worker/control time from JCT.
+
+V110 commits49fb704. Native selection rechecks current fields and
+reuses unchanged planned identities, retaining changed-attempt/session/
+epoch and stale-plan handling. The179 relevant checks pass. All16
+complete-selector CPU cases preserve selection and rejection reasons,
+with1000 alternating trials each. Matching156/512-request means fall
+0.463/1.258 to0.304/0.815ms; identity allocations fall156/512 to zero.
+Queue V110 together with V101/V104/V106/V107 in cold V28, predictive
+first after V27's same-version native. This local saving does not explain
+the full remaining worker difference or establish GPU/JCT improvement.
+V109's list conversion is reverted: current native input storage is
+already array, and some list-divergence cases regress. Retain its report.
+
 V107 commits61f415d in the isolated branch. Pressure maintenance
 deletes only rejected nodes in place and reuses the current scan's
 key verdict for adjacent extents. Refresh leases first; do not cache
