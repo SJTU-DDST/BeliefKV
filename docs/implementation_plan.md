@@ -2,6 +2,27 @@
 
 Status date: 2026-10-12.
 
+V113 commits 11c8258. Coalesce only already queued control messages,
+without a batching timer. Preserve original handler/transaction boundaries,
+FIFO, event timestamps, per-submission completion, partial-prefix ACKs,
+idempotent retries, flush/close and the existing 64-event/60000-byte limits.
+The 73 related checks and two subtests pass. V27's 156 predictive result
+summaries have a median per-workflow reentry queue P95 of112.025ms and
+ACK P50 of17.306ms; these are not pooled event quantiles. Five alternating
+CPU trials per case preserve original batches. With simulated20ms ACKs,
+four pending batches use5→2 messages and101.149→40.751ms;32 use33→2
+and670.342→43.277ms. Large text requires four messages; retain the
+7-9us single-pending cost and receiver codec overhead. Fixture results
+are not GPU/JCT gains. Cold-deploy with the prior isolated optimizations;
+keep the full same-version throughput, JCT, early-FULL and residual-native
+objective active. Do not modify collecting execution source.
+
+At05:01:25 CST, V28 cold-deploys141d3df and starts its frozen pair.
+V27 native completes156 workflows over8279.264s; the prior coordinator
+and server/scheduler are gone. Retain collecting V28 unchanged and
+queue V113 for a new V29 cold pair, predictive first then same-version
+native. The V28 registration is no longer a replaceable waiting target.
+
 V112 commits fa6f6c8. First-service prefetch and background same-session
 prefix audits compare long q-arrays without temporary token slices, using
 native RadixKey's GIL-retaining memory comparison. Retain exact token
