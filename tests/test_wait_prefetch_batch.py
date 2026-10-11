@@ -18,13 +18,14 @@ from tests.test_sglang_v0520_runtime import event, final_stage_runtime, req
 from tests.test_tool_predictive_transfers import tool_runtime
 
 
-def batch_fixture(source, *, partial=False, node_count=4):
+def batch_fixture(source, *, partial=False, node_count=4, completed_join=True):
     if source == "tool_wait":
         runtime, hint = tool_runtime()
         key = hint.key
     else:
         runtime = final_stage_runtime()
-        runtime.on_events((event(7, RuntimeEventKind.RETURN, invocation_id="child"),))
+        if completed_join:
+            runtime.on_events((event(7, RuntimeEventKind.RETURN, invocation_id="child"),))
         key = runtime.context_sessions["ctx-parent"]
     anchors = ContextSessionAnchors(
         key, tuple((component, ((node_count, node_count + 1),)) for component in (0, 2)),
@@ -84,6 +85,89 @@ def batch_fixture(source, *, partial=False, node_count=4):
     )
     runtime.attach_native_cache(cache)
     return runtime, key, opportunity, cache, reserved
+
+
+def provisional_join_batch_fixture():
+    runtime, key, opportunity, cache, reserved = batch_fixture(
+        "join_ticket", completed_join=False,
+    )
+    runtime.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+        context_id="ctx-child", context_epoch=1, attributes={"request_id": "child"},
+    ),))
+    child = req("child")
+    child.session_id, child.session_generation = "cs", 1
+    child.beliefkv_metadata["context_epoch"] = 1
+    runtime.register_visible_request(child)
+    runtime._semantic_worker = NS(close=lambda: None)
+    runtime._semantic_keys["child"] = runtime.visible["child"]
+    runtime._semantic_eos_proofs["child"] = True
+    runtime._semantic_finished["child"] = (time.monotonic() * 1000., 3)
+    runtime._h2d_samples.extend(((180, 10.),) * 3)
+    return runtime, key, opportunity, cache, reserved
+
+
+def test_provisional_join_dispatch_reuses_current_plan_and_rechecks_before_enqueue():
+    runtime, key, opportunity, cache, _ = provisional_join_batch_fixture()
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity",
+                          return_value=opportunity) as inspect:
+            runtime.dispatch_join_prefetch()
+        assert inspect.call_count == 2
+        assert runtime._join_ticket.phase == "provisional"
+        assert runtime._join_ticket.key == key
+        assert runtime.physical_ledger.pending_count == 4
+        cache.prefetch_gpu_session_nodes.assert_called_once()
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("change", ["context_advanced", "plan_changed", "eos_expired"])
+def test_reused_join_plan_cannot_bypass_causal_physical_or_time_revalidation(change):
+    runtime, _, opportunity, cache, _ = provisional_join_batch_fixture()
+
+    def drain(**kwargs):
+        if change == "context_advanced":
+            runtime.on_events((event(
+                8, RuntimeEventKind.CONTEXT_ADVANCE, invocation_id="parent",
+                context_id="ctx-parent", context_epoch=1,
+            ),))
+        elif change == "eos_expired":
+            runtime._semantic_finished["child"] = (time.monotonic() * 1000. - 251., 3)
+
+    runtime.event_server = NS(drain=drain, close=lambda: None)
+    changed = replace(opportunity, step=None, steps=()) if change == "plan_changed" else opportunity
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity",
+                          side_effect=[opportunity, changed]):
+            runtime.dispatch_join_prefetch()
+        cache.prefetch_gpu_session_nodes.assert_not_called()
+        assert runtime.physical_ledger.pending_count == 0
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
+def test_join_dispatch_records_capacity_limited_empty_prefix():
+    runtime, _, opportunity, _, _ = batch_fixture("join_ticket")
+    empty = replace(
+        opportunity, step=None, steps=(), required_full_tokens=0,
+        required_mamba_slots=0, no_step_reason="prefetch_capacity_budget",
+    )
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity",
+                          return_value=opportunity), \
+            patch.object(runtime, "_reclaim_wait_prefetch_capacity", return_value=empty):
+            runtime.dispatch_join_prefetch()
+        plan = next(row for row in records if row["event"] == "wait_prefetch_plan")
+        assert plan["reason"] == "no_restore_plan"
+        assert plan["no_step_reason"] == "prefetch_capacity_budget"
+        assert plan["planned_nodes"] == []
+        assert plan["planned_full_tokens"] == 0
+    finally:
+        runtime.close()
 
 
 @pytest.mark.parametrize("source", ["join_ticket", "tool_wait"])

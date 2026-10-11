@@ -2212,7 +2212,7 @@ class NativeAdmissionRuntime:
                 self._final_request_stages[stage.request_id] = stage
                 self.counts["final_request_bound"] += 1
 
-    def _roll_final_stage(self) -> None:
+    def _roll_final_stage(self) -> SessionH2DOpportunity | None:
         if not (
             self.enable_final_stage_prefetch or self.enable_admission_prefetch
         ) or self.physical_disabled:
@@ -2467,7 +2467,7 @@ class NativeAdmissionRuntime:
                     "context_epoch": stage.key.context_epoch,
                     "child_invocation_id": stage.child_id,
                 })
-            break
+            return observation
 
     def _final_stage_service_available(self, stage: _ChildFinalStage) -> bool:
         batch = self._native_running_batch
@@ -2645,7 +2645,7 @@ class NativeAdmissionRuntime:
     @timed_runtime("join_prefetch")
     def dispatch_join_prefetch(self) -> None:
         """Restore a bounded reusable prefix burst, without granting admission."""
-        self._roll_final_stage()
+        observation = self._roll_final_stage()
         ticket = self._join_ticket
         if ticket is None or not self._live_join_ticket():
             if ticket is not None:
@@ -2686,7 +2686,10 @@ class NativeAdmissionRuntime:
             )
             if remaining_p10_ms > 1_000:
                 return
-        observation = self._wait_prefetch_opportunity(ticket.key)
+        # Reuse only this call's plan; enqueue still drains causal events and
+        # rechecks the current native prefix, capacity and timing.
+        if observation is None:
+            observation = self._wait_prefetch_opportunity(ticket.key)
         if (
             observation is not None and observation.step is not None
             and callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
@@ -2701,6 +2704,9 @@ class NativeAdmissionRuntime:
         step = observation.step if observation is not None else None
         if step is None:
             self.counts["join_prefetch_no_cpu_node"] += 1
+            self._record_wait_prefetch_plan(
+                "join_ticket", ticket.key, observation, reason="no_restore_plan",
+            )
             if (
                 self.enable_confirmed_join_canary
                 and not ticket.no_step_recorded
@@ -3665,7 +3671,8 @@ class NativeAdmissionRuntime:
             if type(amount) is int and (entry := entries.get(pool)) is not None
         }
         fingerprint = (
-            reason, getattr(opportunity, "blocked_detail", None), full, mamba,
+            reason, getattr(opportunity, "no_step_reason", None),
+            getattr(opportunity, "blocked_detail", None), full, mamba,
             tuple((item.node_id, item.creation_time, item.include_mamba) for item in steps),
         )
         now = time.monotonic()
@@ -3683,6 +3690,7 @@ class NativeAdmissionRuntime:
             "context_epoch": key.context_epoch, "request_id": key.request_id,
             "session_id": key.session_id, "session_generation": key.session_generation,
             "join_id": join_id, "active_tool_ids": tools, "reason": reason,
+            "no_step_reason": getattr(opportunity, "no_step_reason", None),
             "blocked_detail": getattr(opportunity, "blocked_detail", None),
             "reusable_input_tokens": getattr(
                 getattr(opportunity, "anchors", None), "reusable_input_tokens", None,

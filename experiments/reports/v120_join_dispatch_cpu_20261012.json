@@ -1,0 +1,332 @@
+{
+  "scope": "CPU JOIN dispatch with actual read-only closure/plan inspection. Fixed session anchors, refreshed native prefix/timing at mock enqueue; no native allocator, transaction reservation, writer, DMA or CUDA. Decision time frozen; wall/thread clocks remain real. Timing decorators excluded. This is not GPU throughput or JCT evidence.",
+  "baseline_revision": "b3aee61",
+  "baseline_source_sha256": "241884d7ba1f8e8cd2b09498256d2bfaf7a12f4ca14f923acda3bdd8e53cb296",
+  "optimized_source_sha256": "57d836a21ea06ba918938cb9afb9508d81c08a65b2e1d6434a0abdec8b3cd9b7",
+  "benchmark_source_sha256": "9e4e462b3d2def308430b93017d90f82d7a3da93c1f1c709bc3db0efc2e53cb7",
+  "iterations": 30,
+  "warmup_iterations": 5,
+  "deployed": false,
+  "cases": [
+    {
+      "depth": 8,
+      "leaves": 1,
+      "selected_nodes": 5,
+      "plans_and_ticket_state_equal": true,
+      "inspections_per_dispatch": {
+        "baseline": 3,
+        "optimized": 2
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "mean_ms": 0.7611819,
+            "p50_ms": 0.7569285,
+            "p90_ms": 0.779698,
+            "max_ms": 0.786542
+          },
+          "thread_cpu": {
+            "mean_ms": 0.7601587666666667,
+            "p50_ms": 0.7559675,
+            "p90_ms": 0.778684,
+            "max_ms": 0.78555
+          }
+        },
+        "optimized": {
+          "wall": {
+            "mean_ms": 0.5789196666666667,
+            "p50_ms": 0.5752705,
+            "p90_ms": 0.596049,
+            "max_ms": 0.617815
+          },
+          "thread_cpu": {
+            "mean_ms": 0.5779143,
+            "p50_ms": 0.574281,
+            "p90_ms": 0.594986,
+            "max_ms": 0.616811
+          }
+        }
+      }
+    },
+    {
+      "depth": 8,
+      "leaves": 4,
+      "selected_nodes": 5,
+      "plans_and_ticket_state_equal": true,
+      "inspections_per_dispatch": {
+        "baseline": 3,
+        "optimized": 2
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "mean_ms": 1.5866446333333333,
+            "p50_ms": 1.580273,
+            "p90_ms": 1.629485,
+            "max_ms": 1.642707
+          },
+          "thread_cpu": {
+            "mean_ms": 1.5856276,
+            "p50_ms": 1.5792605,
+            "p90_ms": 1.628499,
+            "max_ms": 1.641864
+          }
+        },
+        "optimized": {
+          "wall": {
+            "mean_ms": 1.1269719333333332,
+            "p50_ms": 1.1234345000000001,
+            "p90_ms": 1.159701,
+            "max_ms": 1.170698
+          },
+          "thread_cpu": {
+            "mean_ms": 1.1259298666666666,
+            "p50_ms": 1.122446,
+            "p90_ms": 1.1587,
+            "max_ms": 1.169641
+          }
+        }
+      }
+    },
+    {
+      "depth": 64,
+      "leaves": 1,
+      "selected_nodes": 33,
+      "plans_and_ticket_state_equal": true,
+      "inspections_per_dispatch": {
+        "baseline": 3,
+        "optimized": 2
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "mean_ms": 2.192325133333333,
+            "p50_ms": 2.1700625000000002,
+            "p90_ms": 2.229038,
+            "max_ms": 2.471541
+          },
+          "thread_cpu": {
+            "mean_ms": 2.191275533333333,
+            "p50_ms": 2.16907,
+            "p90_ms": 2.227953,
+            "max_ms": 2.4706
+          }
+        },
+        "optimized": {
+          "wall": {
+            "mean_ms": 1.5187291333333333,
+            "p50_ms": 1.511795,
+            "p90_ms": 1.553672,
+            "max_ms": 1.568416
+          },
+          "thread_cpu": {
+            "mean_ms": 1.5176372333333332,
+            "p50_ms": 1.5108365,
+            "p90_ms": 1.552567,
+            "max_ms": 1.567379
+          }
+        }
+      }
+    },
+    {
+      "depth": 64,
+      "leaves": 4,
+      "selected_nodes": 33,
+      "plans_and_ticket_state_equal": true,
+      "inspections_per_dispatch": {
+        "baseline": 3,
+        "optimized": 2
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "mean_ms": 6.3358799,
+            "p50_ms": 6.3272445,
+            "p90_ms": 6.382068,
+            "max_ms": 6.491245
+          },
+          "thread_cpu": {
+            "mean_ms": 6.333954733333333,
+            "p50_ms": 6.3262675,
+            "p90_ms": 6.381251,
+            "max_ms": 6.490224
+          }
+        },
+        "optimized": {
+          "wall": {
+            "mean_ms": 4.6871869,
+            "p50_ms": 4.295189499999999,
+            "p90_ms": 4.626665,
+            "max_ms": 15.448912
+          },
+          "thread_cpu": {
+            "mean_ms": 4.6756472,
+            "p50_ms": 4.294247,
+            "p90_ms": 4.342211,
+            "max_ms": 15.447648
+          }
+        }
+      }
+    },
+    {
+      "depth": 256,
+      "leaves": 1,
+      "selected_nodes": 64,
+      "plans_and_ticket_state_equal": true,
+      "inspections_per_dispatch": {
+        "baseline": 3,
+        "optimized": 2
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "mean_ms": 6.569282666666667,
+            "p50_ms": 6.567716,
+            "p90_ms": 6.603922,
+            "max_ms": 6.684915
+          },
+          "thread_cpu": {
+            "mean_ms": 6.568202366666666,
+            "p50_ms": 6.566683,
+            "p90_ms": 6.602903,
+            "max_ms": 6.683914
+          }
+        },
+        "optimized": {
+          "wall": {
+            "mean_ms": 4.4909549,
+            "p50_ms": 4.4960415000000005,
+            "p90_ms": 4.524967,
+            "max_ms": 4.54329
+          },
+          "thread_cpu": {
+            "mean_ms": 4.4898707,
+            "p50_ms": 4.494914,
+            "p90_ms": 4.523862,
+            "max_ms": 4.542227
+          }
+        }
+      }
+    },
+    {
+      "depth": 256,
+      "leaves": 4,
+      "selected_nodes": 64,
+      "plans_and_ticket_state_equal": true,
+      "inspections_per_dispatch": {
+        "baseline": 3,
+        "optimized": 2
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "mean_ms": 22.6563541,
+            "p50_ms": 22.0409175,
+            "p90_ms": 22.340592,
+            "max_ms": 39.831397
+          },
+          "thread_cpu": {
+            "mean_ms": 22.643046833333333,
+            "p50_ms": 22.0310705,
+            "p90_ms": 22.230259,
+            "max_ms": 39.823594
+          }
+        },
+        "optimized": {
+          "wall": {
+            "mean_ms": 14.789077733333333,
+            "p50_ms": 14.799136,
+            "p90_ms": 14.897733,
+            "max_ms": 14.945999
+          },
+          "thread_cpu": {
+            "mean_ms": 14.7881286,
+            "p50_ms": 14.798312500000002,
+            "p90_ms": 14.897019,
+            "max_ms": 14.945075
+          }
+        }
+      }
+    },
+    {
+      "depth": 1024,
+      "leaves": 1,
+      "selected_nodes": 64,
+      "plans_and_ticket_state_equal": true,
+      "inspections_per_dispatch": {
+        "baseline": 3,
+        "optimized": 2
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "mean_ms": 23.726307433333332,
+            "p50_ms": 23.694657499999998,
+            "p90_ms": 23.978166,
+            "max_ms": 25.118062
+          },
+          "thread_cpu": {
+            "mean_ms": 23.714367133333333,
+            "p50_ms": 23.693791500000003,
+            "p90_ms": 23.921406,
+            "max_ms": 25.117323
+          }
+        },
+        "optimized": {
+          "wall": {
+            "mean_ms": 16.979807366666666,
+            "p50_ms": 15.8359855,
+            "p90_ms": 16.336308,
+            "max_ms": 32.790214
+          },
+          "thread_cpu": {
+            "mean_ms": 16.977935366666667,
+            "p50_ms": 15.834973000000002,
+            "p90_ms": 16.33537,
+            "max_ms": 32.789387
+          }
+        }
+      }
+    },
+    {
+      "depth": 1024,
+      "leaves": 4,
+      "selected_nodes": 64,
+      "plans_and_ticket_state_equal": true,
+      "inspections_per_dispatch": {
+        "baseline": 3,
+        "optimized": 2
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "mean_ms": 85.35814423333333,
+            "p50_ms": 89.349375,
+            "p90_ms": 102.879022,
+            "max_ms": 110.814464
+          },
+          "thread_cpu": {
+            "mean_ms": 85.3444927,
+            "p50_ms": 89.29447,
+            "p90_ms": 102.880203,
+            "max_ms": 110.815466
+          }
+        },
+        "optimized": {
+          "wall": {
+            "mean_ms": 56.22789053333334,
+            "p50_ms": 58.957795000000004,
+            "p90_ms": 60.795743,
+            "max_ms": 75.641968
+          },
+          "thread_cpu": {
+            "mean_ms": 56.224952466666664,
+            "p50_ms": 58.9574005,
+            "p90_ms": 60.788392,
+            "max_ms": 75.642225
+          }
+        }
+      }
+    }
+  ]
+}

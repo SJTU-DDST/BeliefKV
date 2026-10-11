@@ -806,7 +806,8 @@ def wait_plan_gap_summary(rows: list[dict]) -> dict:
     reasons = {
         name: defaultdict(list)
         for name in (
-            "observed_plan_reasons", "observed_planning_blocked_details",
+            "observed_plan_reasons", "observed_planning_no_step_reasons",
+            "observed_planning_blocked_details",
             "observed_no_live_details",
         )
     }
@@ -895,6 +896,7 @@ def wait_event_attribution(
             "first_observation_ts_ms": observation["ts_ms"],
             "max_observed_planned_full_tokens": None, "plan_reasons": Counter(),
             "max_observed_planned_node_count": None,
+            "planning_no_step_reasons": Counter(),
             "planning_blocked_details": Counter(), "no_live_details": Counter(),
             "max_observed_planned_full_bytes": None,
             "observed_capacity_conditions": Counter(),
@@ -936,6 +938,7 @@ def wait_event_attribution(
         if observation.get("event") != "prefetch_native_issued":
             group["plan_reasons"][observation.get("reason", "unknown")] += 1
             for field, target in (
+                ("no_step_reason", "planning_no_step_reasons"),
                 ("blocked_detail", "planning_blocked_details"),
                 ("no_live_detail", "no_live_details"),
             ):
@@ -1156,6 +1159,7 @@ def wait_event_attribution(
                 and type(full_unit) is int else None
             ),
             "observed_plan_reasons": dict(group["plan_reasons"]),
+            "observed_planning_no_step_reasons": dict(group["planning_no_step_reasons"]),
             "observed_planning_blocked_details": dict(group["planning_blocked_details"]),
             "observed_no_live_details": dict(group["no_live_details"]),
             "observed_capacity_conditions": dict(group["observed_capacity_conditions"]),

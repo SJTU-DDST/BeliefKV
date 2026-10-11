@@ -56,6 +56,7 @@ def test_wait_plan_details_group_repeated_samples_into_one_wait(tmp_path):
         "workflow_id": "wf", "context_id": "parent", "context_epoch": 0,
         "invocation_id": "root", "join_id": "join", "ts_ms": 10.,
         "required_full_tokens": 0, "reason": "closure_unobservable",
+        "no_step_reason": "prefetch_capacity_budget",
         "blocked_detail": "node ancestry exceeds bound",
         "no_live_detail": "native_anchor_snapshot_rejected",
     }
@@ -64,10 +65,12 @@ def test_wait_plan_details_group_repeated_samples_into_one_wait(tmp_path):
     )
     [row] = result["rows"]
     assert row["observed_plan_reasons"] == {"closure_unobservable": 2}
+    assert row["observed_planning_no_step_reasons"] == {"prefetch_capacity_budget": 2}
     assert row["observed_planning_blocked_details"] == {"node ancestry exceeds bound": 2}
     summary = result["summary"]["by_source"]["join_ticket"]
     reasons = summary["residual_native_demand_by_observed_planning_evidence"]
     assert reasons["observed_planning_blocked_details"]["node ancestry exceeds bound"]["independent_events"] == 1
+    assert reasons["observed_planning_no_step_reasons"]["prefetch_capacity_budget"]["independent_events"] == 1
     assert summary["plan_evidence_categories"]["only_zero_full_plan"]["remaining_native_full_evidence_unknown_events"] == 1
 
 
