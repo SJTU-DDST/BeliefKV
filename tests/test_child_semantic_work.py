@@ -218,6 +218,69 @@ def test_work_only_update_preserves_every_phase_score():
     assert changed[0].conditional_remaining_tokens != original[0].conditional_remaining_tokens
 
 
+def test_work_text_window_keeps_phase_and_work_caches_separate():
+    from types import SimpleNamespace
+
+    training = rows()
+    head = fit_head(
+        training, np.random.default_rng(4).normal(size=(len(training), 8)), dimensions=4,
+        phase_regularization=.1, work_regularization=.2,
+    )
+
+    class Encoder:
+        def __init__(self):
+            self.calls = []
+
+        def encode(self, texts, **options):
+            self.calls.append((list(texts), options))
+            return np.asarray([
+                np.full(8, len(text) if not options else 2., dtype=float) for text in texts
+            ]).reshape(-1, 8)
+
+    work = SimpleNamespace(
+        text_window={"max_tokens": 128, "truncation_side": "left"}, schema=2,
+        arrays=lambda observations, embeddings, phase: np.repeat(embeddings[:, :1], 3, axis=1),
+    )
+    original = SemanticReportPredictor(head, Encoder())
+    encoder = Encoder()
+    changed = SemanticReportPredictor(head, encoder, neural_work=work, cache_size=1)
+    observations = [training[0]["observation"]]
+    before, after = original.predict(observations)[0], changed.predict(observations)[0]
+    assert after.final_report_score == before.final_report_score
+    assert after.completion_notice_score == before.completion_notice_score
+    assert after.conditional_remaining_tokens == (2., 2., 2.)
+    assert encoder.calls == [
+        ([observations[0].content_tail], {}), ([observations[0].content_tail], work.text_window),
+    ]
+    changed.predict([replace(observations[0], request_id="reentry", context_epoch=2)])
+    assert all(not texts for texts, _ in encoder.calls[2:])
+    assert len(changed._text_cache) == len(changed._work_text_cache) == 1
+
+
+def test_embedding_cache_identifies_the_work_text_window(tmp_path):
+    from scripts.train_child_semantic_work import cached_embeddings
+
+    class Encoder:
+        max_tokens = 256
+
+        def __init__(self):
+            self.calls = 0
+
+        def encode(self, texts, **options):
+            self.calls += 1
+            return np.full((len(texts), 8), 2. if options else 1.)
+
+    encoder = Encoder()
+    samples = rows(count=3)
+    phase = cached_embeddings(samples, encoder, "frozen", tmp_path)
+    options = {"max_tokens": 128, "truncation_side": "left"}
+    work = cached_embeddings(samples, encoder, "frozen", tmp_path, text_window=options)
+    again = cached_embeddings(samples, encoder, "frozen", tmp_path, text_window=options)
+    assert encoder.calls == 2
+    assert np.all(phase == 1.) and np.all(work == 2.)
+    assert np.array_equal(work, again)
+
+
 def test_total_length_work_subtracts_observed_progress_before_bias_clipping():
     training = rows()
     head = fit_head(

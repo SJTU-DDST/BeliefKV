@@ -46,7 +46,9 @@ def work_arrays(model, observations, embeddings):
     if model.work_head is not None:
         _, work = model.work_head.arrays(observations, embeddings)
     elif model.neural_work is not None:
-        work = model.neural_work.arrays(observations, embeddings, model.head)
+        work = model.neural_work.arrays(
+            observations, model.encode_work(observations, embeddings), model.head,
+        )
     return scores, work
 
 

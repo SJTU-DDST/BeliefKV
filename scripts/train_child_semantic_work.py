@@ -81,16 +81,20 @@ def cached_samples(
 
 def cached_embeddings(
     samples: list[dict], encoder: FrozenTextEncoder, revision: str, cache: Path,
+    *, text_window: dict | None = None,
 ) -> np.ndarray:
     texts = [row["observation"].content_tail for row in samples]
+    identity = [revision, encoder.max_tokens, texts]
+    if text_window:
+        identity.append(text_window)
     signature = hashlib.sha256(json.dumps(
-        [revision, encoder.max_tokens, texts], ensure_ascii=False,
+        identity, ensure_ascii=False,
     ).encode()).hexdigest()
     path = cache / f"embeddings-{signature}.npz"
     if path.exists():
         with np.load(path, allow_pickle=False) as values:
             return values["embeddings"]
-    values = encoder.encode(texts)
+    values = encoder.encode(texts, **(text_window or {}))
     np.savez_compressed(path, embeddings=values)
     return values
 

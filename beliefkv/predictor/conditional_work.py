@@ -101,6 +101,15 @@ class NeuralConditionalWork:
         )
         self.projection = raw.get("work_interval_projection", LEGACY_WORK_PROJECTION)
         self.feature_version = raw.get("feature_version", "structural_v1")
+        self.text_window = raw.get("text_window") or {}
+        if self.text_window and (
+            self.schema != 2
+            or set(self.text_window) != {"max_tokens", "truncation_side"}
+            or type(self.text_window["max_tokens"]) is not int
+            or self.text_window["max_tokens"] < 3
+            or self.text_window["truncation_side"] not in ("left", "right")
+        ):
+            raise ValueError("invalid conditional work text window")
         if (
             self.target not in ("remaining", "total") or self.margin < 0
             or self.schema == 2 and (

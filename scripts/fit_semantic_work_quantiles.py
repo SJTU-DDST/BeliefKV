@@ -122,12 +122,16 @@ def main() -> None:
     parser.add_argument("--sample-cache-manifest", type=Path)
     parser.add_argument("--epochs", type=int, default=160)
     parser.add_argument("--work-features", choices=WORK_FEATURE_VERSIONS, default="structural_v1")
+    parser.add_argument("--work-text-max-tokens", type=int)
+    parser.add_argument("--work-text-truncation-side", choices=("left", "right"), default="left")
     parser.add_argument("--late-weight", type=float, default=1.)
     args = parser.parse_args()
     if args.output.exists():
         raise FileExistsError(args.output)
     if args.epochs <= 0:
         parser.error("epochs must be positive")
+    if args.work_text_max_tokens is not None and args.work_text_max_tokens < 3:
+        parser.error("work text window must contain at least three tokens")
     if not math.isfinite(args.late_weight) or args.late_weight < 1.:
         parser.error("late weight must be finite and at least one")
     torch.set_num_threads(2)
@@ -157,8 +161,16 @@ def main() -> None:
         raise ValueError("work refit requires the frozen semantic encoder")
     print(f"Encoding {len(samples)} cached work snapshots", flush=True)
     embeddings = cached_embeddings(samples, encoder, sha, args.cache)
+    text_window = (
+        {"max_tokens": args.work_text_max_tokens, "truncation_side": args.work_text_truncation_side}
+        if args.work_text_max_tokens is not None else {}
+    )
+    work_embeddings = (
+        cached_embeddings(samples, encoder, sha, args.cache, text_window=text_window)
+        if text_window else embeddings
+    )
     raw = np.column_stack((
-        phase.design(observations, embeddings),
+        phase.design(observations, work_embeddings),
         structural_work_features(observations, version=args.work_features),
     ))
     train, selector, interval, held = (
@@ -224,6 +236,7 @@ def main() -> None:
         "kind": "neural_conditional_work", "schema_version": 2,
         "target": "remaining", "output_space": "ordered_log1p_quantiles",
         "feature_version": args.work_features,
+        "text_window": text_window,
         "encoder_weights_sha256": sha,
         "center": center.tolist(), "scale": scale.tolist(),
         "layers": [{
@@ -233,7 +246,7 @@ def main() -> None:
         "scope": "Intrinsic remaining work only; no physical action authorization.",
     }
     runtime = NeuralConditionalWork(work)
-    bounds = runtime.arrays(observations, embeddings, phase)
+    bounds = runtime.arrays(observations, work_embeddings, phase)
     expected = np.expm1(np.clip(
         biased + np.asarray((-margin, 0., margin)), 0., 16.,
     ))
@@ -269,6 +282,7 @@ def main() -> None:
         "scope": "CPU development conditional-work refit, not sealed validation or H2D benefit",
         "plan": plan, "phase_and_encoder_frozen": True,
         "work_features": args.work_features,
+        "work_text_window": text_window,
         "cached_sample_manifest": manifest,
         "training_late_weight": args.late_weight,
         "weighted_output_semantics": (

@@ -32,20 +32,29 @@ class FrozenTextEncoder:
         ).eval()
         self.max_tokens = max_tokens
 
-    def encode(self, texts: Sequence[str], *, batch_size: int = 32) -> np.ndarray:
+    def encode(
+        self, texts: Sequence[str], *, batch_size: int = 32,
+        max_tokens: int | None = None, truncation_side: str | None = None,
+    ) -> np.ndarray:
         result = []
-        with torch.inference_mode():
-            for start in range(0, len(texts), batch_size):
-                batch = self.tokenizer(
-                    list(texts[start:start + batch_size]), padding=True,
-                    truncation=True, max_length=self.max_tokens,
-                    return_tensors="pt",
-                )
-                hidden = self.model(**batch).last_hidden_state
-                mask = batch["attention_mask"].unsqueeze(-1)
-                pooled = (hidden * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1)
-                pooled = torch.nn.functional.normalize(pooled, dim=1)
-                result.append(pooled.numpy())
+        original_side = self.tokenizer.truncation_side
+        if truncation_side is not None:
+            self.tokenizer.truncation_side = truncation_side
+        try:
+            with torch.inference_mode():
+                for start in range(0, len(texts), batch_size):
+                    batch = self.tokenizer(
+                        list(texts[start:start + batch_size]), padding=True,
+                        truncation=True, max_length=max_tokens or self.max_tokens,
+                        return_tensors="pt",
+                    )
+                    hidden = self.model(**batch).last_hidden_state
+                    mask = batch["attention_mask"].unsqueeze(-1)
+                    pooled = (hidden * mask).sum(dim=1) / mask.sum(dim=1).clamp(min=1)
+                    pooled = torch.nn.functional.normalize(pooled, dim=1)
+                    result.append(pooled.numpy())
+        finally:
+            self.tokenizer.truncation_side = original_side
         return np.concatenate(result) if result else np.empty((0, 384), dtype=np.float32)
 
 
@@ -76,6 +85,7 @@ class SemanticReportPredictor:
             raise ValueError("semantic text cache size must be nonnegative")
         self.cache_size = cache_size
         self._text_cache: OrderedDict[str, np.ndarray] = OrderedDict()
+        self._work_text_cache: OrderedDict[str, np.ndarray] = OrderedDict()
 
     @classmethod
     def load(cls, path: str | Path) -> "SemanticReportPredictor":
@@ -110,30 +120,41 @@ class SemanticReportPredictor:
             )
         return cls(head, encoder, work_head=work_head, neural_work=neural_work)
 
+    def _encode_cached(
+        self, observations: Sequence[ReportObservation], cache: OrderedDict,
+        **options,
+    ) -> np.ndarray:
+        missing = list(dict.fromkeys(
+            row.content_tail for row in observations if row.content_tail not in cache
+        ))
+        encoded = dict(zip(missing, self.encoder.encode(missing, **options)))
+        # Build this batch before eviction, including batches larger than the cache.
+        values = []
+        for row in observations:
+            value = encoded[row.content_tail] if row.content_tail in encoded else cache[row.content_tail]
+            values.append(value)
+            cache[row.content_tail] = value
+            cache.move_to_end(row.content_tail)
+        while len(cache) > self.cache_size:
+            cache.popitem(last=False)
+        return np.asarray(values)
+
+    def encode_work(
+        self, observations: Sequence[ReportObservation], phase_embeddings: np.ndarray,
+    ) -> np.ndarray:
+        if self.neural_work is None or not self.neural_work.text_window:
+            return phase_embeddings
+        return self._encode_cached(
+            observations, self._work_text_cache, **self.neural_work.text_window,
+        )
+
     def predict(self, observations: Sequence[ReportObservation]) -> list[ReportPrediction]:
         if not observations:
             return []
-        if self.encoder is None:
-            embeddings = np.zeros((len(observations), len(self.head.embedding_center)))
-        else:
-            missing = list(dict.fromkeys(
-                row.content_tail for row in observations
-                if row.content_tail not in self._text_cache
-            ))
-            encoded = dict(zip(missing, self.encoder.encode(missing)))
-            # Build this batch before eviction, including batches larger than the cache.
-            values = []
-            for row in observations:
-                if row.content_tail in encoded:
-                    value = encoded[row.content_tail]
-                else:
-                    value = self._text_cache[row.content_tail]
-                values.append(value)
-                self._text_cache[row.content_tail] = value
-                self._text_cache.move_to_end(row.content_tail)
-            embeddings = np.asarray(values)
-            while len(self._text_cache) > self.cache_size:
-                self._text_cache.popitem(last=False)
+        embeddings = (
+            np.zeros((len(observations), len(self.head.embedding_center)))
+            if self.encoder is None else self._encode_cached(observations, self._text_cache)
+        )
         predictions = self.head.predictions(observations, embeddings)
         if self.work_head is not None:
             work = self.work_head.predictions(observations, embeddings)
@@ -143,7 +164,9 @@ class SemanticReportPredictor:
                 for phase, remaining in zip(predictions, work)
             ]
         if self.neural_work is not None:
-            work = self.neural_work.arrays(observations, embeddings, self.head)
+            work = self.neural_work.arrays(
+                observations, self.encode_work(observations, embeddings), self.head,
+            )
             predictions = [
                 replace(prediction, conditional_remaining_tokens=tuple(map(float, bounds)),
                         work_interval_status=(
