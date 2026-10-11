@@ -4036,18 +4036,24 @@ class NativeAdmissionRuntime:
             for lease in self._prefetch_service_leases.values()
         }
         live_keys: dict[str, tuple[PrefillCandidateKey, bool]] = {}
-        retained = {}
+        previous_key = None
+        previous_live = False
+        removed = []
         for node_id, (key, created) in self._parent_pressure_candidates.items():
-            if (node_id, created) in protected:
+            if protected and (node_id, created) in protected:
                 self.counts["prefetch_residency_pressure_protected"] += 1
+                removed.append(node_id)
                 continue
-            cached = live_keys.get(key.context_id)
-            if cached is None or (cached[0] is not key and cached[0] != key):
-                cached = (key, self._live_parent_pressure_key(key))
-                live_keys[key.context_id] = cached
-            if cached[1]:
-                retained[node_id] = (key, created)
-        self._parent_pressure_candidates = retained
+            if key is not previous_key:
+                cached = live_keys.get(key.context_id)
+                if cached is None or (cached[0] is not key and cached[0] != key):
+                    cached = (key, self._live_parent_pressure_key(key))
+                    live_keys[key.context_id] = cached
+                previous_key, previous_live = key, cached[1]
+            if not previous_live:
+                removed.append(node_id)
+        for node_id in removed:
+            del self._parent_pressure_candidates[node_id]
 
     def _on_parent_pressure_parked(self, node_id: int, freed: dict[int, int]) -> None:
         for command, lease in tuple(self._prefetch_service_leases.items()):
