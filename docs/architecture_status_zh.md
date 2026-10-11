@@ -77,17 +77,23 @@ v39_eviction_route_single_pass_cpu_20261011.json，均未部署。
 上述writer代码与证据已提交为fe06e06。V23最初于2026-10-11
 08:27:31 CST登记该版本，原登记保存在
 v23_launch_after_v22_fe06e06_superseded_20261011.json。
-2026-10-11 08:46:35 CST已将尚未启动的V23替换为同时包含writer
-索引和准入身份绑定减负的73c9ac1，状态waiting_for_previous_pair，
-协调器PID2167234；冻结checkout为
-beliefkv-v45-admission-binding-20261011，完整目标revision为
-73c9ac13af382f63be37b2fd47d68be6036b1edf，原生patch SHA256仍为
-03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83。
+08:46:35 CST登记的73c9ac1已保存在
+v23_launch_after_v22_73c9ac1_superseded_20261011.json。
+2026-10-11 09:06:17 CST将尚未启动的V23替换为同时包含writer
+索引、准入身份绑定和原生恢复单次spec构造的3644e8b，
+状态waiting_for_previous_pair，协调器PID2402814；
+冻结checkout为beliefkv-v46-single-load-spec-20261011，
+完整目标revision为3644e8b7f752005d861b5fb29c8648fb1467b898，
+新原生patch SHA256为
+498a2e8219f0d454776c7b967b87a82e7b49e3e75831389e08a9daabfb29998e。
 实际登记位于主工作区experiments/reports/
 v23_launch_after_v22_20261011.json；替换回执为
-v23_supersession_fe06e06_to_73c9ac1_20261011.json，旧登记、日志和
-冻结checkout保留。只停止旧waiting coordinator1785294；
+v23_supersession_73c9ac1_to_3644e8b_20261011.json，
+此前v23_supersession_fe06e06_to_73c9ac1_20261011.json及所有旧登记、
+日志和冻结checkout保留。仅停止旧waiting coordinator2167234；
 V22 coordinator/driver/server/scheduler/client均未发送信号。
+新patch相对当前部署的差分已通过原生工作区git apply --check，
+回执为v23_single_spec_validated_engine_delta_20261011.patch。
 协调器已捕获V22 coordinator
 1159560及driver1166290的进程身份，等待整个pair及后处理完成再
 部署；仍为predictive先行、冷native随后，不改变workload或预测
@@ -148,8 +154,9 @@ prefetch burst、load_back以及真实FULL/Mamba/tree spec函数，
 256层同配置为1081.81→951.68微秒。该收益不能直接外推到
 实测handoff enqueue的全部8.138秒或端到端吞吐。
 新canonical patch已在隔离原生工作区验证expected/actual tree
-均为286ef96cc4d5954b9e20a5e3cc96f7306f426acd；该候选等待纳入
-下一轮冻结登记，当前V22继续使用既有patch。
+均为286ef96cc4d5954b9e20a5e3cc96f7306f426acd；代码、夹具和证据
+已提交为3644e8b，并纳入上述V23冻结登记。当前V22继续使用
+既有patch，真实GPU效果及同版本native收益尚待验证。
 
 闭合V21的predictive/native输出吞吐为738.64/831.87 token/s，
 GPU平均利用率为72.04%/80.15%。600–2400秒窗口的decode前平均

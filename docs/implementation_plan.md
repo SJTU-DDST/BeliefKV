@@ -82,18 +82,23 @@ These fixtures exclude real scheduler concurrency, DMA and GPU, and do not
 establish throughput improvement. Writer code and evidence are committed asfe06e06.
 The initial2026-10-11 08:27:31 CST V23 registration is preserved in
 v23_launch_after_v22_fe06e06_superseded_20261011.json.
-At2026-10-11 08:46:35 CST, replace the not-yet-started registration with the
-combined writer-index and admission-binding revision73c9ac1. Same-configuration
-V23 is waiting_for_previous_pair with coordinator2167234. Its frozen checkout is
-beliefkv-v45-admission-binding-20261011, target revision
-73c9ac13af382f63be37b2fd47d68be6036b1edf and canonical patch SHA256 remains
-03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83.
+Preserve the08:46:35 CST revision73c9ac1 registration in
+v23_launch_after_v22_73c9ac1_superseded_20261011.json.
+At2026-10-11 09:06:17 CST, replace the not-yet-started registration with the
+combined writer-index, admission-binding and single-native-spec revision3644e8b.
+Same-configuration V23 is waiting_for_previous_pair with coordinator2402814.
+Its frozen checkout isbeliefkv-v46-single-load-spec-20261011, target revision
+3644e8b7f752005d861b5fb29c8648fb1467b898 and new canonical patch SHA256 is
+498a2e8219f0d454776c7b967b87a82e7b49e3e75831389e08a9daabfb29998e.
 Keep the live registration in the main workspace's
 experiments/reports/v23_launch_after_v22_20261011.json. Preserve the old
 registration, logs and checkout, plus
-v23_supersession_fe06e06_to_73c9ac1_20261011.json. Only the old waiting
-coordinator1785294 was signalled; no V22 coordinator, driver, server, scheduler
-or client was signalled. Captured wait identities
+v23_supersession_73c9ac1_to_3644e8b_20261011.json. Keep the earlier
+v23_supersession_fe06e06_to_73c9ac1_20261011.json as history.
+Only the old waiting coordinator2167234 was signalled; no V22 coordinator,
+driver, server, scheduler or client was signalled. The engine delta passes
+git apply --check against the live frozen engine; retain
+v23_single_spec_validated_engine_delta_20261011.patch. Captured wait identities
 are V22 coordinator1159560 and driver1166290. Deploy only after the full pair and
 postprocessing complete, then run predictive first and cold native second,
 preserving workload and prediction windows. V22 source and processes remain
@@ -159,8 +164,10 @@ to one. Median thread CPU falls9.9%–25.7%;64-node/16-extent/4096-token bursts
 with final Mamba change678.15→545.86 microseconds, and256-node bursts change
 1081.81→951.68. Do not extrapolate this to all8.138s of observed handoff enqueue
 or to end-to-end throughput. The isolated canonical patch's expected/actual
-tree matches286ef96cc4d5954b9e20a5e3cc96f7306f426acd. Include the candidate
-in the next frozen registration; the live V22 remains on its existing patch.
+tree matches286ef96cc4d5954b9e20a5e3cc96f7306f426acd. Code, fixtures and
+evidence are committed as3644e8b and included in the V23 frozen registration.
+The live V22 remains on its existing patch. Actual GPU effect and same-version
+native-relative performance benefit remain unproven.
 
 Closed V21 predictive/native output rates are738.64/831.87 token/s and mean
 GPU utilization72.04%/80.15%. In600–2400s, mean visible decode contexts are
