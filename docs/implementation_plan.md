@@ -2,6 +2,16 @@
 
 Status date: 2026-10-11.
 
+Development iterations may stop an ongoing run once an important fix is
+identified, verified and committed, preserving its frozen plan, raw trace,
+complete windows, written outcomes and interruption receipt. Do not wait
+for the old native arm merely to deploy a useful revision. The existing
+launcher now accepts --development-restart, records interrupted_development
+and waits for old process identities to exit before starting a fresh
+predictive-first pair. Partial work is censored, not model failure or a
+completed performance comparison. Retain a complete same-version native
+comparison for the stable candidate and final benefit claims.
+
 V25 registration is waiting_for_previous_pair as of 21:08:15 CST:
 coordinator 2951765/start 589435807 waits on V24 coordinator 1418070.
 Frozen f244c39 in beliefkv-v94-status-publication-20261011 includes

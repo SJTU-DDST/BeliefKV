@@ -37,6 +37,12 @@ agent 调度、共用路径减负、predictive H2D 与 `PREPARE_HOST`，
 3. 提高有用 FULL 预取覆盖，验证 handoff 能否替代需求恢复，
    并以实际首次复用、吞吐、JCT 与重算评价收益。
 
+开发迭代允许在重要优化已提交后主动结束旧采集，并用新目录
+冷启动最新 predictive。旧计划与 trace 保留，未结束任务属于
+截断观测；只有稳定候选的完整同版本 native 对照用于收益验收。
+现有部署脚本的 --development-restart 支持这一流程，旧轮无需
+完整 summary/后处理，但部署仍在旧执行进程退出之后进行。
+
 V25 已登记冻结 f244c39，待 V24 完整 pair/后处理后部署；包含
 状态发布减负与 prefill 工作量修正，保持原配置，先 predictive
 再同版本冷 native。主工作区 v25_launch_after_v24_20261011.json

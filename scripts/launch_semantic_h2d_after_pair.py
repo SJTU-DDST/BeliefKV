@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Deploy a committed follow-up after a complete pair and start a fresh pair."""
+"""Deploy a follow-up after completed or intentionally interrupted collection."""
 
 from __future__ import annotations
 
@@ -98,6 +98,10 @@ def main() -> None:
     parser.add_argument("--run-root", type=Path, required=True)
     parser.add_argument("--state", type=Path, required=True)
     parser.add_argument("--wait-pid", type=int, action="append", required=True)
+    parser.add_argument(
+        "--development-restart", action="store_true",
+        help="Start a fresh development pair after old processes exit, retaining partial evidence.",
+    )
     parser.add_argument("--port", type=int, default=18454)
     parser.add_argument(
         "--python",
@@ -125,7 +129,13 @@ def main() -> None:
         original, run_root, python=args.python, port=args.port,
     )
     state = {
-        "status": "waiting_for_previous_pair",
+        "status": (
+            "waiting_for_previous_processes" if args.development_restart
+            else "waiting_for_previous_pair"
+        ),
+        "previous_collection_scope": (
+            "interrupted_development" if args.development_restart else "completed_pair"
+        ),
         "previous_run": str(previous),
         "previous_code_commit": original["code_commit"],
         "previous_patch_sha256": original["sglang_patch_sha256"],
@@ -143,7 +153,8 @@ def main() -> None:
     print(json.dumps(state), flush=True)
     try:
         wait_for_processes(identities)
-        validate_completed_pair(previous, original)
+        if not args.development_restart:
+            validate_completed_pair(previous, original)
         if json.loads(plan_path.read_text()) != original:
             raise ValueError("the previous frozen plan changed during collection")
         if git(target, "rev-parse", "HEAD").decode().strip() != revision:
@@ -170,7 +181,10 @@ def main() -> None:
         delta_path.write_bytes(delta)
         if delta:
             git(engine, "apply", "--check", str(delta_path))
-        state["status"] = "deploying_after_completed_pair"
+        state["status"] = (
+            "deploying_after_interrupted_development" if args.development_restart
+            else "deploying_after_completed_pair"
+        )
         write_json(state_path, state)
         git(repo, "merge", "--ff-only", revision)
         if delta:

@@ -4,6 +4,16 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+开发阶段发现重要且已提交的优化后，可以提前结束当前采集并
+冷启动最新 predictive，不必等待旧 native 或完整 pair。保留
+旧冻结计划、原始 trace、已完成窗口、终态结果及停止回执；
+未结束任务记为主动截断，不计为模型 error/incomplete。
+`launch_semantic_h2d_after_pair.py --development-restart` 等待旧
+进程全部退出后部署新修订，记录旧轮为 interrupted_development；
+新目录继续先 predictive 后同版本冷 native。正式收益验收仍需
+候选稳定后的完整同版本对照，开发截断轮仅用于诊断。
+这一约定优先于历史“必须等旧 pair 完成”的开发部署要求。
+
 V25 已于 21:08:15 CST 用干净隔离 checkout 冻结 f244c39，
 等待 V24 协调器 1418070 完成两臂及后处理；V25 协调器为
 2951765，登记为 waiting_for_previous_pair。主工作区权威
