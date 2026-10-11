@@ -2,6 +2,17 @@
 
 更新日期：2026-10-11。
 
+V85 后续服务遥测从已完成 batch 的引擎结果读取
+`can_run_cuda_graph`，在 native/predictive 共用记录中保存
+`cuda_graph_replayed`。未增加采样循环、设备同步或运行策略；
+分析器按 batch、上下文 bin 和回放标记分组，旧记录保持未知。
+600-900 秒重新读取的 V23 predictive/native 7223/7896 个
+decode batch 均无标记，不能补造 graph 是否执行的证据。
+相关遥测及窗口分析共 90 项、原生 scheduler hook 20 项检查
+通过，规范 patch 与隔离源树精确比对、反向应用检查通过。
+保留 v85_v23_legacy_graph_cohorts 与验证回执。此项用于下一轮
+定位 worker 慢批次，不是已修复 GPU 性能或主目标完成的证明。
+
 V84 补齐 V23 同版本 native 的完整繁忙窗口：600-900 秒
 predictive/native 为 1143.43/1250.53 decode token/s，GPU 利用率
 86.03%/90.73%，时间加权 batch 47.353/47.395；900-1200 秒

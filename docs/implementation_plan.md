@@ -2,6 +2,16 @@
 
 Status date: 2026-10-11.
 
+V85 adds the completed engine result's can_run_cuda_graph flag to the
+existing shared native/predictive service records as cuda_graph_replayed.
+No new sampling loop, device synchronization or action policy. Group
+worker intervals by batch, context bin and flag; legacy flags remain
+unknown. V23's7223/7896 decode batches in600-900s are all unknown.
+The90 telemetry/window and20 native scheduler-hook checks pass; the
+canonical patch matches the isolated source and passes reverse-apply
+validation. Keep the V85 legacy-cohort report and receipt. Use this to
+diagnose slow batches in the next GPU pair, without claiming a GPU fix.
+
 V84 now has same-version V23 busy-window evidence. Predictive/native
 decode throughput is1143.43/1250.53 token/s at600-900s and
 1059.913/1083.420 at900-1200s, a predictive deficit of8.6%/2.2%.

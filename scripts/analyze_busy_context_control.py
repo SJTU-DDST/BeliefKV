@@ -126,6 +126,7 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
     path = arm / "server/runtime_audit.jsonl"
     contexts, sums, durations, batches = [], [], [], []
     groups = defaultdict(list)
+    graph_groups = defaultdict(list)
     prefix, bytes_read = hashlib.sha256(), 0
     covered = False
     writer = WriterTimingWindow(begin, end)
@@ -162,6 +163,9 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
             durations.append(duration)
             average = mean(observed)
             groups[(row["batch_size"], int(average) // 2048)].append(duration)
+            replayed = row.get("cuda_graph_replayed")
+            replay_label = "unknown" if replayed is None else str(replayed).lower()
+            graph_groups[(row["batch_size"], int(average) // 2048, replay_label)].append(duration)
             batches.append((average, duration))
     if not covered or not batches:
         raise ValueError(f"runtime samples have not covered the requested window: {path}")
@@ -183,6 +187,16 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
                 "batches": len(values), "mean_ms": mean(values), "median_ms": median(values),
             } for (size, bucket), values in sorted(groups.items())
         },
+        "cuda_graph_cohorts": {
+            f"{size}/{bucket * 2048}/{replay}": {
+                "batches": len(values), "mean_ms": mean(values), "median_ms": median(values),
+            } for (size, bucket, replay), values in sorted(graph_groups.items())
+        },
+        "cuda_graph_semantics": (
+            "Engine completion result can_run_cuda_graph, paired with this batch. "
+            "Absent legacy flags remain unknown; batch size alone does not prove replay. "
+            "Worker intervals include scheduler/result processing and are not kernel timings."
+        ),
     }
 
 

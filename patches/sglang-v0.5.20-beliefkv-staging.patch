@@ -681,7 +681,7 @@ index 7811e44..cd7aea5 100755
                  cow_dst_tensors.append(req.kv.mamba_pool_idx.unsqueeze(0))
                  req.kv.mamba_cow_src_index = None
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..a3d582d 100644
+index 743c8af..f2c64d6 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
 @@ -725,9 +725,147 @@ class Scheduler(
@@ -1141,7 +1141,7 @@ index 743c8af..a3d582d 100644
 +        self._beliefkv_on_batch_completed(batch)
 +        telemetry = self._native_reactive_telemetry
 +        if telemetry is not None:
-+            telemetry.on_completed(batch)
++            telemetry.on_completed(batch, result)
          self._record_step_counters(batch, result)
  
          self.metrics_reporter.log_batch_result_stats(batch, result)

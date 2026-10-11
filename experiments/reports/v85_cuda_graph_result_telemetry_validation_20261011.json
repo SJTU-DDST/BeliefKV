@@ -1,0 +1,23 @@
+{
+  "scope": "Completed engine-result flag in existing shared service telemetry; frozen V23 unchanged",
+  "service_flag": "cuda_graph_replayed",
+  "source_field": "GenerationBatchResult.can_run_cuda_graph",
+  "missing_legacy_value": null,
+  "device_synchronization_added": false,
+  "sampling_loop_added": false,
+  "action_policy_changed": false,
+  "telemetry_checks_passed": 78,
+  "window_analysis_checks_passed": 12,
+  "native_scheduler_hook_checks_passed": 20,
+  "canonical_patch_sha256": "c9195d79d6598c43013d02f04773fb92336651794e9c79005010a9a2b9ec7500",
+  "canonical_patch_matches_isolated_source": true,
+  "reverse_apply_check_passed": true,
+  "legacy_report": "v85_v23_legacy_graph_cohorts_20261011.json",
+  "legacy_window_seconds": [600, 900],
+  "legacy_decode_batches": {
+    "predictive_h2d": {"all": 7223, "unknown": 7223, "known": 0},
+    "native": {"all": 7896, "unknown": 7896, "known": 0}
+  },
+  "gpu_performance_fix_verified": false,
+  "performance_goal_complete": false
+}

@@ -1317,7 +1317,7 @@ class NativeReactiveTelemetry:
         except (AttributeError, KeyError, TypeError, ValueError):
             return {"status": "snapshot_unavailable"}
 
-    def on_completed(self, batch: Any) -> None:
+    def on_completed(self, batch: Any, result: Any = None) -> None:
         self._poll_restore_wait()
         descriptor = self._launched.pop(batch.forward_iter, None)
         if descriptor is None:
@@ -1380,6 +1380,7 @@ class NativeReactiveTelemetry:
             "sample_id": descriptor["sample_id"],
             "phase": descriptor["phase"],
             "batch_size": descriptor["batch_size"],
+            "cuda_graph_replayed": getattr(result, "can_run_cuda_graph", None),
             "request_samples": descriptor["request_samples"],
             "service_start_ts_ms": complete_wall - (complete_mono - start_mono) * 1000,
             "complete_ts_ms": complete_wall,

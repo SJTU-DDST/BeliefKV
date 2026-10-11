@@ -115,7 +115,8 @@ def test_opportunity_writer_window_uses_write_clock_instead_of_producer_clock(tm
 
 
 @pytest.mark.parametrize("collect_writer", [False, True])
-def test_native_writer_coverage_can_follow_the_last_gpu_row(tmp_path, collect_writer):
+@pytest.mark.parametrize("graph_replayed", [None, False, True])
+def test_native_writer_coverage_can_follow_the_last_gpu_row(tmp_path, collect_writer, graph_replayed):
     directory = tmp_path / "server"
     directory.mkdir()
     rows = []
@@ -126,6 +127,8 @@ def test_native_writer_coverage_can_follow_the_last_gpu_row(tmp_path, collect_wr
         "phase": "decode", "batch_size": 1, "service_elapsed_ms": 10.,
         "request_samples": [{"sequence_tokens_before": 1000}],
     })
+    if graph_replayed is not None:
+        rows[-1]["cuda_graph_replayed"] = graph_replayed
     if collect_writer:
         rows.append({
             "event": "background_writer_timing",
@@ -137,6 +140,10 @@ def test_native_writer_coverage_can_follow_the_last_gpu_row(tmp_path, collect_wr
     (directory / "runtime_audit.jsonl").write_bytes(b"".join(encoded(row) for row in rows))
     result = decode_geometry(tmp_path, 100., 200.)
     assert result["decode_batches"] == 1
+    label = "unknown" if graph_replayed is None else str(graph_replayed).lower()
+    assert result["cuda_graph_cohorts"] == {
+        f"1/0/{label}": {"batches": 1, "mean_ms": 10., "median_ms": 10.},
+    }
     writer = result["background_writer_timing"]
     assert writer["available"] == collect_writer
     if collect_writer:

@@ -1134,14 +1134,14 @@ def test_native_request_service_and_ack_are_evidence_not_invented_dma(
         reqs=[request],
     )
     audit.on_launch(batch)
-    audit.on_completed(batch)
+    audit.on_completed(batch, SimpleNamespace(can_run_cuda_graph=False))
     batch.forward_mode = _Mode("decode")
     batch.forward_iter = 2
     batch.launch_ts = time.monotonic()
     audit.on_launch(batch)
     request.output_ids.extend((11, 12))
     request.finished = lambda: True
-    audit.on_completed(batch)
+    audit.on_completed(batch, SimpleNamespace(can_run_cuda_graph=True))
     batch.forward_iter = 3
     batch.launch_ts = time.monotonic()
     audit.on_launch(batch)
@@ -1169,6 +1169,7 @@ def test_native_request_service_and_ack_are_evidence_not_invented_dma(
     assert events[0]["context_epoch"] == 0
     service = _read(tmp_path / "server/runtime_audit.jsonl")
     assert [event["phase"] for event in service] == ["prefill", "decode"]
+    assert [event["cuda_graph_replayed"] for event in service] == [False, True]
     assert service[0]["request_samples"][0]["token_delta"] == 14
     assert service[1]["request_samples"][0]["token_delta"] == 2
     assert all(row["timing_semantics_version"] == "gpu_service_interval_v1" for row in service)

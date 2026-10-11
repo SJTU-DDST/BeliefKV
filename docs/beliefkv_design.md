@@ -42,7 +42,9 @@ predictive decode 吞吐分别低约 8.6%/2.2%，首窗口时间加权
 batch 几乎相同，可见上下文也相近；完整 pair 尚未结束。
 该不利证据必须保留，不能再用跨版本窗口改善代替同版本收益。
 46/47 请求的较长 worker 区间尚未归因；原生允许 padding 到
-48 回放 graph，不能仅凭 batch 大小认定 eager。后续 reentry
+48 回放 graph，不能仅凭 batch 大小认定 eager。后续共用服务
+遥测保存引擎完成结果的 `cuda_graph_replayed`，旧 trace 保持未知；
+即使回放，worker 区间也不等于纯 kernel 时间。后续 reentry
 优化仅复用一次读取中已失败的共享前缀，并减少重复属性读取；
 不跨调用持有输入/驻留状态。27 类 CPU 夹具返回值一致、
 共享失败前缀线程 CPU 降低 6.76%-38.27%，不代表 GPU 吞吐

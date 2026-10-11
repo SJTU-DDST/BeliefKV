@@ -22,6 +22,10 @@ CPU 基准中的历史 `p50_cpu_us` 实为 perf-counter 墙钟字段；
 保留改善与退化样本，夹具结果不能换算为 GPU/JCT。decode 的
 batch 大小没有精确 capture bucket，不代表未回放 graph：原生可
 padding 到更大 bucket；应使用引擎完成结果的回放标记验证。
+后续共用服务记录的 `cuda_graph_replayed` 来自该 batch 对应的
+引擎完成结果，`null` 或缺失表示未知。分析时同时对齐 batch、
+上下文和回放状态；worker 区间仍包括 scheduler/result processing，
+即使标记为 true，也不能称为纯 CUDA kernel 耗时。
 
 ## V20 容量交接与忙时统计
 
