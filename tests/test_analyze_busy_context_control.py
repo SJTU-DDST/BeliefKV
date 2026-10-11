@@ -205,6 +205,38 @@ def test_prefill_cohorts_require_native_geometry_for_every_batch_row(tmp_path):
     assert set(prefill["cohorts"]) == {"2/1024/2048", "1/0/6144"}
 
 
+@pytest.mark.parametrize("raw_launch_count", [0, 1, 2])
+def test_worker_intervals_keep_raw_launch_coverage_and_overlap_separate(
+    tmp_path, raw_launch_count,
+):
+    directory = tmp_path / "server"
+    directory.mkdir()
+    rows = [{
+        "event": "gpu_service_sample", "sample_id": index,
+        "complete_ts_ms": complete, "complete_monotonic_ms": complete,
+        "service_start_monotonic_ms": start, "monotonic_clock_domain": "worker",
+        "phase": "decode", "batch_size": 1, "service_elapsed_ms": complete - start,
+        "request_samples": [{"sequence_tokens_before": 1000}],
+    } for index, (start, complete) in enumerate(((120., 150.), (150., 180.)))]
+    for row, launch in zip(rows[:raw_launch_count], (100., 145.)):
+        row["launch_monotonic_ms"] = launch
+    rows.append({"event": "gpu_service_sample", "complete_ts_ms": 210.})
+    (directory / "runtime_audit.jsonl").write_bytes(b"".join(encoded(row) for row in rows))
+
+    result = decode_geometry(tmp_path, 100., 200.)["worker_interval_neighbors"]
+    assert result["window_samples"] == 2
+    assert result["raw_launch_timing_available"] == bool(raw_launch_count)
+    assert result["raw_launch_window_samples"] == raw_launch_count
+    assert result["missing_raw_launch_window_samples"] == 2 - raw_launch_count
+    assert result["cohorts"]["decode/1/decode/1/0/unknown"]["contiguous_interval_count"] == 1
+    assert result["launch_to_processed_completion_mean_ms"] == (
+        None if raw_launch_count == 0 else 50. if raw_launch_count == 1 else 42.5
+    )
+    assert result["clipped_start_minus_launch_mean_ms"] == (
+        None if raw_launch_count == 0 else 20. if raw_launch_count == 1 else 12.5
+    )
+
+
 @pytest.mark.parametrize("configuration", [
     b"ServerArgs(decode_log_interval=40)",
     b"server_args={'decode_log_interval': 40, 'cuda_graph_config': {'decode': {'bs': [40, 48]}}}",

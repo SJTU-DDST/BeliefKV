@@ -323,7 +323,10 @@ def test_context_opportunity_requires_live_wait_or_ready_session_epoch():
         assert inspect.call_count == 1
 
 
-def test_safe_point_persists_bounded_wait_and_admission_opportunities(tmp_path):
+@pytest.mark.parametrize("defer_observations", (False, True))
+def test_safe_point_persists_bounded_wait_and_admission_opportunities(
+    tmp_path, defer_observations,
+):
     runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
     waiting, tool = req("waiting"), req("tool")
     for request in (waiting, tool):
@@ -358,8 +361,17 @@ def test_safe_point_persists_bounded_wait_and_admission_opportunities(tmp_path):
                       side_effect=lambda *, context_id, context_epoch,
                       admission_candidate=False, max_steps=1:
                       opportunity if context_id == "ctx-waiting" else None) as inspect:
-        runtime.scheduler_step(waiting_queue=[waiting])
-        runtime.scheduler_step(waiting_queue=[waiting])
+        runtime.scheduler_step(
+            waiting_queue=[waiting], defer_observations=defer_observations,
+        )
+        if defer_observations:
+            inspect.assert_not_called()
+            runtime.sample_runtime_observations([waiting])
+        runtime.scheduler_step(
+            waiting_queue=[waiting], defer_observations=defer_observations,
+        )
+        if defer_observations:
+            runtime.sample_runtime_observations([waiting])
         assert inspect.call_count == 2  # 1-second sampling interval
     assert runtime.physical_ledger.pending_count == 0
     runtime.close()

@@ -2,6 +2,27 @@
 
 更新日期：2026-10-12。
 
+V115 将机会采样、终态缓存诊断及周期状态快照移到批次结果
+处理回调，原生 overlap 路径先提交下一批 forward；没有选中
+批次时仍采样。事件处理、预测轮询、恢复、租约及准入策略
+继续在原位置执行，采样频率和记录内容保留。V28 300-600
+秒窗口中的 opportunity_sampling 为 293 次、1.975 秒，
+不能把该累计时间直接换成 JCT 收益。242 项 runtime/引擎
+相关检查通过，另有 105 项遥测和 20 项分析检查通过。
+24 组 CPU 对照保持观测、策略计数、pending 状态及轮询
+频率一致；每轮总 thread CPU 差为 -0.417 至 +0.897 微秒，
+并非总成本下降证明。夹具没有 GPU，真实 overlap 效果待
+冷启动对照验证；负结果保留在 v115_deferred_observations_cpu。
+引擎源码与新 canonical patch 的内容树完全一致。
+
+服务记录新增 launch_monotonic_ms，直接导出已有
+batch.launch_ts，无额外时钟读取或 GPU 同步。它是
+scheduler.run_batch 入口，不是 CUDA 提交或内核开始；
+旧 service_start 裁剪口径保持。分析器区分原始字段的
+完整、部分及缺失覆盖，不用旧 start 补造 launch。
+V28 继续冻结，V29 在确认仍等待后重新登记 V113-V115
+合并版本；吞吐、JCT 与有效提前 FULL 复用目标仍未达到。
+
 V114 完成 V28 的 300-600 秒窗口诊断，参照此前 V27 native；
 冻结计划只差 code_commit，引擎 patch 相同，仍不是同版本
 收益验收。7680/8130 个 decode、2207/2275 个 prefill 的

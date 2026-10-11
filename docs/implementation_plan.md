@@ -2,6 +2,30 @@
 
 Status date: 2026-10-12.
 
+V115 moves periodic opportunity, terminal-cache and runtime-state
+observations to batch-result processing. Native overlap submits the next
+forward first; idle selection still samples the current waiting queue.
+Keep causal event handling, prediction polling, transfers, leases and
+admission in their existing phase, with unchanged observation cadence
+and records. V28's complete300-600s window records293 opportunity
+samples costing1.975s; this cumulative wall time is not a JCT saving.
+The242 relevant runtime/engine checks pass, as do105 telemetry and20
+analysis checks. All24 CPU cases preserve observations, policy counters,
+pending state and semantic polling cadence. Per-cycle total thread-CPU
+deltas range -0.417 to +0.897us; retain the regressions. The dispatch
+boundary is simulated, with no GPU or measured overlap/throughput.
+The isolated engine content tree matches the new canonical patch.
+
+Export existing batch.launch_ts as launch_monotonic_ms without a clock
+read or GPU synchronization. It marks scheduler.run_batch entry before
+telemetry/worker dispatch, not CUDA submission or kernel start. Preserve
+the clipped v1 service interval and distinguish full/partial/missing raw
+coverage in the existing analyzer; never substitute legacy service starts.
+Keep V28 frozen. Revalidate and replace only V29's still-waiting
+registration with a new immutable V113-V115 target, retaining old state,
+logs and checkout. Full same-version throughput/JCT and attributable
+early-FULL reuse remain the active acceptance criteria.
+
 V114 diagnoses V28's complete 300-600s window against prior V27 native.
 Only code_commit differs in the frozen plans; the engine patch matches.
 Retain 7680/8130 decode and 2207/2275 prefill batches with actual geometry.

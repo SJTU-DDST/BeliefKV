@@ -1473,6 +1473,10 @@ class NativeReactiveTelemetry:
             "request_samples": descriptor["request_samples"],
             "service_start_ts_ms": complete_wall - (complete_mono - start_mono) * 1000,
             "complete_ts_ms": complete_wall,
+            "launch_monotonic_ms": descriptor["launch_mono"] * 1000,
+            "launch_timestamp_semantics": (
+                "scheduler.run_batch entry; not CUDA submission or kernel start"
+            ),
             "service_start_monotonic_ms": start_mono * 1000,
             "complete_monotonic_ms": complete_mono * 1000,
             "monotonic_clock_domain": local_monotonic_clock_domain(),

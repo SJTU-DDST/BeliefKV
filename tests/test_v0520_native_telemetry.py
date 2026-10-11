@@ -1339,6 +1339,10 @@ def test_native_request_service_and_ack_are_evidence_not_invented_dma(
     assert service[1]["request_samples"][0]["token_delta"] == 2
     assert all(row["timing_semantics_version"] == "gpu_service_interval_v1" for row in service)
     for row in service:
+        assert row["launch_monotonic_ms"] <= row["service_start_monotonic_ms"]
+        assert row["launch_timestamp_semantics"] == (
+            "scheduler.run_batch entry; not CUDA submission or kernel start"
+        )
         assert row["complete_monotonic_ms"] >= row["service_start_monotonic_ms"]
         assert row["complete_monotonic_ms"] - row["service_start_monotonic_ms"] == pytest.approx(
             row["service_elapsed_ms"], abs=1e-5,
@@ -1724,6 +1728,15 @@ def test_decode_deltas_conserve_tokens_when_forward_completions_overlap(
     events = _read(tmp_path / "server/runtime_events.sglang.jsonl")
     result = next(event for event in events if event["kind"] == "llm_result")
     assert sum(decode_deltas) == result["attributes"]["output_tokens"] == 3
+    decode_records = [record for record in records if record["phase"] == "decode"]
+    assert decode_records[0]["launch_monotonic_ms"] == older.launch_ts * 1000
+    assert decode_records[1]["launch_monotonic_ms"] == newer.launch_ts * 1000
+    assert decode_records[1]["service_start_monotonic_ms"] == (
+        decode_records[0]["complete_monotonic_ms"]
+    )
+    assert decode_records[1]["launch_monotonic_ms"] < (
+        decode_records[1]["service_start_monotonic_ms"]
+    )
 
 
 def test_aborted_waiting_and_started_requests_do_not_leave_pending_telemetry(

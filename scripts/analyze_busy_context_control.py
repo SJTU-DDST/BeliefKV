@@ -268,6 +268,10 @@ def worker_interval_neighbors(markers: list[dict]) -> dict:
     if len(domains) > 1:
         return {"available": False, "reason": "mixed_monotonic_clock_domains"}
     ordered = sorted(valid, key=lambda row: row["complete_ms"])
+    raw_launch_rows = [
+        row for row in valid
+        if row["in_window"] and type(row.get("launch_ms")) in (int, float)
+    ]
     cohorts = defaultdict(list)
     examples = []
     paired = 0
@@ -313,7 +317,22 @@ def worker_interval_neighbors(markers: list[dict]) -> dict:
             for (phase, size, next_phase, next_size, geometry), values in sorted(cohorts.items())
         },
         "examples": examples,
-        "raw_launch_timing_available": False,
+        "raw_launch_timing_available": bool(raw_launch_rows),
+        "raw_launch_window_samples": len(raw_launch_rows),
+        "missing_raw_launch_window_samples": len(selected) - len(raw_launch_rows),
+        "launch_to_processed_completion_mean_ms": (
+            mean(row["complete_ms"] - row["launch_ms"] for row in raw_launch_rows)
+            if raw_launch_rows else None
+        ),
+        "clipped_start_minus_launch_mean_ms": (
+            mean(row["start_ms"] - row["launch_ms"] for row in raw_launch_rows)
+            if raw_launch_rows else None
+        ),
+        "launch_timestamp_semantics": (
+            "scheduler.run_batch entry before telemetry and worker dispatch, "
+            "not CUDA submission or kernel start. Only explicitly recorded raw "
+            "timestamps are used; legacy service starts are not substituted."
+        ),
         "start_boundary": "max(batch.launch_ts, previous_processed_completion)",
         "semantics": (
             "Consecutive observed worker intervals in processed-completion order. "
@@ -359,6 +378,7 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
                     "sample_id": row.get("sample_id"),
                     "phase": row["phase"],
                     "batch_size": row["batch_size"],
+                    "launch_ms": row.get("launch_monotonic_ms"),
                     "start_ms": row.get("service_start_monotonic_ms"),
                     "complete_ms": row.get("complete_monotonic_ms"),
                     "clock_domain": row.get("monotonic_clock_domain"),

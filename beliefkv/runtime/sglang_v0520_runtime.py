@@ -1414,7 +1414,9 @@ class NativeAdmissionRuntime:
             self.counts["semantic_input_submitted"] += 1
 
     @timed_runtime("scheduler_maintenance")
-    def scheduler_step(self, waiting_queue: Sequence[object] = ()) -> None:
+    def scheduler_step(
+        self, waiting_queue: Sequence[object] = (), *, defer_observations: bool = False,
+    ) -> None:
         self._prefill_cycle_active = True
         self._prefill_residency_scan = None
         if self.event_server is not None:
@@ -1532,15 +1534,25 @@ class NativeAdmissionRuntime:
                 "expired" if time.monotonic() >= ticket.expires_at
                 else "safe_point_invalidated"
             )
-        if self._opportunity_writer is not None:
-            if now_ms >= self._opportunity_next_ms:
-                self._sample_h2d_opportunities(waiting_queue, now_ms=now_ms)
-            if (
-                self._terminal_cache_diagnostics
-                and now_ms >= self._terminal_cache_next_ms
-            ):
-                self._sample_terminal_cache(now_ms=now_ms)
-        if self._opportunity_writer is not None and now_ms >= self._runtime_state_next_ms:
+        if not defer_observations:
+            self.sample_runtime_observations(waiting_queue, now_ms=now_ms)
+
+    def sample_runtime_observations(
+        self, waiting_queue: Sequence[object] = (), *, now_ms: float | None = None,
+    ) -> None:
+        """Read diagnostics after launch; idle selection keeps the same cadence."""
+        if self._opportunity_writer is None:
+            return
+        if now_ms is None:
+            now_ms = time.monotonic() * 1000
+        if now_ms >= self._opportunity_next_ms:
+            self._sample_h2d_opportunities(waiting_queue, now_ms=now_ms)
+        if (
+            self._terminal_cache_diagnostics
+            and now_ms >= self._terminal_cache_next_ms
+        ):
+            self._sample_terminal_cache(now_ms=now_ms)
+        if now_ms >= self._runtime_state_next_ms:
             self._runtime_state_next_ms = now_ms + 1_000
             self._record_runtime_state()
 

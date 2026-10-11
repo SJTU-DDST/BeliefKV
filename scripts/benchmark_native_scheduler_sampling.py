@@ -58,7 +58,9 @@ def policy_row(row: dict) -> dict:
     }
 
 
-def benchmark(revision: str, *, samples: int, cycles: int) -> dict:
+def benchmark(
+    revision: str, *, samples: int, cycles: int, defer_observations: bool = False,
+) -> dict:
     baseline, digest = baseline_runtime(revision)
     cases = []
     clock = [1000.]
@@ -83,6 +85,10 @@ def benchmark(revision: str, *, samples: int, cycles: int) -> dict:
                         variant: {"wall_ms": [], "thread_cpu_ms": []}
                         for variant in ("baseline", "optimized")
                     }
+                    if defer_observations:
+                        for measurements in costs.values():
+                            measurements["prelaunch_thread_cpu_ms"] = []
+                            measurements["postlaunch_thread_cpu_ms"] = []
                     try:
                         for variant, cls in (
                             ("baseline", baseline), ("optimized", NativeAdmissionRuntime),
@@ -114,9 +120,23 @@ def benchmark(revision: str, *, samples: int, cycles: int) -> dict:
                                 runtime, queue, _, _ = variants[variant]
                                 start_wall = time.perf_counter_ns()
                                 start_cpu = time.thread_time_ns()
+                                prelaunch_cpu_ns = postlaunch_cpu_ns = 0
                                 for offset in range(cycles):
                                     clock[0] = 1000. + (start_tick + offset) * .001
-                                    runtime.scheduler_step(queue)
+                                    if not defer_observations:
+                                        runtime.scheduler_step(queue)
+                                        continue
+                                    before = time.thread_time_ns()
+                                    if variant == "optimized":
+                                        runtime.scheduler_step(queue, defer_observations=True)
+                                    else:
+                                        runtime.scheduler_step(queue)
+                                    launched = time.thread_time_ns()
+                                    if variant == "optimized":
+                                        runtime.sample_runtime_observations(queue)
+                                    after = time.thread_time_ns()
+                                    prelaunch_cpu_ns += launched - before
+                                    postlaunch_cpu_ns += after - launched
                                 measured = {
                                     "thread_cpu_ms": (
                                         time.thread_time_ns() - start_cpu
@@ -125,6 +145,11 @@ def benchmark(revision: str, *, samples: int, cycles: int) -> dict:
                                         time.perf_counter_ns() - start_wall
                                     ) / 1_000_000 / cycles,
                                 }
+                                if defer_observations:
+                                    measured.update(
+                                        prelaunch_thread_cpu_ms=prelaunch_cpu_ns / 1_000_000 / cycles,
+                                        postlaunch_thread_cpu_ms=postlaunch_cpu_ns / 1_000_000 / cycles,
+                                    )
                                 if sample >= 5:
                                     for metric, value in measured.items():
                                         costs[variant][metric].append(value)
@@ -177,6 +202,14 @@ def benchmark(revision: str, *, samples: int, cycles: int) -> dict:
         ),
         "baseline_revision": revision, "baseline_runtime_sha256": digest,
         "updated_runtime_sha256": hashlib.sha256(source_path.read_bytes()).hexdigest(),
+        "deferred_observations": defer_observations,
+        "phase_partition_semantics": (
+            "CPU fixture dispatch boundary only; no GPU is launched. The optimized "
+            "observation call runs after that boundary using the same logical time "
+            "and queue. Total cost and observation records are retained. This does "
+            "not measure actual GPU overlap, hidden CPU time or throughput."
+            if defer_observations else None
+        ),
         "samples_per_case": samples, "cycles_per_sample": cycles,
         "warmup_samples": 5, "cases": cases,
     }
@@ -187,11 +220,15 @@ def main() -> None:
     parser.add_argument("--baseline-revision", default="e317b68")
     parser.add_argument("--samples", type=int, default=31)
     parser.add_argument("--cycles", type=int, default=128)
+    parser.add_argument("--defer-observations", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.samples <= 0 or args.cycles <= 0:
         parser.error("samples and cycles must be positive")
-    report = benchmark(args.baseline_revision, samples=args.samples, cycles=args.cycles)
+    report = benchmark(
+        args.baseline_revision, samples=args.samples, cycles=args.cycles,
+        defer_observations=args.defer_observations,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     print(f"Saved {args.output}")
