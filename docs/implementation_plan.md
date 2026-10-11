@@ -2,6 +2,29 @@
 
 Status date: 2026-10-11.
 
+Keep the completed V22 waiting-agent audit in
+v70_v22_wait_offload_20261011.json. Tool PREPARE has587 burst decisions,
+3095 acknowledged node commands and27.719GB FULL; pressure demotion has
+77 node events,31 contexts and49 independent tools, releasing1.188GB FULL
+and4.185GB Mamba cumulatively. JOIN PREPARE has293 decisions,891 ACKs
+and6.725GB FULL;49 demotions across42 parents release0.733GB FULL and
+2.125GB Mamba. PREPARE is a Host shadow, not HBM demotion or whole-agent
+offload. Mamba release preserves required native write-back dependencies;
+speculative PREPARE does not back up Mamba.
+
+The existing long-wait predicate targets at least2000ms remaining. First-action
+precision per independent tool is143/499=28.7% for PREPARE and27/49=55.1%
+for demotion; per-node demotion precision is49/77=63.6%. For71 demotions
+with valid P50 predictions, absolute error P50/P90 is719/2828ms. Four
+demotions follow the observed harness TOOL_END by15-119ms; retain clock
+pairing uncertainty and inspect event delivery as well as forecast overestimation.
+The1810 tools with total duration at least2000ms are descriptive, not a feasible
+offload denominator. Current policy starts after actual WAIT_TOOL or WAIT_JOIN;
+there is no unconditional pre-tool or post-spawn COMMIT_CPU. Treat precision,
+coverage, backup/demotion and subsequent consumption as separate evidence.
+This audit does not change the waiting V23b854a91 target or frozen workload;
+the same-version busy-window performance objective remains active.
+
 Reuse pure causal admission ranks across unchanged scheduler iterations instead
 of clearing them every GPU step. Preserve the existing signature of semantic
 revision, graph version, queue order, request object and full current identity.

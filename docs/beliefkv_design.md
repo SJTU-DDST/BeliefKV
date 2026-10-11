@@ -55,6 +55,25 @@ write-back 和恢复依赖保存、加载必要状态。关闭提前备份不能
 离线 trace 中不可识别的预取净收益。准确率、真实传输提前量、
 ACK 后消费与端到端收益分别评价。
 
+工具卸载的现有实现从实际 WAIT_TOOL 开始，根据残余时间判断
+是否备份；不是在工具执行前预测调用并主动卸载。JOIN parent
+在进入 WAIT_JOIN 后可备份缺失 FULL，再于真实分配短缺时由
+原生 allocator 回收已备份的冷页。当前没有每次 spawn 后
+无条件 COMMIT_CPU；PREPARE 只形成 Host shadow，不保证
+parent 或工具 agent 已经成为 host-only。已有原生 Host 副本
+同样可以供回收使用，Mamba 恢复依赖继续由原生路径维护。
+
+V22 审计记录工具/parent 压力回收为 77/49 条节点事件，
+涉及 49 次独立工具等待/42 个 parent，累计释放 FULL
+1.188/0.733 GB。工具长等待规则要求残余 P10 至少 2 秒，
+或未来 2 秒内返回概率不超过 0.1；独立工具首次卸载的实测
+精确率仅 27/49=55.1%，首次 PREPARE 为 143/499=28.7%。
+这是已选择动作的精确率，不是全体预测准确率或机会召回；
+累计页回收也不是完整 agent 卸载或吞吐收益。后续改进应同时
+核对长等待高估、结束事件交付及实际副本/容量消费，不能用
+更多备份 ACK 代替这些证据。逐次数据与来源 SHA256 见
+`experiments/reports/v70_v22_wait_offload_20261011.json`。
+
 H2D 可以只隐藏一部分恢复依赖，无须预计在 RETURN/TOOL_END 前
 完成整批传输。服务估计仍用于选择启动时机，触发 horizon 裁剪到
 配置最大提前量；整批服务加交付时间超过此上限不再令计划失效。
@@ -704,7 +723,7 @@ restore/recompute debt、方向反转率以及最终 workflows/hour。
 | Native causal admission | 新版已接入；allocator最终决定准入 |
 | FULL/Mamba物理闭包、身份与ACK | 有界单node原生事务与首次消费证明已接入 |
 | 预测器 | 冻结语义phase/work + 独立工具残余时间/CDF；runtime独立选动作 |
-| Predictive `PREPARE_HOST` | JOIN/长工具已实际运行，备份后真实压力回收；净收益未证明 |
+| Predictive `PREPARE_HOST` | WAIT_JOIN/WAIT_TOOL 后 FULL 备份与真实压力回收；V22 工具/parent 回收77/49条节点事件，首次工具卸载长等待精确率55.1%；无无条件 spawn 后 COMMIT，净收益未证明 |
 | JOIN `PREFETCH_GPU` | v15有99次ACK，FULL传输/确认首次复用0.893/0.743GB；净收益待完整对照 |
 | 工具 `PREFETCH_GPU` | v15有77次ACK，FULL传输/确认首次复用0.338/0.293GB；仍有未保护驻留丢失 |
 | 原生D2H副本恢复 | 同样可用，不强制依赖先前PREPARE |
