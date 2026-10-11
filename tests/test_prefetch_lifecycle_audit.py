@@ -6,7 +6,7 @@ from scripts.audit_prefetch_lifecycle import (
     audit, full_expiration_evidence, http_transport_waits, observed_capacity_shortfall,
     prepare_host_lifetime_summary, prepare_restore_attribution,
     prepare_selection_summary, source_summary, terminal_capacity_summary, wait_event_attribution,
-    terminal_invocation_scopes, wait_plan_gap_summary,
+    terminal_invocation_scopes, terminal_join_capacity_windows, wait_plan_gap_summary,
 )
 
 
@@ -238,6 +238,103 @@ def test_parent_restore_lookahead_after_service_is_not_attributed():
     assert result["queue_wait_before_restore_lookahead_ms"] == {"count": 0}
 
 
+@pytest.mark.parametrize("release_ts,device,scope,expected", [
+    (20., {"0": 4}, "dynamic_subagent", 50),
+    (20., {"2": 1}, "dynamic_subagent", 50),
+    (20., {}, "dynamic_subagent", 0),
+    (40., {"0": 4}, "dynamic_subagent", 0),
+    (60., {"0": 4}, "dynamic_subagent", 0),
+    (20., {"0": 4}, "runtime_internal", 0),
+    (20., {"0": 4}, "unknown", 0),
+])
+def test_sibling_capacity_window_requires_device_release_before_early_full(
+    release_ts, device, scope, expected,
+):
+    reclaim = {
+        "workflow_id": "wf", "context_id": "child", "invocation_id": "child",
+        "parent_context_id": "parent", "join_id": "join", "session_id": "child",
+        "session_generation": 1, "invocation_scope": scope, "ts_ms": release_ts,
+        "freed_device_units": device, "freed_host_units": {"0": 4},
+        "bytes_per_unit": {"0": 10},
+    }
+    wait = {
+        "source": "join_ticket", "workflow_id": "wf", "context_id": "parent",
+        "join_id": "join", "completion_ts_ms": 50.,
+        "early_started_and_reused_full_command_ids": ["prefetch"],
+    }
+    action = {
+        "command_id": "prefetch", "source": "join_ticket", "workflow_id": "wf",
+        "context_id": "parent", "join_id": "join", "submit_ts_ms": 30.,
+        "pool_bytes": {"kv": 50},
+    }
+    result = terminal_join_capacity_windows([reclaim], [wait], [action])
+    assert result["early_reused_full_bytes_after_sibling_release_known"] == expected
+    assert result["joins_with_early_reused_full_after_sibling_release"] == bool(expected)
+    release = result["cumulative_sibling_device_release_before_join"]
+    if scope == "dynamic_subagent" and device and release_ts < 50.:
+        assert release["freed_device_units"] == device
+        assert result["sibling_device_release_lead_ms"]["p50"] == 50. - release_ts
+    else:
+        assert release["freed_device_units"] == {}
+        assert result["sibling_device_release_lead_ms"] == {"count": 0}
+
+
+def test_sibling_capacity_does_not_turn_missing_boundary_or_missing_use_proof_into_success():
+    reclaim = {
+        "workflow_id": "wf", "context_id": "child", "session_id": "child",
+        "session_generation": 1, "invocation_scope": "dynamic_subagent",
+        "parent_context_id": "parent", "join_id": "join", "ts_ms": 20.,
+        "freed_device_units": {"0": 4}, "freed_host_units": {}, "bytes_per_unit": {"0": 10},
+    }
+    wait = {
+        "source": "join_ticket", "workflow_id": "wf", "context_id": "parent",
+        "join_id": "join", "completion_ts_ms": None,
+    }
+    action = {
+        "command_id": "prefetch", "source": "join_ticket", "workflow_id": "wf",
+        "context_id": "parent", "join_id": "join", "submit_ts_ms": 30.,
+        "pool_bytes": {"kv": 50}, "full_first_service_reused": True,
+    }
+    unknown = terminal_join_capacity_windows([reclaim], [wait], [action])
+    assert unknown["completion_unobserved_events"] == 1
+    assert unknown["rows"][0]["sibling_device_release_before_join"] is None
+    assert unknown["rows"][0]["early_reused_full_bytes_after_sibling_release_known"] is None
+    known = terminal_join_capacity_windows(
+        [reclaim], [{**wait, "completion_ts_ms": 50.}], [action],
+    )
+    assert known["joins_with_sibling_device_release_before_join"] == 1
+    assert known["early_reused_full_bytes_after_sibling_release_known"] == 0
+
+
+def test_sibling_capacity_separates_join_rounds_actions_and_explicit_invocation_scope():
+    reclaim = {
+        "workflow_id": "wf", "invocation_id": "child", "context_id": "child",
+        "session_id": "child", "session_generation": 1, "invocation_scope": "runtime_internal",
+        "parent_context_id": "parent", "join_id": "join", "ts_ms": 20.,
+        "freed_device_units": {"0": 4}, "freed_host_units": {}, "bytes_per_unit": {"0": 10},
+    }
+    wait = {
+        "source": "join_ticket", "workflow_id": "wf", "context_id": "parent",
+        "join_id": "join", "completion_ts_ms": 50.,
+        "early_started_and_reused_full_command_ids": ["good", "other", "demand"],
+    }
+    action = {
+        "command_id": "good", "source": "join_ticket", "workflow_id": "wf",
+        "context_id": "parent", "join_id": "join", "submit_ts_ms": 30., "pool_bytes": {"kv": 50},
+    }
+    result = terminal_capacity_summary(
+        [reclaim, {**reclaim, "join_id": "other-join", "freed_device_units": {"0": 100}}],
+        [], invocation_scopes={("wf", "child"): "dynamic_subagent"},
+        join_wait_events=[wait], prefetch_actions=[
+            action, {**action, "command_id": "other", "join_id": "other-join"},
+            {**action, "command_id": "demand", "source": "execution_handoff"},
+        ],
+    )["sibling_release_windows"]
+    assert result["early_reused_full_bytes_after_sibling_release_known"] == 50
+    assert result["cumulative_sibling_device_release_before_join"]["freed_device_units"] == {"0": 4}
+    assert result["rows"][0]["early_reused_full_commands_after_sibling_release"] == ["good"]
+
+
 def test_prepare_burst_ack_attribution_does_not_multiply_first_extent_estimates():
     result = prepare_selection_summary([{
         "source": "join_prepare", "command_id": "first",
@@ -359,6 +456,7 @@ def test_wait_events_deduplicate_node_commands_and_keep_native_residual_demand_s
     assert row["max_observed_planned_full_tokens"] == 8
     assert row["max_observed_planned_full_bytes"] == 80
     assert row["node_command_count"] == 3
+    assert row["early_started_and_reused_full_command_ids"] == ["early-1", "early-2"]
     assert row["early_started_and_reused_full_bytes"] == 50
     assert row["remaining_native_full_host_hit_bytes"] == 30
     assert row["demand_handoff_full_bytes_known"] == 80
@@ -383,6 +481,7 @@ def test_wait_events_deduplicate_node_commands_and_keep_native_residual_demand_s
     actions[0]["first_service_request_id"] = "later"
     actions[1]["first_service_context_epoch"] = 3
     mismatched = wait_event_attribution(tmp_path, observations, issues, actions, 80.)
+    assert mismatched["rows"][0]["early_started_and_reused_full_command_ids"] == []
     assert mismatched["rows"][0]["early_started_and_reused_full_bytes"] == 0
     missing = wait_event_attribution(tmp_path, [], issues, actions, 80.)
     assert missing["rows"][0]["max_observed_planned_full_tokens"] is None

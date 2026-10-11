@@ -2,20 +2,33 @@
 
 更新日期：2026-10-11。
 
-当前运行V21同版本native；predictive已155个completed、1个incomplete。
-2026-10-11 07:43 CST将仍等待中的V22目标更新为3aa27dd，
-冻结checkout为beliefkv-v35-fragmented-handoff-20261011，协调器PID1159560。
-实验环境、原生patch、后台writer、生命周期审计及等待进程身份
-与08b804f登记一致，旧状态完整保留；回执为
-v22_supersession_08b804f_to_3aa27dd_20261011.json。
-V21完整pair及后处理结束后，自动部署该版本并先predictive后冷native。
-本次登记取消需求恢复的累计16-extent截断，保留单批16-extent、
+V21完整pair和后处理已结束：predictive为155个completed、
+1个incomplete，native为156个completed。2026-10-11 07:49:16 CST
+已自动部署V22的3aa27dd；当前运行predictive，结束后自动冷启动
+同版本native。冻结checkout为beliefkv-v35-fragmented-handoff-20261011，
+协调器PID1159560，driver PID1166290，scheduler PID1166676，
+client PID1168306。登记状态为running_new_pair，原生patch的
+expected/actual tree均为63d91509bee139b2d6a2285eb44b193a67a9e008。
+保留v22_supersession_08b804f_to_3aa27dd_20261011.json；
+实际启动登记位于主工作区experiments/reports/
+v22_launch_after_v21_20261011.json。V22取消需求恢复的累计16-extent
+截断，保留单批16-extent、
 实时容量/pending额度、原有有效期及原生依赖；纳入writer窗口
 分析和按epoch绑定的工具轮次审计修正，保留终态child
 容量交接、容量结算后parent恢复重试、后台写入CPU证据、
 前缀写入减负、首次服务公共前缀比较复用、完整祖先观察、
 已老化准入检查减负和同次tool恢复计划复用；
-等待启动不代表GPU验证完成，吞吐目标仍未达成。
+07:57 CST已观察到真实GPU请求、终态child回收、parent首次服务及
+物理动作ACK；native证据writer的dropped/failed均为0，
+writer_error为空。启动阶段尚不能判断繁忙窗口收益，吞吐目标仍未达成。
+
+闭合V21的predictive/native输出吞吐为738.64/831.87 token/s，
+GPU平均利用率为72.04%/80.15%。600–2400秒窗口的decode前平均
+可见上下文为23679.53/23850.39 token，worker decode区间均值为
+41.49/36.19ms；相近上下文仍存在服务差距。保留
+v35_v21_busy_context_control_600_2400_20261011.json及原始来源哈希。
+worker区间并非kernel时间，整侧轨迹与完成数也不同，不能把差距
+全部归给单一函数；V22继续验证控制减负、完整恢复和实际提前复用。
 
 隔离工作区修正工具轮次审计中的晚到观测关联。原先following请求
 必须晚于first_observation；若控制观测在真正下一请求提交后到达，
@@ -32,8 +45,8 @@ read_file，旧审计却计为两次工具，并选取epoch22而非epoch21。
 真正提前且复用的FULL仍为JOIN1.419GB、tool2.530GB，不能把
 归因修订当成模型精度或吞吐提升；修正后的工具残余原生FULL
 为585.285GB，是观测需求而非可实现的预取或oracle收益。
-本项是离线归因修订，运行中的V21及已冻结V22策略保持原版本。
-修正后的审计脚本已随08b804f进入V22冻结登记，使新一轮后处理
+本项是离线归因修订，V21采集时保留原策略版本。
+修正后的审计脚本已随3aa27dd进入当前V22冻结后处理，使新一轮
 使用正确轮次边界；这不改变模型、传输或准入策略。
 
 隔离工作区补齐后台证据写入线程的独立计时。Native与opportunity
@@ -53,7 +66,7 @@ scripts/benchmark_writer_timing_cpu.py的16组1000轮交替测量，
 分别为0.498/0.595/0.844微秒。保留
 v32_writer_timing_cpu_20261011.json；该CPU夹具不包含实际
 队列、文件I/O、前缀处理或并行scheduler，不是GPU收益证据。
-本项计时已进入87370d3的冻结登记；运行中的V21仍为原版本。
+本项计时已随3aa27dd部署到V22并开始采集；V21没有该计时。
 
 隔离工作区补齐scripts/analyze_busy_context_control.py的writer窗口
 分析：原生writer快照随decode证据读取，opportunity writer随控制
@@ -93,7 +106,7 @@ v33_v21_tool_forecast_epoch_bound_20261011.json；v31旧口径及
 可实现的独占容量，也不证明实际传输、驻留、准入或性能收益。
 继续用实际child容量释放、完整前缀恢复与首次消费验证覆盖，
 将多工具轮次时机误差另行追踪。本项仅增加离线诊断，没有修改
-运行中的V21或等待启动V22的策略；127项相关审计/tool检查通过。
+V21或当前V22的运行策略；127项相关审计/tool检查通过。
 
 继续降低后台前缀证据写入的Python工作量。原生整数token列表
 直接转换为array，已有array在只读重访探测中复用；已服务前缀
@@ -112,7 +125,7 @@ predictive有44790条已服务前缀探测，合计951763303个公共
 token位置，P50为21261 token；原始证据SHA256保留。
 这些计数不等于额外KV复用或节省的JCT，CPU测量没有并行
 调度线程，不能据此断言GIL争用就是GPU性能差距的根因。
-本项修改已进入待启动V22冻结登记87370d3，尚未部署到V21。
+本项修改已随3aa27dd部署到当前V22，V21使用旧版本。
 
 隔离工作区继续减少准入排序的无效观察：已经进入10秒等待老化
 次序的请求，驻留信息不会影响其到达顺序，排序扫描不再读取它
@@ -123,8 +136,8 @@ CPU基准的计划、策略计数和提升身份一致；所有少读的对象�
 已老化请求。48请求全老化夹具的原生读取从2344次降到0，
 两次规划均值1.110→0.689ms；156请求为2.504→1.965ms。
 读取计数包含10轮预热，原生inspector是确定性stub；未老化
-场景的时间差异不能当作收益。这项修订已纳入更新的V22登记，未进入
-运行中的V21。证据为v28_aged_residency_inspection_cpu_20261011.json。
+场景的时间差异不能当作收益。这项修订已部署到当前V22，未进入
+旧V21。证据为v28_aged_residency_inspection_cpu_20261011.json。
 
 继续降低预取首次服务证据的同步成本。在同一个请求的首次服务
 记录中复用已核验的公共输入前缀，减少Python逐token重复比较；
@@ -144,8 +157,8 @@ CPU基准的计划、策略计数和提升身份一致；所有少读的对象�
 服务command记录关联4285个请求，3001个请求有多个目标前缀；
 逐token核验的已匹配前缀合计262613488 token，其中199168503
 位置在同一请求中被重复比较。这些不是额外复用字节或可从JCT
-扣除的时间。修订已进入待启动V22冻结登记87370d3，
-运行中的V21及其旧证据保持原版本。
+扣除的时间。修订已随3aa27dd部署到当前V22，
+V21及其旧证据保留原版本。
 
 补充可复现的繁忙窗口几何/控制审计，脚本为
 scripts/analyze_busy_context_control.py，证据为
@@ -188,7 +201,7 @@ handoff 因 no_cold_capacity 关闭后会一直保留在已尝试集合中；
 并按相同 workflow/context/JOIN/request 关联重试后的 parent
 服务，不能把 native_locked=false 全部视作失去保护或浪费。
 431 项终态回收、handoff、运行时、物理传输、tool 与审计检查
-通过；这项修订尚未部署到运行中的冻结 V21。
+通过；V21保留旧版本，这项修订已进入当前运行的V22。
 
 隔离工作区取消需求handoff的累计16-extent截断，保留每批最多16
 个extent。V21有81个请求在16个ACK后关闭，全部在关联首次服务
@@ -201,8 +214,28 @@ token；对应22.136GB只是原生请求缓存记账代理，可能包含合并
 pending额度继续分批恢复；有效期不续长，原生依赖、页身份、
 ACK校验与失效回退不变，非overlap路径也不再把第16个extent
 当作恢复结束。205项handoff/终态容量/runtime检查通过。
-此项已纳入待启动V22的3aa27dd，尚未GPU验证；需求恢复不计入RETURN
+此项已部署到V22的3aa27dd，正在采集GPU证据；需求恢复不计入RETURN
 前预取，不能由这些检查或Host命中记账宣称吞吐/JCT改善。
+
+离线容量审计新增sibling_release_windows，以独立workflow/
+parent context/JOIN关联真实设备容量释放和完整JOIN边界。
+只有释放发生在实际H2D submit之前、submit发生在完整JOIN之前、
+且既有审计已证明下一请求复用FULL，才计入“sibling释放之后的
+提前复用FULL”。仅Host释放、最后child返回后的释放、内部summary
+调用、不同JOIN和没有复用证明的命令分别排除；未知JOIN终态不填0。
+记录每轮释放提前量及分池实际回收量；这只是时序与复用关联，
+不能证明页号交接、独占容量或native相对收益。本项仅修改隔离
+工作区的离线审计，不修改当前V22运行策略或冻结后处理脚本。
+66项生命周期检查通过。重算闭合V21：187个观测JOIN中159个
+在完整JOIN前已有sibling实际设备释放，其中86个JOIN随后发生
+提前提交并由下一请求复用的FULL，合计1.207GB。这些JOIN前
+设备释放累计为FULL41.998GB、Mamba32.452GB，不是同时空闲
+容量；首次sibling释放到JOIN的P50约649秒，不能从此假设容量
+会一直留给parent。旧版所有既有汇总指标保持一致。保存
+v36_v21_sibling_capacity_windows_20261011.json及
+v36_capacity_handoff_deployment_and_audit_20261011.json。
+V22在08:02 CST前已至少有5个真实需求恢复超过16个extent，最大23；
+只能证明原截断已解除，不能计入提前预取或吞吐收益。
 
 隔离工作区补齐物理状态变化后的短期观测失效。关联child确实释放
 设备容量时，立即清除该parent的语义目标/工具恢复观测；带命令
@@ -223,8 +256,8 @@ handoff检查通过，现已进入更新后的V22冻结登记87370d3。
 100轮交替CPU测量中，4节点/300节点完整dispatch均值分别由
 0.858/9.117ms降至0.683/6.672ms；计划与记账一致，300节点新版
 仍有19.507ms最大值，不能声称消除了长尾。保留
-v27_tool_dispatch_cpu_20261011.json。这项修订已纳入等待启动的
-87370d3，不属于冻结运行中的V21。
+v27_tool_dispatch_cpu_20261011.json。这项修订已随3aa27dd部署到
+当前V22，不属于旧V21。
 
 同版本V21的600–900秒窗口两侧都已完整观测，predictive/native
 decode吞吐为891.68/1165.71 token/s，GPU利用率69.26%/87.60%，
@@ -233,8 +266,8 @@ worker decode区间均值44.19ms，native为35.50ms；该区间不是
 CUDA kernel时间。这说明当前容量交接证据不能代替服务性能验收，
 也不能仅用batch大小解释差距。原始比较及SHA256保存在
 v21_busy_window_same_version_evidence_20261011.json。native整侧
-尚未完成，不将这个局部窗口当作完整JCT或因果速度提升。
-下一轮需验证已排队的实时池计数、深前缀完整观察和控制减负，
+现已完成，这个局部窗口仍不代表因果速度提升。
+当前V22验证实时池计数、深前缀完整观察和控制减负，
 同时继续检查实际提前FULL复用与parent服务，性能目标保持进行中。
 
 后续检查确认完整前缀规划存在不合理的固定祖先数量限制：
@@ -265,9 +298,8 @@ Mamba、16步传输额度、真实allocator回收与共享页保留。
 与完整观察的耗时比较当成性能改进。保留v22_complete_prefix_
 reentry_cpu_20261011.json和v22_deep_prefix_reentry_cpu_20261011.json。
 
-该修订与容量结算后的parent恢复重试进入V22待启动版本，
-仍按V21完整pair结束后自动部署，先predictive后同版本冷native。
-不改运行中V21的源码/patch；下一轮重点检查深前缀的实际
+该修订与容量结算后的parent恢复重试已随3aa27dd部署到V22，
+先predictive后同版本冷native。V21保留原源码/patch；当前重点检查深前缀的实际
 提前FULL复用、parent服务等待、驻留原因和繁忙窗口吞吐。
 四步容量交接已实现，但native相对吞吐目标仍未达成。
 
@@ -303,7 +335,7 @@ native。登记后的目标checkout不再编辑，文档及回执在隔离工作
 完成后的predictive审计更新到v25_v21_capacity_handoff_progress_
 20261011.json，保留最终原始审计路径及SHA256。V21 predictive
 155个completed、1个incomplete，约11375.87秒；同版本冷native
-正在采集。354个真实动态child累计释放设备
+现已完成，闭合pair结果见本文开头。354个真实动态child累计释放设备
 FULL115.495GB/Mamba120.858GB；188个parent首次服务中185个
 可关联到先前child设备释放。最后child的scheduler RETURN观测到
 parent首个观测完成GPU batch的P50/P90为209.57/493.56ms，

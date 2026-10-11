@@ -2,15 +2,17 @@
 
 Status date: 2026-10-11.
 
-V21 same-version native collection is running; predictive finished with 155
-completed and one incomplete workflow. At 2026-10-11 07:43 CST, the still-waiting
-V22 target was updated to 3aa27dd in frozen beliefkv-v35-fragmented-handoff-20261011,
-coordinator PID1159560. Environment, canonical native patch, background writers,
-lifecycle audit and waited process identities match the preserved 08b804f
-registration. Keep v22_supersession_08b804f_to_3aa27dd_20261011.json.
-After the complete V21 pair and
-postprocessing, automatically deploy this revision, predictive first then cold
-same-version native. The target removes the cumulative16-extent demand-restore
+The V21 pair and postprocessing have completed: predictive has 155 completed
+and one incomplete workflow; native has 156 completed. V22 revision3aa27dd
+was automatically deployed at 2026-10-11 07:49:16 CST. Predictive is running,
+followed automatically by cold same-version native. Frozen checkout:
+beliefkv-v35-fragmented-handoff-20261011; coordinator1159560, driver1166290,
+scheduler1166676 and client1168306. Registration is running_new_pair;
+canonical native expected/actual tree matches
+63d91509bee139b2d6a2285eb44b193a67a9e008. Keep
+v22_supersession_08b804f_to_3aa27dd_20261011.json and the deployed registration
+in the main workspace's experiments/reports/v22_launch_after_v21_20261011.json.
+The deployed revision removes the cumulative16-extent demand-restore
 cutoff, retaining16 extents per burst, live capacity/pending limits, original
 expiry and native dependencies. It adds writer-window analysis and retains
 the epoch-bounded tool-round audit below,
@@ -18,8 +20,18 @@ retaining terminal-child capacity handoff, capacity-settlement parent retries,
 background writer CPU evidence, prefix writer reduction, shared first-service
 input-prefix evidence, complete ancestor observation, aged-order inspection
 reduction and same-dispatch tool plan reuse.
-Waiting registration is not GPU validation;
-the broad performance objective remains active.
+At07:57 CST, real GPU requests, terminal-child allocator release, parent first
+service and physical ACKs are present. Native evidence has zero dropped/failed
+records and no writer error. Startup evidence does not establish busy-window
+benefit; the broad performance objective remains active.
+
+Closed V21 predictive/native output rates are738.64/831.87 token/s and mean
+GPU utilization72.04%/80.15%. In600–2400s, mean visible decode contexts are
+23679.53/23850.39 tokens, while mean worker decode intervals are41.49/36.19ms.
+Retain v35_v21_busy_context_control_600_2400_20261011.json with source hashes.
+Worker intervals are not kernel time, and whole-arm trajectories/outcomes differ.
+Validate V22 control reductions, complete restoration and actual early use before
+attributing the prior service gap or claiming improvement.
 
 Fix delayed tool-observation attribution in the isolated follow-up. Requiring
 following submission to be later than first_observation can skip the real next
@@ -38,8 +50,8 @@ Verified early-and-reused FULL remains JOIN1.419GB and tool2.530GB. Corrected
 tool residual native FULL is585.285GB of observed demand, not achievable
 prefetch or oracle savings. These corrections are not prediction or performance
 improvements. This is an
-offline evidence correction, absent from the running V21 and frozen V22 policy.
-The corrected audit script is now registered with 08b804f for V22 postprocessing;
+offline evidence correction, absent from V21 and V22 runtime policies.
+The corrected audit script is deployed with3aa27dd for V22 postprocessing;
 the model, transfer and admission policies remain the same as queued 87370d3.
 
 Add independent background-writer CPU evidence in the isolated follow-up.
@@ -59,7 +71,7 @@ preserve every encoded JSON record. Mean per-record added costs for
 1170/8543/20002-byte fixtures are 0.498/0.595/0.844 microseconds. This excludes
 actual queue, disk, prefix processing and concurrent scheduler work; it is not
 GPU performance evidence. This instrumentation is registered in the frozen
-87370d3 target; the running V21 retains its original version.
+3aa27dd revision and collecting in V22; V21 did not collect these timings.
 
 Extend scripts/analyze_busy_context_control.py with background-writer window
 analysis, consuming native snapshots during the decode scan and opportunity
@@ -102,7 +114,7 @@ plan snapshots can overlap categories and share pages. They are not unique
 achievable bytes, transfer completion, residence, admission or speedup. Validate
 terminal-child release, complete-prefix coverage and actual next-request use;
 track multi-tool timing separately. This offline diagnostic changes neither
-running V21 nor the frozen waiting V22 policy. The 127 scoped audit/tool checks
+V21 nor the deployed V22 policy. The 127 scoped audit/tool checks
 pass.
 
 Reduce background prefix-evidence writer work using direct native integer-array
@@ -122,8 +134,8 @@ speedup evidence. The closed V21 predictive output has44790 context probes
 comparing951763303 common token positions, with21261-token median. Retain its
 source SHA256. These are neither extra useful KV bytes nor avoided JCT. This
 fixture excludes concurrent scheduler work and does not establish GIL contention
-as the cause of the GPU performance gap. The validated reduction is registered
-in the waiting 87370d3 target; preserve the running V21 pair.
+as the cause of the GPU performance gap. The validated reduction is deployed
+in V22 revision3aa27dd; V21 retained its original version.
 
 The isolated follow-up skips resident-order reentry inspection for requests
 already in the ten-second arrival-order aging class. Their residency cannot
@@ -138,8 +150,8 @@ For fully aged48/156-request queues, two-plan wall means change from
 1.110/2.504 to0.689/1.965ms;48-request native reads change2344→0.
 This uses a deterministic native-inspector stub, includes warmups in read counts,
 and is not GPU throughput proof. Unaged timing differences are noise rather
-than evidence of savings. This validated revision is now registered in the
-still-waiting V22 coordinator; the current V21 pair remains frozen.
+than evidence of savings. This validated revision is deployed in
+V22 revision3aa27dd; V21 retained its original version.
 
 Reduce synchronous first-service prefetch evidence work by retaining the
 matching input prefix only within the current request's recording call.
@@ -161,8 +173,8 @@ records for4285 requests,3001 with multiple target prefixes. Reported matching
 prefixes total262613488 tokens, including199168503 repeated matching positions
 within the same request. Preserve the source SHA256. These counts are neither
 additional verified reuse bytes nor removable JCT; the fixture excludes writer,
-allocator, DMA and GPU work. The validated follow-up is now registered as 87370d3
-in the still-waiting V22 coordinator; V21 and its evidence retain their version.
+allocator, DMA and GPU work. The validated follow-up is deployed in
+V22 revision3aa27dd; V21 and its evidence retain their version.
 
 Keep the reproducible scripts/analyze_busy_context_control.py and
 v21_busy_context_control_600_900_20261011.json with source-prefix and boundary-row
@@ -203,7 +215,7 @@ budget exhaustion and an unobservable native closure. Partition FULL transfer an
 reuse by those reasons; link rearmed requests to observed parent service using the
 same workflow/context/JOIN/request and causal time order. Do not infer a miss
 from native_locked=false. The 431 scoped terminal/handoff/runtime/physical/tool/
-lifecycle checks pass. This revision is not part of the running frozen V21.
+lifecycle checks pass. V21 retained its frozen revision; the fix is deployed in V22.
 
 Remove the demand handoff's cumulative16-extent cutoff, retaining16 extents per
 burst. Closed V21 has81 requests stopped after16 ACKs, all before linked first
@@ -218,9 +230,30 @@ continue bursts fitting current native capacity and pending-action slots.
 Do not renew the deadline or relax page/session identity, native pipeline
 dependencies, receipt verification or ordinary fallback. Nonoverlap deferral
 must also follow the live fragmented restoration beyond16 extents.
-The205 handoff/terminal-capacity/runtime checks pass. This is registered in the
-still-waiting V22 target3aa27dd, not yet GPU-validated. Demand restoration remains separate
+The205 handoff/terminal-capacity/runtime checks pass. This is deployed in
+V22 revision3aa27dd and collecting GPU evidence. Demand restoration remains separate
 from pre-RETURN prefetch; tests and Host-hit proxies are not throughput/JCT proof.
+
+Add offline sibling_release_windows to the existing terminal-capacity audit.
+Link actual dynamic-child device release and the observed complete JOIN by
+workflow/parent context/JOIN. Count early FULL only if its actual submission is
+after a linked device release and before complete JOIN, and the existing wait
+audit proves FULL reuse by the following request. Host-only release, post-JOIN
+release, internal summary calls, other JOINs and missing reuse proof cannot
+qualify. Missing completion leaves the window unknown. Report release lead,
+actual per-pool capacity and qualified command bytes; temporal association is
+not exclusive page handoff or native-relative savings. This isolated offline
+audit does not mutate V22's frozen runtime or postprocessing.
+The66 lifecycle checks pass. Recompute closed V21:159 of187 observed JOINs
+have prior sibling device release;86 then submit proven early-and-reused FULL,
+totaling1.207GB. Cumulative pre-JOIN device release is FULL41.998GB and
+Mamba32.452GB, not simultaneously free capacity. First sibling release precedes
+JOIN by a649s median, so do not assume that capacity remains available. All
+previous summary metrics are unchanged. Keep
+v36_v21_sibling_capacity_windows_20261011.json and
+v36_capacity_handoff_deployment_and_audit_20261011.json.
+Before08:02 CST, at least five real V22 demand restorations exceed16 extents, reaching23.
+This proves cutoff removal, not anticipation or service-performance improvement.
 
 Invalidate only the affected parent's semantic/tool restore observations after
 linked terminal-child device release. On ledger-validated completed PREPARE,
@@ -231,7 +264,7 @@ unrelated caches and all current page/capacity/time/residency checks. Untagged
 native ACKs, invalid receipts, stale sessions, Host-only release and no-capacity
 retries do not trigger invalidation. There is no new decode-loop scan. The261
 terminal/tool/runtime/handoff checks pass. This revision is now included in the
-updated frozen 87370d3 V22 target; waiting registration is not GPU validation.
+deployed V22 revision3aa27dd; deployment alone is not performance acceptance.
 
 Reuse only a tool restore plan freshly read during the current dispatch. Refresh
 plans from the short cache or an earlier selection. Preserve the post-event-drain
@@ -242,7 +275,7 @@ v27_tool_dispatch_cpu_20261011.json: 100 alternating CPU samples retain ordered
 bursts and ledger reservations; four/300-node dispatch means change from
 0.858/9.117 to 0.683/6.672 ms. The optimized 300-node maximum remains 19.507 ms.
 This is a CPU planning result, not GPU throughput or end-to-end savings. The
-committed change is now registered in 87370d3; the running V21 remains frozen.
+committed change is deployed in V22 revision3aa27dd; V21 retained its version.
 
 Keep v21_busy_window_same_version_evidence_20261011.json with the original
 comparison SHA256. Both V21 arms completely observe 600–900 s: predictive/native
@@ -251,8 +284,8 @@ time-weighted decode batch 47.18/47.36. Predictive is 23.51% slower in this wind
 The mean worker decode intervals 44.19/35.50 ms are not CUDA kernel timings.
 Capacity handoff associations do not establish service performance improvement,
 and similar batch sizes do not explain the measured gap. Native collection is
-still running; do not label the window a final JCT or causal speedup. Validate
-queued live-pool geometry, complete-prefix coverage and control reductions with
+now complete; this window still cannot establish causal speedup. Validate
+deployed V22 live-pool geometry, complete-prefix coverage and control reductions with
 actual early FULL reuse and parent service in the next same-version pair.
 The broad performance goal remains active.
 
@@ -286,10 +319,9 @@ about -0.7 to +4.9 microseconds; newly supported complete 65/128/300-node
 observations take 111–615 microseconds. Old fast rejection and new complete
 inspection perform different work and must not be reported as a speedup.
 
-Schedule this committed revision together with the capacity-settlement retry in
-V22, replacing only the still-waiting launch registration while preserving its
-superseded state. Keep the live V21 pair frozen. After its complete artifacts,
-deploy exactly this revision and patch, run predictive first and cold native
+This committed revision and the capacity-settlement retry are deployed in V22
+with3aa27dd after the completed V21 pair. Preserve superseded registration
+states and the old V21 artifacts. Run predictive first and cold native
 second, and measure actual early FULL reuse, parent service wait, protection
 reasons and busy-window throughput. The broad performance objective stays active.
 
@@ -328,7 +360,7 @@ not completed GPU validation or achievement of the broad performance goal.
 
 Update v25_v21_capacity_handoff_progress_20261011.json with the final predictive
 source audit path and SHA256. V21 predictive completes155 workflows with1
-incomplete in11375.87 seconds; same-version cold native is collecting.
+incomplete in11375.87 seconds; same-version cold native has completed.
 Its354 confirmed dynamic children release cumulative device FULL115.495GB and
 Mamba120.858GB. Of188 observed parent services,185 follow
 linked device release. Last child scheduler RETURN observation to first observed

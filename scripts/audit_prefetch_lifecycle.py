@@ -154,6 +154,7 @@ def terminal_release_totals(reclaims: list[dict]) -> dict:
 def terminal_capacity_summary(
     reclaims: list[dict], services: list[dict], lookaheads: Sequence[dict] = (),
     *, invocation_scopes: dict | None = None,
+    join_wait_events: Sequence[dict] = (), prefetch_actions: Sequence[dict] = (),
 ) -> dict:
     by_scope, linked = defaultdict(list), defaultdict(list)
     scopes = invocation_scopes or {}
@@ -230,6 +231,9 @@ def terminal_capacity_summary(
         "queue_wait_before_restore_lookahead_ms": distribution(
             row["queue_wait_before_restore_lookahead_ms"] for row in linked_services
         ),
+        "sibling_release_windows": terminal_join_capacity_windows(
+            reclaims, join_wait_events, prefetch_actions, invocation_scopes=scopes,
+        ),
         "rows": linked_services,
         "semantics": (
             "Actual terminal-suffix allocator release, linked to the first observed "
@@ -242,6 +246,106 @@ def terminal_capacity_summary(
             "metadata or recorded runtime scope, never ID spelling. Only confirmed "
             "dynamic subagents link to JOIN parent services; absent metadata stays unknown. "
             "Missing pool byte sizes stay unknown."
+        ),
+    }
+
+
+def terminal_join_capacity_windows(
+    reclaims: Sequence[dict], wait_events: Sequence[dict], actions: Sequence[dict],
+    *, invocation_scopes: dict | None = None,
+) -> dict:
+    """Link settled sibling releases to proven early FULL use without assigning pages."""
+    linked = defaultdict(list)
+    scopes = invocation_scopes or {}
+    for reclaim in reclaims:
+        scope = scopes.get(
+            (reclaim["workflow_id"], reclaim.get("invocation_id")),
+            reclaim.get("invocation_scope", "unknown"),
+        )
+        if scope == "dynamic_subagent":
+            linked[
+                reclaim["workflow_id"], reclaim.get("parent_context_id"), reclaim.get("join_id")
+            ].append(reclaim)
+    by_command = {action["command_id"]: action for action in actions}
+    rows, sibling_reclaims = [], []
+    for event in wait_events:
+        if event["source"] != "join_ticket":
+            continue
+        identity = event["workflow_id"], event["context_id"], event["join_id"]
+        completion = event.get("completion_ts_ms")
+        if completion is None:
+            rows.append({
+                "workflow_id": identity[0], "context_id": identity[1], "join_id": identity[2],
+                "completion_ts_ms": None,
+                "sibling_device_release_before_join": None,
+                "sibling_device_release_lead_ms": None,
+                "early_reused_full_commands_after_sibling_release": None,
+                "early_reused_full_bytes_after_sibling_release_known": None,
+            })
+            continue
+        before = [
+            reclaim for reclaim in linked.get(identity, ())
+            if reclaim["ts_ms"] < completion
+            and any(reclaim.get("freed_device_units", {}).values())
+        ]
+        sibling_reclaims.extend(before)
+        first_release = min((reclaim["ts_ms"] for reclaim in before), default=None)
+        # The wait audit has already verified boundary, following-request and
+        # FULL reuse identity. Capacity provenance must not create that proof.
+        after_release = []
+        for command in event.get("early_started_and_reused_full_command_ids", ()):
+            action = by_command.get(command)
+            if (
+                action is not None and action["source"] == "join_ticket"
+                and (action["workflow_id"], action["context_id"], action.get("join_id")) == identity
+                and first_release is not None and action.get("submit_ts_ms") is not None
+                and first_release < action["submit_ts_ms"] < completion
+                and (action.get("pool_bytes") or {}).get("kv", 0) > 0
+            ):
+                after_release.append(action)
+        rows.append({
+            "workflow_id": identity[0], "context_id": identity[1], "join_id": identity[2],
+            "completion_ts_ms": completion,
+            "sibling_device_release_before_join": terminal_release_totals(before),
+            "sibling_device_release_lead_ms": (
+                completion - first_release if first_release is not None else None
+            ),
+            "early_reused_full_commands_after_sibling_release": [
+                action["command_id"] for action in after_release
+            ],
+            "early_reused_full_bytes_after_sibling_release_known": sum(
+                action["pool_bytes"]["kv"] for action in after_release
+            ),
+        })
+    return {
+        "observed_join_events": len(rows),
+        "completion_unobserved_events": sum(row["completion_ts_ms"] is None for row in rows),
+        "joins_with_sibling_device_release_before_join": sum(
+            row["sibling_device_release_lead_ms"] is not None for row in rows
+        ),
+        "joins_with_early_reused_full_after_sibling_release": sum(
+            bool(row["early_reused_full_commands_after_sibling_release"]) for row in rows
+        ),
+        "early_reused_full_bytes_after_sibling_release_known": sum(
+            row["early_reused_full_bytes_after_sibling_release_known"] or 0 for row in rows
+        ),
+        "cumulative_sibling_device_release_before_join": terminal_release_totals(sibling_reclaims),
+        "sibling_device_release_lead_ms": distribution(
+            row["sibling_device_release_lead_ms"] for row in rows
+        ),
+        "rows": rows,
+        "semantics": (
+            "Independent observed JOIN episodes, not all workload JOINs. Actual allocator "
+            "release uses scheduler wall time; complete JOIN uses the existing client-clock "
+            "offset conversion. Only explicitly identified dynamic subagents link by "
+            "workflow/parent context/JOIN. Host-only or post-JOIN releases cannot support "
+            "pre-JOIN H2D. A command qualifies only with the existing proof of actual "
+            "pre-JOIN submission and FULL reuse by the following request. Temporal "
+            "association does not prove exclusive capacity, child-to-parent page identity, "
+            "that these bytes were necessary for prefetch, or a native-relative saving. "
+            "Cumulative releases are not simultaneously free capacity; transferred FULL "
+            "bytes are command receipts, not a count of unique pages. Unobserved JOIN "
+            "completion leaves the release window unknown."
         ),
     }
 
@@ -1065,6 +1169,9 @@ def wait_event_attribution(
             "client_submit_ts_ms": client_submit, "native_arrival_ts_ms": native_arrival,
             "full_residency_expirations": expirations,
             "node_command_count": len(pending),
+            "early_started_and_reused_full_command_ids": [
+                action["command_id"] for action in early_reused
+            ],
             "early_started_and_reused_full_bytes": sum(
                 action["pool_bytes"].get("kv", 0) for action in early_reused
             ),
@@ -1512,6 +1619,7 @@ def audit(arm: Path) -> dict:
         "terminal_capacity_handoff": terminal_capacity_summary(
             terminal_reclaims, parent_handoff_services, parent_handoff_lookaheads,
             invocation_scopes=terminal_invocation_scopes(arm),
+            join_wait_events=wait_events["rows"], prefetch_actions=results,
         ),
         "parent_capacity_restore_retries": {
             "rearm_records": len(parent_handoff_rearms),

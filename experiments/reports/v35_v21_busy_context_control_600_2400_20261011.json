@@ -1,0 +1,583 @@
+{
+  "scope": "Complete observed window; not identical-demand causality or completed-pair JCT",
+  "code_commit": "597688c62aabc9667484aefe315664a447fea9bb",
+  "patch_sha256": "98fc5af9c40121d6f7ba1824f1fd5b586d0b141d5b12370a2d9243c1b1b5e8f1",
+  "start_seconds": 600.0,
+  "end_seconds": 2400.0,
+  "arms": {
+    "predictive_h2d": {
+      "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/server/runtime_audit.jsonl",
+      "read_prefix_bytes": 983576881,
+      "read_prefix_sha256": "6910c20add04186852a6075c0c38ff01005d906176f8af3492dc37b3ed3eb16a",
+      "decode_batches": 35734,
+      "observed_request_steps": 1703959,
+      "sequence_tokens_per_request_mean": 23679.52914594776,
+      "sequence_tokens_per_request_median": 23761,
+      "sequence_tokens_per_batch_sum_mean": 1129147.2212458723,
+      "worker_decode_duration_mean_ms": 41.49228293344332,
+      "worker_decode_duration_median_ms": 23.012485820800066,
+      "background_writer_timing": {
+        "available": false,
+        "reason": "writer_timing_not_collected"
+      },
+      "time_weighted_mean_request_sequence_tokens": 23645.01916444746,
+      "cohorts": {
+        "43/18432": {
+          "batches": 1,
+          "mean_ms": 127.52529140561819,
+          "median_ms": 127.52529140561819
+        },
+        "43/20480": {
+          "batches": 1,
+          "mean_ms": 130.257997661829,
+          "median_ms": 130.257997661829
+        },
+        "44/18432": {
+          "batches": 2,
+          "mean_ms": 121.41574686393142,
+          "median_ms": 121.41574686393142
+        },
+        "44/20480": {
+          "batches": 3,
+          "mean_ms": 205.62546545018753,
+          "median_ms": 190.17280731350183
+        },
+        "44/22528": {
+          "batches": 11,
+          "mean_ms": 141.49971636520192,
+          "median_ms": 141.37904904782772
+        },
+        "44/24576": {
+          "batches": 6,
+          "mean_ms": 140.36187063902617,
+          "median_ms": 141.09882153570652
+        },
+        "45/18432": {
+          "batches": 8,
+          "mean_ms": 110.74913712218404,
+          "median_ms": 109.36967097222805
+        },
+        "45/20480": {
+          "batches": 33,
+          "mean_ms": 151.87920161494702,
+          "median_ms": 124.87831711769104
+        },
+        "45/22528": {
+          "batches": 121,
+          "mean_ms": 126.1117471890016,
+          "median_ms": 118.15647315233946
+        },
+        "45/24576": {
+          "batches": 35,
+          "mean_ms": 138.71524637298924,
+          "median_ms": 123.6769026145339
+        },
+        "46/18432": {
+          "batches": 60,
+          "mean_ms": 121.8232543207705,
+          "median_ms": 107.82630275934935
+        },
+        "46/20480": {
+          "batches": 201,
+          "mean_ms": 121.72772964249499,
+          "median_ms": 107.45163913816214
+        },
+        "46/22528": {
+          "batches": 864,
+          "mean_ms": 110.50349441831241,
+          "median_ms": 103.12058264389634
+        },
+        "46/24576": {
+          "batches": 345,
+          "mean_ms": 114.2784627829341,
+          "median_ms": 106.21364042162895
+        },
+        "47/18432": {
+          "batches": 238,
+          "mean_ms": 90.02815843990244,
+          "median_ms": 81.86600636690855
+        },
+        "47/20480": {
+          "batches": 958,
+          "mean_ms": 97.52726546121228,
+          "median_ms": 86.60755958408117
+        },
+        "47/22528": {
+          "batches": 4645,
+          "mean_ms": 87.2714151410773,
+          "median_ms": 81.68756403028965
+        },
+        "47/24576": {
+          "batches": 1800,
+          "mean_ms": 88.59084420785722,
+          "median_ms": 81.4466648735106
+        },
+        "47/26624": {
+          "batches": 3,
+          "mean_ms": 110.99369016786416,
+          "median_ms": 92.95167122036219
+        },
+        "48/18432": {
+          "batches": 750,
+          "mean_ms": 21.76949800675114,
+          "median_ms": 20.854401402175426
+        },
+        "48/20480": {
+          "batches": 3089,
+          "mean_ms": 23.043246655467165,
+          "median_ms": 21.658246405422688
+        },
+        "48/22528": {
+          "batches": 16121,
+          "mean_ms": 22.8957156164581,
+          "median_ms": 22.482652217149734
+        },
+        "48/24576": {
+          "batches": 6436,
+          "mean_ms": 23.266160024985243,
+          "median_ms": 22.942655254155397
+        },
+        "48/26624": {
+          "batches": 3,
+          "mean_ms": 32.72124317785104,
+          "median_ms": 30.56191001087427
+        }
+      },
+      "monitor_window": {
+        "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/client_156/gpu_samples.csv",
+        "first_row": {
+          "timestamp": "2026/10/11 01:24:39.471",
+          "memory_used_mib": " 136596",
+          "memory_free_mib": " 6563",
+          "gpu_utilization_percent": " 0",
+          "memory_utilization_percent": " 0",
+          "power_watts": " 103.50"
+        },
+        "origin_ts_ms": 1791653079471.0,
+        "begin_ts_ms": 1791653679471.0,
+        "end_ts_ms": 1791655479471.0,
+        "observed_through_ts_ms": 1791655479617.0,
+        "timezone": "Asia/Shanghai"
+      },
+      "control_profile": {
+        "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/opportunities/admission_opportunities.jsonl",
+        "read_prefix_bytes": 375294246,
+        "read_prefix_sha256": "3c65bf829cd416e7a891327849c4999f57142f335bd30f97a040b0023aeff4de",
+        "boundary_state_ts_ms": [
+          1791653678465.408,
+          1791655478637.5073
+        ],
+        "raw_boundary_line_sha256": [
+          "e32794286d69628e5a4cda6a69199b58054d263c6d4b40bc3182c56042b0cd35",
+          "140f16801ab9bf6b35019d13dd1432962ec8beab2bc3dc250eaac4d8acea82fe"
+        ],
+        "observed_duration_ms": 1800172.0993652344,
+        "summed_python_self_ms": 277597.17787400004,
+        "background_writer_timing": {
+          "available": false,
+          "reason": "writer_timing_not_collected"
+        },
+        "phases": {
+          "reentry_inspection": {
+            "count": 307917,
+            "self_ms": 42491.105099,
+            "total_ms": 42491.105099
+          },
+          "join_prepare": {
+            "count": 45907,
+            "self_ms": 35490.810158,
+            "total_ms": 47593.100251
+          },
+          "control_drain": {
+            "count": 45907,
+            "self_ms": 32724.145923000004,
+            "total_ms": 47845.39929
+          },
+          "admission_plan": {
+            "count": 19548,
+            "self_ms": 26317.196424,
+            "total_ms": 68132.804731
+          },
+          "opportunity_sampling": {
+            "count": 45907,
+            "self_ms": 23878.702633,
+            "total_ms": 23878.702633
+          },
+          "execution_handoff": {
+            "count": 45907,
+            "self_ms": 14944.920279999998,
+            "total_ms": 65802.116915
+          },
+          "event_apply": {
+            "count": 92794,
+            "self_ms": 13004.243392,
+            "total_ms": 15939.465033
+          },
+          "semantic_updates": {
+            "count": 45907,
+            "self_ms": 12794.972557999998,
+            "total_ms": 12794.972557999998
+          },
+          "handoff_enqueue": {
+            "count": 2589,
+            "self_ms": 10583.157452,
+            "total_ms": 11315.015417
+          },
+          "scheduler_maintenance": {
+            "count": 45907,
+            "self_ms": 9574.991534,
+            "total_ms": 102446.159762
+          },
+          "tool_prefetch": {
+            "count": 45907,
+            "self_ms": 8730.606572,
+            "total_ms": 9312.975641
+          },
+          "batch_completed": {
+            "count": 45907,
+            "self_ms": 8705.903645,
+            "total_ms": 8705.903645
+          },
+          "prepare_candidate_maintenance": {
+            "count": 18964,
+            "self_ms": 7731.472135999999,
+            "total_ms": 7731.472135999999
+          },
+          "join_prefetch": {
+            "count": 45907,
+            "self_ms": 7288.650523,
+            "total_ms": 7559.240202999999
+          },
+          "terminal_sampling": {
+            "count": 45907,
+            "self_ms": 7205.353729,
+            "total_ms": 7205.353729
+          },
+          "tool_prepare": {
+            "count": 45907,
+            "self_ms": 5216.328319999999,
+            "total_ms": 6362.341442000001
+          },
+          "prepare_candidate_publication": {
+            "count": 32741,
+            "self_ms": 4831.2842980000005,
+            "total_ms": 4831.2842980000005
+          },
+          "terminal_child_reclaim": {
+            "count": 415,
+            "self_ms": 1494.0562679999998,
+            "total_ms": 1494.0562679999998
+          },
+          "tool_features": {
+            "count": 20946,
+            "self_ms": 1449.107593,
+            "total_ms": 1449.107593
+          },
+          "prepare_backed_registration": {
+            "count": 77622,
+            "self_ms": 1295.38663,
+            "total_ms": 1295.38663
+          },
+          "graph_apply": {
+            "count": 44557,
+            "self_ms": 1139.008704,
+            "total_ms": 1139.008704
+          },
+          "wait_prefetch_enqueue": {
+            "count": 100,
+            "self_ms": 705.774003,
+            "total_ms": 746.8834479999999
+          }
+        }
+      }
+    },
+    "native": {
+      "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/native/server/runtime_audit.jsonl",
+      "read_prefix_bytes": 1165320008,
+      "read_prefix_sha256": "d1fd4806f44ee83e5cdd9089719a60b094bb6363c4017d6ffedbcf98244f715d",
+      "decode_batches": 42037,
+      "observed_request_steps": 2006098,
+      "sequence_tokens_per_request_mean": 23850.389148984745,
+      "sequence_tokens_per_request_median": 23818.0,
+      "sequence_tokens_per_batch_sum_mean": 1138192.9721673764,
+      "worker_decode_duration_mean_ms": 36.19338351391997,
+      "worker_decode_duration_median_ms": 22.95306883752346,
+      "background_writer_timing": {
+        "available": false,
+        "reason": "writer_timing_not_collected"
+      },
+      "time_weighted_mean_request_sequence_tokens": 23866.663539311703,
+      "cohorts": {
+        "43/22528": {
+          "batches": 1,
+          "mean_ms": 142.79536344110966,
+          "median_ms": 142.79536344110966
+        },
+        "44/20480": {
+          "batches": 1,
+          "mean_ms": 132.90978781878948,
+          "median_ms": 132.90978781878948
+        },
+        "44/22528": {
+          "batches": 8,
+          "mean_ms": 142.05683371983469,
+          "median_ms": 122.24145513027906
+        },
+        "44/24576": {
+          "batches": 4,
+          "mean_ms": 106.7290436476469,
+          "median_ms": 106.44925758242607
+        },
+        "45/20480": {
+          "batches": 23,
+          "mean_ms": 113.56791412538809,
+          "median_ms": 114.68824557960033
+        },
+        "45/22528": {
+          "batches": 97,
+          "mean_ms": 114.10761751311341,
+          "median_ms": 106.38375114649534
+        },
+        "45/24576": {
+          "batches": 44,
+          "mean_ms": 106.65814616632733,
+          "median_ms": 103.53636229410768
+        },
+        "45/26624": {
+          "batches": 3,
+          "mean_ms": 112.44825770457585,
+          "median_ms": 106.84383474290371
+        },
+        "46/20480": {
+          "batches": 215,
+          "mean_ms": 94.81186110439688,
+          "median_ms": 86.82032208889723
+        },
+        "46/22528": {
+          "batches": 776,
+          "mean_ms": 103.12134354404107,
+          "median_ms": 94.78584444150329
+        },
+        "46/24576": {
+          "batches": 404,
+          "mean_ms": 99.38589799319311,
+          "median_ms": 96.57082566991448
+        },
+        "46/26624": {
+          "batches": 24,
+          "mean_ms": 93.16625997113685,
+          "median_ms": 91.85375226661563
+        },
+        "47/20480": {
+          "batches": 1289,
+          "mean_ms": 72.3286496895843,
+          "median_ms": 67.38376244902611
+        },
+        "47/22528": {
+          "batches": 4646,
+          "mean_ms": 79.0281799552522,
+          "median_ms": 72.24719598889351
+        },
+        "47/24576": {
+          "batches": 2273,
+          "mean_ms": 76.3781553755477,
+          "median_ms": 73.16183391958475
+        },
+        "47/26624": {
+          "batches": 74,
+          "mean_ms": 83.68001927344783,
+          "median_ms": 72.78627902269363
+        },
+        "48/20480": {
+          "batches": 5085,
+          "mean_ms": 21.86116436743631,
+          "median_ms": 22.111049853265285
+        },
+        "48/22528": {
+          "batches": 17784,
+          "mean_ms": 22.239490135774364,
+          "median_ms": 22.519702091813087
+        },
+        "48/24576": {
+          "batches": 8988,
+          "mean_ms": 22.72190861032988,
+          "median_ms": 23.0684713460505
+        },
+        "48/26624": {
+          "batches": 298,
+          "mean_ms": 23.572908742540836,
+          "median_ms": 23.470915853977203
+        }
+      },
+      "monitor_window": {
+        "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/native/client_156/gpu_samples.csv",
+        "first_row": {
+          "timestamp": "2026/10/11 04:42:46.089",
+          "memory_used_mib": " 136596",
+          "memory_free_mib": " 6563",
+          "gpu_utilization_percent": " 0",
+          "memory_utilization_percent": " 0",
+          "power_watts": " 104.65"
+        },
+        "origin_ts_ms": 1791664966089.0,
+        "begin_ts_ms": 1791665566089.0,
+        "end_ts_ms": 1791667366089.0,
+        "observed_through_ts_ms": 1791667366270.0,
+        "timezone": "Asia/Shanghai"
+      }
+    }
+  },
+  "semantics": [
+    "Context is input plus generated tokens visible before each decode batch.",
+    "Only batches completed in the half-open window are counted; intervals are not clipped.",
+    "Cohorts match batch size and a 2048-token bin of batch-mean context, not exact demand.",
+    "Worker intervals include scheduler processing and are not CUDA kernel timings.",
+    "Control counters use preceding snapshots; exclusive Python wall time is not removable JCT.",
+    "Writer CPU/wall differences use their own snapshot clocks and measured samples only."
+  ],
+  "matched_cohorts": {
+    "45/22528": {
+      "predictive": {
+        "batches": 121,
+        "mean_ms": 126.1117471890016,
+        "median_ms": 118.15647315233946
+      },
+      "native": {
+        "batches": 97,
+        "mean_ms": 114.10761751311341,
+        "median_ms": 106.38375114649534
+      },
+      "predictive_mean_ratio": 1.1052000728567368
+    },
+    "45/24576": {
+      "predictive": {
+        "batches": 35,
+        "mean_ms": 138.71524637298924,
+        "median_ms": 123.6769026145339
+      },
+      "native": {
+        "batches": 44,
+        "mean_ms": 106.65814616632733,
+        "median_ms": 103.53636229410768
+      },
+      "predictive_mean_ratio": 1.30055932302321
+    },
+    "46/20480": {
+      "predictive": {
+        "batches": 201,
+        "mean_ms": 121.72772964249499,
+        "median_ms": 107.45163913816214
+      },
+      "native": {
+        "batches": 215,
+        "mean_ms": 94.81186110439688,
+        "median_ms": 86.82032208889723
+      },
+      "predictive_mean_ratio": 1.2838871447577764
+    },
+    "46/22528": {
+      "predictive": {
+        "batches": 864,
+        "mean_ms": 110.50349441831241,
+        "median_ms": 103.12058264389634
+      },
+      "native": {
+        "batches": 776,
+        "mean_ms": 103.12134354404107,
+        "median_ms": 94.78584444150329
+      },
+      "predictive_mean_ratio": 1.0715870315549039
+    },
+    "46/24576": {
+      "predictive": {
+        "batches": 345,
+        "mean_ms": 114.2784627829341,
+        "median_ms": 106.21364042162895
+      },
+      "native": {
+        "batches": 404,
+        "mean_ms": 99.38589799319311,
+        "median_ms": 96.57082566991448
+      },
+      "predictive_mean_ratio": 1.149845854295757
+    },
+    "47/20480": {
+      "predictive": {
+        "batches": 958,
+        "mean_ms": 97.52726546121228,
+        "median_ms": 86.60755958408117
+      },
+      "native": {
+        "batches": 1289,
+        "mean_ms": 72.3286496895843,
+        "median_ms": 67.38376244902611
+      },
+      "predictive_mean_ratio": 1.34839051855349
+    },
+    "47/22528": {
+      "predictive": {
+        "batches": 4645,
+        "mean_ms": 87.2714151410773,
+        "median_ms": 81.68756403028965
+      },
+      "native": {
+        "batches": 4646,
+        "mean_ms": 79.0281799552522,
+        "median_ms": 72.24719598889351
+      },
+      "predictive_mean_ratio": 1.10430754182233
+    },
+    "47/24576": {
+      "predictive": {
+        "batches": 1800,
+        "mean_ms": 88.59084420785722,
+        "median_ms": 81.4466648735106
+      },
+      "native": {
+        "batches": 2273,
+        "mean_ms": 76.3781553755477,
+        "median_ms": 73.16183391958475
+      },
+      "predictive_mean_ratio": 1.159897666711906
+    },
+    "48/20480": {
+      "predictive": {
+        "batches": 3089,
+        "mean_ms": 23.043246655467165,
+        "median_ms": 21.658246405422688
+      },
+      "native": {
+        "batches": 5085,
+        "mean_ms": 21.86116436743631,
+        "median_ms": 22.111049853265285
+      },
+      "predictive_mean_ratio": 1.0540722473955526
+    },
+    "48/22528": {
+      "predictive": {
+        "batches": 16121,
+        "mean_ms": 22.8957156164581,
+        "median_ms": 22.482652217149734
+      },
+      "native": {
+        "batches": 17784,
+        "mean_ms": 22.239490135774364,
+        "median_ms": 22.519702091813087
+      },
+      "predictive_mean_ratio": 1.02950721786684
+    },
+    "48/24576": {
+      "predictive": {
+        "batches": 6436,
+        "mean_ms": 23.266160024985243,
+        "median_ms": 22.942655254155397
+      },
+      "native": {
+        "batches": 8988,
+        "mean_ms": 22.72190861032988,
+        "median_ms": 23.0684713460505
+      },
+      "predictive_mean_ratio": 1.0239527155922075
+    }
+  }
+}

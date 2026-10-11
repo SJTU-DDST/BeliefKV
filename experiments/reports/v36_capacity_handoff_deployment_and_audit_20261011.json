@@ -1,0 +1,56 @@
+{
+  "scope": "Verified V22 deployment and closed V21 sibling-release attribution; not performance acceptance.",
+  "deployed_v22": {
+    "revision": "3aa27dd67b340236310824d80a7e6e31038ea1f9",
+    "registration": "/home/longhao/experiment/BeliefKV/experiments/reports/v22_launch_after_v21_20261011.json",
+    "registration_sha256_at_check": "3171f814aa758d3048422167e670a11721b1eadeac3b5f2a4ac71ba1f93dbef4",
+    "status": "running_new_pair",
+    "started_at_local": "2026-10-11T07:49:16+08:00",
+    "engine_expected_and_actual_tree": "63d91509bee139b2d6a2285eb44b193a67a9e008",
+    "runtime_sha256": "ba29835f85fd28dcdfcea202eebcead0c2766e7465c26f8c9daffd960f009059",
+    "coordinator_pid": 1159560,
+    "driver_pid": 1166290,
+    "scheduler_pid": 1166676,
+    "client_pid": 1168306,
+    "observed_fragmented_demand_restores_above_sixteen": 5,
+    "maximum_observed_demand_restore_extents": 23,
+    "fragmented_restore_scope": "Partial live scan before 08:02 CST; demand restoration only."
+  },
+  "closed_v21_audit": {
+    "source_previous_audit": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/prefetch_lifecycle_v33_epoch_bound.json",
+    "source_previous_audit_sha256": "8c67955d2bb7b109084e3821ef62bed93b69266b9683fdb2e600509201eb2260",
+    "updated_summary": "v36_v21_sibling_capacity_windows_20261011.json",
+    "updated_summary_sha256": "aec76f2be1210ca10db6041b404208e6c268690e0d70d895d51e0fec4a98e4f7",
+    "analysis_script": "scripts/audit_prefetch_lifecycle.py",
+    "analysis_script_sha256": "ed34f2adb99e62ae2b4e49a750b154b6fe41bd317cc718dcdbcfcd023fe0e532",
+    "all_previous_summary_metrics_unchanged": true,
+    "observed_join_events": 187,
+    "joins_with_prior_sibling_device_release": 159,
+    "joins_with_early_reused_full_after_sibling_release": 86,
+    "early_reused_full_bytes_after_sibling_release": 1206620160,
+    "cumulative_pre_join_device_release_bytes": {
+      "full": 41998213120,
+      "mamba": 32452116480
+    },
+    "sibling_release_to_join_p50_ms": 649045.2766113281,
+    "validation": "66 lifecycle checks passed; existing boundary and following-request reuse proofs remain authoritative."
+  },
+  "closed_v21_comparison": {
+    "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/native_policy_comparison.json",
+    "source_sha256": "063da33f046d28bcad9a1df4ad817f4efbd1363d240be2b95e962777b7570b95",
+    "predictive_completed": 155,
+    "predictive_incomplete": 1,
+    "native_completed": 156,
+    "predictive_output_tokens_per_second": 738.6357878685593,
+    "native_output_tokens_per_second": 831.8721180188166,
+    "predictive_gpu_utilization_mean_percent": 72.03944020356234,
+    "native_gpu_utilization_mean_percent": 80.15368540685205
+  },
+  "limits": [
+    "Capacity release is cumulative, not exclusively reserved for the parent or simultaneously free.",
+    "Temporal sibling-release and early-use association does not establish necessary capacity or native-relative benefit.",
+    "Demand handoff remains separate from pre-RETURN JOIN/tool prefetch.",
+    "Closed V21 uses the old frozen revision; it cannot validate V22 throughput.",
+    "The added capacity audit runs offline in the isolated follow-up, without mutating V22 frozen runtime or postprocessing."
+  ]
+}
