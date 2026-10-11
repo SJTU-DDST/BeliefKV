@@ -2,6 +2,31 @@
 
 Status date: 2026-10-12.
 
+V104 commits0b26516 in the isolated branch. Handoff and admission share
+resident scan targets within a scheduler cycle; queue order, request
+identity and graph/semantic changes invalidate the selection. Each new
+cycle rotates again. Keep physical observations, aging and restore
+priority live; all-aged queues keep their arrival order without another
+residency sort. The286 relevant checks pass. Six100-trial alternating CPU
+cases use the actual native inspector and RadixKey on synthetic Host-only
+ancestry. At156 requests, inspections including warmup fall2432 to1632;
+two-plan means fall2.358 to1.977,4.141 to3.153 and11.810 to8.301ms for
+32K/8-depth,96K/24-depth and32K/256-depth. All-aged means fall0.839 to0.754ms;
+four-request means rise0.291 to0.294ms. Preserve initial and final receipts.
+Mixed-residency second-call sampling changes intentionally; only Host-only
+and aged fixture orders are proved equal. No allocator/DMA/GPU or JCT
+benefit is established. Do not interrupt V27 for this local change alone.
+
+V103 confirms the old native prefill attribution limit: all7303 V27
+prefill batches in600-1800s have native geometry, with7,254,415 actual
+extend tokens. All7248 older-V23-native batches have unknown work, leaving
+zero matched cohorts. Submitted uncached prompts are not actual batch
+work;214.60/167.29s worker intervals do not prove a same-work service-path
+slowdown. Obtain actual geometry from the subsequent same-version native.
+Separate01:38:22 CST reads observe133 completed, four live run handles and
+zero telemetry failures/loss with an empty writer queue. Keep V27df3dd3c
+frozen and the full performance goal active.
+
 V102 adds complete, profiling-free V27/older-V23-native windows600-1800,
 2400-3000,3600-3900s with decode differences-2.79%,+9.05%,-1.99%.
 In the busy window, prefill worker wall is214.60/167.25s and submitted
