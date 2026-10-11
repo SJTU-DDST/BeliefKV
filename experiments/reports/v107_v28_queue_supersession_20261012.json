@@ -1,0 +1,34 @@
+{
+  "observed_at_local": "2026-10-12T02:49:02.451220+08:00",
+  "scope": "Stopped only the verified waiting V28 coordinator to update its frozen target; V27 collection remains active.",
+  "old_target_revision": "d1ce5d23319117267a4b07f7a8479808b87faa3d",
+  "old_coordinator_pid": 3249369,
+  "old_coordinator_identity": [
+    "S",
+    1,
+    "591298428"
+  ],
+  "old_coordinator_after_termination": null,
+  "preserved_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v28_launch_after_v27_d1ce5d2_superseded_20261012_v107.json",
+  "preserved_state_sha256": "0e45ae2e57c08bd5474d678c88637ae5994ef8c28f0abf9e1b83e0c9964775f2",
+  "preserved_log": "/home/longhao/experiment/BeliefKV/experiments/reports/v28_launch_after_v27_d1ce5d2_superseded_20261012_v107.log",
+  "v27_live_handles_after_stop": {
+    "1060398": [
+      "S",
+      1,
+      "590379164"
+    ],
+    "3264484": [
+      "R",
+      3264475,
+      "591405899"
+    ],
+    "3264866": [
+      "R",
+      3264484,
+      "591407169"
+    ]
+  },
+  "replacement_registration_required": true,
+  "performance_goal_met": false
+}

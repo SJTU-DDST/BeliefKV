@@ -1,0 +1,66 @@
+{
+  "observed_at_local": "2026-10-12T02:50:14.807603+08:00",
+  "scope": "Verified documentation-only main update and prepared V107 cold target; queue registration follows this receipt.",
+  "main_revision": "fa6c1fd24dc7384d879d2b267768a83b04ccb962",
+  "target_revision_before_receipt_commit": "b04462ee15a124b85965e64eaf2cc1744484f9b0",
+  "main_is_ancestor_of_target": true,
+  "v27_execution_verification": {
+    "collection_code_commit": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+    "verification_code_commit": "fa6c1fd24dc7384d879d2b267768a83b04ccb962",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": [
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md"
+    ]
+  },
+  "canonical_patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+  "deployed_engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+    "expected_tree": "6e1dc30d83e05cbca3d470892d7cde1000e19ad9",
+    "actual_tree": "6e1dc30d83e05cbca3d470892d7cde1000e19ad9",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "3bbc9777f9ef2be070e35d45a87de74a060e6f61a65ccf1ebe9ed5db445605ce",
+    "beliefkv/runtime/sglang_v0520_physical.py": "d745da6b5b4c36adc1756c0fab58a6caef868267675f60ae02f68d2dc2fdfcf1"
+  },
+  "v27_verified_live_handles": {
+    "1060398": [
+      "S",
+      1,
+      "590379164"
+    ],
+    "3264484": [
+      "R",
+      3264475,
+      "591405899"
+    ],
+    "3264866": [
+      "R",
+      3264484,
+      "591407169"
+    ]
+  },
+  "runtime_optimization_commits": [
+    "68e656c",
+    "0b26516",
+    "793e8ba",
+    "61f415d"
+  ],
+  "same_frozen_workload_configuration": true,
+  "performance_goal_met": false
+}
