@@ -2,6 +2,29 @@
 
 Status date: 2026-10-12.
 
+V119 retains V29's complete300-600s pipeline window against historical
+V27 native as cross-version development evidence. Matched48-request
+CUDA-graph decode mean ratios are0.9963-1.0028. Single-request small
+prefill with0-511 actual extend tokens remains12.8-14.7 versus6.0-7.4ms;
+the groups followed by48-request decode are1.49-1.87 times slower.
+All9,951 service samples carry raw launch; mean launch-to-processed
+completion50.855ms and clipped-start-minus-launch20.707ms are pipeline
+observations, not kernel or removable scheduling cost. Historical native
+has no raw-launch field. Exclusive profiled Python wall totals41.441s/300s,
+not thread CPU or removable JCT. Preserve exact prefix hashes/boundaries.
+
+The06:54:01-06:54:20 CST independent fixed-prefix lifecycle audit observes
+113 JOIN and3,816 tool events.48 JOINs record a start-window candidate,
+but none submit predictive H2D. Eight tool events start early and reuse
+436.859MB FULL;69.231GB handoff FULL reuse remains demand recovery.
+Tool last-ACK-to-service P90 is658.250ms.63 unobserved JOIN completion
+boundaries remain unknown;537.037GB next-request native FULL Host hits
+are not an anticipatory denominator. Keep compressed event/action detail,
+all input lengths/SHA256 and the terminal runtime-state row. Cross-file
+prefixes are not atomic. Retain V29 frozen; investigate candidate-to-submit
+loss with actual timing, capacity and target evidence before selecting a
+fix. No new implementation or GPU performance gain is claimed by V119.
+
 V118 executes the authorized development restart. Stop V28 at06:27:24
 CST with112 completed and44 administratively censored workflows.
 The verified controller/client/server exit; remove only the44 containers

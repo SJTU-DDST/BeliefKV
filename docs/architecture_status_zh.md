@@ -2,6 +2,33 @@
 
 更新日期：2026-10-12。
 
+V119 保存 V29 的首个完整 300-600 秒流水线窗口，参照
+历史 V27 native，属于跨版本开发诊断。48 请求 CUDA graph
+decode 的匹配组均值比为 0.9963-1.0028；单请求、实际
+extend 0-511 token 的小 prefill 仍为约 12.8-14.7 对
+6.0-7.4 ms，后接 48 请求 decode 的匹配组约慢 1.49-1.87
+倍。9,951 个服务样本都有 raw launch；launch 到结果处理
+均值 50.855 ms，裁剪 start 与 launch 差均值 20.707 ms，
+均不能当作内核时间或可直接扣除的调度成本。该窗口早于
+本次离线审计；历史 native 没有 raw launch，不补造字段。
+已埋点 Python 独占墙钟累计 41.441 秒/300 秒，主要为
+admission、reentry、JOIN prepare、control drain 和 handoff
+enqueue；不是 CPU 时间或可移除 JCT。
+
+06:54:01-06:54:20 CST 的 V119 独立日志固定前缀审计有
+113 个 JOIN、3,816 个工具等待事件。48 个 JOIN 曾进入
+start_window，但尚无 JOIN 预测提交；工具侧 8 个事件提前
+且复用 436.859 MB FULL。69.231 GB handoff FULL 复用仍记
+需求恢复。工具末次 ACK 到服务 P90 为 658.250 ms。未知
+JOIN 完成边界有 63 个，不能记作未命中；工具下一请求约
+537.037 GB 原生 FULL Host 命中也不是提前可恢复量。
+保留每份输入前缀的长度/SHA256、逐事件与动作明细、末次
+runtime 状态；文件前缀不是跨文件原子快照。部分重检无
+恢复目标或服务进度，不将全部缺口归因于容量或预测。报告为
+v119_v29_v27_native_pipeline_300_600 和
+v119_v29_sealed_prefetch_lifecycle；V29 仍冻结采集，
+优先追踪候选到提交的缺口，完整性能目标继续 active。
+
 V118 已执行开发重启。V28 在 06:27:24 CST 主动停止，
 截点有 112 completed、44 个未结束任务；后者单列行政
 截断，不计为模型 error/incomplete。旧 controller/client/

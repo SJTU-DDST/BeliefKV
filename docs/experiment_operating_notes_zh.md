@@ -4,6 +4,25 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+V119 在 V29 的完整 300-600 秒窗口保留真实 prefill 工作量、
+CUDA graph 分组、raw launch 覆盖及控制计数。参照历史
+V27 native 时只做跨版本开发诊断；48 请求 decode 基本相当
+不代表小 prefill 成本已消失。服务 launch 到处理完成、
+裁剪 start 差值与 Python 独占墙钟都不是内核时间、完整
+CPU 成本或可从 JCT 扣除的收益；旧 native 不补造 launch。
+
+本次生命周期离线审计为 2026-10-12 06:54:01-06:54:20
+CST；相关后续窗口应标注本地分析重叠。每份 JSONL 首次
+读取截止到其 stat 长度，仅使用完整行；重复读取核对同一
+前缀长度和 SHA256，不能声称跨文件原子快照。保留压缩
+逐事件/动作报告及末次 runtime 状态，63 个未知 JOIN 完成
+边界继续未知。48 个 JOIN 的 start_window 是候选证据，
+本截点尚无 JOIN 提交；8 个工具事件提前复用 436.859 MB
+FULL，69.231 GB handoff FULL 另记需求恢复。不要把
+537.037 GB 工具下一请求原生 FULL Host 命中当作 oracle
+容量，也不要把所有候选退出归因于某一容量或预测缺陷。
+冻结 V29 继续采集，修复须以具体链路证据为依据。
+
 V118 已按开发重启约定停止 V28：2026-10-12 06:27:24
 CST 截点为 112 completed、44 个主动截断任务。workflow
 状态取 result.json.outcome；final_status 是 Git workspace
