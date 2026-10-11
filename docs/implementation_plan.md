@@ -2,6 +2,74 @@
 
 Status date: 2026-10-12.
 
+V115 moves periodic opportunity, terminal-cache and runtime-state
+observations to batch-result processing. Native overlap submits the next
+forward first; idle selection still samples the current waiting queue.
+Keep causal event handling, prediction polling, transfers, leases and
+admission in their existing phase, with unchanged observation cadence
+and records. V28's complete300-600s window records293 opportunity
+samples costing1.975s; this cumulative wall time is not a JCT saving.
+The242 relevant runtime/engine checks pass, as do105 telemetry and20
+analysis checks. All24 CPU cases preserve observations, policy counters,
+pending state and semantic polling cadence. Per-cycle total thread-CPU
+deltas range -0.417 to +0.897us; retain the regressions. The dispatch
+boundary is simulated, with no GPU or measured overlap/throughput.
+The isolated engine content tree matches the new canonical patch.
+
+Export existing batch.launch_ts as launch_monotonic_ms without a clock
+read or GPU synchronization. It marks scheduler.run_batch entry before
+telemetry/worker dispatch, not CUDA submission or kernel start. Preserve
+the clipped v1 service interval and distinguish full/partial/missing raw
+coverage in the existing analyzer; never substitute legacy service starts.
+Keep V28 frozen. Revalidate and replace only V29's still-waiting
+registration with a new immutable V113-V115 target, retaining old state,
+logs and checkout. Full same-version throughput/JCT and attributable
+early-FULL reuse remain the active acceptance criteria.
+
+V114 diagnoses V28's complete 300-600s window against prior V27 native.
+Only code_commit differs in the frozen plans; the engine patch matches.
+Retain 7680/8130 decode and 2207/2275 prefill batches with actual geometry.
+Small-prefill cohorts followed by 48-request decode still average
+9.15-11.60/5.73-7.00ms. Exported service_start_monotonic_ms is the maximum
+of launch and previous processed completion, not raw launch. Contiguous
+neighbor boundaries follow from this clipping and cannot split kernel,
+admission or result-processing cost. Keep that limitation explicit in
+the existing analyzer; preserve prior geometry/control evidence. The 17
+existing analyzer checks pass. V28 stays frozen, V29 remains waiting,
+and the full same-version throughput/JCT and early-FULL goal is unproven.
+
+V113 commits 11c8258. Coalesce only already queued control messages,
+without a batching timer. Preserve original handler/transaction boundaries,
+FIFO, event timestamps, per-submission completion, partial-prefix ACKs,
+idempotent retries, flush/close and the existing 64-event/60000-byte limits.
+The 73 related checks and two subtests pass. V27's 156 predictive result
+summaries have a median per-workflow reentry queue P95 of112.025ms and
+ACK P50 of17.306ms; these are not pooled event quantiles. Five alternating
+CPU trials per case preserve original batches. With simulated20ms ACKs,
+four pending batches use5→2 messages and101.149→40.751ms;32 use33→2
+and670.342→43.277ms. Large text requires four messages; retain the
+7-9us single-pending cost and receiver codec overhead. Fixture results
+are not GPU/JCT gains. Cold-deploy with the prior isolated optimizations;
+keep the full same-version throughput, JCT, early-FULL and residual-native
+objective active. Do not modify collecting execution source.
+
+At05:01:25 CST, V28 cold-deploys141d3df and starts its frozen pair.
+V27 native completes156 workflows over8279.264s; the prior coordinator
+and server/scheduler are gone. Retain collecting V28 unchanged and
+queue V113 for a new V29 cold pair, predictive first then same-version
+native. The V28 registration is no longer a replaceable waiting target.
+
+At05:09:32 CST, V29 waiting coordinator1002829/start ticks592315475
+is live, waiting for the verified V28 coordinator883082. Its clean
+frozen target isd928da4, descended from main141d3df with unchanged
+canonical engine patch. Preservev113_v29_queue_registration_20261012.json;
+do not advance that registered target. Completed V27 still misses the
+goal:155 paired-completed mean JCT2969.228/2483.133s, with100 slower
+predictive workflows. In600-2400s, completed-request output rates are
+1130.054/1201.674token/s and prefill worker intervals320.683/286.702s.
+Actual trajectories/demand differ; later native also overlaps maintenance.
+These are diagnostic evidence, not exact control-cost attribution.
+
 V112 commits fa6f6c8. First-service prefetch and background same-session
 prefix audits compare long q-arrays without temporary token slices, using
 native RadixKey's GIL-retaining memory comparison. Retain exact token
