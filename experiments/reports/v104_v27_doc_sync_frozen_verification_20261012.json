@@ -1,0 +1,18 @@
+{
+  "collection_code_commit": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+  "verification_code_commit": "2fb6594f54ba7f1faf70df652d4b27738401b8fa",
+  "execution_source_unchanged": true,
+  "non_execution_paths": [
+    "docs/",
+    "tests/",
+    "scripts/summarize_semantic_h2d_ab.py",
+    "scripts/launch_semantic_h2d_after_pair.py"
+  ],
+  "changed_committed_paths": [
+    "docs/architecture_status_zh.md",
+    "docs/beliefkv_design.md",
+    "docs/experiment_operating_notes_zh.md",
+    "docs/implementation_plan.md"
+  ],
+  "frozen_artifact_digests_verified": true
+}
