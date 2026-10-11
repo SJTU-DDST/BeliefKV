@@ -1,6 +1,6 @@
 # BeliefKV 当前系统设计
 
-更新日期：2026-10-11
+更新日期：2026-10-12
 
 状态：本文是当前算法与系统边界的权威说明。历史版本保存在
 `docs/archive/snapshots/beliefkv_design_2026-07-14_zh.md`。
@@ -43,6 +43,24 @@ agent 调度、共用路径减负、predictive H2D 与 `PREPARE_HOST`，
 现有部署脚本的 --development-restart 支持这一流程，旧轮无需
 完整 summary/后处理，但部署仍在旧执行进程退出之后进行。
 
+V99 的粗略开发对照使用 V26 predictive 与最近完整 V23 native，
+按各自首个 GPU monitor 样本对齐。300-600、600-2400、
+4200-4800 秒窗口完整并避开栈采样；predictive decode 吞吐
+分别落后 14.58%、2.42%、16.32%，两侧加权 batch 均约 47。
+600-2400 秒总 H2D 为 1.723/2.391 TB，但 prefill worker
+墙钟为 336.57/271.87 秒。5.661 GB JOIN/tool FULL 来源
+标记与 66.866 GB 需求 handoff 必须分开；前者不自动证明
+事件完成前的有效复用。容量、到达流及模型产物相同，代码、
+patch 及实际轨迹不同；不能据截断 V26 的已完成子集推断
+完整 JCT。相对 native 的性能目标尚未达到，V27 继续冻结。
+
+既有 body_progress_v2 候选保持阶段头，在同一 V26 输入
+回放中将 46 个自然 pre-EOS 请求末次快照的绝对误差中位数
+从 39.04 降到 30.19 token，CPU 批次 P50 相近。但 500 ms
+首次触发仍没有 0-500 ms 命中，候选 7 次触发全部提前超过
+2 秒。仅保留开发证据，不部署；继续以项目隔离、因果输入、
+可消费提前量和实际 FULL 复用评价，不以 token 误差代替收益。
+
 V98 针对后台记录编码增加严格 ujson 5.12.1 路径，提交
 8f8ce45；字段值、非有限数拒绝、队列、ACK/use flush 和
 身份/HMAC 编码契约保留。236 项相关检查及 259 条真实记录
@@ -65,7 +83,7 @@ v27_launch_after_v26_20261011.json，running_new_pair。
 
 内容剩余工作头的最近 128 token 候选已快速回放并拒绝部署：
 阶段分数完全不变，但 V26 的 46 个自然 pre-EOS 请求末次
-快照 token MAE 从 39.04 增至 43.19，CPU 批次 P50 从
+快照 token 绝对误差中位数从 39.04 增至 43.19，CPU 批次 P50 从
 129.85 增至 191.43 ms。500 ms 回放没有 0-500 ms 命中，
 且未重放容量与候选额外时延。原 selector、interval、
 evaluation 数据均无 notice-active 快照，与训练数据的
