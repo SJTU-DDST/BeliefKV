@@ -26,6 +26,19 @@ FULL未复用；这不是184秒工具执行、GPU准入等待或RETURN预测误�
 预测、准入及workload配置。相关486项检查通过；尚未部署到V22，
 不据此宣称消除摘要执行成本或取得native相对收益。
 
+该驻留修复、容量审计及文档已提交为d6d6470。2026-10-11
+10:43:32 CST将仍在等待的V23更新为
+d6d64706b114d5587541958bff8f2a0e7bf98bb9，冻结checkout为
+beliefkv-v59-summary-residency-20261011，协调器PID3317739，PPID1。
+配置、前序pair身份及canonical原生patch与6793959登记一致。
+仅停止旧等待协调器3297034，主checkout继续为干净的3aa27dd，
+V22采集进程未发信号。旧登记保留为
+v23_launch_after_v22_6793959_superseded_20261011.json；
+回执为v59_v23_summary_residency_registration_20261011.json，
+当前主工作区登记仍为v23_launch_after_v22_20261011.json。
+V23在V22完整pair及后处理结束后自动部署，predictive先、
+冷启动同版本native后。当前性能目标仍未达成。
+
 继续降低工具预测交付成本：CPU profile定位到operational曲线的
 18个采样点重复扫描整份系数表。现在在单条曲线内一次筛出本次
 特征使用的系数，保留原系数顺序、非有限项和原校准/保序计算；
@@ -48,6 +61,7 @@ v23_launch_after_v22_58f2097_superseded_20261011.json，当前登记仍为
 v57_v23_tool_curve_registration_20261011.json。冻结V22及运行配置
 保持原样，其完整pair及后处理结束后自动部署，predictive先、
 冷启动同版本native后；GPU收益仍待验证。
+该10:34登记已由上方10:43的d6d6470登记替换。
 
 终态child到parent的容量交接已包含在冻结V22中：child RETURN且
 context确定退休后，释放session引用，直接丢弃原生allocator确认
@@ -103,7 +117,7 @@ V22采集进程未发信号。旧登记及日志保留，回执为
 v55_v23_tool_capacity_registration_20261011.json；
 实际登记仍在主工作区v23_launch_after_v22_20261011.json。
 V22完整pair与后处理结束后自动部署，predictive先、冷native后。
-该10:01登记先由10:21的58f2097登记替换，当前为10:34的6793959。
+该10:01登记先由10:21的58f2097登记替换，当前为10:43的d6d6470。
 
 补齐工具窗口离线审计的H2D服务时间比较，保存
 v54_v22_tool_service_window_fixedprefix_20261011.json及本地详细产物。

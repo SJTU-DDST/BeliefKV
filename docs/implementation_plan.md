@@ -27,6 +27,18 @@ execution, prediction, admission or workload settings or extend leases.
 The486 related checks pass. Include the follow-up in the next waiting frozen
 target; V22 remains unchanged. This does not remove summary work or prove GPU benefit.
 
+The residence fix, capacity evidence and documents are committed asd6d6470.
+At2026-10-11 10:43:32 CST, register the waiting V23 target as
+d6d64706b114d5587541958bff8f2a0e7bf98bb9 in
+beliefkv-v59-summary-residency-20261011; coordinator3317739, now PPID1.
+Configuration, captured previous-pair identities and canonical engine patch match
+the6793959 registration. Stop only waiting coordinator3297034; retain its
+registration asv23_launch_after_v22_6793959_superseded_20261011.json and its log.
+Keepv59_v23_summary_residency_registration_20261011.json as the bounded receipt.
+Main remains clean at3aa27dd, V23 has no run directory, and V22 collection processes
+are not signalled. Deploy after the complete V22 pair and postprocessing, then
+predictive followed by cold same-version native. The performance goal remains active.
+
 Reduce operational tool-curve cost after the CPU profile identifies repeated
 dense coefficient scans at18 knots. Select coefficients for this curve's feature
 names once, retaining original coefficient order, nonfinite terms, sigmoid,
@@ -51,6 +63,7 @@ v57_v23_tool_curve_registration_20261011.json as the bounded receipt; the main
 v23_launch_after_v22_20261011.json remains current. V22 collection processes are
 not signalled. Deploy after its complete pair and postprocessing, then run
 predictive followed by cold same-version native. GPU performance remains unproven.
+This10:34 registration is superseded by the10:43 d6d6470 registration above.
 
 Terminal-child to parent capacity handoff is already in the frozen V22: retire
 confirmed finished contexts, release session references, and directly discard
@@ -91,7 +104,7 @@ v56_v23_tool_wait_registration_20261011.json receipt; the main
 v23_launch_after_v22_20261011.json remains current. V22 collection processes are
 not signalled. Deploy after its complete pair and postprocessing, then run
 predictive followed by cold same-version native. GPU performance remains unproven.
-This10:21 registration is superseded by the10:34 6793959 registration above.
+This10:21 registration was superseded by10:34 6793959; current target is10:43 d6d6470.
 
 Fix capacity blocking between tool-prefetch candidates in the isolated follow-up.
 Previously the nearest-ending tool took the sole ticket before reclaim was checked;
@@ -115,7 +128,7 @@ v55_v23_tool_capacity_registration_20261011.json receipt. V22 collection process
 are not signalled. The main v23_launch_after_v22_20261011.json is current.
 Deploy after the complete V22 pair and postprocessing, predictive first and cold
 same-version native second.
-This10:01 registration was superseded by10:21 58f2097; current target is10:34 6793959.
+This10:01 registration was superseded by10:21 58f2097; current target is10:43 d6d6470.
 
 Keepv54_v22_tool_service_window_fixedprefix_20261011.json and its local detailed
 artifact. Re-read exactly the same817177733-byte opportunity prefix and lifecycle
