@@ -1,0 +1,34 @@
+{
+  "scope": "Nonblocking GIL stack samples, not total CPU time, GPU stall or removable JCT",
+  "pid": 1061045,
+  "command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/py-spy",
+    "record",
+    "--pid",
+    "1061045",
+    "--duration",
+    "20",
+    "--rate",
+    "30",
+    "--gil",
+    "--nonblocking",
+    "--format",
+    "raw",
+    "--output",
+    "experiments/reports/v100_v27_scheduler_stack_samples_20261012.raw"
+  ],
+  "returncode": 1,
+  "started_at_local": "2026-10-12T00:23:23.369461+08:00",
+  "finished_at_local": "2026-10-12T00:23:24.141369+08:00",
+  "performance_exclusion_ts_ms": [
+    1791735803369.4905,
+    1791735804141.36
+  ],
+  "stdout": "",
+  "stderr": "Permission Denied: Try running again with elevated permissions by going 'sudo env \"PATH=$PATH\" !!'\n",
+  "weighted_valid_samples": 0,
+  "threads": {},
+  "top_leaf_frames": [],
+  "top_inclusive_frames": [],
+  "raw_sha256": null
+}

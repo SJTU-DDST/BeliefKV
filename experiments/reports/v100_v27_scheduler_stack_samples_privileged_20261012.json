@@ -1,0 +1,269 @@
+{
+  "scope": "Nonblocking GIL stack samples, not total CPU time, GPU stall or removable JCT",
+  "pid": 1061045,
+  "command": [
+    "sudo",
+    "-n",
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/py-spy",
+    "record",
+    "--pid",
+    "1061045",
+    "--duration",
+    "20",
+    "--rate",
+    "30",
+    "--gil",
+    "--nonblocking",
+    "--format",
+    "raw",
+    "--output",
+    "experiments/reports/v100_v27_scheduler_stack_samples_privileged_20261012.raw"
+  ],
+  "returncode": 0,
+  "started_at_local": "2026-10-12T00:23:57.635480+08:00",
+  "finished_at_local": "2026-10-12T00:24:17.819114+08:00",
+  "performance_exclusion_ts_ms": [
+    1791735837635.5054,
+    1791735857819.109
+  ],
+  "stdout": "py-spy> Sampling process 30 times a second for 20 seconds. Press Control-C to exit.\n\npy-spy> Wrote raw flamegraph data to 'experiments/reports/v100_v27_scheduler_stack_samples_privileged_20261012.raw'. Samples: 176 Errors: 71\npy-spy> You can use the flamegraph.pl script from https://github.com/brendangregg/flamegraph to generate a SVG\n",
+  "stderr": "",
+  "weighted_valid_samples": 176,
+  "threads": {
+    "<module> (<string>:1)": 154,
+    "_bootstrap (threading.py:1002)": 12,
+    "_get_device_index (torch/cuda/_utils.py:586)": 1,
+    "_zero_padded_pcg_tail (radix_attention.py:69)": 1,
+    "quantile (beliefkv/predictor/action_frontier.py:320)": 1,
+    "forward_extend (flashattention_backend.py:1826)": 1,
+    "set_raw (utils/gauge_histogram.py:65)": 1,
+    "graph_pool_replay_scope (runner_utils/pool.py:196)": 1,
+    "": 3,
+    "<genexpr> (beliefkv/runtime/sglang_v0520_physical.py:424)": 1
+  },
+  "top_leaf_frames": [
+    [
+      "inspect_beliefkv_reentry (unified_radix_cache.py:2253)",
+      7
+    ],
+    [
+      "__len__ (radix_cache.py:106)",
+      5
+    ],
+    [
+      "<lambda> (triton/runtime/jit.py:370)",
+      5
+    ],
+    [
+      "encode_record (beliefkv/runtime/record_json.py:9)",
+      5
+    ],
+    [
+      "extend (linear/kernels/gdn_flashinfer.py:516)",
+      4
+    ],
+    [
+      "is_prefix_at (radix_cache.py:255)",
+      4
+    ],
+    [
+      "extend (linear/kernels/gdn_flashinfer.py:569)",
+      3
+    ],
+    [
+      "extend (linear/kernels/gdn_flashinfer.py:533)",
+      3
+    ],
+    [
+      "",
+      3
+    ],
+    [
+      "extend (linear/gdn_backend.py:452)",
+      2
+    ],
+    [
+      "observe_unified_node_closure (beliefkv/runtime/sglang_v0520_observer.py:654)",
+      2
+    ],
+    [
+      "wrapper (scheduler_stage_metrics.py:155)",
+      2
+    ],
+    [
+      "inspect_beliefkv_reentry (unified_radix_cache.py:2232)",
+      2
+    ],
+    [
+      "__init__ (<string>:10)",
+      2
+    ],
+    [
+      "__call__ (triton/backends/nvidia/driver.py:328)",
+      2
+    ],
+    [
+      "gdn_prefill_qkv_prepare_fwd (l2norm.py:247)",
+      2
+    ],
+    [
+      "__getitem__ (radix_cache.py:143)",
+      2
+    ],
+    [
+      "generate_execution_args (cutlass/base_dsl/jit_executor.py:639)",
+      2
+    ],
+    [
+      "forward_extend (linear/gdn_backend.py:909)",
+      2
+    ],
+    [
+      "extend (linear/kernels/gdn_flashinfer.py:532)",
+      2
+    ],
+    [
+      "chunk_gated_delta_rule (flashinfer/gdn_prefill.py:558)",
+      2
+    ],
+    [
+      "_write (beliefkv/runtime/v0520_native_telemetry.py:1978)",
+      2
+    ],
+    [
+      "_insert_walk_step (unified_cache/unified_tree_core.py:1274)",
+      1
+    ],
+    [
+      "__init__ (cutlass/base_dsl/compiler.py:443)",
+      1
+    ],
+    [
+      "measured (beliefkv/runtime/hotpath_timing.py:107)",
+      1
+    ]
+  ],
+  "top_inclusive_frames": [
+    [
+      "run_event_loop (scheduler.py:2031)",
+      154
+    ],
+    [
+      "<module> (<string>:1)",
+      154
+    ],
+    [
+      "run (multiprocessing/process.py:108)",
+      154
+    ],
+    [
+      "wrapper (scheduler_stage_metrics.py:155)",
+      154
+    ],
+    [
+      "run_scheduler_process (scheduler.py:6243)",
+      154
+    ],
+    [
+      "_bootstrap (multiprocessing/process.py:314)",
+      154
+    ],
+    [
+      "_main (multiprocessing/spawn.py:135)",
+      154
+    ],
+    [
+      "spawn_main (multiprocessing/spawn.py:122)",
+      154
+    ],
+    [
+      "decorate_context (torch/utils/_contextlib.py:124)",
+      154
+    ],
+    [
+      "dispatch_event_loop (scheduler.py:6089)",
+      154
+    ],
+    [
+      "wrapper (utils/nvtx_utils.py:109)",
+      151
+    ],
+    [
+      "event_loop_overlap (scheduler.py:2129)",
+      82
+    ],
+    [
+      "run_batch (scheduler.py:4652)",
+      77
+    ],
+    [
+      "forward_batch_generation (tp_worker.py:628)",
+      75
+    ],
+    [
+      "forward (model_runner.py:1675)",
+      75
+    ],
+    [
+      "_forward_raw (model_runner.py:1856)",
+      72
+    ],
+    [
+      "_execute_body_capture (runner/prefill_cuda_graph_runner.py:1844)",
+      70
+    ],
+    [
+      "execute (runner/prefill_cuda_graph_runner.py:1946)",
+      70
+    ],
+    [
+      "general_mm_embed_routine (mm_utils.py:750)",
+      69
+    ],
+    [
+      "forward (qwen3_vl.py:1630)",
+      69
+    ],
+    [
+      "_wrapped_call_impl (torch/nn/modules/module.py:1778)",
+      69
+    ],
+    [
+      "_call_impl (torch/nn/modules/module.py:1789)",
+      69
+    ],
+    [
+      "replay (runner_backend/breakable_cuda_graph_backend.py:258)",
+      68
+    ],
+    [
+      "replay_layer_forward (runner/prefill_cuda_graph_runner.py:1815)",
+      68
+    ],
+    [
+      "__call__ (torch/_ops.py:1279)",
+      67
+    ],
+    [
+      "replay (runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py:291)",
+      66
+    ],
+    [
+      "replay_fn (runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py:261)",
+      66
+    ],
+    [
+      "forward (hybrid_linear_attn_backend.py:1327)",
+      64
+    ],
+    [
+      "forward_extend (hybrid_linear_attn_backend.py:1279)",
+      63
+    ],
+    [
+      "unified_linear_attention_with_output (radix_linear_attention.py:223)",
+      62
+    ]
+  ],
+  "raw_sha256": "84f873c84a1f804260ab6f0b595ce00a8c23361680c6e9a044103f1046e46d00"
+}
