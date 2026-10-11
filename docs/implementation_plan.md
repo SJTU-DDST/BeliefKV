@@ -2,6 +2,15 @@
 
 Status date: 2026-10-12.
 
+V102 adds complete, profiling-free V27/older-V23-native windows600-1800,
+2400-3000,3600-3900s with decode differences-2.79%,+9.05%,-1.99%.
+In the busy window, prefill worker wall is214.60/167.25s and submitted
+uncached prompt work7.254/6.812million tokens; service-work attribution
+is not established. Separate01:00:44 CST reads observe88 completed and
+zero telemetry loss/failure. Preserve the same-version comparison.
+The driver archives and cleans each terminal arm before the next arm;
+keep the37GiB active workspaces until their archival conditions hold.
+
 V101: commit68e656c stops scanning a pool index once its native-consumed
 pressure-candidate prefix is full. The other pool retains candidate order,
 live lock/residency checks and pending-transfer exclusion. The118 relevant
