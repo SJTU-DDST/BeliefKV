@@ -20,6 +20,7 @@ from beliefkv.experiments.arrival_schedule import build_workflow_arrivals
 NON_EXECUTION_SOURCE_PATHS = (
     "docs/",
     "tests/",
+    "experiments/archive/README.md",
     "scripts/summarize_semantic_h2d_ab.py",
     "scripts/launch_semantic_h2d_after_pair.py",
 )
