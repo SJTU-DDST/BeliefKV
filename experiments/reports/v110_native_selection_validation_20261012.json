@@ -1,0 +1,37 @@
+{
+  "schema_version": 1,
+  "runtime_commit": "49fb704",
+  "scope": "Reuse unchanged planned identities only after rechecking all current request/session fields. CPU selection cost and allocation evidence, not GPU/JCT benefit.",
+  "runtime_path": "beliefkv/runtime/sglang_v0520_admission.py",
+  "runtime_source_sha256": "092d0f2814402e2a8a8211ba6afa6fad273b2c85323d73cc5bf8f89f29cc5ecd",
+  "benchmark_report": "experiments/reports/v110_native_selection_identity_cpu_20261012.json",
+  "benchmark_report_sha256": "9297d2e5357dd845e796bd9c167889bb58a90d34fd34c306187abfd363dea7f8",
+  "benchmark_baseline_revision": "b892bba",
+  "benchmark_iterations_per_case": 1000,
+  "benchmark_cases": 16,
+  "benchmark_order": "Alternating baseline/current on the same inputs. Allocation counting is separate from timed runs.",
+  "matching_case_mean_wall_ms": {
+    "4": [0.018549948, 0.012532352],
+    "48": [0.154837958, 0.099973136],
+    "156": [0.462714153, 0.303672201],
+    "512": [1.258316096, 0.815267553]
+  },
+  "matching_case_identity_allocations_per_selection": {
+    "4": [4, 0],
+    "48": [48, 0],
+    "156": [156, 0],
+    "512": [512, 0]
+  },
+  "selections_and_rejection_reasons_equal": true,
+  "changed_identities_still_allocate_and_fail_stale_authorization": true,
+  "validation": {
+    "command": "python -m pytest -q tests/test_sglang_v0520_admission.py tests/test_sglang_v0520_runtime.py tests/test_analyze_busy_context_control.py",
+    "passed": 179,
+    "duration_seconds": 0.58,
+    "git_diff_check": "passed",
+    "coverage": "Changed attempt/epoch/session identity, stale revision, mixed native requests, duplicates, terminal contexts and runtime integration."
+  },
+  "v27_execution_unchanged": true,
+  "v28_target_update_required": true,
+  "performance_goal_met": false
+}

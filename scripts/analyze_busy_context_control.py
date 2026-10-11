@@ -416,14 +416,28 @@ def main() -> None:
                 arm, window["begin_ts_ms"], window["end_ts_ms"],
             )
         report["arms"][name] = values
-    left, right = (report["arms"][name]["cohorts"] for name in ("predictive_h2d", "native"))
-    report["matched_cohorts"] = {
-        key: {
-            "predictive": left[key], "native": right[key],
-            "predictive_mean_ratio": left[key]["mean_ms"] / right[key]["mean_ms"],
-        } for key in sorted(left.keys() & right.keys())
-        if left[key]["batches"] >= 32 and right[key]["batches"] >= 32
-    }
+    predictive, native = (
+        report["arms"][name] for name in ("predictive_h2d", "native")
+    )
+    for name, left, right in (
+        ("matched_cohorts", predictive["cohorts"], native["cohorts"]),
+        (
+            "matched_cuda_graph_cohorts",
+            predictive["cuda_graph_cohorts"], native["cuda_graph_cohorts"],
+        ),
+        (
+            "matched_prefill_cohorts",
+            predictive["prefill_geometry"]["cohorts"],
+            native["prefill_geometry"]["cohorts"],
+        ),
+    ):
+        report[name] = {
+            key: {
+                "predictive": left[key], "native": right[key],
+                "predictive_mean_ratio": left[key]["mean_ms"] / right[key]["mean_ms"],
+            } for key in sorted(left.keys() & right.keys())
+            if left[key]["batches"] >= 32 and right[key]["batches"] >= 32
+        }
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     print(json.dumps({

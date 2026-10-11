@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "scope": "Complete early same-version V27 windows. Cohort comparisons are work-binned diagnostics, not identical-demand causality or a completed-pair JCT result.",
+  "collection_revision": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+  "canonical_patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+  "reports": [
+    {
+      "path": "experiments/reports/v108_v27_same_version_context_control_300_600_20261012.json",
+      "sha256": "19c513aecd432a26140aad6883689411b8a0595717ad171be602116a99616489",
+      "window_seconds": [300, 600],
+      "prefill_batches_predictive_native": [2115, 2275],
+      "prefill_actual_extend_tokens_predictive_native": [1706633, 1725046],
+      "prefill_worker_interval_ms_predictive_native": [43871.32067233324, 32646.05926722288],
+      "matched_prefill_cohorts": 13,
+      "matched_decode_graph_cohorts": 11,
+      "predictive_instrumented_python_exclusive_wall_ms": 41697.790722000005
+    },
+    {
+      "path": "experiments/reports/v108_v27_same_version_context_control_600_900_20261012.json",
+      "sha256": "2eeaf313ad54f58a17497db18071a5f7174a1f3ecf585c2822d23965075eb483",
+      "window_seconds": [600, 900],
+      "prefill_batches_predictive_native": [1904, 1992],
+      "prefill_actual_extend_tokens_predictive_native": [1633118, 1735724],
+      "prefill_worker_interval_ms_predictive_native": [48000.10452605784, 37991.76123738289],
+      "matched_prefill_cohorts": 12,
+      "matched_decode_graph_cohorts": 9,
+      "predictive_instrumented_python_exclusive_wall_ms": 42668.094219000006
+    }
+  ],
+  "cohort_contract": {
+    "minimum_batches_in_each_arm": 32,
+    "decode_dimensions": ["batch_size", "2048_token_mean_context_bin", "actual_cuda_graph_replay_flag"],
+    "prefill_dimensions": ["batch_size", "512_token_total_extend_bin", "2048_token_mean_prefix_bin"],
+    "zero_extend_bin_semantics": "0 through 511 actual extend tokens, not proof of zero work",
+    "prefill_geometry": "All counted prefill batches in both windows have actual native batch geometry.",
+    "decode_graph_observation": "Every observed decode batch in both windows reports cuda_graph_replayed=true."
+  },
+  "findings": [
+    "Matched 48-request decode means are nearly equal in the 600-900s window; the 47-request bins are slower by approximately 6-13 percent in predictive.",
+    "Single-request prefill cohorts with fewer than 512 actual extend tokens have predictive/native worker-interval mean ratios around 1.90-2.72 in the 600-900s window.",
+    "The same-version native has more actual prefill work and a shorter total prefill worker interval in each window. Prior missing-geometry ambiguity is resolved for these windows.",
+    "Instrumented predictive Python costs remain substantial. Native has no corresponding admission-runtime control profile, so these are not measured native-relative CPU differences.",
+    "The first-service list-input optimization is rejected because the actual tokenizer/Req path already uses native arrays. The next isolated change removes repeated identity allocations in the real native selection path."
+  ],
+  "timing_boundary": "Scheduler run_batch launch_ts through processed completion, clipped against prior completion under overlap; includes scheduler/result processing and is not CUDA kernel time.",
+  "unresolved": [
+    "Exact attribution among control scheduling, restoration, overlap and first-service observation.",
+    "Independent late-window and full-pair throughput/JCT confirmation.",
+    "GPU benefit from queued V101/V104/V106/V107 and the new V110 change."
+  ],
+  "performance_goal_met": false
+}

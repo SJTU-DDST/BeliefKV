@@ -1,0 +1,728 @@
+{
+  "scope": "Complete CPU native candidate selection on identical request identities and plans; alternating baseline/current order, with allocation counts measured separately. No native allocator, DMA, GPU or JCT measurement.",
+  "baseline_revision": "b892bba",
+  "baseline_source_sha256": "7e0bc9eef49072111bded400fe429f0fecf632613d0e41780e19030e475a5fce",
+  "optimized_source_sha256": "092d0f2814402e2a8a8211ba6afa6fad273b2c85323d73cc5bf8f89f29cc5ecd",
+  "cases": [
+    {
+      "queue_size": 4,
+      "scenario": "matching",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 4,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.018549948,
+            "p50_ms": 0.017437,
+            "p99_ms": 0.023716,
+            "max_ms": 0.816889
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.017963106,
+            "p50_ms": 0.016854,
+            "p99_ms": 0.023034,
+            "max_ms": 0.81568
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.012532352,
+            "p50_ms": 0.012324,
+            "p99_ms": 0.01691,
+            "max_ms": 0.019098
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.011953722,
+            "p50_ms": 0.011748,
+            "p99_ms": 0.01616,
+            "max_ms": 0.018408
+          }
+        }
+      }
+    },
+    {
+      "queue_size": 4,
+      "scenario": "mixed_native",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 3,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.014373588,
+            "p50_ms": 0.014277,
+            "p99_ms": 0.019115,
+            "max_ms": 0.021872
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.013768872,
+            "p50_ms": 0.013683,
+            "p99_ms": 0.018267,
+            "max_ms": 0.021096
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.01114024,
+            "p50_ms": 0.011015,
+            "p99_ms": 0.015605,
+            "max_ms": 0.02137
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.01054661,
+            "p50_ms": 0.010421,
+            "p99_ms": 0.01489,
+            "max_ms": 0.020768
+          }
+        }
+      }
+    },
+    {
+      "queue_size": 4,
+      "scenario": "changed_attempt",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 4,
+        "optimized": 1
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.016814652,
+            "p50_ms": 0.01657,
+            "p99_ms": 0.021529,
+            "max_ms": 0.060308
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.016225833,
+            "p50_ms": 0.015982,
+            "p99_ms": 0.020863,
+            "max_ms": 0.059591
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.014072503,
+            "p50_ms": 0.013852,
+            "p99_ms": 0.018706,
+            "max_ms": 0.045471
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.013479658,
+            "p50_ms": 0.013262,
+            "p99_ms": 0.017968,
+            "max_ms": 0.044905
+          }
+        }
+      }
+    },
+    {
+      "queue_size": 4,
+      "scenario": "stale_plan",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 4,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.014100068,
+            "p50_ms": 0.013932,
+            "p99_ms": 0.019085,
+            "max_ms": 0.023798
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.01352387,
+            "p50_ms": 0.013351,
+            "p99_ms": 0.018386,
+            "max_ms": 0.02314
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.009607254,
+            "p50_ms": 0.009461,
+            "p99_ms": 0.012363,
+            "max_ms": 0.015278
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.009039761,
+            "p50_ms": 0.008898,
+            "p99_ms": 0.011747,
+            "max_ms": 0.014582
+          }
+        }
+      }
+    },
+    {
+      "queue_size": 48,
+      "scenario": "matching",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 48,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.154837958,
+            "p50_ms": 0.154472,
+            "p99_ms": 0.17328,
+            "max_ms": 0.269696
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.154209804,
+            "p50_ms": 0.15386,
+            "p99_ms": 0.172514,
+            "max_ms": 0.268585
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.099973136,
+            "p50_ms": 0.09993,
+            "p99_ms": 0.108155,
+            "max_ms": 0.127072
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.099349649,
+            "p50_ms": 0.099316,
+            "p99_ms": 0.107387,
+            "max_ms": 0.125832
+          }
+        }
+      }
+    },
+    {
+      "queue_size": 48,
+      "scenario": "mixed_native",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 38,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.12763193,
+            "p50_ms": 0.12693,
+            "p99_ms": 0.152188,
+            "max_ms": 0.270446
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.126965483,
+            "p50_ms": 0.12633,
+            "p99_ms": 0.148366,
+            "max_ms": 0.26899
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.083902077,
+            "p50_ms": 0.083547,
+            "p99_ms": 0.099443,
+            "max_ms": 0.159672
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.083269977,
+            "p50_ms": 0.082923,
+            "p99_ms": 0.098794,
+            "max_ms": 0.158363
+          }
+        }
+      }
+    },
+    {
+      "queue_size": 48,
+      "scenario": "changed_attempt",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 48,
+        "optimized": 10
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.157236092,
+            "p50_ms": 0.154968,
+            "p99_ms": 0.277641,
+            "max_ms": 0.286787
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.156544574,
+            "p50_ms": 0.154367,
+            "p99_ms": 0.276813,
+            "max_ms": 0.285939
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.118262339,
+            "p50_ms": 0.116928,
+            "p99_ms": 0.198657,
+            "max_ms": 0.200061
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.117640852,
+            "p50_ms": 0.116311,
+            "p99_ms": 0.197852,
+            "max_ms": 0.199158
+          }
+        }
+      }
+    },
+    {
+      "queue_size": 48,
+      "scenario": "stale_plan",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 48,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.119827464,
+            "p50_ms": 0.119459,
+            "p99_ms": 0.137163,
+            "max_ms": 0.223281
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.119186128,
+            "p50_ms": 0.11885,
+            "p99_ms": 0.136434,
+            "max_ms": 0.222104
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.069697109,
+            "p50_ms": 0.069006,
+            "p99_ms": 0.08283,
+            "max_ms": 0.121887
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.069062988,
+            "p50_ms": 0.068393,
+            "p99_ms": 0.082217,
+            "max_ms": 0.120822
+          }
+        }
+      }
+    },
+    {
+      "queue_size": 156,
+      "scenario": "matching",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 156,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.462714153,
+            "p50_ms": 0.47674,
+            "p99_ms": 0.692526,
+            "max_ms": 0.696019
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.462046998,
+            "p50_ms": 0.476064,
+            "p99_ms": 0.691777,
+            "max_ms": 0.695331
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.303672201,
+            "p50_ms": 0.311801,
+            "p99_ms": 0.425977,
+            "max_ms": 1.077869
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.302942759,
+            "p50_ms": 0.31113,
+            "p99_ms": 0.425273,
+            "max_ms": 1.063532
+          }
+        }
+      }
+    },
+    {
+      "queue_size": 156,
+      "scenario": "mixed_native",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 124,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.313715391,
+            "p50_ms": 0.30783,
+            "p99_ms": 0.371482,
+            "max_ms": 0.479657
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.313090062,
+            "p50_ms": 0.307299,
+            "p99_ms": 0.370849,
+            "max_ms": 0.470265
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.20673002099999999,
+            "p50_ms": 0.202412,
+            "p99_ms": 0.25283,
+            "max_ms": 0.269405
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.206182625,
+            "p50_ms": 0.201914,
+            "p99_ms": 0.252131,
+            "max_ms": 0.268611
+          }
+        }
+      }
+    },
+    {
+      "queue_size": 156,
+      "scenario": "changed_attempt",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 156,
+        "optimized": 32
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.388803252,
+            "p50_ms": 0.384053,
+            "p99_ms": 0.431976,
+            "max_ms": 0.516652
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.388205357,
+            "p50_ms": 0.383538,
+            "p99_ms": 0.431284,
+            "max_ms": 0.516049
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.290323524,
+            "p50_ms": 0.285546,
+            "p99_ms": 0.328854,
+            "max_ms": 0.360535
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.28967954,
+            "p50_ms": 0.285025,
+            "p99_ms": 0.32787,
+            "max_ms": 0.346401
+          }
+        }
+      }
+    },
+    {
+      "queue_size": 156,
+      "scenario": "stale_plan",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 156,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.299573236,
+            "p50_ms": 0.292829,
+            "p99_ms": 0.343399,
+            "max_ms": 0.407691
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.299008431,
+            "p50_ms": 0.292321,
+            "p99_ms": 0.34281,
+            "max_ms": 0.406924
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.169575742,
+            "p50_ms": 0.164898,
+            "p99_ms": 0.209883,
+            "max_ms": 0.224015
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.169038448,
+            "p50_ms": 0.164406,
+            "p99_ms": 0.209168,
+            "max_ms": 0.223031
+          }
+        }
+      }
+    },
+    {
+      "queue_size": 512,
+      "scenario": "matching",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 512,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 1.258316096,
+            "p50_ms": 1.256514,
+            "p99_ms": 1.385561,
+            "max_ms": 1.671555
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 1.2574344,
+            "p50_ms": 1.255776,
+            "p99_ms": 1.384648,
+            "max_ms": 1.668602
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.815267553,
+            "p50_ms": 0.814936,
+            "p99_ms": 0.865301,
+            "max_ms": 1.500374
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.814434849,
+            "p50_ms": 0.814114,
+            "p99_ms": 0.864546,
+            "max_ms": 1.499261
+          }
+        }
+      }
+    },
+    {
+      "queue_size": 512,
+      "scenario": "mixed_native",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 409,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 1.013302336,
+            "p50_ms": 1.010539,
+            "p99_ms": 1.180364,
+            "max_ms": 1.97907
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 1.012374757,
+            "p50_ms": 1.009812,
+            "p99_ms": 1.178691,
+            "max_ms": 1.976469
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.66987969,
+            "p50_ms": 0.669325,
+            "p99_ms": 0.73752,
+            "max_ms": 0.795223
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.669073236,
+            "p50_ms": 0.668588,
+            "p99_ms": 0.730576,
+            "max_ms": 0.793844
+          }
+        }
+      }
+    },
+    {
+      "queue_size": 512,
+      "scenario": "changed_attempt",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 512,
+        "optimized": 103
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 1.256486137,
+            "p50_ms": 1.253971,
+            "p99_ms": 1.341626,
+            "max_ms": 1.46482
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 1.255333706,
+            "p50_ms": 1.253024,
+            "p99_ms": 1.33971,
+            "max_ms": 1.463698
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.950115167,
+            "p50_ms": 0.950645,
+            "p99_ms": 0.995905,
+            "max_ms": 1.814844
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.949079857,
+            "p50_ms": 0.949767,
+            "p99_ms": 0.995028,
+            "max_ms": 1.81169
+          }
+        }
+      }
+    },
+    {
+      "queue_size": 512,
+      "scenario": "stale_plan",
+      "iterations": 1000,
+      "warmup_iterations": 10,
+      "selections_and_rejections_equal": true,
+      "identity_allocations_per_selection": {
+        "baseline": 512,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 1.211379526,
+            "p50_ms": 1.219633,
+            "p99_ms": 1.263376,
+            "max_ms": 2.394832
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 1.210596172,
+            "p50_ms": 1.21898,
+            "p99_ms": 1.262777,
+            "max_ms": 2.390938
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 1000,
+            "mean_ms": 0.675168608,
+            "p50_ms": 0.67694,
+            "p99_ms": 0.728285,
+            "max_ms": 0.880853
+          },
+          "thread_cpu_ms": {
+            "count": 1000,
+            "mean_ms": 0.674441965,
+            "p50_ms": 0.676288,
+            "p99_ms": 0.727521,
+            "max_ms": 0.879388
+          }
+        }
+      }
+    }
+  ]
+}
