@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-12T04:32:40.453445+08:00",
+  "scope": "Verified replacement waiting coordinator after the complete frozen V27 pair; registration is not evidence of GPU throughput or JCT improvement.",
+  "queued_state_path": "/home/longhao/experiment/BeliefKV/experiments/reports/v28_launch_after_v27_20261012.json",
+  "queued_state_sha256": "7fdcf51dc83b39d24445d78a182a98bfcea99dc2cbc36a201616d10c4cf6dfdd",
+  "queued_status": "waiting_for_previous_pair",
+  "registered_at_utc": "2026-10-11T20:32:09.350404+00:00",
+  "queued_coordinator_pid": 883082,
+  "verified_process_identities": {
+    "883082": {"ppid": 1, "start_ticks": "592099218"},
+    "1060398": {"ppid": 1, "start_ticks": "590379164"},
+    "3264484": {"ppid": 3264475, "start_ticks": "591405899"},
+    "3264866": {"ppid": 3264484, "start_ticks": "591407169"}
+  },
+  "superseded_state_path": "/home/longhao/experiment/BeliefKV/experiments/reports/v28_launch_after_v27_e6224fb_superseded_20261012_v112.json",
+  "superseded_coordinator_pid": 371784,
+  "unsuccessful_replacement_pid": 850025,
+  "unsuccessful_replacement_observation": "Process missing, authoritative state missing, and log empty before retry; the exact cause of that process disappearance is unknown.",
+  "preflight_blocker": "Frozen-source verification classified experiments/archive/README.md as execution source.",
+  "reporting_fix_commits": {
+    "editable": "469eb87",
+    "main": "bc665b533be736e9bcc31641fc86e96e42ad2dc6"
+  },
+  "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v27",
+  "previous_collection_revision": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+  "previous_execution_source_unchanged": true,
+  "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v28",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v112-prefix-audit-20261012",
+  "target_revision": "141d3df1181009c0045b890e4ea7b733a497c42d",
+  "target_tracked_worktree_clean": true,
+  "main_revision": "bc665b533be736e9bcc31641fc86e96e42ad2dc6",
+  "main_is_ancestor_of_target": true,
+  "canonical_patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+  "runtime_optimization_commits": [
+    "68e656c",
+    "0b26516",
+    "793e8ba",
+    "61f415d",
+    "49fb704",
+    "efcda87",
+    "fa6f6c8"
+  ],
+  "arm_order": ["predictive_h2d", "native"],
+  "v27_native_written_completed_at_followup": 149,
+  "new_pair_started": false,
+  "performance_goal_met": false
+}
