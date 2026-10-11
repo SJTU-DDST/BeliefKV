@@ -4,6 +4,14 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+V25 已于 21:08:15 CST 用干净隔离 checkout 冻结 f244c39，
+等待 V24 协调器 1418070 完成两臂及后处理；V25 协调器为
+2951765，登记为 waiting_for_previous_pair。主工作区权威
+v25_launch_after_v24_20261011.json 与 V94 回执保留。目标
+包含主分支新月报提交，维持 ff-only 部署；保留用户的未跟踪
+报告模板及编辑 checkout 的 tmp/，没有放宽干净执行源要求。
+新 pair 沿用原配置，先 predictive 后冷 native，不热更新 V24。
+
 V94 的 live profiler 使用非阻塞、仅 GIL 持有者的 20 秒栈采样；
 有效样本 411、读取错误 89，一并保留原始栈及 SHA256。该口径
 不是全 CPU 时间、GPU 停顿或可减少的 JCT。主性能窗口排除

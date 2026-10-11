@@ -2,6 +2,15 @@
 
 更新日期：2026-10-11。
 
+V25 已于 21:08:15 CST 登记为 waiting_for_previous_pair，协调器
+2951765、启动身份 589435807，等待 V24 协调器 1418070 的完整
+pair 及后处理。冻结 f244c39 包含本轮 94f579f、prefill 工作量
+修正和主分支最新月报提交；干净目标为
+beliefkv-v94-status-publication-20261011。配置沿用 V24，先
+predictive 后同版本冷 native。权威登记位于主工作区
+v25_launch_after_v24_20261011.json，V94 登记回执保留原状态。
+未在 V24 中途部署，原编辑 checkout 的未跟踪 tmp/ 保持原位。
+
 V94：实际 V24 scheduler 的 20 秒 GIL 栈采样中，411 个有效样本
 有 34 个包含后台 `_write_status`。该发布路径每秒重新扫描最多
 32768 条待归因驱逐记录，原 writer/control 计时未包含此成本。

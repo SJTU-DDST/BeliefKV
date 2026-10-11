@@ -2,6 +2,15 @@
 
 Status date: 2026-10-11.
 
+V25 registration is waiting_for_previous_pair as of 21:08:15 CST:
+coordinator 2951765/start 589435807 waits on V24 coordinator 1418070.
+Frozen f244c39 in beliefkv-v94-status-publication-20261011 includes
+94f579f, prefill geometry measurement and the latest main report commits.
+Keep the identical V24 environment, predictive first and cold native,
+after the complete V24 pair/postprocessing. Main's
+v25_launch_after_v24_20261011.json is authoritative; preserve the V94
+registration receipt. The editable checkout's existing tmp/ is retained.
+
 V94: a 20-second live V24 GIL stack sample contains _write_status in
 34 of 411 valid samples, with 89 read errors. Status publication scans up
 to 32768 pending eviction records every second and is omitted from the
@@ -26,9 +35,8 @@ Exclude the live profiling interval 20:45:34-20:46:00 CST, or
 3825.305-3851.305s from the first GPU sample, from primary performance
 windows. GIL stack frequencies are not total CPU, GPU stall or removable
 JCT. Actual engine frames use main third_party/sglang-v0.5.20.
-After committing this fix and preserving the new main report commits,
-register a clean frozen follow-up to wait for V24's complete pair and
-postprocessing, then run predictive first and cold same-version native.
+The clean follow-up is now registered as V25 above. Its same-version
+GPU/JCT comparison must establish the net effect of these changes.
 
 The isolated follow-up fixes prefill work measurement. The old
 req.extend_input_len defaults to zero in the current engine: V24's first

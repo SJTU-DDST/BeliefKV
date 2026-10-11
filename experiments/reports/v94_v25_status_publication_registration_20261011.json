@@ -1,0 +1,77 @@
+{
+  "receipt_scope": "Verified registration snapshot; V25 has not started and the current V24 pair stays frozen.",
+  "authoritative_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v25_launch_after_v24_20261011.json",
+  "source_state_sha256_at_registration": "2e52673f80e0e5a72dae51944795cf78cdb801a4f66e162c8efaa21e7b03526b",
+  "coordinator_pid": 2951765,
+  "coordinator_identity": [
+    "S",
+    1,
+    "589435807"
+  ],
+  "validated_changes": [
+    "b85277a: actual native prefill work measurement",
+    "94f579f: incremental pending eviction totals for status publication",
+    "15d2353: preserved main monthly-report commits"
+  ],
+  "editable_untracked_tmp_preserved": true,
+  "status": "waiting_for_previous_pair",
+  "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v24",
+  "previous_code_commit": "56ff3c26768ac844f9c90f994f5ae5a09f8ec90f",
+  "previous_patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+  "previous_execution_verification": {
+    "collection_code_commit": "56ff3c26768ac844f9c90f994f5ae5a09f8ec90f",
+    "verification_code_commit": "15d23532214f52f87d54bc877608e0c931a62766",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": [
+      "docs/figures/generate_monthly_report_deck.py",
+      "\"docs/reports/2026-10/BeliefKV_\\346\\234\\210\\345\\272\\246\\346\\261\\207\\346\\212\\245_20261011.pdf\"",
+      "\"docs/reports/2026-10/BeliefKV_\\346\\234\\210\\345\\272\\246\\346\\261\\207\\346\\212\\245_20261011.pptx\"",
+      "docs/reports/2026-10/assets/beliefkv_monthly_report_20261011_preview.png",
+      "docs/reports/2026-10/beliefkv_monthly_report_20260815_20261011_zh.md"
+    ]
+  },
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v94-status-publication-20261011",
+  "target_revision": "f244c39e6792f36a0191fc92d6c032fe7d6d0039",
+  "target_patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+  "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25",
+  "wait_process_identities": {
+    "1418070": [
+      "S",
+      1,
+      "588699021"
+    ]
+  },
+  "environment": {
+    "PYTHON": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "RUN_ROOT": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25",
+    "ROOT_COUNT": "156",
+    "ARRIVAL_BATCH_SIZE": "108",
+    "ARRIVAL_BATCH_INTERVAL_MS": "3600000",
+    "ARM_ORDER": "predictive_h2d native",
+    "RESUME_PENDING": "0",
+    "HOST_SPLIT": "80:20",
+    "PORT": "18454",
+    "SAMPLING_SEED": "21",
+    "REPETITION_ID": "0",
+    "ACTIVATION_WALL_CLOCK_SECONDS": "14400.0",
+    "SEMANTIC_REPORT_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/child_semantic_work_live_v7_quantiles/semantic_event_calibrated.json",
+    "PREPARE_HOST": "1",
+    "H2D_SEED_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/native_h2d_ack_seed_20261004.json",
+    "TOOL_TIMING_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/qwen35_native_event_horizons_20260928_calibrated.json",
+    "TRANSFER_SERVICE_SEED": "/home/longhao/experiment/BeliefKV/experiments/models/native_transfer_service_seed_v4.json",
+    "ENABLE_TOOL_TIMING": "1",
+    "PREFETCH_LEAD_MS": "500",
+    "SEMANTIC_WORK_STATISTIC": "center",
+    "EOS_PROTOCOL_WINDOW_MS": "250",
+    "FANOUT_PROFILE": "native_in_graph_2to4",
+    "CHILD_FINAL_REPORT_SHADOW": "1",
+    "WORKLOAD_MANIFEST": "/home/longhao/experiment/BeliefKV/configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json"
+  },
+  "registered_at_utc": "2026-10-11T13:08:15.672985+00:00"
+}

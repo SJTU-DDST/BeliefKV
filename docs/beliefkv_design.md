@@ -37,6 +37,12 @@ agent 调度、共用路径减负、predictive H2D 与 `PREPARE_HOST`，
 3. 提高有用 FULL 预取覆盖，验证 handoff 能否替代需求恢复，
    并以实际首次复用、吞吐、JCT 与重算评价收益。
 
+V25 已登记冻结 f244c39，待 V24 完整 pair/后处理后部署；包含
+状态发布减负与 prefill 工作量修正，保持原配置，先 predictive
+再同版本冷 native。主工作区 v25_launch_after_v24_20261011.json
+为权威状态，当前 waiting_for_previous_pair；新修改的 CPU
+效果与实际服务收益分开验收，主性能目标仍 active。
+
 控制成本须包括后台状态发布，不能只依赖逐记录 writer 和
 scheduler 的既有计时。V24 实际 GIL 栈采样确认 `_write_status`
 有重复扫描待归因驱逐记录的成本；后续版本由单一 writer 在
