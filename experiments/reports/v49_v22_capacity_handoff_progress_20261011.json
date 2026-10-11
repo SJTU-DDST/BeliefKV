@@ -1,0 +1,85 @@
+{
+  "scope": "Partial live V22 predictive evidence; allocator release and following-request reuse are observed, but same-version native benefit is not yet measured.",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d",
+  "deployed_revision": "3aa27dd67b340236310824d80a7e6e31038ea1f9",
+  "source_lifecycle_audit": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v47_v22_prefetch_lifecycle_live_20261011.json",
+    "sha256": "6e73e21a1a92ff8934139fece5626f62945e4ef7b799319d6cc65dd187c75c5d",
+    "written_at_cst": "2026-10-11T09:10:53+08:00",
+    "source_logs_live": true
+  },
+  "confirmed_dynamic_children": {
+    "terminal_contexts": 256,
+    "reclaim_records_including_retries": 544,
+    "cumulative_freed_device_full_bytes": 72813711360,
+    "cumulative_freed_device_mamba_bytes": 37216911360,
+    "cumulative_freed_host_full_bytes": 55465041920,
+    "cumulative_freed_host_mamba_bytes": 47776727040
+  },
+  "parent_first_completed_gpu_batches": {
+    "count": 111,
+    "with_prior_linked_child_device_release": 111,
+    "scheduler_observed_last_child_return_to_completed_batch_ms": {
+      "count": 111,
+      "p50": 264.40283203125,
+      "p90": 767.287109375,
+      "max": 16312.46484375
+    },
+    "prior_restore_lookahead_count": 39,
+    "capacity_restore_rearm_records": 0
+  },
+  "sibling_enabled_window_associations": {
+    "observed_join_events": 169,
+    "completion_unobserved_events": 60,
+    "joins_with_device_release_before_join": 101,
+    "joins_with_actual_pre_join_full_submission_and_following_parent_reuse_after_release": 56,
+    "early_reused_full_bytes_after_sibling_release": 935055360,
+    "cumulative_pre_join_sibling_device_full_release_bytes": 24414187520,
+    "cumulative_pre_join_sibling_device_mamba_release_bytes": 11525652480
+  },
+  "independent_wait_attribution": {
+    "join_events_with_early_reused_full": 59,
+    "join_early_started_and_reused_full_bytes": 1071841280,
+    "join_remaining_next_request_native_full_host_hit_bytes_known": 467681280,
+    "tool_events_with_early_reused_full": 130,
+    "tool_early_started_and_reused_full_bytes": 3442176000,
+    "tool_remaining_next_request_native_full_host_hit_bytes_known": 421437399040,
+    "demand_handoff_verified_reused_full_bytes": 113662812160
+  },
+  "observed_handoff_slot_loss_case": {
+    "workflow": "django__django-11141",
+    "request_id": "beliefkv:01a1284c-39a3-78a0-96c3-5eafe63a3fd2",
+    "native_queue_registered_ts_ms": 1791677446638.3022,
+    "parent_restore_lookahead_ts_ms": 1791677446695.4207,
+    "frontier_slots_at_lookahead": 1,
+    "handoff_submit_ts_ms": 1791677446697.6929,
+    "last_handoff_ack_ts_ms": 1791677446748.8833,
+    "ack_protection_slots": 0,
+    "ack_protection_reason": "no_frontier_slot",
+    "handoff_issue_allowance_recorded": false,
+    "first_observed_native_residency_loss_ts_ms": 1791677447134.7976,
+    "first_gpu_worker_interval_start_ts_ms": 1791677462932.4102,
+    "first_gpu_worker_interval_elapsed_ms": 20.98754234611988,
+    "handoff_full_bytes": 6922240,
+    "handoff_full_reused": false,
+    "remaining_next_request_native_full_host_hit_bytes": 176947200
+  },
+  "follow_up": {
+    "change": "Capture the demand handoff issue allowance in both single-node and native burst callbacks, and discard it with unsubmitted receipts. ACK protection can preserve the originally issued slot allowance while bytes, ownership, native dependencies, expiry and allocation-pressure release remain live.",
+    "new_admission_gate": false,
+    "gpu_validated": false,
+    "focused_runtime_checks_passed": 174,
+    "common_tool_and_runtime_checks_passed": 187,
+    "total_related_checks_passed": 361,
+    "deployed_v22_modified": false
+  },
+  "semantics": [
+    "Cumulative releases are not simultaneously free or exclusively assigned capacity, and do not require the parent to reuse the same physical page numbers.",
+    "Actual submission before JOIN and following-parent FULL reuse qualify the early transfer; association with sibling release does not prove the capacity was necessary.",
+    "Last-child post-RETURN restoration and execution handoff remain demand recovery, separate from predictive H2D.",
+    "Completed GPU batch and worker interval start are different boundaries; neither is CUDA kernel-start evidence.",
+    "Residual native Host-hit bytes are observed following-request demand, not achievable exclusive prefetch coverage or removable JCT.",
+    "The new issue-allowance fix does not reserve a GPU running slot or prove that the 16-second queue tail is removed.",
+    "No capacity restore rearm has been observed in this live snapshot."
+  ]
+}

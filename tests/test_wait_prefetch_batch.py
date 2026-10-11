@@ -7,13 +7,14 @@ import pytest
 
 from beliefkv.core.events import RuntimeEventKind
 from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget, TransferStartWindow
+from beliefkv.runtime.sglang_v0520_runtime import _ExecutionHandoffTicket
 from beliefkv.runtime.sglang_v0520_physical import (
     ActionLocalPrefetchCandidate, ContextSessionAnchors, PrefetchLoadStep,
     SessionH2DOpportunity, plan_prefetch_gpu_steps,
 )
 from beliefkv.runtime.sglang_v0520_observer import StaticPoolHeadroomObservation
 from tests.test_sglang_v0520_physical import prefetch_node
-from tests.test_sglang_v0520_runtime import event, final_stage_runtime
+from tests.test_sglang_v0520_runtime import event, final_stage_runtime, req
 from tests.test_tool_predictive_transfers import tool_runtime
 
 
@@ -121,6 +122,30 @@ def test_wait_burst_restores_checkpoint_once_and_cancels_only_unsubmitted_tail(s
     assert sum(action.num_bytes for action in runtime.completed_physical_actions) == (
         120 if partial else 180
     )
+
+
+@pytest.mark.parametrize("partial", [False, True])
+@pytest.mark.parametrize("slots", [0, 1])
+def test_handoff_burst_keeps_one_issue_allowance_and_cleans_unsubmitted_tail(partial, slots):
+    runtime, key, opportunity, cache, reserved = batch_fixture("join_ticket", partial=partial)
+    runtime.enable_execution_handoff = True
+    request = req(key.request_id)
+    request.session_id, request.session_generation = key.session_id, key.session_generation
+    ticket = _ExecutionHandoffTicket(key, request, time.monotonic() + 2.)
+    budget = PrefetchResidencyBudget(slots, 1024, source="native_next_prefill")
+    with patch.object(runtime, "_current_residency_budget", return_value=budget):
+        commands = runtime._issue_handoff_prefetch_steps(ticket, opportunity.steps)
+    assert len(commands) == (3 if partial else 4)
+    assert runtime.physical_ledger.pending_count == len(commands)
+    assert runtime._prefetch_issue_budgets == dict.fromkeys(commands, budget)
+    cache.prefetch_gpu_session_nodes.assert_called_once()
+    if partial:
+        assert not runtime.physical_ledger.is_pending(reserved[-1])
+        assert reserved[-1] not in runtime._prefetch_steps
+        assert reserved[-1] not in runtime._prefetch_issue_budgets
+    runtime._discard_prefetch_tracking("test_completed")
+    assert not runtime._prefetch_issue_budgets
+    runtime.close()
 
 
 def test_wait_plan_crops_by_total_capacity_and_bytes_while_preserving_prefill_reserve():

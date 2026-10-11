@@ -42,6 +42,48 @@ restore rearm is observed yet; the real-pressure retry path is not verified by t
 snapshot. Multiple source logs remain live; this is neither a frozen final result
 nor a native-relative saving.
 
+Keep the09:10:53 CST partial full lifecycle audit in
+v47_v22_prefetch_lifecycle_live_20261011.json and its bounded, SHA256-linked
+v49_v22_capacity_handoff_progress_20261011.json summary. The256 confirmed dynamic
+children cumulatively release device FULL72.814GB and Mamba37.217GB, excluding
+internal calls. Of169 observed JOINs,109 have completion evidence and60 remain
+unobserved. There are101 with pre-JOIN sibling device release and56 with actual
+subsequent pre-JOIN FULL submission and following-parent reuse, totaling935055360
+bytes. All early-and-reused JOIN FULL totals1.072GB; the113.663GB verified
+execution-handoff FULL remains demand recovery. All111 linked parent completed
+GPU batches have prior child device release; scheduler last-child RETURN to
+completed batch P50/P90 is264.40/767.29ms, maximum16.312s. No capacity retry rearm
+is observed. Do not treat cumulative release as simultaneously available or
+exclusively assigned capacity, or the completed batch as kernel start.
+
+Fix a traced handoff residence gap in the isolated follow-up: django-11141 is
+selected with one frontier allowance57ms after native queue registration.
+Its three extents ACK about51ms after submission with zero remaining frontier
+slots and no recorded issue allowance. They obtain no residence lock and lose
+native residency about386ms later; first worker interval starts16.29s after
+registration and lasts20.99ms. FULL6.922MB is not proven reused, and the next
+request still has176.947MB native FULL Host hits. This proves the gap, not that
+the new fix removes all of the queue tail.
+
+Record the existing issue protection allowance for single-node and batched demand
+handoff, including rollback of unsubmitted tail receipts. Reuse the existing
+same-capacity-source slot allowance at ACK while byte capacity, other-context
+ownership, native page/dependency checks, the original3-second expiry and
+allocation-pressure release stay live. Do not reserve a GPU running slot or
+introduce another admission gate. The174 focused runtime/transfer/handoff/
+terminal-capacity checks and187 common tool/runtime checks pass,361 in total.
+Queue this follow-up for V23 without mutating V22;
+validate actual residence and first use in the next matched pair.
+
+Keep v48_v22_tool_forecast_live_20261011.json and its detailed local artifact.
+For6549 independent tool rounds with last-second accepted forecasts, the
+round-weighted median absolute error P50/P90 is63.57/572.06ms. These selected
+live traces do not establish heldout accuracy. Of575 rounds with a recorded
+timely FULL candidate,95 also have observed free capacity. Snapshot categories
+overlap. Use actual capacity settlement, residence and admission to explain
+coverage;421.44GB residual next-request native FULL demand is not entirely
+replaceable prefetch or an oracle JCT saving.
+
 Keep v37_v22_busy_window_600_900_20261011.json with input-prefix and boundary-line
 hashes. The complete V22 predictive600–900s window has6440 decode batches,
 23068.33 mean visible context tokens and39.187ms mean worker decode interval;

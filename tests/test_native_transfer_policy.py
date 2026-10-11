@@ -171,7 +171,7 @@ def test_unobservable_capacity_does_not_keep_an_old_expanded_budget():
     assert budget.source == "legacy_capacity_unavailable"
 
 
-def issue_restore_with_budget(runtime, key, budget):
+def issue_restore_with_budget(runtime, key, budget, *, source="tool_wait"):
     cache = runtime._native_cache
     unit = cache.host_pool_group.entry_map["kv"].host_pool.size_per_token
     cache.cache_controller = NS(
@@ -191,7 +191,7 @@ def issue_restore_with_budget(runtime, key, budget):
     step = PrefetchLoadStep(key, 1, 2, 1, 2)
     with patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step), \
         patch.object(runtime, "_current_residency_budget", return_value=budget):
-        command = runtime.issue_prefetch_gpu_step(step)
+        command = runtime.issue_prefetch_gpu_step(step, source=source)
     return command, NS(
         direction="h2d", status="completed", node_ids=(1,),
         num_tokens_by_pool=(("kv", 1),),
@@ -208,8 +208,9 @@ def issue_restore_with_budget(runtime, key, budget):
     (0, 1024, "legacy_capacity_unavailable", False),
     (1, 1024, "native_next_prefill", True),
 ])
+@pytest.mark.parametrize("restore_source", ["tool_wait", "execution_handoff"])
 def test_issued_restore_keeps_bounded_protection_across_transient_slot_loss(
-    ack_slots, ack_bytes, source, locked,
+    ack_slots, ack_bytes, source, locked, restore_source,
 ):
     from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
 
@@ -217,8 +218,14 @@ def test_issued_restore_keeps_bounded_protection_across_transient_slot_loss(
     runtime._release_prefetch_service_lease(old_action.command_id, "test_reissue")
     tree = runtime._native_cache.tree_core
     tree.inc_lock_ref.reset_mock()
+    invocation = runtime.graph.invocations[hint.key.invocation_id]
+    if restore_source == "execution_handoff":
+        invocation.state = InvocationState.READY
+        invocation.active_tool_calls.clear()
     issued_budget = PrefetchResidencyBudget(1, 1024, source="native_next_prefill")
-    command, commit = issue_restore_with_budget(runtime, hint.key, issued_budget)
+    command, commit = issue_restore_with_budget(
+        runtime, hint.key, issued_budget, source=restore_source,
+    )
     assert command is not None
     assert runtime._prefetch_issue_budgets[command] == issued_budget
     ack_budget = PrefetchResidencyBudget(ack_slots, ack_bytes, source=source)
@@ -238,8 +245,13 @@ def test_issued_restore_keeps_bounded_protection_across_transient_slot_loss(
         locked and ack_slots == 0
     )
     assert not runtime._prefetch_issue_budgets
-    assert runtime.graph.invocations[hint.key.invocation_id].state.value == "wait_tool"
-    assert lease.expires_at - lease.acknowledged_at == pytest.approx(2.)
+    assert invocation.state is (
+        InvocationState.READY if restore_source == "execution_handoff"
+        else InvocationState.WAIT_TOOL
+    )
+    assert lease.expires_at - lease.acknowledged_at == pytest.approx(
+        3. if restore_source == "execution_handoff" else 2.
+    )
 
 
 def test_prefetch_slot_loss_before_enqueue_leaves_no_dma_or_issue_allowance():

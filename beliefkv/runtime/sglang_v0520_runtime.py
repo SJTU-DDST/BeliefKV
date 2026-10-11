@@ -4775,9 +4775,10 @@ class NativeAdmissionRuntime:
             ) != step:
                 self.counts["prefetch_causal_invalidated_before_enqueue"] += 1
                 return False
-            issue_budget = None
+            issue_budget = self._current_residency_budget(
+                include_evictable=source == "execution_handoff",
+            )
             if source != "execution_handoff":
-                issue_budget = self._current_residency_budget()
                 if not self._prefetch_slot_available(step.key, budget=issue_budget):
                     self.counts["prefetch_slot_lost_before_enqueue"] += 1
                     return False
@@ -4795,8 +4796,7 @@ class NativeAdmissionRuntime:
                 step, source,
                 invocation.updated_ts_ms if invocation is not None else None,
             )
-            if issue_budget is not None:
-                self._prefetch_issue_budgets[command_id] = issue_budget
+            self._prefetch_issue_budgets[command_id] = issue_budget
             return True
 
         outcome = cache.prefetch_gpu_session_node(
@@ -5034,6 +5034,7 @@ class NativeAdmissionRuntime:
             or len({(step.leaf_node_id, step.leaf_creation_time) for step in steps}) != 1
         ):
             return ()
+        issue_budget = self._current_residency_budget(include_evictable=True)
         commands = tuple(f"beliefkv-prefetch-{uuid4().hex}" for _ in steps)
         planned = dict(zip(commands, steps))
         registered: set[str] = set()
@@ -5059,6 +5060,7 @@ class NativeAdmissionRuntime:
                 step, "execution_handoff",
                 invocation.updated_ts_ms if invocation is not None else None,
             )
+            self._prefetch_issue_budgets[command] = issue_budget
             return True
 
         outcomes = cache.prefetch_gpu_session_nodes(
@@ -5082,6 +5084,7 @@ class NativeAdmissionRuntime:
         for command in registered.difference(issued):
             self.physical_ledger.cancel_unsubmitted(command)
             self._prefetch_steps.pop(command, None)
+            self._prefetch_issue_budgets.pop(command, None)
         if issued:
             self.counts["execution_handoff_bursts"] += 1
             self.counts["execution_handoff_burst_nodes"] += len(issued)
