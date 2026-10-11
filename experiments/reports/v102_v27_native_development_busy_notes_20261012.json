@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "scope": "Complete V27 predictive windows against older V23 native; development diagnosis, not same-version causal validation.",
+  "report": "v102_v27_native_development_busy_20261012.json",
+  "predictive_code_commit": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+  "native_code_commit": "a6dd627587827f376bed7022d15e538100c0c775",
+  "time_origin": "Each arm's first GPU monitor sample.",
+  "v27_time_origin_local": "2026/10/11 23:48:11.247",
+  "windows_seconds": [
+    [600, 1800],
+    [2400, 3000],
+    [3600, 3900]
+  ],
+  "all_selected_windows_observed_complete": true,
+  "profiling_attempts_local": [
+    ["2026-10-12T00:23:23.369461+08:00", "2026-10-12T00:23:24.141369+08:00"],
+    ["2026-10-12T00:23:57.635480+08:00", "2026-10-12T00:24:17.819114+08:00"]
+  ],
+  "profiling_overlaps_selected_windows": false,
+  "throughput_change_percent_predictive_vs_native": [
+    -2.7895388877804406,
+    9.053346045446808,
+    -1.9859562268726094
+  ],
+  "busy_600_1800": {
+    "predictive_decode_tokens_per_second": 1067.8075,
+    "native_decode_tokens_per_second": 1098.4491666666668,
+    "predictive_prefill_worker_seconds": 214.59834790039062,
+    "native_prefill_worker_seconds": 167.24563598632812,
+    "predictive_submitted_uncached_prompt_tokens": 7254014,
+    "native_submitted_uncached_prompt_tokens": 6812002,
+    "predictive_total_h2d_bytes": 2181965660160,
+    "native_total_h2d_bytes": 2185701457920
+  },
+  "trajectory_matched": false,
+  "prefill_workload_normalized_causality_established": false,
+  "completed_subset_jct_comparison_performed": false,
+  "same_version_v27_native_started": false,
+  "latest_separate_status_reads_local": "2026-10-12T01:00:44+08:00",
+  "latest_observed_workflow_outcomes": {"completed": 88},
+  "latest_telemetry": {
+    "snapshot_ts_ms": 1791738044255.7288,
+    "writer_error": null,
+    "dropped_records": 0,
+    "failed_records": 0,
+    "writer_queue_depth": 1
+  },
+  "completed_pool_optimization_commit": "68e656c",
+  "completed_pool_optimization_deployed_in_v27": false,
+  "performance_goal_met": false,
+  "next_action": "Keep the frozen V27 pair; distinguish prefill work and service cost using native geometry, and inspect JOIN expiry against actual completion before changing timing or residency."
+}
