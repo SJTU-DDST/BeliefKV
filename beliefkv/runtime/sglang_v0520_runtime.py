@@ -3527,7 +3527,7 @@ class NativeAdmissionRuntime:
 
     def _wait_prefetch_opportunity(
         self, key: PrefillCandidateKey,
-        *, max_steps: int = 16, fit_current_capacity: bool = False,
+        *, max_steps: int | None = None, fit_current_capacity: bool = False,
     ) -> SessionH2DOpportunity | None:
         batched = callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
         slots = self.physical_ledger.max_pending - self.physical_ledger.pending_count
@@ -3535,7 +3535,9 @@ class NativeAdmissionRuntime:
             return None
         opportunity = self.inspect_context_h2d_opportunity(
             context_id=key.context_id, context_epoch=key.context_epoch,
-            max_steps=min(max_steps, slots) if batched else 1,
+            max_steps=(
+                slots if max_steps is None else min(max_steps, slots)
+            ) if batched else 1,
             fit_current_capacity=fit_current_capacity,
         )
         if opportunity is None or opportunity.step is None:

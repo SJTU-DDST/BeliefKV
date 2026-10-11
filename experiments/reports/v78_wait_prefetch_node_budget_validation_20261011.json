@@ -1,0 +1,84 @@
+{
+  "scope": "CPU validation of JOIN/tool burst planning and native submission against existing physical-ledger, byte and capacity budgets; no GPU performance claim.",
+  "baseline_revision": "3b7e950",
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "a9f18f06b8617aebaca526c6988da03744f73eeacfc2d9a61424fcfe8e9e14ed",
+    "beliefkv/runtime/sglang_v0520_physical.py": "8d58c52ffb80bc0ad2654a8442b25575beb2d3e5e44a3ace112d9d1175dd177b",
+    "patches/sglang-v0.5.20-beliefkv-staging.patch": "16008af16a20149f24f37123cddfe46228a722fc9f7a0b4d6dee394866345817"
+  },
+  "change": {
+    "independent_join_tool_sixteen_node_limit_removed": true,
+    "planner_node_limit": "physical_ledger.max_pending - physical_ledger.pending_count",
+    "default_ledger_max_pending": 64,
+    "continuous_ancestor_order_preserved": true,
+    "byte_pool_capacity_and_prefill_reserve_checks_preserved": true,
+    "per_node_physical_reservations_and_ack_reconciliation_preserved": true,
+    "only_necessary_checkpoint_mamba_restored": true,
+    "whole_burst_timing_and_causal_revalidation_preserved": true,
+    "handoff_and_read_only_sampling_limits_expanded": false
+  },
+  "checks": {
+    "python": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "passed": 697,
+    "native_subtests_passed": 27,
+    "suites": [
+      "tests/test_wait_prefetch_batch.py",
+      "tests/test_sglang_v0520_physical.py",
+      "tests/test_sglang_v0520_runtime.py",
+      "tests/test_sglang_v0520_admission.py",
+      "tests/test_execution_handoff.py",
+      "tests/test_tool_predictive_transfers.py",
+      "tests/test_terminal_child_capacity.py",
+      "test/srt/test_beliefkv_shadow_dispatch.py",
+      "test/srt/test_beliefkv_transfer_receipts.py",
+      "test/srt/test_beliefkv_execution_handoff.py",
+      "test/srt/test_beliefkv_radix_prefix.py"
+    ],
+    "fragmented_wait_cases_for_both_join_and_tool": [
+      {
+        "checkpoint_nodes": 40,
+        "pending_limit": 64,
+        "byte_limit": 4096,
+        "submitted_nodes": 40,
+        "necessary_mamba_slots": 1
+      },
+      {
+        "checkpoint_nodes": 80,
+        "pending_limit": 64,
+        "byte_limit": 4096,
+        "submitted_nodes": 64,
+        "necessary_mamba_slots": 0
+      },
+      {
+        "checkpoint_nodes": 40,
+        "pending_limit": 23,
+        "byte_limit": 4096,
+        "submitted_nodes": 23,
+        "necessary_mamba_slots": 0
+      },
+      {
+        "checkpoint_nodes": 40,
+        "pending_limit": 64,
+        "byte_limit": 810,
+        "submitted_nodes": 20,
+        "necessary_mamba_slots": 0
+      }
+    ],
+    "native_single_submission": {
+      "complete_nodes": 64,
+      "successful_prefix_on_reservation_rejection": 20,
+      "load_stream_starts_per_case": 1,
+      "real_allocator_or_dma_measured": false
+    },
+    "native_patch_matches_isolated_source_tree": true,
+    "native_source_tree": "42d436bb92bf32e5b1abed47b8ba6f9e6c40aeb1"
+  },
+  "deployment": {
+    "frozen_v23_modified": false,
+    "live_engine_patch_sha256": "4af68951beefdf759901d0143ca747c6893aa1ffc7124a3738158512851f7e60",
+    "live_engine_tree": "a49cf2d2f643afaaf188f693cfee0c08373bba81",
+    "live_engine_matches_frozen_patch": true,
+    "next_gpu_pair_registered_by_this_change": false,
+    "performance_goal_achieved": false
+  }
+}

@@ -14,9 +14,24 @@ This live read is not an atomic snapshot, ablation or native speedup proof.
 
 The same audit has 258 independent tool waits with at least 16 observed
 planned nodes, associated with 85.362 GB residual next-request FULL Host hits.
-Inspect the fixed 16-node planning limit against existing pending, byte and
-capacity budgets next. Those associations do not establish feasible early
-bytes or gains from a larger burst; verify continuous prefixes and actual use.
+Those associations do not establish truncation, feasible early bytes or gains
+from a larger burst.
+
+The isolated follow-up removes the independent 16-node limit in JOIN/tool
+planning and native prefetch submission. Plan up to the current physical-ledger
+slots (64 by default), then crop the continuous prefix by byte, pool capacity
+and prefill reserve. Preserve per-node reservations/ACKs, necessary checkpoint
+state, causal revalidation and whole-burst transfer timing. Demand handoff
+and read-only opportunity sampling retain their existing 16-node scope.
+The 697 related checks and 27 native subtests pass: complete 40-node recovery,
+80-node plans clipped to 64 ledger slots, a 23-slot limit and a 20-ancestor
+prefix under the byte budget. Native 64-node submission and reservation
+rejection after 20 nodes both start one load burst. The native patch matches
+the isolated source tree; the live V23 engine still matches its frozen patch.
+Keep v78_wait_prefetch_node_budget_validation_20261011.json. This is CPU
+semantic validation, not DMA, pre-boundary reuse, throughput or JCT evidence.
+Continue verifying useful FULL coverage and exposed first-service recovery
+waits in the next same-version GPU pair. Frozen V23 remains unchanged.
 
 The isolated follow-up avoids empty-hint queue statistics in plan_native_prefill.
 Validate hint identity, expiry and invocation revision only when hints exist;
@@ -31,7 +46,7 @@ scheduler/admission CPU cases use real graphs, live identity checks and changing
 stub residency; plans, inspection traces and non-cache counters agree.
 Average wall falls 6.18%-11.89% and thread CPU 6.26%-11.89% against f9b2f96.
 Native allocator, DMA, GPU throughput and JCT are excluded. Preserve frozen
-V23 and the full same-version performance goal.
+V23 and the full same-version performance goal. Committed as 3b7e950.
 
 V23 wait-offload evidence was updated at 2026-10-11 14:35:10 CST.
 Tool PREPARE has 82 burst decisions, 456 node ACKs and 3.811 GB FULL

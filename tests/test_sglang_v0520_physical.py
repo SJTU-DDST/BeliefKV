@@ -824,9 +824,14 @@ def test_deep_prefix_planning_clips_output_and_preserves_transfer_budget(depth, 
     assert failures == []
     assert capture_action_local_shadow(cache, anchors, max_nodes=64) is None
     if backed:
-        steps = plan_prefetch_gpu_steps(candidate)
+        steps = plan_prefetch_gpu_steps(candidate, max_steps=16)
         assert [step.node_id for step in steps] == list(range(1, 17))
         assert all(not step.include_mamba for step in steps)
+        full_plan = plan_prefetch_gpu_steps(candidate)
+        assert [step.node_id for step in full_plan] == list(range(1, checkpoint + 1))
+        assert [step.node_id for step in full_plan if step.include_mamba] == [checkpoint]
+        ledger_plan = plan_prefetch_gpu_steps(candidate, max_steps=64)
+        assert ledger_plan == full_plan[:64]
         for node_id in range(1, checkpoint):
             nodes[node_id].component_data[0].value = [node_id]
         refreshed = capture_action_local_shadow(cache, anchors, for_prefetch=True)

@@ -1995,7 +1995,7 @@ index 6815679..edd6918 100644
      def demote(self, node_id: NodeId) -> DemoteResult:
          """Demote a backed-up node: drop its device value after a successful backup."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..e28c0e2 100644
+index d417d7d..06cf534 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -6,7 +6,7 @@ import threading
@@ -3008,13 +3008,13 @@ index d417d7d..e28c0e2 100644
 +        nodes: tuple[tuple[NodeId, int | float, bool, str], ...],
 +        beliefkv_before_enqueue: Callable[[CacheOperation], bool],
 +    ) -> tuple[PrefetchGpuNodeResult, ...]:
-+        """Enqueue one bounded ancestor-first burst, then submit it once.
++        """Enqueue one ancestor-first burst under the caller's live budgets.
 +
 +        Only this call's successfully enqueued predecessors may remain pending.
 +        Each node keeps its own command, allocation, locks and ACK receipt.
 +        """
 +        if (
-+            type(nodes) is not tuple or not 1 <= len(nodes) <= 16
++            type(nodes) is not tuple or not nodes
 +            or any(type(item) is not tuple or len(item) != 4 for item in nodes)
 +            or any(
 +                type(node_id) is not int
@@ -6234,10 +6234,10 @@ index 0000000..f8adad2
 +    assert tracker.snapshot_released_session_leaf_anchors("session", generation) is None
 diff --git a/test/srt/test_beliefkv_shadow_dispatch.py b/test/srt/test_beliefkv_shadow_dispatch.py
 new file mode 100644
-index 0000000..fd5bfdc
+index 0000000..700e2eb
 --- /dev/null
 +++ b/test/srt/test_beliefkv_shadow_dispatch.py
-@@ -0,0 +1,1349 @@
+@@ -0,0 +1,1402 @@
 +"""CPU-only action-local shadow dispatch tests, without importing the GPU runtime."""
 +
 +import ast
@@ -7128,6 +7128,59 @@ index 0000000..fd5bfdc
 +        self.assertEqual(cache.load_back.call_count, 2)
 +        self.assertFalse(cache.load_back.call_args_list[0].kwargs["beliefkv_include_mamba"])
 +        self.assertTrue(cache.load_back.call_args_list[1].kwargs["beliefkv_include_mamba"])
++
++    def test_fragmented_burst_uses_live_reservations_and_submits_prefix_once(self):
++        for accepted_nodes in (20, 64):
++            with self.subTest(accepted_nodes=accepted_nodes):
++                cache, root, *_ = fixture()
++                nodes = {0: root}
++                for node_id in range(1, 65):
++                    nodes[node_id] = node(
++                        node_id, nodes[node_id - 1], host=torch.arange(2),
++                    )
++                leaf = nodes[64]
++                leaf.component_data[ComponentType.FULL].session_ids.add("s")
++                cache.components[ComponentType.FULL]._session_leaves["s"] = {leaf}
++                cache.tree_core.node_by_id.side_effect = nodes.__getitem__
++                controller = cache.cache_controller
++                controller.load_queue = []
++                controller.start_loading = Mock(return_value=1)
++
++                def load(node_id, **kwargs):
++                    op = SimpleNamespace(
++                        beliefkv_command_id=kwargs["beliefkv_command_id"],
++                    )
++                    if not kwargs["beliefkv_before_enqueue"](op):
++                        return False
++                    target = nodes[node_id]
++                    target.component_data[ComponentType.FULL].value = torch.arange(2)
++                    target.load_back_pending_id = node_id
++                    cache.ongoing_load_back[node_id] = object()
++                    controller.load_queue.append(op)
++                    return True
++
++                cache.load_back = Mock(side_effect=load)
++                result = cache.prefetch_gpu_session_nodes(
++                    session_id="s", session_generation=7,
++                    leaf_node_id=leaf.id, leaf_creation_time=leaf.creation_time,
++                    nodes=tuple(
++                        (node_id, nodes[node_id].creation_time, node_id == 64, str(node_id))
++                        for node_id in range(1, 65)
++                    ),
++                    beliefkv_before_enqueue=lambda op: len(controller.load_queue) < accepted_nodes,
++                )
++                self.assertEqual(
++                    [item.node_id for item in result], list(range(1, accepted_nodes + 1)),
++                )
++                self.assertTrue(all(item.load_started for item in result))
++                self.assertEqual(
++                    set(cache.ongoing_load_back), set(range(1, accepted_nodes + 1)),
++                )
++                controller.start_loading.assert_called_once()
++                self.assertTrue(all(
++                    call.kwargs["beliefkv_include_mamba"] == (call.args[0] == 64)
++                    for call in cache.load_back.call_args_list
++                ))
 +
 +    def test_failed_burst_tail_still_submits_its_successful_prefix(self):
 +        cache, _, parent, leaf, _, _, args = fixture()

@@ -364,7 +364,7 @@ def next_prefetch_gpu_step(
 
 
 def plan_prefetch_gpu_steps(
-    candidate: ActionLocalPrefetchCandidate, *, max_steps: int = 16,
+    candidate: ActionLocalPrefetchCandidate, *, max_steps: int | None = None,
 ) -> tuple[PrefetchLoadStep, ...]:
     """Restore FULL ancestors and the reusable input checkpoint root-first.
 
@@ -372,7 +372,7 @@ def plan_prefetch_gpu_steps(
     Native must revalidate session, ancestry, pool capacity and node creation
     before enqueue. Generated output need not survive chat-template round trips.
     """
-    if type(max_steps) is not int or not 1 <= max_steps <= 16:
+    if max_steps is not None and (type(max_steps) is not int or max_steps < 1):
         raise ValueError("invalid prefetch burst bound")
     anchors = getattr(candidate, "anchors", None)
     if anchors is None:
