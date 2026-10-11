@@ -3545,7 +3545,9 @@ class NativeAdmissionRuntime:
             max_steps=(
                 slots if max_steps is None else min(max_steps, slots)
             ) if batched else 1,
-            fit_current_capacity=fit_current_capacity,
+            # Apply both pool budgets together below; a missing state slot
+            # need not discard an otherwise fitting FULL checkpoint extent.
+            fit_current_capacity=False,
         )
         if opportunity is None or opportunity.step is None:
             return opportunity
@@ -3555,11 +3557,13 @@ class NativeAdmissionRuntime:
         budget = self._current_residency_budget(include_evictable=True)
         headroom = opportunity.headroom
         full_limit = max(
-            0, headroom.device_full_free_tokens + budget.evictable_full_tokens
+            0, headroom.device_full_free_tokens
+            + (0 if fit_current_capacity else budget.evictable_full_tokens)
             - budget.reserve_full_tokens,
         )
         mamba_limit = max(
-            0, headroom.device_mamba_free_slots + budget.evictable_mamba_slots
+            0, headroom.device_mamba_free_slots
+            + (0 if fit_current_capacity else budget.evictable_mamba_slots)
             - budget.reserve_mamba_slots,
         )
         entries = self._native_cache.cache_controller.mem_pool_host.entry_map
@@ -3569,23 +3573,33 @@ class NativeAdmissionRuntime:
             lease.protected_bytes for lease in self._prefetch_service_leases.values()
         ))
         nodes = {node.node_id: node for node in candidate.nodes}
-        selected, full, mamba = [], 0, 0
+        selected, full, mamba, deferred_mamba = [], 0, 0, 0
         leaf = (opportunity.step.leaf_node_id, opportunity.step.leaf_creation_time)
         for step in opportunity.steps:
             node = nodes[step.node_id]
-            next_full = full + (
+            missing_full = (
                 node.full_host_tokens if node.full_device_tokens == 0 else 0
             )
-            next_mamba = mamba + int(
+            missing_mamba = int(
                 step.include_mamba and node.mamba_host_present
                 and not node.mamba_device_present
             )
+            next_full, next_mamba = full + missing_full, mamba + missing_mamba
             if (
                 (step.leaf_node_id, step.leaf_creation_time) != leaf
-                or next_full > full_limit or next_mamba > mamba_limit
-                or next_full * full_unit + next_mamba * mamba_unit > byte_limit
+                or next_full > full_limit
+                or next_full * full_unit + mamba * mamba_unit > byte_limit
             ):
                 break
+            if (
+                next_mamba > mamba_limit
+                or next_full * full_unit + next_mamba * mamba_unit > byte_limit
+            ):
+                if not batched or not missing_full or not missing_mamba:
+                    break
+                step = replace(step, include_mamba=False)
+                next_mamba = mamba
+                deferred_mamba += missing_mamba
             selected.append(step)
             full, mamba = next_full, next_mamba
         if not selected:
@@ -3593,11 +3607,12 @@ class NativeAdmissionRuntime:
             return replace(
                 opportunity, step=None, steps=(), required_full_tokens=0,
                 required_mamba_slots=0, fits_current_free_lists=None,
-                no_step_reason="prefetch_capacity_budget",
+                no_step_reason="prefetch_capacity_budget", deferred_mamba_slots=0,
             )
         return replace(
             opportunity, step=selected[0], steps=tuple(selected),
             required_full_tokens=full, required_mamba_slots=mamba,
+            deferred_mamba_slots=deferred_mamba,
             fits_current_free_lists=(
                 full <= headroom.device_full_free_tokens
                 and mamba <= headroom.device_mamba_free_slots
@@ -3659,6 +3674,7 @@ class NativeAdmissionRuntime:
                 getattr(opportunity, "anchors", None), "reusable_input_tokens", None,
             ),
             "planned_full_tokens": full, "planned_mamba_slots": mamba,
+            "deferred_mamba_slots": getattr(opportunity, "deferred_mamba_slots", 0),
             "planned_pool_bytes": planned_bytes,
             "planned_nodes": [
                 {"node_id": item.node_id, "creation_time": item.creation_time,
@@ -5003,10 +5019,39 @@ class NativeAdmissionRuntime:
         )
         if (
             fresh is None or fresh.fits_current_free_lists is not True
-            or tuple(fresh.steps[:len(steps)]) != steps
+            or len(fresh.steps) != len(steps)
         ):
             self.counts["prefetch_burst_plan_changed"] += 1
             return ()
+        if fresh.steps != steps:
+            nodes = {
+                node.node_id: node for node in fresh.candidate.nodes
+            } if fresh.candidate is not None else {}
+            if not all(
+                current == selected or (
+                    current.include_mamba and not selected.include_mamba
+                    and replace(current, include_mamba=False) == selected
+                    and current.node_id in nodes
+                    and nodes[current.node_id].full_device_tokens == 0
+                    and nodes[current.node_id].full_host_tokens > 0
+                )
+                for current, selected in zip(fresh.steps, steps)
+            ):
+                self.counts["prefetch_burst_plan_changed"] += 1
+                return ()
+            dropped_mamba = sum(
+                int(nodes[current.node_id].mamba_host_present
+                    and not nodes[current.node_id].mamba_device_present)
+                for current, selected in zip(fresh.steps, steps)
+                if current.include_mamba and not selected.include_mamba
+            )
+            # Capacity growth may offer a combined restore. Keep the selected
+            # FULL-only payload and estimate its timing without the later state.
+            fresh = replace(
+                fresh, step=steps[0], steps=steps,
+                required_mamba_slots=fresh.required_mamba_slots - dropped_mamba,
+                deferred_mamba_slots=fresh.deferred_mamba_slots + dropped_mamba,
+            )
         if not self._wait_prefetch_timing_valid(key, fresh, source):
             return ()
         issue_budget = self._current_residency_budget(include_evictable=True)

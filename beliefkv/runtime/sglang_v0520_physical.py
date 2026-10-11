@@ -89,6 +89,7 @@ class SessionH2DOpportunity:
     candidate: ActionLocalPrefetchCandidate | None = field(
         default=None, compare=False, repr=False,
     )
+    deferred_mamba_slots: int = 0
 
 
 def _prefetch_block_detail(candidate: ActionLocalPrefetchCandidate) -> str:

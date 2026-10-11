@@ -110,6 +110,7 @@ def run_case(source: str, free_full: int, free_mamba: int, methods=None) -> dict
             "planned_nodes": len(plan.steps),
             "planned_full_tokens": plan.required_full_tokens,
             "planned_mamba_slots": plan.required_mamba_slots,
+            "deferred_mamba_slots": plan.deferred_mamba_slots,
             "fits_current_capacity": plan.fits_current_free_lists,
             "submitted_node_commands": len(commands),
             "submitted_pool_bytes": submitted["planned_pool_bytes"] if submitted else {},

@@ -49,9 +49,11 @@ def batch_fixture(source, *, partial=False, node_count=4):
     def native_burst(**kwargs):
         outcomes = []
         for node, created, state, command in kwargs["nodes"]:
+            full_tokens = 0 if nodes[node].full_device_tokens else 4
             op = NS(
                 beliefkv_command_id=command, node_ids=[node],
-                host_indices=tuple(range(4)), device_indices=tuple(range(4)),
+                host_indices=tuple(range(full_tokens)),
+                device_indices=tuple(range(full_tokens)),
                 pool_transfers=[NS(
                     name="mamba", indices_from_pool=None,
                     host_indices=(10,), device_indices=(11,),
@@ -282,7 +284,7 @@ def test_cold_reclaim_excludes_every_node_in_the_target_prefix():
 @pytest.mark.parametrize("source", ["join_ticket", "tool_wait"])
 @pytest.mark.parametrize(
     "free_full,free_mamba,expected_nodes",
-    [(10, 0, 2), (16, 0, 3), (20, 1, 4)],
+    [(10, 0, 2), (16, 0, 4), (20, 1, 4)],
 )
 def test_wait_reclaim_submits_only_the_prefix_that_fits_current_capacity(
     source, free_full, free_mamba, expected_nodes,
@@ -325,7 +327,8 @@ def test_wait_reclaim_submits_only_the_prefix_that_fits_current_capacity(
             assert plan.fits_current_free_lists is True
             assert len(plan.steps) == expected_nodes
             assert plan.required_full_tokens == 4 * expected_nodes
-            assert plan.required_mamba_slots == int(expected_nodes == 4)
+            assert plan.required_mamba_slots == int(expected_nodes == 4 and free_mamba > 0)
+            assert plan.deferred_mamba_slots == int(expected_nodes == 4 and free_mamba == 0)
             before_enqueue = closure.call_count
             commands = runtime._issue_wait_prefetch_steps(key, plan.steps, source=source)
             assert closure.call_count == before_enqueue + 1
@@ -337,10 +340,11 @@ def test_wait_reclaim_submits_only_the_prefix_that_fits_current_capacity(
             if row["event"] == "wait_prefetch_plan" and row["reason"] == "submitted"
         )
         assert submitted["planned_pool_bytes"] == {
-            "kv": 40 * expected_nodes, "mamba": 20 * int(expected_nodes == 4),
+            "kv": 40 * expected_nodes, "mamba": 20 * plan.required_mamba_slots,
         }
+        assert submitted["deferred_mamba_slots"] == plan.deferred_mamba_slots
         assert [item[2] for item in cache.prefetch_gpu_session_nodes.call_args.kwargs["nodes"]] == [
-            node == 4 for node in range(1, expected_nodes + 1)
+            node == 4 and free_mamba > 0 for node in range(1, expected_nodes + 1)
         ]
     finally:
         runtime.close()
@@ -376,8 +380,9 @@ def test_wait_partial_prefetch_cannot_skip_an_ancestor_that_does_not_fit(source)
             plan = runtime._reclaim_wait_prefetch_capacity(
                 key, replace(opportunity, fits_current_free_lists=False), source=source,
             )
-            assert plan.fits_current_free_lists is False
-            assert plan.steps == opportunity.steps[:1]
+            assert plan.fits_current_free_lists is None
+            assert plan.steps == ()
+            assert plan.no_step_reason == "prefetch_capacity_budget"
             assert not runtime._issue_wait_prefetch_steps(key, plan.steps, source=source)
         cache.prefetch_gpu_session_nodes.assert_not_called()
         assert runtime.physical_ledger.pending_count == 0
@@ -425,6 +430,177 @@ def test_wait_partial_prefetch_revalidates_only_the_selected_payload_when_capaci
         )
         assert submitted["planned_pool_bytes"] == {"kv": 80, "mamba": 0}
         assert len(cache.prefetch_gpu_session_nodes.call_args.kwargs["nodes"]) == 2
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("source", ["join_ticket", "tool_wait"])
+def test_wait_full_first_restore_leaves_only_checkpoint_state_for_a_later_burst(source):
+    runtime, key, opportunity, cache, _ = batch_fixture(source)
+    headroom = [replace(
+        opportunity.headroom, device_full_free_tokens=16, device_mamba_free_slots=0,
+    )]
+
+    def inspect(**kwargs):
+        return inspect_session_h2d_opportunity(
+            cache, opportunity.anchors, max_steps=kwargs["max_steps"],
+            fit_current_capacity=kwargs["fit_current_capacity"],
+        )
+
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity", side_effect=inspect), \
+            patch.object(runtime, "_current_residency_budget",
+                         return_value=PrefetchResidencyBudget(1, 1024)), \
+            patch.object(runtime, "_h2d_start_window",
+                         return_value=TransferStartWindow(200., 0., 500.)), \
+            patch("beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+                  side_effect=lambda *args, **kwargs: NS(
+                      observable=True, nodes=tuple(reversed(opportunity.candidate.nodes)),
+                  )), \
+            patch("beliefkv.runtime.sglang_v0520_physical.observe_static_full_mamba_headroom",
+                  side_effect=lambda *args: headroom[0]):
+            if source == "tool_wait":
+                runtime._roll_tool_prefetch()
+            plan = runtime._wait_prefetch_opportunity(key, fit_current_capacity=True)
+            assert plan.required_full_tokens == 16
+            assert plan.required_mamba_slots == 0
+            assert plan.deferred_mamba_slots == 1
+            commands = runtime._issue_wait_prefetch_steps(key, plan.steps, source=source)
+            assert len(commands) == 4
+            for command, step in zip(commands, plan.steps):
+                runtime.on_native_transfer_commit(NS(
+                    direction="h2d", status="completed", node_ids=(step.node_id,),
+                    num_tokens_by_pool=(("kv", 4),),
+                    child_commits=(NS(
+                        command_id=command, anchor_node_id=step.node_id,
+                        published_node_ids=(step.node_id,),
+                        num_tokens_by_pool=(("kv", 4),), num_bytes=40,
+                    ),),
+                ))
+                opportunity.candidate.nodes[step.node_id].full_device_tokens = 4
+            assert runtime.physical_ledger.pending_count == 0
+            assert not opportunity.candidate.nodes[-1].mamba_device_present
+            blocked = runtime._wait_prefetch_opportunity(key, fit_current_capacity=True)
+            assert blocked.steps == ()
+            headroom[0] = replace(
+                headroom[0], device_full_free_tokens=0, device_mamba_free_slots=1,
+            )
+            state_plan = runtime._wait_prefetch_opportunity(key, fit_current_capacity=True)
+            assert len(state_plan.steps) == 1
+            assert state_plan.step.node_id == 4 and state_plan.step.include_mamba
+            assert state_plan.required_full_tokens == 0
+            assert state_plan.required_mamba_slots == 1
+            assert state_plan.deferred_mamba_slots == 0
+            state_commands = runtime._issue_wait_prefetch_steps(
+                key, state_plan.steps, source=source,
+            )
+            assert len(state_commands) == 1
+            runtime.on_native_transfer_commit(NS(
+                direction="h2d", status="completed", node_ids=(4,),
+                num_tokens_by_pool=(("kv", 0), ("mamba", 1)),
+                child_commits=(NS(
+                    command_id=state_commands[0], anchor_node_id=4, published_node_ids=(4,),
+                    num_tokens_by_pool=(("kv", 0), ("mamba", 1)), num_bytes=20,
+                ),),
+            ))
+        assert cache.prefetch_gpu_session_nodes.call_count == 2
+        assert runtime.physical_ledger.pending_count == 0
+        assert sum(action.num_bytes for action in runtime.completed_physical_actions) == 180
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize(
+    "free_mamba,byte_limit", [(0, 1024), (4, 160)],
+)
+def test_wait_full_only_payload_does_not_expand_when_state_capacity_or_byte_budget_grows(
+    free_mamba, byte_limit,
+):
+    runtime, key, opportunity, cache, _ = batch_fixture("tool_wait")
+    headroom = [replace(opportunity.headroom, device_mamba_free_slots=free_mamba)]
+    budget = [PrefetchResidencyBudget(1, byte_limit)]
+    seen_payloads, records = [], []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+
+    def inspect(**kwargs):
+        return inspect_session_h2d_opportunity(
+            cache, opportunity.anchors, max_steps=kwargs["max_steps"],
+            fit_current_capacity=kwargs["fit_current_capacity"],
+        )
+
+    def window(plan):
+        seen_payloads.append((plan.required_full_tokens, plan.required_mamba_slots))
+        return TransferStartWindow(200., 0., 500.)
+
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity", side_effect=inspect), \
+            patch.object(runtime, "_current_residency_budget", side_effect=lambda **kwargs: budget[0]), \
+            patch.object(runtime, "_h2d_start_window", side_effect=window), \
+            patch("beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+                  return_value=NS(
+                      observable=True, nodes=tuple(reversed(opportunity.candidate.nodes)),
+                  )), \
+            patch("beliefkv.runtime.sglang_v0520_physical.observe_static_full_mamba_headroom",
+                  side_effect=lambda *args: headroom[0]):
+            runtime._roll_tool_prefetch()
+            plan = runtime._wait_prefetch_opportunity(key)
+            assert len(plan.steps) == 4
+            assert not any(step.include_mamba for step in plan.steps)
+            assert plan.deferred_mamba_slots == 1
+            headroom[0] = opportunity.headroom
+            budget[0] = PrefetchResidencyBudget(1, 1024)
+            seen_payloads.clear()
+            commands = runtime._issue_wait_prefetch_steps(key, plan.steps, source="tool_wait")
+        assert len(commands) == 4
+        assert seen_payloads == [(16, 0)]
+        assert not any(
+            item[2] for item in cache.prefetch_gpu_session_nodes.call_args.kwargs["nodes"]
+        )
+        submitted = next(
+            row for row in records
+            if row["event"] == "wait_prefetch_plan" and row["reason"] == "submitted"
+        )
+        assert submitted["planned_pool_bytes"] == {"kv": 160, "mamba": 0}
+        assert submitted["deferred_mamba_slots"] == 1
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("change", ["state_capacity_lost", "full_extent_already_resident"])
+def test_wait_burst_rejects_state_mask_changes_that_cannot_preserve_selected_payload(change):
+    runtime, key, opportunity, cache, _ = batch_fixture("tool_wait")
+    headroom = replace(opportunity.headroom, device_mamba_free_slots=(
+        0 if change == "state_capacity_lost" else 4
+    ))
+    selected = opportunity.steps
+    if change == "full_extent_already_resident":
+        selected = tuple(replace(step, include_mamba=False) for step in selected)
+        opportunity.candidate.nodes[-1].full_device_tokens = 4
+
+    def inspect(**kwargs):
+        return inspect_session_h2d_opportunity(
+            cache, opportunity.anchors, max_steps=kwargs["max_steps"],
+            fit_current_capacity=kwargs["fit_current_capacity"],
+        )
+
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity", side_effect=inspect), \
+            patch.object(runtime, "_current_residency_budget",
+                         return_value=PrefetchResidencyBudget(1, 1024)), \
+            patch.object(runtime, "_h2d_start_window",
+                         return_value=TransferStartWindow(200., 0., 500.)), \
+            patch("beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+                  return_value=NS(
+                      observable=True, nodes=tuple(reversed(opportunity.candidate.nodes)),
+                  )), \
+            patch("beliefkv.runtime.sglang_v0520_physical.observe_static_full_mamba_headroom",
+                  return_value=headroom):
+            runtime._roll_tool_prefetch()
+            assert not runtime._issue_wait_prefetch_steps(key, selected, source="tool_wait")
+        cache.prefetch_gpu_session_nodes.assert_not_called()
+        assert runtime.physical_ledger.pending_count == 0
+        assert not runtime.physical_disabled
+        assert runtime.counts["prefetch_burst_plan_changed"] == 1
     finally:
         runtime.close()
 
