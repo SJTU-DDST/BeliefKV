@@ -661,7 +661,10 @@ def lease_case(baseline, *, workflows, lease_count, matching, iterations,
             runtime.close()
 
 
-def publication_case(baseline, *, workflows, depth, iterations, sparse_pool):
+def publication_case(
+    baseline, *, workflows, depth, iterations, sparse_pool,
+    extra_full_leaves=0,
+):
     class Node(NS):
         __hash__ = object.__hash__
 
@@ -693,6 +696,10 @@ def publication_case(baseline, *, workflows, depth, iterations, sparse_pool):
                 if index != workflows * depth - 1:
                     node.component_data[2].value = None
                     node.component_data[2].host_value = None
+        leaves.update(
+            Node(id=workflows * depth + index)
+            for index in range(extra_full_leaves)
+        )
 
         def node_by_id(node_id, *, nodes=nodes, reads=reads):
             reads["node_lookup"] += 1
@@ -752,6 +759,7 @@ def publication_case(baseline, *, workflows, depth, iterations, sparse_pool):
         return {
             "workflows": workflows, "nodes_per_workflow": depth,
             "candidate_nodes": workflows * depth, "sparse_pool": sparse_pool,
+            "unrelated_device_leaves": extra_full_leaves,
             "iterations": iterations, "native_consumed_prefixes_equal": True,
             "native_candidate_prefix_sha256": hashlib.sha256(evidence.encode()).hexdigest(),
             "observed_reads": {name: dict(value) for name, value in totals.items()},
@@ -857,6 +865,10 @@ def main():
                         help="Measure consumer matching for one- and sixteen-extent restores.")
     parser.add_argument("--publication-only", action="store_true",
                         help="Measure the first eight cold candidates consumed by each native pool.")
+    parser.add_argument(
+        "--publication-extra-full-leaves", type=int, default=0,
+        help="Include unrelated device leaves in the publication fixture.",
+    )
     parser.add_argument("--failed-sampling-only", action="store_true",
                         help="Measure shared failed-closure sampling and its normal-path overhead.")
     parser.add_argument("--static-counters-only", action="store_true",
@@ -880,6 +892,10 @@ def main():
         raise ValueError("Mamba ancestor fixture requires depth at least three")
     if not 1 <= args.counter_checkpoint_depth <= 512:
         raise ValueError("counter checkpoint depth 1..512 required")
+    if args.publication_extra_full_leaves < 0 or (
+        args.publication_extra_full_leaves and not args.publication_only
+    ):
+        raise ValueError("extra device leaves require the publication-only scope")
     isolated = (
         args.terminal_only or args.lease_only or args.publication_only
         or args.failed_sampling_only or args.static_counters_only
@@ -956,6 +972,7 @@ def main():
             publication_case(
                 baseline, workflows=args.workflows, depth=args.depth,
                 iterations=args.iterations, sparse_pool=pool,
+                extra_full_leaves=args.publication_extra_full_leaves,
             )
             for pool in (None, 0, 2)
         ] if args.publication_only else [],

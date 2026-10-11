@@ -1166,6 +1166,72 @@ def test_pressure_publication_excludes_restore_target_before_native_pool_limits(
         runtime.close()
 
 
+@pytest.mark.parametrize("sparse_pool", (0, 2))
+def test_pressure_publication_does_not_scan_an_already_filled_pool(sparse_pool):
+    class Node(NS):
+        __hash__ = object.__hash__
+
+    class DeviceLeaves(set):
+        def __iter__(self):
+            if sparse_pool == 2:
+                raise AssertionError("FULL candidate prefix is already complete")
+            return super().__iter__()
+
+    class MambaIndex(dict):
+        def keys(self):
+            if sparse_pool == 0:
+                raise AssertionError("Mamba candidate prefix is already complete")
+            return super().keys()
+
+    runtime, _ = tool_runtime()
+    nodes = {
+        number: Node(
+            id=number, creation_time=number, backuped=True,
+            write_through_pending_id=None, load_back_pending_id=None,
+            component_data=[
+                NS(value=[1], host_value=[1], lock_ref=0, session_ref=1),
+                NS(value=None, host_value=None, lock_ref=0, session_ref=0),
+                NS(
+                    value=[1] if sparse_pool == 0 or number == 64 else None,
+                    host_value=[1] if sparse_pool == 0 or number == 64 else None,
+                    lock_ref=0, session_ref=1,
+                ),
+            ],
+        )
+        for number in range(1, 65)
+    }
+    leaves = DeviceLeaves(
+        {nodes[64]} if sparse_pool == 0 else nodes.values()
+    )
+    if sparse_pool == 2:
+        leaves.update(Node(id=number) for number in range(65, 4161))
+    cache = NS(
+        tree_core=NS(
+            node_by_id=nodes.__getitem__,
+            evictable_device_leaves=leaves,
+            lru_lists={2: NS(cache=MambaIndex({
+                number: node for number, node in nodes.items()
+                if node.component_data[2].value is not None
+            }))},
+        ),
+        ongoing_write_through={},
+    )
+    runtime._native_cache = cache
+    runtime._parent_pressure_candidates = {
+        number: (None, number) for number in nodes
+    }
+    try:
+        runtime._publish_parent_pressure_candidates()
+        first = tuple((number, number) for number in range(1, 9))
+        assert cache.beliefkv_join_pressure_candidates == first
+        assert cache.beliefkv_join_pressure_candidates_by_component == {
+            0: ((64, 64),) if sparse_pool == 0 else first,
+            2: ((64, 64),) if sparse_pool == 2 else first,
+        }
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("blocked", ("none", "locked", "shared", "swa_unbacked", "pending"))
 def test_full_only_pressure_candidate_can_save_missing_mamba_at_actual_eviction(blocked):
     class Node(NS):

@@ -1,0 +1,201 @@
+{
+  "scope": "same-input CPU fixtures; native enqueue is stubbed, no GPU or throughput claim",
+  "baseline_revision": "b14da57",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "6e1db6ad33c310c11a6f5a721958dae4646366b0d9ea8599efae56a903d2711e",
+    "beliefkv/runtime/sglang_v0520_physical.py": "8d58c52ffb80bc0ad2654a8442b25575beb2d3e5e44a3ace112d9d1175dd177b",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "dafdbb365d29aac9677bc3178536fef8a5e6213ec46d6d15d080d3823938164e"
+  },
+  "fixture": "validated static pools and real observer ancestry; sixteen retained workflow rounds",
+  "optimized_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "6e1db6ad33c310c11a6f5a721958dae4646366b0d9ea8599efae56a903d2711e",
+    "beliefkv/runtime/sglang_v0520_physical.py": "8d58c52ffb80bc0ad2654a8442b25575beb2d3e5e44a3ace112d9d1175dd177b",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "a3aa181a68b3e41f92fc33f82d385e3684b68a14b5d78057fef613c5c3c6b585"
+  },
+  "imported_sources": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/sglang_v0520_observer.py",
+    "beliefkv/runtime/sglang_v0520_physical.py": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/sglang_v0520_physical.py",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/sglang_v0520_runtime.py"
+  },
+  "benchmark_source_sha256": "3ccb01eb8778c1fa11f5a6cdd67c03c300998085b0846a44eec76323c7e2e6a3",
+  "service_seed": null,
+  "handoff_identity": null,
+  "cases": [],
+  "terminal_cases": [],
+  "lease_cases": [],
+  "publication_cases": [
+    {
+      "workflows": 156,
+      "nodes_per_workflow": 1,
+      "candidate_nodes": 156,
+      "sparse_pool": null,
+      "unrelated_device_leaves": 4096,
+      "iterations": 100,
+      "native_consumed_prefixes_equal": true,
+      "native_candidate_prefix_sha256": "bb5d12a131fabafa27f653e998708fd060e8ee7596196f3ea33b7f90c9a497db",
+      "observed_reads": {
+        "baseline": {
+          "node_lookup": 800
+        },
+        "optimized": {
+          "node_lookup": 800
+        }
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 100,
+            "mean_ms": 0.02429116,
+            "p50_ms": 0.024154,
+            "p99_ms": 0.031501,
+            "max_ms": 0.031501
+          },
+          "thread_cpu": {
+            "count": 100,
+            "mean_ms": 0.02356338,
+            "p50_ms": 0.0235,
+            "p99_ms": 0.03066,
+            "max_ms": 0.03066
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 100,
+            "mean_ms": 0.02409632,
+            "p50_ms": 0.023968,
+            "p99_ms": 0.029559,
+            "max_ms": 0.029559
+          },
+          "thread_cpu": {
+            "count": 100,
+            "mean_ms": 0.02342976,
+            "p50_ms": 0.023301,
+            "p99_ms": 0.028773,
+            "max_ms": 0.028773
+          }
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.008021024932526766,
+        "thread_cpu": 0.005670663546570864
+      },
+      "scope": "read-only candidate publication; excludes causal pruning and native eviction"
+    },
+    {
+      "workflows": 156,
+      "nodes_per_workflow": 1,
+      "candidate_nodes": 156,
+      "sparse_pool": 0,
+      "unrelated_device_leaves": 4096,
+      "iterations": 100,
+      "native_consumed_prefixes_equal": true,
+      "native_candidate_prefix_sha256": "b40f8d7b8bb4c8afd0e10af4cb5a5ff2df9dfe0bfaecbddcd0b37bc317686995",
+      "observed_reads": {
+        "baseline": {
+          "node_lookup": 1700
+        },
+        "optimized": {
+          "node_lookup": 1700
+        }
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 100,
+            "mean_ms": 0.41745647,
+            "p50_ms": 0.421143,
+            "p99_ms": 0.452281,
+            "max_ms": 0.452281
+          },
+          "thread_cpu": {
+            "count": 100,
+            "mean_ms": 0.41669803,
+            "p50_ms": 0.420411,
+            "p99_ms": 0.45151,
+            "max_ms": 0.45151
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 100,
+            "mean_ms": 0.34349781,
+            "p50_ms": 0.346058,
+            "p99_ms": 0.372798,
+            "max_ms": 0.372798
+          },
+          "thread_cpu": {
+            "count": 100,
+            "mean_ms": 0.34270373,
+            "p50_ms": 0.345288,
+            "p99_ms": 0.372033,
+            "max_ms": 0.372033
+          }
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.17716496285229455,
+        "thread_cpu": 0.17757295372862703
+      },
+      "scope": "read-only candidate publication; excludes causal pruning and native eviction"
+    },
+    {
+      "workflows": 156,
+      "nodes_per_workflow": 1,
+      "candidate_nodes": 156,
+      "sparse_pool": 2,
+      "unrelated_device_leaves": 4096,
+      "iterations": 100,
+      "native_consumed_prefixes_equal": true,
+      "native_candidate_prefix_sha256": "d4caf6a855ec1da29304681954de5cbc332198571b4b1dedc32c0f221d78d6ab",
+      "observed_reads": {
+        "baseline": {
+          "node_lookup": 1700
+        },
+        "optimized": {
+          "node_lookup": 1700
+        }
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 100,
+            "mean_ms": 0.42374127,
+            "p50_ms": 0.421095,
+            "p99_ms": 0.477983,
+            "max_ms": 0.477983
+          },
+          "thread_cpu": {
+            "count": 100,
+            "mean_ms": 0.42299799,
+            "p50_ms": 0.420364,
+            "p99_ms": 0.476758,
+            "max_ms": 0.476758
+          }
+        },
+        "optimized": {
+          "wall": {
+            "count": 100,
+            "mean_ms": 0.05110154,
+            "p50_ms": 0.050972,
+            "p99_ms": 0.056546,
+            "max_ms": 0.056546
+          },
+          "thread_cpu": {
+            "count": 100,
+            "mean_ms": 0.05041476,
+            "p50_ms": 0.050294,
+            "p99_ms": 0.055767,
+            "max_ms": 0.055767
+          }
+        }
+      },
+      "mean_reduction": {
+        "wall": 0.8794039107873538,
+        "thread_cpu": 0.8808156038755646
+      },
+      "scope": "read-only candidate publication; excludes causal pruning and native eviction"
+    }
+  ],
+  "failed_sampling_cases": [],
+  "static_counter_cases": []
+}

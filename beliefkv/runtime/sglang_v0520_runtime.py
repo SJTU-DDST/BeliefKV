@@ -4080,10 +4080,10 @@ class NativeAdmissionRuntime:
                             node.id in self._parent_pressure_candidates
                             and node.id not in visited and node.id not in excluded
                         )
-                    }
+                    } if full_left else set()
                     mamba_ids = (
                         self._parent_pressure_candidates.keys() & mamba_lru.keys()
-                    ) - visited - excluded
+                    ) - visited - excluded if mamba_left else set()
                     indexed = True
             if indexed:
                 if not fallback_left and not (
