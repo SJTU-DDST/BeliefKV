@@ -16,22 +16,23 @@ sequences and nonempty commands. Scan CPU falls26.78%-46.48% and wall
 26.63%-46.43%; native pools, service and enqueue are stubs, so DMA,
 GPU throughput and JCT are unmeasured. Keep
 v81_tool_prefetch_scan_capacity_cpu_20261011.json and its validation receipt.
-Commit the change and replace only the still-waiting V24 target. Preserve
-the frozen V23 pair and require the same-version GPU comparison.
+Committed asbb64e77 and registered for waiting V24. Preserve the frozen
+V23 pair and require the same-version GPU comparison.
 
-At 15:48:41 CST, waiting V24 was updated to committed
-1f75f554a5d9cbafa6231f65aaf3c8b2f7544848 in the frozen
-beliefkv-v80-tool-offload-20261011 checkout. Coordinator2996799 has
-PPID1 and start identity587518374; old waiting coordinator2684310 is
-absent. Archive its f61fc05 state and log. V23 coordinator, server and client
+At 16:13:07 CST, waiting V24 was updated to committed
+bb64e770574e46b35e708a842424ace9ae60562d in the frozen
+beliefkv-v81-tool-scan-20261011 checkout. At16:13:33 coordinator3283000
+has PPID1 and start identity587664974; old waiting coordinator2996799 is
+absent. Its1f75f55 state and log are archived. V23 coordinator, server and client
 remain live; main stays at frozen a6dd627. The environment, native patch,
 arrival flow and model artifacts exactly match the superseded registration.
 Only the waiting target code changes. After the complete V23 pair and
-postprocessing, deploy the one-second tool-offload policy, run predictive
-then cold same-version native. Keep authoritative main state
+postprocessing, deploy the one-second tool-offload policy and scan reduction,
+run predictive then cold same-version native. Keep authoritative main state
 v24_launch_after_v23_20261011.json and receipt
-v80_v24_tool_offload_registration_20261011.json. No V24 GPU arm or
-performance proof exists yet; the15:29 f61fc05 registration below is historical.
+v81_v24_tool_scan_registration_20261011.json. No V24 GPU arm or performance
+proof exists yet; the15:48 1f75f55 and15:29 f61fc05 registrations are historical
+and retain their own receipts.
 
 Reduce the subsequent tool-offload horizon from 2000ms to 1000ms.
 The return-within-window probability remains at most0.1, or the residual

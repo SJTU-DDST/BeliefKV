@@ -1,0 +1,41 @@
+{
+  "registered_at_cst": "2026-10-11 16:13:07 CST",
+  "verified_at_cst": "2026-10-11 16:13:33 CST",
+  "status": "waiting_for_previous_pair",
+  "authoritative_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v24_launch_after_v23_20261011.json",
+  "superseded_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v24_launch_after_v23_1f75f55_superseded_20261011.json",
+  "superseded_target_revision": "1f75f554a5d9cbafa6231f65aaf3c8b2f7544848",
+  "stopped_waiting_coordinator": {
+    "pid": 2996799,
+    "start_identity": "587518374",
+    "absent_after_stop": true
+  },
+  "new_waiting_coordinator": {
+    "pid": 3283000,
+    "ppid": 1,
+    "start_identity": "587664974"
+  },
+  "previous_pair_coordinator": {
+    "pid": 1083828,
+    "start_identity": "586838240",
+    "alive": true
+  },
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v81-tool-scan-20261011",
+  "target_revision": "bb64e770574e46b35e708a842424ace9ae60562d",
+  "target_patch_sha256": "16008af16a20149f24f37123cddfe46228a722fc9f7a0b4d6dee394866345817",
+  "tool_offload_wait_ms": 1000,
+  "return_within_window_probability_limit": 0.1,
+  "verification": {
+    "environment_matches_superseded_registration": true,
+    "previous_run_and_revision_match": true,
+    "native_patch_matches_superseded_registration": true,
+    "wait_process_identities_match": true,
+    "frozen_target_clean": true,
+    "main_still_at_frozen_v23_revision": true,
+    "v23_server_and_client_alive": true,
+    "v23_pair_modified": false,
+    "v24_gpu_arm_started": false
+  },
+  "sequence": "After the complete V23 pair and postprocessing, deploy one-second tool offload and scan capacity reuse; run predictive first, then cold same-version native.",
+  "performance_goal_achieved": false
+}
