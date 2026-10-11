@@ -2,6 +2,27 @@
 
 Status date: 2026-10-12.
 
+V107 commits61f415d in the isolated branch. Pressure maintenance
+deletes only rejected nodes in place and reuses the current scan's
+key verdict for adjacent extents. Refresh leases first; do not cache
+liveness across scans, conflate attempt/epoch identities or reorder
+candidates. The294 related checks pass. Existing PREPARE fixtures run
+100 alternating trials per case. With156 workflows and backed24/64-depth
+ancestry, no-lease means fall5.840 to4.622 and20.769 to12.181ms;
+selection, publication and node-read counts stay equal. Empty candidate
+paths are nearly unchanged. Host-only sampling means increase9%-13%
+although the sampling code is unchanged; retain these negative results.
+No GPU or JCT benefit is proved.
+
+At02:43 CST, V27 predictive is terminal with155 completed and1 incomplete,
+over9812.319s. The incomplete remains django__django-12325; terminal
+telemetry has zero loss, failure or backlog. HTML/workspace archival
+is complete. Same-version native starts its server at02:36:34 CST
+and is serving with live handles. Keep V27df3dd3c frozen; cold-deploy
+V101/V104/V106/V107 together in V28. Replace the waiting target when
+syncing new main docs, preserving main's fast-forward ancestry and
+the previous queue receipt. The full performance goal remains active.
+
 V106 commits793e8ba in the isolated branch. Restore a fitting missing FULL
 checkpoint extent without its necessary Mamba state when the state slot
 or combined byte payload does not fit. A state-only step still waits.
