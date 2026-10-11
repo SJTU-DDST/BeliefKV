@@ -1,0 +1,52 @@
+{
+  "scope": "Skip unmatched routing ranges in the background eviction attribution writer without reducing evidence coverage.",
+  "baseline_revision": "7d8b91c",
+  "updated_telemetry_sha256": "369da166ccf7475384ee64540e059b711b033c7426acc9551a4af384cc7382d2",
+  "change": {
+    "binary_boundaries_on_existing_sorted_lengths": true,
+    "unmatched_routes_skip_all_terminal_lengths": true,
+    "exact_terminal_hashes_and_output_order_preserved": true,
+    "cross_pool_namespace_expiry_and_overflow_semantics_preserved": true,
+    "sampling_frequency_or_evidence_coverage_changed": false,
+    "prediction_or_transfer_policy_changed": false,
+    "native_patch_changed": false,
+    "frozen_v23_modified": false
+  },
+  "checks": {
+    "passed": 148,
+    "suites": [
+      {"path": "tests/test_v0520_native_telemetry.py", "group_passed": 82},
+      {"path": "tests/test_writer_timing.py", "included_in_previous_group": true},
+      {"path": "tests/test_prefetch_lifecycle_audit.py", "group_passed": 66}
+    ],
+    "covers": [
+      "exact matches and divergences across power-of-two boundaries",
+      "cross-pool and same-route references",
+      "other namespace indexes survive",
+      "capacity expiry and bounded prefix overflow",
+      "older live-prefix attribution",
+      "lifecycle source and first-service attribution"
+    ],
+    "python": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python"
+  },
+  "benchmark": {
+    "selected_report": "v82_eviction_route_range_writer_cpu_20261011.json",
+    "cases": 36,
+    "iterations_per_case": 25,
+    "warmup_iterations": 10,
+    "records_hashes_counters_history_and_pending_equal": true,
+    "unrelated_branch_cpu_reduction_percent_range": [6.58, 18.28],
+    "partial_branch_cpu_reduction_percent_range": [1.60, 3.62],
+    "full_match_processing_nearly_unchanged": true,
+    "concurrent_gil_allocator_dma_gpu_or_jct_measured": false
+  },
+  "rejected_alternative": {
+    "report": "v82_eviction_matched_routes_writer_cpu_20261011.json",
+    "description": "Intersect eligible terminal lengths with each matching route rather than skipping sorted routing ranges.",
+    "records_and_state_equal": true,
+    "reason": "Weaker unrelated-branch reductions and some partial-branch regressions; retain the range-skipping implementation.",
+    "deployed": false
+  },
+  "deployment": "Update only the waiting V24 target after committing; preserve the running frozen V23 pair.",
+  "performance_goal_achieved": false
+}

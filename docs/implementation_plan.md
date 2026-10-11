@@ -2,6 +2,32 @@
 
 Status date: 2026-10-11.
 
+The V82 follow-up skips unmatched power-of-two prefix ranges in the background
+eviction writer using the existing sorted lengths and binary boundaries.
+Keep exact terminal hashes, cross-pool/namespace attribution, expiry, overflow
+accounting and output order. The82 telemetry/writer and66 lifecycle audit
+checks pass. Against7d8b91c,36 CPU cases with25 alternating measurements
+and10 warmups preserve all records, hashes, counters, history and pending
+indexes. Unrelated-branch CPU falls6.58%-18.28%; partial-branch CPU falls
+1.60%-3.62%; complete matches are nearly unchanged. The alternative that
+directly enumerates matching routes has weaker gains and some regressions,
+so retain the range-skipping version. These fixtures exclude concurrent
+GIL effects, DMA, GPU throughput and JCT. Keep both V82 writer CPU reports
+and the validation receipt; update only the still-waiting V24 registration.
+
+The V82 V23 live lifecycle audit links100 JOIN and390 tool waits to
+pre-boundary-started, next-request-reused FULL of1.479/6.257GB.
+Demand handoff reuse of97.598GB remains separate. Independent-wait
+last-ACK-to-service P50/P90 is328/1452ms for JOIN and433/913ms for tools;
+maxima remain12.496/91.976s. No JOIN/tool prefetched FULL in this read
+has a confirmed native reload before first service. JOIN pre-completion
+protection expirations cover0.170GB. Remaining tool-associated FULL Host
+hits total480.284GB, including85.362GB across258 waits with at least16
+observed nodes; association is not a feasible early-recovery denominator.
+Keepv82_v23_prefetch_lifecycle_live_20261011.json. Sequential reads of
+append-only logs are not an atomic snapshot, ablation or completed-pair
+performance evidence. Preserve V23; the full goal remains unmet.
+
 The isolated follow-up now reuses the admission-slot budget within one tool
 prefetch scan and invalidates it before capacity reclamation. The next
 candidate rereads changed capacity; native prefix planning and enqueue

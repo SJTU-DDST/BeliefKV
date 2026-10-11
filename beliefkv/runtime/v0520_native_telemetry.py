@@ -8,6 +8,7 @@ from beliefkv.runtime.writer_timing import SampledWriterTiming
 
 import atexit
 from array import array
+from bisect import bisect_left
 from collections import Counter, OrderedDict
 import hashlib
 import json
@@ -704,33 +705,38 @@ class NativeReactiveTelemetry:
                 record.get("extra_key"), record.get("cache_salt"),
             ))
             token_bytes = memoryview(token_ids).cast("B")
-            previous_length = routing_tokens = 0
-            route_lengths = ()
-            routing_digest = None
+            previous_length = prefix_index = 0
             prefix_digests = {}
-            for prefix_tokens in prefix_lengths:
-                boundary = 1 << (prefix_tokens.bit_length() - 1)
-                if boundary != routing_tokens:
-                    hasher.update(token_bytes[
-                        previous_length * token_ids.itemsize:
-                        boundary * token_ids.itemsize
-                    ])
-                    previous_length = routing_tokens = boundary
-                    routing_digest = hasher.copy().hexdigest()
-                    route_lengths = self._block_eviction_route_lengths.get(
-                        (namespace_digest, boundary, routing_digest), (),
-                    )
-                if prefix_tokens not in route_lengths:
-                    continue
-                if prefix_tokens == routing_tokens:
-                    prefix_digests[prefix_tokens] = routing_digest
-                else:
-                    hasher.update(token_bytes[
-                        previous_length * token_ids.itemsize:
-                        prefix_tokens * token_ids.itemsize
-                    ])
-                    previous_length = prefix_tokens
-                    prefix_digests[prefix_tokens] = hasher.copy().hexdigest()
+            while prefix_index < candidate_prefix_lengths:
+                boundary = 1 << (prefix_lengths[prefix_index].bit_length() - 1)
+                boundary_end = bisect_left(
+                    prefix_lengths, boundary * 2, lo=prefix_index + 1,
+                )
+                hasher.update(token_bytes[
+                    previous_length * token_ids.itemsize:
+                    boundary * token_ids.itemsize
+                ])
+                previous_length = boundary
+                routing_digest = hasher.copy().hexdigest()
+                route_lengths = self._block_eviction_route_lengths.get(
+                    (namespace_digest, boundary, routing_digest), (),
+                )
+                # An unmatched route rules out this whole prefix-length range.
+                if route_lengths:
+                    for index in range(prefix_index, boundary_end):
+                        prefix_tokens = prefix_lengths[index]
+                        if prefix_tokens not in route_lengths:
+                            continue
+                        if prefix_tokens == boundary:
+                            prefix_digests[prefix_tokens] = routing_digest
+                        else:
+                            hasher.update(token_bytes[
+                                previous_length * token_ids.itemsize:
+                                prefix_tokens * token_ids.itemsize
+                            ])
+                            previous_length = prefix_tokens
+                            prefix_digests[prefix_tokens] = hasher.copy().hexdigest()
+                prefix_index = boundary_end
         clear_indexes = len(prefix_digests) == len(self._block_eviction_index) and all(
             (namespace_digest, length, digest) in self._block_eviction_index
             for length, digest in prefix_digests.items()
