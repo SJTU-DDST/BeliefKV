@@ -7,6 +7,7 @@ import argparse
 from array import array
 import ast
 from collections import Counter, OrderedDict
+from datetime import datetime, timezone
 import hashlib
 from io import StringIO
 import json
@@ -15,7 +16,10 @@ import statistics
 import subprocess
 import sys
 from tempfile import TemporaryDirectory
+from threading import Lock
 import time
+from types import SimpleNamespace as NS
+from unittest.mock import patch
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -27,6 +31,7 @@ METHODS = (
     "_write_context_prefix", "_write_block_request_probe",
     "_write_block_eviction", "_remove_block_eviction_index",
     "_remove_pending_block_totals", "_write_status",
+    "_match_path", "_match_paths", "on_launch",
 )
 
 
@@ -368,6 +373,98 @@ def status_publication_case(writers: dict, *, entries: int, iterations: int) -> 
     }
 
 
+def first_service_match_path_case(writers, *, depth, scenario, iterations):
+    states = {}
+    for name, writer in writers.items():
+        nodes = {0: NS(id=0, creation_time=0., parent=None)}
+        for index in range(1, depth):
+            nodes[index] = NS(id=index, creation_time=float(index), parent=nodes[index - 1])
+        leaf = depth - 1
+        anchors = {
+            "same_anchor": (leaf, leaf, leaf),
+            "two_anchors": (leaf, max(0, leaf - 1), leaf),
+            "distinct_anchors": (leaf, max(0, leaf - 1), max(0, leaf - 2)),
+            "missing_anchor": (depth, depth, depth),
+            "no_host_hit": (leaf, leaf, leaf),
+        }[scenario]
+        audit = writer.__new__(writer)
+        audit._cache = NS(tree_core=NS(node_by_id=nodes.__getitem__))
+        audit._state_lock = Lock()
+        audit._cache_request_evidence = {"all": Counter()}
+        audit._host_evictions = Counter()
+        audit._poll_restore_wait = lambda: None
+        audit._record_prefetch_first_service = lambda *args: ()
+        audit._queue_block_reaccess_probe = lambda *args: None
+        audit._queue_context_prefix = lambda *args, **kwargs: None
+        audit.record_host_pool_usage = lambda *args: None
+        records = []
+        audit._emit = lambda stream, record, records=records: records.append((stream, record))
+        request = NS(
+            rid="request", beliefkv_metadata={
+                "root_workflow_id": "workflow", "invocation_id": "parent",
+                "context_id": "context", "context_epoch": 1,
+            },
+            last_node=anchors[0], last_host_node=anchors[1], best_match_node=anchors[2],
+            origin_input_ids=array("q", range(1024)), output_ids=[],
+            cached_tokens_device=1020,
+            cached_tokens_host=0 if scenario == "no_host_hit" else 4,
+            mamba_host_hit_length=0, extend_input_len=4,
+            sampling_params=NS(max_new_tokens=128),
+        )
+        batch = NS(
+            forward_mode=NS(is_extend=lambda: True, is_decode=lambda: False),
+            launch_ts=1., forward_iter=1, reqs=[request],
+            prefix_lens=[1020], extend_lens=[4],
+        )
+        states[name] = audit, batch, records
+    samples = {
+        name: {"wall": [], "thread_cpu": []} for name in writers
+    }
+    # Only the record timestamps are fixed; both measured clocks remain live.
+    with patch.object(telemetry.time, "time", return_value=1.):
+        for iteration in range(iterations + 10):
+            order = list(writers)
+            if iteration % 2:
+                order.reverse()
+            signatures = {}
+            for name in order:
+                audit, batch, records = states[name]
+                audit._pending = {"request": 1000.}
+                audit._active = set()
+                audit._completed = set()
+                audit._reported_output_tokens = {}
+                audit._launched = {}
+                audit._sequence = 0
+                audit._cache_request_evidence["all"].clear()
+                records.clear()
+                wall, cpu = time.perf_counter_ns(), time.thread_time_ns()
+                audit.on_launch(batch)
+                elapsed_cpu = (time.thread_time_ns() - cpu) / 1e6
+                elapsed_wall = (time.perf_counter_ns() - wall) / 1e6
+                signatures[name] = (
+                    records[:], dict(audit._launched),
+                    dict(audit._cache_request_evidence["all"]),
+                )
+                if iteration >= 10:
+                    samples[name]["wall"].append(elapsed_wall)
+                    samples[name]["thread_cpu"].append(elapsed_cpu)
+            if signatures["baseline"] != signatures["optimized"]:
+                raise AssertionError("first-service path evidence or launch state changed")
+    return {
+        "scenario": scenario, "path_depth": depth,
+        "costs": {
+            name: {clock: distribution(values) for clock, values in clocks.items()}
+            for name, clocks in samples.items()
+        },
+        "records_and_service_state_equal": True,
+        "scope": (
+            "Complete real on_launch for one first prefill with CPU node ancestry. "
+            "Transfer proof, prefix-probe queueing, usage publication and CUDA probes "
+            "are excluded identically; no concurrent writer, allocator, GPU or JCT measurement."
+        ),
+    }
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-revision", required=True)
@@ -376,6 +473,7 @@ def main() -> None:
     parser.add_argument("--observed-prefix-evidence", type=Path)
     parser.add_argument("--pressure-cases", action="store_true")
     parser.add_argument("--status-publication-only", action="store_true")
+    parser.add_argument("--first-service-match-paths", action="store_true")
     args = parser.parse_args()
     if args.iterations <= 0:
         parser.error("iterations must be positive")
@@ -391,6 +489,7 @@ def main() -> None:
         "optimized": load_writer(current, str(ROOT / SOURCE)),
     }
     report = {
+        "benchmark_started_at_utc": datetime.now(timezone.utc).isoformat(),
         "scope": (
             "CPU status publication and pending-counter mutation with unchanged evidence; "
             "no disk, concurrent writer/scheduler, GIL contention or GPU/JCT measurement."
@@ -405,13 +504,35 @@ def main() -> None:
         "benchmark_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "iterations_per_case": args.iterations, "warmup_iterations": 10,
         "deployed": False,
-        "cases": [
+    }
+    if args.observed_prefix_evidence is not None:
+        report["observed_prefix_work"] = observed_prefix_work(args.observed_prefix_evidence)
+    if args.first_service_match_paths:
+        report["scope"] = (
+            "Complete first-prefill on_launch CPU comparison on identical native "
+            "ancestry and request records; fixed record timestamps, alternating "
+            "baseline/current order, no CUDA or end-to-end benefit measurement."
+        )
+        report["cases"] = [
+            first_service_match_path_case(
+                writers, depth=depth, scenario=scenario, iterations=args.iterations,
+            )
+            for depth in (24, 64, 185, 257)
+            for scenario in (
+                "same_anchor", "two_anchors", "distinct_anchors",
+                "missing_anchor", "no_host_hit",
+            )
+        ]
+    elif args.status_publication_only:
+        report["cases"] = [
             status_publication_case(writers, entries=entries, iterations=args.iterations)
             for entries in (0, 1024, 32768)
         ] + [
             measure(writers, tokens=1024, scenario=scenario, iterations=args.iterations)
             for scenario in ("block_eviction", "block_many_matches")
-        ] if args.status_publication_only else [
+        ]
+    else:
+        report["cases"] = [
             measure(writers, tokens=tokens, scenario=scenario, iterations=args.iterations)
             for tokens in (1024, 8192, 32768)
             for scenario in (
@@ -420,11 +541,8 @@ def main() -> None:
                 "block_other_namespace", "block_many_branches", "block_many_unrelated",
                 "block_many_matches", "block_eviction",
             )
-        ],
-    }
-    if args.observed_prefix_evidence is not None:
-        report["observed_prefix_work"] = observed_prefix_work(args.observed_prefix_evidence)
-    if args.pressure_cases and not args.status_publication_only:
+        ]
+    if args.pressure_cases and not args.status_publication_only and not args.first_service_match_paths:
         report["cases"].extend(
             measure(writers, tokens=tokens, scenario=scenario, iterations=args.iterations)
             for tokens in (8192, 32768)
@@ -438,11 +556,13 @@ def main() -> None:
             "Query and bounded-expiry mutation outputs and evidence states are compared."
         )
     args.output.parent.mkdir(parents=True, exist_ok=True)
+    report["benchmark_finished_at_utc"] = datetime.now(timezone.utc).isoformat()
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
     for case in report["cases"]:
         before = case["costs"]["baseline"]["wall"]["mean_ms"]
         after = case["costs"]["optimized"]["wall"]["mean_ms"]
         label = (
+            f"depth={case['path_depth']}" if "path_depth" in case else
             f"pending={case['pending_entries']}" if "pending_entries" in case
             else f"tokens={case['prior_input_tokens']}"
         )

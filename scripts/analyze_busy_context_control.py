@@ -204,6 +204,59 @@ def periodic_decode_graph_log(
     }
 
 
+def host_match_path_geometry(arm: Path, begin: float, end: float) -> dict:
+    path = arm / "server/runtime_events.sglang.jsonl"
+    counts, lengths = Counter(), Counter()
+    prefix, bytes_read = hashlib.sha256(), 0
+    if not path.exists():
+        return {"available": False, "reason": "native_events_not_collected"}
+    with path.open("rb") as stream:
+        for line in stream:
+            if not line.endswith(b"\n"):
+                break
+            prefix.update(line)
+            bytes_read += len(line)
+            if b'"native_host_hit_match_path"' not in line:
+                continue
+            observed = json.loads(line)["attributes"]["native_host_hit_match_path"]
+            timestamp = observed["observed_ts_ms"]
+            if timestamp >= end:
+                break
+            if timestamp < begin:
+                continue
+            values = [
+                observed[name] for name in (
+                    "last_device_path", "last_host_path", "best_match_path",
+                )
+            ]
+            valid = [value for value in values if value is not None]
+            unique = {tuple(map(tuple, value)) for value in valid}
+            counts["host_hit_records"] += 1
+            counts["valid_paths"] += len(valid)
+            counts["duplicate_valid_paths"] += len(valid) - len(unique)
+            counts["records_with_three_identical_valid_paths"] += int(
+                len(valid) == 3 and len(unique) == 1
+            )
+            counts["recorded_path_nodes"] += sum(len(value) for value in valid)
+            counts["unique_path_nodes_by_identical_anchor"] += sum(
+                len(value) for value in unique
+            )
+            lengths.update(len(value) for value in valid)
+    return {
+        "available": True, "source": str(path),
+        "read_prefix_bytes": bytes_read, "read_prefix_sha256": prefix.hexdigest(),
+        "begin_ts_ms": begin, "end_ts_ms": end,
+        "counts": dict(counts),
+        "path_length_histogram": dict(sorted(lengths.items())),
+        "semantics": (
+            "Host-hit identity paths recorded at first service, selected by their "
+            "observation timestamps, not earlier request submission timestamps. "
+            "Identical recorded paths expose repeat observation; no FULL/Mamba "
+            "reuse, CPU time or native-relative latency saving is inferred."
+        ),
+    }
+
+
 def decode_geometry(arm: Path, begin: float, end: float) -> dict:
     path = arm / "server/runtime_audit.jsonl"
     contexts, sums, durations, batches = [], [], [], []
@@ -408,6 +461,9 @@ def main() -> None:
         )
         values = decode_geometry(arm, window["begin_ts_ms"], window["end_ts_ms"])
         values["monitor_window"] = window
+        values["host_match_path_geometry"] = host_match_path_geometry(
+            arm, window["begin_ts_ms"], window["end_ts_ms"],
+        )
         values["periodic_decode_graph_log"] = periodic_decode_graph_log(
             arm, window["begin_ts_ms"], window["end_ts_ms"], ZoneInfo(args.timezone),
         )

@@ -957,6 +957,19 @@ class NativeReactiveTelemetry:
             node = getattr(node, "parent", None)
         return list(reversed(path)) if node is None else None
 
+    def _match_paths(self, node_ids: tuple[Any, ...]) -> tuple[Any, ...]:
+        """Read identical anchors once within this first-service observation."""
+        paths = {}
+        observed = []
+        for node_id in node_ids:
+            if type(node_id) is int:
+                if node_id not in paths:
+                    paths[node_id] = self._match_path(node_id)
+                observed.append(paths[node_id])
+            else:
+                observed.append(self._match_path(node_id))
+        return tuple(observed)
+
     def on_abort_request(self, abort: Any) -> None:
         affected = [
             rid for rid in self._pending.keys() | self._active
@@ -1012,25 +1025,24 @@ class NativeReactiveTelemetry:
                 mamba_host_hits = int(
                     getattr(req, "mamba_host_hit_length", 0) or 0
                 )
-                host_hit_path = (
-                    {"native_host_hit_match_path": {
-                        "observed_ts_ms": time.time() * 1000.0,
-                        "last_device_path": self._match_path(
-                            getattr(req, "last_node", None)
-                        ),
-                        "last_host_path": self._match_path(
-                            getattr(req, "last_host_node", None)
-                        ),
-                        "best_match_path": self._match_path(
-                            getattr(req, "best_match_node", None)
-                        ),
+                host_hit_path = {}
+                if cached_host or mamba_host_hits:
+                    observed_ts_ms = time.time() * 1000.0
+                    device_path, host_path, best_path = self._match_paths((
+                        getattr(req, "last_node", None),
+                        getattr(req, "last_host_node", None),
+                        getattr(req, "best_match_node", None),
+                    ))
+                    host_hit_path = {"native_host_hit_match_path": {
+                        "observed_ts_ms": observed_ts_ms,
+                        "last_device_path": device_path,
+                        "last_host_path": host_path,
+                        "best_match_path": best_path,
                         "evidence": (
                             "node_identity_at_first_gpu_service_only;"
                             "not_proof_of_component_reuse"
                         ),
                     }}
-                    if cached_host or mamba_host_hits else {}
-                )
                 cache_evidence = {
                     "request_count": 1,
                     "prompt_tokens": prompt_tokens,

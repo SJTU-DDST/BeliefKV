@@ -7,6 +7,7 @@ from array import array
 from pathlib import Path
 from queue import Queue
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 import pytest
 from numpy import float64
@@ -530,24 +531,24 @@ def test_confirmed_join_canary_has_distinct_provenance(tmp_path: Path) -> None:
     assert status["writer_error"] is None
 
 
+@pytest.mark.parametrize("identical", (False, True))
 def test_host_hit_path_records_identity_without_claiming_component_reuse(
-    tmp_path: Path,
+    tmp_path: Path, identical: bool,
 ) -> None:
     audit = NativeReactiveTelemetry(tmp_path / "service")
     root = SimpleNamespace(id=0, creation_time=1, parent=None)
     ancestor = SimpleNamespace(id=52, creation_time=float64(286), parent=root)
     leaf = SimpleNamespace(id=4721, creation_time=300, parent=ancestor)
-    audit._cache = SimpleNamespace(
-        tree_core=SimpleNamespace(
-            node_by_id={node.id: node for node in (root, ancestor, leaf)}.__getitem__
-        )
-    )
+    lookup = Mock(side_effect={
+        node.id: node for node in (root, ancestor, leaf)
+    }.__getitem__)
+    audit._cache = SimpleNamespace(tree_core=SimpleNamespace(node_by_id=lookup))
     req = SimpleNamespace(
         rid="request", beliefkv_metadata={
             "root_workflow_id": "workflow", "invocation_id": "parent",
             "context_id": "ctx", "context_epoch": 9,
         },
-        last_node=leaf.id, last_host_node=ancestor.id,
+        last_node=leaf.id, last_host_node=leaf.id if identical else ancestor.id,
         best_match_node=leaf.id, origin_input_ids=[1, 2], output_ids=[],
         cached_tokens_device=1, cached_tokens_host=1,
         mamba_host_hit_length=1, extend_input_len=0,
@@ -562,8 +563,21 @@ def test_host_hit_path_records_identity_without_claiming_component_reuse(
     [event] = _read(tmp_path / "service/runtime_events.sglang.jsonl")
     path = event["attributes"]["native_host_hit_match_path"]
     assert path["last_device_path"] == [[0, 1], [52, 286], [4721, 300]]
-    assert path["last_host_path"] == [[0, 1], [52, 286]]
+    assert path["last_host_path"] == (
+        path["last_device_path"] if identical else [[0, 1], [52, 286]]
+    )
+    assert path["best_match_path"] == path["last_device_path"]
+    assert lookup.call_count == (1 if identical else 2)
     assert path["evidence"].endswith("not_proof_of_component_reuse")
+
+
+def test_match_path_reuse_does_not_survive_the_next_observation():
+    audit = NativeReactiveTelemetry.__new__(NativeReactiveTelemetry)
+    node = SimpleNamespace(id=7, creation_time=1, parent=None)
+    audit._cache = SimpleNamespace(tree_core=SimpleNamespace(node_by_id=lambda _: node))
+    assert audit._match_paths((7, 7, 7)) == ([[7, 1]],) * 3
+    node.creation_time = 2
+    assert audit._match_paths((7, 7, 7)) == ([[7, 2]],) * 3
 
 
 def test_physical_action_evidence_flushes_without_idle_queue(
