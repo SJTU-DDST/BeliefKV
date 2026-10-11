@@ -25,7 +25,16 @@ v56_tool_wait_model_cpu_20261011.json使用现有35MB校准产物和
 单项平均墙钟1.571→1.243ms；16项批量19.743→15.322ms，减少
 20.9%/22.4%，两组均产生非空hint且逐项完全一致。输入为人工
 elapsed矩阵，排除IPC、排队、DMA和GPU，不能推导端到端加速。
-该修改将纳入尚未启动的V23，正在采集的V22保持冻结。
+上述代码、验证和文档已提交为58f2097。2026-10-11 10:21:26 CST
+已将尚未启动的V23更新为58f2097c7a0c6c098d6a6d81abaadb69663e2522，
+冻结checkout为beliefkv-v56-tool-wait-fast-20261011，等待协调器
+PID3255311。运行配置、前序pair及等待进程身份均与606cc4e登记
+相同，canonical原生patch亦未改变。主checkout仍为干净的3aa27dd，
+V23目录尚未创建；仅停止旧等待协调器3111032，V22采集进程未发
+信号。旧登记保存为v23_launch_after_v22_606cc4e_superseded_20261011.json，
+现登记仍位于主工作区v23_launch_after_v22_20261011.json；
+保留v56_v23_tool_wait_registration_20261011.json作为有界回执。
+V22完整pair及后处理结束后自动部署，predictive先、冷native后。
 
 工具预取隔离跟进修复候选之间的容量阻塞：原先最临近工具结束的
 agent先占唯一ticket，随后发现恢复容量不足就结束整个扫描，
@@ -47,6 +56,7 @@ V22采集进程未发信号。旧登记及日志保留，回执为
 v55_v23_tool_capacity_registration_20261011.json；
 实际登记仍在主工作区v23_launch_after_v22_20261011.json。
 V22完整pair与后处理结束后自动部署，predictive先、冷native后。
+该10:01登记已由上方10:21的58f2097登记替换。
 
 补齐工具窗口离线审计的H2D服务时间比较，保存
 v54_v22_tool_service_window_fixedprefix_20261011.json及本地详细产物。

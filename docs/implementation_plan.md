@@ -30,6 +30,18 @@ The synthetic elapsed matrix is not a workload-frequency sample; exclude IPC,
 queueing, DMA and GPU and do not extrapolate throughput. Include this committed
 change in the not-yet-started V23; preserve the running V22 pair.
 
+Commit the code, verification and documents as58f2097. At2026-10-11 10:21:26 CST,
+update the still-waiting V23 target to58f2097c7a0c6c098d6a6d81abaadb69663e2522
+inbeliefkv-v56-tool-wait-fast-20261011; coordinator3255311. Configuration,
+previous pair, captured wait-process identities and canonical engine patch match
+the606cc4e registration. Main remains clean at3aa27dd and V23 has no run directory.
+Stop only old waiting coordinator3111032; preserve its registration as
+v23_launch_after_v22_606cc4e_superseded_20261011.json and its log. Keep the bounded
+v56_v23_tool_wait_registration_20261011.json receipt; the main
+v23_launch_after_v22_20261011.json remains current. V22 collection processes are
+not signalled. Deploy after its complete pair and postprocessing, then run
+predictive followed by cold same-version native. GPU performance remains unproven.
+
 Fix capacity blocking between tool-prefetch candidates in the isolated follow-up.
 Previously the nearest-ending tool took the sole ticket before reclaim was checked;
 when capacity remained insufficient, the dispatch ended and a later restorable
@@ -52,6 +64,7 @@ v55_v23_tool_capacity_registration_20261011.json receipt. V22 collection process
 are not signalled. The main v23_launch_after_v22_20261011.json is current.
 Deploy after the complete V22 pair and postprocessing, predictive first and cold
 same-version native second.
+This10:01 registration is superseded by the10:21 58f2097 registration above.
 
 Keepv54_v22_tool_service_window_fixedprefix_20261011.json and its local detailed
 artifact. Re-read exactly the same817177733-byte opportunity prefix and lifecycle

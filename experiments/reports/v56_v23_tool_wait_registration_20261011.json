@@ -1,0 +1,154 @@
+{
+  "status": "waiting_for_previous_pair",
+  "registered_at_utc": "2026-10-11T02:21:26.309421+00:00",
+  "verified_at_utc": "2026-10-11T02:21:26.384316+00:00",
+  "previous_target_revision": "606cc4eb2ded154a8b1c79dd7a8a31e26483b1fb",
+  "target_revision": "58f2097c7a0c6c098d6a6d81abaadb69663e2522",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v56-tool-wait-fast-20261011",
+  "target_patch_sha256": "498a2e8219f0d454776c7b967b87a82e7b49e3e75831389e08a9daabfb29998e",
+  "previous_registration": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_606cc4e_superseded_20261011.json",
+  "current_registration": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_20261011.json",
+  "launch_log": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_58f2097_20261011.log",
+  "stopped_waiting_coordinator": 3111032,
+  "current_waiting_coordinator": 3255311,
+  "current_waiting_coordinator_identity": [
+    "S",
+    1,
+    "585554898"
+  ],
+  "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22",
+  "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v23",
+  "current_main_revision": "3aa27dd67b340236310824d80a7e6e31038ea1f9",
+  "configuration_equal": true,
+  "wait_process_identities_equal": true,
+  "target_engine_patch_equal": true,
+  "main_and_frozen_target_clean": true,
+  "new_run_directory_absent_at_verification": true,
+  "v22_processes_not_signalled": [
+    1159560,
+    1166290,
+    1166319,
+    1166676,
+    1168306
+  ],
+  "deployed_v22_engine_canonical_patch": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83",
+    "expected_tree": "63d91509bee139b2d6a2285eb44b193a67a9e008",
+    "actual_tree": "63d91509bee139b2d6a2285eb44b193a67a9e008",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "deployment": "After the complete V22 predictive/native pair and postprocessing, deploy 58f2097 and run predictive followed by cold same-version native.",
+  "change": {
+    "first_tool_query_unconditional_delay_ms": 0,
+    "unchanged_wait_throttle_ms": [
+      150,
+      500,
+      1000
+    ],
+    "tool_only_heads": [
+      "tool_wait",
+      "prompt_growth",
+      "operational_timing"
+    ],
+    "terminal_child_capacity_handoff_retained": true,
+    "prediction_contract_and_runtime_budgets_preserved": true,
+    "gpu_performance_verified": false
+  },
+  "validation": {
+    "relevant_checks_passed": 565,
+    "full_prediction_and_tool_hint_equality": true,
+    "benchmark": "v56_tool_wait_model_cpu_20261011.json",
+    "benchmark_sha256": "4395ee041b5628ce3fbcd39c140ecbee9c5e5cae5e7b00b889b0b12fe007359b",
+    "synthetic_inputs_actual_calibrated_artifact": true,
+    "cases": {
+      "single_root": {
+        "returned_hint_count": 1,
+        "mean_reduction": {
+          "wall": 0.20894906028025106,
+          "thread_cpu": 0.2091490088748249
+        },
+        "costs_per_batch": {
+          "baseline": {
+            "wall": {
+              "count": 200,
+              "mean_ms": 1.57104339,
+              "p50_ms": 1.334025,
+              "p99_ms": 2.53879,
+              "max_ms": 2.541975
+            },
+            "thread_cpu": {
+              "count": 200,
+              "mean_ms": 1.569934645,
+              "p50_ms": 1.333023,
+              "p99_ms": 2.537509,
+              "max_ms": 2.540661
+            }
+          },
+          "tool_only": {
+            "wall": {
+              "count": 200,
+              "mean_ms": 1.24277535,
+              "p50_ms": 1.049206,
+              "p99_ms": 2.026281,
+              "max_ms": 2.050423
+            },
+            "thread_cpu": {
+              "count": 200,
+              "mean_ms": 1.24158437,
+              "p50_ms": 1.048184,
+              "p99_ms": 2.024897,
+              "max_ms": 2.048993
+            }
+          }
+        }
+      },
+      "mixed_batch_16": {
+        "returned_hint_count": 16,
+        "mean_reduction": {
+          "wall": 0.2239350158182204,
+          "thread_cpu": 0.22396598655091404
+        },
+        "costs_per_batch": {
+          "baseline": {
+            "wall": {
+              "count": 200,
+              "mean_ms": 19.743012605,
+              "p50_ms": 19.753531,
+              "p99_ms": 20.062307,
+              "max_ms": 20.847332
+            },
+            "thread_cpu": {
+              "count": 200,
+              "mean_ms": 19.741468685,
+              "p50_ms": 19.752428,
+              "p99_ms": 20.061406,
+              "max_ms": 20.845687
+            }
+          },
+          "tool_only": {
+            "wall": {
+              "count": 200,
+              "mean_ms": 15.321860765,
+              "p50_ms": 15.309927,
+              "p99_ms": 16.480352,
+              "max_ms": 17.12124
+            },
+            "thread_cpu": {
+              "count": 200,
+              "mean_ms": 15.320051175,
+              "p50_ms": 15.308545,
+              "p99_ms": 16.478248,
+              "max_ms": 17.119382
+            }
+          }
+        }
+      }
+    }
+  }
+}
