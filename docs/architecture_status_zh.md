@@ -86,6 +86,39 @@ v23_launch_after_v22_20261011.json。协调器已捕获V22 coordinator
 窗口。当前V22源码和运行进程保持冻结，V23尚未启动；性能目标仍
 待真正提前复用FULL和同版本繁忙窗口收益共同证明。
 
+新增完整1200–1800秒控制窗口，保存在
+v42_v22_control_1200_1800_20261011.json，固定读取前缀和边界行
+SHA256。599.617秒快照间隔内，已埋点Python独占墙钟累计82.818秒；
+reentry检查为78428次/19.956秒，handoff enqueue为1693次/8.138秒，
+准入规划为6793次/6.982秒，control drain和JOIN PREPARE分别为
+6.613/6.359秒。同版本native尚未运行，累计阶段耗时不能直接从
+JCT扣除，也不能单独证明GPU服务差距的原因。
+
+根据该窗口继续缩减准入身份绑定开销。_request_key直接读取
+workflow、invocation和context字段，避免生成器及中间tuple；
+原有类型、session、epoch、attempt和generation校验保持一致，
+没有增加模型或调度门槛。新增12种无效必要身份输入检查，
+相关290项准入、handoff、终态容量、runtime和原生前缀检查通过。
+比较脚本分别加载两个revision的compiler和直接request-key函数，
+避免baseline误用优化后的绑定；其它继承helper仍共享，明确限制
+测量范围。逻辑时钟改用普通lambda，避免MagicMock保留调用历史
+导致GC和计时噪声；旧v44结果保留但不用于最终性能判断。
+v45_request_binding_plan_light_clock_cpu_20261011.json包含17组
+各200轮交替CPU夹具。两次规划的墙钟均值降低6.6%–14.7%，
+顺序、计数、提升元数据和原生驻留检查次数均一致；48-request/
+4-lease场景为1.216→1.101ms，156-request/16-lease场景为
+2.510→2.216ms。该夹具没有真实allocator、DMA或GPU，
+不代表端到端吞吐收益；隔离改动待合并到下一轮冻结登记。
+
+同时验证并撤回仅在RadixKey中复用原始长度的候选优化。
+v43_reentry_length_reuse_cpu_20261011.json记录15组各15轮、
+每轮100次完整reentry检查。256层单leaf前缀约435→437微秒；
+1024层单leaf约1703→1666微秒，8-leaf约1800→1793微秒，
+没有稳定的整体改善。扩充deep-prefix夹具保留，候选原生代码
+已撤回，canonical patch SHA256仍为03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83。
+继续按真实控制窗口、已结束child释放、实际FULL提前复用和
+恢复后首次消费检查收益；不由孤立小函数计时扩大原生修改。
+
 闭合V21的predictive/native输出吞吐为738.64/831.87 token/s，
 GPU平均利用率为72.04%/80.15%。600–2400秒窗口的decode前平均
 可见上下文为23679.53/23850.39 token，worker decode区间均值为

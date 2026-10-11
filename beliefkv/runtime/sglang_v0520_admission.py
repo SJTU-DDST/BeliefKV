@@ -44,8 +44,9 @@ def _request_key(req: object) -> PrefillCandidateKey | None:
     request_id = getattr(req, "rid", None)
     if type(metadata) is not dict or type(request_id) is not str or not request_id:
         return None
-    fields = ("root_workflow_id", "invocation_id", "context_id")
-    values = tuple(metadata.get(field) for field in fields)
+    workflow_id = metadata.get("root_workflow_id")
+    invocation_id = metadata.get("invocation_id")
+    context_id = metadata.get("context_id")
     epoch = metadata.get("context_epoch")
     attempt = getattr(handle, "attempt_id", None)
     session_id = getattr(req, "session_id", None)
@@ -57,7 +58,9 @@ def _request_key(req: object) -> PrefillCandidateKey | None:
         session_id = session_ref
     session_generation = getattr(req, "session_generation", None)
     if (
-        any(type(value) is not str or not value for value in values)
+        type(workflow_id) is not str or not workflow_id
+        or type(invocation_id) is not str or not invocation_id
+        or type(context_id) is not str or not context_id
         or type(epoch) is not int
         or epoch < 0
         or type(attempt) is not int
@@ -74,7 +77,8 @@ def _request_key(req: object) -> PrefillCandidateKey | None:
     ):
         return None
     return PrefillCandidateKey(
-        request_id, *values, epoch, attempt, session_id, session_generation
+        request_id, workflow_id, invocation_id, context_id,
+        epoch, attempt, session_id, session_generation,
     )
 
 

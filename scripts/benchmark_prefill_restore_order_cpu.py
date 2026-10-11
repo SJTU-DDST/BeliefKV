@@ -41,13 +41,14 @@ def load_plan(source: str, label: str, *, admission_source: str | None = None):
     namespace = dict(vars(runtime_module))
     if admission_source is not None:
         admission = ast.parse(admission_source)
-        compiler = next(
+        helpers = [
             node for node in admission.body
-            if isinstance(node, ast.FunctionDef) and node.name == "compile_native_prefill_plan"
-        )
+            if isinstance(node, ast.FunctionDef)
+            and node.name in ("_request_key", "compile_native_prefill_plan")
+        ]
         module = ast.Module(body=[
             ast.ImportFrom(module="__future__", names=[ast.alias(name="annotations")], level=0),
-            compiler,
+            *helpers,
         ], type_ignores=[])
         exec(compile(ast.fix_missing_locations(module), label, "exec"), namespace)
     module = ast.Module(body=[
@@ -214,7 +215,7 @@ def main():
     }
     results, clock = [], [1000.]
     with patch.dict(os.environ, clean_environment, clear=True), \
-         patch.object(runtime_module.time, "monotonic", side_effect=lambda: clock[0]):
+         patch.object(runtime_module.time, "monotonic", new=lambda: clock[0]):
         for case in cases:
             clock[0] = 1000.
             variants = {
@@ -258,8 +259,9 @@ def main():
         "planning_calls_per_iteration": 2, "deployed": False, "cases": results,
         "scope": (
             "CPU plan_native_prefill with real causal/request identity handling, "
-            "using each variant's exact plan and compiler source, "
+            "using each variant's exact plan, direct request-key binding and compiler source, "
             "mixed restoration sources and deterministic stub-native residency. "
+            "Other inherited runtime helpers are shared between variants. "
             "Logical time advances past the 50ms observation cache each iteration. "
             "Alternating variants must agree on both plans, cumulative policy "
             "counters and promotion metadata. Inspection traces must retain "

@@ -93,6 +93,42 @@ preserving workload and prediction windows. V22 source and processes remain
 frozen; V23 is not yet running. Keep the objective active until useful early FULL
 reuse and same-version busy-window performance benefit are both demonstrated.
 
+Keep the complete1200–1800s control evidence in
+v42_v22_control_1200_1800_20261011.json with exact read-prefix and boundary hashes.
+The599.617s snapshot interval has82.818s of instrumented Python self wall:
+reentry inspection78428 calls/19.956s, handoff enqueue1693/8.138s,
+admission planning6793/6.982s, control drain6.613s and JOIN PREPARE6.359s.
+Same-version native has not run. Do not subtract cumulative phase wall from JCT
+or use this evidence alone to assign the GPU service gap.
+
+Reduce admission request-key binding allocations without changing identity
+validation or scheduling decisions. Read workflow/invocation/context directly;
+keep exact types, session consistency, epoch, attempt and generation checks.
+The12 additional invalid-required-field cases and relevant290 admission,
+handoff, terminal-capacity, runtime and native-prefix checks pass.
+The benchmark now loads each revision's compiler and direct request-key function;
+other inherited helpers remain shared and the scope states that limitation.
+Use a plain lambda for logical monotonic time so MagicMock does not retain
+iteration histories and introduce GC noise. Keep oldv44 as nonfinal evidence.
+The finalv45_request_binding_plan_light_clock_cpu_20261011.json contains17
+groups of200 alternating iterations with identical plans, counters, promotion
+metadata and native inspection counts. Mean wall for two planning calls falls
+6.6%–14.7%;48 requests/4 leases changes1.216→1.101ms and156 requests/16 leases
+changes2.510→2.216ms. These fixtures exclude real allocator, DMA and GPU.
+Integrate the isolated change into the next frozen registration before claiming
+any actual service-performance benefit.
+
+Reject the RadixKey raw-length reuse candidate after whole-inspector measurement.
+Keepv43_reentry_length_reuse_cpu_20261011.json:15 groups of15 samples with100
+iterations each show no stable broad improvement;256-node/one-leaf prefixes
+change about435→437 microseconds,1024-node/one-leaf1703→1666 and eight-leaf
+1800→1793. Preserve the expanded deep-prefix fixtures but withdraw the engine
+candidate. Canonical patch SHA256 remains
+03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83.
+Continue using real control windows, settled terminal-child release, useful
+early FULL restoration and first consumption, rather than isolated tiny-function
+timings, to choose the next engine change.
+
 Closed V21 predictive/native output rates are738.64/831.87 token/s and mean
 GPU utilization72.04%/80.15%. In600–2400s, mean visible decode contexts are
 23679.53/23850.39 tokens, while mean worker decode intervals are41.49/36.19ms.

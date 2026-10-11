@@ -112,10 +112,12 @@ def fixture(implementation, case):
 
 def benchmark(baseline, optimized, *, samples, iterations):
     cases = []
-    for tokens, depth in ((4096, 4), (32768, 8), (98304, 24)):
+    for tokens, depth in (
+        (4096, 4), (32768, 8), (98304, 24), (32768, 256), (32768, 1024),
+    ):
         for leaves in (1, 8):
             cases.append({
-                "case": f"match-{tokens}-{leaves}-leaves",
+                "case": f"match-{tokens}-{depth}-depth-{leaves}-leaves",
                 "tokens": tokens, "depth": depth, "leaves": leaves, "page_size": 1,
             })
     for label, extra in (

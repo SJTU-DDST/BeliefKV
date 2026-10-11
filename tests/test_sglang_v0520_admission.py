@@ -181,6 +181,18 @@ def test_compiler_rejects_missing_identity_duplicate_and_oversized_decision() ->
         compile_native_prefill_plan((req,), semantic_revision=True)
 
 
+@pytest.mark.parametrize("field", ("root_workflow_id", "invocation_id", "context_id"))
+@pytest.mark.parametrize("value", (None, "", 7, False))
+def test_compiler_rejects_invalid_required_identity_fields(field, value) -> None:
+    req = _req("tagged")
+    req.beliefkv_metadata[field] = value
+    with pytest.raises(ValueError, match="invalid tagged identity"):
+        compile_native_prefill_plan((req,), semantic_revision=1)
+    assert select_native_prefill_candidates(
+        (req,), plan=NativePrefillPlan(1, ()), current_semantic_revision=1,
+    ).rejected == (("tagged", "invalid_identity"),)
+
+
 @pytest.mark.parametrize("changed", ("epoch", "attempt", "generation"))
 def test_compiler_reuses_bound_keys_but_selection_rechecks_live_identity(changed) -> None:
     first, last, native = _req("first"), _req("last"), _req("native", tagged=False)
