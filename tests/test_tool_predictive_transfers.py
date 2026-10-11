@@ -292,13 +292,63 @@ def test_history_wait_conditions_on_live_survivors_after_its_median():
     )
     assert history.remaining_quantile(.5, now_ms=1225.) == pytest.approx(25.)
     assert history.release_probability_within(25., now_ms=1225.) == pytest.approx(.79 / .9)
-    assert history.remaining_quantile(.5, now_ms=1251.) == pytest.approx(49.)
-    assert history.release_probability_within(48., now_ms=1251.) == 0.
-    assert history.release_probability_within(49., now_ms=1251.) == 1.
-    assert history.remaining_quantile(.5, now_ms=1300.) is None
-    assert history.release_probability_within(500., now_ms=1300.) is None
+    curve = replace(history, residual_duration_mass=())
+    for when in (1251., 1300.):
+        assert history.remaining_quantile(.5, now_ms=when) == curve.remaining_quantile(
+            .5, now_ms=when,
+        )
+        assert history.release_probability_within(
+            500., now_ms=when,
+        ) == curve.release_probability_within(500., now_ms=when)
     with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.3):
         assert not runtime._tool_prefetch_ready(history)
+    runtime.close()
+
+
+@pytest.mark.parametrize("support", (
+    "same_input_completed", "same_failed_input_completed", "completed_project_command",
+))
+@pytest.mark.parametrize("curve", (
+    ((100., .1), (500., .8), (2000., .99)),
+    ((100., .001), (2000., .005), (10000., .02), (30000., .8)),
+))
+def test_history_error_margin_does_not_become_a_certain_long_wait(support, curve):
+    runtime, hint = tool_runtime()
+    history = replace(
+        hint, issued_monotonic_ms=1000., expires_monotonic_ms=6000.,
+        release_cdf=curve,
+        residual_duration_mass=((50., .1), (100., .79), (3200., .11)),
+        residual_support_detail=support,
+    )
+    runtime.tool_wait_hints[hint.key.context_id] = history
+    curve_hint = replace(history, residual_duration_mass=())
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.2):
+        probability = curve_hint.release_probability_within(2000., now_ms=1200.)
+        assert history.release_probability_within(2000., now_ms=1200.) == probability
+        assert history.remaining_quantile(.5, now_ms=1200.) == curve_hint.remaining_quantile(
+            .5, now_ms=1200.,
+        )
+        assert runtime._long_tool_wait(hint.key) == (probability <= .1)
+        assert not (runtime._long_tool_wait(hint.key) and runtime._tool_prefetch_ready(history))
+    runtime.close()
+
+
+def test_history_overrun_without_operational_curve_remains_unknown():
+    runtime, hint = tool_runtime()
+    history = replace(
+        hint, issued_monotonic_ms=1000., expires_monotonic_ms=6000.,
+        release_cdf=(),
+        residual_duration_mass=((3000., 1.),),
+        residual_support_detail="completed_project_command",
+    )
+    runtime.tool_wait_hints[hint.key.context_id] = history
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.2):
+        assert history.remaining_quantile(.1, now_ms=1200.) is None
+        assert history.remaining_quantile(.5, now_ms=1200.) is None
+        assert history.release_probability_within(2000., now_ms=1200.) is None
+        assert not runtime._long_tool_wait(hint.key)
+        assert not runtime._tool_prefetch_ready(history)
+        assert runtime.graph.invocations["tool"].state is InvocationState.WAIT_TOOL
     runtime.close()
 
 

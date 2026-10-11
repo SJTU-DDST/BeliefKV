@@ -6,6 +6,7 @@ from __future__ import annotations
 import argparse
 from bisect import bisect_right
 from collections import Counter, defaultdict
+from dataclasses import replace
 import hashlib
 import json
 from pathlib import Path
@@ -75,13 +76,13 @@ def read_tools(arm: Path, seals: list[dict]):
     return windows, joins
 
 
-def hint_from_forecast(row: dict) -> NativeToolWaitHint:
+def hint_from_forecast(row: dict, hint_type=NativeToolWaitHint) -> NativeToolWaitHint:
     key = PrefillCandidateKey(
         "audit", row["workflow_id"], row["invocation_id"],
         row["context_id"], row["context_epoch"], 0,
     )
     observed = row["observed_monotonic_ms"]
-    return NativeToolWaitHint(
+    return hint_type(
         key, row["p10_ms"], row["p50_ms"], row["p90_ms"],
         observed, observed + 5000., "audit",
         release_cdf=tuple(tuple(point) for point in row.get("release_cdf", ())),
@@ -92,7 +93,9 @@ def hint_from_forecast(row: dict) -> NativeToolWaitHint:
     )
 
 
-def tool_decision(row, forecast, offset, windows, starts) -> dict:
+def tool_decision(
+    row, forecast, offset, windows, starts, *, hint_type=NativeToolWaitHint,
+) -> dict:
     result = {
         "event": row["event"], "ts_ms": row["ts_ms"],
         "context_id": row["context_id"], "context_epoch": row["context_epoch"],
@@ -126,7 +129,7 @@ def tool_decision(row, forecast, offset, windows, starts) -> dict:
     else:
         result["boundary_unknown_reason"] = "no_single_active_tool_at_decision"
     if forecast is not None:
-        hint = hint_from_forecast(forecast)
+        hint = hint_from_forecast(forecast, hint_type)
         result["forecast_age_ms"] = when - hint.issued_monotonic_ms
         result["forecast_live"] = hint.live(hint.key, now_ms=when)
         result["forecast_invocation_matches"] = (
@@ -136,6 +139,10 @@ def tool_decision(row, forecast, offset, windows, starts) -> dict:
             probability = hint.release_probability_within(2000., now_ms=when)
             p10 = hint.remaining_quantile(.1, now_ms=when)
             p50 = hint.remaining_quantile(.5, now_ms=when)
+            curve_hint = replace(hint, residual_duration_mass=())
+            curve_probability = curve_hint.release_probability_within(2000., now_ms=when)
+            curve_p10 = curve_hint.remaining_quantile(.1, now_ms=when)
+            age = when - hint.issued_monotonic_ms
             result.update({
                 "predicted_return_within_2000ms_probability": probability,
                 "remaining_p10_ms": p10, "remaining_p50_ms": p50,
@@ -144,6 +151,16 @@ def tool_decision(row, forecast, offset, windows, starts) -> dict:
                     if hint.release_cdf else p10 is not None and p10 >= 2000.
                 ),
                 "timing_policy": forecast.get("timing_policy"),
+                "residual_support_detail": hint.residual_support_detail,
+                "surviving_history_points": sum(
+                    value > age for value, _ in hint.residual_duration_mass
+                ),
+                "cdf_return_within_2000ms_probability": curve_probability,
+                "cdf_long_wait_predicate": (
+                    curve_probability is not None and curve_probability <= .1
+                    if hint.release_cdf
+                    else curve_p10 is not None and curve_p10 >= 2000.
+                ),
             })
             actual = result.get("actual_remaining_ms")
             if actual is not None and p50 is not None:
@@ -154,10 +171,13 @@ def tool_decision(row, forecast, offset, windows, starts) -> dict:
 
 def decision_summary(rows: list[dict]) -> dict:
     known = [row for row in rows if row.get("actual_remaining_ms") is not None]
-    groups = {}
+    groups, support_groups = {}, defaultdict(list)
     for row in known:
         identity = row["workflow_id"], row["invocation_id"], row["tool_run_id"]
         groups.setdefault(identity, row)
+        support_groups[
+            row.get("residual_support_detail"), row.get("surviving_history_points")
+        ].append(row)
     first = list(groups.values())
     return {
         "decision_records": len(rows), "known_tool_boundary_records": len(known),
@@ -195,6 +215,29 @@ def decision_summary(rows: list[dict]) -> dict:
             row.get("p50_absolute_error_ms") for row in rows
         ),
         "tool_names": dict(Counter(row["tool_name"] for row in first)),
+        "history_survival_groups": [
+            {
+                "support_detail": support, "surviving_points": points,
+                "records": len(group),
+                "records_actual_remaining_ge_2000ms": sum(
+                    row["actual_remaining_ge_2000ms"] for row in group
+                ),
+            }
+            for (support, points), group in sorted(
+                support_groups.items(),
+                key=lambda item: (str(item[0][0]), item[0][1] or 0),
+            )
+        ],
+        "cdf_replay_on_selected_decisions": {
+            "records_selected": sum(
+                row.get("cdf_long_wait_predicate") is True for row in known
+            ),
+            "records_selected_actual_remaining_ge_2000ms": sum(
+                row.get("cdf_long_wait_predicate") is True
+                and row["actual_remaining_ge_2000ms"] for row in known
+            ),
+            "scope": "Subset of recorded decisions, not policy replay or opportunity recall.",
+        },
     }
 
 

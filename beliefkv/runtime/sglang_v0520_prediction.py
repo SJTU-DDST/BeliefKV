@@ -168,9 +168,20 @@ class NativeToolWaitHint:
             tuple(point[1] for point in self.residual_duration_mass), 1.,
         )
 
+    def _supported_history_distribution(self, age_ms: float):
+        distribution = self._residual_distribution
+        if distribution is not None and self.residual_support_detail in (
+            "same_input_completed", "same_failed_input_completed",
+            "completed_project_command",
+        ) and sum(value > age_ms for value in distribution.values) < 2:
+            # The remaining upper point is an error margin, not an observed
+            # completion. Use the operational survival curve after an overrun.
+            return None
+        return distribution
+
     def release_probability_within(self, horizon_ms: float, *, now_ms: float) -> float | None:
         age = max(0., now_ms - self.issued_monotonic_ms)
-        distribution = self._residual_distribution
+        distribution = self._supported_history_distribution(age)
         if distribution is not None:
             surviving = distribution.probability_greater_than(age)
             if surviving <= 1e-9:
@@ -191,7 +202,7 @@ class NativeToolWaitHint:
         if not math.isfinite(quantile) or not 0 < quantile < 1:
             raise ValueError("tool timing quantile must be strictly between zero and one")
         age = max(0., now_ms - self.issued_monotonic_ms)
-        distribution = self._residual_distribution
+        distribution = self._supported_history_distribution(age)
         if distribution is not None:
             surviving = distribution.probability_greater_than(age)
             if surviving <= 1e-9:
@@ -205,6 +216,8 @@ class NativeToolWaitHint:
                 return None
             finish = curve.quantile(past + quantile * (1. - past))
             return max(0., finish - age) if finish is not None else None
+        if self.residual_duration_mass:
+            return None
         values = {.1: self.wait_p10_ms, .5: self.wait_p50_ms, .9: self.wait_p90_ms}
         if quantile not in values:
             raise ValueError("quantile-only hint supports P10/P50/P90")

@@ -1,0 +1,41 @@
+{
+  "status": "validated_for_next_pair_not_gpu_performance",
+  "baseline_revision": "b854a91f75198ee2ce5cdfa1a1a181bf92fa003f",
+  "checks": {
+    "passed": 494,
+    "commands": [
+      "python -m pytest -q tests/test_tool_predictive_transfers.py tests/test_sglang_v0520_prediction.py tests/test_sglang_v0520_predictor_worker.py tests/test_structured_frontier.py tests/test_wait_prefetch_batch.py tests/test_execution_handoff.py",
+      "python -m pytest -q tests/test_sglang_v0520_runtime.py tests/test_sglang_v0520_admission.py tests/test_terminal_child_capacity.py"
+    ],
+    "first_command_passed": 285,
+    "second_command_passed": 209,
+    "python_compilation_passed": true,
+    "diff_check_passed": true
+  },
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_prediction.py": "0bdd0e15a3c761605c48f9d9b3980a44b8ecdf47dd6e91aab41ddbc64ac26702",
+    "scripts/evaluate_tool_history_overrun.py": "68bf971a49640f885b483f41b07f5a7894f53e9f1253d2a1ede2de949190c4c4",
+    "scripts/audit_wait_offload.py": "a9603668fd2281c635410a081e16d6483d04be77b1fd94ce19e48ac4433018f8"
+  },
+  "evidence_sha256": {
+    "v71_v22_tool_history_overrun_replay_20261011.json": "46ac6d1e3df1a8b42c9258d93ffa1829bffee0d4425f23158fe79ddc2a874ada",
+    "v71_v22_tool_prepare_probability_20261011.json": "42e382be93d37b650bc2b8104d6f89e623c4d07ed94c751978c0b4461e86ef67"
+  },
+  "same_recorded_demotion_p50_absolute_error_ms": {
+    "baseline": {
+      "count": 71,
+      "p50": 719.2365698814392,
+      "p90": 2827.5861053466797
+    },
+    "optimized": {
+      "count": 71,
+      "p50": 303.14745330810547,
+      "p90": 1712.6890616113626
+    }
+  },
+  "scope": "Frozen-trace development replay without fitting. Selection precision is conditional on the recorded old-policy action set. Rolling snapshots do not prove Host-only targets, feasible capacity, physical transfers, first reuse, opportunity recall or native-relative GPU throughput and JCT.",
+  "native_patch_changed": false,
+  "workload_configuration_changed": false,
+  "observation_configuration_changed": false,
+  "gpu_performance_verified": false
+}

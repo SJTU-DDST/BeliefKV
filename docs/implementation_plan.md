@@ -2,6 +2,33 @@
 
 Status date: 2026-10-11.
 
+Correct the completed-history overrun path before the next pair. The final
+surviving point of a three-point historical prior is an error margin, not a
+certain completion. When its center has passed, use the existing operational
+survival CDF for probabilities and quantiles; retain history while the center
+still has support. Add no policy switch or timing threshold. Preserve the
+frozen model, workload, native patch, observations and live V22 collection.
+
+494 related checks pass. In the same V22 development replay,364 PREPARE
+decisions retain only the upper point, with just15 actual long waits;
+23 demotions in that condition have just1 actual long wait. Re-evaluating the
+old77 demotions selects54, of which48 remain open at least2s; independent
+first-tool precision is26/29 versus27/49 originally. Re-evaluating587 backups
+selects215 with168 actual long waits; independent first-tool precision is
+129/165 versus143/499 originally. Keep selection subsets distinct from
+opportunity recall, actual actions and end-to-end throughput.
+
+On all71 recorded demotions with valid P50, absolute error P50/P90 changes
+719/2828 to303/1713ms without changing that error denominator. Across18251
+tools with accepted active snapshots, per-tool near-end median absolute-error
+P90 falls713 to606ms, while P50 remains101-102ms. First500ms triggers with
+actual0-500ms lead increase11281 to11305; triggers over1s early fall609 to606.
+This is snapshot timing, not physical prefetch or GPU benefit. Keep the
+source-hashedv71_v22_tool_prepare_probability_20261011.json,
+v71_v22_tool_history_overrun_replay_20261011.json and
+v71_tool_history_overrun_validation_20261011.json. Register the committed
+fix for the genuinely waiting V23; continue the full performance objective.
+
 Keep the completed V22 waiting-agent audit in
 v70_v22_wait_offload_20261011.json. Tool PREPARE has587 burst decisions,
 3095 acknowledged node commands and27.719GB FULL; pressure demotion has

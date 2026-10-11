@@ -1,0 +1,1690 @@
+{
+  "scope": "Development replay of the same frozen forecasts without fitting. Later tool ends are labels only. Selection comparisons re-evaluate recorded old-policy actions; they do not replay allocator decisions, identify all feasible opportunities or prove GPU throughput gains. Rolling timing uses accepted snapshots while exactly one completed tool is active; first triggers are recorded snapshots, not continuous start times. Near-end errors take each tool's median over snapshots with actual remaining <=1000ms before aggregating tools. No actual transmission, Host-only copy, capacity, admission or reuse is implied.",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d",
+  "baseline_revision": "b854a91",
+  "baseline_source_sha256": "2f458f1ced6542571c0450db16aa1b344e974ba280db0fced85cdf66ba6eb0d2",
+  "optimized_source_sha256": "0bdd0e15a3c761605c48f9d9b3980a44b8ecdf47dd6e91aab41ddbc64ac26702",
+  "source_seals": [
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-10097/runtime_events.deepagents.jsonl",
+      "bytes": 1504387,
+      "records": 977,
+      "sha256": "e952ae3a98185ef2805dbb6b0142cff97f36fe9541060a5105eb0c73b45c6676"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-10554/runtime_events.deepagents.jsonl",
+      "bytes": 2863545,
+      "records": 2037,
+      "sha256": "6e3afe22f8d863b552c0168f58646626215f28af42ccf16e949ed37f42d0d6d3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-10880/runtime_events.deepagents.jsonl",
+      "bytes": 2687804,
+      "records": 2104,
+      "sha256": "837fd209a2b00406e58dc0de3e75403a78a40d580302eb998fa9b87f5d94e8df"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-10914/runtime_events.deepagents.jsonl",
+      "bytes": 1499864,
+      "records": 976,
+      "sha256": "cf3b0ab5bcd8a325b5afe807a2aaab217d42f9cb8e1f442532970f8cc83ce9ba"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-10973/runtime_events.deepagents.jsonl",
+      "bytes": 1114209,
+      "records": 751,
+      "sha256": "984a453c98b9a90e66fefb79ab9aa323767526a6a383eeeb5b15f8ec72ad6bdd"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-10999/runtime_events.deepagents.jsonl",
+      "bytes": 1027224,
+      "records": 672,
+      "sha256": "de6954f45da8d945e27d10e9210e76dd9a23865fdb34414ab1338718ba5dc249"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11066/runtime_events.deepagents.jsonl",
+      "bytes": 2015869,
+      "records": 1431,
+      "sha256": "3f294a0c171f3defd67b41860e42b54e5bf4908dc54b31a0bc99975aa4c915cb"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11087/runtime_events.deepagents.jsonl",
+      "bytes": 6425975,
+      "records": 5340,
+      "sha256": "455b88c1873414f58d8d2124432d81076a2d20e4bac67d1a6c3bfb99d97df229"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11095/runtime_events.deepagents.jsonl",
+      "bytes": 2199510,
+      "records": 1376,
+      "sha256": "276ce656b70bcac4dfec56c211ad7a772953a65502520d7ac22ffcaf87855c6b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11099/runtime_events.deepagents.jsonl",
+      "bytes": 483220,
+      "records": 339,
+      "sha256": "2e3ca74febd09bea176de8dede6e0e44588b2f63f5a473d09fdd94004763b945"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11119/runtime_events.deepagents.jsonl",
+      "bytes": 1733527,
+      "records": 1296,
+      "sha256": "d76a7a1f795c0283568bd6b3818a947dae41ddc7459cb2d7ba23f8cc168bfd88"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11133/runtime_events.deepagents.jsonl",
+      "bytes": 2208451,
+      "records": 1513,
+      "sha256": "1197e1660973cf65fd482f0535998d751045a72dac7ed9c417b1de6a786e4806"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11138/runtime_events.deepagents.jsonl",
+      "bytes": 4099193,
+      "records": 3089,
+      "sha256": "315e2b61c188ee10f108ff7607fbb7c478dd253285be7c6967d5539e53bdca63"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11141/runtime_events.deepagents.jsonl",
+      "bytes": 2249853,
+      "records": 1613,
+      "sha256": "8c5b5780a5414f4d365906feadf5f054f9155d5b4e933dc9716e88691ed56ff8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11149/runtime_events.deepagents.jsonl",
+      "bytes": 3815605,
+      "records": 2801,
+      "sha256": "6fe7333a035c9809dd27b986c8404735cd05211c4d509b2b76b0f30a8af3725b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11163/runtime_events.deepagents.jsonl",
+      "bytes": 632307,
+      "records": 446,
+      "sha256": "85a43ad814b938b78d9e681c2561f6ad77a75dd2a0a96fe491dc796682a46161"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11179/runtime_events.deepagents.jsonl",
+      "bytes": 1170525,
+      "records": 824,
+      "sha256": "916b81829b835aa8516bd139e3fb167c21c3c2cb04839a54d15cabb6ca083f71"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11206/runtime_events.deepagents.jsonl",
+      "bytes": 1434724,
+      "records": 982,
+      "sha256": "8f1f1cfdeb226c4c44804238bd0b6c30eb75543e3c34f405ece264d2a993d044"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11211/runtime_events.deepagents.jsonl",
+      "bytes": 4038480,
+      "records": 3228,
+      "sha256": "9b403f38f041a87b951c9e9ad9a3220ed787d5a7e996f383a28d6248a0d6aa06"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11239/runtime_events.deepagents.jsonl",
+      "bytes": 1840363,
+      "records": 1205,
+      "sha256": "5e82377733f82350869bd8b4f8a1d78b618c2f909d6c1a43eb328bfc1e8a8945"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11265/runtime_events.deepagents.jsonl",
+      "bytes": 10399386,
+      "records": 8545,
+      "sha256": "900bdd867119ee1a109a5c29d47f4aed70a0b1591167fec51d8a5e677fb35a99"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11276/runtime_events.deepagents.jsonl",
+      "bytes": 1052713,
+      "records": 686,
+      "sha256": "6f5b072a4e3e56d060635c1c074231d6284d20f36110e877a2bf310d3f4be68c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11292/runtime_events.deepagents.jsonl",
+      "bytes": 4184558,
+      "records": 2946,
+      "sha256": "b530a065edcd3db9973762f89fda8eee7649eefed35c2ff6e3c54a4a25fdcf2a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11299/runtime_events.deepagents.jsonl",
+      "bytes": 6171105,
+      "records": 4879,
+      "sha256": "99fb974e17fd82ac2e05e0170fd207c740fffa11a63d4b4a2fcbdd3866360595"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11333/runtime_events.deepagents.jsonl",
+      "bytes": 1646139,
+      "records": 1032,
+      "sha256": "4f4e66ab2401c52097093293de1d0374358f2804e4cf6b3ffe440163ebe04435"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11400/runtime_events.deepagents.jsonl",
+      "bytes": 2374299,
+      "records": 1712,
+      "sha256": "de1670c90cc3e082507f46c0b8002d838f54765414266bfcc49f50cf4e242ee2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11433/runtime_events.deepagents.jsonl",
+      "bytes": 4026123,
+      "records": 3033,
+      "sha256": "66246454909541d2861944e5cb8a76205f4ef876948589c676a498398fc1584a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11451/runtime_events.deepagents.jsonl",
+      "bytes": 2280376,
+      "records": 1467,
+      "sha256": "b767b2f600c4a60aa31ff159f9b4292fedf69429c21e0c62c63f0cde164f69c3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11477/runtime_events.deepagents.jsonl",
+      "bytes": 4886282,
+      "records": 3882,
+      "sha256": "3ab182cb088859fbd04be731c1e26f2be642005c882fd4ab301dbdf34182a210"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11490/runtime_events.deepagents.jsonl",
+      "bytes": 6165643,
+      "records": 4994,
+      "sha256": "de54063294c691fa15af42143b4b2401c209cbe060d29c28e5465032d34dcebd"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11532/runtime_events.deepagents.jsonl",
+      "bytes": 2214924,
+      "records": 1758,
+      "sha256": "936dd801a5fc6cbfe280ac9d2b705ccf850d3d3617e17129ee8b9544c7224ba1"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11551/runtime_events.deepagents.jsonl",
+      "bytes": 5774509,
+      "records": 4597,
+      "sha256": "a9d0f2c999b637c9850c9e80f7a9239ca06c8f51561f9d3cd693f8cd76b7dc47"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11555/runtime_events.deepagents.jsonl",
+      "bytes": 5579825,
+      "records": 4358,
+      "sha256": "98109a208d7f650f413ef3295e4cec5b07256fce87560a093d85bb7d3771eb08"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11603/runtime_events.deepagents.jsonl",
+      "bytes": 1810249,
+      "records": 1311,
+      "sha256": "eecffae1d5d998056beeec8ee84051b55ea991e2b76c5d0626fb5825ac5f922c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11728/runtime_events.deepagents.jsonl",
+      "bytes": 2866383,
+      "records": 2109,
+      "sha256": "fb2db5de1cf0bbff7afc1ca41d0a14e12ad8b8ab1d4d688b0ef905bdf3deff33"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11734/runtime_events.deepagents.jsonl",
+      "bytes": 8632410,
+      "records": 6945,
+      "sha256": "63510f4d360aa8e6ed09d7363c5fe1ed7a83a300da1fa65c19cbfb6db7dc9184"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11740/runtime_events.deepagents.jsonl",
+      "bytes": 2902516,
+      "records": 2231,
+      "sha256": "b02381056a30463ee8072199497e02c2fda548f5afaaa403cf906b73143a653a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11749/runtime_events.deepagents.jsonl",
+      "bytes": 2039576,
+      "records": 1415,
+      "sha256": "5b151d36bc9522a9e02da42c5af7811a5d4daa0236cdfdb9445bf3e67d4f0e18"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11790/runtime_events.deepagents.jsonl",
+      "bytes": 1459513,
+      "records": 988,
+      "sha256": "2dd84f668302030afe163698e7855d180230d05591bfb2b59014097a6d6d55b1"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11815/runtime_events.deepagents.jsonl",
+      "bytes": 2868154,
+      "records": 2028,
+      "sha256": "b10ff7431b737a80ff544e00570049ef55e02ed43c5ae12174b13863732a582d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11820/runtime_events.deepagents.jsonl",
+      "bytes": 2865859,
+      "records": 2330,
+      "sha256": "00a812ee733f303aa296a8fa06080b51fe590f56ea534ca4a62dfb15057666e3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11848/runtime_events.deepagents.jsonl",
+      "bytes": 1515236,
+      "records": 909,
+      "sha256": "d4338ca74e346c819266c08412e840a1557bb68557859dfde186824d4ec5a0ee"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11880/runtime_events.deepagents.jsonl",
+      "bytes": 1689516,
+      "records": 1168,
+      "sha256": "42a528e675acdf78f8b3e19d53c05d7ff57ad9976c102f6aed31e44c59034483"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11885/runtime_events.deepagents.jsonl",
+      "bytes": 5999722,
+      "records": 4148,
+      "sha256": "1f196cac6609bc5cac334900e8fb600eb9203e62692f86b40fb9950fac3a7628"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11951/runtime_events.deepagents.jsonl",
+      "bytes": 2133719,
+      "records": 1340,
+      "sha256": "b6f9b86e5010812311b4ab4bf8761cf5573a51e1772c4997212792dfd371bef3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11964/runtime_events.deepagents.jsonl",
+      "bytes": 7425565,
+      "records": 5793,
+      "sha256": "db3b2feba8525ab1921eb91c05f5f5e1f0308cc30aa66e97f50655867f094524"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-11999/runtime_events.deepagents.jsonl",
+      "bytes": 2329927,
+      "records": 1687,
+      "sha256": "e452549e9eed7906e17b4906d7a9a5a048d29ce812f3b371fdfcf83709a3c425"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12039/runtime_events.deepagents.jsonl",
+      "bytes": 2091549,
+      "records": 1549,
+      "sha256": "5b31c46a1ef3d02f21710604eec07a58330c4a51b33674cdf4947b0db673faf9"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12050/runtime_events.deepagents.jsonl",
+      "bytes": 1923089,
+      "records": 1357,
+      "sha256": "5a8dee597db308c415e7bff24aa7276f981e85b94931cca7cfd421693903061a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12125/runtime_events.deepagents.jsonl",
+      "bytes": 11179362,
+      "records": 9070,
+      "sha256": "e4d96adcf2f195a06f64643a8c4f04c6917f5e93a0c7acf90e305953ad9f5d26"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12143/runtime_events.deepagents.jsonl",
+      "bytes": 3121949,
+      "records": 2234,
+      "sha256": "29c9255df5acc21da7ffadb1797d44f10f0453a9aee3acc43bb8e3d4d072a48f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12155/runtime_events.deepagents.jsonl",
+      "bytes": 1618534,
+      "records": 1201,
+      "sha256": "4ad0d687248d887732cefa0e74de50669667777111da707ae64b671486c42978"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12193/runtime_events.deepagents.jsonl",
+      "bytes": 3500108,
+      "records": 2635,
+      "sha256": "5c9915897869f6d6fd13a248efbe2a974153db908868a87e2229804e2362e3f9"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12209/runtime_events.deepagents.jsonl",
+      "bytes": 5637551,
+      "records": 4527,
+      "sha256": "ec6fadb914ed0e3d70bdf46e8509010d34b139a3d17dd104ae2a67d4cb085d43"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12262/runtime_events.deepagents.jsonl",
+      "bytes": 3137777,
+      "records": 2373,
+      "sha256": "41b5e9d09f75073ae2e417d113b203a651492063ca4af7fce973e05aaaa1e617"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12273/runtime_events.deepagents.jsonl",
+      "bytes": 6293145,
+      "records": 4769,
+      "sha256": "64b7d2a93c4ff065ce129d856002cb5ec27b56ad1921d86d0df8aca59fca1e8f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12276/runtime_events.deepagents.jsonl",
+      "bytes": 2106910,
+      "records": 1602,
+      "sha256": "a6e81b8d50d735411ba3a9dbbae982dfa7524003848b9544b2b067cf9533466e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12304/runtime_events.deepagents.jsonl",
+      "bytes": 2484668,
+      "records": 1839,
+      "sha256": "730b8afe5b2d947a7644a706ccbfb7b6c9e0de5517dda5307cc762a16cd10809"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12308/runtime_events.deepagents.jsonl",
+      "bytes": 2189903,
+      "records": 1591,
+      "sha256": "5caa20111b34829e365496dd69b1cd9df2fe4ee91eba72574a52ce8ca7505d42"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12325/runtime_events.deepagents.jsonl",
+      "bytes": 3079452,
+      "records": 2395,
+      "sha256": "45a6c207f9b087626e2eef9e58fd2f28ef64b9f07a1a2525886520aca05268a6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12406/runtime_events.deepagents.jsonl",
+      "bytes": 4356854,
+      "records": 3542,
+      "sha256": "6892cea50f60f90c675482829a4e711b0323d5f90eb0b7089965e30b4555b0b4"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12419/runtime_events.deepagents.jsonl",
+      "bytes": 1658153,
+      "records": 1032,
+      "sha256": "19496430a8ae4b7b3f1b223cfcfd7313c1dac0fd1fe71047c334aa42024fc205"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12663/runtime_events.deepagents.jsonl",
+      "bytes": 5446080,
+      "records": 4309,
+      "sha256": "75aa4cb549f5216c084c38d708fac0a3741ae3335b420f713c14d786e7d165e3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12708/runtime_events.deepagents.jsonl",
+      "bytes": 2585457,
+      "records": 1881,
+      "sha256": "cd6d570b392e7e64d53733293527b5572686e856da9ea77a63993453d31f8570"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12713/runtime_events.deepagents.jsonl",
+      "bytes": 2618348,
+      "records": 1960,
+      "sha256": "fb74783f783ebfd7121308765b2b99a3cf2429c14bfeeece0a2f822ec75b96b4"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12741/runtime_events.deepagents.jsonl",
+      "bytes": 547110,
+      "records": 389,
+      "sha256": "5d47ef803f0b155cbd6dfab80b9acfa8fa7c8d5647c753045e91e96916bf4cad"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12754/runtime_events.deepagents.jsonl",
+      "bytes": 9693077,
+      "records": 7718,
+      "sha256": "e9502b11e995ccd1cc8a3b992fc0a33838319e8e7e5c71bfe71bb83e1714d3b0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12774/runtime_events.deepagents.jsonl",
+      "bytes": 2657166,
+      "records": 2028,
+      "sha256": "b517ce3ef0320660ad16f5ff1ceb4ba79efa3fd0b2594cf72cbae8979acf4f2c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12858/runtime_events.deepagents.jsonl",
+      "bytes": 9527437,
+      "records": 7772,
+      "sha256": "89791ca264af67588704e3f7c4fc9eee64cbba2338c451cd5e2cf863dfa4a04e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-12965/runtime_events.deepagents.jsonl",
+      "bytes": 4074957,
+      "records": 3042,
+      "sha256": "73f96f7650aec439d9b152e3449bc337441f0607ea90c8b83512b272361c8c39"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-13012/runtime_events.deepagents.jsonl",
+      "bytes": 10037898,
+      "records": 7993,
+      "sha256": "986fbcfc3d75266c98aaf9eb96ab4e3a732706049e70d0aa36ef306cc771264d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-13023/runtime_events.deepagents.jsonl",
+      "bytes": 2973396,
+      "records": 2239,
+      "sha256": "7f5c0de8e22fc343d50ed4f6d8a43cc465657cee4968916bd3376480d844230e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-13028/runtime_events.deepagents.jsonl",
+      "bytes": 5390726,
+      "records": 4307,
+      "sha256": "0f41703f116043e73b3d0daccc1bedd6fa53cecc8bbfaea6127d94baa810c73c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-13033/runtime_events.deepagents.jsonl",
+      "bytes": 8115972,
+      "records": 6315,
+      "sha256": "93a6e295881bf2f8b3f81d11816ec71fd29487ca333a6a1a73bcbf4d3d93c604"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-13089/runtime_events.deepagents.jsonl",
+      "bytes": 2665258,
+      "records": 1917,
+      "sha256": "53d07c09b513079d37a8a6f803c18653307f3449a44aa1aceb2e592d7a41305e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-13109/runtime_events.deepagents.jsonl",
+      "bytes": 1514347,
+      "records": 1086,
+      "sha256": "51ef0d03e30ee77cd8d568103c0178c7dea15c7a617ccb86d641ee71645e9368"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-13112/runtime_events.deepagents.jsonl",
+      "bytes": 13433644,
+      "records": 10749,
+      "sha256": "69fb9509fe6de3c175a8e6b4d583ecec2c52a945c6517598effb43c260d82ebd"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-13121/runtime_events.deepagents.jsonl",
+      "bytes": 11327942,
+      "records": 9224,
+      "sha256": "e06b2d810a4bdc50e7711652b0036fc0476678fcb2067587d4e33d107fa6dd7f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-13128/runtime_events.deepagents.jsonl",
+      "bytes": 3463792,
+      "records": 2713,
+      "sha256": "43ba66364a4be750388b9d25d8bf5099abf7699a872eb2164fc656d1e0aba3a4"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-13158/runtime_events.deepagents.jsonl",
+      "bytes": 2536850,
+      "records": 1813,
+      "sha256": "077bbee86c55731ff06257244f1fe551389616960fe569b8e868133cdd35385d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-13195/runtime_events.deepagents.jsonl",
+      "bytes": 1998703,
+      "records": 1265,
+      "sha256": "37330a015b82b0cb165fb5e6f7d5fb20c679c06a45f55fef10912b1f048fae47"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-13212/runtime_events.deepagents.jsonl",
+      "bytes": 1806960,
+      "records": 1158,
+      "sha256": "0cf7f6486ead051e8bbc90f7259db55666df176f9a6583d569865e693b1119fc"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-13279/runtime_events.deepagents.jsonl",
+      "bytes": 2882761,
+      "records": 2016,
+      "sha256": "2269600ecc4dfba29130ee76037e70e86f1e2c58d549a34f0343a127524fae10"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-13964/runtime_events.deepagents.jsonl",
+      "bytes": 5498216,
+      "records": 4367,
+      "sha256": "f9dba998351591e4dff131784c0446d043bd6b6bb608999d81412db15121da4a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-14349/runtime_events.deepagents.jsonl",
+      "bytes": 1357112,
+      "records": 972,
+      "sha256": "6923a3cd568a7034a1e4fda5b3b199317c100eda52709077d9abd73858577102"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-14500/runtime_events.deepagents.jsonl",
+      "bytes": 3683769,
+      "records": 2768,
+      "sha256": "5c6ce555e1b10eb344503858df7bf686457b6ffe8f7b38794231b0176b5c61d6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-14631/runtime_events.deepagents.jsonl",
+      "bytes": 2602372,
+      "records": 1969,
+      "sha256": "aff6585e80edc6d13c9a6f0eb012483d6a341514759ec8c89e208d4435ea1ba0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-15103/runtime_events.deepagents.jsonl",
+      "bytes": 607653,
+      "records": 400,
+      "sha256": "94ce2c9af896b82e4510357263ad9c4397115fcabc2c7d4fdb09152c24003b7d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-15315/runtime_events.deepagents.jsonl",
+      "bytes": 3444230,
+      "records": 2716,
+      "sha256": "63bf997db89ff139be89857362af0a0d0ae25cd7ebde6f60d2779de854a5e1cb"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-15368/runtime_events.deepagents.jsonl",
+      "bytes": 1994594,
+      "records": 1576,
+      "sha256": "598e9a2d61c0e51480e64f9ddde1ce3041be184f677ed968024f5b033eef5bb2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-16255/runtime_events.deepagents.jsonl",
+      "bytes": 1392896,
+      "records": 1029,
+      "sha256": "917dfad3fa09846ea819dc835879e7e77d2a62c592072a6febb8b50d015a0b86"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-16502/runtime_events.deepagents.jsonl",
+      "bytes": 2075333,
+      "records": 1520,
+      "sha256": "02bc9a3db51acace4d9dea421428cbe52e09d3af3e04920cc7b7f805ea793798"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-16667/runtime_events.deepagents.jsonl",
+      "bytes": 4964443,
+      "records": 3983,
+      "sha256": "dc757e8de5fb4398e96d35e64a91b342e9763f6e2e574b3d30e7aaf1be54f808"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-16877/runtime_events.deepagents.jsonl",
+      "bytes": 1619574,
+      "records": 1128,
+      "sha256": "8a3c6ed49b6f906def50ddf032930fb12c24eddd5b2a7b5bfbcf700084a86e5e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/django__django-16938/runtime_events.deepagents.jsonl",
+      "bytes": 4486900,
+      "records": 3594,
+      "sha256": "870548f5ca1aa05078e8169adc32fe9879c9fd9558122197b7eea270882d47ac"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/mwaskom__seaborn-3069/runtime_events.deepagents.jsonl",
+      "bytes": 3924255,
+      "records": 2882,
+      "sha256": "22262b0253e48e92776330890134bb4498499a492c7ca7a73b0ff3fdfb34d6cd"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/runtime_events.deepagents.jsonl",
+      "bytes": 4040693,
+      "records": 3106,
+      "sha256": "e242372fde2f309247d2f9b42ffaebf01bb5445ceb25a51a7efa6d32bd42e73d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pallets__flask-5014/runtime_events.deepagents.jsonl",
+      "bytes": 1184371,
+      "records": 840,
+      "sha256": "17218b2fb9c13ac0cf82b172ddc3a4e6e6f9aa1531593de7feaafbce7d7f24b2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/psf__requests-1142/runtime_events.deepagents.jsonl",
+      "bytes": 1085860,
+      "records": 731,
+      "sha256": "594914d945442c5c0a3ce7293926cd17c02772d11546a2d9f2610c585b44091d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/psf__requests-1724/runtime_events.deepagents.jsonl",
+      "bytes": 1636227,
+      "records": 1136,
+      "sha256": "4f4cba1a3a3f8f1dbd62bfecad4400f46da7521ac1f80ce063cd775966869245"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/psf__requests-1766/runtime_events.deepagents.jsonl",
+      "bytes": 1004118,
+      "records": 681,
+      "sha256": "32beae901993368b43307f355168ac4184828baa6ee31785796a9322be10d7ec"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/psf__requests-1921/runtime_events.deepagents.jsonl",
+      "bytes": 1943609,
+      "records": 1512,
+      "sha256": "2b056d4c56f31934fb04d3a94cc1155a71ae656c88d56edefeb74c6494e06e3a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/psf__requests-2317/runtime_events.deepagents.jsonl",
+      "bytes": 1632183,
+      "records": 1208,
+      "sha256": "92ad42a9f62540ac5bcf71720938e9a29241a4af248e3fdd13c86cc19dbddeb5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/psf__requests-2931/runtime_events.deepagents.jsonl",
+      "bytes": 3322741,
+      "records": 2350,
+      "sha256": "6e1f8aa109e837ac2464e1798b0b8cbc6a2b27c1edcccc5ba9425c25c4f9c0fa"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/psf__requests-5414/runtime_events.deepagents.jsonl",
+      "bytes": 1008116,
+      "records": 691,
+      "sha256": "074b914a7b07a0db245e177900fdbed215e8fe4aade2ab691041561c4bec7afd"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/psf__requests-6028/runtime_events.deepagents.jsonl",
+      "bytes": 1787845,
+      "records": 1317,
+      "sha256": "0ecc6e71600a48dd6cc8657e27036bca82a0b0a1cb132e19dbc27d2afb374210"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-2905/runtime_events.deepagents.jsonl",
+      "bytes": 4290773,
+      "records": 3473,
+      "sha256": "ae906d80ec4935156057d5598889a6e87162002046455f54159018ebf1b319c0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-3095/runtime_events.deepagents.jsonl",
+      "bytes": 6756437,
+      "records": 5160,
+      "sha256": "194b823d13068a8517dfc70fc56e8c6e6d1dc4064401d9fb2655e390547d40d8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-3151/runtime_events.deepagents.jsonl",
+      "bytes": 1834659,
+      "records": 1373,
+      "sha256": "165723db0d79f0f1b15ad37a0961eed7b093f25e6684274e0d7ee9e43f327399"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-3305/runtime_events.deepagents.jsonl",
+      "bytes": 1215839,
+      "records": 881,
+      "sha256": "076db7dfcdbedf2c6aba2255d19d06ebdbeebe5f16c74c1d0583bdbd8d246845"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-3677/runtime_events.deepagents.jsonl",
+      "bytes": 1415292,
+      "records": 1023,
+      "sha256": "83ad22e3ba8f07c7d62f008c598b9f2ef2fe72fd6f1e47b731d4af73a872b1c1"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-3993/runtime_events.deepagents.jsonl",
+      "bytes": 1272343,
+      "records": 826,
+      "sha256": "8bdd66fac1cd9b8f8f885f95be5b1d0c89fc370097c0cebe1461194a78a8f3f2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-4075/runtime_events.deepagents.jsonl",
+      "bytes": 1206026,
+      "records": 847,
+      "sha256": "ed8dc204ba6690bce75ae7428dabad63a111649b41c3300252dea00714cd45ca"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-4094/runtime_events.deepagents.jsonl",
+      "bytes": 3164114,
+      "records": 2460,
+      "sha256": "ff3637d0e451f3e3661668f7404bb8c8bb4c2a6ff001d906df6bdf297de459aa"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-4356/runtime_events.deepagents.jsonl",
+      "bytes": 1883533,
+      "records": 1358,
+      "sha256": "67b71af88bb0db33d5e0ee9ecc43e049fbe665526cb985f774970954d0742062"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-4629/runtime_events.deepagents.jsonl",
+      "bytes": 2204766,
+      "records": 1652,
+      "sha256": "0b95a81d7767ac407e5ade6552a03ce3f6037fe864b1c7104d713c6c0d0d73bf"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-4687/runtime_events.deepagents.jsonl",
+      "bytes": 2320830,
+      "records": 1839,
+      "sha256": "479938d25e1feb03c6bdb64f7ca4a446183259ed7be2a502621a524237513146"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-4966/runtime_events.deepagents.jsonl",
+      "bytes": 2562837,
+      "records": 1855,
+      "sha256": "00e89fbdadb6452b0318e804450b16cfe48eeb624701d6904e80d57dc3bf2b4e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-6461/runtime_events.deepagents.jsonl",
+      "bytes": 7692951,
+      "records": 6421,
+      "sha256": "00300a0989c110e862faf153ae8ad98b2a356eb3336efc9b45687444c7c0da24"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-6599/runtime_events.deepagents.jsonl",
+      "bytes": 3265394,
+      "records": 2500,
+      "sha256": "f61c420f4611544aac82fd4af95f8732e5946e4523645a6a5749549643e79c19"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-6721/runtime_events.deepagents.jsonl",
+      "bytes": 5374929,
+      "records": 4385,
+      "sha256": "082e3f03c264e7a2aea532301e37c438f8b7bc20890dcdac0687c42d2e4e8a0d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-6744/runtime_events.deepagents.jsonl",
+      "bytes": 1136179,
+      "records": 770,
+      "sha256": "f17902fc557eb9bd96b034271ed6c5929da4df27b77ef4967b13268f9a752466"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-6938/runtime_events.deepagents.jsonl",
+      "bytes": 2377214,
+      "records": 1788,
+      "sha256": "0f92c8f4a942264cd3130c2598c61ec560d58711c48bcca7326320a88456aedf"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-6992/runtime_events.deepagents.jsonl",
+      "bytes": 1783184,
+      "records": 1342,
+      "sha256": "1a5f0e3c89a54a7ae3edc6f23d0316309418de58ca07022d13246e08cf7ab693"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-7229/runtime_events.deepagents.jsonl",
+      "bytes": 4705279,
+      "records": 3735,
+      "sha256": "42d7b664272f5aba16a11545720b538d3028519eeb3e3ced8f4bc34bc32c0769"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-7233/runtime_events.deepagents.jsonl",
+      "bytes": 2250541,
+      "records": 1666,
+      "sha256": "40e927c18ce1963d76f75d18072b402ed28cd2891150e77a2a71c63e03a1d35f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-7393/runtime_events.deepagents.jsonl",
+      "bytes": 7090963,
+      "records": 5766,
+      "sha256": "c32f4752dc18470a67da3d2a6697254a21a599699389a3b2436eb41b69543f13"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pylint-dev__pylint-4551/runtime_events.deepagents.jsonl",
+      "bytes": 5448598,
+      "records": 4311,
+      "sha256": "285d4b719c1054cdffa6674e99b186552dda3ad845947e7e9d6c81111803b682"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pylint-dev__pylint-4604/runtime_events.deepagents.jsonl",
+      "bytes": 5624206,
+      "records": 4508,
+      "sha256": "f578ba104d8c8948d9d6187430f1a2ddcc906e69d9576abc105ce430fe8299b6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pylint-dev__pylint-4661/runtime_events.deepagents.jsonl",
+      "bytes": 3196092,
+      "records": 2510,
+      "sha256": "4d604a25d5b6752db37cee211040543e5b6090e9ed7386b2ebfef1d488750f04"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/runtime_events.deepagents.jsonl",
+      "bytes": 6722323,
+      "records": 5571,
+      "sha256": "b805b4576acca112783db42f0ae43a186dffb31902d6744e4e0e9d29d11f3f92"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pylint-dev__pylint-6386/runtime_events.deepagents.jsonl",
+      "bytes": 2781874,
+      "records": 2229,
+      "sha256": "8cbef0c824f9acec9f71caee4b1b73928b16aae9dc63b007420d6c93028413e8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/runtime_events.deepagents.jsonl",
+      "bytes": 2396832,
+      "records": 1763,
+      "sha256": "1b87cf1444a0c3d533c696f57926c6937677e652aa3d4f90f855faea791e3ca4"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pylint-dev__pylint-6903/runtime_events.deepagents.jsonl",
+      "bytes": 2194855,
+      "records": 1649,
+      "sha256": "c4e527a38058fde74de3532c71d050bc419d4556abd6d1455990a4e653de0bee"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pylint-dev__pylint-7080/runtime_events.deepagents.jsonl",
+      "bytes": 4319878,
+      "records": 3404,
+      "sha256": "73786d45dab3d3c5f30cf20869d734685ae93c81a07a2f511235f03fea402064"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pylint-dev__pylint-7277/runtime_events.deepagents.jsonl",
+      "bytes": 1573283,
+      "records": 1088,
+      "sha256": "a04a2ca8f465148628c5ca5ab2558c6b59651a61a5d88d0d2e89c5cf6bc1fb97"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pylint-dev__pylint-8898/runtime_events.deepagents.jsonl",
+      "bytes": 4358376,
+      "records": 3395,
+      "sha256": "214ad59a4fbf8d1a1158e831e22194b26f8344efe1fc13b58487a42accfdb7c2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-10051/runtime_events.deepagents.jsonl",
+      "bytes": 1408931,
+      "records": 975,
+      "sha256": "960002053785c8d9317d8aeb9f9d15145139febbbc75d926bccd3d86b04a9a59"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-10081/runtime_events.deepagents.jsonl",
+      "bytes": 4854935,
+      "records": 3866,
+      "sha256": "1752e1dbd57db39191bd6ac893fe8ca2506069ab185c24bcdecf8467fd6fffa3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-10356/runtime_events.deepagents.jsonl",
+      "bytes": 5915092,
+      "records": 4751,
+      "sha256": "650bf013e105f1e281cd38d99d4cb63e747194ad2f5bca65df376b67dd34fcc3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-5262/runtime_events.deepagents.jsonl",
+      "bytes": 3807138,
+      "records": 3006,
+      "sha256": "0204b0dfabecc305695adec30f117c208d9ebb6226e882d9757a38802d7b9c96"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-5631/runtime_events.deepagents.jsonl",
+      "bytes": 2350631,
+      "records": 1828,
+      "sha256": "3e588ec61f712267946a1dacd407965ac8aa1ba9516004976f0aa92c547f6e5d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-5787/runtime_events.deepagents.jsonl",
+      "bytes": 6129341,
+      "records": 4993,
+      "sha256": "3f436be03c97d60513e37887429734e3d4b2b71f49445b581d491e0d01b4be92"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-5809/runtime_events.deepagents.jsonl",
+      "bytes": 673896,
+      "records": 477,
+      "sha256": "a94ccb107a55e0c8f0816e2fff2a841ddf0c8863fa6257896c42d0430ff603fb"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-5840/runtime_events.deepagents.jsonl",
+      "bytes": 4643426,
+      "records": 3706,
+      "sha256": "0a7edd005ff721e030166c320aeb81560650a215218ccf96c3375b503b68986b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-6197/runtime_events.deepagents.jsonl",
+      "bytes": 4590969,
+      "records": 3421,
+      "sha256": "de1adb014451281e1126a7c326f75140f43c09de8a4192b82ec9b13557213519"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-6202/runtime_events.deepagents.jsonl",
+      "bytes": 6541872,
+      "records": 5302,
+      "sha256": "19782a7b5ea05ca7561876fa816ea789f180c2f3afdd358bf8d6e03a15d42de5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-7205/runtime_events.deepagents.jsonl",
+      "bytes": 2419674,
+      "records": 1800,
+      "sha256": "22e7e5cf177cf9d2080c44f033bd6b9176903b2e3864d4f20c341e9f368620d6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-7236/runtime_events.deepagents.jsonl",
+      "bytes": 6309981,
+      "records": 5127,
+      "sha256": "2aed8449d18e9334fa8f10fbdc9173676e288fdc5b87d2900260923b01875283"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-7324/runtime_events.deepagents.jsonl",
+      "bytes": 2184027,
+      "records": 1633,
+      "sha256": "5430f692f86148948d1355b8d08090ccbd628f42855d5591ae3ddb3981e35ecb"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-7432/runtime_events.deepagents.jsonl",
+      "bytes": 1380471,
+      "records": 990,
+      "sha256": "61877fbbce116600e8b2554b27dc74564b70a8a43b132d7ed0a322b37a09bf5d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-7490/runtime_events.deepagents.jsonl",
+      "bytes": 3029357,
+      "records": 2313,
+      "sha256": "779568081ef719bf85640b2b87f1aca7f1d8f8b2c377cb8a255503ea9f84cf0e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-7521/runtime_events.deepagents.jsonl",
+      "bytes": 7130215,
+      "records": 5702,
+      "sha256": "8950b8de37ae23245c864add0bb0f70e3777cb241c1cff0a3135e4c2fb10ffb3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-7571/runtime_events.deepagents.jsonl",
+      "bytes": 5922948,
+      "records": 4727,
+      "sha256": "efe8ed029a5d8463f01fa5052f5c819a5113d21888ed3a00fedcbd161ed53a88"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-7982/runtime_events.deepagents.jsonl",
+      "bytes": 8996480,
+      "records": 7029,
+      "sha256": "eea6b04911cbecc468a00ea68ac37915f548387c6afd8766cc25b508f9b2d050"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pytest-dev__pytest-8399/runtime_events.deepagents.jsonl",
+      "bytes": 3384241,
+      "records": 2736,
+      "sha256": "7773764e8a96c74e465275398d852767fab11fd1bc63148b44cb4038b0a9bbac"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/opportunities/admission_opportunities.jsonl",
+      "bytes": 1508987340,
+      "records": 496622,
+      "sha256": "f3c57bacab2d5ee6ab3f6ce0d7f3f4916f9ed1d46beccd99c6f17f30935ad45f"
+    }
+  ],
+  "skipped_snapshots": {
+    "no_single_complete_active_tool": 969,
+    "baseline_expired_hint": 20,
+    "optimized_expired_hint": 20
+  },
+  "summary": {
+    "baseline": {
+      "selected_decisions": {
+        "prepare": {
+          "all_recorded_decisions": {
+            "decision_records": 587,
+            "known_tool_boundary_records": 587,
+            "unknown_tool_boundary_records": 0,
+            "decisions_after_observed_tool_end": 63,
+            "unique_known_tools": 499,
+            "records_actual_remaining_ge_2000ms": 185,
+            "record_long_wait_precision": 0.3151618398637138,
+            "tools_first_decision_remaining_ge_2000ms": 143,
+            "first_decision_per_tool_long_wait_precision": 0.2865731462925852,
+            "live_same_invocation_forecast_records": 587,
+            "runtime_long_wait_predicate_true": 562,
+            "actual_remaining_ms": {
+              "count": 587,
+              "p50": 447.9718608856201,
+              "p90": 3252.4923242568925,
+              "max": 164403.55878257751
+            },
+            "remaining_p50_ms": {
+              "count": 574,
+              "p50": 2118.178656578064,
+              "p90": 3078.302011013031,
+              "max": 162775.35230445862
+            },
+            "p50_absolute_error_ms": {
+              "count": 574,
+              "p50": 1842.3499817848206,
+              "p90": 2991.4804416656502,
+              "max": 162367.7435274124
+            },
+            "tool_names": {
+              "execute": 495,
+              "glob": 4
+            },
+            "history_survival_groups": [
+              {
+                "support_detail": null,
+                "surviving_points": 0,
+                "records": 13,
+                "records_actual_remaining_ge_2000ms": 6
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 1,
+                "records": 269,
+                "records_actual_remaining_ge_2000ms": 15
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 2,
+                "records": 23,
+                "records_actual_remaining_ge_2000ms": 8
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 3,
+                "records": 44,
+                "records_actual_remaining_ge_2000ms": 37
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 1,
+                "records": 95,
+                "records_actual_remaining_ge_2000ms": 0
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 2,
+                "records": 26,
+                "records_actual_remaining_ge_2000ms": 23
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 3,
+                "records": 16,
+                "records_actual_remaining_ge_2000ms": 16
+              },
+              {
+                "support_detail": "same_input_completed",
+                "surviving_points": 3,
+                "records": 101,
+                "records_actual_remaining_ge_2000ms": 80
+              }
+            ],
+            "cdf_replay_on_selected_decisions": {
+              "records_selected": 13,
+              "records_selected_actual_remaining_ge_2000ms": 6,
+              "scope": "Subset of recorded decisions, not policy replay or opportunity recall."
+            }
+          },
+          "reconstructed_long_wait_subset": {
+            "decision_records": 562,
+            "known_tool_boundary_records": 562,
+            "unknown_tool_boundary_records": 0,
+            "decisions_after_observed_tool_end": 59,
+            "unique_known_tools": 480,
+            "records_actual_remaining_ge_2000ms": 183,
+            "record_long_wait_precision": 0.32562277580071175,
+            "tools_first_decision_remaining_ge_2000ms": 141,
+            "first_decision_per_tool_long_wait_precision": 0.29375,
+            "live_same_invocation_forecast_records": 562,
+            "runtime_long_wait_predicate_true": 562,
+            "actual_remaining_ms": {
+              "count": 562,
+              "p50": 440.17052602767944,
+              "p90": 3453.104239273074,
+              "max": 164403.55878257751
+            },
+            "remaining_p50_ms": {
+              "count": 549,
+              "p50": 2123.240393638611,
+              "p90": 3079.645985794067,
+              "max": 162775.35230445862
+            },
+            "p50_absolute_error_ms": {
+              "count": 549,
+              "p50": 1851.6018643379211,
+              "p90": 3008.7618782043455,
+              "max": 162367.7435274124
+            },
+            "tool_names": {
+              "execute": 476,
+              "glob": 4
+            },
+            "history_survival_groups": [
+              {
+                "support_detail": null,
+                "surviving_points": 0,
+                "records": 13,
+                "records_actual_remaining_ge_2000ms": 6
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 1,
+                "records": 252,
+                "records_actual_remaining_ge_2000ms": 15
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 2,
+                "records": 20,
+                "records_actual_remaining_ge_2000ms": 7
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 3,
+                "records": 44,
+                "records_actual_remaining_ge_2000ms": 37
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 1,
+                "records": 95,
+                "records_actual_remaining_ge_2000ms": 0
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 2,
+                "records": 25,
+                "records_actual_remaining_ge_2000ms": 23
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 3,
+                "records": 16,
+                "records_actual_remaining_ge_2000ms": 16
+              },
+              {
+                "support_detail": "same_input_completed",
+                "surviving_points": 3,
+                "records": 97,
+                "records_actual_remaining_ge_2000ms": 79
+              }
+            ],
+            "cdf_replay_on_selected_decisions": {
+              "records_selected": 13,
+              "records_selected_actual_remaining_ge_2000ms": 6,
+              "scope": "Subset of recorded decisions, not policy replay or opportunity recall."
+            }
+          }
+        },
+        "demotion": {
+          "all_recorded_decisions": {
+            "decision_records": 77,
+            "known_tool_boundary_records": 77,
+            "unknown_tool_boundary_records": 0,
+            "decisions_after_observed_tool_end": 4,
+            "unique_known_tools": 49,
+            "records_actual_remaining_ge_2000ms": 49,
+            "record_long_wait_precision": 0.6363636363636364,
+            "tools_first_decision_remaining_ge_2000ms": 27,
+            "first_decision_per_tool_long_wait_precision": 0.5510204081632653,
+            "live_same_invocation_forecast_records": 77,
+            "runtime_long_wait_predicate_true": 76,
+            "actual_remaining_ms": {
+              "count": 77,
+              "p50": 2727.6542205810547,
+              "p90": 4715.580891418457,
+              "max": 164016.0553340912
+            },
+            "remaining_p50_ms": {
+              "count": 71,
+              "p50": 3006.651186943054,
+              "p90": 3831.1739988327026,
+              "max": 162117.98462867737
+            },
+            "p50_absolute_error_ms": {
+              "count": 71,
+              "p50": 719.2365698814392,
+              "p90": 2827.5861053466797,
+              "max": 9789.214570999146
+            },
+            "tool_names": {
+              "glob": 4,
+              "execute": 45
+            },
+            "history_survival_groups": [
+              {
+                "support_detail": null,
+                "surviving_points": 0,
+                "records": 6,
+                "records_actual_remaining_ge_2000ms": 2
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 1,
+                "records": 14,
+                "records_actual_remaining_ge_2000ms": 1
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 3,
+                "records": 34,
+                "records_actual_remaining_ge_2000ms": 34
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 1,
+                "records": 9,
+                "records_actual_remaining_ge_2000ms": 0
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 2,
+                "records": 4,
+                "records_actual_remaining_ge_2000ms": 4
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 3,
+                "records": 3,
+                "records_actual_remaining_ge_2000ms": 2
+              },
+              {
+                "support_detail": "same_input_completed",
+                "surviving_points": 3,
+                "records": 7,
+                "records_actual_remaining_ge_2000ms": 6
+              }
+            ],
+            "cdf_replay_on_selected_decisions": {
+              "records_selected": 6,
+              "records_selected_actual_remaining_ge_2000ms": 2,
+              "scope": "Subset of recorded decisions, not policy replay or opportunity recall."
+            }
+          },
+          "reconstructed_long_wait_subset": {
+            "decision_records": 76,
+            "known_tool_boundary_records": 76,
+            "unknown_tool_boundary_records": 0,
+            "decisions_after_observed_tool_end": 4,
+            "unique_known_tools": 48,
+            "records_actual_remaining_ge_2000ms": 49,
+            "record_long_wait_precision": 0.6447368421052632,
+            "tools_first_decision_remaining_ge_2000ms": 27,
+            "first_decision_per_tool_long_wait_precision": 0.5625,
+            "live_same_invocation_forecast_records": 76,
+            "runtime_long_wait_predicate_true": 76,
+            "actual_remaining_ms": {
+              "count": 76,
+              "p50": 2766.263961791992,
+              "p90": 4717.869492530823,
+              "max": 164016.0553340912
+            },
+            "remaining_p50_ms": {
+              "count": 70,
+              "p50": 3037.9749054908752,
+              "p90": 3832.338283729553,
+              "max": 162117.98462867737
+            },
+            "p50_absolute_error_ms": {
+              "count": 70,
+              "p50": 694.4127328395844,
+              "p90": 2827.5861053466797,
+              "max": 9789.214570999146
+            },
+            "tool_names": {
+              "glob": 4,
+              "execute": 44
+            },
+            "history_survival_groups": [
+              {
+                "support_detail": null,
+                "surviving_points": 0,
+                "records": 6,
+                "records_actual_remaining_ge_2000ms": 2
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 1,
+                "records": 13,
+                "records_actual_remaining_ge_2000ms": 1
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 3,
+                "records": 34,
+                "records_actual_remaining_ge_2000ms": 34
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 1,
+                "records": 9,
+                "records_actual_remaining_ge_2000ms": 0
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 2,
+                "records": 4,
+                "records_actual_remaining_ge_2000ms": 4
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 3,
+                "records": 3,
+                "records_actual_remaining_ge_2000ms": 2
+              },
+              {
+                "support_detail": "same_input_completed",
+                "surviving_points": 3,
+                "records": 7,
+                "records_actual_remaining_ge_2000ms": 6
+              }
+            ],
+            "cdf_replay_on_selected_decisions": {
+              "records_selected": 6,
+              "records_selected_actual_remaining_ge_2000ms": 2,
+              "scope": "Subset of recorded decisions, not policy replay or opportunity recall."
+            }
+          }
+        }
+      },
+      "rolling_tool_timing": {
+        "independent_tools": 18251,
+        "tools_with_first_p50_le_500ms_snapshot": 13024,
+        "first_trigger_with_actual_0_to_500ms_lead": 11281,
+        "first_trigger_with_actual_500_to_1000ms_lead": 1134,
+        "first_trigger_more_than_1000ms_early": 609,
+        "first_trigger_after_observed_end": 0,
+        "first_trigger_actual_lead_ms": {
+          "count": 13024,
+          "p50": 232.58374977111816,
+          "p90": 584.0070439338687,
+          "max": 166154.43783950806
+        },
+        "tools_with_near_end_snapshots": 18161,
+        "tools_with_valid_near_end_p50": 18130,
+        "per_tool_near_end_median_absolute_error_ms": {
+          "count": 18130,
+          "p50": 100.95052003860474,
+          "p90": 713.4890122841249,
+          "max": 59393.245270543004
+        }
+      }
+    },
+    "optimized": {
+      "selected_decisions": {
+        "prepare": {
+          "all_recorded_decisions": {
+            "decision_records": 587,
+            "known_tool_boundary_records": 587,
+            "unknown_tool_boundary_records": 0,
+            "decisions_after_observed_tool_end": 63,
+            "unique_known_tools": 499,
+            "records_actual_remaining_ge_2000ms": 185,
+            "record_long_wait_precision": 0.3151618398637138,
+            "tools_first_decision_remaining_ge_2000ms": 143,
+            "first_decision_per_tool_long_wait_precision": 0.2865731462925852,
+            "live_same_invocation_forecast_records": 587,
+            "runtime_long_wait_predicate_true": 215,
+            "actual_remaining_ms": {
+              "count": 587,
+              "p50": 447.9718608856201,
+              "p90": 3252.4923242568925,
+              "max": 164403.55878257751
+            },
+            "remaining_p50_ms": {
+              "count": 574,
+              "p50": 722.6634107905729,
+              "p90": 2708.134694194797,
+              "max": 162775.35230445862
+            },
+            "p50_absolute_error_ms": {
+              "count": 574,
+              "p50": 403.6787817331947,
+              "p90": 886.8451880300194,
+              "max": 163945.5482518064
+            },
+            "tool_names": {
+              "execute": 495,
+              "glob": 4
+            },
+            "history_survival_groups": [
+              {
+                "support_detail": null,
+                "surviving_points": 0,
+                "records": 13,
+                "records_actual_remaining_ge_2000ms": 6
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 1,
+                "records": 269,
+                "records_actual_remaining_ge_2000ms": 15
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 2,
+                "records": 23,
+                "records_actual_remaining_ge_2000ms": 8
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 3,
+                "records": 44,
+                "records_actual_remaining_ge_2000ms": 37
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 1,
+                "records": 95,
+                "records_actual_remaining_ge_2000ms": 0
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 2,
+                "records": 26,
+                "records_actual_remaining_ge_2000ms": 23
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 3,
+                "records": 16,
+                "records_actual_remaining_ge_2000ms": 16
+              },
+              {
+                "support_detail": "same_input_completed",
+                "surviving_points": 3,
+                "records": 101,
+                "records_actual_remaining_ge_2000ms": 80
+              }
+            ],
+            "cdf_replay_on_selected_decisions": {
+              "records_selected": 13,
+              "records_selected_actual_remaining_ge_2000ms": 6,
+              "scope": "Subset of recorded decisions, not policy replay or opportunity recall."
+            }
+          },
+          "reconstructed_long_wait_subset": {
+            "decision_records": 215,
+            "known_tool_boundary_records": 215,
+            "unknown_tool_boundary_records": 0,
+            "decisions_after_observed_tool_end": 0,
+            "unique_known_tools": 165,
+            "records_actual_remaining_ge_2000ms": 168,
+            "record_long_wait_precision": 0.7813953488372093,
+            "tools_first_decision_remaining_ge_2000ms": 129,
+            "first_decision_per_tool_long_wait_precision": 0.7818181818181819,
+            "live_same_invocation_forecast_records": 215,
+            "runtime_long_wait_predicate_true": 215,
+            "actual_remaining_ms": {
+              "count": 215,
+              "p50": 2202.8940649032593,
+              "p90": 4453.846504974365,
+              "max": 164155.12711143494
+            },
+            "remaining_p50_ms": {
+              "count": 202,
+              "p50": 2186.6051535606384,
+              "p90": 3974.600701904297,
+              "max": 162775.35230445862
+            },
+            "p50_absolute_error_ms": {
+              "count": 202,
+              "p50": 192.15995979309082,
+              "p90": 1803.5301816463473,
+              "max": 9789.214570999146
+            },
+            "tool_names": {
+              "glob": 4,
+              "execute": 161
+            },
+            "history_survival_groups": [
+              {
+                "support_detail": null,
+                "surviving_points": 0,
+                "records": 13,
+                "records_actual_remaining_ge_2000ms": 6
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 2,
+                "records": 20,
+                "records_actual_remaining_ge_2000ms": 7
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 3,
+                "records": 44,
+                "records_actual_remaining_ge_2000ms": 37
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 2,
+                "records": 25,
+                "records_actual_remaining_ge_2000ms": 23
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 3,
+                "records": 16,
+                "records_actual_remaining_ge_2000ms": 16
+              },
+              {
+                "support_detail": "same_input_completed",
+                "surviving_points": 3,
+                "records": 97,
+                "records_actual_remaining_ge_2000ms": 79
+              }
+            ],
+            "cdf_replay_on_selected_decisions": {
+              "records_selected": 13,
+              "records_selected_actual_remaining_ge_2000ms": 6,
+              "scope": "Subset of recorded decisions, not policy replay or opportunity recall."
+            }
+          }
+        },
+        "demotion": {
+          "all_recorded_decisions": {
+            "decision_records": 77,
+            "known_tool_boundary_records": 77,
+            "unknown_tool_boundary_records": 0,
+            "decisions_after_observed_tool_end": 4,
+            "unique_known_tools": 49,
+            "records_actual_remaining_ge_2000ms": 49,
+            "record_long_wait_precision": 0.6363636363636364,
+            "tools_first_decision_remaining_ge_2000ms": 27,
+            "first_decision_per_tool_long_wait_precision": 0.5510204081632653,
+            "live_same_invocation_forecast_records": 77,
+            "runtime_long_wait_predicate_true": 54,
+            "actual_remaining_ms": {
+              "count": 77,
+              "p50": 2727.6542205810547,
+              "p90": 4715.580891418457,
+              "max": 164016.0553340912
+            },
+            "remaining_p50_ms": {
+              "count": 71,
+              "p50": 3006.651186943054,
+              "p90": 3831.1739988327026,
+              "max": 162117.98462867737
+            },
+            "p50_absolute_error_ms": {
+              "count": 71,
+              "p50": 303.14745330810547,
+              "p90": 1712.6890616113626,
+              "max": 9789.214570999146
+            },
+            "tool_names": {
+              "glob": 4,
+              "execute": 45
+            },
+            "history_survival_groups": [
+              {
+                "support_detail": null,
+                "surviving_points": 0,
+                "records": 6,
+                "records_actual_remaining_ge_2000ms": 2
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 1,
+                "records": 14,
+                "records_actual_remaining_ge_2000ms": 1
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 3,
+                "records": 34,
+                "records_actual_remaining_ge_2000ms": 34
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 1,
+                "records": 9,
+                "records_actual_remaining_ge_2000ms": 0
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 2,
+                "records": 4,
+                "records_actual_remaining_ge_2000ms": 4
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 3,
+                "records": 3,
+                "records_actual_remaining_ge_2000ms": 2
+              },
+              {
+                "support_detail": "same_input_completed",
+                "surviving_points": 3,
+                "records": 7,
+                "records_actual_remaining_ge_2000ms": 6
+              }
+            ],
+            "cdf_replay_on_selected_decisions": {
+              "records_selected": 6,
+              "records_selected_actual_remaining_ge_2000ms": 2,
+              "scope": "Subset of recorded decisions, not policy replay or opportunity recall."
+            }
+          },
+          "reconstructed_long_wait_subset": {
+            "decision_records": 54,
+            "known_tool_boundary_records": 54,
+            "unknown_tool_boundary_records": 0,
+            "decisions_after_observed_tool_end": 0,
+            "unique_known_tools": 29,
+            "records_actual_remaining_ge_2000ms": 48,
+            "record_long_wait_precision": 0.8888888888888888,
+            "tools_first_decision_remaining_ge_2000ms": 26,
+            "first_decision_per_tool_long_wait_precision": 0.896551724137931,
+            "live_same_invocation_forecast_records": 54,
+            "runtime_long_wait_predicate_true": 54,
+            "actual_remaining_ms": {
+              "count": 54,
+              "p50": 3188.2583718299866,
+              "p90": 4991.056554603578,
+              "max": 164016.0553340912
+            },
+            "remaining_p50_ms": {
+              "count": 48,
+              "p50": 3421.1424236297607,
+              "p90": 3866.548112106323,
+              "max": 162117.98462867737
+            },
+            "p50_absolute_error_ms": {
+              "count": 48,
+              "p50": 278.9969663619995,
+              "p90": 1873.9827032089242,
+              "max": 9789.214570999146
+            },
+            "tool_names": {
+              "glob": 4,
+              "execute": 25
+            },
+            "history_survival_groups": [
+              {
+                "support_detail": null,
+                "surviving_points": 0,
+                "records": 6,
+                "records_actual_remaining_ge_2000ms": 2
+              },
+              {
+                "support_detail": "completed_project_command",
+                "surviving_points": 3,
+                "records": 34,
+                "records_actual_remaining_ge_2000ms": 34
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 2,
+                "records": 4,
+                "records_actual_remaining_ge_2000ms": 4
+              },
+              {
+                "support_detail": "same_failed_input_completed",
+                "surviving_points": 3,
+                "records": 3,
+                "records_actual_remaining_ge_2000ms": 2
+              },
+              {
+                "support_detail": "same_input_completed",
+                "surviving_points": 3,
+                "records": 7,
+                "records_actual_remaining_ge_2000ms": 6
+              }
+            ],
+            "cdf_replay_on_selected_decisions": {
+              "records_selected": 6,
+              "records_selected_actual_remaining_ge_2000ms": 2,
+              "scope": "Subset of recorded decisions, not policy replay or opportunity recall."
+            }
+          }
+        }
+      },
+      "rolling_tool_timing": {
+        "independent_tools": 18251,
+        "tools_with_first_p50_le_500ms_snapshot": 13052,
+        "first_trigger_with_actual_0_to_500ms_lead": 11305,
+        "first_trigger_with_actual_500_to_1000ms_lead": 1141,
+        "first_trigger_more_than_1000ms_early": 606,
+        "first_trigger_after_observed_end": 0,
+        "first_trigger_actual_lead_ms": {
+          "count": 13052,
+          "p50": 233.18558263778687,
+          "p90": 584.2901699066161,
+          "max": 166154.43783950806
+        },
+        "tools_with_near_end_snapshots": 18161,
+        "tools_with_valid_near_end_p50": 18132,
+        "per_tool_near_end_median_absolute_error_ms": {
+          "count": 18132,
+          "p50": 101.50657200813293,
+          "p90": 605.5688517648689,
+          "max": 59393.245270543004
+        }
+      }
+    }
+  }
+}
