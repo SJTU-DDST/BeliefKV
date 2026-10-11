@@ -1,0 +1,307 @@
+{
+  "background_writer_timing": {
+    "categories": {
+      "action_ack:beliefkv_physical_action_ack": {
+        "max_sample_cpu_ms": 0.149322,
+        "max_sample_wall_ms": 5.636038,
+        "mean_sample_cpu_ms": 0.04104988106796116,
+        "mean_sample_wall_ms": 0.28517567475728156,
+        "records_seen": 26323,
+        "sampled_cpu_ms": 16.912551,
+        "sampled_wall_ms": 117.492378,
+        "samples": 412
+      },
+      "action_use:beliefkv_prefetch_first_service": {
+        "max_sample_cpu_ms": 0.192398,
+        "max_sample_wall_ms": 5.150241,
+        "mean_sample_cpu_ms": 0.058134569553805776,
+        "mean_sample_wall_ms": 0.09707134645669292,
+        "records_seen": 24336,
+        "sampled_cpu_ms": 22.149271,
+        "sampled_wall_ms": 36.984183,
+        "samples": 381
+      },
+      "action_use:beliefkv_prefetch_mamba_forward_completed": {
+        "max_sample_cpu_ms": 0.131612,
+        "max_sample_wall_ms": 1.070013,
+        "mean_sample_cpu_ms": 0.07988276190476191,
+        "mean_sample_wall_ms": 0.3045684285714286,
+        "records_seen": 1344,
+        "sampled_cpu_ms": 1.677538,
+        "sampled_wall_ms": 6.395937,
+        "samples": 21
+      },
+      "audit:gpu_restore_dependency_wait": {
+        "max_sample_cpu_ms": 0.271609,
+        "max_sample_wall_ms": 0.271455,
+        "mean_sample_cpu_ms": 0.223983,
+        "mean_sample_wall_ms": 0.22389575,
+        "records_seen": 511,
+        "sampled_cpu_ms": 1.791864,
+        "sampled_wall_ms": 1.791166,
+        "samples": 8
+      },
+      "audit:gpu_service_sample": {
+        "max_sample_cpu_ms": 1.289384,
+        "max_sample_wall_ms": 14.185702,
+        "mean_sample_cpu_ms": 0.36254143498349833,
+        "mean_sample_wall_ms": 0.704135494389439,
+        "records_seen": 193895,
+        "sampled_cpu_ms": 1098.500548,
+        "sampled_wall_ms": 2133.530548,
+        "samples": 3030
+      },
+      "events:record": {
+        "max_sample_cpu_ms": 0.856647,
+        "max_sample_wall_ms": 1.179688,
+        "mean_sample_cpu_ms": 0.07221385396039603,
+        "mean_sample_wall_ms": 0.07662252722772278,
+        "records_seen": 77521,
+        "sampled_cpu_ms": 87.523191,
+        "sampled_wall_ms": 92.866503,
+        "samples": 1212
+      },
+      "eviction_attribution:context_prefix_probe": {
+        "max_sample_cpu_ms": 1.204607,
+        "max_sample_wall_ms": 1.20527,
+        "mean_sample_cpu_ms": 0.3567837920792079,
+        "mean_sample_wall_ms": 0.3586321699669967,
+        "records_seen": 38772,
+        "sampled_cpu_ms": 216.210978,
+        "sampled_wall_ms": 217.331095,
+        "samples": 606
+      },
+      "eviction_attribution:host_block_eviction": {
+        "max_sample_cpu_ms": 2.661263,
+        "max_sample_wall_ms": 11.440104,
+        "mean_sample_cpu_ms": 1.0295458164196123,
+        "mean_sample_wall_ms": 1.2348032770809578,
+        "records_seen": 56119,
+        "sampled_cpu_ms": 902.911681,
+        "sampled_wall_ms": 1082.922474,
+        "samples": 877
+      },
+      "eviction_attribution:request_probe": {
+        "max_sample_cpu_ms": 4.195004,
+        "max_sample_wall_ms": 4.884847,
+        "mean_sample_cpu_ms": 1.5033262486583185,
+        "mean_sample_wall_ms": 1.76566785509839,
+        "records_seen": 35751,
+        "sampled_cpu_ms": 840.359373,
+        "sampled_wall_ms": 987.008331,
+        "samples": 559
+      },
+      "eviction_attribution:served_context_prefix": {
+        "max_sample_cpu_ms": 0.291274,
+        "max_sample_wall_ms": 0.291833,
+        "mean_sample_cpu_ms": 0.08509487458745875,
+        "mean_sample_wall_ms": 0.08502741749174918,
+        "records_seen": 38749,
+        "sampled_cpu_ms": 51.567494,
+        "sampled_wall_ms": 51.526615,
+        "samples": 606
+      },
+      "host_pool:host_pool_eviction": {
+        "max_sample_cpu_ms": 0.093046,
+        "max_sample_wall_ms": 0.097915,
+        "mean_sample_cpu_ms": 0.0267677343358396,
+        "mean_sample_wall_ms": 0.026742761904761905,
+        "records_seen": 25517,
+        "sampled_cpu_ms": 10.680326,
+        "sampled_wall_ms": 10.670362,
+        "samples": 399
+      },
+      "host_pool:host_pool_transfer_ack": {
+        "max_sample_cpu_ms": 0.10479,
+        "max_sample_wall_ms": 4.965525,
+        "mean_sample_cpu_ms": 0.022829675141242938,
+        "mean_sample_wall_ms": 0.027789435969868173,
+        "records_seen": 67946,
+        "sampled_cpu_ms": 24.245115,
+        "sampled_wall_ms": 29.512381,
+        "samples": 1062
+      },
+      "host_pool:host_pool_usage": {
+        "max_sample_cpu_ms": 0.114358,
+        "max_sample_wall_ms": 0.114737,
+        "mean_sample_cpu_ms": 0.05229903370786517,
+        "mean_sample_wall_ms": 0.05225284269662921,
+        "records_seen": 5645,
+        "sampled_cpu_ms": 4.654614,
+        "sampled_wall_ms": 4.650503,
+        "samples": 89
+      },
+      "transfer:transfer_telemetry": {
+        "max_sample_cpu_ms": 0.411046,
+        "max_sample_wall_ms": 6.125376,
+        "mean_sample_cpu_ms": 0.06119410263653484,
+        "mean_sample_wall_ms": 0.12759933709981167,
+        "records_seen": 67946,
+        "sampled_cpu_ms": 64.988137,
+        "sampled_wall_ms": 135.510496,
+        "samples": 1062
+      }
+    },
+    "cpu_clock": "thread_time_ns",
+    "sample_every": 64,
+    "schema_version": 1,
+    "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+    "snapshot_ts_ms": 1791724733416.7114,
+    "wall_clock": "perf_counter_ns"
+  },
+  "collection_mode": "admission_observation",
+  "context_prefix_reuse_evidence": {
+    "counts": {
+      "history_capacity_expirations": 563,
+      "new_or_changed_prompt_tokens": 18193420,
+      "previously_served_common_prefix_tokens": 780763145,
+      "previously_served_prefix_recompute_proxy_tokens": 1216848,
+      "request_probes": 38772,
+      "requests_with_prefix_recompute_proxy": 36478,
+      "with_prior_served_prompt": 37184,
+      "without_prior_served_prompt": 1588
+    },
+    "semantics": "Previously served same-session input-prefix loss, not newly appended input or a per-layer FULL/Mamba recomputation count.",
+    "tracked_context_count": 1024,
+    "tracking_limit": 1024
+  },
+  "dropped_records": 0,
+  "failed_records": 0,
+  "gpu_restore_wait_probe": {
+    "counts": {
+      "completed_samples": 511,
+      "duplicate_or_captured_wait": 24,
+      "eligible_batches": 8168,
+      "sampled_batches": 511
+    },
+    "pending_samples": 0,
+    "queue_limit": 32,
+    "sampling_interval": 16
+  },
+  "host_block_eviction_attribution": {
+    "available": true,
+    "counts": {
+      "expired_without_reaccess": 11019,
+      "full_device_hit": 2080,
+      "full_evictions": 38859,
+      "full_host_hit": 575,
+      "full_recompute": 72,
+      "mamba_evictions": 17260,
+      "mamba_prefix_revisited_hit_location_unknown": 9431,
+      "request_probes": 35751
+    },
+    "evicted_units_by_pool": {
+      "full": 13877297,
+      "full_expired": 2823985,
+      "mamba": 17260,
+      "mamba_expired": 5254
+    },
+    "full_reaccess_semantics": "exact prefix match plus request device/host cached-token intervals; remaining evicted FULL interval is attributed to recomputation",
+    "identity_semantics": "run-keyed HMAC over exact cache namespace and radix token prefix; raw token IDs are not written",
+    "mamba_reaccess_semantics": "exact prefix revisit is observable, but native telemetry does not expose the Mamba hit location per node",
+    "pending_blocks_by_pool": {
+      "full": 30193,
+      "mamba": 2575
+    },
+    "pending_latest_evicted_units_by_pool": {
+      "full": 9884881,
+      "mamba": 2575
+    },
+    "probe_prefix_length_overflow": 0,
+    "recomputed_full_units": 68203,
+    "reused_full_units": 1034098
+  },
+  "host_pool_evidence": {
+    "full": {
+      "bytes_per_unit": 20480,
+      "capacity_units": 7812501,
+      "d2h_ack_units": 21689538,
+      "evicted_bytes": 211042979840,
+      "evicted_units": 10304833,
+      "eviction_calls": 10256,
+      "h2d_ack_units": 65179235,
+      "h2d_units_after_first_host_eviction": 65179235,
+      "high_water": {
+        "used_bytes": 160000020480,
+        "used_units": 7812501
+      }
+    },
+    "mamba": {
+      "bytes_per_unit": 64389120,
+      "capacity_units": 622,
+      "d2h_ack_units": 17882,
+      "evicted_bytes": 1036085329920,
+      "evicted_units": 16091,
+      "eviction_calls": 16091,
+      "h2d_ack_units": 20327,
+      "h2d_units_after_first_host_eviction": 20327,
+      "high_water": {
+        "used_bytes": 40050032640,
+        "used_units": 622
+      }
+    }
+  },
+  "pending_batch_count": 1,
+  "pending_request_count": 23,
+  "record_counts": {
+    "action_ack": 26323,
+    "action_use": 25680,
+    "audit": 199950,
+    "events": 77521,
+    "eviction_attribution": 169391,
+    "host_pool": 99108,
+    "transfer": 67946
+  },
+  "request_cache_evidence": {
+    "after_first_full_host_eviction": {
+      "cached_tokens_device": 617338641,
+      "cached_tokens_host": 107715967,
+      "mamba_host_hit_slots": 7818,
+      "prompt_tokens": 759097989,
+      "request_count": 33870,
+      "requests_with_full_host_hit": 7818,
+      "requests_with_mamba_host_hit": 7818,
+      "uncached_prompt_tokens": 34043381
+    },
+    "after_first_host_eviction": {
+      "cached_tokens_device": 635773619,
+      "cached_tokens_host": 117600894,
+      "mamba_host_hit_slots": 9255,
+      "prompt_tokens": 788415960,
+      "request_count": 35511,
+      "requests_with_full_host_hit": 9255,
+      "requests_with_mamba_host_hit": 9255,
+      "uncached_prompt_tokens": 35041447
+    },
+    "after_first_mamba_host_eviction": {
+      "cached_tokens_device": 635773619,
+      "cached_tokens_host": 117600894,
+      "mamba_host_hit_slots": 9255,
+      "prompt_tokens": 788415960,
+      "request_count": 35511,
+      "requests_with_full_host_hit": 9255,
+      "requests_with_mamba_host_hit": 9255,
+      "uncached_prompt_tokens": 35041447
+    },
+    "all": {
+      "cached_tokens_device": 665496760,
+      "cached_tokens_host": 118992010,
+      "mamba_host_hit_slots": 9479,
+      "prompt_tokens": 821968973,
+      "request_count": 38772,
+      "requests_with_full_host_hit": 9479,
+      "requests_with_mamba_host_hit": 9479,
+      "uncached_prompt_tokens": 37480203
+    }
+  },
+  "request_cache_evidence_semantics": {
+    "after_eviction": "pool-level request hits and uncached prompt tokens after the first eviction; use eviction_attribution.jsonl for node-level FULL reaccess attribution",
+    "full_host_hit": "cached_tokens_host input-token count",
+    "mamba_host_hit": "mamba_host_hit_length checkpoint-slot count; not tokens"
+  },
+  "schema_version": 1,
+  "snapshot_ts_ms": 1791724733416.7063,
+  "source": "native_sglang_v0520",
+  "writer_error": null,
+  "writer_queue_depth": 0
+}

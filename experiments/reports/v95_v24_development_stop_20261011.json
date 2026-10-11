@@ -1,0 +1,803 @@
+{
+  "schema_version": 1,
+  "status": "development_interrupted",
+  "started_at_local": "2026-10-11T21:18:54.166590+08:00",
+  "reason": "User authorizes early developer restart after important optimization; deploy incremental telemetry status publication and native prefill-work measurement without waiting for old native.",
+  "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v24",
+  "collection_commit": "56ff3c26768ac844f9c90f994f5ae5a09f8ec90f",
+  "frozen_plan_sha256": "b2f77d05913ff29c3755337a6006e6b0aa5db026628f991cc1046bf859facab7",
+  "pids": {
+    "queued_v25": 2951765,
+    "coordinator": 1418070,
+    "pair_driver": 1495196,
+    "regime_driver": 1495221,
+    "client": 1497799,
+    "server": 1495239,
+    "scheduler": 1495619
+  },
+  "process_identities_before_stop": {
+    "queued_v25": [
+      "S",
+      1,
+      "589435807"
+    ],
+    "coordinator": [
+      "S",
+      1,
+      "588699021"
+    ],
+    "pair_driver": [
+      "S",
+      1418070,
+      "588895187"
+    ],
+    "regime_driver": [
+      "S",
+      1495196,
+      "588895255"
+    ],
+    "client": [
+      "S",
+      1495221,
+      "588916758"
+    ],
+    "server": [
+      "S",
+      1495221,
+      "588895268"
+    ],
+    "scheduler": [
+      "R",
+      1495239,
+      "588896545"
+    ]
+  },
+  "written_outcomes_before_stop": {
+    "completed": 132
+  },
+  "written_results_before_stop": [
+    {
+      "instance_id": "django__django-16938",
+      "outcome": "completed",
+      "duration_seconds": 3448.388660075143
+    },
+    {
+      "instance_id": "django__django-11603",
+      "outcome": "completed",
+      "duration_seconds": 954.9906452065334
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5262",
+      "outcome": "completed",
+      "duration_seconds": 2844.471367011778
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5631",
+      "outcome": "completed",
+      "duration_seconds": 2387.6732109049335
+    },
+    {
+      "instance_id": "django__django-16502",
+      "outcome": "completed",
+      "duration_seconds": 3388.299199502915
+    },
+    {
+      "instance_id": "django__django-11400",
+      "outcome": "completed",
+      "duration_seconds": 981.0280423266813
+    },
+    {
+      "instance_id": "django__django-11551",
+      "outcome": "completed",
+      "duration_seconds": 1571.7422288618982
+    },
+    {
+      "instance_id": "django__django-11066",
+      "outcome": "completed",
+      "duration_seconds": 2581.9950889581814
+    },
+    {
+      "instance_id": "psf__requests-6028",
+      "outcome": "completed",
+      "duration_seconds": 2118.9719917215407
+    },
+    {
+      "instance_id": "pydata__xarray-3095",
+      "outcome": "completed",
+      "duration_seconds": 2400.6506313458085
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5840",
+      "outcome": "completed",
+      "duration_seconds": 1748.4613626096398
+    },
+    {
+      "instance_id": "mwaskom__seaborn-3069",
+      "outcome": "completed",
+      "duration_seconds": 4040.496408178471
+    },
+    {
+      "instance_id": "django__django-14349",
+      "outcome": "completed",
+      "duration_seconds": 921.9163661645725
+    },
+    {
+      "instance_id": "mwaskom__seaborn-3187",
+      "outcome": "completed",
+      "duration_seconds": 4677.792036452331
+    },
+    {
+      "instance_id": "django__django-13279",
+      "outcome": "completed",
+      "duration_seconds": 837.1768838549033
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4970",
+      "outcome": "completed",
+      "duration_seconds": 1885.4711365699768
+    },
+    {
+      "instance_id": "django__django-16667",
+      "outcome": "completed",
+      "duration_seconds": 1530.5047868657857
+    },
+    {
+      "instance_id": "django__django-11211",
+      "outcome": "completed",
+      "duration_seconds": 3664.0849405666813
+    },
+    {
+      "instance_id": "django__django-11333",
+      "outcome": "completed",
+      "duration_seconds": 2877.4282802511007
+    },
+    {
+      "instance_id": "django__django-11099",
+      "outcome": "completed",
+      "duration_seconds": 1289.2474624812603
+    },
+    {
+      "instance_id": "django__django-12276",
+      "outcome": "completed",
+      "duration_seconds": 639.1273516854271
+    },
+    {
+      "instance_id": "django__django-12708",
+      "outcome": "completed",
+      "duration_seconds": 1069.136734080501
+    },
+    {
+      "instance_id": "django__django-11087",
+      "outcome": "completed",
+      "duration_seconds": 3123.6318316925317
+    },
+    {
+      "instance_id": "django__django-12713",
+      "outcome": "completed",
+      "duration_seconds": 939.2044681534171
+    },
+    {
+      "instance_id": "pydata__xarray-6744",
+      "outcome": "completed",
+      "duration_seconds": 2979.3487393492833
+    },
+    {
+      "instance_id": "django__django-11276",
+      "outcome": "completed",
+      "duration_seconds": 3296.759289360605
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6386",
+      "outcome": "completed",
+      "duration_seconds": 1268.603041834198
+    },
+    {
+      "instance_id": "django__django-12262",
+      "outcome": "completed",
+      "duration_seconds": 1373.4977594865486
+    },
+    {
+      "instance_id": "django__django-10097",
+      "outcome": "completed",
+      "duration_seconds": 3544.6091640712693
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7521",
+      "outcome": "completed",
+      "duration_seconds": 1974.444948816672
+    },
+    {
+      "instance_id": "django__django-13128",
+      "outcome": "completed",
+      "duration_seconds": 1828.549173654057
+    },
+    {
+      "instance_id": "pydata__xarray-2905",
+      "outcome": "completed",
+      "duration_seconds": 2755.785412395373
+    },
+    {
+      "instance_id": "pydata__xarray-7393",
+      "outcome": "completed",
+      "duration_seconds": 2307.2032425459474
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10356",
+      "outcome": "completed",
+      "duration_seconds": 4380.0948358858
+    },
+    {
+      "instance_id": "pydata__xarray-6461",
+      "outcome": "completed",
+      "duration_seconds": 2331.4106548288837
+    },
+    {
+      "instance_id": "pydata__xarray-4966",
+      "outcome": "completed",
+      "duration_seconds": 4145.452424027026
+    },
+    {
+      "instance_id": "django__django-10914",
+      "outcome": "completed",
+      "duration_seconds": 1161.1560979112983
+    },
+    {
+      "instance_id": "django__django-11734",
+      "outcome": "completed",
+      "duration_seconds": 5344.414970667101
+    },
+    {
+      "instance_id": "pydata__xarray-3993",
+      "outcome": "completed",
+      "duration_seconds": 1944.937347526662
+    },
+    {
+      "instance_id": "psf__requests-2931",
+      "outcome": "completed",
+      "duration_seconds": 1924.832807420753
+    },
+    {
+      "instance_id": "django__django-15315",
+      "outcome": "completed",
+      "duration_seconds": 2358.1151878274977
+    },
+    {
+      "instance_id": "pydata__xarray-3677",
+      "outcome": "completed",
+      "duration_seconds": 1611.9742640005425
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10051",
+      "outcome": "completed",
+      "duration_seconds": 1399.8920253254473
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5809",
+      "outcome": "completed",
+      "duration_seconds": 613.2916757492349
+    },
+    {
+      "instance_id": "django__django-13121",
+      "outcome": "completed",
+      "duration_seconds": 2195.9456316251308
+    },
+    {
+      "instance_id": "psf__requests-2317",
+      "outcome": "completed",
+      "duration_seconds": 2701.8557973755524
+    },
+    {
+      "instance_id": "django__django-12308",
+      "outcome": "completed",
+      "duration_seconds": 1658.0912274606526
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10081",
+      "outcome": "completed",
+      "duration_seconds": 3336.154457117431
+    },
+    {
+      "instance_id": "psf__requests-1724",
+      "outcome": "completed",
+      "duration_seconds": 2262.20474947989
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6903",
+      "outcome": "completed",
+      "duration_seconds": 5126.918334607035
+    },
+    {
+      "instance_id": "psf__requests-1142",
+      "outcome": "completed",
+      "duration_seconds": 1257.6527046104893
+    },
+    {
+      "instance_id": "django__django-11477",
+      "outcome": "completed",
+      "duration_seconds": 3362.5135764507577
+    },
+    {
+      "instance_id": "django__django-12754",
+      "outcome": "completed",
+      "duration_seconds": 4434.577808760107
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7236",
+      "outcome": "completed",
+      "duration_seconds": 3354.2533846264705
+    },
+    {
+      "instance_id": "django__django-12143",
+      "outcome": "completed",
+      "duration_seconds": 1059.3081098729745
+    },
+    {
+      "instance_id": "psf__requests-1921",
+      "outcome": "completed",
+      "duration_seconds": 2143.862826567143
+    },
+    {
+      "instance_id": "django__django-11999",
+      "outcome": "completed",
+      "duration_seconds": 1300.8999022720382
+    },
+    {
+      "instance_id": "pydata__xarray-4075",
+      "outcome": "completed",
+      "duration_seconds": 476.4606932057068
+    },
+    {
+      "instance_id": "django__django-12406",
+      "outcome": "completed",
+      "duration_seconds": 1444.989478573203
+    },
+    {
+      "instance_id": "django__django-11239",
+      "outcome": "completed",
+      "duration_seconds": 952.184531448409
+    },
+    {
+      "instance_id": "pydata__xarray-4356",
+      "outcome": "completed",
+      "duration_seconds": 2477.6164041291922
+    },
+    {
+      "instance_id": "django__django-11951",
+      "outcome": "completed",
+      "duration_seconds": 1747.6027575051412
+    },
+    {
+      "instance_id": "django__django-13212",
+      "outcome": "completed",
+      "duration_seconds": 1307.440208505839
+    },
+    {
+      "instance_id": "django__django-13028",
+      "outcome": "completed",
+      "duration_seconds": 1936.12176496163
+    },
+    {
+      "instance_id": "django__django-13109",
+      "outcome": "completed",
+      "duration_seconds": 1717.2916689701378
+    },
+    {
+      "instance_id": "django__django-16255",
+      "outcome": "completed",
+      "duration_seconds": 2354.921263200231
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7324",
+      "outcome": "completed",
+      "duration_seconds": 2914.4863222027197
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5787",
+      "outcome": "completed",
+      "duration_seconds": 3098.9149919198826
+    },
+    {
+      "instance_id": "django__django-12304",
+      "outcome": "completed",
+      "duration_seconds": 1115.596885027364
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7432",
+      "outcome": "completed",
+      "duration_seconds": 2240.328388346359
+    },
+    {
+      "instance_id": "django__django-11451",
+      "outcome": "completed",
+      "duration_seconds": 1418.814754677005
+    },
+    {
+      "instance_id": "django__django-11206",
+      "outcome": "completed",
+      "duration_seconds": 2253.599592914805
+    },
+    {
+      "instance_id": "django__django-11292",
+      "outcome": "completed",
+      "duration_seconds": 2173.9225896848366
+    },
+    {
+      "instance_id": "django__django-12741",
+      "outcome": "completed",
+      "duration_seconds": 1084.7350856177509
+    },
+    {
+      "instance_id": "pydata__xarray-4687",
+      "outcome": "completed",
+      "duration_seconds": 2755.759159900248
+    },
+    {
+      "instance_id": "django__django-11532",
+      "outcome": "completed",
+      "duration_seconds": 4057.9907270949334
+    },
+    {
+      "instance_id": "django__django-11749",
+      "outcome": "completed",
+      "duration_seconds": 1925.724681770429
+    },
+    {
+      "instance_id": "django__django-12193",
+      "outcome": "completed",
+      "duration_seconds": 1843.0129521321505
+    },
+    {
+      "instance_id": "django__django-11820",
+      "outcome": "completed",
+      "duration_seconds": 2401.8111134655774
+    },
+    {
+      "instance_id": "django__django-11133",
+      "outcome": "completed",
+      "duration_seconds": 757.5775433508679
+    },
+    {
+      "instance_id": "django__django-11880",
+      "outcome": "completed",
+      "duration_seconds": 624.8049095924944
+    },
+    {
+      "instance_id": "pydata__xarray-6938",
+      "outcome": "completed",
+      "duration_seconds": 2448.092538013123
+    },
+    {
+      "instance_id": "pydata__xarray-4629",
+      "outcome": "completed",
+      "duration_seconds": 623.8873157659546
+    },
+    {
+      "instance_id": "pydata__xarray-3305",
+      "outcome": "completed",
+      "duration_seconds": 1947.9309354657307
+    },
+    {
+      "instance_id": "django__django-13023",
+      "outcome": "completed",
+      "duration_seconds": 844.8502062959597
+    },
+    {
+      "instance_id": "django__django-10999",
+      "outcome": "completed",
+      "duration_seconds": 652.550037117675
+    },
+    {
+      "instance_id": "django__django-11179",
+      "outcome": "completed",
+      "duration_seconds": 3202.1217243643478
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7490",
+      "outcome": "completed",
+      "duration_seconds": 3253.308389676735
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4661",
+      "outcome": "completed",
+      "duration_seconds": 2578.557935883291
+    },
+    {
+      "instance_id": "django__django-15103",
+      "outcome": "completed",
+      "duration_seconds": 852.6952445460483
+    },
+    {
+      "instance_id": "django__django-12774",
+      "outcome": "completed",
+      "duration_seconds": 1627.399347068742
+    },
+    {
+      "instance_id": "psf__requests-1766",
+      "outcome": "completed",
+      "duration_seconds": 1345.3686522701755
+    },
+    {
+      "instance_id": "django__django-11163",
+      "outcome": "completed",
+      "duration_seconds": 2117.2052085539326
+    },
+    {
+      "instance_id": "pydata__xarray-4094",
+      "outcome": "completed",
+      "duration_seconds": 2674.9820176698267
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7982",
+      "outcome": "completed",
+      "duration_seconds": 2097.888663722202
+    },
+    {
+      "instance_id": "django__django-11433",
+      "outcome": "completed",
+      "duration_seconds": 2133.8412699913606
+    },
+    {
+      "instance_id": "django__django-12155",
+      "outcome": "completed",
+      "duration_seconds": 426.12894745450467
+    },
+    {
+      "instance_id": "django__django-12209",
+      "outcome": "completed",
+      "duration_seconds": 1696.3628814704716
+    },
+    {
+      "instance_id": "pylint-dev__pylint-7080",
+      "outcome": "completed",
+      "duration_seconds": 4592.791196275502
+    },
+    {
+      "instance_id": "django__django-14631",
+      "outcome": "completed",
+      "duration_seconds": 4418.405404328369
+    },
+    {
+      "instance_id": "django__django-11138",
+      "outcome": "completed",
+      "duration_seconds": 4438.870275672525
+    },
+    {
+      "instance_id": "psf__requests-5414",
+      "outcome": "completed",
+      "duration_seconds": 2971.5358931599185
+    },
+    {
+      "instance_id": "django__django-16877",
+      "outcome": "completed",
+      "duration_seconds": 1668.5663761319593
+    },
+    {
+      "instance_id": "django__django-13964",
+      "outcome": "completed",
+      "duration_seconds": 5683.618454458192
+    },
+    {
+      "instance_id": "django__django-12965",
+      "outcome": "completed",
+      "duration_seconds": 1714.563130300492
+    },
+    {
+      "instance_id": "django__django-11141",
+      "outcome": "completed",
+      "duration_seconds": 3074.075939415954
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7571",
+      "outcome": "completed",
+      "duration_seconds": 1386.8829556116834
+    },
+    {
+      "instance_id": "django__django-11790",
+      "outcome": "completed",
+      "duration_seconds": 539.5274120066315
+    },
+    {
+      "instance_id": "django__django-11728",
+      "outcome": "completed",
+      "duration_seconds": 1569.5017005875707
+    },
+    {
+      "instance_id": "django__django-15368",
+      "outcome": "completed",
+      "duration_seconds": 1480.3309327494353
+    },
+    {
+      "instance_id": "django__django-12419",
+      "outcome": "completed",
+      "duration_seconds": 691.6330440854654
+    },
+    {
+      "instance_id": "pydata__xarray-7229",
+      "outcome": "completed",
+      "duration_seconds": 3330.048944344744
+    },
+    {
+      "instance_id": "django__django-11299",
+      "outcome": "completed",
+      "duration_seconds": 2709.898307845928
+    },
+    {
+      "instance_id": "django__django-11095",
+      "outcome": "completed",
+      "duration_seconds": 1865.655623741448
+    },
+    {
+      "instance_id": "pydata__xarray-7233",
+      "outcome": "completed",
+      "duration_seconds": 2755.233617185615
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4604",
+      "outcome": "completed",
+      "duration_seconds": 2319.6767116803676
+    },
+    {
+      "instance_id": "django__django-10880",
+      "outcome": "completed",
+      "duration_seconds": 1584.1795606631786
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6528",
+      "outcome": "completed",
+      "duration_seconds": 2634.1636130809784
+    },
+    {
+      "instance_id": "pydata__xarray-3151",
+      "outcome": "completed",
+      "duration_seconds": 2400.877467578277
+    },
+    {
+      "instance_id": "django__django-13012",
+      "outcome": "completed",
+      "duration_seconds": 1844.1403495185077
+    },
+    {
+      "instance_id": "pallets__flask-5014",
+      "outcome": "completed",
+      "duration_seconds": 925.3791338307783
+    },
+    {
+      "instance_id": "pydata__xarray-6992",
+      "outcome": "completed",
+      "duration_seconds": 2131.7162195835263
+    },
+    {
+      "instance_id": "django__django-13195",
+      "outcome": "completed",
+      "duration_seconds": 599.0628150803968
+    },
+    {
+      "instance_id": "pylint-dev__pylint-8898",
+      "outcome": "completed",
+      "duration_seconds": 3350.3702613441274
+    },
+    {
+      "instance_id": "django__django-11490",
+      "outcome": "completed",
+      "duration_seconds": 3270.1585351498798
+    },
+    {
+      "instance_id": "django__django-11119",
+      "outcome": "completed",
+      "duration_seconds": 880.9016657397151
+    },
+    {
+      "instance_id": "pylint-dev__pylint-7277",
+      "outcome": "completed",
+      "duration_seconds": 2483.3446491770446
+    },
+    {
+      "instance_id": "django__django-12039",
+      "outcome": "completed",
+      "duration_seconds": 1724.8077151933685
+    },
+    {
+      "instance_id": "django__django-13089",
+      "outcome": "completed",
+      "duration_seconds": 1065.8127233004197
+    },
+    {
+      "instance_id": "pytest-dev__pytest-8399",
+      "outcome": "completed",
+      "duration_seconds": 2738.2713689226657
+    },
+    {
+      "instance_id": "django__django-10973",
+      "outcome": "completed",
+      "duration_seconds": 957.698121487163
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7205",
+      "outcome": "completed",
+      "duration_seconds": 1763.438844177872
+    }
+  ],
+  "unfinished_instances_before_stop": [
+    "django__django-10554",
+    "django__django-11149",
+    "django__django-11265",
+    "django__django-11555",
+    "django__django-11740",
+    "django__django-11815",
+    "django__django-11848",
+    "django__django-11885",
+    "django__django-11964",
+    "django__django-12050",
+    "django__django-12125",
+    "django__django-12273",
+    "django__django-12325",
+    "django__django-12663",
+    "django__django-12858",
+    "django__django-13033",
+    "django__django-13112",
+    "django__django-13158",
+    "django__django-14500",
+    "pydata__xarray-6599",
+    "pydata__xarray-6721",
+    "pylint-dev__pylint-4551",
+    "pytest-dev__pytest-6197",
+    "pytest-dev__pytest-6202"
+  ],
+  "native_started": false,
+  "next_target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v95-development-restart-20261011",
+  "next_target_revision": "a77018068869f66e3cc55479009239ed30e47c97",
+  "source_changes": [
+    "94f579f: incremental eviction status totals",
+    "b85277a: native prefill work measurement",
+    "00bfdef: development restart mode"
+  ],
+  "semantics": "Unfinished workflows are administratively censored, not model error/incomplete. Preserve original plan and raw traces; no full-pair or causal performance claim.",
+  "gpu_allocations_observed_empty_at_local": "2026-10-11T21:19:55.619334+08:00",
+  "shutdown_log_semantics": "Deliberate process-group SIGTERM caused detokenizer termination and native parent SIGQUIT cleanup; these logs describe administrative shutdown, not a spontaneous runtime fault.",
+  "stopped_verified_at_local": "2026-10-11T21:23:29.051147+08:00",
+  "process_identities_after_stop": {
+    "queued_v25": null,
+    "coordinator": null,
+    "pair_driver": null,
+    "regime_driver": null,
+    "client": null,
+    "server": null,
+    "scheduler": null
+  },
+  "written_outcomes_after_stop": {
+    "completed": 132
+  },
+  "administratively_censored_instances": [
+    "django__django-10554",
+    "django__django-11149",
+    "django__django-11265",
+    "django__django-11555",
+    "django__django-11740",
+    "django__django-11815",
+    "django__django-11848",
+    "django__django-11885",
+    "django__django-11964",
+    "django__django-12050",
+    "django__django-12125",
+    "django__django-12273",
+    "django__django-12325",
+    "django__django-12663",
+    "django__django-12858",
+    "django__django-13033",
+    "django__django-13112",
+    "django__django-13158",
+    "django__django-14500",
+    "pydata__xarray-6599",
+    "pydata__xarray-6721",
+    "pylint-dev__pylint-4551",
+    "pytest-dev__pytest-6197",
+    "pytest-dev__pytest-6202"
+  ],
+  "runtime_final_shutdown_receipts_available": false,
+  "removed_completed_workspaces": 132,
+  "retained_completed_workspaces": 0,
+  "removed_matching_containers": 24,
+  "retained_partial_workspaces": true,
+  "new_coordinator_pid": 3075855,
+  "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25"
+}
