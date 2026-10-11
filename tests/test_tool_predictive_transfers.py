@@ -784,6 +784,101 @@ def test_submitted_demand_lease_is_not_shortened_by_ready_observation():
     assert runtime._prefetch_service_leases[action.command_id] == original
 
 
+def summary_call_events(
+    *, parent="tool", agent="context-summarizer", mode="foreground", start_seq=3,
+):
+    from beliefkv.core.events import ExecutionMode
+
+    return (
+        event(start_seq, RuntimeEventKind.TOOL_END, invocation_id="tool",
+              attributes={"tool_run_id": "long"}),
+        event(start_seq + 1, RuntimeEventKind.INVOCATION_CREATE, invocation_id="summary",
+              context_id="ctx-summary", agent_definition_id=agent,
+              agent_instance_id="summary"),
+        event(start_seq + 2, RuntimeEventKind.CALL, invocation_id=parent,
+              target_invocation_id="summary", execution_mode=ExecutionMode(mode)),
+    )
+
+
+@pytest.mark.parametrize("source", ("tool_wait", "join_ticket"))
+def test_summary_start_releases_speculative_lock_without_retiring_parent(source):
+    runtime, hint, node, action, receipt, _ = locked_runtime()
+    runtime._prefetch_service_leases[action.command_id] = replace(
+        runtime._prefetch_service_leases[action.command_id], source=source,
+    )
+    try:
+        runtime.on_events(summary_call_events())
+        assert not runtime._prefetch_service_leases
+        runtime._native_cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
+        assert runtime.counts["prefetch_residency_released:context_summary_started"] == 1
+        assert runtime.context_sessions[hint.key.context_id] == hint.key
+        assert runtime.graph.contexts[hint.key.context_id].epoch == hint.key.context_epoch
+        assert node.component_data[0].value is not None
+        assert node.component_data[2].value is not None
+        assert runtime._native_cache.session_refs._session_generations == {"s": 1}
+        runtime.on_events((event(6, RuntimeEventKind.INVOCATION_CANCEL,
+                                 invocation_id="summary"),))
+        assert not runtime._prefetch_service_leases
+        assert runtime.graph.invocations["tool"].state is InvocationState.READY
+        assert runtime.context_sessions[hint.key.context_id] == hint.key
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("case", ("ordinary_call", "background_summary", "other_parent"))
+def test_only_this_parent_blocking_summary_releases_speculative_lock(case):
+    runtime, hint, _, action, _, _ = locked_runtime()
+    try:
+        if case == "other_parent":
+            runtime.on_events((event(
+                3, RuntimeEventKind.INVOCATION_CREATE, invocation_id="other",
+                context_id="ctx-other", agent_definition_id="agent",
+                agent_instance_id="other",
+            ),))
+        runtime.on_events(summary_call_events(
+            parent="other" if case == "other_parent" else "tool",
+            agent="ordinary-agent" if case == "ordinary_call" else "context-summarizer",
+            mode="background" if case == "background_summary" else "foreground",
+            start_seq=4 if case == "other_parent" else 3,
+        ))
+        assert action.command_id in runtime._prefetch_service_leases
+        runtime._native_cache.tree_core.dec_lock_ref.assert_not_called()
+        assert runtime.counts["prefetch_residency_released:context_summary_started"] == 0
+        assert runtime.context_sessions[hint.key.context_id] == hint.key
+    finally:
+        runtime.close()
+
+
+def test_restore_ack_during_summary_does_not_acquire_speculative_lock():
+    runtime, hint, _, action, receipt, _ = locked_runtime()
+    try:
+        runtime.on_events(summary_call_events())
+        runtime._native_cache.tree_core.inc_lock_ref.reset_mock()
+        step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
+        runtime._prefetch_steps["late-ack"] = (step, "tool_wait", 2.)
+        runtime._register_prefetch_service_lease(replace(action, command_id="late-ack"))
+        assert not runtime._prefetch_service_leases
+        runtime._native_cache.tree_core.inc_lock_ref.assert_not_called()
+        runtime._native_cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
+        assert runtime.counts[
+            "prefetch_residency_registration_skipped:context_summary_started"
+        ] == 1
+    finally:
+        runtime.close()
+
+
+def test_summary_observation_preserves_already_submitted_demand_lock():
+    runtime, _, _, action, _, _ = locked_runtime()
+    try:
+        submit_restored_request(runtime)
+        original = runtime._prefetch_service_leases[action.command_id]
+        runtime.on_events(summary_call_events(start_seq=5))
+        assert runtime._prefetch_service_leases[action.command_id] == original
+        runtime._native_cache.tree_core.dec_lock_ref.assert_not_called()
+    finally:
+        runtime.close()
+
+
 def test_expired_restore_lock_is_not_revived_by_late_tool_completion():
     runtime, _, _, action, _, _ = locked_runtime()
     lease = runtime._prefetch_service_leases[action.command_id]

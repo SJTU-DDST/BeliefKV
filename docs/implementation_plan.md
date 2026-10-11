@@ -2,6 +2,31 @@
 
 Status date: 2026-10-11.
 
+Keepv58_v22_child_parent_capacity_and_summary_gap_20261011.json with the
+10:29:41 CST lifecycle-audit SHA256 and independent client-event SHA256.
+The partial live V22 audit has364 confirmed dynamic children with cumulative
+device FULL116.806GB/Mamba109.783GB release, excluding internal calls.
+Of188 observed JOINs,169 have pre-completion sibling device release and89
+subsequently submit before JOIN and prove following-parent FULL reuse,1.332GB.
+All187 parent first completed GPU batches link to child release; scheduler
+last-child RETURN to that batch P50/P90 is223.28/691.96ms, maximum16.312s.
+This is neither prediction error nor kernel-start latency. Total early-and-reused
+JOIN FULL is1.617GB and tool FULL3.643GB; demand handoff reuse128.325GB remains
+separate. No real capacity retry rearm is observed. Cumulative release is not
+simultaneously free or exclusive parent capacity; same-version native is pending.
+
+Trace xarray-4356's184s ACK-to-service tail: the tool lasts423.61ms, then two
+foreground context-summary model requests take97.61/85.14s, both length with
+empty visible output. The summary phase spans182.95s and changes the37120-token
+target to a next input sharing only8252 tokens; FULL is not reused.
+Release speculative next-consumer residence when this same parent has an observed
+active blocking context-summarizer CALL. ACK during the call does not acquire a
+new lock. Keep the parent's data/session/epoch and already submitted demand
+protection; failed summary must leave the parent resumable. Do not change summary
+execution, prediction, admission or workload settings or extend leases.
+The486 related checks pass. Include the follow-up in the next waiting frozen
+target; V22 remains unchanged. This does not remove summary work or prove GPU benefit.
+
 Reduce operational tool-curve cost after the CPU profile identifies repeated
 dense coefficient scans at18 knots. Select coefficients for this curve's feature
 names once, retaining original coefficient order, nonfinite terms, sigmoid,
@@ -35,8 +60,8 @@ release separately; earlier sibling release can support restoration while the
 final child still generates. Restoration that needs the last child's post-RETURN
 capacity remains demand handoff. Use native free lists rather than fixed page
 identity, preserve next-input/decode reserves, and apply existing bounded ready-
-parent admission and residence until first service. The partial v49 GPU evidence
-below establishes observed release and following-request reuse, not native-relative
+parent admission and residence until first service. The latest partial v58 GPU evidence
+above establishes observed release and following-request reuse, not native-relative
 performance improvement.
 
 Remove the first tool query's unconditional50ms delay while retaining unchanged-

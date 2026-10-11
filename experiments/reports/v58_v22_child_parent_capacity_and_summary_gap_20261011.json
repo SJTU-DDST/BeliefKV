@@ -1,0 +1,124 @@
+{
+  "scope": "Partial live V22 predictive evidence, not complete pair performance or a claim of native-relative improvement.",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d",
+  "deployed_revision": "3aa27dd67b340236310824d80a7e6e31038ea1f9",
+  "source_lifecycle_audit": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v58_v22_prefetch_lifecycle_summary_live_20261011.json",
+    "sha256": "91aa6f67170e77b292cd5ff1a635245497e890a48d250773b7f151d4033de3b3",
+    "written_at_cst": "2026-10-11T10:29:41+08:00",
+    "source_logs_live": true
+  },
+  "confirmed_dynamic_children": {
+    "terminal_contexts": 364,
+    "reclaim_records_including_retries": 785,
+    "cumulative_freed_device_full_bytes": 116805611520,
+    "cumulative_freed_device_mamba_bytes": 109783449600,
+    "cumulative_freed_host_full_bytes": 57123102720,
+    "cumulative_freed_host_mamba_bytes": 59495546880
+  },
+  "parent_first_completed_gpu_batches": {
+    "count": 187,
+    "with_prior_linked_child_device_release": 187,
+    "scheduler_observed_last_child_return_to_completed_batch_ms": {
+      "count": 187,
+      "p50": 223.27734375,
+      "p90": 691.956103515625,
+      "max": 16312.46484375
+    },
+    "prior_restore_lookahead_count": 50,
+    "capacity_restore_rearm_records": 0
+  },
+  "sibling_enabled_window_associations": {
+    "observed_join_events": 188,
+    "completion_unobserved_events": 3,
+    "joins_with_device_release_before_join": 169,
+    "joins_with_actual_pre_join_full_submission_and_following_parent_reuse_after_release": 89,
+    "early_reused_full_bytes_after_sibling_release": 1331814400,
+    "cumulative_pre_join_sibling_device_full_release_bytes": 46955028480,
+    "cumulative_pre_join_sibling_device_mamba_release_bytes": 38633472000
+  },
+  "independent_wait_attribution": {
+    "join_events_with_early_reused_full": 93,
+    "join_early_started_and_reused_full_bytes": 1617080320,
+    "join_remaining_next_request_native_full_host_hit_bytes_known": 539279360,
+    "join_last_ack_to_first_service_ms": {
+      "count": 98,
+      "p50": 308.69287109375,
+      "p90": 767.0742431640625,
+      "max": 4253.068603515625
+    },
+    "tool_events_with_early_reused_full": 152,
+    "tool_early_started_and_reused_full_bytes": 3643105280,
+    "tool_remaining_next_request_native_full_host_hit_bytes_known": 427927613440,
+    "tool_last_ack_to_first_service_ms": {
+      "count": 162,
+      "p50": 459.6217041015625,
+      "p90": 1242.6631347656253,
+      "max": 184241.30517578125
+    },
+    "demand_handoff_verified_reused_full_bytes": 128324526080
+  },
+  "observed_summary_gap_case": {
+    "workflow": "pydata__xarray-4356",
+    "command_id": "beliefkv-prefetch-2ff33bc0064e4f4f860b74ba8127b41c",
+    "context_id": "deepagents:autonomous:pydata__xarray-4356:b0d352fb3fb5:context:root",
+    "prefetch_context_epoch": 50,
+    "service_context_epoch": 51,
+    "first_service_request_id": "beliefkv:01a12862-c72d-79b3-b185-21abb28b78c9",
+    "tool_run_id": "01a1285f-fac7-77e3-b90a-75a2be902c2f",
+    "client_events": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/workflows/pydata__xarray-4356/runtime_events.deepagents.jsonl",
+      "sha256": "67b71af88bb0db33d5e0ee9ecc43e049fbe665526cb985f774970954d0742062",
+      "tool_start_sequence": 956,
+      "tool_end_sequence": 957,
+      "first_summary_sequences": [958, 959, 960, 961, 962],
+      "second_summary_sequences": [963, 964, 965, 966, 967],
+      "context_compaction_sequence": 968,
+      "next_root_submit_sequence": 969
+    },
+    "client_monotonic_intervals_ms": {
+      "tool_duration": 423.6069211959839,
+      "tool_end_to_next_root_submit": 183092.3114042282,
+      "first_summary_model_wall": 97605.59169483185,
+      "second_summary_model_wall": 85137.3922252655,
+      "summary_phase_wall": 182951.72417259216,
+      "compact_to_next_root_submit": 119.30494403839111
+    },
+    "summary_results": {
+      "both_finish_reason": "length",
+      "both_visible_output_chars": 0
+    },
+    "physical_first_use": {
+      "source": "server/physical_action_use.jsonl",
+      "line": 22405,
+      "ack_ts_ms": 1791678741540.4307,
+      "first_service_ts_ms": 1791678925733.0037,
+      "ack_to_first_service_ms": 184192.57299804688,
+      "target_node_id": 32511,
+      "target_prefix_tokens": 37120,
+      "common_input_prefix_tokens": 8252,
+      "full_node_reused": false,
+      "full_reuse_proof_version": 2
+    },
+    "diagnosis": "The root's next request is delayed by two real foreground summary calls and then uses a compacted input. This case does not demonstrate a 184-second tool, GPU queue wait, or RETURN prediction error."
+  },
+  "follow_up": {
+    "change": "Relinquish only speculative next-consumer residency when that same parent has an observed active blocking context-summarizer CALL. ACK arriving during that call does not acquire protection. Keep parent KV, session references, context epoch and already submitted demand protection.",
+    "summary_failure_keeps_parent_resumable": true,
+    "physical_transfer_receipts_and_first_use_evidence_preserved": true,
+    "new_admission_gate": false,
+    "frozen_v22_modified": false,
+    "related_checks_passed": 486,
+    "gpu_validated": false
+  },
+  "semantics": [
+    "Internal summary releases are excluded from confirmed dynamic-child counts.",
+    "Cumulative allocator releases are not simultaneously free or exclusively assigned capacity.",
+    "Pre-JOIN submission plus following-parent FULL reuse qualifies early transfer; association with sibling release does not prove that capacity was necessary.",
+    "Last-child post-RETURN restoration and execution handoff remain demand recovery, separate from predictive H2D.",
+    "The parent service boundary is the first observed completed GPU batch, not CUDA kernel start or prediction error.",
+    "Residual native Host-hit bytes are observed following-request demand, not achievable prefetch coverage or removable JCT.",
+    "The summary fix releases native protection without freeing or changing the live parent's data and does not avoid the two summary requests.",
+    "No capacity restore rearm has been observed in this live snapshot."
+  ]
+}

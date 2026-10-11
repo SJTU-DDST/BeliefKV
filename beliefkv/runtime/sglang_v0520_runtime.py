@@ -5195,6 +5195,17 @@ class NativeAdmissionRuntime:
             != (key.session_id, key.session_generation)
         )):
             return "session_changed"
+        if not lease.demand_ready and any(
+            (child := self.graph.invocations.get(child_id)) is not None
+            and child.agent_definition_id == "context-summarizer"
+            and child.relation_type is RelationType.CALL
+            and child.parent_invocation_id == key.invocation_id
+            and not child.state.terminal
+            for child_id in invocation.blocking_child_ids
+        ):
+            # The next request is a summary, not this checkpoint's consumer.
+            # Relinquish only speculative protection; retain resumable data.
+            return "context_summary_started"
         cache = self._native_cache
         try:
             sessions = cache.session_refs
