@@ -137,6 +137,31 @@ Continue using real control windows, settled terminal-child release, useful
 early FULL restoration and first consumption, rather than isolated tiny-function
 timings, to choose the next engine change.
 
+Eliminate duplicate transfer-spec construction per predictive extent in the
+isolated follow-up. Previously prefetch_gpu_session_node builds and checks
+FULL/Mamba transfers before load_back builds them again under native locks,
+including a second FULL Host-index concatenation. Move the existing single-node/
+necessary-Mamba checks to the one locked construction. Keep live session and
+complete ancestry checks, capacity, no additional device reclamation, native
+layer dependencies and individual ACKs. Release acquired device/Host locks on
+the previously handled spec failures; normal native demand restoration still
+accepts its multi-node specs. The104 native shadow/handoff/latest-state checks
+and25 subtests pass.
+
+Keep scripts/benchmark_native_prefetch_load_cpu.py and
+v46_native_prefetch_single_spec_cpu_20261011.json. These exercise whole native
+prefetch bursts and load_back with the exact FULL/Mamba/tree spec builders;
+allocator, lock accounting, enqueue and commit are deterministic CPU stubs.
+They exclude runtime physical-ledger work, DMA and GPU. The24 groups of15
+alternating samples,30 iterations each, preserve transfer indices, callbacks,
+lock counts and outcomes. Spec construction falls from two calls per extent
+to one. Median thread CPU falls9.9%–25.7%;64-node/16-extent/4096-token bursts
+with final Mamba change678.15→545.86 microseconds, and256-node bursts change
+1081.81→951.68. Do not extrapolate this to all8.138s of observed handoff enqueue
+or to end-to-end throughput. The isolated canonical patch's expected/actual
+tree matches286ef96cc4d5954b9e20a5e3cc96f7306f426acd. Include the candidate
+in the next frozen registration; the live V22 remains on its existing patch.
+
 Closed V21 predictive/native output rates are738.64/831.87 token/s and mean
 GPU utilization72.04%/80.15%. In600–2400s, mean visible decode contexts are
 23679.53/23850.39 tokens, while mean worker decode intervals are41.49/36.19ms.

@@ -128,6 +128,29 @@ v43_reentry_length_reuse_cpu_20261011.json记录15组各15轮、
 继续按真实控制窗口、已结束child释放、实际FULL提前复用和
 恢复后首次消费检查收益；不由孤立小函数计时扩大原生修改。
 
+隔离工作区继续消除每个预取extent的重复原生传输构造。原先
+prefetch_gpu_session_node先构造并核验一次FULL/Mamba spec，
+load_back持锁后再构造一次；FULL hook会重复拼接Host索引。
+现在将原有单节点、仅必要Mamba的范围检查移到持锁后的唯一
+构造位置，保留session/完整祖先核验、容量、无额外设备驱逐、
+原生逐层依赖及每节点ACK。已知spec构造失败会释放所取得的
+设备与Host锁；普通native需求恢复仍可按原语义恢复多节点。
+104项原生shadow/handoff/latest-state检查及25个子用例通过。
+
+scripts/benchmark_native_prefetch_load_cpu.py比较完整原生
+prefetch burst、load_back以及真实FULL/Mamba/tree spec函数，
+夹具中的allocator、锁计数、enqueue、commit为确定性CPU替身，
+不包含runtime物理账本、DMA或GPU。v46_native_prefetch_single_spec_cpu_20261011.json
+包含24组各15轮、每轮30次交替测量；有效提交的传输索引、
+回调、锁计数和结果完全一致，spec构造次数由每extent两次减为
+一次。thread CPU中位耗时降低9.9%–25.7%；64层/16-extent/
+4096-token且含最终Mamba的burst为678.15→545.86微秒，
+256层同配置为1081.81→951.68微秒。该收益不能直接外推到
+实测handoff enqueue的全部8.138秒或端到端吞吐。
+新canonical patch已在隔离原生工作区验证expected/actual tree
+均为286ef96cc4d5954b9e20a5e3cc96f7306f426acd；该候选等待纳入
+下一轮冻结登记，当前V22继续使用既有patch。
+
 闭合V21的predictive/native输出吞吐为738.64/831.87 token/s，
 GPU平均利用率为72.04%/80.15%。600–2400秒窗口的decode前平均
 可见上下文为23679.53/23850.39 token，worker decode区间均值为

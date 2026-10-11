@@ -1996,7 +1996,7 @@ index 6815679..edd6918 100644
      def demote(self, node_id: NodeId) -> DemoteResult:
          """Demote a backed-up node: drop its device value after a successful backup."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..8a0d4e2 100644
+index d417d7d..364728c 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -6,7 +6,7 @@ import threading
@@ -2758,7 +2758,7 @@ index d417d7d..8a0d4e2 100644
              )
              if host_indices is None:
                  return 0
-@@ -1554,6 +2193,345 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1554,6 +2193,328 @@ class UnifiedRadixCache(BasePrefixCache):
              written = len(host_indices)
          return written
  
@@ -2975,23 +2975,6 @@ index d417d7d..8a0d4e2 100644
 +            )
 +        ):
 +            return declined
-+        try:
-+            kv_xfer, comp_xfers = self.tree_core.build_load_back_spec(
-+                node_id, include_mamba=beliefkv_include_mamba
-+            )
-+        except (KeyError, RuntimeError, ValueError):
-+            return declined
-+        if (
-+            any(ct != ComponentType.MAMBA for ct in comp_xfers)
-+            or (kv_xfer.nodes_to_load or []) not in ([], [node_id])
-+            or any(
-+                transfer.nodes_to_load and transfer.nodes_to_load != [node_id]
-+                for transfers in comp_xfers.values()
-+                for transfer in transfers
-+            )
-+            or (not len(kv_xfer.host_indices) and not comp_xfers)
-+        ):
-+            return declined
 +        issued = self.load_back(
 +            node_id,
 +            req=None,
@@ -3104,7 +3087,7 @@ index d417d7d..8a0d4e2 100644
      @staticmethod
      def _backup_publish_node_ids(
          node_id: NodeId, comp_xfers: dict[ComponentType, list[PoolTransfer]]
-@@ -1574,18 +2552,77 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1574,18 +2535,77 @@ class UnifiedRadixCache(BasePrefixCache):
              CacheTransferPhase.BACKUP_HOST, kv_xfer, comp_xfers
          )
  
@@ -3184,7 +3167,7 @@ index d417d7d..8a0d4e2 100644
          )
  
      def _track_write_through_node(
-@@ -1627,10 +2664,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1627,10 +2647,10 @@ class UnifiedRadixCache(BasePrefixCache):
              updated_node_ids,
          )
  
@@ -3197,7 +3180,7 @@ index d417d7d..8a0d4e2 100644
  
          lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
              ack_id
-@@ -1643,15 +2680,25 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1643,15 +2663,25 @@ class UnifiedRadixCache(BasePrefixCache):
              # suffix; the prefix fragment must be persisted as well.
              for node_id in publish_node_ids:
                  self.write_backup_storage(node_id)
@@ -3224,7 +3207,7 @@ index d417d7d..8a0d4e2 100644
              return False
  
          host_anchor_params = self.inc_host_lock_ref(node_id).to_dec_params()
-@@ -1675,6 +2722,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1675,6 +2705,10 @@ class UnifiedRadixCache(BasePrefixCache):
                  result=result,
                  ancestor_lock_params=ancestor_lock_params,
                  host_anchor_params=host_anchor_params,
@@ -3235,7 +3218,7 @@ index d417d7d..8a0d4e2 100644
              )
              return success
          finally:
-@@ -1690,9 +2741,15 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1690,9 +2724,34 @@ class UnifiedRadixCache(BasePrefixCache):
          result: IncLockRefResult,
          ancestor_lock_params: DecLockRefParams,
          host_anchor_params: DecLockRefParams,
@@ -3246,13 +3229,32 @@ index d417d7d..8a0d4e2 100644
      ) -> bool:
          # Build the KV + per-component aux transfers.
 -        kv_xfer, comp_xfers = self.tree_core.build_load_back_spec(node_id, req=req)
-+        kv_xfer, comp_xfers = self.tree_core.build_load_back_spec(
-+            node_id, req=req, include_mamba=beliefkv_include_mamba
-+        )
++        try:
++            kv_xfer, comp_xfers = self.tree_core.build_load_back_spec(
++                node_id, req=req, include_mamba=beliefkv_include_mamba
++            )
++        except (KeyError, RuntimeError, ValueError):
++            if not beliefkv_no_device_reclaim:
++                raise
++            self.dec_lock_ref(node_id, ancestor_lock_params)
++            self.dec_host_lock_ref(node_id, host_anchor_params)
++            return False
++        if beliefkv_no_device_reclaim and (
++            any(ct != ComponentType.MAMBA for ct in comp_xfers)
++            or (kv_xfer.nodes_to_load or []) not in ([], [node_id])
++            or any(
++                transfer.nodes_to_load and transfer.nodes_to_load != [node_id]
++                for transfers in comp_xfers.values()
++                for transfer in transfers
++            )
++        ):
++            self.dec_lock_ref(node_id, ancestor_lock_params)
++            self.dec_host_lock_ref(node_id, host_anchor_params)
++            return False
          kv_tokens = len(kv_xfer.host_indices)
          sidecar_xfers = self._build_sidecar_transfers(
              CacheTransferPhase.LOAD_BACK, kv_xfer, comp_xfers
-@@ -1703,7 +2760,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1703,7 +2762,8 @@ class UnifiedRadixCache(BasePrefixCache):
          # when the Full-KV load is skipped by thresholding. max(1, ...): an
          # entirely empty spec (e.g. foreign-pin rejection) must never report
          # success, even at load_back_threshold <= 0.
@@ -3262,7 +3264,7 @@ index d417d7d..8a0d4e2 100644
              mem_quota is not None and kv_tokens + result.delta > mem_quota
          ):
              self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -1714,6 +2772,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1714,6 +2774,10 @@ class UnifiedRadixCache(BasePrefixCache):
              self.token_to_kv_pool_allocator, "c128_attn_allocator", None
          )
          if c128_allocator is not None:
@@ -3273,7 +3275,7 @@ index d417d7d..8a0d4e2 100644
              c128_num_pages = _c128_transfer_num_pages(
                  comp_xfers.get(ComponentType.C128, ()),
                  c128_allocator.page_size,
-@@ -1727,6 +2789,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1727,6 +2791,10 @@ class UnifiedRadixCache(BasePrefixCache):
  
          avail = self._component_available_size(ComponentType.FULL)
          if avail < kv_tokens:
@@ -3284,7 +3286,7 @@ index d417d7d..8a0d4e2 100644
              needed = kv_tokens - avail
              self.evict_for_alloc(EvictParams(num_tokens=needed))
              if self._component_available_size(ComponentType.FULL) < kv_tokens:
-@@ -1741,6 +2807,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1741,6 +2809,9 @@ class UnifiedRadixCache(BasePrefixCache):
              host_indices=kv_xfer.host_indices,
              node_id=node_id,
              extra_pools=aux_xfers or None,
@@ -3294,7 +3296,7 @@ index d417d7d..8a0d4e2 100644
          )
  
          self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -3130,10 +4199,24 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3130,10 +4201,24 @@ class UnifiedRadixCache(BasePrefixCache):
              while self.ongoing_write_through:
                  for ack in cc.ack_write_queue:
                      ack.finish_event.synchronize()
@@ -3320,7 +3322,7 @@ index d417d7d..8a0d4e2 100644
                  cc.ack_write_queue.clear()
                  assert len(self.ongoing_write_through) == 0
              return
-@@ -3154,11 +4237,122 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3154,11 +4239,122 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_write_queue.pop(0)
              ack.finish_event.synchronize()
@@ -3444,7 +3446,7 @@ index d417d7d..8a0d4e2 100644
      def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
          """Record D->H backup volume and duration for a completed write ack."""
          if self.metrics_collector is None:
-@@ -3200,6 +4394,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3200,6 +4396,8 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_load_queue.pop(0)
              ack.finish_event.synchronize()
@@ -3453,7 +3455,7 @@ index d417d7d..8a0d4e2 100644
              for ack_id in ack.node_ids:
                  if (
                      self.buffer_pipeline is not None
-@@ -3211,6 +4407,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3211,6 +4409,8 @@ class UnifiedRadixCache(BasePrefixCache):
                  self.dec_host_lock_ref(node, host_lock_params)
                  # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
                  self.tree_core.finish_load_back(node)
@@ -3462,7 +3464,7 @@ index d417d7d..8a0d4e2 100644
  
              if self.metrics_collector is not None:
                  for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
-@@ -3225,6 +4423,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3225,6 +4425,13 @@ class UnifiedRadixCache(BasePrefixCache):
                      self.metrics_collector.observe_load_back_duration(
                          duration_ms / 1000.0
                      )
@@ -3476,7 +3478,7 @@ index d417d7d..8a0d4e2 100644
              finish_count -= 1
  
      # ---- HiCache: Scheduler Entry Points ----
-@@ -3341,9 +4546,31 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3341,9 +4548,31 @@ class UnifiedRadixCache(BasePrefixCache):
          if self.linker is not None:
              return self.linker.start_layer_wise_loading()
          if self.cache_controller is not None:
@@ -6210,10 +6212,10 @@ index 0000000..f8adad2
 +    assert tracker.snapshot_released_session_leaf_anchors("session", generation) is None
 diff --git a/test/srt/test_beliefkv_shadow_dispatch.py b/test/srt/test_beliefkv_shadow_dispatch.py
 new file mode 100644
-index 0000000..548c17f
+index 0000000..fd5bfdc
 --- /dev/null
 +++ b/test/srt/test_beliefkv_shadow_dispatch.py
-@@ -0,0 +1,1237 @@
+@@ -0,0 +1,1349 @@
 +"""CPU-only action-local shadow dispatch tests, without importing the GPU runtime."""
 +
 +import ast
@@ -6274,6 +6276,7 @@ index 0000000..548c17f
 +        "beliefkv_prefetch_can_admit",
 +        "supports_beliefkv_overlap_prefetch",
 +        "ready_to_load_host_cache",
++        "load_back",
 +        "_load_back_transfers",
 +        "_execute_and_commit_kv_backup",
 +        "_execute_kv_backup",
@@ -6564,6 +6567,60 @@ index 0000000..548c17f
 +        beliefkv_command_id="cmd-2",
 +    )
 +    return cache, root, parent, leaf, group, ops, args
++
++
++def native_load_fixture():
++    result = fixture()
++    cache, root, parent, leaf, _, _, _ = result
++    nodes = {item.id: item for item in (root, parent, leaf)}
++    cache.load_back_threshold = 32
++    cache.token_to_kv_pool_allocator = SimpleNamespace(c128_attn_allocator=None)
++    cache._build_sidecar_transfers = Mock(return_value=[])
++    cache._component_available_size = Mock(return_value=100)
++    cache.inc_host_lock_ref = Mock(
++        return_value=SimpleNamespace(to_dec_params=lambda: "host")
++    )
++    cache.dec_host_lock_ref = Mock()
++    cache.inc_lock_ref = Mock(
++        return_value=SimpleNamespace(delta=0, to_dec_params=lambda: "device")
++    )
++    cache._components_tuple = tuple(
++        SimpleNamespace(
++            component_type=ct, prepare_load_back=Mock(return_value=object()),
++            finalize_load_back=Mock(),
++        )
++        for ct in (ComponentType.FULL, ComponentType.MAMBA)
++    )
++    cache.cache_controller.load_queue = []
++    cache.cache_controller.start_loading = Mock(return_value=1)
++
++    def load(host_indices, *, node_id, extra_pools, beliefkv_command_id,
++             beliefkv_before_enqueue, beliefkv_no_device_reclaim):
++        operation = SimpleNamespace(
++            beliefkv_command_id=beliefkv_command_id, node_id=node_id,
++            host_indices=host_indices, extra_pools=extra_pools,
++        )
++        if beliefkv_before_enqueue is not None and not beliefkv_before_enqueue(operation):
++            return None
++        cache.cache_controller.load_queue.append(operation)
++        return torch.arange(len(host_indices))
++
++    def commit(node_id, device_indices, kv_xfer, comp_xfers):
++        target = nodes[node_id]
++        if len(device_indices):
++            target.component_data[ComponentType.FULL].value = device_indices
++        for ct, transfers in comp_xfers.items():
++            target.component_data[ct].value = torch.arange(
++                sum(len(transfer.host_indices) for transfer in transfers)
++            )
++        target.load_back_pending_id = node_id
++        return []
++
++    cache.cache_controller.load = Mock(side_effect=load)
++    cache.tree_core.commit_load_back = Mock(side_effect=commit)
++    cache._apply_cache_actions = Mock()
++    cache.evict_for_alloc = Mock(side_effect=AssertionError("device eviction is forbidden"))
++    return result
 +
 +
 +class TestPrepareHostShadow(unittest.TestCase):
@@ -7148,21 +7205,20 @@ index 0000000..548c17f
 +        self.assertFalse(cache.supports_beliefkv_overlap_prefetch())
 +
 +    def test_full_only_restore_propagates_mask_to_native_load(self):
-+        cache, _, _, leaf, _, _, args = fixture()
++        cache, _, _, leaf, _, _, args = native_load_fixture()
++        leaf.component_data[ComponentType.FULL].value = None
++        leaf.component_data[ComponentType.FULL].host_value = torch.arange(2)
 +        cache.tree_core.build_load_back_spec = Mock(return_value=(
 +            SimpleNamespace(host_indices=torch.arange(2), nodes_to_load=[leaf.id]),
 +            {},
 +        ))
-+        def load(node_id, **kwargs):
-+            cache.ongoing_load_back[node_id] = object()
-+            return True
-+        cache.load_back = Mock(side_effect=load)
++        cache.load_back = Mock(wraps=cache.load_back)
 +        self.assertTrue(cache.prefetch_gpu_session_node(
 +            **args, beliefkv_before_enqueue=lambda op: True,
 +            beliefkv_include_mamba=False,
 +        ).issued)
 +        cache.tree_core.build_load_back_spec.assert_called_once_with(
-+            leaf.id, include_mamba=False
++            leaf.id, req=None, include_mamba=False
 +        )
 +        self.assertFalse(cache.load_back.call_args.kwargs["beliefkv_include_mamba"])
 +
@@ -7271,7 +7327,7 @@ index 0000000..548c17f
 +        cache.evict_host.assert_not_called()
 +
 +    def test_rejects_multiple_full_ancestors_or_stale_session_without_load(self):
-+        cache, _, parent, leaf, _, _, args = fixture()
++        cache, _, parent, leaf, _, _, args = native_load_fixture()
 +        leaf.component_data[ComponentType.FULL].host_value = torch.arange(2)
 +        leaf.component_data[ComponentType.FULL].value = None
 +        cache.tree_core.build_load_back_spec = Mock(return_value=(
@@ -7280,11 +7336,13 @@ index 0000000..548c17f
 +            ),
 +            {},
 +        ))
-+        cache.load_back = Mock()
++        cache.load_back = Mock(wraps=cache.load_back)
 +        self.assertFalse(cache.prefetch_gpu_session_node(
 +            **args, beliefkv_before_enqueue=lambda op: True
 +        ).issued)
-+        cache.load_back.assert_not_called()
++        cache.cache_controller.load.assert_not_called()
++        cache.dec_lock_ref.assert_called_once()
++        cache.dec_host_lock_ref.assert_called_once()
 +        args["session_generation"] += 1
 +        cache.tree_core.build_load_back_spec.reset_mock()
 +        self.assertFalse(cache.prefetch_gpu_session_node(
@@ -7372,7 +7430,7 @@ index 0000000..548c17f
 +    def test_hbm_shortage_declines_without_native_eviction(self):
 +        cache, _, _, leaf, _, _, _ = fixture()
 +        cache.tree_core.build_load_back_spec = Mock(return_value=(
-+            SimpleNamespace(host_indices=torch.arange(2)),
++            SimpleNamespace(host_indices=torch.arange(2), nodes_to_load=[leaf.id]),
 +            {},
 +        ))
 +        cache.load_back_threshold = 4
@@ -7405,9 +7463,9 @@ index 0000000..548c17f
 +    def test_mamba_only_load_back_can_enqueue_without_full_tokens(self):
 +        cache, _, _, leaf, _, _, _ = fixture()
 +        cache.tree_core.build_load_back_spec = Mock(return_value=(
-+            SimpleNamespace(host_indices=torch.arange(0)),
++            SimpleNamespace(host_indices=torch.arange(0), nodes_to_load=[]),
 +            {ComponentType.MAMBA: [SimpleNamespace(
-+                name=PoolName.MAMBA, host_indices=torch.arange(1),
++                name=PoolName.MAMBA, host_indices=torch.arange(1), nodes_to_load=[leaf.id],
 +            )]},
 +        ))
 +        cache.load_back_threshold = 32
@@ -7447,6 +7505,62 @@ index 0000000..548c17f
 +                "beliefkv_no_device_reclaim"
 +            ]
 +        )
++
++    def test_invalid_single_node_specs_release_locks_without_enqueuing(self):
++        for kind in ("full_ancestor", "full_foreign", "mamba_foreign", "other_component"):
++            with self.subTest(kind=kind):
++                cache, _, parent, leaf, _, _, args = native_load_fixture()
++                kv = SimpleNamespace(host_indices=torch.arange(2), nodes_to_load=[leaf.id])
++                extra = {}
++                if kind == "full_ancestor":
++                    kv.nodes_to_load = [parent.id, leaf.id]
++                elif kind == "full_foreign":
++                    kv.nodes_to_load = [parent.id]
++                else:
++                    ct = ComponentType.MAMBA if kind == "mamba_foreign" else ComponentType.SWA
++                    extra = {ct: [SimpleNamespace(
++                        nodes_to_load=[parent.id], host_indices=torch.arange(1),
++                    )]}
++                cache.tree_core.build_load_back_spec = Mock(return_value=(kv, extra))
++                self.assertFalse(cache.prefetch_gpu_session_node(
++                    **args, beliefkv_before_enqueue=lambda operation: True,
++                ).issued)
++                cache.cache_controller.load.assert_not_called()
++                cache.dec_lock_ref.assert_called_once_with(leaf.id, "device")
++                cache.dec_host_lock_ref.assert_called_once_with(leaf.id, "host")
++                self.assertEqual(cache.ongoing_load_back, {})
++                for comp in cache._components_tuple:
++                    self.assertFalse(comp.finalize_load_back.call_args.args[-1])
++
++    def test_spec_errors_release_prefetch_locks(self):
++        for error in (KeyError("missing node"), RuntimeError("stale"), ValueError("invalid")):
++            with self.subTest(error=type(error).__name__):
++                cache, _, _, leaf, _, _, args = native_load_fixture()
++
++                def build(node_id, **kwargs):
++                    cache.inc_lock_ref.assert_called_once()
++                    cache.inc_host_lock_ref.assert_called_once()
++                    raise error
++
++                cache.tree_core.build_load_back_spec = Mock(side_effect=build)
++                self.assertFalse(cache.prefetch_gpu_session_node(
++                    **args, beliefkv_before_enqueue=lambda operation: True,
++                ).issued)
++                cache.dec_lock_ref.assert_called_once_with(leaf.id, "device")
++                cache.dec_host_lock_ref.assert_called_once_with(leaf.id, "host")
++                cache.cache_controller.load.assert_not_called()
++
++    def test_native_demand_restore_preserves_multi_node_spec(self):
++        cache, _, parent, leaf, _, _, _ = native_load_fixture()
++        cache.load_back_threshold = 1
++        cache.tree_core.build_load_back_spec = Mock(return_value=(
++            SimpleNamespace(
++                host_indices=torch.arange(4), nodes_to_load=[parent.id, leaf.id],
++            ), {},
++        ))
++        self.assertTrue(cache.load_back(leaf.id))
++        cache.tree_core.build_load_back_spec.assert_called_once()
++        self.assertEqual(len(cache.cache_controller.load.call_args.kwargs["host_indices"]), 4)
 +
 +
 +if __name__ == "__main__":
