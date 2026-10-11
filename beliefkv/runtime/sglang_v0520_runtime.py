@@ -4506,6 +4506,7 @@ class NativeAdmissionRuntime:
             return
         self._tool_prefetch_next_ms = now_ms + SEMANTIC_FRAME_INTERVAL_MS
         self.counts["tool_prefetch_scans"] += 1
+        budget = None
         for hint in sorted(
             self.tool_wait_hints.values(),
             key=lambda item: (
@@ -4518,9 +4519,9 @@ class NativeAdmissionRuntime:
             if not self._tool_prefetch_ready(hint):
                 self.counts["tool_prefetch_not_in_time_window"] += 1
                 continue
-            if not self._prefetch_slot_available(
-                hint.key, budget=self._current_residency_budget(include_evictable=True),
-            ):
+            if budget is None:
+                budget = self._current_residency_budget(include_evictable=True)
+            if not self._prefetch_slot_available(hint.key, budget=budget):
                 self.counts["tool_prefetch_admission_budget_busy"] += 1
                 continue
             cached = self._tool_opportunity_cache.get(hint.key)
@@ -4558,6 +4559,7 @@ class NativeAdmissionRuntime:
                 )
                 continue
             if opportunity.fits_current_free_lists is not True:
+                budget = None
                 opportunity = self._reclaim_wait_prefetch_capacity(
                     hint.key, opportunity, source="tool_wait",
                 )

@@ -1052,6 +1052,46 @@ def test_tool_opportunity_cache_avoids_repeated_native_inspection():
     assert runtime._tool_ticket is None
 
 
+def test_tool_scan_rereads_admission_capacity_after_reclaim():
+    runtime, hint = tool_runtime()
+    request = req("second")
+    request.session_id, request.session_generation = "second-session", 1
+    runtime.register_visible_request(request)
+    runtime.on_events((
+        event(3, RuntimeEventKind.INVOCATION_CREATE, invocation_id="second",
+              context_id="ctx-second", agent_definition_id="child", agent_instance_id="second"),
+        event(4, RuntimeEventKind.TOOL_START, invocation_id="second",
+              attributes={"tool_family": "shell", "tool_run_id": "second-call"}),
+    ))
+    second = replace(
+        hint, key=runtime.context_sessions["ctx-second"],
+        invocation_revision_ts_ms=4., wait_p50_ms=400.,
+    )
+    runtime.tool_wait_hints["ctx-second"] = second
+    native_slots = [2]
+    step = PrefetchLoadStep(hint.key, 11, 4, 11, 4)
+    opportunity = NS(step=step, fits_current_free_lists=False)
+
+    def reclaim(*args, **kwargs):
+        native_slots[0] = 0
+        return None
+
+    try:
+        with patch.object(runtime, "_current_residency_budget", side_effect=lambda **kwargs:
+                          PrefetchResidencyBudget(native_slots[0], 1024 ** 3)), \
+             patch.object(runtime, "inspect_context_h2d_opportunity",
+                          return_value=opportunity) as inspect, \
+             patch.object(runtime, "_h2d_start_window",
+                          return_value=TransferStartWindow(200., 0., 500.)), \
+             patch.object(runtime, "_reclaim_wait_prefetch_capacity", side_effect=reclaim):
+            runtime._roll_tool_prefetch()
+        inspect.assert_called_once()
+        assert runtime._tool_ticket is None
+        assert runtime.counts["tool_prefetch_admission_budget_busy"] == 1
+    finally:
+        runtime.close()
+
+
 def test_fresh_tool_selection_reuses_the_plan_in_the_same_dispatch_call():
     runtime, hint = tool_runtime()
     step = PrefetchLoadStep(hint.key, 11, 4, 11, 4)

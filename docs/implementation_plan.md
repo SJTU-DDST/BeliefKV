@@ -2,6 +2,23 @@
 
 Status date: 2026-10-11.
 
+The isolated follow-up now reuses the admission-slot budget within one tool
+prefetch scan and invalidates it before capacity reclamation. The next
+candidate rereads changed capacity; native prefix planning and enqueue
+continue to validate current capacity independently. The323 related checks
+pass, including a reclaim that changes available slots from2 to0 before
+the second candidate. No prediction, timing or physical policy changes.
+Against455a5ef, nine CPU cases cover8/32/64 tool waits and no frontier,
+no target or selection of the last candidate. Each has eight alternating
+trials of120 prepared scans. Admission-check capacity reads per960 scans
+fall from7680/30720/61440 to960, with matching policy counters, inspection
+sequences and nonempty commands. Scan CPU falls26.78%-46.48% and wall
+26.63%-46.43%; native pools, service and enqueue are stubs, so DMA,
+GPU throughput and JCT are unmeasured. Keep
+v81_tool_prefetch_scan_capacity_cpu_20261011.json and its validation receipt.
+Commit the change and replace only the still-waiting V24 target. Preserve
+the frozen V23 pair and require the same-version GPU comparison.
+
 At 15:48:41 CST, waiting V24 was updated to committed
 1f75f554a5d9cbafa6231f65aaf3c8b2f7544848 in the frozen
 beliefkv-v80-tool-offload-20261011 checkout. Coordinator2996799 has

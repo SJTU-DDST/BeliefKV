@@ -1,0 +1,50 @@
+{
+  "scope": "Reuse the admission-slot capacity budget within a tool-prefetch scan; CPU validation only.",
+  "baseline_revision": "455a5ef85b65052efc48ab954383913793a82d55",
+  "updated_runtime_sha256": "f82ad089f6aabe7c35a6e903af68d60b927e244b07898bde7413559bdfd557fb",
+  "change": {
+    "budget_computed_lazily_once_for_unmutated_candidates": true,
+    "budget_invalidated_before_capacity_reclaim": true,
+    "budget_not_retained_across_scans": true,
+    "planning_and_enqueue_revalidate_capacity": true,
+    "prediction_or_physical_policy_changed": false,
+    "native_patch_changed": false,
+    "frozen_v23_modified": false
+  },
+  "checks": {
+    "passed": 323,
+    "duration_seconds": 1.16,
+    "suites": [
+      "tests/test_tool_predictive_transfers.py",
+      "tests/test_native_transfer_policy.py",
+      "tests/test_wait_prefetch_batch.py",
+      "tests/test_sglang_v0520_runtime.py"
+    ],
+    "regression": "test_tool_scan_rereads_admission_capacity_after_reclaim",
+    "reclaimed_capacity_case": {
+      "slots_before_reclaim": 2,
+      "slots_after_reclaim": 0,
+      "second_candidate_blocked": true,
+      "native_inspection_calls": 1,
+      "prefetch_ticket_created": false
+    },
+    "python": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python"
+  },
+  "benchmark": {
+    "report": "v81_tool_prefetch_scan_capacity_cpu_20261011.json",
+    "cases": 9,
+    "tool_wait_counts": [8, 32, 64],
+    "scenarios": ["no_frontier", "no_target", "select_last"],
+    "alternating_trials": 8,
+    "scans_per_trial": 120,
+    "logical_step_ms": 125,
+    "policy_counts_inspections_and_commands_match": true,
+    "admission_capacity_reads_before_per_960_scans": [7680, 30720, 61440],
+    "admission_capacity_reads_after_per_960_scans": 960,
+    "cpu_reduction_percent_range": [26.78, 46.48],
+    "wall_reduction_percent_range": [26.63, 46.43],
+    "native_allocator_dma_or_gpu_measured": false
+  },
+  "deployment": "Commit in the isolated follow-up and update only the waiting V24 registration; preserve the running frozen V23 pair.",
+  "performance_goal_achieved": false
+}
