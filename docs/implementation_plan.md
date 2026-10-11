@@ -2,6 +2,18 @@
 
 Status date: 2026-10-11.
 
+At17:30:54 CST, waiting V24 was updated to frozen
+dbcd95cfdd198acb0b29815d1b594d2a1ab9ed82 in
+beliefkv-v85-reentry-graph-20261011, including failed-prefix reentry
+reduction and the shared graph-result marker. Coordinator121691 has
+PPID1/start588131709; old3444664 is absent and itsdd12454 state/log
+are archived. The environment exactly matches the previous registration.
+Main stays clean ata6dd627; its frozen engine and running V23 coordinator/
+native server/client remain intact. Wait for the complete V23 pair and
+postprocessing, then predictive followed by cold same-version native.
+No V24 GPU arm has started. Keep authoritative main state
+v24_launch_after_v23_20261011.json and the V85 registration receipt.
+
 V85 adds the completed engine result's can_run_cuda_graph flag to the
 existing shared native/predictive service records as cuda_graph_replayed.
 No new sampling loop, device synchronization or action policy. Group
@@ -53,8 +65,9 @@ polling from these counts; preserve rearming after linked child device release.
 The measured exclusive wall totals include113.822s of reentry inspection,
 90.732s control_drain and74.104s opportunity sampling. They are not JCT
 savings; select subsequent reductions from actual path evidence. Keep
-v83_v23_terminal_and_handoff_diagnostics_20261011.json. Native remains live,
-the V24 target stays dd12454 and the full performance goal remains unmet.
+v83_v23_terminal_and_handoff_diagnostics_20261011.json. At that diagnosis
+V24 targeted dd12454; the latest registration above supersedes it. Native
+remains live and the full performance goal remains unmet.
 
 The V82 follow-up skips unmatched power-of-two prefix ranges in the background
 eviction writer using the existing sorted lengths and binary boundaries.

@@ -2,6 +2,18 @@
 
 更新日期：2026-10-11。
 
+2026-10-11 17:30:54 CST 已将尚未启动的 V24 登记更新为
+dbcd95cfdd198acb0b29815d1b594d2a1ab9ed82，冻结 checkout 为
+beliefkv-v85-reentry-graph-20261011，包含 f935411 的 reentry
+减负及 dbcd95c 的共用 graph 回放标记。新等待协调器 PID
+121691、PPID=1、启动身份 588131709；旧 3444664 已退出，
+dd12454 登记与日志已归档。V23 coordinator/native server/client
+保持运行，主目录仍为干净的 a6dd627，活动引擎匹配冻结 patch。
+新 V24 环境与被替换登记完全一致，仍等完整 V23 pair 及后处理，
+再先 predictive、后同版本冷 native；V24 GPU 尚未开始。
+权威登记为主工作区 v24_launch_after_v23_20261011.json，
+回执为 v85_v24_reentry_graph_registration_20261011.json。
+
 V85 后续服务遥测从已完成 batch 的引擎结果读取
 `can_run_cuda_graph`，在 native/predictive 共用记录中保存
 `cuda_graph_replayed`。未增加采样循环、设备同步或运行策略；
