@@ -1,0 +1,1470 @@
+{
+  "schema_version": 1,
+  "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v27",
+  "recorded_at_local": "2026-10-11T23:48:59.714239+08:00",
+  "status": "running_new_pair",
+  "started_at_utc": "2026-10-11T15:45:30.020788+00:00",
+  "scope": "Startup and independent complete file-prefix verification only; not an atomic snapshot, prediction improvement or GPU/JCT benefit.",
+  "collection_commit": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+  "execution_verification": {
+    "collection_code_commit": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+    "verification_code_commit": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "plan_differences": {
+    "code_commit": {
+      "previous": "2d25850d37caecbee8558f56c60d7d47ea46b706",
+      "current": "df3dd3c71a1cfc1100eb49148098869a546f519a"
+    }
+  },
+  "deployed_engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+    "expected_tree": "6e1dc30d83e05cbca3d470892d7cde1000e19ad9",
+    "actual_tree": "6e1dc30d83e05cbca3d470892d7cde1000e19ad9",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "artifact_verification": {
+    "semantic_artifact": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/models/child_semantic_work_live_v7_quantiles/semantic_event_calibrated.json",
+      "expected_sha256": "126e9447789c4361df436383a42afc8db092ca7cf085e8af24eb83aa39feb74d",
+      "actual_sha256": "126e9447789c4361df436383a42afc8db092ca7cf085e8af24eb83aa39feb74d",
+      "matches": true
+    },
+    "h2d_seed_artifact": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/models/native_h2d_ack_seed_20261004.json",
+      "expected_sha256": "76fbfd712963a2b3ca4dcc2a4a3629f74e36d61e7cb8044a69a75926991d2fcd",
+      "actual_sha256": "76fbfd712963a2b3ca4dcc2a4a3629f74e36d61e7cb8044a69a75926991d2fcd",
+      "matches": true
+    },
+    "tool_timing_artifact": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/models/qwen35_native_event_horizons_20260928_calibrated.json",
+      "expected_sha256": "55ea6fdc3307ecbbc4bb06020dbc961801cf7d5da3a3c13ad09a619276c64e80",
+      "actual_sha256": "55ea6fdc3307ecbbc4bb06020dbc961801cf7d5da3a3c13ad09a619276c64e80",
+      "matches": true
+    },
+    "transfer_service_seed": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/models/native_transfer_service_seed_v4.json",
+      "expected_sha256": "da149a32fe8b4ff8ea88387cac5be2c1e9929a0721778768b92b3d11a54a49f5",
+      "actual_sha256": "da149a32fe8b4ff8ea88387cac5be2c1e9929a0721778768b92b3d11a54a49f5",
+      "matches": true
+    }
+  },
+  "health_http_status": 200,
+  "pids": {
+    "coordinator": 1060398,
+    "server": 1060657,
+    "scheduler": 1061045,
+    "client": 1062524
+  },
+  "process_identities": {
+    "coordinator": [
+      "S",
+      1,
+      "590379164"
+    ],
+    "server": [
+      "S",
+      1060620,
+      "590379390"
+    ],
+    "scheduler": [
+      "R",
+      1060657,
+      "590380729"
+    ],
+    "client": [
+      "S",
+      1060620,
+      "590395035"
+    ]
+  },
+  "prefixes": {
+    "predictive_h2d/server/runtime_events.sglang.jsonl": {
+      "prefix_observed_size": 9169,
+      "complete_prefix_bytes": 9169,
+      "complete_record_count": 11,
+      "sha256": "d8155a72edbef68941a03d2897a0bf1a02c7e6add6cc5f48979d533436c187d5",
+      "events": {
+        "llm_submit": 6,
+        "llm_result": 5
+      },
+      "sources": {},
+      "first_ts_ms": 1791733723105.5146,
+      "last_ts_ms": 1791733738717.55
+    },
+    "predictive_h2d/server/runtime_audit.jsonl": {
+      "prefix_observed_size": 666081,
+      "complete_prefix_bytes": 666081,
+      "complete_record_count": 644,
+      "sha256": "746f42bf5647908e9e4eca49f6b1f78ce449a702b814ff660b6e79b963351e08",
+      "events": {
+        "background_writer_timing": 45,
+        "gpu_service_sample": 599
+      },
+      "sources": {},
+      "first_ts_ms": 1791733686177.2734,
+      "last_ts_ms": 1791733739299.1821
+    },
+    "predictive_h2d/server/transfer_telemetry.jsonl": {
+      "prefix_observed_size": 0,
+      "complete_prefix_bytes": 0,
+      "complete_record_count": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "events": {},
+      "sources": {},
+      "first_ts_ms": null,
+      "last_ts_ms": null
+    },
+    "predictive_h2d/server/physical_action_ack.jsonl": {
+      "prefix_observed_size": 0,
+      "complete_prefix_bytes": 0,
+      "complete_record_count": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "events": {},
+      "sources": {},
+      "first_ts_ms": null,
+      "last_ts_ms": null
+    },
+    "predictive_h2d/server/physical_action_use.jsonl": {
+      "prefix_observed_size": 0,
+      "complete_prefix_bytes": 0,
+      "complete_record_count": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "events": {},
+      "sources": {},
+      "first_ts_ms": null,
+      "last_ts_ms": null
+    }
+  },
+  "native_telemetry_status": {
+    "background_writer_timing": {
+      "categories": {
+        "audit:gpu_service_sample": {
+          "max_sample_cpu_ms": 0.111071,
+          "max_sample_wall_ms": 0.33144,
+          "mean_sample_cpu_ms": 0.04874075,
+          "mean_sample_wall_ms": 0.07562225,
+          "records_seen": 498,
+          "sampled_cpu_ms": 0.389926,
+          "sampled_wall_ms": 0.604978,
+          "samples": 8
+        },
+        "events:record": {
+          "max_sample_cpu_ms": 0.046093,
+          "max_sample_wall_ms": 0.045261,
+          "mean_sample_cpu_ms": 0.046093,
+          "mean_sample_wall_ms": 0.045261,
+          "records_seen": 11,
+          "sampled_cpu_ms": 0.046093,
+          "sampled_wall_ms": 0.045261,
+          "samples": 1
+        },
+        "eviction_attribution:context_prefix_probe": {
+          "max_sample_cpu_ms": 0.10006,
+          "max_sample_wall_ms": 0.100499,
+          "mean_sample_cpu_ms": 0.10006,
+          "mean_sample_wall_ms": 0.100499,
+          "records_seen": 6,
+          "sampled_cpu_ms": 0.10006,
+          "sampled_wall_ms": 0.100499,
+          "samples": 1
+        },
+        "eviction_attribution:served_context_prefix": {
+          "max_sample_cpu_ms": 0.127606,
+          "max_sample_wall_ms": 0.127449,
+          "mean_sample_cpu_ms": 0.127606,
+          "mean_sample_wall_ms": 0.127449,
+          "records_seen": 5,
+          "sampled_cpu_ms": 0.127606,
+          "sampled_wall_ms": 0.127449,
+          "samples": 1
+        },
+        "host_pool:host_pool_usage": {
+          "max_sample_cpu_ms": 0.017106,
+          "max_sample_wall_ms": 0.017351,
+          "mean_sample_cpu_ms": 0.017106,
+          "mean_sample_wall_ms": 0.017351,
+          "records_seen": 6,
+          "sampled_cpu_ms": 0.017106,
+          "sampled_wall_ms": 0.017351,
+          "samples": 1
+        }
+      },
+      "cpu_clock": "thread_time_ns",
+      "sample_every": 64,
+      "schema_version": 1,
+      "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+      "snapshot_ts_ms": 1791733738849.8848,
+      "wall_clock": "perf_counter_ns"
+    },
+    "collection_mode": "admission_observation",
+    "context_prefix_reuse_evidence": {
+      "counts": {
+        "new_or_changed_prompt_tokens": 439,
+        "previously_served_common_prefix_tokens": 16243,
+        "previously_served_prefix_recompute_proxy_tokens": 115,
+        "request_probes": 6,
+        "requests_with_prefix_recompute_proxy": 3,
+        "with_prior_served_prompt": 3,
+        "without_prior_served_prompt": 3
+      },
+      "semantics": "Previously served same-session input-prefix loss, not newly appended input or a per-layer FULL/Mamba recomputation count.",
+      "tracked_context_count": 3,
+      "tracking_limit": 1024
+    },
+    "dropped_records": 0,
+    "failed_records": 0,
+    "gpu_restore_wait_probe": {
+      "counts": {},
+      "pending_samples": 0,
+      "queue_limit": 32,
+      "sampling_interval": 16
+    },
+    "host_block_eviction_attribution": {
+      "available": true,
+      "counts": {},
+      "evicted_units_by_pool": {},
+      "full_reaccess_semantics": "exact prefix match plus request device/host cached-token intervals; remaining evicted FULL interval is attributed to recomputation",
+      "identity_semantics": "run-keyed HMAC over exact cache namespace and radix token prefix; raw token IDs are not written",
+      "mamba_reaccess_semantics": "exact prefix revisit is observable, but native telemetry does not expose the Mamba hit location per node",
+      "pending_blocks_by_pool": {},
+      "pending_latest_evicted_units_by_pool": {},
+      "probe_prefix_length_overflow": 0,
+      "recomputed_full_units": 0,
+      "reused_full_units": 0
+    },
+    "host_pool_evidence": {
+      "full": {
+        "bytes_per_unit": 20480,
+        "capacity_units": 7812501,
+        "d2h_ack_units": 0,
+        "evicted_bytes": 0,
+        "evicted_units": 0,
+        "eviction_calls": 0,
+        "h2d_ack_units": 0,
+        "h2d_units_after_first_host_eviction": 0,
+        "high_water": {
+          "used_bytes": 0,
+          "used_units": 0
+        }
+      },
+      "mamba": {
+        "bytes_per_unit": 64389120,
+        "capacity_units": 622,
+        "d2h_ack_units": 0,
+        "evicted_bytes": 0,
+        "evicted_units": 0,
+        "eviction_calls": 0,
+        "h2d_ack_units": 0,
+        "h2d_units_after_first_host_eviction": 0,
+        "high_water": {
+          "used_bytes": 0,
+          "used_units": 0
+        }
+      }
+    },
+    "pending_batch_count": 1,
+    "pending_request_count": 1,
+    "record_counts": {
+      "audit": 543,
+      "events": 11,
+      "eviction_attribution": 11,
+      "host_pool": 6
+    },
+    "request_cache_evidence": {
+      "after_first_full_host_eviction": {},
+      "after_first_host_eviction": {},
+      "after_first_mamba_host_eviction": {},
+      "all": {
+        "cached_tokens_device": 19712,
+        "cached_tokens_host": 0,
+        "mamba_host_hit_slots": 0,
+        "prompt_tokens": 36069,
+        "request_count": 6,
+        "requests_with_full_host_hit": 0,
+        "requests_with_mamba_host_hit": 0,
+        "uncached_prompt_tokens": 16357
+      }
+    },
+    "request_cache_evidence_semantics": {
+      "after_eviction": "pool-level request hits and uncached prompt tokens after the first eviction; use eviction_attribution.jsonl for node-level FULL reaccess attribution",
+      "full_host_hit": "cached_tokens_host input-token count",
+      "mamba_host_hit": "mamba_host_hit_length checkpoint-slot count; not tokens"
+    },
+    "schema_version": 1,
+    "snapshot_ts_ms": 1791733738849.88,
+    "source": "native_sglang_v0520",
+    "writer_error": null,
+    "writer_queue_depth": 0
+  },
+  "ujson_version": "5.12.1",
+  "native_started": false,
+  "available_disk_bytes": 57279279104,
+  "runtime_verification_after_doc_sync": {
+    "recorded_at_local": "2026-10-11T23:53:13.371349+08:00",
+    "runtime_state_prefix": {
+      "prefix_observed_size": 42370296,
+      "complete_prefix_bytes": 42370296,
+      "complete_record_count": 14413,
+      "sha256": "1afc85a30471a23b172cc11427ffa786173810c52681cbd1d8520da324aecd9f",
+      "events": {
+        "safe_point_census": 297,
+        "admission_runtime_state": 297,
+        "session_h2d_opportunity": 3809,
+        "tool_wait_forecast": 4277,
+        "wait_prefetch_plan": 1695,
+        "terminal_context_cache_sample": 3470,
+        "terminal_child_cache_reclaimed": 19,
+        "semantic_child_forecast": 192,
+        "child_final_stage_accepted": 2,
+        "terminal_cache_anchor_unavailable": 3,
+        "parent_capacity_handoff_first_service": 1,
+        "prepare_native_issued": 206,
+        "prepare_candidate_selected": 106,
+        "parent_pressure_demoted": 39
+      },
+      "sources": {
+        "join_wait": 1885,
+        "tool_wait": 1929,
+        "admission_candidate": 1788,
+        "join_ticket": 1,
+        "join_prepare": 252
+      },
+      "first_ts_ms": 1791733685713.142,
+      "last_ts_ms": 1791733992565.964,
+      "latest_runtime_state": {
+        "event": "admission_runtime_state",
+        "ts_ms": 1791733992095.7092,
+        "final": false,
+        "counts": {
+          "semantic_worker_ready": 1,
+          "semantic_worker_disabled": 0,
+          "semantic_worker_dropped": 0,
+          "join_wait_expired": 0,
+          "physical_expired": 0,
+          "tool_prefetch_scans": 4402,
+          "prepare_no_service_demand": 1704,
+          "execution_handoff_no_waiting_requests": 1700,
+          "tool_prefetch_scan_deferred": 258971,
+          "native_admitted": 2821,
+          "admission_causal_cache_hits": 1223,
+          "semantic_native_tool_marker_invalidated": 2772,
+          "semantic_text_received": 13221,
+          "semantic_text_after_tool_ignored": 5196,
+          "semantic_tool_chunk_invalidated": 2655,
+          "tool_wait_submitted": 5302,
+          "tool_wait_accepted": 4275,
+          "tool_hint_physical_inspection_deferred": 4275,
+          "tool_prefetch_no_restore_target": 5343,
+          "tool_unchanged_wait_prediction_skipped": 6762,
+          "tool_wait_context_stale": 2734,
+          "tool_prefetch_not_in_time_window": 12389,
+          "tool_wait_expired": 1,
+          "child_report_notice_observed": 25,
+          "join_intent_stale": 41,
+          "semantic_no_transfer_target_skipped": 34234,
+          "tool_wait_result_stale": 903,
+          "terminal_child_reclaim_calls": 19,
+          "terminal_child_discarded_nodes": 290,
+          "terminal_child_freed_full_tokens": 133337,
+          "terminal_child_freed_mamba_slots": 68,
+          "terminal_cache_watch_anchors_gone": 18,
+          "tool_wait_parallel_group_pending": 333,
+          "resident_first_ordered": 3285,
+          "tool_prefetch_admission_budget_busy": 3531,
+          "execution_handoff_no_frontier_slots": 1738,
+          "semantic_pending_frame_expired": 1,
+          "prepare_mamba_pressure_only": 2840,
+          "native_physical_completed": 206,
+          "native_OTHER": 2,
+          "semantic_input_submitted": 188,
+          "semantic_result_accepted": 184,
+          "final_stage_accepted": 2,
+          "final_request_bound": 2,
+          "semantic_h2d_child_waiting_for_service": 803,
+          "terminal_cache_anchor_unavailable": 3,
+          "semantic_latest_start_no_live_forecast": 510,
+          "terminal_cache_watch_time_expired": 4,
+          "observed_eos_h2d_candidate": 8,
+          "semantic_h2d_no_host_target": 8,
+          "wait_transfer_observation_invalidated": 8,
+          "parent_handoff_priority_ordered": 2,
+          "prefetch_priority_aged_head_bounded_bypass": 2,
+          "parent_handoff_priority_admitted": 1,
+          "parent_capacity_handoff_first_service": 1,
+          "shadow_native_issued": 206,
+          "shadow_bursts": 106,
+          "shadow_burst_nodes": 206,
+          "join_prepare_issued": 154,
+          "tool_prepare_issued": 52,
+          "prepare_probe_backoff": 598,
+          "parent_pressure_demoted": 39,
+          "tool_wait_pressure_demoted": 5,
+          "join_wait_pressure_demoted": 34,
+          "semantic_final_stage_created": 12,
+          "semantic_pre_eos_phase_unconfirmed": 755,
+          "semantic_pre_eos_uses_work_center": 375,
+          "semantic_h2d_too_early": 375
+        },
+        "physical_disabled": false,
+        "final_stage_prefetch": true,
+        "final_stage_priority": true,
+        "prepare_host": true,
+        "prepare_pool_scope": "missing_full_prefix",
+        "resident_first": true,
+        "execution_handoff": true,
+        "overlap_prefetch_supported": true,
+        "execution_handoff_request_id": null,
+        "tool_timing_only": true,
+        "tool_predictor_configured": true,
+        "tool_predictor_disabled": false,
+        "tool_prefetch": true,
+        "prefetch_lead_ms": 500.0,
+        "semantic_work_statistic": "center",
+        "eos_protocol_window_ms": 250.0,
+        "terminal_cache_diagnostics": true,
+        "h2d_seed_samples": 22,
+        "h2d_service_samples": 22,
+        "prefetch_residency_budget": {
+          "request_slots": 1,
+          "byte_limit": 47848263680,
+          "reserve_full_tokens": 16432,
+          "reserve_mamba_slots": 1,
+          "source": "native_next_prefill",
+          "evictable_full_tokens": 1334090,
+          "evictable_mamba_slots": 323
+        },
+        "prefetch_locked_count": 0,
+        "prefetch_protected_bytes": 0,
+        "semantic_worker_configured": true,
+        "semantic_worker_error": "",
+        "shared_path_timing": {
+          "schema_version": 1,
+          "enabled": true,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 306383.614214,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {
+            "control_socket_receive_sample": {
+              "count": 4507,
+              "total_ms": 29.773507,
+              "self_ms": 29.773507,
+              "mean_ms": 0.006606058797426226,
+              "max_ms": 1.174707,
+              "histogram": [
+                4200,
+                205,
+                63,
+                17,
+                12,
+                6,
+                2,
+                2,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_drain": {
+              "count": 263374,
+              "total_ms": 6920.543028,
+              "self_ms": 4784.256543,
+              "mean_ms": 0.02627648525670719,
+              "max_ms": 14.631662,
+              "histogram": [
+                235043,
+                20624,
+                1052,
+                88,
+                1341,
+                1549,
+                1881,
+                1539,
+                236,
+                20,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "semantic_updates": {
+              "count": 263374,
+              "total_ms": 2580.566044,
+              "self_ms": 2580.566044,
+              "mean_ms": 0.009798104763568157,
+              "max_ms": 2.203235,
+              "histogram": [
+                224275,
+                29789,
+                3848,
+                3996,
+                793,
+                481,
+                165,
+                27,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "opportunity_sampling": {
+              "count": 297,
+              "total_ms": 1235.501051,
+              "self_ms": 1235.501051,
+              "mean_ms": 4.159936198653199,
+              "max_ms": 52.604185,
+              "histogram": [
+                0,
+                22,
+                18,
+                0,
+                0,
+                11,
+                9,
+                15,
+                135,
+                83,
+                3,
+                0,
+                1,
+                0,
+                0,
+                0
+              ]
+            },
+            "terminal_sampling": {
+              "count": 297,
+              "total_ms": 243.770002,
+              "self_ms": 243.770002,
+              "mean_ms": 0.8207744175084175,
+              "max_ms": 4.357795,
+              "histogram": [
+                47,
+                0,
+                0,
+                0,
+                10,
+                31,
+                111,
+                95,
+                3,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "scheduler_maintenance": {
+              "count": 263373,
+              "total_ms": 17599.418223,
+              "self_ms": 6554.18251,
+              "mean_ms": 0.06682316798988507,
+              "max_ms": 53.707085,
+              "histogram": [
+                0,
+                0,
+                227994,
+                26045,
+                2409,
+                1922,
+                2204,
+                2148,
+                443,
+                164,
+                42,
+                1,
+                1,
+                0,
+                0,
+                0
+              ]
+            },
+            "join_prefetch": {
+              "count": 263373,
+              "total_ms": 1121.625646,
+              "self_ms": 1121.625646,
+              "mean_ms": 0.004258696396365611,
+              "max_ms": 0.686958,
+              "histogram": [
+                255115,
+                6017,
+                1487,
+                481,
+                264,
+                8,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "tool_prefetch": {
+              "count": 263373,
+              "total_ms": 2176.775595,
+              "self_ms": 2176.775595,
+              "mean_ms": 0.008264991456983062,
+              "max_ms": 7.003235,
+              "histogram": [
+                259357,
+                241,
+                340,
+                640,
+                1195,
+                747,
+                541,
+                280,
+                31,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "join_prepare": {
+              "count": 263373,
+              "total_ms": 1829.912249,
+              "self_ms": 1648.595007,
+              "mean_ms": 0.006947987261412522,
+              "max_ms": 88.104078,
+              "histogram": [
+                258616,
+                385,
+                3337,
+                783,
+                14,
+                24,
+                7,
+                108,
+                33,
+                37,
+                22,
+                4,
+                3,
+                0,
+                0,
+                0
+              ]
+            },
+            "tool_prepare": {
+              "count": 263373,
+              "total_ms": 560.758751,
+              "self_ms": 532.378059,
+              "mean_ms": 0.0021291428923997523,
+              "max_ms": 38.358111,
+              "histogram": [
+                260741,
+                1144,
+                1228,
+                159,
+                22,
+                52,
+                17,
+                2,
+                2,
+                0,
+                4,
+                2,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "execution_handoff": {
+              "count": 263373,
+              "total_ms": 5390.192227,
+              "self_ms": 726.246367,
+              "mean_ms": 0.020466001552930633,
+              "max_ms": 6.252015,
+              "histogram": [
+                259532,
+                389,
+                1173,
+                203,
+                174,
+                23,
+                28,
+                982,
+                850,
+                19,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "admission_plan": {
+              "count": 4225,
+              "total_ms": 8084.186812,
+              "self_ms": 5376.947453,
+              "mean_ms": 1.913416996923077,
+              "max_ms": 8.677128,
+              "histogram": [
+                0,
+                3,
+                160,
+                89,
+                124,
+                38,
+                194,
+                2640,
+                971,
+                6,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "batch_completed": {
+              "count": 13329,
+              "total_ms": 1153.30044,
+              "self_ms": 1153.30044,
+              "mean_ms": 0.08652565383749719,
+              "max_ms": 2.769748,
+              "histogram": [
+                30,
+                6564,
+                926,
+                215,
+                4912,
+                675,
+                6,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_json_decode_sample": {
+              "count": 390,
+              "total_ms": 9.604496,
+              "self_ms": 9.604496,
+              "mean_ms": 0.02462691282051282,
+              "max_ms": 0.071406,
+              "histogram": [
+                0,
+                232,
+                145,
+                13,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_event_decode_sample": {
+              "count": 390,
+              "total_ms": 8.608295,
+              "self_ms": 8.608295,
+              "mean_ms": 0.02207255128205128,
+              "max_ms": 0.084644,
+              "histogram": [
+                0,
+                258,
+                120,
+                12,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "graph_apply": {
+              "count": 11710,
+              "total_ms": 264.328245,
+              "self_ms": 264.328245,
+              "mean_ms": 0.02257286464560205,
+              "max_ms": 0.708498,
+              "histogram": [
+                0,
+                8976,
+                2560,
+                154,
+                19,
+                0,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "event_apply": {
+              "count": 24931,
+              "total_ms": 2080.55482,
+              "self_ms": 1600.948562,
+              "mean_ms": 0.08345252176005775,
+              "max_ms": 3.531283,
+              "histogram": [
+                8733,
+                2734,
+                3820,
+                3905,
+                3150,
+                2067,
+                495,
+                21,
+                6,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_ack_encode_sample": {
+              "count": 390,
+              "total_ms": 4.97606,
+              "self_ms": 4.97606,
+              "mean_ms": 0.012759128205128206,
+              "max_ms": 0.039824,
+              "histogram": [
+                176,
+                198,
+                16,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_socket_send_sample": {
+              "count": 390,
+              "total_ms": 8.767579,
+              "self_ms": 8.767579,
+              "mean_ms": 0.022480971794871796,
+              "max_ms": 0.558292,
+              "histogram": [
+                237,
+                111,
+                16,
+                5,
+                14,
+                6,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "reentry_inspection": {
+              "count": 36546,
+              "total_ms": 2881.616274,
+              "self_ms": 2881.616274,
+              "mean_ms": 0.07884901970119848,
+              "max_ms": 4.863439,
+              "histogram": [
+                5204,
+                2116,
+                2522,
+                15845,
+                10550,
+                277,
+                30,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "tool_features": {
+              "count": 5302,
+              "total_ms": 259.773873,
+              "self_ms": 259.773873,
+              "mean_ms": 0.04899544945303659,
+              "max_ms": 0.24445,
+              "histogram": [
+                277,
+                1269,
+                1347,
+                2039,
+                370,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "terminal_child_reclaim": {
+              "count": 19,
+              "total_ms": 29.280511,
+              "self_ms": 29.280511,
+              "mean_ms": 1.5410795263157895,
+              "max_ms": 2.678385,
+              "histogram": [
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                3,
+                15,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "prepare_candidate_maintenance": {
+              "count": 1966,
+              "total_ms": 84.475013,
+              "self_ms": 84.475013,
+              "mean_ms": 0.04296796185147508,
+              "max_ms": 0.784186,
+              "histogram": [
+                1729,
+                2,
+                9,
+                25,
+                33,
+                141,
+                27,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "prepare_candidate_publication": {
+              "count": 2067,
+              "total_ms": 110.507306,
+              "self_ms": 110.507306,
+              "mean_ms": 0.053462654088050315,
+              "max_ms": 0.58934,
+              "histogram": [
+                1455,
+                274,
+                1,
+                0,
+                85,
+                241,
+                11,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "prepare_backed_registration": {
+              "count": 690,
+              "total_ms": 8.717343,
+              "self_ms": 8.717343,
+              "mean_ms": 0.01263383043478261,
+              "max_ms": 0.048112,
+              "histogram": [
+                185,
+                484,
+                21,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        },
+        "control_timing_sample_every": 64,
+        "opportunity_writer_timing": {
+          "schema_version": 1,
+          "sample_every": 64,
+          "snapshot_ts_ms": 1791733992104.5234,
+          "cpu_clock": "thread_time_ns",
+          "wall_clock": "perf_counter_ns",
+          "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+          "categories": {
+            "safe_point_census": {
+              "records_seen": 297,
+              "samples": 5,
+              "sampled_cpu_ms": 0.116705,
+              "sampled_wall_ms": 0.11349,
+              "mean_sample_cpu_ms": 0.023341,
+              "mean_sample_wall_ms": 0.022698,
+              "max_sample_cpu_ms": 0.042425,
+              "max_sample_wall_ms": 0.041378
+            },
+            "admission_runtime_state": {
+              "records_seen": 296,
+              "samples": 5,
+              "sampled_cpu_ms": 1.259676,
+              "sampled_wall_ms": 1.374558,
+              "mean_sample_cpu_ms": 0.2519352,
+              "mean_sample_wall_ms": 0.2749116,
+              "max_sample_cpu_ms": 0.336632,
+              "max_sample_wall_ms": 0.43494
+            },
+            "session_h2d_opportunity": {
+              "records_seen": 3809,
+              "samples": 60,
+              "sampled_cpu_ms": 2.199872,
+              "sampled_wall_ms": 3.204337,
+              "mean_sample_cpu_ms": 0.03666453333333333,
+              "mean_sample_wall_ms": 0.05340561666666667,
+              "max_sample_cpu_ms": 0.138855,
+              "max_sample_wall_ms": 0.96384
+            },
+            "tool_wait_forecast": {
+              "records_seen": 4275,
+              "samples": 67,
+              "sampled_cpu_ms": 4.931891,
+              "sampled_wall_ms": 4.939267,
+              "mean_sample_cpu_ms": 0.07361031343283582,
+              "mean_sample_wall_ms": 0.07372040298507462,
+              "max_sample_cpu_ms": 0.223924,
+              "max_sample_wall_ms": 0.225961
+            },
+            "wait_prefetch_plan": {
+              "records_seen": 1694,
+              "samples": 27,
+              "sampled_cpu_ms": 1.438874,
+              "sampled_wall_ms": 1.420762,
+              "mean_sample_cpu_ms": 0.053291629629629626,
+              "mean_sample_wall_ms": 0.052620814814814815,
+              "max_sample_cpu_ms": 0.239459,
+              "max_sample_wall_ms": 0.242398
+            },
+            "terminal_context_cache_sample": {
+              "records_seen": 3463,
+              "samples": 55,
+              "sampled_cpu_ms": 10.009776,
+              "sampled_wall_ms": 27.53969,
+              "mean_sample_cpu_ms": 0.1819959272727273,
+              "mean_sample_wall_ms": 0.5007216363636363,
+              "max_sample_cpu_ms": 0.65605,
+              "max_sample_wall_ms": 6.685106
+            },
+            "terminal_child_cache_reclaimed": {
+              "records_seen": 19,
+              "samples": 1,
+              "sampled_cpu_ms": 0.065196,
+              "sampled_wall_ms": 0.064136,
+              "mean_sample_cpu_ms": 0.065196,
+              "mean_sample_wall_ms": 0.064136,
+              "max_sample_cpu_ms": 0.065196,
+              "max_sample_wall_ms": 0.064136
+            },
+            "semantic_child_forecast": {
+              "records_seen": 184,
+              "samples": 3,
+              "sampled_cpu_ms": 0.077133,
+              "sampled_wall_ms": 0.076113,
+              "mean_sample_cpu_ms": 0.025711,
+              "mean_sample_wall_ms": 0.025371,
+              "max_sample_cpu_ms": 0.028969,
+              "max_sample_wall_ms": 0.028774
+            },
+            "child_final_stage_accepted": {
+              "records_seen": 2,
+              "samples": 1,
+              "sampled_cpu_ms": 0.021173,
+              "sampled_wall_ms": 0.02098,
+              "mean_sample_cpu_ms": 0.021173,
+              "mean_sample_wall_ms": 0.02098,
+              "max_sample_cpu_ms": 0.021173,
+              "max_sample_wall_ms": 0.02098
+            },
+            "terminal_cache_anchor_unavailable": {
+              "records_seen": 3,
+              "samples": 1,
+              "sampled_cpu_ms": 0.022476,
+              "sampled_wall_ms": 0.022127,
+              "mean_sample_cpu_ms": 0.022476,
+              "mean_sample_wall_ms": 0.022127,
+              "max_sample_cpu_ms": 0.022476,
+              "max_sample_wall_ms": 0.022127
+            },
+            "parent_capacity_handoff_first_service": {
+              "records_seen": 1,
+              "samples": 1,
+              "sampled_cpu_ms": 0.057308,
+              "sampled_wall_ms": 0.057118,
+              "mean_sample_cpu_ms": 0.057308,
+              "mean_sample_wall_ms": 0.057118,
+              "max_sample_cpu_ms": 0.057308,
+              "max_sample_wall_ms": 0.057118
+            },
+            "prepare_native_issued": {
+              "records_seen": 206,
+              "samples": 4,
+              "sampled_cpu_ms": 0.189979,
+              "sampled_wall_ms": 0.182976,
+              "mean_sample_cpu_ms": 0.04749475,
+              "mean_sample_wall_ms": 0.045744,
+              "max_sample_cpu_ms": 0.090744,
+              "max_sample_wall_ms": 0.084808
+            },
+            "prepare_candidate_selected": {
+              "records_seen": 106,
+              "samples": 2,
+              "sampled_cpu_ms": 0.034112,
+              "sampled_wall_ms": 0.036089,
+              "mean_sample_cpu_ms": 0.017056,
+              "mean_sample_wall_ms": 0.0180445,
+              "max_sample_cpu_ms": 0.017467,
+              "max_sample_wall_ms": 0.01981
+            },
+            "parent_pressure_demoted": {
+              "records_seen": 39,
+              "samples": 1,
+              "sampled_cpu_ms": 0.021629,
+              "sampled_wall_ms": 0.021747,
+              "mean_sample_cpu_ms": 0.021629,
+              "mean_sample_wall_ms": 0.021747,
+              "max_sample_cpu_ms": 0.021629,
+              "max_sample_wall_ms": 0.021747
+            }
+          }
+        }
+      }
+    },
+    "native_telemetry_status": {
+      "background_writer_timing": {
+        "categories": {
+          "action_ack:beliefkv_physical_action_ack": {
+            "max_sample_cpu_ms": 0.188391,
+            "max_sample_wall_ms": 0.565855,
+            "mean_sample_cpu_ms": 0.07042975,
+            "mean_sample_wall_ms": 0.25746025,
+            "records_seen": 206,
+            "sampled_cpu_ms": 0.281719,
+            "sampled_wall_ms": 1.029841,
+            "samples": 4
+          },
+          "audit:gpu_service_sample": {
+            "max_sample_cpu_ms": 1.159782,
+            "max_sample_wall_ms": 6.39267,
+            "mean_sample_cpu_ms": 0.2005657081339713,
+            "mean_sample_wall_ms": 0.44174915789473684,
+            "records_seen": 13339,
+            "sampled_cpu_ms": 41.918233,
+            "sampled_wall_ms": 92.325574,
+            "samples": 209
+          },
+          "events:record": {
+            "max_sample_cpu_ms": 0.345568,
+            "max_sample_wall_ms": 1.3562,
+            "mean_sample_cpu_ms": 0.05523204545454546,
+            "mean_sample_wall_ms": 0.081554,
+            "records_seen": 5602,
+            "sampled_cpu_ms": 4.86042,
+            "sampled_wall_ms": 7.176752,
+            "samples": 88
+          },
+          "eviction_attribution:context_prefix_probe": {
+            "max_sample_cpu_ms": 1.231111,
+            "max_sample_wall_ms": 1.231665,
+            "mean_sample_cpu_ms": 0.3176489333333333,
+            "mean_sample_wall_ms": 0.3200302,
+            "records_seen": 2825,
+            "sampled_cpu_ms": 14.294202,
+            "sampled_wall_ms": 14.401359,
+            "samples": 45
+          },
+          "eviction_attribution:served_context_prefix": {
+            "max_sample_cpu_ms": 0.327813,
+            "max_sample_wall_ms": 0.32795,
+            "mean_sample_cpu_ms": 0.10561225,
+            "mean_sample_wall_ms": 0.10612331818181818,
+            "records_seen": 2777,
+            "sampled_cpu_ms": 4.646939,
+            "sampled_wall_ms": 4.669426,
+            "samples": 44
+          },
+          "host_pool:host_pool_transfer_ack": {
+            "max_sample_cpu_ms": 0.016812,
+            "max_sample_wall_ms": 0.018273,
+            "mean_sample_cpu_ms": 0.011072799999999999,
+            "mean_sample_wall_ms": 0.0113935,
+            "records_seen": 612,
+            "sampled_cpu_ms": 0.110728,
+            "sampled_wall_ms": 0.113935,
+            "samples": 10
+          },
+          "host_pool:host_pool_usage": {
+            "max_sample_cpu_ms": 0.044279,
+            "max_sample_wall_ms": 0.04381,
+            "mean_sample_cpu_ms": 0.03207475,
+            "mean_sample_wall_ms": 0.03203825,
+            "records_seen": 252,
+            "sampled_cpu_ms": 0.128299,
+            "sampled_wall_ms": 0.128153,
+            "samples": 4
+          },
+          "transfer:transfer_telemetry": {
+            "max_sample_cpu_ms": 0.087207,
+            "max_sample_wall_ms": 0.145333,
+            "mean_sample_cpu_ms": 0.0344977,
+            "mean_sample_wall_ms": 0.0402784,
+            "records_seen": 612,
+            "sampled_cpu_ms": 0.344977,
+            "sampled_wall_ms": 0.402784,
+            "samples": 10
+          }
+        },
+        "cpu_clock": "thread_time_ns",
+        "sample_every": 64,
+        "schema_version": 1,
+        "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+        "snapshot_ts_ms": 1791733992529.9236,
+        "wall_clock": "perf_counter_ns"
+      },
+      "collection_mode": "admission_observation",
+      "context_prefix_reuse_evidence": {
+        "counts": {
+          "new_or_changed_prompt_tokens": 1823130,
+          "previously_served_common_prefix_tokens": 23248784,
+          "previously_served_prefix_recompute_proxy_tokens": 89799,
+          "request_probes": 2825,
+          "requests_with_prefix_recompute_proxy": 2465,
+          "with_prior_served_prompt": 2501,
+          "without_prior_served_prompt": 324
+        },
+        "semantics": "Previously served same-session input-prefix loss, not newly appended input or a per-layer FULL/Mamba recomputation count.",
+        "tracked_context_count": 324,
+        "tracking_limit": 1024
+      },
+      "dropped_records": 0,
+      "failed_records": 0,
+      "gpu_restore_wait_probe": {
+        "counts": {},
+        "pending_samples": 0,
+        "queue_limit": 32,
+        "sampling_interval": 16
+      },
+      "host_block_eviction_attribution": {
+        "available": true,
+        "counts": {},
+        "evicted_units_by_pool": {},
+        "full_reaccess_semantics": "exact prefix match plus request device/host cached-token intervals; remaining evicted FULL interval is attributed to recomputation",
+        "identity_semantics": "run-keyed HMAC over exact cache namespace and radix token prefix; raw token IDs are not written",
+        "mamba_reaccess_semantics": "exact prefix revisit is observable, but native telemetry does not expose the Mamba hit location per node",
+        "pending_blocks_by_pool": {},
+        "pending_latest_evicted_units_by_pool": {},
+        "probe_prefix_length_overflow": 0,
+        "recomputed_full_units": 0,
+        "reused_full_units": 0
+      },
+      "host_pool_evidence": {
+        "full": {
+          "bytes_per_unit": 20480,
+          "capacity_units": 7812501,
+          "d2h_ack_units": 153886,
+          "evicted_bytes": 0,
+          "evicted_units": 0,
+          "eviction_calls": 0,
+          "h2d_ack_units": 0,
+          "h2d_units_after_first_host_eviction": 0,
+          "high_water": {
+            "used_bytes": 3047649280,
+            "used_units": 148811
+          }
+        },
+        "mamba": {
+          "bytes_per_unit": 64389120,
+          "capacity_units": 622,
+          "d2h_ack_units": 109,
+          "evicted_bytes": 0,
+          "evicted_units": 0,
+          "eviction_calls": 0,
+          "h2d_ack_units": 0,
+          "h2d_units_after_first_host_eviction": 0,
+          "high_water": {
+            "used_bytes": 7018414080,
+            "used_units": 109
+          }
+        }
+      },
+      "pending_batch_count": 1,
+      "pending_request_count": 192,
+      "record_counts": {
+        "action_ack": 206,
+        "audit": 13630,
+        "events": 5602,
+        "eviction_attribution": 5602,
+        "host_pool": 864,
+        "transfer": 612
+      },
+      "request_cache_evidence": {
+        "after_first_full_host_eviction": {},
+        "after_first_host_eviction": {},
+        "after_first_mamba_host_eviction": {},
+        "all": {
+          "cached_tokens_device": 24992866,
+          "cached_tokens_host": 0,
+          "mamba_host_hit_slots": 0,
+          "prompt_tokens": 27219949,
+          "request_count": 2825,
+          "requests_with_full_host_hit": 0,
+          "requests_with_mamba_host_hit": 0,
+          "uncached_prompt_tokens": 2227083
+        }
+      },
+      "request_cache_evidence_semantics": {
+        "after_eviction": "pool-level request hits and uncached prompt tokens after the first eviction; use eviction_attribution.jsonl for node-level FULL reaccess attribution",
+        "full_host_hit": "cached_tokens_host input-token count",
+        "mamba_host_hit": "mamba_host_hit_length checkpoint-slot count; not tokens"
+      },
+      "schema_version": 1,
+      "snapshot_ts_ms": 1791733992529.9182,
+      "source": "native_sglang_v0520",
+      "writer_error": null,
+      "writer_queue_depth": 0
+    },
+    "execution_verification": {
+      "collection_code_commit": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+      "verification_code_commit": "86e90f3590c02c41e52caabe7519e447a7c7fb3a",
+      "execution_source_unchanged": true,
+      "non_execution_paths": [
+        "docs/",
+        "tests/",
+        "scripts/summarize_semantic_h2d_ab.py",
+        "scripts/launch_semantic_h2d_after_pair.py"
+      ],
+      "changed_committed_paths": [
+        "docs/architecture_status_zh.md",
+        "docs/beliefkv_design.md",
+        "docs/experiment_operating_notes_zh.md",
+        "docs/implementation_plan.md"
+      ]
+    }
+  }
+}
