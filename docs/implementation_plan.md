@@ -2,6 +2,19 @@
 
 Status date: 2026-10-12.
 
+V111 commits efcda87. In the same-version V27 600-900s window,
+all 2030/2159 Host-hit records repeat three identical identity paths.
+Read an identical integer anchor once within that first-service
+observation; refresh on the next observation. Preserve record fields,
+node identity and separate physical reuse proof. The 104 related
+checks pass. Twenty CPU on_launch cases, 100 alternating trials each,
+preserve records and service state. Same-anchor means at depths
+24/64/185 fall from 0.071/0.134/0.337 to 0.045/0.071/0.133ms.
+Retain small distinct/missing-anchor overhead and no-hit mean outliers.
+This does not explain all small-prefill delay or prove GPU/JCT benefit.
+Add V111 to V28's frozen cold target without changing live V27;
+the full throughput, JCT and attributable early-FULL goal stays active.
+
 V108 obtains complete same-version V27 windows300-600 and600-900s.
 Both arms have actual native prefill geometry; matched cohorts number
 13 and12. In600-900s, actual extend is1.633/1.736 million tokens while
