@@ -72,8 +72,18 @@ ownership, native page/dependency checks, the original3-second expiry and
 allocation-pressure release stay live. Do not reserve a GPU running slot or
 introduce another admission gate. The174 focused runtime/transfer/handoff/
 terminal-capacity checks and187 common tool/runtime checks pass,361 in total.
-Queue this follow-up for V23 without mutating V22;
-validate actual residence and first use in the next matched pair.
+At2026-10-11 09:23:57 CST, register this committed e7bd8fa follow-up for V23
+without mutating V22. Frozen checkout:
+beliefkv-v50-handoff-issue-protection-20261011; full revision
+e7bd8faa08d380a33cb88ee98b71e5e3303a1917; waiting coordinator2616411.
+Configuration, previous pair and canonical engine patch match the prior
+registration. Only old waiting coordinator2402814 was stopped; no V22 process
+was signalled. Preserve the previous registration as
+v23_launch_after_v22_3644e8b_superseded_20261011.json and the receipt
+v50_v23_handoff_protection_registration_20261011.json. Wait for the complete
+V22 pair and postprocessing, then deploy, predictive first and cold native second.
+Validate actual residence and first use in that matched pair; the new fix has
+not run on GPU.
 
 Keep v48_v22_tool_forecast_live_20261011.json and its detailed local artifact.
 For6549 independent tool rounds with last-second accepted forecasts, the
@@ -128,7 +138,7 @@ Preserve the08:46:35 CST revision73c9ac1 registration in
 v23_launch_after_v22_73c9ac1_superseded_20261011.json.
 At2026-10-11 09:06:17 CST, replace the not-yet-started registration with the
 combined writer-index, admission-binding and single-native-spec revision3644e8b.
-Same-configuration V23 is waiting_for_previous_pair with coordinator2402814.
+That registration was waiting_for_previous_pair with coordinator2402814.
 Its frozen checkout isbeliefkv-v46-single-load-spec-20261011, target revision
 3644e8b7f752005d861b5fb29c8648fb1467b898 and new canonical patch SHA256 is
 498a2e8219f0d454776c7b967b87a82e7b49e3e75831389e08a9daabfb29998e.
@@ -144,7 +154,8 @@ v23_single_spec_validated_engine_delta_20261011.patch. Captured wait identities
 are V22 coordinator1159560 and driver1166290. Deploy only after the full pair and
 postprocessing complete, then run predictive first and cold native second,
 preserving workload and prediction windows. V22 source and processes remain
-frozen; V23 is not yet running. Keep the objective active until useful early FULL
+frozen; the09:06 registration is superseded by the09:23 e7bd8fa registration
+above, and V23 is not yet running. Keep the objective active until useful early FULL
 reuse and same-version busy-window performance benefit are both demonstrated.
 
 Keep the complete1200–1800s control evidence in

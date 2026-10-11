@@ -1,0 +1,40 @@
+{
+  "status": "waiting_for_previous_pair",
+  "registered_at_utc": "2026-10-11T01:23:57.833692+00:00",
+  "registered_at_cst": "2026-10-11T09:23:57.833692+08:00",
+  "previous_target_revision": "3644e8b7f752005d861b5fb29c8648fb1467b898",
+  "target_revision": "e7bd8faa08d380a33cb88ee98b71e5e3303a1917",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v50-handoff-issue-protection-20261011",
+  "target_patch_sha256": "498a2e8219f0d454776c7b967b87a82e7b49e3e75831389e08a9daabfb29998e",
+  "previous_registration": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_3644e8b_superseded_20261011.json",
+  "current_registration": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_20261011.json",
+  "launch_log": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_e7bd8fa_20261011.log",
+  "stopped_waiting_coordinator": 2402814,
+  "current_waiting_coordinator": 2616411,
+  "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22",
+  "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v23",
+  "current_main_revision": "3aa27dd67b340236310824d80a7e6e31038ea1f9",
+  "configuration_equal": true,
+  "previous_run_equal": true,
+  "previous_commit_equal": true,
+  "target_engine_patch_equal": true,
+  "new_run_directory_absent_at_verification": true,
+  "v22_processes_not_signalled": [
+    1159560,
+    1166290,
+    1166319,
+    1166676,
+    1168306
+  ],
+  "wait_process_identities": {
+    "1159560": ["S", 2225719, "584605337"],
+    "1166290": ["S", 1159560, "584641989"]
+  },
+  "deployment": "Wait for the complete V22 predictive/native pair and postprocessing, then fast-forward the main checkout and apply its existing validated canonical engine delta. Run predictive first and cold same-version native second.",
+  "validation": {
+    "focused_runtime_checks": 174,
+    "common_tool_runtime_checks": 187,
+    "total": 361,
+    "new_handoff_fix_gpu_validated": false
+  }
+}

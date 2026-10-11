@@ -66,8 +66,16 @@ ACK沿用同一原生容量来源的已下发槽额度，继续实时核验字�
 首次服务、失效和分配压力均按原路径释放，不额外预留GPU running
 slot，不增加准入门槛。未提交的批量尾节点同步清除额度。174项
 相关runtime、handoff、终态容量及传输预算检查及187项公共工具/
-runtime检查通过，合计361项。该修改尚未
-部署到冻结V22，准备纳入后续V23；GPU效果及同版本native收益待验证。
+runtime检查通过，合计361项。该修改尚未部署到冻结V22。
+2026-10-11 09:23:57 CST已将等待中的V23登记更新为e7bd8fa，
+完整revision为e7bd8faa08d380a33cb88ee98b71e5e3303a1917，
+冻结checkout为beliefkv-v50-handoff-issue-protection-20261011，
+协调器PID2616411。运行配置、前序pair和canonical原生patch均与
+上一登记相同；仅停止旧waiting coordinator2402814，V22进程未发
+信号。旧登记保存为v23_launch_after_v22_3644e8b_superseded_20261011.json；
+回执为v50_v23_handoff_protection_registration_20261011.json。等待V22
+完整pair及后处理后自动部署，仍为predictive先、冷native后；GPU
+效果及同版本native收益待验证。
 
 工具窗口局部诊断v48_v22_tool_forecast_live_20261011.json由上述完整
 生命周期关联和带读取SHA256的opportunity前缀生成。6549个具有最后
@@ -119,7 +127,7 @@ v23_launch_after_v22_fe06e06_superseded_20261011.json。
 v23_launch_after_v22_73c9ac1_superseded_20261011.json。
 2026-10-11 09:06:17 CST将尚未启动的V23替换为同时包含writer
 索引、准入身份绑定和原生恢复单次spec构造的3644e8b，
-状态waiting_for_previous_pair，协调器PID2402814；
+当时状态waiting_for_previous_pair，协调器PID2402814；
 冻结checkout为beliefkv-v46-single-load-spec-20261011，
 完整目标revision为3644e8b7f752005d861b5fb29c8648fb1467b898，
 新原生patch SHA256为
@@ -132,7 +140,8 @@ v23_supersession_73c9ac1_to_3644e8b_20261011.json，
 V22 coordinator/driver/server/scheduler/client均未发送信号。
 新patch相对当前部署的差分已通过原生工作区git apply --check，
 回执为v23_single_spec_validated_engine_delta_20261011.patch。
-协调器已捕获V22 coordinator
+该09:06登记已由上方09:23的e7bd8fa登记替换。当前协调器2616411
+已捕获V22 coordinator
 1159560及driver1166290的进程身份，等待整个pair及后处理完成再
 部署；仍为predictive先行、冷native随后，不改变workload或预测
 窗口。当前V22源码和运行进程保持冻结，V23尚未启动；性能目标仍
