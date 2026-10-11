@@ -2,6 +2,16 @@
 
 Updated: 2026-10-11.
 
+Terminal close and child retirement retain every valid indexed session leaf.
+The former 64-anchor fallback to only the latest branch lost historical private
+suffixes after releasing their references. Reclamation still uses bounded native
+batches and retries; shared, locked and in-flight data remains protected, with
+no terminal D2H. Twelve real CPU allocator regressions cover 65/128 branches,
+both close/RETURN orders, shared parent prefixes and historical lock/H2D retry.
+The follow-up passes 164 native and 464 BeliefKV checks and canonical forward/
+reverse tree validation. Deploy after the frozen V22 pair, with predictive and
+cold native using the same version; allocator tests do not prove GPU speedup.
+
 The current Qwen3.5 / SGLang v0.5.20 integration uses
 `sglang-v0.5.20-beliefkv-staging.patch`, pinned to
 `94602c9c2b7cbdb8efd5c52802dac6a1c180089e`; details are below.

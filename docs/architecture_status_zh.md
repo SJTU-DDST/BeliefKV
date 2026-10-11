@@ -2,6 +2,55 @@
 
 更新日期：2026-10-11。
 
+child 到 parent 的四步容量交接已落实到 runtime 与原生 allocator，
+本轮核对现有实现并补齐已结束 V22 predictive 的证据，没有新增
+开关或修改冻结采集。收尾通知规划 parent 安全 checkpoint；
+真实 RETURN 且 context 退休后直接回收无用私有后缀，无须 D2H；
+分池实际释放进入原生 free lists；JOIN 满足且下一请求依赖就绪后
+有界优先恢复、准入与首次消费前驻留。共享前缀、活跃引用和在途
+传输仍保留，结算后的回收可重新激活容量不足的 parent 恢复。
+
+V22 predictive 已结束，155 completed、1 incomplete，367 个动态
+child，31 个 workflow 多轮 spawn。重新审计全部已封存数据：
+367 个真实 child 累计释放设备 FULL 117.868 GB、Mamba 111.973 GB；
+188 个观测 JOIN 中 172 个在完成前已有 sibling 设备释放，91 个
+随后在 JOIN 前实际提交 H2D 并由 parent 下一请求证明 FULL 复用，
+合计 1.356 GB。190 个 parent 首次完成 GPU batch 均关联先前
+child 释放，scheduler 最后 child RETURN 交付到该 batch 的
+P50/P90 为 222.46/689.11 ms，最大 16.312 秒。此时延不是
+预测误差或 kernel 启动时延，累计释放也不是同时空闲或独占容量。
+最后 child 返回后才启动的恢复仍单列为需求 handoff。
+
+完整重算见 v63_v22_terminal_capacity_complete_20261011.json，
+紧凑证据与来源 SHA256 见
+v63_child_parent_capacity_handoff_complete_20261011.json。
+同版本 native 仍在采集；V23 保留下方 11:20 登记的 2aa19f2，
+待完整 V22 pair 及后处理结束后先 predictive、再冷 native。
+当前只能确认联动已实现且发生了释放与提前复用，不能据此宣称
+相对 native 的吞吐/JCT 目标已达成。
+
+本次继续修复终态回收的真实覆盖缺口：同一 session 超过 64 个
+component 叶锚点时，直接 RETURN 与 close-before-RETURN 都退回
+仅最新锚点，释放全部 session 引用后丢失历史私有分支的回收来源。
+CPU 实际 allocator 中，65 个两 token 分支共享一 token 前缀，
+共占 66 个 FULL token；旧版只直接回收 1 个，留下 65 个且没有
+retry anchors。它们仍可由普通驱逐回收，不能称为永久内存泄漏；
+现有 V22 遥测尚不能量化真实受影响 child 数。
+
+终态关闭和退休现在完整保留该 session 的已索引有效锚点；
+普通动作快照的默认额度不变，实际回收仍受既有 max_nodes 额度
+约束，剩余锚点进入重试，不新增全树扫描或 D2H。65/128 分支、
+close 与 RETURN 两种顺序、共享 parent 前缀及旧分支锁/H2D
+均已验证；12 个新增用例在旧版全部失败，修复后通过。原生
+164 项、BeliefKV 457 项及真实源码 materialization 7 项共
+628 项检查通过。新规范 patch SHA256 为
+4af68951beefdf759901d0143ca747c6893aa1ffc7124a3738158512851f7e60，
+预期/实际原生 tree 均为 a49cf2d2f643afaaf188f693cfee0c08373bba81。
+相对等待中 2aa19f2 只改 session_ref_tracker.py、
+unified_radix_cache.py 和终态容量测试；正反向应用核验通过。
+证据见 v63_terminal_anchor_recycling_fix_20261011.json。
+本项将随下一轮 V23 部署，当前 V22 及 workload 配置继续冻结。
+
 继续降低准入身份解析成本。CPU profile在108个等待请求、保留
 16轮历史的合成场景中定位到_request_key的重复身份对象分配。
 现在准入规划、终态队列检查、恢复读取及有驻留租约的首次服务
@@ -66,16 +115,17 @@ FULL未复用；这不是184秒工具执行、GPU准入等待或RETURN预测误�
 预测、准入及workload配置。相关486项检查通过；尚未部署到V22，
 不据此宣称消除摘要执行成本或取得native相对收益。
 
-该驻留修复、容量审计及文档已提交为d6d6470，前缀减负为cc2fac4。
-2026-10-11 11:00:53 CST将仍在等待的V23更新为
-cc2fac4f00009d2a778eeee7c419ed84cad1a08d，冻结checkout为
-beliefkv-v60-prefix-lengths-20261011，协调器PID3325062，PPID1。
-配置及前序pair进程身份与d6d6470登记一致；原生patch只增加上述
-两文件的已验证差异，完整部署差异只读apply检查再次通过。
-仅停止旧等待协调器3317739，主checkout继续为干净的3aa27dd，
+该驻留修复、容量审计及文档已提交为d6d6470，前缀减负为cc2fac4，
+准入身份复用为2aa19f2。2026-10-11 11:20:16 CST将仍在等待的V23
+更新为2aa19f28b6e257d0bb4d07ca4b47a86f536a9c7b，冻结checkout为
+beliefkv-v61-bound-identities-20261011，协调器PID3378541。
+11:27:33 CST确认该进程已由登记helper的子进程转为PPID1，
+启动身份仍为585907880。配置、前序pair进程身份及原生patch与
+cc2fac4登记一致；准入身份复用没有新的原生引擎差异。
+仅停止旧等待协调器3325062，主checkout继续为干净的3aa27dd，
 V22采集进程未发信号。旧登记保留为
-v23_launch_after_v22_d6d6470_superseded_20261011.json；
-回执为v60_v23_prefix_lengths_registration_20261011.json，
+v23_launch_after_v22_cc2fac4_superseded_20261011.json；
+回执为v61_v23_bound_identity_registration_20261011.json，
 当前主工作区登记仍为v23_launch_after_v22_20261011.json。
 V23在V22完整pair及后处理结束后自动部署，predictive先、
 冷启动同版本native后。当前性能目标仍未达成。
@@ -102,7 +152,7 @@ v23_launch_after_v22_58f2097_superseded_20261011.json，当前登记仍为
 v57_v23_tool_curve_registration_20261011.json。冻结V22及运行配置
 保持原样，其完整pair及后处理结束后自动部署，predictive先、
 冷启动同版本native后；GPU收益仍待验证。
-该10:34登记先由d6d6470替换，当前登记为上方11:00的cc2fac4。
+该10:34登记先由d6d6470和cc2fac4替换，当前登记为上方11:20的2aa19f2。
 
 终态child到parent的容量交接已包含在冻结V22中：child RETURN且
 context确定退休后，释放session引用，直接丢弃原生allocator确认

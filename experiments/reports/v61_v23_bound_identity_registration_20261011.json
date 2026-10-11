@@ -1,0 +1,78 @@
+{
+  "status": "waiting_for_previous_pair",
+  "registered_at_utc": "2026-10-11T03:20:16.135388+00:00",
+  "verified_at_utc": "2026-10-11T03:20:16.209093+00:00",
+  "previous_target_revision": "cc2fac4f00009d2a778eeee7c419ed84cad1a08d",
+  "target_revision": "2aa19f28b6e257d0bb4d07ca4b47a86f536a9c7b",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v61-bound-identities-20261011",
+  "target_patch_sha256": "fb6aecfc1f72f4ad82e8ca83a8379980ba036883573dd59d9875458ba4989100",
+  "previous_registration": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_cc2fac4_superseded_20261011.json",
+  "current_registration": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_20261011.json",
+  "launch_log": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_2aa19f2_20261011.log",
+  "stopped_waiting_coordinator": 3325062,
+  "current_waiting_coordinator": 3378541,
+  "current_waiting_coordinator_identity": [
+    "S",
+    3378204,
+    "585907880"
+  ],
+  "current_waiting_coordinator_identity_after_helper_exit": [
+    "S",
+    1,
+    "585907880"
+  ],
+  "helper_exit_identity_verified_at_cst": "2026-10-11T11:27:33+08:00",
+  "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22",
+  "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v23",
+  "current_main_revision": "3aa27dd67b340236310824d80a7e6e31038ea1f9",
+  "configuration_equal": true,
+  "wait_process_identities_equal": true,
+  "target_engine_patch_equal": true,
+  "main_and_frozen_target_clean": true,
+  "new_run_directory_absent_at_verification": true,
+  "v22_processes_not_signalled": [
+    1159560,
+    1166290,
+    3330270,
+    3332034
+  ],
+  "deployed_v22_engine_canonical_patch": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83",
+    "expected_tree": "63d91509bee139b2d6a2285eb44b193a67a9e008",
+    "actual_tree": "63d91509bee139b2d6a2285eb44b193a67a9e008",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "deployment": "After the complete V22 predictive/native pair and postprocessing, deploy 2aa19f2 and run predictive followed by cold same-version native.",
+  "change": {
+    "reuse_runtime_bound_identity_after_current_field_validation": true,
+    "request_workflow_invocation_context_epoch_attempt_session_generation_checked": true,
+    "changed_identity_and_malformed_metadata_behavior_retained": true,
+    "cross_call_metadata_or_physical_residency_cache_added": false,
+    "planner_identity_parser_and_frontier_baseline_sources_pinned": true,
+    "terminal_child_capacity_handoff_retained": true,
+    "queued_prefix_and_tool_curve_and_summary_residence_fixes_retained": true,
+    "prediction_contract_and_runtime_budgets_preserved": true,
+    "gpu_performance_verified": false
+  },
+  "validation": {
+    "relevant_checks_passed": 328,
+    "bounded_evidence": "v61_bound_identity_admission_cpu_20261011.json",
+    "bounded_evidence_sha256": "98dc252c9514d405ca30ffee6e75d4a2adfa660c92203000b5d6c4a1b433271b",
+    "changed_or_invalid_live_field_cases": 14,
+    "ordinary_and_streaming_session_cases": 2,
+    "queue_order_batch_state_and_native_inspection_counts_equal": true,
+    "synthetic_cpu_mean_wall_reduction_fraction": [
+      0.11936211789540674,
+      0.10575776484619515,
+      0.1421488444779302,
+      0.14974747939804223
+    ],
+    "physical_restoration_ipc_dma_and_gpu_excluded_from_benchmark": true
+  }
+}

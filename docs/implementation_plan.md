@@ -2,6 +2,51 @@
 
 Status date: 2026-10-11.
 
+The requested four-step child-to-parent capacity handoff is implemented in the
+runtime and native allocator. Reuse final-stage planning of the safe parent
+checkpoint; retire only authoritatively finished child contexts; directly discard
+settled private suffixes without D2H; use actual separate FULL/Mamba free lists
+and next-input/decode reserves; coordinate bounded ready-parent admission and
+residence until first consumption. Shared ancestors, active references and
+inflight transfers remain protected. Settled child device release may rearm a
+capacity-blocked parent restore. Add no new switch or frozen-workload change.
+
+Keep the complete V22 predictive audit and compact source-hashed evidence in
+v63_v22_terminal_capacity_complete_20261011.json and
+v63_child_parent_capacity_handoff_complete_20261011.json. The arm ends with
+155 completed/1 incomplete, 367 dynamic children and 31 multi-round workflows.
+Confirmed children cumulatively release device FULL 117.868 GB and Mamba
+111.973 GB, excluding internal calls. Of 188 observed JOINs, 172 have pre-JOIN
+sibling device release and 91 subsequently submit before JOIN and prove
+following-parent FULL reuse, 1.356 GB. All 190 parent first completed GPU batches
+link to prior child release; scheduler-observed last RETURN to that batch
+P50/P90 is 222.46/689.11 ms, maximum 16.312 s. This is not prediction error,
+kernel-start latency, simultaneous free capacity or exclusive parent ownership.
+Restore after the last child's RETURN remains demand recovery. No actual
+capacity-retry rearm is observed. Wait for the same-version native comparison
+before any throughput/JCT claim. Keep V23 queued at the 11:20 2aa19f2 target.
+
+Fix the demonstrated terminal-history coverage loss before the next V23 launch.
+More than 64 indexed component anchors previously forced latest-only provenance
+in both direct retirement and close-before-RETURN, then released all references
+and lost the historical private branches from retries. A real CPU allocator
+fixture with 65 branches owns 66 FULL tokens; the old code frees only one and
+returns no retry anchors. Ordinary eviction can still reclaim the remainder;
+the affected real V22 child count is not established.
+
+Terminal close/retirement now request all valid indexed anchors. Ordinary action
+snapshot defaults and per-call reclamation/retry budgets remain unchanged.
+Add no whole-tree scan or D2H. Twelve new 65/128-branch, close-order, shared-parent
+and historical lock/H2D cases fail before the fix and pass afterwards.
+Native 164, related BeliefKV 457 and native materialization 7 checks pass, 628 total.
+Keep v63_terminal_anchor_recycling_fix_20261011.json. New canonical patch:
+4af68951beefdf759901d0143ca747c6893aa1ffc7124a3738158512851f7e60;
+expected/actual tree a49cf2d2f643afaaf188f693cfee0c08373bba81.
+The queued native delta touches only session_ref_tracker.py, unified_radix_cache.py
+and the terminal-capacity test; forward deployed transition and reverse checks
+pass. Commit and replace only the waiting V23 target; preserve the frozen V22
+pair and all workload/model settings. Allocator coverage is not a GPU speedup.
+
 Reduce repeated request-identity allocations after a CPU profile of108 waiting
 requests with16 retained rounds identifies_request_key cost. Admission planning,
 terminal queue checks, reentry reads and lease first-service processing may reuse
@@ -70,14 +115,16 @@ The486 related checks pass. Include the follow-up in the next waiting frozen
 target; V22 remains unchanged. This does not remove summary work or prove GPU benefit.
 
 The residence fix and capacity evidence are committed asd6d6470; prefix-length
-reuse iscc2fac4. At2026-10-11 11:00:53 CST, register the waiting V23 target as
-cc2fac4f00009d2a778eeee7c419ed84cad1a08d in
-beliefkv-v60-prefix-lengths-20261011; coordinator3325062, now PPID1.
-Configuration and captured previous-pair identities match thed6d6470 registration.
-Verify the bounded two-file native delta and repeat the full deployed transition's
-read-only apply check. Stop only waiting coordinator3317739; retain its registration
-asv23_launch_after_v22_d6d6470_superseded_20261011.json and its log.
-Keepv60_v23_prefix_lengths_registration_20261011.json as the bounded receipt.
+reuse iscc2fac4 and bound-identity reuse is2aa19f2. At2026-10-11 11:20:16 CST,
+register the waiting V23 target as2aa19f28b6e257d0bb4d07ca4b47a86f536a9c7b
+inbeliefkv-v61-bound-identities-20261011; coordinator3378541.
+At11:27:33 CST, verify its reparenting to PPID1 with unchanged start identity
+585907880. Configuration, captured previous-pair identities and native patch
+match thecc2fac4 registration; the identity optimization adds no engine delta.
+Stop only waiting coordinator3325062; retain its registration as
+v23_launch_after_v22_cc2fac4_superseded_20261011.json and its log.
+Keepv61_v23_bound_identity_registration_20261011.json as the bounded receipt,
+including the original helper-child identity and the subsequent PPID1 observation.
 Main remains clean at3aa27dd, V23 has no run directory, and V22 collection processes
 are not signalled. Deploy after the complete V22 pair and postprocessing, then
 predictive followed by cold same-version native. The performance goal remains active.
@@ -106,7 +153,8 @@ v57_v23_tool_curve_registration_20261011.json as the bounded receipt; the main
 v23_launch_after_v22_20261011.json remains current. V22 collection processes are
 not signalled. Deploy after its complete pair and postprocessing, then run
 predictive followed by cold same-version native. GPU performance remains unproven.
-This10:34 registration was superseded byd6d6470; the current11:00 target iscc2fac4.
+This10:34 registration was superseded byd6d6470 andcc2fac4; the current11:20
+target is2aa19f2.
 
 Terminal-child to parent capacity handoff is already in the frozen V22: retire
 confirmed finished contexts, release session references, and directly discard

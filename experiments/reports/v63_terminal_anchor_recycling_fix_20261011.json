@@ -1,0 +1,77 @@
+{
+  "scope": "Native CPU allocator regression and canonical-patch validation for complete terminal-session branch reclamation; no GPU throughput claim.",
+  "previous_queued_revision": "2aa19f28b6e257d0bb4d07ca4b47a86f536a9c7b",
+  "previous_queued_patch_sha256": "fb6aecfc1f72f4ad82e8ca83a8379980ba036883573dd59d9875458ba4989100",
+  "new_patch_sha256": "4af68951beefdf759901d0143ca747c6893aa1ffc7124a3738158512851f7e60",
+  "native_source": "/tmp/sglang-v63-terminal-anchors-20261011",
+  "native_upstream_revision": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
+  "native_expected_tree": "a49cf2d2f643afaaf188f693cfee0c08373bba81",
+  "native_actual_tree": "a49cf2d2f643afaaf188f693cfee0c08373bba81",
+  "native_matches_canonical_patch": true,
+  "new_patch_reverse_check_passed": true,
+  "deployed_v22_to_new_patch_apply_check_passed": true,
+  "queued_delta_paths": [
+    "python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py",
+    "python/sglang/srt/mem_cache/unified_radix_cache.py",
+    "test/srt/test_beliefkv_terminal_capacity.py"
+  ],
+  "queued_delta_sha256": "f27a7e08bfb6f8aaa8d673c0bf80f8689b894dc271364c62417397398c5ad7b9",
+  "failure": {
+    "trigger": "More than 64 indexed component leaves in one terminal session.",
+    "cause": "Both direct retirement and close-before-RETURN fell back to latest-only anchors, released all session references, then lost historical private branches from the retry set.",
+    "unshared_65_branch_allocated_full_tokens": 66,
+    "previous_directly_reclaimed_full_tokens": 1,
+    "previous_remaining_allocated_full_tokens": 65,
+    "previous_retry_anchor_count": 0,
+    "new_regression_cases_failed_before_fix": 12,
+    "ordinary_eviction_could_reclaim_the_remaining_cache": true,
+    "unsafe_free_observed": false,
+    "affected_real_v22_child_count_established": false
+  },
+  "fix": {
+    "retain_all_valid_indexed_terminal_leaf_anchors": true,
+    "max_leaves_none_only_used_by_terminal_close_and_retirement": true,
+    "ordinary_action_snapshot_default_limit_retained": true,
+    "per_call_native_reclamation_budget_retained": true,
+    "runtime_retry_batch_budget_retained": true,
+    "whole_tree_scan_added": false,
+    "new_d2h_added": false,
+    "running_child_reclamation_added": false,
+    "generation_and_node_creation_validation_retained": true,
+    "shared_prefix_and_active_reference_validation_retained": true,
+    "inflight_and_lock_retry_validation_retained": true
+  },
+  "regression_results": {
+    "unshared_65_branch_reclaimed_full_tokens": 66,
+    "unshared_128_branch_reclaimed_full_tokens": 129,
+    "shared_parent_65_branch_reclaimed_private_full_tokens": 65,
+    "shared_parent_128_branch_reclaimed_private_full_tokens": 128,
+    "shared_parent_full_tokens_preserved": 2,
+    "regression_reclamation_batch_limit": 4,
+    "close_before_and_after_return_passed": true,
+    "old_branch_device_lock_and_h2d_retry_passed": true,
+    "all_12_new_cases_passed_after_fix": true
+  },
+  "checks": {
+    "native_checks_passed": 164,
+    "native_suites": [
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_session_anchors.py",
+      "test/srt/test_beliefkv_latest_mamba_state.py",
+      "test/srt/test_beliefkv_execution_handoff.py",
+      "test/srt/test_beliefkv_radix_prefix.py"
+    ],
+    "beliefkv_related_checks_passed": 457,
+    "beliefkv_materialization_checks_passed": 7,
+    "total_checks_passed": 628,
+    "python": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "cuda_visible_devices": "999",
+    "real_cpu_radix_tree_and_full_mamba_allocators_used": true,
+    "import_collection_cuda_home_failure_corrected_by_hiding_gpu": true,
+    "empty_device_string_test_helper_port_failure_corrected": true,
+    "materialization_collection_module_source_path_explicitly_overridden": true,
+    "gpu_experiment_or_model_started_by_validation": false,
+    "live_v22_processes_or_engine_modified": false
+  },
+  "deployment": "Commit and include this patch in the waiting V23 predictive-first pair after the complete frozen V22 pair and postprocessing; use the same version for its cold native arm."
+}

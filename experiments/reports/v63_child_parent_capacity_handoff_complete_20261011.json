@@ -1,0 +1,102 @@
+{
+  "scope": "Four-step child-to-parent capacity handoff implementation and completed V22 predictive-arm evidence; native-relative performance remains unproven.",
+  "analyzed_at_cst": "2026-10-11T11:27:25+08:00",
+  "deployed_revision": "3aa27dd67b340236310824d80a7e6e31038ea1f9",
+  "audit_code_revision": "2aa19f28b6e257d0bb4d07ca4b47a86f536a9c7b",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d",
+  "sources": {
+    "analyzer": {
+      "path": "scripts/audit_prefetch_lifecycle.py",
+      "sha256": "ed34f2adb99e62ae2b4e49a750b154b6fe41bd317cc718dcdbcfcd023fe0e532"
+    },
+    "complete_capacity_audit": {
+      "path": "experiments/reports/v63_v22_terminal_capacity_complete_20261011.json",
+      "sha256": "89efb4b91379c9f176b7e2638aae59e19a6698a56587c3b4f27e9c433bfbd4b4"
+    },
+    "frozen_arm_lifecycle_audit": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/prefetch_lifecycle.json",
+      "sha256": "aeffcee336279e9f0d2fb2e644ea4a18bfa624248c234fe1e87e803011ee32ae"
+    },
+    "workflow_summary": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22/predictive_h2d/client_156/summary.json",
+      "sha256": "fee0cab8e3aa2bb386dfe37ed8e0dfc4be01979cf8d91e4985a4613db7735735"
+    }
+  },
+  "implementation": {
+    "initial_commit": "ec7b437",
+    "plan_safe_parent_checkpoint_during_final_child_report": true,
+    "resume_final_stage_on_sibling_return_with_existing_report_progress": true,
+    "retire_only_authoritatively_finished_child_contexts": true,
+    "discard_settled_unreferenced_private_suffixes_without_d2h": true,
+    "preserve_shared_ancestors_and_active_or_inflight_dependencies": true,
+    "retry_pending_native_dependencies_and_capacity_blocked_parent_restore": true,
+    "restore_through_native_full_and_mamba_free_lists": true,
+    "preserve_next_input_and_decode_growth_reserves": true,
+    "bounded_ready_parent_admission_and_residency_until_first_use": true,
+    "exclusive_parent_capacity_reservation": false,
+    "reuse_same_child_page_ids_required": false,
+    "free_running_child_pages_from_prediction": false,
+    "last_child_post_return_restore_counted_as_predictive_h2d": false
+  },
+  "completed_predictive_arm": {
+    "workflow_count": 156,
+    "completed_workflows": 155,
+    "incomplete_workflows": 1,
+    "dynamic_subagent_count": 367,
+    "multi_round_spawn_workflows": 31,
+    "duration_seconds": 11779.025753789581
+  },
+  "confirmed_dynamic_child_release": {
+    "terminal_contexts": 367,
+    "reclaim_records_including_retries": 798,
+    "cumulative_freed_device_full_bytes": 117868339200,
+    "cumulative_freed_device_mamba_bytes": 111972679680,
+    "cumulative_freed_host_full_bytes": 57304698880,
+    "cumulative_freed_host_mamba_bytes": 59495546880
+  },
+  "sibling_release_window_associations": {
+    "observed_join_events": 188,
+    "completion_unobserved_events": 0,
+    "joins_with_sibling_device_release_before_join": 172,
+    "joins_with_early_reused_full_after_sibling_release": 91,
+    "early_reused_full_bytes_after_sibling_release_known": 1355550720,
+    "cumulative_sibling_device_full_release_before_join_bytes": 47878901760,
+    "cumulative_sibling_device_mamba_release_before_join_bytes": 38891028480
+  },
+  "parent_first_completed_gpu_batches": {
+    "count": 190,
+    "with_prior_linked_child_device_release": 190,
+    "scheduler_observed_last_child_return_to_completed_batch_ms": {
+      "count": 190,
+      "p50": 222.459716796875,
+      "p90": 689.10859375,
+      "max": 16312.46484375
+    },
+    "parent_services_with_prior_restore_lookahead": 50,
+    "capacity_restore_rearm_records": 0
+  },
+  "independent_wait_attribution": {
+    "join_early_started_and_reused_full_bytes": 1640816640,
+    "tool_early_started_and_reused_full_bytes": 3643105280,
+    "demand_handoff_verified_reused_full_bytes": 128338022400
+  },
+  "deployment": {
+    "next_run": "v23",
+    "target_revision": "2aa19f28b6e257d0bb4d07ca4b47a86f536a9c7b",
+    "state": "waiting_for_previous_pair",
+    "after": "Complete V22 predictive/native pair and postprocessing",
+    "arm_order": ["predictive_h2d", "native"],
+    "native_cold_start": true,
+    "current_v22_pair_modified": false
+  },
+  "semantics": [
+    "Only confirmed dynamic subagents enter child-release totals; internal summary calls remain separate.",
+    "Cumulative allocator release is neither simultaneously available nor exclusively reserved parent capacity.",
+    "Sibling release before actual pre-JOIN H2D submission followed by verified parent FULL use is a temporal and reuse association, not proof that the released capacity was necessary.",
+    "Last-child post-RETURN restoration and submitted execution handoff remain demand recovery.",
+    "The parent service timestamp is the first observed completed GPU batch, not kernel start or prediction error.",
+    "The 188 observed JOIN events are not all 191 workload JOINs; absent planning observations are not inferred.",
+    "No real capacity-blocked retry rearm is observed in this arm; implementation coverage does not establish workload frequency.",
+    "Same-version native is still running; no isolated speedup or final performance-goal completion is claimed."
+  ]
+}
