@@ -1,0 +1,2435 @@
+{
+  "observed_at_local": "2026-10-11T22:46:28.659668+08:00",
+  "scope": "All nonreused JOIN FULL commands in the previously sealed V97 V26 prefix; associations do not establish a sole cause.",
+  "source_report": "experiments/reports/v97_v26_live_prefetch_lifecycle_20261011.json",
+  "source_prefix_seals": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+      "stat_prefix_bytes": 301042924,
+      "read_complete_prefix_bytes": 301042924,
+      "sha256": "6079e58ee2b487f9d386546d315ba9f46afc08c78065dbfc3d52d366053f349d",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/server/transfer_telemetry.jsonl": {
+      "stat_prefix_bytes": 24177453,
+      "read_complete_prefix_bytes": 24177453,
+      "sha256": "017efee97f185245494ea47b85d9b5b06ebf8a7bb060db979abc9d57596b9794",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/server/runtime_events.sglang.jsonl": {
+      "stat_prefix_bytes": 37051241,
+      "read_complete_prefix_bytes": 37051241,
+      "sha256": "8eebae92f82bd682c58b236ea3f8603c5682ed0dbeeb89767dcb848299f6c209",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/server/physical_action_use.jsonl": {
+      "stat_prefix_bytes": 19007316,
+      "read_complete_prefix_bytes": 19007316,
+      "sha256": "4b5eb45621142241df52b6a8f855d3857a144d9508113053104004302d620938",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/server/physical_action_ack.jsonl": {
+      "stat_prefix_bytes": 7292112,
+      "read_complete_prefix_bytes": 7292112,
+      "sha256": "76faebf4c080de1a4c320e7435968a90c61377bd3f5502cefff8df8e19e1af3a",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/server/eviction_attribution.jsonl": {
+      "stat_prefix_bytes": 23893333,
+      "read_complete_prefix_bytes": 23893333,
+      "sha256": "e92bce6eb521bfcb0231ee912ff119a94626ef0c3a56c9424b2beb1151f7c372",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-16938/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1815714,
+      "read_complete_prefix_bytes": 1815714,
+      "sha256": "00bdb821474b840731d8d7d322551c5d7c2514b839d64d7efe697ba379408c40",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-5262/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1650795,
+      "read_complete_prefix_bytes": 1650795,
+      "sha256": "94e591ced270973b5d1375fcb4f2bf3b5478d68169ffea03b58ffa4e918682ac",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-5631/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1565469,
+      "read_complete_prefix_bytes": 1565469,
+      "sha256": "1b5f5bcab64b0bd6568b299f2a012fc94219c324435a526dc834682017c00f96",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-16502/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1596824,
+      "read_complete_prefix_bytes": 1596824,
+      "sha256": "3cbbc8809dd27a4c98398843e430c399baf79c84a248f8d04d2b5ff5c406e571",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11400/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1499547,
+      "read_complete_prefix_bytes": 1499547,
+      "sha256": "63ad2f8c41e981e599132b8db8f41f92ce4f3a3d24ec5939b74ade5f0a290c45",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11066/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1632207,
+      "read_complete_prefix_bytes": 1632207,
+      "sha256": "112d017bb568ec6b0cb5d4d8ce80ed9f3a7b0b51c4e5fd5100f46250f8afac6d",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-6028/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1340746,
+      "read_complete_prefix_bytes": 1340746,
+      "sha256": "ba21d7f5420749c5b79e5e3bfd17086a745aa7d01df0a89fc78044ac8ba5a8a9",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-3095/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1490641,
+      "read_complete_prefix_bytes": 1490641,
+      "sha256": "f2bdff1459cdf568eca3193708c01fde361b1537ef63f26f74579db859767a1b",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-5840/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1605163,
+      "read_complete_prefix_bytes": 1605163,
+      "sha256": "3e59ae8c06011a242e3400f00426d9ea77ca3392bcab152d726059fa37df9714",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/mwaskom__seaborn-3069/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1403862,
+      "read_complete_prefix_bytes": 1403862,
+      "sha256": "98ddd7a40338a800e5bc10f923062677a63e65c49ae1eea68357d448347cf937",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-14349/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1494127,
+      "read_complete_prefix_bytes": 1494127,
+      "sha256": "02ea297c1893323d4c2856312a8018e60a545ea3c86d940434c6f2f6980ee0bf",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 923486,
+      "read_complete_prefix_bytes": 923486,
+      "sha256": "4b0c2687e5d25379e79b66a59390b0850b8ac291d5df326acd09deb047aecbd5",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1231606,
+      "read_complete_prefix_bytes": 1231606,
+      "sha256": "e66f0d29c9ef3c6493137acd04bc209f74db12b65366b89fd140f5656fcdc652",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-16667/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1124622,
+      "read_complete_prefix_bytes": 1124622,
+      "sha256": "47562745f8748965217bca32b95ce4832793de0c470a206de5bd213fefefaba5",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11211/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1422314,
+      "read_complete_prefix_bytes": 1422314,
+      "sha256": "bf5c45bbdd8fb074e80ee659031bf47672013fd5cd89c676272eb10d114c491a",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11333/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1479955,
+      "read_complete_prefix_bytes": 1479955,
+      "sha256": "16ae1f7cbcd7eac37894e277d062b09c5ad335168e93c144f182abb38cd741fb",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-10554/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1620377,
+      "read_complete_prefix_bytes": 1620377,
+      "sha256": "af50ef09c41a1a803f4c48a7c0abf44e2df1956b44234ec9c30d6afed71ddac0",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11099/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1402833,
+      "read_complete_prefix_bytes": 1402833,
+      "sha256": "6b551bd2c1342de65cf81c4f9e3827589e6535c8e6ae33eb19c3e71aaf9b24ce",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11087/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1574813,
+      "read_complete_prefix_bytes": 1574813,
+      "sha256": "5e6232f0ebdb620adca0413ec8c3b429046573ca2cd8fd812c2621dfc4f2c9b6",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-6744/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1173487,
+      "read_complete_prefix_bytes": 1173487,
+      "sha256": "bfa12f4c1140cd1bde8f5df9de2ba8144a5322561491bca1707de26c655ca434",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11276/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1663761,
+      "read_complete_prefix_bytes": 1663761,
+      "sha256": "18c7912785d404b73bfe909a09c8faa4ebc1bd11cad61bfe5a10ac3e6b5c2694",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-6386/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1364202,
+      "read_complete_prefix_bytes": 1364202,
+      "sha256": "6857073c0702c1410a5b563e848deef4be7ac4ea97c067286677837f446d9ba8",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-10097/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1768411,
+      "read_complete_prefix_bytes": 1768411,
+      "sha256": "dbfe316b573437d7218c67e866c45e67cc27c517f51a7138f022f4a923acde70",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-4551/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1958833,
+      "read_complete_prefix_bytes": 1958833,
+      "sha256": "2d74691ae4c3f53ebbe73f203ce918ade410323ec3904902d9f7820e2fe940cb",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7521/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1574402,
+      "read_complete_prefix_bytes": 1574402,
+      "sha256": "a252aa6b4c327cb018ce02d27b1448154554ec04835080b5158bf597ed2814f7",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-6202/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1271740,
+      "read_complete_prefix_bytes": 1271740,
+      "sha256": "5804a29a019e17e17e7b881aeff3f98784b139a96b7b672025827b5145165d4e",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-2905/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1223014,
+      "read_complete_prefix_bytes": 1223014,
+      "sha256": "ea75c7f826c62b1cec20bcf7a10f474f94bd47abc28c3ae9b71d4f5d10c24409",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11265/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1295593,
+      "read_complete_prefix_bytes": 1295593,
+      "sha256": "f109f2e67dc2cb9600a5e4dfacfa262f6fd8cd9e40aa1ee368c2af560ebdcf86",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-6721/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1682930,
+      "read_complete_prefix_bytes": 1682930,
+      "sha256": "1d6fa88950bdf19e3d1afbf9ded0c1b2f3ddec153790eaaf8e436beea2cc7c90",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-7393/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1428366,
+      "read_complete_prefix_bytes": 1428366,
+      "sha256": "d318645b44ee9658fb8b173b3785da11de2b5422b02484fe2af800f223ad47c2",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-10356/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1598024,
+      "read_complete_prefix_bytes": 1598024,
+      "sha256": "acca62df3acab159428b9a62b98c42edc0059a3126882824f5a4b9f03500a350",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-6461/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1502579,
+      "read_complete_prefix_bytes": 1502579,
+      "sha256": "f78fb3a4992d76a06a182e3a68ae62c835fa3e5326b7121d5c4019975bfd15e0",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-4966/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1326920,
+      "read_complete_prefix_bytes": 1326920,
+      "sha256": "bd210806143393f7a9eb5ddb8b277f9a09464469f9c9b58a0e81b54351f70afd",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-10914/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1025700,
+      "read_complete_prefix_bytes": 1025700,
+      "sha256": "6df467d203f3928649e96fe194f8b583208df5f07ac97adc589953d24b8f935b",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11734/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1402613,
+      "read_complete_prefix_bytes": 1402613,
+      "sha256": "8bc63b01055f483a319c82a5f210ae727d152ba3f86aa8986b2c82ad5ed85cce",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-3993/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1311027,
+      "read_complete_prefix_bytes": 1311027,
+      "sha256": "9126aeed06712dd8e4617259441de48cff921ff0d562fe4b6c4fba72e76abb5d",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-2931/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1465690,
+      "read_complete_prefix_bytes": 1465690,
+      "sha256": "3b403336e94ac7d5ed7c7bc89e3cdae5108f886358c21dfa3e3fe397ee452d9b",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-15315/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1279340,
+      "read_complete_prefix_bytes": 1279340,
+      "sha256": "403244c0754090f0aedb4c72eda862c7e175fb29fb4ca7f88e982d8608f0e709",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-3677/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1227099,
+      "read_complete_prefix_bytes": 1227099,
+      "sha256": "01adbe87e605bc6a73ed775ac01e24122975fa70d92e4d4194755362233baefd",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-10051/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 2021318,
+      "read_complete_prefix_bytes": 2021318,
+      "sha256": "74633f06a51e9d81b29494f791d356d7a82359270cc67a4225a02f9657e6e463",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-5809/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 666351,
+      "read_complete_prefix_bytes": 666351,
+      "sha256": "b992dfd9b54c9c3ecb3a01d6a63f425b26e7dfca4da498f90d1da56678c551fd",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-6197/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1511254,
+      "read_complete_prefix_bytes": 1511254,
+      "sha256": "b50d450d4d4d48bcb8352faa8ec1e0762c3ea314b81180d7e9c36d69dd78e6df",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-2317/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1214355,
+      "read_complete_prefix_bytes": 1214355,
+      "sha256": "8f869fba71a3e66b3d9dd39224325e39518c6a64af0493ccd11ac95e89e15662",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-10081/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1296971,
+      "read_complete_prefix_bytes": 1296971,
+      "sha256": "f83cd05b436afb7185b62a633c4ee49bfb34996399ed52bad23fd8d5426b9a5d",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-1724/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1433356,
+      "read_complete_prefix_bytes": 1433356,
+      "sha256": "61f75d4f46321f6d6b0abca40b29cf1aecc210e0d2b50d3d65b7d728dd153264",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-6903/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1130413,
+      "read_complete_prefix_bytes": 1130413,
+      "sha256": "12fd1f8282133d99d13d2eb787bd3338e112aa9de8f77425db728e3349b8416b",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-1142/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1154771,
+      "read_complete_prefix_bytes": 1154771,
+      "sha256": "3eb71e4fa8a4393930ba7251c44252b83dd45b68430c017a81a17bca7703d0d8",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11477/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1891340,
+      "read_complete_prefix_bytes": 1891340,
+      "sha256": "16a4100ee61d875377a7f39c4c9d2e8f07707231a1514234db05528fadab781b",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-12754/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1682348,
+      "read_complete_prefix_bytes": 1682348,
+      "sha256": "ba666066f5ab3f6da0945d9e98da915a9ea1c95dee525adb6fd4c72d1899b10c",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7236/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1436904,
+      "read_complete_prefix_bytes": 1436904,
+      "sha256": "ca658be8e1ffc7af61176e8393ef0b3b6c091266b8afe5d0004e05ad20aac5f2",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-1921/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1488715,
+      "read_complete_prefix_bytes": 1488715,
+      "sha256": "6f8639d796dec366bb4335d57b4d8a7ddcd96b32bd3286da009d2fabc1530255",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-4075/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 650046,
+      "read_complete_prefix_bytes": 650046,
+      "sha256": "687f30ab1848c8fd16da0c2082485f92b21f16a9da0a6c4624984a0bab18c880",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11239/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 2378010,
+      "read_complete_prefix_bytes": 2378010,
+      "sha256": "260cf22e6c2e0e87d3466a012f814df789f5d6cc0a0952a2c72de777e30a9908",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-4356/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1433684,
+      "read_complete_prefix_bytes": 1433684,
+      "sha256": "32b0ffe65959876a340bda491407667ad989f3a653cf9bfbe7baa47e2399cc85",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-16255/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1254858,
+      "read_complete_prefix_bytes": 1254858,
+      "sha256": "814b62c8c0cf06828a31ef23a2c768972243244cbc0c69bddb3bff501fbf2f34",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7324/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 2163540,
+      "read_complete_prefix_bytes": 2163540,
+      "sha256": "67e2cbf2135d7c780222c9933d2f7b0d14a0172824d9c749557fc9ea8aac49f6",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-5787/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1675095,
+      "read_complete_prefix_bytes": 1675095,
+      "sha256": "7819393aef5614ebbb674e59f0e052674853db988728c9324dd4b9b37cf8b84d",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7432/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1357465,
+      "read_complete_prefix_bytes": 1357465,
+      "sha256": "1ab3b388202a0548cc36a339395973cda8323cf45d917cfed0e817b33ef98698",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11451/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1247833,
+      "read_complete_prefix_bytes": 1247833,
+      "sha256": "f941568ad1821586621f8e95b56db912cbb07efb34ff4bfc1147ec189cbde0c1",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-6599/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1370094,
+      "read_complete_prefix_bytes": 1370094,
+      "sha256": "ce037f1c30c53f93cb333e41a6de804eb848ed846b98e009976d10cd82652862",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11206/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 2017015,
+      "read_complete_prefix_bytes": 2017015,
+      "sha256": "586a551c9cf396ea0fca28e3974f070ab89d39eb5192606ef6e243b4b3ad6818",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11292/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1410666,
+      "read_complete_prefix_bytes": 1410666,
+      "sha256": "63bd592c8512ad80b31ec16763bb17729e9f36a873aaa3fc8edaeb3b607aee2c",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-12741/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 972427,
+      "read_complete_prefix_bytes": 972427,
+      "sha256": "7df6b4e813e044e581d9ab85f097afe5c19c9f4c2381471efa7ef5829644706d",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-4687/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1355133,
+      "read_complete_prefix_bytes": 1355133,
+      "sha256": "f360ee83023ae3823733ca74eaa1030b499e286673574067e5793f7e20418f52",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11532/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1308909,
+      "read_complete_prefix_bytes": 1308909,
+      "sha256": "286546cac389fea727c3237d0d571828f9af0254877206983fdf2635e366a306",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11820/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1197978,
+      "read_complete_prefix_bytes": 1197978,
+      "sha256": "9401d8feb4988d9d9302df8a22ee9dcd4ec3c8a6c8509d08a6bb5e560a4631f0",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-6938/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1247239,
+      "read_complete_prefix_bytes": 1247239,
+      "sha256": "4b58efa4c45807fa43f9f632097de85efe9b8646090c5b6d74f416216ab7f1be",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11149/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1615175,
+      "read_complete_prefix_bytes": 1615175,
+      "sha256": "bdc87f909d2cb449131e20fac42e2f14c3138a8763e6ff80a5da809f9ffd39c5",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-4629/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1181470,
+      "read_complete_prefix_bytes": 1181470,
+      "sha256": "a7c8ce558ba7a60d34603102bf2d079d80e8bb13cf6f95823fe3b5321a117c11",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-3305/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1266008,
+      "read_complete_prefix_bytes": 1266008,
+      "sha256": "14d6dceade4cca9c9c53e532123710d82c3e915796939e6230c109390ac3208f",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-13023/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1601634,
+      "read_complete_prefix_bytes": 1601634,
+      "sha256": "279c81a92b7fba3ad8d59176c857b171b0cb2162864c1922281b7cb944ea1415",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-10999/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 740247,
+      "read_complete_prefix_bytes": 740247,
+      "sha256": "f74b69330a9235033c4443463f492a05ce03db24a88e19e79d11f06cb0fe8e5b",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11179/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1121019,
+      "read_complete_prefix_bytes": 1121019,
+      "sha256": "792e7befc88feec9c6b19c1991b13deaa21fea146066190b61183437702d98a7",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7490/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1414231,
+      "read_complete_prefix_bytes": 1414231,
+      "sha256": "1374ba8460c1d9200030678e9a67089175d8589e54ed50ae29725ee70ee975a2",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-4661/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1589956,
+      "read_complete_prefix_bytes": 1589956,
+      "sha256": "d92cc3272050738abd5254848126ddccc4c8c3e4cf617060e2f4bebc38c3a84a",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-15103/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 744788,
+      "read_complete_prefix_bytes": 744788,
+      "sha256": "7700577b6ab6dde7bbdb8fbdfc608778a6850776cddcd0751e35382928372c60",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-1766/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 938982,
+      "read_complete_prefix_bytes": 938982,
+      "sha256": "03e45ac8887f7d4085a8fe65fac8d439256e1ff9ce2df47996d9257b65b40f9d",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11163/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1095981,
+      "read_complete_prefix_bytes": 1095981,
+      "sha256": "947bc8302e6acf9bf37110c6b41402811d8eee976ab8d9b6b280f7033a76c9e7",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-4094/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1885199,
+      "read_complete_prefix_bytes": 1885199,
+      "sha256": "56ec4479fe4d445ea47d6abcc8b8006935dad366d3b27fdf679da7030175489c",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7982/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1110588,
+      "read_complete_prefix_bytes": 1110588,
+      "sha256": "b84143400322d93a2c0798bdc847a4baf16ca311099eb378d648fd90d6320354",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11433/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1446483,
+      "read_complete_prefix_bytes": 1446483,
+      "sha256": "72b8df1cd5edd2f302092d2b19ec3d866813326b5fd63ba2f7af864e10e39b0f",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-7080/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1947136,
+      "read_complete_prefix_bytes": 1947136,
+      "sha256": "a78f7ce4ee30caa8ec3faccc8c75ac42a2eb2f686ae3258defdcd48035c70516",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-14631/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1529087,
+      "read_complete_prefix_bytes": 1529087,
+      "sha256": "ecd4677782f63c57f49969999e030b081435ca3840885f5c240c3c21f08ef5d9",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11138/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1534339,
+      "read_complete_prefix_bytes": 1534339,
+      "sha256": "88d1c2f131a7be4741db3450f0f51f3fd797ec4572160dfc1bea9fb3a7cc5fa9",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-5414/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1696526,
+      "read_complete_prefix_bytes": 1696526,
+      "sha256": "c839f1ae628351dcb5bbe176419937e729ab4308b1b4c1d430d5d0b96714ea8f",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-16877/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1939877,
+      "read_complete_prefix_bytes": 1939877,
+      "sha256": "48ac95656171d10159eaabf400ce833b6e979e544c7c5719976c45949f58d19f",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-13964/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1059629,
+      "read_complete_prefix_bytes": 1059629,
+      "sha256": "6ac41f43befde82fa956d2ca2b2507480a78b7d0a02eb73008fa3837d877368c",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11141/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1673507,
+      "read_complete_prefix_bytes": 1673507,
+      "sha256": "60f7aa9079369c343efbf05b25afe26f5036d36fd97bbf8c87531bfd4e3790de",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7571/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1484120,
+      "read_complete_prefix_bytes": 1484120,
+      "sha256": "ddeba61657f1593d765ff9cc446130d0a3dbe2fdf4bcbce0c639a8437dc06de8",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-15368/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1160956,
+      "read_complete_prefix_bytes": 1160956,
+      "sha256": "08b4d7afed2f78c98ecef1e949b08be3256d1dac61141f621d2896022774f265",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-7229/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 2163575,
+      "read_complete_prefix_bytes": 2163575,
+      "sha256": "8e0c678acf7045ade289a26322906208d4dd5d074da9638a4ab28f1a70bc0288",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11299/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1464642,
+      "read_complete_prefix_bytes": 1464642,
+      "sha256": "ecb9c3626f1245dcc6dbd0e732130a5e22a03e9c0b2fc5e40d08443fe5cdeb83",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11095/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1632623,
+      "read_complete_prefix_bytes": 1632623,
+      "sha256": "7a5de21b310756bc8af6bdf0bd22f9f6cdb45eb0e63d295770643a5bea1d7cfe",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-7233/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1153237,
+      "read_complete_prefix_bytes": 1153237,
+      "sha256": "5d52089f997074784d6b49dd85e2371f63a955d199f8dc50fe5a7d4159d881bb",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-4604/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1675008,
+      "read_complete_prefix_bytes": 1675008,
+      "sha256": "4893b5f2a406fcba823d62002225032b3c8cdfce9070917da83ac8b74fbb0a34",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-10880/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1341284,
+      "read_complete_prefix_bytes": 1341284,
+      "sha256": "698aad0372d7762220de5e27c573dd64dc3ee8f2d84227b3816c61639fb7426f",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 2005718,
+      "read_complete_prefix_bytes": 2005718,
+      "sha256": "89555c4c1ac686751cc604d2433f2b768c7a71d9540bcfcb2603870af195b1e7",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-3151/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1519962,
+      "read_complete_prefix_bytes": 1519962,
+      "sha256": "5a3f98392f316fe37fe037d44d0338a43fa0bbc93825844e979f23f00798c56d",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pallets__flask-5014/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1305800,
+      "read_complete_prefix_bytes": 1305800,
+      "sha256": "05c80396f23f440508cbdea0eb7e5fab111f5d6169962491427f2e5bea730873",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-6992/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1201613,
+      "read_complete_prefix_bytes": 1201613,
+      "sha256": "43942e40d3e26483b7a18e287234dbb45a7f39b5146495de2a8bd9da4431ec91",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-8898/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1823462,
+      "read_complete_prefix_bytes": 1823462,
+      "sha256": "38a1ddbd28007389b9298ab7f243f5908ce0d85e7191f613fea480319af80304",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11490/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1429176,
+      "read_complete_prefix_bytes": 1429176,
+      "sha256": "911b556fe5cf343dc42fa1961ecca268c7bd02fc3310e09e282a2f10557584b1",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11119/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1566764,
+      "read_complete_prefix_bytes": 1566764,
+      "sha256": "d75898efdc3b10713cadad0a91b589d85af8f03dcdca333524802b5943f972ce",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-7277/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 993737,
+      "read_complete_prefix_bytes": 993737,
+      "sha256": "756df62e310656a15bc9dd3423d22628c69de05c7860d526a07b38dfbde4536d",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-8399/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1771141,
+      "read_complete_prefix_bytes": 1771141,
+      "sha256": "40a7f50ba628389e2ed6c8f16cbc4503811547fb96d6aa869e2d45c3de58bc04",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-14500/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1510057,
+      "read_complete_prefix_bytes": 1510057,
+      "sha256": "b2dd4618c7c5024c6306b00525d81fbde51c2b221b9c80938435f15f7e8db9fd",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-10973/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1163594,
+      "read_complete_prefix_bytes": 1163594,
+      "sha256": "3e1568c03a662f5f6b2e2a8cb09464a0ff986301582967f76c340a9b6aeb4c95",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7205/runtime_events.deepagents.jsonl": {
+      "stat_prefix_bytes": 1597130,
+      "read_complete_prefix_bytes": 1597130,
+      "sha256": "a42dcc9deeb678742881150fd471f8376447579b1cc9b47c3df03d7eea4ace9b",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-16938/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 915603,
+      "read_complete_prefix_bytes": 915603,
+      "sha256": "f56b5ca23cc4dd905f5a43d3fda7f2ce1447e528b4356095b638b21b1bf3e3df",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-5262/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 592419,
+      "read_complete_prefix_bytes": 592419,
+      "sha256": "bf532e9b7954d55c68fc68f0ae640920b49d80a148ffe4c4b3f82d03892f19fd",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-5631/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 973142,
+      "read_complete_prefix_bytes": 973142,
+      "sha256": "448ecc382b20f7dfa4966edd981c34582e33ac8f6290d019ef3a4a1e2921f844",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-16502/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 790222,
+      "read_complete_prefix_bytes": 790222,
+      "sha256": "f61544704c5c912f6f532524c23e5dab77f55d4836a5094b8b98c124ab370d29",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11400/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 792500,
+      "read_complete_prefix_bytes": 792500,
+      "sha256": "eebd4ffe956b4403dc7cfee1520fbfb6a05a9192e6fc841617118b718e148f01",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11066/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 1121681,
+      "read_complete_prefix_bytes": 1121681,
+      "sha256": "b31d021522b47ee456199379910cb7cc34fec431792642d819de8d1b254a5e41",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-6028/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 555973,
+      "read_complete_prefix_bytes": 555973,
+      "sha256": "335560a5c8c5eafc45943647761747bc6396f04cf8e14842ed9ca5569dec8973",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-3095/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 613506,
+      "read_complete_prefix_bytes": 613506,
+      "sha256": "1fae8308aeb35bf063f72ff4b74322e1f37377f9e5bd7019eb74d09df33a4bcd",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-5840/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 820782,
+      "read_complete_prefix_bytes": 820782,
+      "sha256": "50f016a4a96ea2a51bb3d6dacf4b8aa3f842e9b89a704500923dc30d222bca41",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/mwaskom__seaborn-3069/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 420587,
+      "read_complete_prefix_bytes": 420587,
+      "sha256": "faf5a2c704e345645d191e314862bae7d4993c68b179491f776a8facbef445a4",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-14349/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 1033543,
+      "read_complete_prefix_bytes": 1033543,
+      "sha256": "da7141c3467f1fba74093f98fa740d631605289a02a7bec2f83c2ed679d758e0",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 294029,
+      "read_complete_prefix_bytes": 294029,
+      "sha256": "dfed569580b3aabb16b3198323ad3c2280bbe67479aaec8dd712d7fdd76572db",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 463123,
+      "read_complete_prefix_bytes": 463123,
+      "sha256": "d7116ea6ccfa22c16ef48b90ced0fe3f41732285e00dfc13bbeb218082e94cac",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-16667/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 774367,
+      "read_complete_prefix_bytes": 774367,
+      "sha256": "b6a7f52a6c7813b8f6440dd594e15395dd9fdd1ddae3b2cb4e59a2e17a690296",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11211/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 626230,
+      "read_complete_prefix_bytes": 626230,
+      "sha256": "0bf8c20e22a0032e10c39f7b41fd0878a66f55178796bbaaadb7afe19fea61da",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11333/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 747544,
+      "read_complete_prefix_bytes": 747544,
+      "sha256": "ec1de5f3fe6a9e158ae206ff790c5a68e5867213f7fca706676c3125fad41b69",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-10554/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 693411,
+      "read_complete_prefix_bytes": 693411,
+      "sha256": "8902c69cc92b754b38a7cbfdff3a75d506456342962db56d2d067e21bf8c5415",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11099/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 958692,
+      "read_complete_prefix_bytes": 958692,
+      "sha256": "984e1243e165809fffc840440b069247a7282b383bd14413a6927b9de7503a7b",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11087/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 949410,
+      "read_complete_prefix_bytes": 949410,
+      "sha256": "971059a38138821a5586c0b49cab2c1dc2b6a076f9eb1b5f1e89d0f7c4f4a50c",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-6744/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 680190,
+      "read_complete_prefix_bytes": 680190,
+      "sha256": "9b1fa4011353303f71dc1e11cc13d5e9bc5228e4b26cf212e23e5fb382ce116a",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11276/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 896604,
+      "read_complete_prefix_bytes": 896604,
+      "sha256": "ad0fdd35c52e98d2933c3105c958c232dbc427ad3d7f3a956378b380a93ea834",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-6386/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 666166,
+      "read_complete_prefix_bytes": 666166,
+      "sha256": "40550302e5e9013eb9c56d229628cc440ca29b2457e37974a4255542595677b0",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-10097/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 1014980,
+      "read_complete_prefix_bytes": 1014980,
+      "sha256": "19d8377dcef8239cb74b1b49ab73f903b550ee8dcaab0380ca04c6c48a6987c6",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-4551/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 1200308,
+      "read_complete_prefix_bytes": 1200308,
+      "sha256": "88a50f17d45fa33faed3d0e2816d16c49ceeb538b81ce04ec09f40d430974a7b",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7521/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 606840,
+      "read_complete_prefix_bytes": 606840,
+      "sha256": "00dbd393fb5eb5ec9c5a152b9ee6341a39f48d43f0f796518eb2ec37fe0d3820",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-6202/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 665744,
+      "read_complete_prefix_bytes": 665744,
+      "sha256": "78c6c7d3dabe52d8755517e3a65a5a22fa413cbb2ef000739f61ba452e646eae",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-2905/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 585958,
+      "read_complete_prefix_bytes": 585958,
+      "sha256": "de05c71c375191927b7d463f1e0f0abbf0dfcfb8c9e56e9e7e5578250a65387f",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11265/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 630691,
+      "read_complete_prefix_bytes": 630691,
+      "sha256": "57f0da237c1e2478c1551e4b06d518f08709050e3d066a92cacf8e6ddc2c6c86",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-6721/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 1068513,
+      "read_complete_prefix_bytes": 1068513,
+      "sha256": "faec3f25b7c67cadbdf323ab8d729409ac61bfb9fdd21e5b590f387085113c5e",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-7393/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 453600,
+      "read_complete_prefix_bytes": 453600,
+      "sha256": "ca0d5edf75371dbf3ca5934e7353025ee21605cf6c4e1b73a0e6d0414a333479",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-10356/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 487320,
+      "read_complete_prefix_bytes": 487320,
+      "sha256": "2c96dcea34c484e7692edb2703c99016954b11623cc4d8095bd9fc872cd764f3",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-6461/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 726496,
+      "read_complete_prefix_bytes": 726496,
+      "sha256": "6bccd45e62279e22db0ed983d918144aaed15c8ccc31de9ed8f92c9fb392f666",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-4966/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 485377,
+      "read_complete_prefix_bytes": 485377,
+      "sha256": "2548be27a1913547b8212e89cb9db1b4958536a819869e1f62105c132384ac63",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-10914/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 622845,
+      "read_complete_prefix_bytes": 622845,
+      "sha256": "aab150e53d7084be3e788f0750f9ad82c32c724822ee3e989ea1551e8722c233",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11734/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 456275,
+      "read_complete_prefix_bytes": 456275,
+      "sha256": "194dd41b40a6a76c47e02d79bbddfd14cbf3c03f4ad57e39fa6640eabce7aa83",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-3993/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 752881,
+      "read_complete_prefix_bytes": 752881,
+      "sha256": "943ac7eca6eaaf43e57b52d8975f47a11eabc1630a360810f8c8719ae3dbd0f0",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-2931/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 788988,
+      "read_complete_prefix_bytes": 788988,
+      "sha256": "e302583960538a333e02e82fe77dd7003bb3fd63496dd029fdb3beee5c500919",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-15315/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 539330,
+      "read_complete_prefix_bytes": 539330,
+      "sha256": "d390b746d77550a325137ecbac3de77cf855fd4faba52be4e807fc7a9df66f81",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-3677/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 628498,
+      "read_complete_prefix_bytes": 628498,
+      "sha256": "0b0a21958a14d296eab1ffa7b7adc9ab04e472a426744e3af770813cfd92228e",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-10051/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 1035554,
+      "read_complete_prefix_bytes": 1035554,
+      "sha256": "63df33c8e69a91f64ecb3045b773cb8e255b323b4f0081e673263c5927ec40e2",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-5809/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 378754,
+      "read_complete_prefix_bytes": 378754,
+      "sha256": "6fcbf31574ebf1c95af95e03ccc01bd7731e1541f96bb4b5a5404250506514db",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-6197/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 489566,
+      "read_complete_prefix_bytes": 489566,
+      "sha256": "b3db8a64b7ee950dd271473ef06d6d1cab4776b62411d851252024f609409dbc",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-2317/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 706158,
+      "read_complete_prefix_bytes": 706158,
+      "sha256": "666beb9699ee5a9b64f348de9d1119710f90c80743c257dc77139a5a0caf944c",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-10081/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 397089,
+      "read_complete_prefix_bytes": 397089,
+      "sha256": "c645b7a05702d3e94734f8084ca7f446956bc18dcd380fbc2c671aa904ef9d94",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-1724/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 724348,
+      "read_complete_prefix_bytes": 724348,
+      "sha256": "751c362a47189a8bd7fd3919093616492895e42ab3d5a5ac8512d47c16264d31",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-6903/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 480105,
+      "read_complete_prefix_bytes": 480105,
+      "sha256": "928739f6f0572b53230c082cf4cf4e8a199cca403b3e02987e2369c79fe8c7e5",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-1142/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 650474,
+      "read_complete_prefix_bytes": 650474,
+      "sha256": "2661a3cf32c6a98c584a5978c0a709a22692fa727d7dca12436fc5dce1940f6a",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11477/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 856400,
+      "read_complete_prefix_bytes": 856400,
+      "sha256": "44a180be65987f060bd3c7c7d434266b06b5070151f2e4fea30961135d9645b7",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-12754/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 711679,
+      "read_complete_prefix_bytes": 711679,
+      "sha256": "5038ffd1df65271799f02aede2576fdfde7f7a2bf28241cc31fd4d08bbada718",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7236/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 550171,
+      "read_complete_prefix_bytes": 550171,
+      "sha256": "a3ee9eec0e8a2fc26ca1c2cfc93b980423b1ee0da2109358221c7bbf5e5725e9",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-1921/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 908725,
+      "read_complete_prefix_bytes": 908725,
+      "sha256": "e7222ee4203e60c897c7c99647abba3546c939da237bcf00185bec2ca57c5f45",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-4075/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 382000,
+      "read_complete_prefix_bytes": 382000,
+      "sha256": "39ca8ac140e5c48a447763fc8dc7d7212cebca83b4c0e9e85c9046e2efc4ca57",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11239/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 1334664,
+      "read_complete_prefix_bytes": 1334664,
+      "sha256": "b4fb006e06b0be4771c41e82f77a12d0c7b03d0a2138a44a089cba9f566c326c",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-4356/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 792932,
+      "read_complete_prefix_bytes": 792932,
+      "sha256": "b8c8b7a5f5e57b105df08b1fa73890b29a95c72b9403266dbea272f7f4bb76b6",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-16255/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 808246,
+      "read_complete_prefix_bytes": 808246,
+      "sha256": "7afbb4befcbb50aff848bd507f672be07a84c4c1b3a2fad5b029cbca20c163dc",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7324/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 1055023,
+      "read_complete_prefix_bytes": 1055023,
+      "sha256": "b8c46d2e47a4610f175e48bedfa1754ed1c1c346dca732920b5df21ff17e0f64",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-5787/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 989616,
+      "read_complete_prefix_bytes": 989616,
+      "sha256": "d5d40d76c999db909765a32c4c11a955a6422a095673337281c1d8910bd26947",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7432/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 761791,
+      "read_complete_prefix_bytes": 761791,
+      "sha256": "acd4c2dcdaf843172b3787e21e305ae9ebbf3779ae0a4470d08a66ec8446f439",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11451/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 655991,
+      "read_complete_prefix_bytes": 655991,
+      "sha256": "d5d605f04f84e4494e4f4b6569d38293c6f806a80bfaf1f0013ce5c2dd4ed86f",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-6599/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 787923,
+      "read_complete_prefix_bytes": 787923,
+      "sha256": "1dc5cbc6bd888de8c3a6eaa6ff93e98e455b1844f72f6fa4ae9fe0b07b33591b",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11206/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 1464534,
+      "read_complete_prefix_bytes": 1464534,
+      "sha256": "2a48d78faedaee8b789a6cc5fdb36630d4f9c9eb7c17acb84c3f60dab499bc00",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11292/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 869124,
+      "read_complete_prefix_bytes": 869124,
+      "sha256": "6f9d0eeaff72ed4d68bceac81f3876851e1655d5cb1ef3b8fe8384136f93c6c8",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-12741/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 524162,
+      "read_complete_prefix_bytes": 524162,
+      "sha256": "4a730c688f32771643bf6f1ae313eaebe7c0934469e5fac9fe4e99874909aa49",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-4687/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 430309,
+      "read_complete_prefix_bytes": 430309,
+      "sha256": "ff9097d3fafc3e73ad3308f6f35a785c62ad0727f9136470ecf353e06c71870a",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11532/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 636989,
+      "read_complete_prefix_bytes": 636989,
+      "sha256": "7235a55319b41898c6013f2639a8a4f31482d23bbf41834555be7faae251898c",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11820/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 548194,
+      "read_complete_prefix_bytes": 548194,
+      "sha256": "3eae375dff3b616141fe4388c42dede5dd261b7427bff243585fb85230aea6ae",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-6938/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 396307,
+      "read_complete_prefix_bytes": 396307,
+      "sha256": "b6658fcb4780143c969184cdc9ab927f08d446803eb6e5ebf352791387303097",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11149/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 765524,
+      "read_complete_prefix_bytes": 765524,
+      "sha256": "77aaad38ad4d36e644d5764eb49695786f969bd7533175675fed850872d071f5",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-4629/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 658966,
+      "read_complete_prefix_bytes": 658966,
+      "sha256": "4bbfc539c6baca9e98fc9e8ab2518c16c6d0c8d3c12435617955687113ac128d",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-3305/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 798301,
+      "read_complete_prefix_bytes": 798301,
+      "sha256": "00081192982ad37830c661c7c02be2cba9a978858860a3da344a99022e565a73",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-13023/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 1001585,
+      "read_complete_prefix_bytes": 1001585,
+      "sha256": "99cb8ebb8f535f6e9ee7be488cb17cbabce42fdc77ebf2685eb81ef5f929f333",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-10999/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 459215,
+      "read_complete_prefix_bytes": 459215,
+      "sha256": "6c8d04a067bb0848b6f8b5dfbd1e87d45b77cec0c447bf7e312a33d65bdbb45c",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11179/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 727586,
+      "read_complete_prefix_bytes": 727586,
+      "sha256": "064eff83b69e35abe7b1d1a9722ce9e40035ca4a7964334249fa0179fc2b7978",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7490/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 615567,
+      "read_complete_prefix_bytes": 615567,
+      "sha256": "37e7c0ebbb869d5589b0090a0eb660131de4942a28d764051d48987389019d10",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-4661/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 488681,
+      "read_complete_prefix_bytes": 488681,
+      "sha256": "5f5347e9b87b431221538a40639deab9cb3e90ccb3e012b275d0eec2f459dded",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-15103/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 522235,
+      "read_complete_prefix_bytes": 522235,
+      "sha256": "b05d5fe3e2fc5cbbc5159d954eb96e9ea38199fde5b49a023c1b599f75bc6c92",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-1766/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 687716,
+      "read_complete_prefix_bytes": 687716,
+      "sha256": "a3d1a6bfe112fcc6e7b379769cbf036b13171a79a44116feaf1b06b3fdb5a6e0",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11163/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 496492,
+      "read_complete_prefix_bytes": 496492,
+      "sha256": "1c1cc4e02e64a9e9ed17d6ae008c6e2a444cda672b642b1945eac0b26a2716ec",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-4094/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 1091280,
+      "read_complete_prefix_bytes": 1091280,
+      "sha256": "e927fdf289083de8557118d01ab722378cb96d7c9431555fbdc21ab61d189b36",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7982/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 496916,
+      "read_complete_prefix_bytes": 496916,
+      "sha256": "d55b2a6dd8b6c079b701348c01c7284feb96fa0f711396e00242b46626f90e36",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11433/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 749210,
+      "read_complete_prefix_bytes": 749210,
+      "sha256": "33d50902ecb096066f9ac63c65677457736779d7428eccf228011593a85314c5",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-7080/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 899021,
+      "read_complete_prefix_bytes": 899021,
+      "sha256": "3d429c758c5dcf51b42db7f5511e2dcc4601f21ae64e2845873dfe372664704d",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-14631/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 667750,
+      "read_complete_prefix_bytes": 667750,
+      "sha256": "9d1dec44300ef53bdb331f81817244cb1d29f401fb66ede4ce48d7132999ea3b",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11138/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 712267,
+      "read_complete_prefix_bytes": 712267,
+      "sha256": "82bee9bfe24d5b8b0086139195537937de8a74628977a9743976be4a85d4bb07",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/psf__requests-5414/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 805026,
+      "read_complete_prefix_bytes": 805026,
+      "sha256": "9ce8ce4281d9af00fc3319b9e7c849ee6980726be507e80ae7e5f029f0c31c07",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-16877/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 1025322,
+      "read_complete_prefix_bytes": 1025322,
+      "sha256": "5c32a98414bf757c3a2eeffb57dc0cceaf192883c19eb519622af9cb7eb72819",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-13964/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 382762,
+      "read_complete_prefix_bytes": 382762,
+      "sha256": "0d1718da18feaa2b134ee1fa728f1ad661392fc03f87265f8e16989a0a680843",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11141/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 897210,
+      "read_complete_prefix_bytes": 897210,
+      "sha256": "90738aa027b653b568a718dd9e913794aaadc86c4acb47beca14693669eb1e69",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7571/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 767498,
+      "read_complete_prefix_bytes": 767498,
+      "sha256": "34da2af97e98a674d528d0b71e6393169f4d0d3417e9273de38ed841f93d7158",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-15368/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 550265,
+      "read_complete_prefix_bytes": 550265,
+      "sha256": "5c2aedd8d22e67de2e34abc212afd3bff5e360f2641c83db17d33a026dbd1019",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-7229/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 1049829,
+      "read_complete_prefix_bytes": 1049829,
+      "sha256": "e3364c89dc6d78fe29a55d13e0dc00ab43b29a406c126698604945ac3484674d",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11299/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 454052,
+      "read_complete_prefix_bytes": 454052,
+      "sha256": "f5d61e54b20fcc35e24877f76d97ecf7c29c0345c692c4c78c3fb6514a5892a9",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11095/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 1012887,
+      "read_complete_prefix_bytes": 1012887,
+      "sha256": "27a7f1b743c0978b3d45addbba39577ff2677dd1ada014e3cb34a8f483509651",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-7233/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 550806,
+      "read_complete_prefix_bytes": 550806,
+      "sha256": "631f9fbc17236c081df548da45dfb030b1c00f8b79502f22ed99b06596dfe5a9",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-4604/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 624472,
+      "read_complete_prefix_bytes": 624472,
+      "sha256": "6e53fb5140961f63e8333e3f185b4a174f86049e055f5c0c5869b35c8387941f",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-10880/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 655625,
+      "read_complete_prefix_bytes": 655625,
+      "sha256": "2664c54d1276d0ae85b4a24deff0bf97a3d6ec29d580a390619da43e89395e7d",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 1170927,
+      "read_complete_prefix_bytes": 1170927,
+      "sha256": "2c11e3007face8bae3706f86a7cd584c0e130c11dd48b0fc49b7a98fb516e746",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-3151/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 866305,
+      "read_complete_prefix_bytes": 866305,
+      "sha256": "59121966b2d5771b1563ee1cd2ed2ad1817dd1f6789a6c00b9eb15763148a40a",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pallets__flask-5014/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 757520,
+      "read_complete_prefix_bytes": 757520,
+      "sha256": "a4c73872208fd70784858a21611257c47fce300ea4959148d2686e482da9e32e",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pydata__xarray-6992/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 361394,
+      "read_complete_prefix_bytes": 361394,
+      "sha256": "f07c166ab3bc99be8e699dd12895c136a997e7b4470882a83d618c3620ded912",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-8898/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 941124,
+      "read_complete_prefix_bytes": 941124,
+      "sha256": "19362831ceca074aeb3169bafd4ca101ad42dd0ec2fe9c2a13d621ba1c2366c1",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11490/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 687427,
+      "read_complete_prefix_bytes": 687427,
+      "sha256": "e85d58ad86b7c781fe8f529aac6a0eccb18adbc5422985fcb681d11266649900",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-11119/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 872826,
+      "read_complete_prefix_bytes": 872826,
+      "sha256": "d585ec33433f725fe5748ecde41d4c63bf6192b3774beda2fbd2fec24088ef46",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pylint-dev__pylint-7277/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 490898,
+      "read_complete_prefix_bytes": 490898,
+      "sha256": "2823b1a723111463e80f8ea8c5a33d00a22b8ef845f04f02c97a4e7da32ac667",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-8399/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 817966,
+      "read_complete_prefix_bytes": 817966,
+      "sha256": "6166ee2f0ef707c13494fb3bf4455f376ba374cec6ad7791b022ecadff2f1ae2",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-14500/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 605594,
+      "read_complete_prefix_bytes": 605594,
+      "sha256": "029222e0c828f516f679aa00a0347281c24d8305270ca2f252ddf37ccc501373",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/django__django-10973/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 837396,
+      "read_complete_prefix_bytes": 837396,
+      "sha256": "ea12704a2571d4ba51b2e7b083af4980babe83794a2a6acbb09bf1664a81b047",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/client_156/workflows/pytest-dev__pytest-7205/child_stream_content.jsonl": {
+      "stat_prefix_bytes": 647614,
+      "read_complete_prefix_bytes": 647614,
+      "sha256": "0f60aa7d2e7b312e0a62fef564442f92f4fcc1f47fc668f8c4fdbb8983eb005f",
+      "ignored_trailing_bytes": 0
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/server/runtime_audit.jsonl": {
+      "stat_prefix_bytes": 689619164,
+      "read_complete_prefix_bytes": 689619164,
+      "sha256": "4747fc4dc226c60a750fe9ea529435754161386707a93d541540c4b900367108",
+      "ignored_trailing_bytes": 0
+    }
+  },
+  "misses": [
+    {
+      "command_id": "beliefkv-prefetch-cfec339771dd42e1af9a8f0cbdc0c738",
+      "source": "join_ticket",
+      "trigger_kind": "estimated_work",
+      "workflow_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da",
+      "invocation_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da:root",
+      "request_id": "beliefkv:01a12b55-3daf-7800-a6b0-6732a0320c40",
+      "join_id": "deepagents-join:5f7df9cc3f822850",
+      "context_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da:context:root",
+      "context_epoch": 0,
+      "node_id": 204,
+      "actual_bytes": 69980160,
+      "pool_units": {
+        "kv": 273,
+        "mamba": 1
+      },
+      "pool_bytes": {
+        "kv": 5591040,
+        "mamba": 64389120
+      },
+      "submit_ts_ms": 1791728649771.1016,
+      "ack_ts_ms": 1791728649945.3208,
+      "issue_to_submit_ms": 0.464599609375,
+      "enqueue_to_submit_ms": 0.3370223566889763,
+      "submit_to_ack_ms": 173.8358261063695,
+      "submit_after_native_eos_ms": -4160.658447265625,
+      "submit_lead_to_completion_ms": null,
+      "ack_to_first_service_ms": 4237.62744140625,
+      "full_first_service_reused": false,
+      "first_service_request_id": "beliefkv:01a12b59-96af-7c53-af53-d9a684548a56",
+      "first_service_context_epoch": 1,
+      "full_reuse_proof_version": 2,
+      "mamba_forward_verified": false,
+      "lease_events": [
+        {
+          "event": "prefetch_residency_registered",
+          "ts_ms": 1791728649945.2708,
+          "command_id": "beliefkv-prefetch-cfec339771dd42e1af9a8f0cbdc0c738",
+          "source": "join_ticket",
+          "context_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da:context:root",
+          "context_epoch": 0,
+          "session_id": "beliefkv-94e5608dc444728f5b3eebbd57a5522f",
+          "session_generation": 39,
+          "node_id": 204,
+          "node_creation_time": 1890.0,
+          "pool_bytes": {
+            "kv": 5591040,
+            "mamba": 64389120
+          },
+          "lease_ms": 1500.0,
+          "native_locked": true,
+          "protected_bytes": 240025600,
+          "protection_reason": "native_locked",
+          "protected_by_command_id": null,
+          "budget": {
+            "request_slots": 0,
+            "byte_limit": 45522329600,
+            "reserve_full_tokens": 16430,
+            "reserve_mamba_slots": 0,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 1228719,
+            "evictable_mamba_slots": 261
+          },
+          "residency_issue_budget": {
+            "request_slots": 1,
+            "byte_limit": 46565498880,
+            "reserve_full_tokens": 16433,
+            "reserve_mamba_slots": 1,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 1257597,
+            "evictable_mamba_slots": 261
+          },
+          "protection_request_slots": 1,
+          "scope": "bounded restore protection; native admission remains authoritative"
+        },
+        {
+          "event": "prefetch_residency_released",
+          "ts_ms": 1791728651483.1223,
+          "command_id": "beliefkv-prefetch-cfec339771dd42e1af9a8f0cbdc0c738",
+          "source": "join_ticket",
+          "reason": "service_window_expired",
+          "context_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da:context:root",
+          "context_epoch": 0,
+          "node_id": 204,
+          "node_creation_time": 1890.0,
+          "residency_ms": 1538.0790065973997,
+          "pool_bytes": {
+            "kv": 5591040,
+            "mamba": 64389120
+          },
+          "request_id": null,
+          "native_locked": true,
+          "protected_bytes": 240025600,
+          "scope": "native lock released; not reuse proof"
+        }
+      ],
+      "pressure_demotions_before_first_service": [],
+      "native_reloads_before_first_service": []
+    },
+    {
+      "command_id": "beliefkv-prefetch-273f42e5f2aa494ea388f61cca09341d",
+      "source": "join_ticket",
+      "trigger_kind": "estimated_work",
+      "workflow_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da",
+      "invocation_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da:root",
+      "request_id": "beliefkv:01a12b55-3daf-7800-a6b0-6732a0320c40",
+      "join_id": "deepagents-join:5f7df9cc3f822850",
+      "context_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da:context:root",
+      "context_epoch": 0,
+      "node_id": 204,
+      "actual_bytes": 69980160,
+      "pool_units": {
+        "kv": 273,
+        "mamba": 1
+      },
+      "pool_bytes": {
+        "kv": 5591040,
+        "mamba": 64389120
+      },
+      "submit_ts_ms": 1791728651801.6548,
+      "ack_ts_ms": 1791728651884.118,
+      "issue_to_submit_ms": 2.046630859375,
+      "enqueue_to_submit_ms": 0.5510086193680763,
+      "submit_to_ack_ms": 81.94457087665796,
+      "submit_after_native_eos_ms": -2130.105224609375,
+      "submit_lead_to_completion_ms": null,
+      "ack_to_first_service_ms": 2299.242431640625,
+      "full_first_service_reused": false,
+      "first_service_request_id": "beliefkv:01a12b59-96af-7c53-af53-d9a684548a56",
+      "first_service_context_epoch": 1,
+      "full_reuse_proof_version": 2,
+      "mamba_forward_verified": false,
+      "lease_events": [
+        {
+          "event": "prefetch_residency_registered",
+          "ts_ms": 1791728651884.0293,
+          "command_id": "beliefkv-prefetch-273f42e5f2aa494ea388f61cca09341d",
+          "source": "join_ticket",
+          "context_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da:context:root",
+          "context_epoch": 0,
+          "session_id": "beliefkv-94e5608dc444728f5b3eebbd57a5522f",
+          "session_generation": 39,
+          "node_id": 204,
+          "node_creation_time": 1890.0,
+          "pool_bytes": {
+            "kv": 5591040,
+            "mamba": 64389120
+          },
+          "lease_ms": 1500.0,
+          "native_locked": true,
+          "protected_bytes": 240025600,
+          "protection_reason": "native_locked",
+          "protected_by_command_id": null,
+          "budget": {
+            "request_slots": 0,
+            "byte_limit": 46181191680,
+            "reserve_full_tokens": 16430,
+            "reserve_mamba_slots": 0,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 1260458,
+            "evictable_mamba_slots": 234
+          },
+          "residency_issue_budget": {
+            "request_slots": 1,
+            "byte_limit": 47003586560,
+            "reserve_full_tokens": 16433,
+            "reserve_mamba_slots": 1,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 1279854,
+            "evictable_mamba_slots": 233
+          },
+          "protection_request_slots": 1,
+          "scope": "bounded restore protection; native admission remains authoritative"
+        },
+        {
+          "event": "prefetch_residency_released",
+          "ts_ms": 1791728653384.8752,
+          "command_id": "beliefkv-prefetch-273f42e5f2aa494ea388f61cca09341d",
+          "source": "join_ticket",
+          "reason": "service_window_expired",
+          "context_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da:context:root",
+          "context_epoch": 0,
+          "node_id": 204,
+          "node_creation_time": 1890.0,
+          "residency_ms": 1501.1683125048876,
+          "pool_bytes": {
+            "kv": 5591040,
+            "mamba": 64389120
+          },
+          "request_id": null,
+          "native_locked": true,
+          "protected_bytes": 240025600,
+          "scope": "native lock released; not reuse proof"
+        }
+      ],
+      "pressure_demotions_before_first_service": [],
+      "native_reloads_before_first_service": []
+    },
+    {
+      "command_id": "beliefkv-prefetch-660c613062de46f1874dad0ed605a3d2",
+      "source": "join_ticket",
+      "trigger_kind": "estimated_work",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa",
+      "invocation_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:root",
+      "request_id": "beliefkv:01a12b55-5395-7131-941d-2afcf6efc4a8",
+      "join_id": "deepagents-join:f8edfa0fa253ec69",
+      "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+      "context_epoch": 0,
+      "node_id": 331,
+      "actual_bytes": 20480,
+      "pool_units": {
+        "kv": 1
+      },
+      "pool_bytes": {
+        "kv": 20480
+      },
+      "submit_ts_ms": 1791729031869.3472,
+      "ack_ts_ms": 1791729031943.0647,
+      "issue_to_submit_ms": 0.938232421875,
+      "enqueue_to_submit_ms": 0.6535621359944344,
+      "submit_to_ack_ms": 73.10870941728354,
+      "submit_after_native_eos_ms": -4487.35791015625,
+      "submit_lead_to_completion_ms": null,
+      "ack_to_first_service_ms": 5698.067138671875,
+      "full_first_service_reused": false,
+      "first_service_request_id": "beliefkv:01a12b5f-6ce8-7fc0-bcca-2ed201ff19c2",
+      "first_service_context_epoch": 1,
+      "full_reuse_proof_version": 2,
+      "mamba_forward_verified": false,
+      "lease_events": [
+        {
+          "event": "prefetch_residency_registered",
+          "ts_ms": 1791729031943.0251,
+          "command_id": "beliefkv-prefetch-660c613062de46f1874dad0ed605a3d2",
+          "source": "join_ticket",
+          "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+          "context_epoch": 0,
+          "session_id": "beliefkv-412417130701eda0cf57bf8de15e6978",
+          "session_generation": 86,
+          "node_id": 331,
+          "node_creation_time": 159.0,
+          "pool_bytes": {
+            "kv": 20480
+          },
+          "lease_ms": 1500.0,
+          "native_locked": false,
+          "protected_bytes": 0,
+          "protection_reason": "covered_by_existing_lock",
+          "protected_by_command_id": "beliefkv-prefetch-ec2547f0d8534f21af87dca0aeebc9de",
+          "budget": {
+            "request_slots": 0,
+            "byte_limit": 39785246720,
+            "reserve_full_tokens": 16431,
+            "reserve_mamba_slots": 0,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 926072,
+            "evictable_mamba_slots": 104
+          },
+          "residency_issue_budget": {
+            "request_slots": 1,
+            "byte_limit": 40267243520,
+            "reserve_full_tokens": 16433,
+            "reserve_mamba_slots": 1,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 941711,
+            "evictable_mamba_slots": 104
+          },
+          "protection_request_slots": 1,
+          "scope": "bounded restore protection; native admission remains authoritative"
+        },
+        {
+          "event": "prefetch_residency_released",
+          "ts_ms": 1791729033446.9167,
+          "command_id": "beliefkv-prefetch-660c613062de46f1874dad0ed605a3d2",
+          "source": "join_ticket",
+          "reason": "service_window_expired",
+          "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+          "context_epoch": 0,
+          "node_id": 331,
+          "node_creation_time": 159.0,
+          "residency_ms": 1504.051210358739,
+          "pool_bytes": {
+            "kv": 20480
+          },
+          "request_id": null,
+          "native_locked": false,
+          "protected_bytes": 0,
+          "scope": "native lock released; not reuse proof"
+        }
+      ],
+      "pressure_demotions_before_first_service": [],
+      "native_reloads_before_first_service": []
+    },
+    {
+      "command_id": "beliefkv-prefetch-ec2547f0d8534f21af87dca0aeebc9de",
+      "source": "join_ticket",
+      "trigger_kind": "estimated_work",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa",
+      "invocation_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:root",
+      "request_id": "beliefkv:01a12b55-5395-7131-941d-2afcf6efc4a8",
+      "join_id": "deepagents-join:f8edfa0fa253ec69",
+      "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+      "context_epoch": 0,
+      "node_id": 333,
+      "actual_bytes": 79933440,
+      "pool_units": {
+        "kv": 759,
+        "mamba": 1
+      },
+      "pool_bytes": {
+        "kv": 15544320,
+        "mamba": 64389120
+      },
+      "submit_ts_ms": 1791729031869.3472,
+      "ack_ts_ms": 1791729031943.0732,
+      "issue_to_submit_ms": 0.938232421875,
+      "enqueue_to_submit_ms": 0.6535621359944344,
+      "submit_to_ack_ms": 73.10870941728354,
+      "submit_after_native_eos_ms": -4487.35791015625,
+      "submit_lead_to_completion_ms": null,
+      "ack_to_first_service_ms": 5698.11328125,
+      "full_first_service_reused": false,
+      "first_service_request_id": "beliefkv:01a12b5f-6ce8-7fc0-bcca-2ed201ff19c2",
+      "first_service_context_epoch": 1,
+      "full_reuse_proof_version": 2,
+      "mamba_forward_verified": false,
+      "lease_events": [
+        {
+          "event": "prefetch_residency_registered",
+          "ts_ms": 1791729031942.8186,
+          "command_id": "beliefkv-prefetch-ec2547f0d8534f21af87dca0aeebc9de",
+          "source": "join_ticket",
+          "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+          "context_epoch": 0,
+          "session_id": "beliefkv-412417130701eda0cf57bf8de15e6978",
+          "session_generation": 86,
+          "node_id": 333,
+          "node_creation_time": 3397.0,
+          "pool_bytes": {
+            "kv": 15544320,
+            "mamba": 64389120
+          },
+          "lease_ms": 1500.0,
+          "native_locked": true,
+          "protected_bytes": 249200640,
+          "protection_reason": "native_locked",
+          "protected_by_command_id": null,
+          "budget": {
+            "request_slots": 0,
+            "byte_limit": 39660113920,
+            "reserve_full_tokens": 16431,
+            "reserve_mamba_slots": 0,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 928986,
+            "evictable_mamba_slots": 105
+          },
+          "residency_issue_budget": {
+            "request_slots": 1,
+            "byte_limit": 40267243520,
+            "reserve_full_tokens": 16433,
+            "reserve_mamba_slots": 1,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 941711,
+            "evictable_mamba_slots": 104
+          },
+          "protection_request_slots": 1,
+          "scope": "bounded restore protection; native admission remains authoritative"
+        },
+        {
+          "event": "prefetch_residency_released",
+          "ts_ms": 1791729033446.8987,
+          "command_id": "beliefkv-prefetch-ec2547f0d8534f21af87dca0aeebc9de",
+          "source": "join_ticket",
+          "reason": "service_window_expired",
+          "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+          "context_epoch": 0,
+          "node_id": 333,
+          "node_creation_time": 3397.0,
+          "residency_ms": 1504.3152486905456,
+          "pool_bytes": {
+            "kv": 15544320,
+            "mamba": 64389120
+          },
+          "request_id": null,
+          "native_locked": true,
+          "protected_bytes": 249200640,
+          "scope": "native lock released; not reuse proof"
+        }
+      ],
+      "pressure_demotions_before_first_service": [],
+      "native_reloads_before_first_service": []
+    },
+    {
+      "command_id": "beliefkv-prefetch-b5f0c5c450f8498387dc7c65ecb0d826",
+      "source": "join_ticket",
+      "trigger_kind": "estimated_work",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa",
+      "invocation_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:root",
+      "request_id": "beliefkv:01a12b55-5395-7131-941d-2afcf6efc4a8",
+      "join_id": "deepagents-join:f8edfa0fa253ec69",
+      "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+      "context_epoch": 0,
+      "node_id": 331,
+      "actual_bytes": 20480,
+      "pool_units": {
+        "kv": 1
+      },
+      "pool_bytes": {
+        "kv": 20480
+      },
+      "submit_ts_ms": 1791729034922.9192,
+      "ack_ts_ms": 1791729035006.3315,
+      "issue_to_submit_ms": 0.921142578125,
+      "enqueue_to_submit_ms": 0.6304839625954628,
+      "submit_to_ack_ms": 82.77912624180317,
+      "submit_after_native_eos_ms": -1433.785888671875,
+      "submit_lead_to_completion_ms": null,
+      "ack_to_first_service_ms": 2634.897705078125,
+      "full_first_service_reused": false,
+      "first_service_request_id": "beliefkv:01a12b5f-6ce8-7fc0-bcca-2ed201ff19c2",
+      "first_service_context_epoch": 1,
+      "full_reuse_proof_version": 2,
+      "mamba_forward_verified": false,
+      "lease_events": [
+        {
+          "event": "prefetch_residency_registered",
+          "ts_ms": 1791729035006.2937,
+          "command_id": "beliefkv-prefetch-b5f0c5c450f8498387dc7c65ecb0d826",
+          "source": "join_ticket",
+          "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+          "context_epoch": 0,
+          "session_id": "beliefkv-412417130701eda0cf57bf8de15e6978",
+          "session_generation": 86,
+          "node_id": 331,
+          "node_creation_time": 159.0,
+          "pool_bytes": {
+            "kv": 20480
+          },
+          "lease_ms": 1500.0,
+          "native_locked": false,
+          "protected_bytes": 0,
+          "protection_reason": "covered_by_existing_lock",
+          "protected_by_command_id": "beliefkv-prefetch-4643716d4ce248a68c062df420f0bb8e",
+          "budget": {
+            "request_slots": 1,
+            "byte_limit": 39318282240,
+            "reserve_full_tokens": 16432,
+            "reserve_mamba_slots": 1,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 908572,
+            "evictable_mamba_slots": 104
+          },
+          "residency_issue_budget": {
+            "request_slots": 1,
+            "byte_limit": 38822318080,
+            "reserve_full_tokens": 16433,
+            "reserve_mamba_slots": 1,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 892507,
+            "evictable_mamba_slots": 108
+          },
+          "protection_request_slots": 1,
+          "scope": "bounded restore protection; native admission remains authoritative"
+        },
+        {
+          "event": "prefetch_residency_released",
+          "ts_ms": 1791729036525.298,
+          "command_id": "beliefkv-prefetch-b5f0c5c450f8498387dc7c65ecb0d826",
+          "source": "join_ticket",
+          "reason": "service_window_expired",
+          "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+          "context_epoch": 0,
+          "node_id": 331,
+          "node_creation_time": 159.0,
+          "residency_ms": 1519.1693110391498,
+          "pool_bytes": {
+            "kv": 20480
+          },
+          "request_id": null,
+          "native_locked": false,
+          "protected_bytes": 0,
+          "scope": "native lock released; not reuse proof"
+        }
+      ],
+      "pressure_demotions_before_first_service": [],
+      "native_reloads_before_first_service": []
+    },
+    {
+      "command_id": "beliefkv-prefetch-4643716d4ce248a68c062df420f0bb8e",
+      "source": "join_ticket",
+      "trigger_kind": "estimated_work",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa",
+      "invocation_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:root",
+      "request_id": "beliefkv:01a12b55-5395-7131-941d-2afcf6efc4a8",
+      "join_id": "deepagents-join:f8edfa0fa253ec69",
+      "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+      "context_epoch": 0,
+      "node_id": 333,
+      "actual_bytes": 79933440,
+      "pool_units": {
+        "kv": 759,
+        "mamba": 1
+      },
+      "pool_bytes": {
+        "kv": 15544320,
+        "mamba": 64389120
+      },
+      "submit_ts_ms": 1791729034922.9192,
+      "ack_ts_ms": 1791729035006.3406,
+      "issue_to_submit_ms": 0.921142578125,
+      "enqueue_to_submit_ms": 0.6304839625954628,
+      "submit_to_ack_ms": 82.77912624180317,
+      "submit_after_native_eos_ms": -1433.785888671875,
+      "submit_lead_to_completion_ms": null,
+      "ack_to_first_service_ms": 2634.925048828125,
+      "full_first_service_reused": false,
+      "first_service_request_id": "beliefkv:01a12b5f-6ce8-7fc0-bcca-2ed201ff19c2",
+      "first_service_context_epoch": 1,
+      "full_reuse_proof_version": 2,
+      "mamba_forward_verified": false,
+      "lease_events": [
+        {
+          "event": "prefetch_residency_registered",
+          "ts_ms": 1791729035006.0776,
+          "command_id": "beliefkv-prefetch-4643716d4ce248a68c062df420f0bb8e",
+          "source": "join_ticket",
+          "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+          "context_epoch": 0,
+          "session_id": "beliefkv-412417130701eda0cf57bf8de15e6978",
+          "session_generation": 86,
+          "node_id": 333,
+          "node_creation_time": 3397.0,
+          "pool_bytes": {
+            "kv": 15544320,
+            "mamba": 64389120
+          },
+          "lease_ms": 1500.0,
+          "native_locked": true,
+          "protected_bytes": 249200640,
+          "protection_reason": "native_locked",
+          "protected_by_command_id": null,
+          "budget": {
+            "request_slots": 1,
+            "byte_limit": 39149035520,
+            "reserve_full_tokens": 16432,
+            "reserve_mamba_slots": 1,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 909332,
+            "evictable_mamba_slots": 105
+          },
+          "residency_issue_budget": {
+            "request_slots": 1,
+            "byte_limit": 38822318080,
+            "reserve_full_tokens": 16433,
+            "reserve_mamba_slots": 1,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 892507,
+            "evictable_mamba_slots": 108
+          },
+          "protection_request_slots": 1,
+          "scope": "bounded restore protection; native admission remains authoritative"
+        },
+        {
+          "event": "prefetch_residency_released",
+          "ts_ms": 1791729036525.2776,
+          "command_id": "beliefkv-prefetch-4643716d4ce248a68c062df420f0bb8e",
+          "source": "join_ticket",
+          "reason": "service_window_expired",
+          "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+          "context_epoch": 0,
+          "node_id": 333,
+          "node_creation_time": 3397.0,
+          "residency_ms": 1519.4493597373366,
+          "pool_bytes": {
+            "kv": 15544320,
+            "mamba": 64389120
+          },
+          "request_id": null,
+          "native_locked": true,
+          "protected_bytes": 249200640,
+          "scope": "native lock released; not reuse proof"
+        }
+      ],
+      "pressure_demotions_before_first_service": [],
+      "native_reloads_before_first_service": []
+    },
+    {
+      "command_id": "beliefkv-prefetch-0b37c6c959264cf8b981841c9e5b5f9a",
+      "source": "join_ticket",
+      "trigger_kind": "estimated_work",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9",
+      "invocation_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9:root",
+      "request_id": "beliefkv:01a12b55-5766-7cd2-bc71-23e5be0187c1",
+      "join_id": "deepagents-join:2c86d9c6d2749488",
+      "context_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9:context:root",
+      "context_epoch": 0,
+      "node_id": 441,
+      "actual_bytes": 20480,
+      "pool_units": {
+        "kv": 1
+      },
+      "pool_bytes": {
+        "kv": 20480
+      },
+      "submit_ts_ms": 1791729446586.0686,
+      "ack_ts_ms": 1791729446729.273,
+      "issue_to_submit_ms": 2.216796875,
+      "enqueue_to_submit_ms": 1.389259472489357,
+      "submit_to_ack_ms": 141.9369876384735,
+      "submit_after_native_eos_ms": -14828.342529296875,
+      "submit_lead_to_completion_ms": null,
+      "ack_to_first_service_ms": 15528.424072265625,
+      "full_first_service_reused": false,
+      "first_service_request_id": "beliefkv:01a12b65-ea21-7460-94a3-e6379ea9b51e",
+      "first_service_context_epoch": 1,
+      "full_reuse_proof_version": 2,
+      "mamba_forward_verified": false,
+      "lease_events": [
+        {
+          "event": "prefetch_residency_registered",
+          "ts_ms": 1791729446729.2222,
+          "command_id": "beliefkv-prefetch-0b37c6c959264cf8b981841c9e5b5f9a",
+          "source": "join_ticket",
+          "context_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9:context:root",
+          "context_epoch": 0,
+          "session_id": "beliefkv-96d7fe917fcbdcc04f33b65ff993b67d",
+          "session_generation": 135,
+          "node_id": 441,
+          "node_creation_time": 306.0,
+          "pool_bytes": {
+            "kv": 20480
+          },
+          "lease_ms": 1500.0,
+          "native_locked": false,
+          "protected_bytes": 0,
+          "protection_reason": "covered_by_existing_lock",
+          "protected_by_command_id": "beliefkv-prefetch-3b0e6515e78243e4b4e6a12f888acbbc",
+          "budget": {
+            "request_slots": 1,
+            "byte_limit": 38911201280,
+            "reserve_full_tokens": 16431,
+            "reserve_mamba_slots": 1,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 887742,
+            "evictable_mamba_slots": 82
+          },
+          "residency_issue_budget": {
+            "request_slots": 2,
+            "byte_limit": 39421624320,
+            "reserve_full_tokens": 16432,
+            "reserve_mamba_slots": 2,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 911295,
+            "evictable_mamba_slots": 93
+          },
+          "protection_request_slots": 2,
+          "scope": "bounded restore protection; native admission remains authoritative"
+        },
+        {
+          "event": "prefetch_residency_released",
+          "ts_ms": 1791729448232.464,
+          "command_id": "beliefkv-prefetch-0b37c6c959264cf8b981841c9e5b5f9a",
+          "source": "join_ticket",
+          "reason": "service_window_expired",
+          "context_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9:context:root",
+          "context_epoch": 0,
+          "node_id": 441,
+          "node_creation_time": 306.0,
+          "residency_ms": 1503.6867121234536,
+          "pool_bytes": {
+            "kv": 20480
+          },
+          "request_id": null,
+          "native_locked": false,
+          "protected_bytes": 0,
+          "scope": "native lock released; not reuse proof"
+        }
+      ],
+      "pressure_demotions_before_first_service": [],
+      "native_reloads_before_first_service": []
+    },
+    {
+      "command_id": "beliefkv-prefetch-3b0e6515e78243e4b4e6a12f888acbbc",
+      "source": "join_ticket",
+      "trigger_kind": "estimated_work",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9",
+      "invocation_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9:root",
+      "request_id": "beliefkv:01a12b55-5766-7cd2-bc71-23e5be0187c1",
+      "join_id": "deepagents-join:2c86d9c6d2749488",
+      "context_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9:context:root",
+      "context_epoch": 0,
+      "node_id": 442,
+      "actual_bytes": 79912960,
+      "pool_units": {
+        "kv": 758,
+        "mamba": 1
+      },
+      "pool_bytes": {
+        "kv": 15523840,
+        "mamba": 64389120
+      },
+      "submit_ts_ms": 1791729446586.0686,
+      "ack_ts_ms": 1791729446729.2861,
+      "issue_to_submit_ms": 2.216796875,
+      "enqueue_to_submit_ms": 1.389259472489357,
+      "submit_to_ack_ms": 141.9369876384735,
+      "submit_after_native_eos_ms": -14828.342529296875,
+      "submit_lead_to_completion_ms": null,
+      "ack_to_first_service_ms": 15528.4619140625,
+      "full_first_service_reused": false,
+      "first_service_request_id": "beliefkv:01a12b65-ea21-7460-94a3-e6379ea9b51e",
+      "first_service_context_epoch": 1,
+      "full_reuse_proof_version": 2,
+      "mamba_forward_verified": false,
+      "lease_events": [
+        {
+          "event": "prefetch_residency_registered",
+          "ts_ms": 1791729446728.6584,
+          "command_id": "beliefkv-prefetch-3b0e6515e78243e4b4e6a12f888acbbc",
+          "source": "join_ticket",
+          "context_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9:context:root",
+          "context_epoch": 0,
+          "session_id": "beliefkv-96d7fe917fcbdcc04f33b65ff993b67d",
+          "session_generation": 135,
+          "node_id": 442,
+          "node_creation_time": 4722.0,
+          "pool_bytes": {
+            "kv": 15523840,
+            "mamba": 64389120
+          },
+          "lease_ms": 1500.0,
+          "native_locked": true,
+          "protected_bytes": 249200640,
+          "protection_reason": "native_locked",
+          "protected_by_command_id": null,
+          "budget": {
+            "request_slots": 1,
+            "byte_limit": 38741934080,
+            "reserve_full_tokens": 16431,
+            "reserve_mamba_slots": 1,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 888501,
+            "evictable_mamba_slots": 83
+          },
+          "residency_issue_budget": {
+            "request_slots": 2,
+            "byte_limit": 39421624320,
+            "reserve_full_tokens": 16432,
+            "reserve_mamba_slots": 2,
+            "source": "native_next_prefill",
+            "evictable_full_tokens": 911295,
+            "evictable_mamba_slots": 93
+          },
+          "protection_request_slots": 2,
+          "scope": "bounded restore protection; native admission remains authoritative"
+        },
+        {
+          "event": "prefetch_residency_released",
+          "ts_ms": 1791729448232.4468,
+          "command_id": "beliefkv-prefetch-3b0e6515e78243e4b4e6a12f888acbbc",
+          "source": "join_ticket",
+          "reason": "service_window_expired",
+          "context_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9:context:root",
+          "context_epoch": 0,
+          "node_id": 442,
+          "node_creation_time": 4722.0,
+          "residency_ms": 1504.2322240769863,
+          "pool_bytes": {
+            "kv": 15523840,
+            "mamba": 64389120
+          },
+          "request_id": null,
+          "native_locked": true,
+          "protected_bytes": 249200640,
+          "scope": "native lock released; not reuse proof"
+        }
+      ],
+      "pressure_demotions_before_first_service": [],
+      "native_reloads_before_first_service": []
+    }
+  ],
+  "associated_waits": [
+    {
+      "source": "join_ticket",
+      "workflow_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da",
+      "invocation_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da:root",
+      "context_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da:context:root",
+      "context_epoch": 0,
+      "join_id": "deepagents-join:5f7df9cc3f822850",
+      "max_observed_planned_full_tokens": 273,
+      "completion_ts_ms": 1791728653972.9172,
+      "max_observed_planned_node_count": 1,
+      "completion_evidence": "join_satisfied",
+      "observed_tools_completion_ts_ms": null,
+      "observed_context_epochs": [
+        0
+      ],
+      "observed_tool_call_count": 0,
+      "tool_ids_outside_request_round": [],
+      "first_observation_after_completion_ms": 0.0,
+      "max_observed_planned_full_bytes": 5591040,
+      "observed_plan_reasons": {
+        "no_reusable_input_restore_step": 15,
+        "insufficient_free_lists": 2,
+        "fits_current_free_lists": 1,
+        "before_start_window": 15,
+        "admission_budget_busy": 2,
+        "start_window": 3,
+        "no_cold_capacity": 1,
+        "submitted": 3,
+        "no_restore_plan": 5
+      },
+      "observed_planning_blocked_details": {
+        "input_checkpoint_unavailable_or_already_resident": 20
+      },
+      "observed_no_live_details": {},
+      "observed_capacity_conditions": {
+        "mamba_only": 1,
+        "full_only": 1,
+        "none": 1
+      },
+      "max_observed_full_bytes_with_mamba_only_shortfall": 5591040,
+      "observed_session_bindings": 1,
+      "next_request_id": "beliefkv:01a12b59-96af-7c53-af53-d9a684548a56",
+      "first_service_ts_ms": 1791728654239.944,
+      "client_submit_ts_ms": 1791728654000.709,
+      "native_arrival_ts_ms": 1791728654123.6177,
+      "full_residency_expirations": [
+        {
+          "command_id": "beliefkv-prefetch-cfec339771dd42e1af9a8f0cbdc0c738",
+          "full_bytes": 5591040,
+          "release_ts_ms": 1791728651483.1223,
+          "release_stage": "before_completion",
+          "full_first_service_reused": false,
+          "reentry_ready_observed": false,
+          "client_submit_observed_by_runtime": false,
+          "native_demand_observed_by_runtime": false
+        },
+        {
+          "command_id": "beliefkv-prefetch-273f42e5f2aa494ea388f61cca09341d",
+          "full_bytes": 5591040,
+          "release_ts_ms": 1791728653384.8752,
+          "release_stage": "before_completion",
+          "full_first_service_reused": false,
+          "reentry_ready_observed": false,
+          "client_submit_observed_by_runtime": false,
+          "native_demand_observed_by_runtime": false
+        }
+      ],
+      "node_command_count": 3,
+      "early_started_and_reused_full_command_ids": [
+        "beliefkv-prefetch-a9b2c814aebd430195533ee75bfdec27"
+      ],
+      "early_started_and_reused_full_bytes": 5591040,
+      "early_ready_and_reused_full_bytes": 5591040,
+      "remaining_native_full_host_hit_tokens": 0,
+      "remaining_native_full_host_hit_bytes": 0,
+      "demand_handoff_full_bytes_known": 0,
+      "completion_to_client_submit_ms": 27.791748046875,
+      "client_submit_to_native_arrival_ms": 122.90869140625,
+      "http_transport_attempts_observed": 1,
+      "http_body_sent_ts_ms": 1791728654010.9888,
+      "client_submit_to_http_request_ms": 8.83984375,
+      "http_request_to_body_sent_ms": 1.43994140625,
+      "body_sent_to_native_arrival_ms": 112.62890625,
+      "http_request_to_response_headers_ms": 266.323974609375,
+      "native_ingress_timing_ms": {
+        "chat_conversion_started_ts_ms": 1791728654093.2988,
+        "chat_conversion_finished_ts_ms": 1791728654121.6646,
+        "api_received_ts_ms": 1791728654077.218,
+        "api_tokenized_ts_ms": 1791728654122.0234,
+        "api_dispatch_started_ts_ms": 1791728654122.0276,
+        "scheduler_received_ts_ms": 1791728654123.469,
+        "native_queue_registered_ts_ms": 1791728654123.6177,
+        "http_body_sent_ts_ms": 1791728654010.9888
+      },
+      "body_sent_to_api_received_ms": 66.229248046875,
+      "api_received_to_chat_conversion_ms": 16.080810546875,
+      "chat_conversion_ms": 28.36572265625,
+      "chat_conversion_to_tokenized_ms": 0.35888671875,
+      "tokenized_to_dispatch_ms": 0.004150390625,
+      "dispatch_to_scheduler_received_ms": 1.44140625,
+      "scheduler_received_to_queue_registered_ms": 0.148681640625,
+      "client_submit_to_first_service_ms": 239.235107421875,
+      "submit_to_first_service_ms": 116.326416015625,
+      "first_ack_to_first_service_ms": 4294.623291015625,
+      "last_ack_to_first_service_ms": 565.668212890625,
+      "sampled_batch_restore_dependency_wait_ms": []
+    },
+    {
+      "source": "join_ticket",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa",
+      "invocation_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:root",
+      "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+      "context_epoch": 0,
+      "join_id": "deepagents-join:f8edfa0fa253ec69",
+      "max_observed_planned_full_tokens": 760,
+      "completion_ts_ms": 1791729036501.3972,
+      "max_observed_planned_node_count": 2,
+      "completion_evidence": "join_satisfied",
+      "observed_tools_completion_ts_ms": null,
+      "observed_context_epochs": [
+        0
+      ],
+      "observed_tool_call_count": 0,
+      "tool_ids_outside_request_round": [],
+      "first_observation_after_completion_ms": 0.0,
+      "max_observed_planned_full_bytes": 15564800,
+      "observed_plan_reasons": {
+        "no_reusable_input_restore_step": 14,
+        "insufficient_free_lists": 18,
+        "fits_current_free_lists": 15,
+        "before_start_window": 26,
+        "admission_budget_busy": 5,
+        "start_window": 4,
+        "submitted": 2,
+        "no_restore_plan": 2,
+        "service_unsupported": 2,
+        "service_progress_unavailable": 2
+      },
+      "observed_planning_blocked_details": {
+        "input_checkpoint_unavailable_or_already_resident": 16
+      },
+      "observed_no_live_details": {},
+      "observed_capacity_conditions": {
+        "full_only": 18,
+        "none": 15
+      },
+      "max_observed_full_bytes_with_mamba_only_shortfall": null,
+      "observed_session_bindings": 1,
+      "next_request_id": "beliefkv:01a12b5f-6ce8-7fc0-bcca-2ed201ff19c2",
+      "first_service_ts_ms": 1791729037693.6902,
+      "client_submit_ts_ms": 1791729036522.532,
+      "native_arrival_ts_ms": 1791729037388.9749,
+      "full_residency_expirations": [
+        {
+          "command_id": "beliefkv-prefetch-ec2547f0d8534f21af87dca0aeebc9de",
+          "full_bytes": 15544320,
+          "release_ts_ms": 1791729033446.8987,
+          "release_stage": "before_completion",
+          "full_first_service_reused": false,
+          "reentry_ready_observed": false,
+          "client_submit_observed_by_runtime": false,
+          "native_demand_observed_by_runtime": false
+        },
+        {
+          "command_id": "beliefkv-prefetch-4643716d4ce248a68c062df420f0bb8e",
+          "full_bytes": 15544320,
+          "release_ts_ms": 1791729036525.2776,
+          "release_stage": "awaiting_native_arrival",
+          "full_first_service_reused": false,
+          "reentry_ready_observed": false,
+          "client_submit_observed_by_runtime": false,
+          "native_demand_observed_by_runtime": false
+        }
+      ],
+      "node_command_count": 4,
+      "early_started_and_reused_full_command_ids": [],
+      "early_started_and_reused_full_bytes": 0,
+      "early_ready_and_reused_full_bytes": 0,
+      "remaining_native_full_host_hit_tokens": 0,
+      "remaining_native_full_host_hit_bytes": 0,
+      "demand_handoff_full_bytes_known": 15564800,
+      "completion_to_client_submit_ms": 21.134765625,
+      "client_submit_to_native_arrival_ms": 866.44287109375,
+      "http_transport_attempts_observed": 1,
+      "http_body_sent_ts_ms": 1791729037313.3474,
+      "client_submit_to_http_request_ms": 13.62744140625,
+      "http_request_to_body_sent_ms": 777.18798828125,
+      "body_sent_to_native_arrival_ms": 75.62744140625,
+      "http_request_to_response_headers_ms": 1611.7880859375,
+      "native_ingress_timing_ms": {
+        "chat_conversion_started_ts_ms": 1791729037314.5688,
+        "chat_conversion_finished_ts_ms": 1791729037346.128,
+        "api_received_ts_ms": 1791729037289.517,
+        "api_tokenized_ts_ms": 1791729037346.5337,
+        "api_dispatch_started_ts_ms": 1791729037346.54,
+        "scheduler_received_ts_ms": 1791729037388.8215,
+        "native_queue_registered_ts_ms": 1791729037388.9749,
+        "http_body_sent_ts_ms": 1791729037313.3474
+      },
+      "body_sent_to_api_received_ms": null,
+      "api_received_to_chat_conversion_ms": 25.0517578125,
+      "chat_conversion_ms": 31.55908203125,
+      "chat_conversion_to_tokenized_ms": 0.40576171875,
+      "tokenized_to_dispatch_ms": 0.00634765625,
+      "dispatch_to_scheduler_received_ms": 42.281494140625,
+      "scheduler_received_to_queue_registered_ms": 0.1533203125,
+      "client_submit_to_first_service_ms": 1171.158203125,
+      "submit_to_first_service_ms": 304.71533203125,
+      "first_ack_to_first_service_ms": 5750.62548828125,
+      "last_ack_to_first_service_ms": 2687.349609375,
+      "sampled_batch_restore_dependency_wait_ms": []
+    },
+    {
+      "source": "join_ticket",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9",
+      "invocation_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9:root",
+      "context_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9:context:root",
+      "context_epoch": 0,
+      "join_id": "deepagents-join:2c86d9c6d2749488",
+      "max_observed_planned_full_tokens": 760,
+      "completion_ts_ms": 1791729461743.5068,
+      "max_observed_planned_node_count": 3,
+      "completion_evidence": "join_satisfied",
+      "observed_tools_completion_ts_ms": null,
+      "observed_context_epochs": [
+        0
+      ],
+      "observed_tool_call_count": 0,
+      "tool_ids_outside_request_round": [],
+      "first_observation_after_completion_ms": 0.0,
+      "max_observed_planned_full_bytes": 15544320,
+      "observed_plan_reasons": {
+        "no_reusable_input_restore_step": 9,
+        "insufficient_free_lists": 47,
+        "fits_current_free_lists": 24,
+        "before_start_window": 40,
+        "start_window": 1,
+        "submitted": 1,
+        "no_restore_plan": 1,
+        "admission_budget_busy": 6
+      },
+      "observed_planning_blocked_details": {
+        "input_checkpoint_unavailable_or_already_resident": 10
+      },
+      "observed_no_live_details": {},
+      "observed_capacity_conditions": {
+        "both": 1,
+        "full_only": 46,
+        "none": 24
+      },
+      "max_observed_full_bytes_with_mamba_only_shortfall": null,
+      "observed_session_bindings": 1,
+      "next_request_id": "beliefkv:01a12b65-ea21-7460-94a3-e6379ea9b51e",
+      "first_service_ts_ms": 1791729462304.4739,
+      "client_submit_ts_ms": 1791729461796.0515,
+      "native_arrival_ts_ms": 1791729461877.4492,
+      "full_residency_expirations": [
+        {
+          "command_id": "beliefkv-prefetch-3b0e6515e78243e4b4e6a12f888acbbc",
+          "full_bytes": 15523840,
+          "release_ts_ms": 1791729448232.4468,
+          "release_stage": "before_completion",
+          "full_first_service_reused": false,
+          "reentry_ready_observed": false,
+          "client_submit_observed_by_runtime": false,
+          "native_demand_observed_by_runtime": false
+        }
+      ],
+      "node_command_count": 2,
+      "early_started_and_reused_full_command_ids": [],
+      "early_started_and_reused_full_bytes": 0,
+      "early_ready_and_reused_full_bytes": 0,
+      "remaining_native_full_host_hit_tokens": 0,
+      "remaining_native_full_host_hit_bytes": 0,
+      "demand_handoff_full_bytes_known": 15544320,
+      "completion_to_client_submit_ms": 52.544677734375,
+      "client_submit_to_native_arrival_ms": 81.397705078125,
+      "http_transport_attempts_observed": 1,
+      "http_body_sent_ts_ms": 1791729461823.5483,
+      "client_submit_to_http_request_ms": 15.9609375,
+      "http_request_to_body_sent_ms": 11.535888671875,
+      "body_sent_to_native_arrival_ms": 53.90087890625,
+      "http_request_to_response_headers_ms": 530.784912109375,
+      "native_ingress_timing_ms": {
+        "chat_conversion_started_ts_ms": 1791729461839.3032,
+        "chat_conversion_finished_ts_ms": 1791729461869.074,
+        "api_received_ts_ms": 1791729461824.1904,
+        "api_tokenized_ts_ms": 1791729461869.498,
+        "api_dispatch_started_ts_ms": 1791729461869.5034,
+        "scheduler_received_ts_ms": 1791729461877.2957,
+        "native_queue_registered_ts_ms": 1791729461877.4492,
+        "http_body_sent_ts_ms": 1791729461823.5483
+      },
+      "body_sent_to_api_received_ms": 0.64208984375,
+      "api_received_to_chat_conversion_ms": 15.11279296875,
+      "chat_conversion_ms": 29.770751953125,
+      "chat_conversion_to_tokenized_ms": 0.424072265625,
+      "tokenized_to_dispatch_ms": 0.00537109375,
+      "dispatch_to_scheduler_received_ms": 7.792236328125,
+      "scheduler_received_to_queue_registered_ms": 0.153564453125,
+      "client_submit_to_first_service_ms": 508.42236328125,
+      "submit_to_first_service_ms": 427.024658203125,
+      "first_ack_to_first_service_ms": 15575.200927734375,
+      "last_ack_to_first_service_ms": 15575.187744140625,
+      "sampled_batch_restore_dependency_wait_ms": []
+    }
+  ]
+}

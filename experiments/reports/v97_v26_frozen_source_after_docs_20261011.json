@@ -1,0 +1,20 @@
+{
+  "collection_code_commit": "2d25850d37caecbee8558f56c60d7d47ea46b706",
+  "verification_code_commit": "41808d15e424ef1e117c57c37caf2d8a51781cb8",
+  "execution_source_unchanged": true,
+  "non_execution_paths": [
+    "docs/",
+    "tests/",
+    "scripts/summarize_semantic_h2d_ab.py",
+    "scripts/launch_semantic_h2d_after_pair.py"
+  ],
+  "changed_committed_paths": [
+    "docs/architecture_status_zh.md",
+    "docs/beliefkv_design.md",
+    "docs/experiment_operating_notes_zh.md",
+    "docs/implementation_plan.md"
+  ],
+  "observed_at_local": "2026-10-11T22:52:49.571200+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26",
+  "new_runtime_optimization_deployed": false
+}

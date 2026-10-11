@@ -1,0 +1,538 @@
+{
+  "scope": "CPU native-tree protection fixtures with the real scalar closure observer. Context validation is held constant; no allocator, DMA, CUDA, admission or end-to-end performance is measured. Preserve slower paths.",
+  "baseline_revision": "2d25850d37caecbee8558f56c60d7d47ea46b706",
+  "baseline_source_sha256": "f82ad089f6aabe7c35a6e903af68d60b927e244b07898bde7413559bdfd557fb",
+  "optimized_source_sha256": "dafdbb365d29aac9677bc3178536fef8a5e6213ec46d6d15d080d3823938164e",
+  "benchmark_source_sha256": "8a2236cdc417ec6942e1d79de13ceb0371aac47b650740bceac6826ae9624482",
+  "iterations_per_case": 60,
+  "cases": [
+    {
+      "depth": 8,
+      "mode": "same_node_covered",
+      "outputs_and_locks_equal": true,
+      "output_sha256": "ae70240f9f6891a65838765c567ae6480df74091ee76941eaa396e205a7d3610",
+      "closure_captures_per_call": {
+        "baseline": [
+          1
+        ],
+        "optimized": [
+          0
+        ]
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.2070942,
+            "p50_ms": 0.19824950000000002,
+            "p90_ms": 0.21245
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.2072821,
+            "p50_ms": 0.19839400000000001,
+            "p90_ms": 0.212714
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.06453028333333333,
+            "p50_ms": 0.06378349999999999,
+            "p90_ms": 0.069783
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.06474,
+            "p50_ms": 0.06394150000000001,
+            "p90_ms": 0.070241
+          }
+        }
+      }
+    },
+    {
+      "depth": 8,
+      "mode": "ancestor_covered",
+      "outputs_and_locks_equal": true,
+      "output_sha256": "ddd8b3ea5b330aa946c78d9508e411a9d6b7c8e98aa16af089a4121bd4539a54",
+      "closure_captures_per_call": {
+        "baseline": [
+          1
+        ],
+        "optimized": [
+          0
+        ]
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.17848516666666667,
+            "p50_ms": 0.175846,
+            "p90_ms": 0.192504
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.17869658333333333,
+            "p50_ms": 0.175989,
+            "p90_ms": 0.192726
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.07907301666666666,
+            "p50_ms": 0.0711475,
+            "p90_ms": 0.083323
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.07924153333333334,
+            "p50_ms": 0.07129350000000001,
+            "p90_ms": 0.083521
+          }
+        }
+      }
+    },
+    {
+      "depth": 8,
+      "mode": "new_lock",
+      "outputs_and_locks_equal": true,
+      "output_sha256": "8caee845fc37391edb9d0b55765a9228ce9a969b96157d309b7665bce89962a1",
+      "closure_captures_per_call": {
+        "baseline": [
+          1
+        ],
+        "optimized": [
+          1
+        ]
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.19399075,
+            "p50_ms": 0.192517,
+            "p90_ms": 0.207817
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.19419039999999999,
+            "p50_ms": 0.192722,
+            "p90_ms": 0.208
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.19403896666666667,
+            "p50_ms": 0.192518,
+            "p90_ms": 0.203308
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.19423189999999999,
+            "p50_ms": 0.192663,
+            "p90_ms": 0.203346
+          }
+        }
+      }
+    },
+    {
+      "depth": 8,
+      "mode": "extend_lock",
+      "outputs_and_locks_equal": true,
+      "output_sha256": "c6c0b7101468ef2100e435feff4d76fdc195e4f9e63648dcc32cc4dae55a07b4",
+      "closure_captures_per_call": {
+        "baseline": [
+          1
+        ],
+        "optimized": [
+          1
+        ]
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.2177576,
+            "p50_ms": 0.21521849999999998,
+            "p90_ms": 0.231099
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.21795508333333333,
+            "p50_ms": 0.2155295,
+            "p90_ms": 0.231187
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.22148688333333333,
+            "p50_ms": 0.2200395,
+            "p90_ms": 0.234699
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.2216853,
+            "p50_ms": 0.2202575,
+            "p90_ms": 0.234908
+          }
+        }
+      }
+    },
+    {
+      "depth": 64,
+      "mode": "same_node_covered",
+      "outputs_and_locks_equal": true,
+      "output_sha256": "fab0429fda7e85fc89bbfc2002036c6541bd19f9004d300a967619862d60815e",
+      "closure_captures_per_call": {
+        "baseline": [
+          1
+        ],
+        "optimized": [
+          0
+        ]
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.5519873833333333,
+            "p50_ms": 0.549353,
+            "p90_ms": 0.570804
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.5522102666666666,
+            "p50_ms": 0.5495175,
+            "p90_ms": 0.571059
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.06744545,
+            "p50_ms": 0.066002,
+            "p90_ms": 0.073665
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.0676218,
+            "p50_ms": 0.066161,
+            "p90_ms": 0.073793
+          }
+        }
+      }
+    },
+    {
+      "depth": 64,
+      "mode": "ancestor_covered",
+      "outputs_and_locks_equal": true,
+      "output_sha256": "316bf02fbeeb11d1341674e900ff105ff3c6045c249f0d4768969e4384642b9d",
+      "closure_captures_per_call": {
+        "baseline": [
+          1
+        ],
+        "optimized": [
+          0
+        ]
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.35945555,
+            "p50_ms": 0.35703850000000004,
+            "p90_ms": 0.373722
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.3596443833333333,
+            "p50_ms": 0.357063,
+            "p90_ms": 0.373715
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.076126,
+            "p50_ms": 0.0737415,
+            "p90_ms": 0.085081
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.07623425,
+            "p50_ms": 0.073879,
+            "p90_ms": 0.084954
+          }
+        }
+      }
+    },
+    {
+      "depth": 64,
+      "mode": "new_lock",
+      "outputs_and_locks_equal": true,
+      "output_sha256": "44ac2b74cfb33022b53fedc474d4099c36fbca83a93373fce1461221fff27578",
+      "closure_captures_per_call": {
+        "baseline": [
+          1
+        ],
+        "optimized": [
+          1
+        ]
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.48034811666666666,
+            "p50_ms": 0.460693,
+            "p90_ms": 0.565206
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.48055868333333335,
+            "p50_ms": 0.460994,
+            "p90_ms": 0.565412
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.48685613333333333,
+            "p50_ms": 0.462522,
+            "p90_ms": 0.587347
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.48701761666666665,
+            "p50_ms": 0.462392,
+            "p90_ms": 0.587362
+          }
+        }
+      }
+    },
+    {
+      "depth": 64,
+      "mode": "extend_lock",
+      "outputs_and_locks_equal": true,
+      "output_sha256": "d3efc4802b441cf0aa15e38084b3c21953aebfd1fbdfe0530f3f08e2061eea82",
+      "closure_captures_per_call": {
+        "baseline": [
+          1
+        ],
+        "optimized": [
+          1
+        ]
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.4336939833333333,
+            "p50_ms": 0.43240449999999997,
+            "p90_ms": 0.445387
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.43385845,
+            "p50_ms": 0.432541,
+            "p90_ms": 0.445517
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.44421408333333334,
+            "p50_ms": 0.441386,
+            "p90_ms": 0.465766
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.44435878333333334,
+            "p50_ms": 0.441625,
+            "p90_ms": 0.465782
+          }
+        }
+      }
+    },
+    {
+      "depth": 512,
+      "mode": "same_node_covered",
+      "outputs_and_locks_equal": true,
+      "output_sha256": "f83f8f900a7662e037183e735df6a3246da64cb165424367196de250ffa26443",
+      "closure_captures_per_call": {
+        "baseline": [
+          1
+        ],
+        "optimized": [
+          0
+        ]
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 2.5894557,
+            "p50_ms": 2.571907,
+            "p90_ms": 2.668286
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 2.5895552166666667,
+            "p50_ms": 2.5718484999999998,
+            "p90_ms": 2.668467
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.06189318333333333,
+            "p50_ms": 0.061333,
+            "p90_ms": 0.066181
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.06191468333333333,
+            "p50_ms": 0.06124,
+            "p90_ms": 0.066237
+          }
+        }
+      }
+    },
+    {
+      "depth": 512,
+      "mode": "ancestor_covered",
+      "outputs_and_locks_equal": true,
+      "output_sha256": "be81c323cb3162480732e147c2a28e4dd5caef1e3c7035e2dd33d191c8f55fdc",
+      "closure_captures_per_call": {
+        "baseline": [
+          1
+        ],
+        "optimized": [
+          0
+        ]
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 1.41761955,
+            "p50_ms": 1.414415,
+            "p90_ms": 1.452511
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 1.4176132833333333,
+            "p50_ms": 1.4137385,
+            "p90_ms": 1.452409
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 0.10368945,
+            "p50_ms": 0.102333,
+            "p90_ms": 0.108047
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 0.10362745,
+            "p50_ms": 0.102167,
+            "p90_ms": 0.107936
+          }
+        }
+      }
+    },
+    {
+      "depth": 512,
+      "mode": "new_lock",
+      "outputs_and_locks_equal": true,
+      "output_sha256": "58d9b78aab38ae8ff5aca33f94d0744df0e44d5121c3fcb154d306d1b02ae420",
+      "closure_captures_per_call": {
+        "baseline": [
+          1
+        ],
+        "optimized": [
+          1
+        ]
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 2.5975678,
+            "p50_ms": 2.5977930000000002,
+            "p90_ms": 2.669381
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 2.5976831333333332,
+            "p50_ms": 2.5978820000000002,
+            "p90_ms": 2.669569
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 2.5874175833333335,
+            "p50_ms": 2.5868595,
+            "p90_ms": 2.653584
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 2.587524533333333,
+            "p50_ms": 2.586927,
+            "p90_ms": 2.653663
+          }
+        }
+      }
+    },
+    {
+      "depth": 512,
+      "mode": "extend_lock",
+      "outputs_and_locks_equal": true,
+      "output_sha256": "d5e05d7de74c7fa8eb8d9bf85cf868a24f4aebb5a3897b08ed58e385ce367636",
+      "closure_captures_per_call": {
+        "baseline": [
+          1
+        ],
+        "optimized": [
+          1
+        ]
+      },
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 2.586165783333333,
+            "p50_ms": 2.5801534999999998,
+            "p90_ms": 2.658517
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 2.58626625,
+            "p50_ms": 2.5801925,
+            "p90_ms": 2.658438
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 60,
+            "mean_ms": 2.626740916666667,
+            "p50_ms": 2.6186665,
+            "p90_ms": 2.660587
+          },
+          "thread_cpu": {
+            "samples": 60,
+            "mean_ms": 2.6268255833333334,
+            "p50_ms": 2.61877,
+            "p90_ms": 2.660618
+          }
+        }
+      }
+    }
+  ]
+}
