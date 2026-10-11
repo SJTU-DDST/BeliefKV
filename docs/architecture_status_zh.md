@@ -19,7 +19,17 @@ maintenance 加准入 CPU 夹具各交替测量 61 次，图每 4/16 周期
 计划和非缓存策略计数一致。证据为
 v69_causal_reuse_admission_cpu_20261011.json；不包含物理 allocator、
 DMA 或 GPU 性能，实际繁忙窗口收益仍由 V23 同版本对照验证。
-本项拟更新尚未启动的 V23，冻结 V22 继续运行，配置不变。
+本项已提交为 b854a91，并于 2026-10-11 12:56:00 CST 登记为
+未启动 V23 的目标；冻结 checkout 为 beliefkv-v69-causal-ranks-
+20261011。等待协调器 PID 773052，12:56:41 核验 PPID=1、
+启动身份 586482350，V22 native server/client 仍运行。
+仅替换原等待协调器 384991，workload、观测、原生 patch、
+500 ms 提前量及等待进程身份一致。登记回执为
+v69_v23_causal_rank_registration_20261011.json；主工作区的
+v23_launch_after_v22_20261011.json 仍为权威状态，原 26633b4
+登记归档为 v23_launch_after_v22_26633b4_superseded_20261011.json。
+完整 V22 pair 与后处理结束后，先 predictive、再同版本冷 native。
+以下较早登记为历史记录，性能主目标继续有效。
 
 补充负载到达后的两个完整窗口仍有性能退化。V22 在
 3600–3900 秒的 predictive/native decode 吞吐为

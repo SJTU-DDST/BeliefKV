@@ -21,9 +21,17 @@ Native observations/plans/non-cache counters agree. Graph changes every4/16
 cycles reduce mean wall16.8%-31.6%/20.8%-39.3%; every-cycle invalidation is
 approximately unchanged at0.5%-2.1% variation. Residency is a changing stub;
 actual allocator,DMA,GPU throughput and JCT are excluded.
-Commit and register only for the genuinely waiting V23; preserve frozen V22
-and all workload/observation settings. Validate actual GPU benefit before
-accepting this CPU evidence as progress toward the full performance goal.
+Committed asb854a91 and registered at2026-10-11 12:56:00CST for the
+still-waiting V23 inbeliefkv-v69-causal-ranks-20261011. Coordinator773052
+is reverified at12:56:41 with PPID1 and start identity586482350; V22 native
+server/client remain live. Replace only waiting coordinator384991.
+Workload,observations,native patch,maximum lead500ms and wait identities
+match the previous26633b4 target. Keepv69_v23_causal_rank_registration_
+20261011.json; archive the old registration asv23_launch_after_v22_26633b4_
+superseded_20261011.json. The mainv23_launch_after_v22_20261011.json
+remains authoritative. After complete V22 pair/postprocessing, run predictive
+then cold same-version native. Earlier registrations below are historical;
+actual GPU benefit and the full performance objective remain unproven.
 
 Keep the complete replenishment-window regression in the acceptance evidence:
 v68_v22_replenished_busy_windows_20261011.json and
