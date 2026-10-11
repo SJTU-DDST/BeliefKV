@@ -1,5 +1,7 @@
 import hashlib
 import json
+from datetime import datetime
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -7,6 +9,7 @@ from scripts.analyze_busy_context_control import (
     WriterTimingWindow,
     control_profile,
     decode_geometry,
+    periodic_decode_graph_log,
 )
 
 
@@ -150,3 +153,58 @@ def test_native_writer_coverage_can_follow_the_last_gpu_row(tmp_path, collect_wr
         assert writer["sampled_cpu_ms"] == 1.
     else:
         assert writer["reason"] == "writer_timing_not_collected"
+
+
+def test_periodic_graph_log_keeps_boundary_and_unknown_samples_separate(tmp_path):
+    lines = [
+        b"[2026-10-11 16:42:00] ServerArgs(decode_log_interval=40)\n",
+        b"[2026-10-11 16:42:01] Decode batch, #running-req: 47, cuda graph: False\n",
+        b"[2026-10-11 16:42:02] Decode batch [80], #running-req: 47, cuda graph: True\n",
+        b"[2026-10-11 16:42:03] Decode batch. #running-req: 47, cuda graph: False\n",
+        b"[2026-10-11 16:42:04] Decode batch, #running-req: 46, #queue-req: 1\n",
+        b"[2026-10-11 16:42:05] Decode batch, #running-req: 47, cuda graph: False\n",
+        b"[2026-10-11 16:42:06] Prefill batch, #running-req: 48\n",
+        b"[2026-10-11 16:42:07] Decode batch, #running-req: 47, cuda graph: False\n",
+    ]
+    (tmp_path / "server.log").write_bytes(b"".join(lines))
+    timezone = ZoneInfo("Asia/Shanghai")
+    origin = datetime(2026, 10, 11, 16, 42, tzinfo=timezone).timestamp() * 1000.
+    result = periodic_decode_graph_log(tmp_path, origin + 1500., origin + 5500., timezone)
+    assert result["samples"] == 3
+    assert result["batch_sizes"] == {
+        "46": {"true": 0, "false": 0, "unknown": 1},
+        "47": {"true": 1, "false": 1, "unknown": 0},
+    }
+    assert result["boundary_samples_excluded"] == {"begin": 1, "end": 1}
+    assert result["window_fully_observed"]
+    assert result["decode_log_interval_observed"] == 40
+    prefix = b"".join(lines[:-1])
+    assert result["read_prefix_bytes"] == len(prefix)
+    assert result["read_prefix_sha256"] == hashlib.sha256(prefix).hexdigest()
+
+
+def test_missing_graph_logs_differ_from_observed_zero_samples(tmp_path):
+    timezone = ZoneInfo("UTC")
+    origin = datetime(2026, 10, 11, tzinfo=timezone).timestamp() * 1000.
+    missing = periodic_decode_graph_log(tmp_path, origin, origin + 1000., timezone)
+    assert not missing["available"]
+    assert missing["reason"] == "server_log_not_collected"
+    (tmp_path / "server.log").write_bytes(
+        b"[2026-10-11 00:00:01] Prefill batch, #running-req: 1\n"
+    )
+    result = periodic_decode_graph_log(tmp_path, origin, origin + 1000., timezone)
+    assert result["available"] and result["window_fully_observed"]
+    assert result["samples"] == 0 and result["batch_sizes"] == {}
+    assert result["decode_log_interval_observed"] is None
+
+
+def test_incomplete_graph_log_does_not_claim_full_window_coverage(tmp_path):
+    timezone = ZoneInfo("UTC")
+    origin = datetime(2026, 10, 11, tzinfo=timezone).timestamp() * 1000.
+    prefix = b"[2026-10-11 00:00:00] Decode batch, #running-req: 48, cuda graph: True\n"
+    partial = b"[2026-10-11 00:00:02] Decode batch, #running-req: 48, cuda graph: False"
+    (tmp_path / "server.log").write_bytes(prefix + partial)
+    result = periodic_decode_graph_log(tmp_path, origin, origin + 2000., timezone)
+    assert not result["window_fully_observed"]
+    assert result["batch_sizes"] == {"48": {"true": 1, "false": 0, "unknown": 0}}
+    assert result["read_prefix_sha256"] == hashlib.sha256(prefix).hexdigest()

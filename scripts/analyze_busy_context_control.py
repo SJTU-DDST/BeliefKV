@@ -10,8 +10,17 @@ from datetime import datetime
 import hashlib
 import json
 from pathlib import Path
+import re
 from statistics import mean, median
 from zoneinfo import ZoneInfo
+
+
+_LOG_TIMESTAMP = re.compile(
+    rb"^\[(\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2})\]"
+)
+_DECODE_BATCH = re.compile(rb"Decode batch(?: \[\d+\])?[,\.].*?#running-req:\s*(\d+)")
+_GRAPH_FLAG = re.compile(rb"cuda graph:\s*(True|False)")
+_DECODE_LOG_INTERVAL = re.compile(rb"decode_log_interval=(\d+)")
 
 
 class WriterTimingWindow:
@@ -119,6 +128,75 @@ def monitor_window(arm: Path, start: float, end: float, timezone: ZoneInfo) -> d
         "source": str(path), "first_row": first, "origin_ts_ms": origin,
         "begin_ts_ms": origin + start * 1000., "end_ts_ms": origin + end * 1000.,
         "observed_through_ts_ms": coverage, "timezone": str(timezone),
+    }
+
+
+def periodic_decode_graph_log(
+    arm: Path, begin: float, end: float, timezone: ZoneInfo,
+) -> dict:
+    path = arm / "server.log"
+    if not path.exists():
+        return {"available": False, "reason": "server_log_not_collected", "source": str(path)}
+    groups = defaultdict(lambda: {"true": 0, "false": 0, "unknown": 0})
+    boundaries = {"begin": 0, "end": 0}
+    prefix, bytes_read = hashlib.sha256(), 0
+    observed_through = None
+    interval = None
+    with path.open("rb") as stream:
+        for line in stream:
+            if not line.endswith(b"\n"):
+                break
+            prefix.update(line)
+            bytes_read += len(line)
+            interval_match = _DECODE_LOG_INTERVAL.search(line)
+            if interval_match:
+                interval = int(interval_match[1])
+            timestamp_match = _LOG_TIMESTAMP.match(line)
+            if timestamp_match is None:
+                continue
+            timestamp = datetime.strptime(
+                timestamp_match[1].decode("ascii"), "%Y-%m-%d %H:%M:%S",
+            ).replace(tzinfo=timezone).timestamp() * 1000.
+            observed_through = (
+                timestamp if observed_through is None else max(timestamp, observed_through)
+            )
+            if timestamp >= end:
+                break
+            batch_match = _DECODE_BATCH.search(line)
+            if batch_match is None or timestamp + 1000. <= begin:
+                continue
+            # Second-resolution logs that straddle a window boundary stay separate.
+            if timestamp < begin:
+                boundaries["begin"] += 1
+                continue
+            if timestamp + 1000. > end:
+                boundaries["end"] += 1
+                continue
+            graph_match = _GRAPH_FLAG.search(line)
+            flag = graph_match[1].decode("ascii").lower() if graph_match else "unknown"
+            groups[int(batch_match[1])][flag] += 1
+    return {
+        "available": True, "source": str(path),
+        "read_prefix_bytes": bytes_read, "read_prefix_sha256": prefix.hexdigest(),
+        "timezone": str(timezone), "timestamp_resolution_ms": 1000,
+        "begin_ts_ms": begin, "end_ts_ms": end,
+        "observed_through_ts_ms": observed_through,
+        "window_fully_observed": observed_through is not None and observed_through >= end,
+        "decode_log_interval_observed": interval,
+        "samples": sum(sum(values.values()) for values in groups.values()),
+        "batch_sizes": {str(size): values for size, values in sorted(groups.items())},
+        "boundary_samples_excluded": boundaries,
+        "flag_source": (
+            "GenerationBatchResult.can_run_cuda_graph -> process_batch_result_decode "
+            "-> metrics_reporter.report_decode_stats for that completed batch."
+        ),
+        "semantics": (
+            "Periodic decode log samples, not all batches or kernel timings. "
+            "Second-resolution timestamps represent a one-second bucket; samples "
+            "straddling the requested half-open window are excluded. "
+            "No flag is backfilled into runtime_audit batches or extrapolated "
+            "to unsampled batches. Missing logs and observed zero samples differ."
+        ),
     }
 
 
@@ -266,6 +344,7 @@ def main() -> None:
             "Worker intervals include scheduler processing and are not CUDA kernel timings.",
             "Control counters use preceding snapshots; exclusive Python wall time is not removable JCT.",
             "Writer CPU/wall differences use their own snapshot clocks and measured samples only.",
+            "Periodic graph logs are separate samples; legacy per-batch graph flags stay unknown.",
         ],
     }
     for name in ("predictive_h2d", "native"):
@@ -275,6 +354,9 @@ def main() -> None:
         )
         values = decode_geometry(arm, window["begin_ts_ms"], window["end_ts_ms"])
         values["monitor_window"] = window
+        values["periodic_decode_graph_log"] = periodic_decode_graph_log(
+            arm, window["begin_ts_ms"], window["end_ts_ms"], ZoneInfo(args.timezone),
+        )
         if name == "predictive_h2d":
             values["control_profile"] = control_profile(
                 arm, window["begin_ts_ms"], window["end_ts_ms"],

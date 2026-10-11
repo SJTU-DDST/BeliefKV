@@ -2,6 +2,35 @@
 
 Status date: 2026-10-11.
 
+V89 confirms committed1f75f55's one-second tool-offload rule is already
+included in the V24 registration below for both PREPARE and waiting-page
+reclamation. Frozen V23 retains two seconds. Predictive has154 completed
+and2 incomplete; native has154 completed withdjango-11265 anddjango-11885
+pending. Waiting coordinator1418070 still has start identity588699021.
+
+Analyze existing periodic decode graph logs separately from per-batch
+audit flags. In600-900s, all180/197 predictive/native log samples report
+true; batch46/47 contribute5/44 and2/35 samples. Trace flags from the
+completed result throughreport_decode_stats. The source emits periodic
+samples; the logs do not specify the configured interval. Preserve prefix
+hashes and second-resolution boundary exclusions, and keep legacy audit
+flags unknown. Some context-matched46/47 worker cohorts remain2%-15%
+slower, so absent graph replay is not established as the cause. Predictive
+instrumented exclusive wall is40.985s, led by reentry5.641s,
+admission4.131s,join_prepare3.719s andcontrol_drain3.570s. No kernel or
+removable JCT attribution follows. The15 analysis checks pass. Keep
+v89_v23_context_control_graph_600_900_20261011.json and validate queued
+CPU reductions with actual V24 GPU/same-version-native measurements.
+
+Keep V89's4200-4500s advantage2.36% and4500-4800s deficit1.54% as
+diagnostics only: native overlaps disk maintenance17:52:00-18:04:35 CST.
+After those bounds,5100-5400/5400-5700s deficits are3.91%/17.78%, with
+weighted batches41.728/47.428 and32.480/46.898. Different demand and
+late occupancy prevent isolated policy attribution. Both V89 busy-window
+reports record maintenance context. Do not expand instrumentation or add
+speculative runtime changes before testing the queued V24 optimizations.
+The complete native pair and throughput/JCT objective remain pending.
+
 At19:05:27 CST, waiting V24 was updated to frozen56ff3c2 in
 beliefkv-v88-reclaim-exclusions-20261011, including the one-second
 tool-offload policy and excluded-node reclaim correction. Coordinator
