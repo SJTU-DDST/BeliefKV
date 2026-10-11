@@ -1,0 +1,40 @@
+{
+  "scope": "Read-only native reentry CPU optimization; frozen V23 unchanged",
+  "accepted_report": "v84_reentry_prefix_locals_thread_cpu_20261011.json",
+  "rejected_reports": [
+    "v84_reentry_failed_prefix_thread_cpu_20261011.json",
+    "v84_reentry_node_locals_thread_cpu_20261011.json"
+  ],
+  "changed_native_paths": [
+    "python/sglang/srt/mem_cache/unified_radix_cache.py",
+    "test/srt/test_beliefkv_execution_handoff.py"
+  ],
+  "native_checks_passed": 139,
+  "materialization_checks_passed": 7,
+  "benchmark_cases": 27,
+  "alternating_samples_per_case": 31,
+  "calls_per_sample": 80,
+  "outputs_equal": true,
+  "thread_cpu_clock": "thread_time_ns",
+  "historical_cpu_field_clock": "perf_counter_ns wall time",
+  "shared_failed_prefix_thread_cpu_reduction_percent": [6.763118365963361, 38.27431653051361],
+  "regressions": [
+    {
+      "case": "match-4096-4-depth-8-leaves",
+      "baseline_thread_cpu_us": 31.029425,
+      "optimized_thread_cpu_us": 31.1214
+    },
+    {
+      "case": "last-divergence",
+      "baseline_thread_cpu_us": 27.774225,
+      "optimized_thread_cpu_us": 27.7896875
+    }
+  ],
+  "canonical_patch_sha256": "9e7693278f4cf0c50428009eb5690b40e2a2fa96034ae0ffed77964c0bcbb311",
+  "canonical_patch_matches_isolated_source": true,
+  "dma_measured": false,
+  "native_allocation_measured": false,
+  "gpu_throughput_measured": false,
+  "jct_measured": false,
+  "performance_goal_complete": false
+}

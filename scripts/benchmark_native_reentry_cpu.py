@@ -131,6 +131,18 @@ def benchmark(baseline, optimized, *, samples, iterations):
             "case": label, "tokens": 32768, "depth": 8,
             "leaves": 1, "page_size": 1, **extra,
         })
+    for depth in (8, 256, 1024):
+        for label, extra in (
+            ("first-divergence", {"mismatch": 0}),
+            ("middle-divergence", {"mismatch": 16384}),
+            ("late-shared-divergence", {"mismatch": 32768 - 32768 // depth - 1}),
+            ("short-request", {"short_request": True}),
+        ):
+            cases.append({
+                "case": f"shared-{label}-{depth}-depth",
+                "tokens": 32768, "depth": depth, "leaves": 8,
+                "page_size": 1, **extra,
+            })
     results = []
     for case in cases:
         variants = {
@@ -143,6 +155,7 @@ def benchmark(baseline, optimized, *, samples, iterations):
             for _ in range(20):
                 implementation.inspect(cache, request)
         timings = {name: [] for name in variants}
+        thread_timings = {name: [] for name in variants}
         for sample in range(samples):
             order = list(variants)
             if sample % 2:
@@ -150,20 +163,32 @@ def benchmark(baseline, optimized, *, samples, iterations):
             for name in order:
                 implementation, cache, request = variants[name]
                 start = time.perf_counter_ns()
+                thread_start = time.thread_time_ns()
                 for _ in range(iterations):
                     result = implementation.inspect(cache, request)
+                thread_elapsed_us = (
+                    time.thread_time_ns() - thread_start
+                ) / 1000. / iterations
                 elapsed_us = (time.perf_counter_ns() - start) / 1000. / iterations
                 assert result == expected, (case, name)
                 timings[name].append(elapsed_us)
+                thread_timings[name].append(thread_elapsed_us)
         costs = {
             name: {"p50_cpu_us": median(values), "mean_cpu_us": mean(values),
-                   "sample_means_cpu_us": values}
+                   "sample_means_cpu_us": values,
+                   "p50_thread_cpu_us": median(thread_timings[name]),
+                   "mean_thread_cpu_us": mean(thread_timings[name]),
+                   "sample_means_thread_cpu_us": thread_timings[name]}
             for name, values in timings.items()
         }
         results.append({
             **case, "outputs_equal": True, "costs": costs,
             "median_reduction_fraction": (
                 1 - costs["optimized"]["p50_cpu_us"] / costs["baseline"]["p50_cpu_us"]
+            ),
+            "median_thread_cpu_reduction_fraction": (
+                1 - costs["optimized"]["p50_thread_cpu_us"]
+                / costs["baseline"]["p50_thread_cpu_us"]
             ),
         })
     return {
@@ -174,6 +199,10 @@ def benchmark(baseline, optimized, *, samples, iterations):
         "baseline_source_sha256": baseline.source_sha256,
         "optimized_source_sha256": optimized.source_sha256,
         "samples": samples, "iterations_per_sample": iterations,
+        "timing_semantics": {
+            "p50_cpu_us": "Historical field: per-call perf_counter wall time in CPU fixtures.",
+            "p50_thread_cpu_us": "Per-call thread_time CPU time, excluding scheduler waiting.",
+        },
         "outputs_equal": True, "results": results,
     }
 

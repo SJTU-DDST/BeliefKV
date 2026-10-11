@@ -17,6 +17,12 @@ V23 两臂及后处理结束后再部署。接受预测
 时间候选增加不等于实际卸载增加，仍核对 FULL 副本、真实容量
 回收、工具返回前 H2D、首次复用及同版本繁忙窗口吞吐/JCT。
 
+CPU 基准中的历史 `p50_cpu_us` 实为 perf-counter 墙钟字段；
+新增 `p50_thread_cpu_us` 使用 thread-time，排除线程未获服务的等待。
+保留改善与退化样本，夹具结果不能换算为 GPU/JCT。decode 的
+batch 大小没有精确 capture bucket，不代表未回放 graph：原生可
+padding 到更大 bucket；应使用引擎完成结果的回放标记验证。
+
 ## V20 容量交接与忙时统计
 
 机会性回收的后续修订异步备份必要 Mamba，保留设备原生读锁

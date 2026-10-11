@@ -2,6 +2,29 @@
 
 Status date: 2026-10-11.
 
+V84 now has same-version V23 busy-window evidence. Predictive/native
+decode throughput is1143.43/1250.53 token/s at600-900s and
+1059.913/1083.420 at900-1200s, a predictive deficit of8.6%/2.2%.
+The first window has nearly equal weighted batch47.353/47.395 and
+visible context23016.65/23524.59 tokens. Preserve these unfavorable
+results; live trajectories and instrumented40.985s exclusive wall do
+not establish isolated CPU causality or completed-pair JCT. Slow46/47
+worker intervals do not prove eager fallback: native graph replay can
+pad them to48, and the old telemetry has no replay flag.
+
+The isolated reentry follow-up memoizes a failed shared ancestor within
+one inspection and reuses local node/key/page-size values. Preserve
+identity, cycle, namespace, safe-input and transfer checks; no cross-call
+failure cache. The139 native and7 materialization checks pass. All27
+CPU fixtures preserve outputs over31 alternating samples of80 calls.
+Shared failed-prefix thread CPU falls6.76%-38.27%; complete matches
+are nearly unchanged or faster, with two small regressions of0.092/
+0.015 microseconds. Retain both rejected candidate reports and the
+accepted prefix-locals report, with actual thread CPU distinguished
+from the historical perf-counter wall fields. Canonical patch matches
+the isolated source exactly. No DMA or GPU performance is measured.
+Preserve frozen V23 and require the subsequent same-version GPU pair.
+
 The V83 diagnosis of the completed V23 predictive arm confirms that each
 incomplete root's final original and thinking-disabled recovery responses
 used 8192 output tokens and finished with length; the recovery text is
