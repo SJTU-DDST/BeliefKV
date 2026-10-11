@@ -1,0 +1,2874 @@
+{
+  "observation": {
+    "read_completed_at_cst": "2026-10-11 14:15:42 CST",
+    "run_status": "predictive_arm_running",
+    "scope": "Sequential reads of appended live logs, not an atomic snapshot, code ablation or a same-version native throughput comparison. Handoff reuse remains demand recovery. Unfinished waits cannot yet be assigned completion or service outcomes.",
+    "code_revision": "a6dd627587827f376bed7022d15e538100c0c775",
+    "performance_goal_achieved": false
+  },
+  "scope": "Observed controller submission/ACK/first-launch chain; no DMA wall anchor, exposed-stall measurement or counterfactual speedup.",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v23/predictive_h2d",
+  "summary": {
+    "join_commands": 20,
+    "tool_commands": 313,
+    "handoff_commands": 4093,
+    "by_source": {
+      "execution_handoff": {
+        "issued_commands": 4093,
+        "acknowledged_commands": 4093,
+        "actual_bytes": 37747875840,
+        "full_transfer_commands": 4093,
+        "full_reused_commands": 4080,
+        "full_not_reused_commands": 13,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 20749148160,
+        "full_verified_reused_bytes_known": 20646461440,
+        "full_reuse_proof_versions": {
+          "2": 4093
+        },
+        "native_reloaded_prefetched_full_before_first_service": 3,
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": false,
+            "protection_reason_at_registration": "covered_by_existing_lock",
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 2488,
+            "full_reused_commands": 2488,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 13038039040,
+            "full_verified_reused_bytes_known": 13038039040,
+            "full_reuse_proof_versions": {
+              "2": 2488
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 2488,
+              "p50": 19.8863525390625,
+              "p90": 49.336499023437504,
+              "max": 702.5869140625
+            }
+          },
+          {
+            "native_locked_at_registration": false,
+            "protection_reason_at_registration": "frontier_slot_occupied",
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 521,
+            "full_reused_commands": 521,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 2488852480,
+            "full_verified_reused_bytes_known": 2488852480,
+            "full_reuse_proof_versions": {
+              "2": 521
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 521,
+              "p50": 14.9287109375,
+              "p90": 91.12646484375,
+              "max": 471.480712890625
+            }
+          },
+          {
+            "native_locked_at_registration": false,
+            "protection_reason_at_registration": "frontier_slot_occupied",
+            "last_observed_release_reason": "native_residency_lost",
+            "full_transfer_commands": 13,
+            "full_reused_commands": 0,
+            "full_not_reused_commands": 13,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 102686720,
+            "full_verified_reused_bytes_known": 0,
+            "full_reuse_proof_versions": {
+              "2": 13
+            },
+            "native_reloaded_prefetched_full_before_first_service": 3,
+            "ack_to_first_service_ms": {
+              "count": 13,
+              "p50": 291.567626953125,
+              "p90": 291.7955078125,
+              "max": 493.4462890625
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "protection_reason_at_registration": "native_locked",
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 1071,
+            "full_reused_commands": 1071,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 5119569920,
+            "full_verified_reused_bytes_known": 5119569920,
+            "full_reuse_proof_versions": {
+              "2": 1071
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 1071,
+              "p50": 20.224365234375,
+              "p90": 50.614990234375,
+              "max": 702.667724609375
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 261,
+        "ack_to_first_service_ms": {
+          "count": 4093,
+          "p50": 19.4921875,
+          "p90": 54.641455078125006,
+          "max": 702.667724609375
+        }
+      },
+      "join_ticket": {
+        "issued_commands": 20,
+        "acknowledged_commands": 20,
+        "actual_bytes": 967372800,
+        "full_transfer_commands": 20,
+        "full_reused_commands": 13,
+        "full_not_reused_commands": 7,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 130314240,
+        "full_verified_reused_bytes_known": 105246720,
+        "full_reuse_proof_versions": {
+          "2": 20
+        },
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": false,
+            "protection_reason_at_registration": "covered_by_existing_lock",
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 3,
+            "full_reused_commands": 3,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 81920,
+            "full_verified_reused_bytes_known": 81920,
+            "full_reuse_proof_versions": {
+              "2": 3
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 3,
+              "p50": 763.728515625,
+              "p90": 763.768359375,
+              "max": 763.7783203125
+            }
+          },
+          {
+            "native_locked_at_registration": false,
+            "protection_reason_at_registration": "covered_by_existing_lock",
+            "last_observed_release_reason": "service_window_expired",
+            "full_transfer_commands": 4,
+            "full_reused_commands": 1,
+            "full_not_reused_commands": 3,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 102400,
+            "full_verified_reused_bytes_known": 20480,
+            "full_reuse_proof_versions": {
+              "2": 4
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 4,
+              "p50": 3067.212890625,
+              "p90": 7346.243115234376,
+              "max": 8877.943359375
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "protection_reason_at_registration": "native_locked",
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 9,
+            "full_reused_commands": 9,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 105144320,
+            "full_verified_reused_bytes_known": 105144320,
+            "full_reuse_proof_versions": {
+              "2": 9
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 9,
+              "p50": 400.324951171875,
+              "p90": 976.7542968750001,
+              "max": 1510.349609375
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "protection_reason_at_registration": "native_locked",
+            "last_observed_release_reason": "service_window_expired",
+            "full_transfer_commands": 4,
+            "full_reused_commands": 0,
+            "full_not_reused_commands": 4,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 24985600,
+            "full_verified_reused_bytes_known": 0,
+            "full_reuse_proof_versions": {
+              "2": 4
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 4,
+              "p50": 3282.83544921875,
+              "p90": 7346.332983398439,
+              "max": 8878.037841796875
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 9,
+        "ack_to_first_service_ms": {
+          "count": 20,
+          "p50": 803.5968017578125,
+          "p90": 4282.913818359382,
+          "max": 8878.037841796875
+        }
+      },
+      "tool_wait": {
+        "issued_commands": 313,
+        "acknowledged_commands": 313,
+        "actual_bytes": 3368058880,
+        "full_transfer_commands": 313,
+        "full_reused_commands": 312,
+        "full_not_reused_commands": 1,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 1371996160,
+        "full_verified_reused_bytes_known": 1370071040,
+        "full_reuse_proof_versions": {
+          "2": 313
+        },
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": false,
+            "protection_reason_at_registration": "covered_by_existing_lock",
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 199,
+            "full_reused_commands": 199,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 908001280,
+            "full_verified_reused_bytes_known": 908001280,
+            "full_reuse_proof_versions": {
+              "2": 199
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 199,
+              "p50": 368.290771484375,
+              "p90": 921.44404296875,
+              "max": 1310.760498046875
+            }
+          },
+          {
+            "native_locked_at_registration": false,
+            "protection_reason_at_registration": "covered_by_existing_lock",
+            "last_observed_release_reason": "service_window_expired",
+            "full_transfer_commands": 7,
+            "full_reused_commands": 7,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 25333760,
+            "full_verified_reused_bytes_known": 25333760,
+            "full_reuse_proof_versions": {
+              "2": 7
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 7,
+              "p50": 1677.957763671875,
+              "p90": 1678.1578125,
+              "max": 1678.200439453125
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "protection_reason_at_registration": "native_locked",
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 106,
+            "full_reused_commands": 106,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 436736000,
+            "full_verified_reused_bytes_known": 436736000,
+            "full_reuse_proof_versions": {
+              "2": 106
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 106,
+              "p50": 372.717041015625,
+              "p90": 769.392578125,
+              "max": 1678.28515625
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "protection_reason_at_registration": "native_locked",
+            "last_observed_release_reason": "service_window_expired",
+            "full_transfer_commands": 1,
+            "full_reused_commands": 0,
+            "full_not_reused_commands": 1,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 1925120,
+            "full_verified_reused_bytes_known": 0,
+            "full_reuse_proof_versions": {
+              "2": 1
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 1,
+              "p50": 17215.5986328125,
+              "p90": 17215.5986328125,
+              "max": 17215.5986328125
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 31,
+        "ack_to_first_service_ms": {
+          "count": 313,
+          "p50": 380.952392578125,
+          "p90": 921.5669921875,
+          "max": 17215.5986328125
+        }
+      }
+    },
+    "trigger_kinds": {
+      "unrecorded_legacy": 4406,
+      "observed_no_tool_eos": 10,
+      "estimated_work": 10
+    },
+    "join_bytes": 967372800,
+    "tool_bytes": 3368058880,
+    "handoff_bytes": 37747875840,
+    "join_submitted_before_eos": 10,
+    "full_reused": 4405,
+    "full_not_reused": 21,
+    "full_use_unknown": 0,
+    "full_reuse_proof_versions": {
+      "2": 4426
+    },
+    "mamba_forward_verified": 301,
+    "redemoted_before_first_service": 0,
+    "native_reloaded_before_first_service": 3,
+    "native_reloaded_prefetched_full_before_first_service": 3,
+    "native_reloaded_prefetched_mamba_before_first_service": 3,
+    "native_reload_pool_associations_by_evidence": {
+      "kv": {
+        "reconciled_native_receipt": 0,
+        "legacy_batch_pool_presence": 3
+      },
+      "mamba": {
+        "reconciled_native_receipt": 0,
+        "legacy_batch_pool_presence": 3
+      }
+    },
+    "issue_to_submit_ms": {
+      "count": 4426,
+      "p50": 1.744873046875,
+      "p90": 3.77294921875,
+      "max": 8.64697265625
+    },
+    "enqueue_to_submit_ms": {
+      "count": 4426,
+      "p50": 1.4796527102589607,
+      "p90": 3.4282859414815903,
+      "max": 6.774554029107094
+    },
+    "submit_to_ack_ms": {
+      "count": 4426,
+      "p50": 14.0748992562294,
+      "p90": 78.7045955657959,
+      "max": 155.35136964172125
+    },
+    "ack_to_first_service_ms": {
+      "count": 4426,
+      "p50": 20.9256591796875,
+      "p90": 157.427978515625,
+      "max": 17215.5986328125
+    },
+    "join_submit_after_eos_ms": {
+      "count": 20,
+      "p50": -175.16015625,
+      "p90": 17.213232421875116,
+      "max": 90.440185546875
+    },
+    "completion_lead_ms": {
+      "count": 0
+    },
+    "pressure_events": 56,
+    "pressure_events_with_prior_prepare_ack": 49,
+    "unique_prepared_nodes_demoted": 49,
+    "prepare_issued_commands": 475,
+    "prepare_acknowledged_commands": 475,
+    "prepare_commands_with_observed_restore": 61,
+    "prepare_commands_with_native_restore": 7,
+    "prepare_commands_with_controlled_restore": 58,
+    "prepare_commands_without_observed_restore": 414,
+    "prepare_commands_with_later_node_pool_d2h": 0,
+    "prepare_commands_with_host_eviction_before_later_d2h": 0,
+    "prepare_host_lifetime": {
+      "host_eviction_evidence_available": true,
+      "command_categories": {
+        "no_restore": 414,
+        "before_observed_eviction_only": 61,
+        "after_observed_eviction_only": 0,
+        "mixed": 0,
+        "unknown_eviction_evidence": 0
+      },
+      "restore_node_pool_associations": {
+        "before_observed_eviction": 199,
+        "after_observed_eviction": 0,
+        "unknown": 0
+      },
+      "by_pool": {
+        "kv": {
+          "prepared_commands": 475,
+          "commands_with_observed_eviction": 51,
+          "ack_to_first_observed_eviction_ms": {
+            "count": 51,
+            "p50": 211846.37719726562,
+            "p90": 287360.17138671875,
+            "max": 287360.8134765625
+          }
+        }
+      },
+      "repeated_context_epoch_node_creation_groups": 0,
+      "additional_prepares_on_same_identity": 0,
+      "max_commands_on_same_identity": 1,
+      "prepare_identity_evidence_missing_commands": 0,
+      "scope": "Node/pool associations, not allocation continuity or model-forward reuse. A restore after observed Host eviction cannot establish consumption of the original prepared copy. Eviction latency stops at the next observed same-node/pool D2H write; absent eviction records are not zero evictions. Reported latencies include only observed evictions, excluding censored copies. Repeated context/epoch/node/creation identities are not exact duplicate bytes and do not establish the same wait episode across splits."
+    },
+    "prepare_selection": {
+      "candidate_records": 150,
+      "records_without_command_id": 0,
+      "burst_records": 76,
+      "explicit_burst_commands": 475,
+      "acknowledged_burst_commands": 475,
+      "by_source": {
+        "join_prepare": {
+          "candidate_records": 104,
+          "acknowledged_command_records": 104,
+          "direct_reclaim_potential_commands": 72,
+          "zero_direct_reclaim_potential_commands": 32,
+          "direct_reclaim_potential_unknown_commands": 0,
+          "selected_transfer_bytes_known": 1473167360.0,
+          "selected_transfer_bytes_unknown_records": 0,
+          "zero_direct_reclaim_selected_transfer_bytes_known": 202260480.0,
+          "missing_full_prefix_tokens": {
+            "count": 104,
+            "p50": 580.5,
+            "p90": 2325.1,
+            "max": 9088.0
+          }
+        },
+        "tool_wait": {
+          "candidate_records": 46,
+          "acknowledged_command_records": 46,
+          "direct_reclaim_potential_commands": 4,
+          "zero_direct_reclaim_potential_commands": 42,
+          "direct_reclaim_potential_unknown_commands": 0,
+          "selected_transfer_bytes_known": 400158720.0,
+          "selected_transfer_bytes_unknown_records": 0,
+          "zero_direct_reclaim_selected_transfer_bytes_known": 378572800.0,
+          "missing_full_prefix_tokens": {
+            "count": 46,
+            "p50": 5216.0,
+            "p90": 9344.0,
+            "max": 12790.0
+          }
+        }
+      },
+      "scope": "Candidate selection-time estimates, not reclaimed bytes, DMA bytes or forward-use credit. Zero direct reclaim may be a necessary ancestor backup before an exclusive checkpoint becomes reclaimable. Match ACKs by command ID only; legacy records without it remain unassociated. Missing candidate estimates remain unknown. For a burst, candidate transfer/reclaim estimates describe the selected first extent only; explicit burst IDs link additional per-node receipts without multiplying this estimate or granting reuse credit."
+    },
+    "wait_events": {
+      "observed_wait_events": 2361,
+      "records_without_wait_event_identity": 0,
+      "by_source": {
+        "join_ticket": {
+          "observed_events": 108,
+          "events_with_observed_full_plan": 107,
+          "events_with_capacity_observation": 106,
+          "events_with_capacity_condition": {
+            "none": 103,
+            "full_only": 106,
+            "mamba_only": 11,
+            "both": 41
+          },
+          "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 59289600,
+          "max_snapshot_planned_full_bytes_known": 1855938560,
+          "planned_full_bytes_unknown_events": 0,
+          "events_with_early_reused_full": 9,
+          "completion_boundary_unknown_events": 87,
+          "events_first_observed_after_completion": 0,
+          "events_with_tool_ids_outside_request_round": 0,
+          "early_started_and_reused_full_bytes": 105246720,
+          "remaining_native_full_host_hit_bytes_known": 180879360,
+          "remaining_native_full_evidence_unknown_events": 87,
+          "plan_evidence_categories": {
+            "only_zero_full_plan": {
+              "independent_events": 1,
+              "events_with_known_completion_boundary": 1,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "positive_full_plan": {
+              "independent_events": 107,
+              "events_with_known_completion_boundary": 20,
+              "remaining_native_full_host_hit_bytes_known": 180879360,
+              "remaining_native_full_evidence_unknown_events": 87,
+              "events_with_early_reused_full": 9
+            }
+          },
+          "restore_burst_size_evidence": {
+            "one_to_fifteen_nodes_observed": {
+              "independent_events": 107,
+              "events_with_known_completion_boundary": 20,
+              "remaining_native_full_host_hit_bytes_known": 180879360,
+              "remaining_native_full_evidence_unknown_events": 87,
+              "events_with_early_reused_full": 9
+            },
+            "only_empty_plan_observed": {
+              "independent_events": 1,
+              "events_with_known_completion_boundary": 1,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            }
+          },
+          "residual_native_demand_by_observed_planning_evidence": {
+            "observed_plan_reasons": {
+              "admission_budget_busy": {
+                "independent_events": 8,
+                "events_with_known_completion_boundary": 8,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 4
+              },
+              "before_start_window": {
+                "independent_events": 17,
+                "events_with_known_completion_boundary": 17,
+                "remaining_native_full_host_hit_bytes_known": 180879360,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 7
+              },
+              "fits_current_free_lists": {
+                "independent_events": 103,
+                "events_with_known_completion_boundary": 18,
+                "remaining_native_full_host_hit_bytes_known": 180879360,
+                "remaining_native_full_evidence_unknown_events": 85,
+                "events_with_early_reused_full": 8
+              },
+              "insufficient_free_lists": {
+                "independent_events": 106,
+                "events_with_known_completion_boundary": 19,
+                "remaining_native_full_host_hit_bytes_known": 180879360,
+                "remaining_native_full_evidence_unknown_events": 87,
+                "events_with_early_reused_full": 9
+              },
+              "no_cold_capacity": {
+                "independent_events": 6,
+                "events_with_known_completion_boundary": 6,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "no_restore_plan": {
+                "independent_events": 11,
+                "events_with_known_completion_boundary": 11,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 8
+              },
+              "no_reusable_input_restore_step": {
+                "independent_events": 108,
+                "events_with_known_completion_boundary": 21,
+                "remaining_native_full_host_hit_bytes_known": 180879360,
+                "remaining_native_full_evidence_unknown_events": 87,
+                "events_with_early_reused_full": 9
+              },
+              "service_progress_unavailable": {
+                "independent_events": 5,
+                "events_with_known_completion_boundary": 5,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "service_unsupported": {
+                "independent_events": 4,
+                "events_with_known_completion_boundary": 4,
+                "remaining_native_full_host_hit_bytes_known": 180879360,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 1
+              },
+              "start_window": {
+                "independent_events": 18,
+                "events_with_known_completion_boundary": 18,
+                "remaining_native_full_host_hit_bytes_known": 180879360,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 9
+              },
+              "submitted": {
+                "independent_events": 10,
+                "events_with_known_completion_boundary": 10,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 9
+              }
+            },
+            "observed_planning_blocked_details": {
+              "input_checkpoint_unavailable_or_already_resident": {
+                "independent_events": 108,
+                "events_with_known_completion_boundary": 21,
+                "remaining_native_full_host_hit_bytes_known": 180879360,
+                "remaining_native_full_evidence_unknown_events": 87,
+                "events_with_early_reused_full": 9
+              }
+            },
+            "observed_no_live_details": {}
+          },
+          "planning_gap_semantics": "One count per independent wait per observed reason, regardless of repeated samples. Evidence categories partition waits; reason/detail groups overlap and must not be summed. Zero or missing plans do not prove zero physical demand. Residual bytes are next-request native FULL Host hits, not a proven pre-boundary opportunity, exclusive rejection cause or oracle speedup. Burst categories partition waits by the largest explicitly observed plan, not lifetime node commands. A sixteen-node plan is not proof of truncation or that a larger early transfer would fit capacity or the service window.",
+          "client_submit_to_native_arrival_ms": {
+            "count": 21,
+            "p50": 116.310546875,
+            "p90": 218.75537109375,
+            "max": 230.059814453125
+          },
+          "client_submit_to_http_request_ms": {
+            "count": 18,
+            "p50": 9.8775634765625,
+            "p90": 21.1052490234375,
+            "max": 22.697998046875
+          },
+          "http_request_to_body_sent_ms": {
+            "count": 18,
+            "p50": 11.8485107421875,
+            "p90": 33.33264160156251,
+            "max": 81.47900390625
+          },
+          "body_sent_to_native_arrival_ms": {
+            "count": 18,
+            "p50": 95.881591796875,
+            "p90": 188.1262939453125,
+            "max": 189.182373046875
+          },
+          "http_request_to_response_headers_ms": {
+            "count": 18,
+            "p50": 401.9019775390625,
+            "p90": 886.8703857421876,
+            "max": 1093.782958984375
+          },
+          "body_sent_to_api_received_ms": {
+            "count": 15,
+            "p50": 25.54833984375,
+            "p90": 119.96230468749998,
+            "max": 145.471923828125
+          },
+          "api_received_to_chat_conversion_ms": {
+            "count": 21,
+            "p50": 15.182373046875,
+            "p90": 29.890869140625,
+            "max": 32.1669921875
+          },
+          "chat_conversion_ms": {
+            "count": 21,
+            "p50": 26.122802734375,
+            "p90": 29.42138671875,
+            "max": 30.395263671875
+          },
+          "chat_conversion_to_tokenized_ms": {
+            "count": 21,
+            "p50": 0.37255859375,
+            "p90": 0.404052734375,
+            "max": 0.9052734375
+          },
+          "tokenized_to_dispatch_ms": {
+            "count": 21,
+            "p50": 0.0048828125,
+            "p90": 0.005615234375,
+            "max": 0.005859375
+          },
+          "dispatch_to_scheduler_received_ms": {
+            "count": 21,
+            "p50": 11.7373046875,
+            "p90": 45.582275390625,
+            "max": 67.71142578125
+          },
+          "scheduler_received_to_queue_registered_ms": {
+            "count": 21,
+            "p50": 0.13134765625,
+            "p90": 0.1962890625,
+            "max": 0.223876953125
+          },
+          "client_submit_to_first_service_ms": {
+            "count": 21,
+            "p50": 264.9384765625,
+            "p90": 654.123291015625,
+            "max": 1047.1875
+          },
+          "submit_to_first_service_ms": {
+            "count": 21,
+            "p50": 159.925537109375,
+            "p90": 456.6943359375,
+            "max": 948.003662109375
+          },
+          "last_ack_to_first_service_ms": {
+            "count": 10,
+            "p50": 533.02294921875,
+            "p90": 1640.6930175781247,
+            "max": 2400.75048828125
+          },
+          "full_expiration_commands_by_stage": {
+            "before_completion": 4
+          },
+          "full_expiration_bytes_by_stage": {
+            "before_completion": 24985600
+          }
+        },
+        "tool_wait": {
+          "observed_events": 2253,
+          "events_with_observed_full_plan": 383,
+          "events_with_capacity_observation": 33,
+          "events_with_capacity_condition": {
+            "none": 2,
+            "full_only": 31,
+            "mamba_only": 0,
+            "both": 0
+          },
+          "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 0,
+          "max_snapshot_planned_full_bytes_known": 18620907520,
+          "planned_full_bytes_unknown_events": 0,
+          "events_with_early_reused_full": 87,
+          "completion_boundary_unknown_events": 2,
+          "events_first_observed_after_completion": 291,
+          "events_with_tool_ids_outside_request_round": 0,
+          "early_started_and_reused_full_bytes": 1188106240,
+          "remaining_native_full_host_hit_bytes_known": 85858631680,
+          "remaining_native_full_evidence_unknown_events": 13,
+          "plan_evidence_categories": {
+            "only_zero_full_plan": {
+              "independent_events": 1870,
+              "events_with_known_completion_boundary": 1870,
+              "remaining_native_full_host_hit_bytes_known": 13352304640,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "positive_full_plan": {
+              "independent_events": 383,
+              "events_with_known_completion_boundary": 381,
+              "remaining_native_full_host_hit_bytes_known": 72506327040,
+              "remaining_native_full_evidence_unknown_events": 13,
+              "events_with_early_reused_full": 87
+            }
+          },
+          "restore_burst_size_evidence": {
+            "one_to_fifteen_nodes_observed": {
+              "independent_events": 362,
+              "events_with_known_completion_boundary": 360,
+              "remaining_native_full_host_hit_bytes_known": 66399825920,
+              "remaining_native_full_evidence_unknown_events": 12,
+              "events_with_early_reused_full": 84
+            },
+            "only_empty_plan_observed": {
+              "independent_events": 1870,
+              "events_with_known_completion_boundary": 1870,
+              "remaining_native_full_host_hit_bytes_known": 13352304640,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "sixteen_or_more_nodes_observed": {
+              "independent_events": 21,
+              "events_with_known_completion_boundary": 21,
+              "remaining_native_full_host_hit_bytes_known": 6106501120,
+              "remaining_native_full_evidence_unknown_events": 1,
+              "events_with_early_reused_full": 3
+            }
+          },
+          "residual_native_demand_by_observed_planning_evidence": {
+            "observed_plan_reasons": {
+              "before_start_window": {
+                "independent_events": 215,
+                "events_with_known_completion_boundary": 215,
+                "remaining_native_full_host_hit_bytes_known": 43974922240,
+                "remaining_native_full_evidence_unknown_events": 5,
+                "events_with_early_reused_full": 22
+              },
+              "fits_current_free_lists": {
+                "independent_events": 2,
+                "events_with_known_completion_boundary": 2,
+                "remaining_native_full_host_hit_bytes_known": 280494080,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "insufficient_free_lists": {
+                "independent_events": 31,
+                "events_with_known_completion_boundary": 30,
+                "remaining_native_full_host_hit_bytes_known": 6404096000,
+                "remaining_native_full_evidence_unknown_events": 1,
+                "events_with_early_reused_full": 1
+              },
+              "no_cold_capacity": {
+                "independent_events": 103,
+                "events_with_known_completion_boundary": 102,
+                "remaining_native_full_host_hit_bytes_known": 21838008320,
+                "remaining_native_full_evidence_unknown_events": 7,
+                "events_with_early_reused_full": 26
+              },
+              "no_restore_plan": {
+                "independent_events": 1831,
+                "events_with_known_completion_boundary": 1831,
+                "remaining_native_full_host_hit_bytes_known": 13598699520,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 11
+              },
+              "no_reusable_input_restore_step": {
+                "independent_events": 183,
+                "events_with_known_completion_boundary": 183,
+                "remaining_native_full_host_hit_bytes_known": 1028833280,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 1
+              },
+              "service_unsupported": {
+                "independent_events": 1,
+                "events_with_known_completion_boundary": 1,
+                "remaining_native_full_host_hit_bytes_known": 97423360,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "start_window": {
+                "independent_events": 107,
+                "events_with_known_completion_boundary": 107,
+                "remaining_native_full_host_hit_bytes_known": 15068241920,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 87
+              },
+              "submitted": {
+                "independent_events": 100,
+                "events_with_known_completion_boundary": 100,
+                "remaining_native_full_host_hit_bytes_known": 13693276160,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 87
+              }
+            },
+            "observed_planning_blocked_details": {
+              "input_checkpoint_unavailable_or_already_resident": {
+                "independent_events": 1884,
+                "events_with_known_completion_boundary": 1884,
+                "remaining_native_full_host_hit_bytes_known": 13755207680,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 11
+              }
+            },
+            "observed_no_live_details": {}
+          },
+          "planning_gap_semantics": "One count per independent wait per observed reason, regardless of repeated samples. Evidence categories partition waits; reason/detail groups overlap and must not be summed. Zero or missing plans do not prove zero physical demand. Residual bytes are next-request native FULL Host hits, not a proven pre-boundary opportunity, exclusive rejection cause or oracle speedup. Burst categories partition waits by the largest explicitly observed plan, not lifetime node commands. A sixteen-node plan is not proof of truncation or that a larger early transfer would fit capacity or the service window.",
+          "client_submit_to_native_arrival_ms": {
+            "count": 2240,
+            "p50": 229.8138427734375,
+            "p90": 434.4739990234376,
+            "max": 20854.25048828125
+          },
+          "client_submit_to_http_request_ms": {
+            "count": 2217,
+            "p50": 33.94580078125,
+            "p90": 107.67280273437501,
+            "max": 20095.80908203125
+          },
+          "http_request_to_body_sent_ms": {
+            "count": 2145,
+            "p50": 48.72802734375,
+            "p90": 165.14882812500008,
+            "max": 1301.56005859375
+          },
+          "body_sent_to_native_arrival_ms": {
+            "count": 2145,
+            "p50": 102.94970703125,
+            "p90": 307.6762695312501,
+            "max": 833.9228515625
+          },
+          "http_request_to_response_headers_ms": {
+            "count": 2217,
+            "p50": 6114.64404296875,
+            "p90": 15580.426904296875,
+            "max": 18716.8759765625
+          },
+          "body_sent_to_api_received_ms": {
+            "count": 1619,
+            "p50": 60.51513671875,
+            "p90": 272.33452148437505,
+            "max": 750.685302734375
+          },
+          "api_received_to_chat_conversion_ms": {
+            "count": 2240,
+            "p50": 14.5361328125,
+            "p90": 19.571386718750006,
+            "max": 88.064697265625
+          },
+          "chat_conversion_ms": {
+            "count": 2240,
+            "p50": 23.66552734375,
+            "p90": 46.7899169921875,
+            "max": 126.842041015625
+          },
+          "chat_conversion_to_tokenized_ms": {
+            "count": 2240,
+            "p50": 0.343505859375,
+            "p90": 0.6194091796875001,
+            "max": 3.639404296875
+          },
+          "tokenized_to_dispatch_ms": {
+            "count": 2240,
+            "p50": 0.004150390625,
+            "p90": 0.0048828125,
+            "max": 0.018310546875
+          },
+          "dispatch_to_scheduler_received_ms": {
+            "count": 2240,
+            "p50": 16.326171875,
+            "p90": 48.576269531250006,
+            "max": 143.131591796875
+          },
+          "scheduler_received_to_queue_registered_ms": {
+            "count": 2240,
+            "p50": 0.10595703125,
+            "p90": 0.17607421875000007,
+            "max": 0.8876953125
+          },
+          "client_submit_to_first_service_ms": {
+            "count": 2240,
+            "p50": 5924.1907958984375,
+            "p90": 15544.026318359376,
+            "max": 20901.313720703125
+          },
+          "submit_to_first_service_ms": {
+            "count": 2240,
+            "p50": 5301.0567626953125,
+            "p90": 15357.366455078127,
+            "max": 18523.0029296875
+          },
+          "last_ack_to_first_service_ms": {
+            "count": 100,
+            "p50": 420.03515625,
+            "p90": 818.9402099609379,
+            "max": 17256.982666015625
+          },
+          "full_expiration_commands_by_stage": {
+            "awaiting_client_submit": 1
+          },
+          "full_expiration_bytes_by_stage": {
+            "awaiting_client_submit": 1925120
+          }
+        }
+      }
+    },
+    "terminal_capacity_handoff": {
+      "reclaim_records": 93,
+      "terminal_contexts": 91,
+      "freed_device_units": {
+        "0": 764737,
+        "2": 132
+      },
+      "freed_host_units": {
+        "0": 636580,
+        "2": 201
+      },
+      "freed_device_bytes_known": {
+        "0": 15661813760,
+        "2": 8499363840
+      },
+      "freed_host_bytes_known": {
+        "0": 13037158400,
+        "2": 12942213120
+      },
+      "freed_device_units_with_unknown_byte_size": {},
+      "freed_host_units_with_unknown_byte_size": {},
+      "terminal_children": 79,
+      "by_invocation_scope": {
+        "dynamic_subagent": {
+          "reclaim_records": 81,
+          "terminal_contexts": 79,
+          "freed_device_units": {
+            "0": 619354,
+            "2": 102
+          },
+          "freed_host_units": {
+            "0": 477055,
+            "2": 148
+          },
+          "freed_device_bytes_known": {
+            "0": 12684369920,
+            "2": 6567690240
+          },
+          "freed_host_bytes_known": {
+            "0": 9770086400,
+            "2": 9529589760
+          },
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        },
+        "runtime_internal": {
+          "reclaim_records": 12,
+          "terminal_contexts": 12,
+          "freed_device_units": {
+            "0": 145383,
+            "2": 30
+          },
+          "freed_host_units": {
+            "0": 159525,
+            "2": 53
+          },
+          "freed_device_bytes_known": {
+            "0": 2977443840,
+            "2": 1931673600
+          },
+          "freed_host_bytes_known": {
+            "0": 3267072000,
+            "2": 3412623360
+          },
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        }
+      },
+      "parent_first_services": 21,
+      "parent_services_with_prior_device_release": 21,
+      "last_child_return_to_first_service_ms": {
+        "count": 21,
+        "p50": 230.99609375,
+        "p90": 690.826904296875,
+        "max": 1114.86865234375
+      },
+      "request_wait_ms": {
+        "count": 21,
+        "p50": 183.05996991693974,
+        "p90": 509.42777283489704,
+        "max": 973.0566665530205
+      },
+      "restore_lookahead_records": 11,
+      "parent_services_with_prior_restore_lookahead": 11,
+      "restore_lookahead_to_first_service_ms": {
+        "count": 11,
+        "p50": 154.02490234375,
+        "p90": 283.980712890625,
+        "max": 305.044189453125
+      },
+      "queue_wait_before_restore_lookahead_ms": {
+        "count": 11,
+        "p50": 28.960131108760834,
+        "p90": 701.7122004181147,
+        "max": 819.212225265801
+      },
+      "sibling_release_windows": {
+        "observed_join_events": 108,
+        "completion_unobserved_events": 87,
+        "joins_with_sibling_device_release_before_join": 20,
+        "joins_with_early_reused_full_after_sibling_release": 9,
+        "early_reused_full_bytes_after_sibling_release_known": 105246720,
+        "cumulative_sibling_device_release_before_join": {
+          "reclaim_records": 20,
+          "terminal_contexts": 20,
+          "freed_device_units": {
+            "0": 138442,
+            "2": 35
+          },
+          "freed_host_units": {
+            "0": 80637,
+            "2": 23
+          },
+          "freed_device_bytes_known": {
+            "0": 2835292160,
+            "2": 2253619200
+          },
+          "freed_host_bytes_known": {
+            "0": 1651445760,
+            "2": 1480949760
+          },
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        },
+        "sibling_device_release_lead_ms": {
+          "count": 20,
+          "p50": 127692.70532226562,
+          "p90": 345776.9610351563,
+          "max": 435467.9382324219
+        },
+        "rows": [
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11095:67d9455d8566",
+            "context_id": "deepagents:autonomous:django__django-11095:67d9455d8566:context:root",
+            "join_id": "deepagents-join:49d50d3d398d135b",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-1724:23d571538f57",
+            "context_id": "deepagents:autonomous:psf__requests-1724:23d571538f57:context:root",
+            "join_id": "deepagents-join:50d55643f8456c8b",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11490:787e449e49a3",
+            "context_id": "deepagents:autonomous:django__django-11490:787e449e49a3:context:root",
+            "join_id": "deepagents-join:406c8b77c950d8a6",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-6028:85c9df3aa89f",
+            "context_id": "deepagents:autonomous:psf__requests-6028:85c9df3aa89f:context:root",
+            "join_id": "deepagents-join:9618edb3ab977b02",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:context:root",
+            "join_id": "deepagents-join:c17d735869ffdc48",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11477:7cdaa6ef05b8",
+            "context_id": "deepagents:autonomous:django__django-11477:7cdaa6ef05b8:context:root",
+            "join_id": "deepagents-join:2b887f99b44b5f11",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11099:1b1795f9c2a6",
+            "context_id": "deepagents:autonomous:django__django-11099:1b1795f9c2a6:context:root",
+            "join_id": "deepagents-join:c8295820c3d70ec4",
+            "completion_ts_ms": 1791698960946.665,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 6576,
+                "2": 3
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 134676480,
+                "2": 193167360
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 29303.52099609375,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7571:037b0ce77a94",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7571:037b0ce77a94:context:root",
+            "join_id": "deepagents-join:15037c14ba6cf8fd",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31:context:root",
+            "join_id": "deepagents-join:d8725609c35612e5",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-12741:874cc5a30550",
+            "context_id": "deepagents:autonomous:django__django-12741:874cc5a30550:context:root",
+            "join_id": "deepagents-join:d9c4f323f21fb91a",
+            "completion_ts_ms": 1791699070237.6047,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 7257,
+                "2": 3
+              },
+              "freed_host_units": {
+                "0": 285
+              },
+              "freed_device_bytes_known": {
+                "0": 148623360,
+                "2": 193167360
+              },
+              "freed_host_bytes_known": {
+                "0": 5836800
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 82555.3740234375,
+            "early_reused_full_commands_after_sibling_release": [
+              "beliefkv-prefetch-5095f2ed430b4f34b5e43a3005b83787",
+              "beliefkv-prefetch-d0b3858128d84a6fbc7bb080bb54baf1"
+            ],
+            "early_reused_full_bytes_after_sibling_release_known": 5632000
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-4687:82c20df6dc5c",
+            "context_id": "deepagents:autonomous:pydata__xarray-4687:82c20df6dc5c:context:root",
+            "join_id": "deepagents-join:d7cad622e9ee4167",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11066:1939ea8eb0a7",
+            "context_id": "deepagents:autonomous:django__django-11066:1939ea8eb0a7:context:root",
+            "join_id": "deepagents-join:ca02e4021afbe5d5",
+            "completion_ts_ms": 1791699225415.1091,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 2061,
+                "2": 1
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 42209280,
+                "2": 64389120
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 435467.9382324219,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11292:be64dc14b282",
+            "context_id": "deepagents:autonomous:django__django-11292:be64dc14b282:context:root",
+            "join_id": "deepagents-join:628a7392c33356e1",
+            "completion_ts_ms": 1791699104135.7087,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 7304
+              },
+              "freed_host_units": {
+                "0": 11627,
+                "2": 4
+              },
+              "freed_device_bytes_known": {
+                "0": 149585920
+              },
+              "freed_host_bytes_known": {
+                "0": 238120960,
+                "2": 257556480
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 10215.491455078125,
+            "early_reused_full_commands_after_sibling_release": [
+              "beliefkv-prefetch-cec9bef3b5d74c9b90fd217a6802ae1e",
+              "beliefkv-prefetch-24cbe3add6214c73af72b545124a33d5"
+            ],
+            "early_reused_full_bytes_after_sibling_release_known": 5591040
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-8399:17f02ffbae36",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-8399:17f02ffbae36:context:root",
+            "join_id": "deepagents-join:31e0d3e643210df1",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-6202:31098ed45ef5",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-6202:31098ed45ef5:context:root",
+            "join_id": "deepagents-join:10970deafc115c03",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-16667:1f7731acce8b",
+            "context_id": "deepagents:autonomous:django__django-16667:1f7731acce8b:context:root",
+            "join_id": "deepagents-join:5ef6f7835d9963e4",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-5262:2bf485d2d225",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-5262:2bf485d2d225:context:root",
+            "join_id": "deepagents-join:2d94a3038e805f3d",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-12754:bf286e722ba0",
+            "context_id": "deepagents:autonomous:django__django-12754:bf286e722ba0:context:root",
+            "join_id": "deepagents-join:d7f4c31b765fd116",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-2317:5b0e8c907878",
+            "context_id": "deepagents:autonomous:psf__requests-2317:5b0e8c907878:context:root",
+            "join_id": "deepagents-join:f38b1e31ca1bcd5e",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6903:7fb6fff00c5e",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-6903:7fb6fff00c5e:context:root",
+            "join_id": "deepagents-join:0d7cd5e1a5fb7fa2",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-15103:5b84e72a0da8",
+            "context_id": "deepagents:autonomous:django__django-15103:5b84e72a0da8:context:root",
+            "join_id": "deepagents-join:ae8026718a2c0c14",
+            "completion_ts_ms": 1791698910425.3518,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 3693,
+                "2": 1
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 75632640,
+                "2": 64389120
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 72478.1103515625,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11333:48f4b5412f44",
+            "context_id": "deepagents:autonomous:django__django-11333:48f4b5412f44:context:root",
+            "join_id": "deepagents-join:21b2841d73182ac1",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da",
+            "context_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da:context:root",
+            "join_id": "deepagents-join:1711734c508e0fd3",
+            "completion_ts_ms": 1791699198448.9934,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 953
+              },
+              "freed_host_units": {
+                "0": 13846,
+                "2": 3
+              },
+              "freed_device_bytes_known": {
+                "0": 19517440
+              },
+              "freed_host_bytes_known": {
+                "0": 283566080,
+                "2": 193167360
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 39404.368408203125,
+            "early_reused_full_commands_after_sibling_release": [
+              "beliefkv-prefetch-00aafbbf9cd84a92b01ed316458e73ec"
+            ],
+            "early_reused_full_bytes_after_sibling_release_known": 5591040
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-6938:07a5c6540129",
+            "context_id": "deepagents:autonomous:pydata__xarray-6938:07a5c6540129:context:root",
+            "join_id": "deepagents-join:97bcc25885b323ba",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-16255:07903d021612",
+            "context_id": "deepagents:autonomous:django__django-16255:07903d021612:context:root",
+            "join_id": "deepagents-join:9209248b579231fa",
+            "completion_ts_ms": 1791699293172.5527,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 8185,
+                "2": 3
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 167628800,
+                "2": 193167360
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 351556.18359375,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-5631:79cb6b51ae8c",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-5631:79cb6b51ae8c:context:root",
+            "join_id": "deepagents-join:e3caa334e749aaa0",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-4075:1e023990fab6",
+            "context_id": "deepagents:autonomous:pydata__xarray-4075:1e023990fab6:context:root",
+            "join_id": "deepagents-join:3fe539f3adfbc0e2",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11239:606be0a8f4e9",
+            "context_id": "deepagents:autonomous:django__django-11239:606be0a8f4e9:context:root",
+            "join_id": "deepagents-join:c52fe2f98113e71d",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11299:7cd18225e0da",
+            "context_id": "deepagents:autonomous:django__django-11299:7cd18225e0da:context:root",
+            "join_id": "deepagents-join:5ccaafa0a68f8729",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11087:7b6c6e76c748",
+            "context_id": "deepagents:autonomous:django__django-11087:7b6c6e76c748:context:root",
+            "join_id": "deepagents-join:048efdcf010e6cfa",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:mwaskom__seaborn-3069:78c3db8f4fc5",
+            "context_id": "deepagents:autonomous:mwaskom__seaborn-3069:78c3db8f4fc5:context:root",
+            "join_id": "deepagents-join:d9ab5bc181d51be4",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-14500:ad07c81188ab",
+            "context_id": "deepagents:autonomous:django__django-14500:ad07c81188ab:context:root",
+            "join_id": "deepagents-join:5778679433d105f0",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-2931:377555fe20ed",
+            "context_id": "deepagents:autonomous:psf__requests-2931:377555fe20ed:context:root",
+            "join_id": "deepagents-join:3f78b4a205744db4",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:mwaskom__seaborn-3187:b49fcc2a0fb8",
+            "context_id": "deepagents:autonomous:mwaskom__seaborn-3187:b49fcc2a0fb8:context:root",
+            "join_id": "deepagents-join:7c9f7fdaeae125be",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7236:ff63795bc147",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7236:ff63795bc147:context:root",
+            "join_id": "deepagents-join:b863159e2f6f6e22",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11141:93106db8a8ab",
+            "context_id": "deepagents:autonomous:django__django-11141:93106db8a8ab:context:root",
+            "join_id": "deepagents-join:f7a40587b2e8123a",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11119:7ad073658ab1",
+            "context_id": "deepagents:autonomous:django__django-11119:7ad073658ab1:context:root",
+            "join_id": "deepagents-join:001b5d6bfd2eebf2",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-4970:c8f21f2860b8",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-4970:c8f21f2860b8:context:root",
+            "join_id": "deepagents-join:2394df931bfea2fa",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72",
+            "context_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72:context:root",
+            "join_id": "deepagents-join:48523a01d8f92e25",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-4604:5e4de9858f1d",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-4604:5e4de9858f1d:context:root",
+            "join_id": "deepagents-join:d7ca69a963a477f5",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-1766:beba0016a51c",
+            "context_id": "deepagents:autonomous:psf__requests-1766:beba0016a51c:context:root",
+            "join_id": "deepagents-join:3fc826bd2f92652b",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-4661:52eff856c28a",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-4661:52eff856c28a:context:root",
+            "join_id": "deepagents-join:89db7ff320a7c603",
+            "completion_ts_ms": 1791699235583.7104,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 6121
+              },
+              "freed_host_units": {
+                "0": 12583,
+                "2": 3
+              },
+              "freed_device_bytes_known": {
+                "0": 125358080
+              },
+              "freed_host_bytes_known": {
+                "0": 257699840,
+                "2": 193167360
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 134551.01611328125,
+            "early_reused_full_commands_after_sibling_release": [
+              "beliefkv-prefetch-4479444134884738a028b173bd4677f6",
+              "beliefkv-prefetch-5e2d4c06e003465a9898da64e29ad470",
+              "beliefkv-prefetch-3523f075c14a4f75bf1431ac9e1724e2"
+            ],
+            "early_reused_full_bytes_after_sibling_release_known": 7659520
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-5414:a1327c8dd67d",
+            "context_id": "deepagents:autonomous:psf__requests-5414:a1327c8dd67d:context:root",
+            "join_id": "deepagents-join:f99ef7a1dc0c197a",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-7393:6f40fcc1312b",
+            "context_id": "deepagents:autonomous:pydata__xarray-7393:6f40fcc1312b:context:root",
+            "join_id": "deepagents-join:41fb37d02a59c8a2",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-1921:dce78325b625",
+            "context_id": "deepagents:autonomous:psf__requests-1921:dce78325b625:context:root",
+            "join_id": "deepagents-join:58aa181ce05a0bb8",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-7277:7a081127326d",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-7277:7a081127326d:context:root",
+            "join_id": "deepagents-join:9b3cecdcbf8b9e77",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11734:08aaffab09f0",
+            "context_id": "deepagents:autonomous:django__django-11734:08aaffab09f0:context:root",
+            "join_id": "deepagents-join:a4c2bfc31272f5ef",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11276:21576a5c06fc",
+            "context_id": "deepagents:autonomous:django__django-11276:21576a5c06fc:context:root",
+            "join_id": "deepagents-join:87a26925f0219de7",
+            "completion_ts_ms": 1791699118489.744,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 6703,
+                "2": 3
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 137277440,
+                "2": 193167360
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 216901.6298828125,
+            "early_reused_full_commands_after_sibling_release": [
+              "beliefkv-prefetch-68c27b5c1e8449fba7c6bacfb2308124"
+            ],
+            "early_reused_full_bytes_after_sibling_release_known": 9523200
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-7080:6a2c45052f84",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-7080:6a2c45052f84:context:root",
+            "join_id": "deepagents-join:9ca75b4e4bf13b87",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-4356:b0d352fb3fb5",
+            "context_id": "deepagents:autonomous:pydata__xarray-4356:b0d352fb3fb5:context:root",
+            "join_id": "deepagents-join:b67de5d8829e53f4",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11163:413b51e7d0af",
+            "context_id": "deepagents:autonomous:django__django-11163:413b51e7d0af:context:root",
+            "join_id": "deepagents-join:461032c06c7e22a0",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-10356:8f4d35e3c180",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-10356:8f4d35e3c180:context:root",
+            "join_id": "deepagents-join:28ec784dfc6720c7",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11206:2d80ef444f55",
+            "context_id": "deepagents:autonomous:django__django-11206:2d80ef444f55:context:root",
+            "join_id": "deepagents-join:5dc7506c1982e8d7",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11179:0c9bffcebd6e",
+            "context_id": "deepagents:autonomous:django__django-11179:0c9bffcebd6e:context:root",
+            "join_id": "deepagents-join:cbc9d5a618a38edf",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7324:d3a2f3016288",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7324:d3a2f3016288:context:root",
+            "join_id": "deepagents-join:9ca2a1c59c5f5ab3",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-13964:e2a7b10e8f1f",
+            "context_id": "deepagents:autonomous:django__django-13964:e2a7b10e8f1f:context:root",
+            "join_id": "deepagents-join:6ae43123c6ff6dab",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11820:90dadb463ed8",
+            "context_id": "deepagents:autonomous:django__django-11820:90dadb463ed8:context:root",
+            "join_id": "deepagents-join:15feda2127429f82",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11400:9a33693a5b5e",
+            "context_id": "deepagents:autonomous:django__django-11400:9a33693a5b5e:context:root",
+            "join_id": "deepagents-join:459079aef49f45db",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7432:4159262db3c2",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7432:4159262db3c2:context:root",
+            "join_id": "deepagents-join:178dcf78dd8907b5",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-4629:f0dd665f5155",
+            "context_id": "deepagents:autonomous:pydata__xarray-4629:f0dd665f5155:context:root",
+            "join_id": "deepagents-join:d11dd5221079caf5",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-6992:70d940bd9758",
+            "context_id": "deepagents:autonomous:pydata__xarray-6992:70d940bd9758:context:root",
+            "join_id": "deepagents-join:70faeefbfa6056d6",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-4966:d00cd9a2049b",
+            "context_id": "deepagents:autonomous:pydata__xarray-4966:d00cd9a2049b:context:root",
+            "join_id": "deepagents-join:a8cf9eb559de2361",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-10880:daee8fcbdad8",
+            "context_id": "deepagents:autonomous:django__django-10880:daee8fcbdad8:context:root",
+            "join_id": "deepagents-join:a5c63d3e7fa1a640",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-10097:b43eaad6ac36",
+            "context_id": "deepagents:autonomous:django__django-10097:b43eaad6ac36:context:root",
+            "join_id": "deepagents-join:c99ecf1ff97bb854",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-14349:49dd7dfb0765",
+            "context_id": "deepagents:autonomous:django__django-14349:49dd7dfb0765:context:root",
+            "join_id": "deepagents-join:71da83526e3b462e",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-5809:0e3d26e69f47",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-5809:0e3d26e69f47:context:root",
+            "join_id": "deepagents-join:af97e6b497990a21",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-3151:d162a2fc458d",
+            "context_id": "deepagents:autonomous:pydata__xarray-3151:d162a2fc458d:context:root",
+            "join_id": "deepagents-join:32d7f5661855e35d",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7205:c503ff72f7b8",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7205:c503ff72f7b8:context:root",
+            "join_id": "deepagents-join:e0ae2ea66fa873a7",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-16938:d91cfa323992",
+            "context_id": "deepagents:autonomous:django__django-16938:d91cfa323992:context:root",
+            "join_id": "deepagents-join:067fe8fd6b368f0c",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11532:0dc6c9c614c2",
+            "context_id": "deepagents:autonomous:django__django-11532:0dc6c9c614c2:context:root",
+            "join_id": "deepagents-join:df2d7c75420c6da9",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-5840:2d9c45ac09be",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-5840:2d9c45ac09be:context:root",
+            "join_id": "deepagents-join:6c8843af7be5f0d4",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-15368:aaaed32f1769",
+            "context_id": "deepagents:autonomous:django__django-15368:aaaed32f1769:context:root",
+            "join_id": "deepagents-join:db6e6139655ea918",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-5787:d7623016e855",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-5787:d7623016e855:context:root",
+            "join_id": "deepagents-join:c5f78b9fa25a01bd",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11433:8d519930d2f1",
+            "context_id": "deepagents:autonomous:django__django-11433:8d519930d2f1:context:root",
+            "join_id": "deepagents-join:d656747386eda9f9",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+            "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+            "join_id": "deepagents-join:375920fddd0dac61",
+            "completion_ts_ms": 1791699279277.313,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 8520,
+                "2": 3
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 174489600,
+                "2": 193167360
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 345134.8251953125,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-7233:5875d36e871e",
+            "context_id": "deepagents:autonomous:pydata__xarray-7233:5875d36e871e:context:root",
+            "join_id": "deepagents-join:4de42d9bb96aba35",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-10914:2ef9209a9297",
+            "context_id": "deepagents:autonomous:django__django-10914:2ef9209a9297:context:root",
+            "join_id": "deepagents-join:3938e54b50632f7b",
+            "completion_ts_ms": 1791699146142.8228,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 5226,
+                "2": 3
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 107028480,
+                "2": 193167360
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 254377.51708984375,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa",
+            "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+            "join_id": "deepagents-join:5fdbb18af198714c",
+            "completion_ts_ms": 1791699068551.0286,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 1461
+              },
+              "freed_host_units": {
+                "0": 6994,
+                "2": 3
+              },
+              "freed_device_bytes_known": {
+                "0": 29921280
+              },
+              "freed_host_bytes_known": {
+                "0": 143237120,
+                "2": 193167360
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 92956.08447265625,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+            "context_id": "deepagents:autonomous:django__django-11211:497274ba2e12:context:root",
+            "join_id": "deepagents-join:f616841aa218b1c9",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-3993:e66bd1ac565f",
+            "context_id": "deepagents:autonomous:pydata__xarray-3993:e66bd1ac565f:context:root",
+            "join_id": "deepagents-join:8e397896bd43157e",
+            "completion_ts_ms": 1791699235553.2876,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 9006,
+                "2": 3
+              },
+              "freed_host_units": {
+                "0": 86
+              },
+              "freed_device_bytes_known": {
+                "0": 184442880,
+                "2": 193167360
+              },
+              "freed_host_bytes_known": {
+                "0": 1761280
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 257726.16137695312,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7521:243a2a0e112c",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7521:243a2a0e112c:context:root",
+            "join_id": "deepagents-join:bb4cad2a0cf38fed",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7982:a33aa66d617b",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7982:a33aa66d617b:context:root",
+            "join_id": "deepagents-join:862d9aedb549195c",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-10554:1e17758de0c7",
+            "context_id": "deepagents:autonomous:django__django-10554:1e17758de0c7:context:root",
+            "join_id": "deepagents-join:7ae6bf573d89ddb8",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-3095:fa0d3057575d",
+            "context_id": "deepagents:autonomous:pydata__xarray-3095:fa0d3057575d:context:root",
+            "join_id": "deepagents-join:4995b1b495b9b611",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-10081:c3a4d77d4e00",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-10081:c3a4d77d4e00:context:root",
+            "join_id": "deepagents-join:ed3299860acf54bb",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-6461:ba706c945707",
+            "context_id": "deepagents:autonomous:pydata__xarray-6461:ba706c945707:context:root",
+            "join_id": "deepagents-join:3182b28220a3f378",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7490:b35d0808a2de",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7490:b35d0808a2de:context:root",
+            "join_id": "deepagents-join:4226c577451829d0",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-6197:85f8e156c71f",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-6197:85f8e156c71f:context:root",
+            "join_id": "deepagents-join:d6552a130a561e38",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-6599:7ae66091b513",
+            "context_id": "deepagents:autonomous:pydata__xarray-6599:7ae66091b513:context:root",
+            "join_id": "deepagents-join:f60b88e8ea9c0f0e",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11149:763c4aad1784",
+            "context_id": "deepagents:autonomous:django__django-11149:763c4aad1784:context:root",
+            "join_id": "deepagents-join:ae5d01155f354b7b",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pallets__flask-5014:7d2b18204aa2",
+            "context_id": "deepagents:autonomous:pallets__flask-5014:7d2b18204aa2:context:root",
+            "join_id": "deepagents-join:6149c4c8aaa055e8",
+            "completion_ts_ms": 1791699228473.8342,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 22646
+              },
+              "freed_host_units": {
+                "0": 27641,
+                "2": 3
+              },
+              "freed_device_bytes_known": {
+                "0": 463790080
+              },
+              "freed_host_bytes_known": {
+                "0": 566087680,
+                "2": 193167360
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 23276.301513671875,
+            "early_reused_full_commands_after_sibling_release": [
+              "beliefkv-prefetch-dd86b2320ad34010a547140d5e4d3e08"
+            ],
+            "early_reused_full_bytes_after_sibling_release_known": 47882240
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-4551:45683c620cb4",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-4551:45683c620cb4:context:root",
+            "join_id": "deepagents-join:da8fa95be706b94f",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-7229:5d945f3f7125",
+            "context_id": "deepagents:autonomous:pydata__xarray-7229:5d945f3f7125:context:root",
+            "join_id": "deepagents-join:cf705163627a719c",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-13023:3b9d85055dc2",
+            "context_id": "deepagents:autonomous:django__django-13023:3b9d85055dc2:context:root",
+            "join_id": "deepagents-join:e17137ba67b19475",
+            "completion_ts_ms": 1791699313566.8972,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 0,
+              "terminal_contexts": 0,
+              "freed_device_units": {},
+              "freed_host_units": {},
+              "freed_device_bytes_known": {},
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-14631:2f18f23667cc",
+            "context_id": "deepagents:autonomous:django__django-14631:2f18f23667cc:context:root",
+            "join_id": "deepagents-join:b90231023a6c92bf",
+            "completion_ts_ms": 1791698989454.2024,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 8216,
+                "2": 1
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 168263680,
+                "2": 64389120
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 113872.90942382812,
+            "early_reused_full_commands_after_sibling_release": [
+              "beliefkv-prefetch-3fad5bca2385417296fbd74fa7e39537"
+            ],
+            "early_reused_full_bytes_after_sibling_release_known": 9543680
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-16502:bc51eaebfdea",
+            "context_id": "deepagents:autonomous:django__django-16502:bc51eaebfdea:context:root",
+            "join_id": "deepagents-join:0b4b0a59e72cf092",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+            "join_id": "deepagents-join:339fbd0c61a5747c",
+            "completion_ts_ms": 1791699176479.3525,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 7467,
+                "2": 3
+              },
+              "freed_host_units": {
+                "0": 2968,
+                "2": 3
+              },
+              "freed_device_bytes_known": {
+                "0": 152924160,
+                "2": 193167360
+              },
+              "freed_host_bytes_known": {
+                "0": 60784640,
+                "2": 193167360
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 158943.0517578125,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-2905:2bab764734a6",
+            "context_id": "deepagents:autonomous:pydata__xarray-2905:2bab764734a6:context:root",
+            "join_id": "deepagents-join:6cd20e34d6b4832a",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef",
+            "context_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef:context:root",
+            "join_id": "deepagents-join:836a5267d77fdd92",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-10999:ba6bc943cf20",
+            "context_id": "deepagents:autonomous:django__django-10999:ba6bc943cf20:context:root",
+            "join_id": "deepagents-join:5539d3786c8ae16f",
+            "completion_ts_ms": 1791699212418.0613,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 3335,
+                "2": 1
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 68300800,
+                "2": 64389120
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 339923.34912109375,
+            "early_reused_full_commands_after_sibling_release": [
+              "beliefkv-prefetch-4f0e34d43c39445aa9cf3b8ca9ddceae"
+            ],
+            "early_reused_full_bytes_after_sibling_release_known": 8212480
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-6721:9efc8a1d5ea5",
+            "context_id": "deepagents:autonomous:pydata__xarray-6721:9efc8a1d5ea5:context:root",
+            "join_id": "deepagents-join:6da28fe18a3dd524",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-16877:22a8438bda7c",
+            "context_id": "deepagents:autonomous:django__django-16877:22a8438bda7c:context:root",
+            "join_id": "deepagents-join:3d987bb10ae916b7",
+            "completion_ts_ms": 1791699066387.334,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 8596,
+                "2": 3
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 176046080,
+                "2": 193167360
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 120834.39453125,
+            "early_reused_full_commands_after_sibling_release": [
+              "beliefkv-prefetch-27506923116f49d98ee5662e8d63c804"
+            ],
+            "early_reused_full_bytes_after_sibling_release_known": 5611520
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9",
+            "context_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9:context:root",
+            "join_id": "deepagents-join:420284c102c089da",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-6744:820d5e0e51b1",
+            "context_id": "deepagents:autonomous:pydata__xarray-6744:820d5e0e51b1:context:root",
+            "join_id": "deepagents-join:3bd5766fe04aa023",
+            "completion_ts_ms": 1791699165007.013,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 12834,
+                "2": 2
+              },
+              "freed_host_units": {
+                "0": 4607,
+                "2": 4
+              },
+              "freed_device_bytes_known": {
+                "0": 262840320,
+                "2": 128778240
+              },
+              "freed_host_bytes_known": {
+                "0": 94351360,
+                "2": 257556480
+              },
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 117433.755859375,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-1142:68ffd976de2b",
+            "context_id": "deepagents:autonomous:psf__requests-1142:68ffd976de2b:context:root",
+            "join_id": "deepagents-join:49f81c953be61d09",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11265:e92f680cdb72",
+            "context_id": "deepagents:autonomous:django__django-11265:e92f680cdb72:context:root",
+            "join_id": "deepagents-join:d5a6bd455d12727e",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+            "context_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:context:root",
+            "join_id": "deepagents-join:c576d6d9813b49d5",
+            "completion_ts_ms": 1791699149613.169,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 2282,
+                "2": 2
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 46735360,
+                "2": 128778240
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 326451.7673339844,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-10051:ce010bfbbfdd",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-10051:ce010bfbbfdd:context:root",
+            "join_id": "deepagents-join:e1b930620671544a",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          }
+        ],
+        "semantics": "Independent observed JOIN episodes, not all workload JOINs. Actual allocator release uses scheduler wall time; complete JOIN uses the existing client-clock offset conversion. Only explicitly identified dynamic subagents link by workflow/parent context/JOIN. Host-only or post-JOIN releases cannot support pre-JOIN H2D. A command qualifies only with the existing proof of actual pre-JOIN submission and FULL reuse by the following request. Temporal association does not prove exclusive capacity, child-to-parent page identity, that these bytes were necessary for prefetch, or a native-relative saving. Cumulative releases are not simultaneously free capacity; transferred FULL bytes are command receipts, not a count of unique pages. Unobserved JOIN completion leaves the release window unknown."
+      },
+      "rows": [
+        {
+          "workflow_id": "deepagents:autonomous:django__django-15103:5b84e72a0da8",
+          "context_id": "deepagents:autonomous:django__django-15103:5b84e72a0da8:context:root",
+          "join_id": "deepagents-join:ae8026718a2c0c14",
+          "request_id": "beliefkv:01a12993-bce7-7383-916f-c65a3d53e654",
+          "freed_device_units_before_service": {
+            "0": 12279,
+            "2": 4
+          },
+          "last_child_return_to_first_service_ms": 86.46630859375,
+          "request_wait_ms": 119.94394566863775,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11099:1b1795f9c2a6",
+          "context_id": "deepagents:autonomous:django__django-11099:1b1795f9c2a6:context:root",
+          "join_id": "deepagents-join:c8295820c3d70ec4",
+          "request_id": "beliefkv:01a12994-828e-7b42-81e9-4a78c53b17f7",
+          "freed_device_units_before_service": {
+            "0": 10042,
+            "2": 5
+          },
+          "last_child_return_to_first_service_ms": 197.926513671875,
+          "request_wait_ms": 95.28235904872417,
+          "restore_lookahead_to_first_service_ms": 91.041748046875,
+          "queue_wait_before_restore_lookahead_ms": 4.237944260239601
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-14631:2f18f23667cc",
+          "context_id": "deepagents:autonomous:django__django-14631:2f18f23667cc:context:root",
+          "join_id": "deepagents-join:b90231023a6c92bf",
+          "request_id": "beliefkv:01a12994-f1b3-7041-8172-72004d947dd8",
+          "freed_device_units_before_service": {
+            "0": 16162,
+            "2": 4
+          },
+          "last_child_return_to_first_service_ms": 228.69287109375,
+          "request_wait_ms": 107.7160369604826,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-16877:22a8438bda7c",
+          "context_id": "deepagents:autonomous:django__django-16877:22a8438bda7c:context:root",
+          "join_id": "deepagents-join:3d987bb10ae916b7",
+          "request_id": "beliefkv:01a12996-1e35-7711-a149-930897e0e36a",
+          "freed_device_units_before_service": {
+            "0": 19734,
+            "2": 4
+          },
+          "last_child_return_to_first_service_ms": 111.185791015625,
+          "request_wait_ms": 75.55782329291105,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa",
+          "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+          "join_id": "deepagents-join:5fdbb18af198714c",
+          "request_id": "beliefkv:01a12996-26cd-7cc0-8395-cf0c096711d1",
+          "freed_device_units_before_service": {
+            "0": 9936,
+            "2": 1
+          },
+          "last_child_return_to_first_service_ms": 517.619140625,
+          "request_wait_ms": 337.5217951834202,
+          "restore_lookahead_to_first_service_ms": 150.91357421875,
+          "queue_wait_before_restore_lookahead_ms": 186.60406582057476
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-12741:874cc5a30550",
+          "context_id": "deepagents:autonomous:django__django-12741:874cc5a30550:context:root",
+          "join_id": "deepagents-join:d9c4f323f21fb91a",
+          "request_id": "beliefkv:01a12996-2d5d-7d41-b8c2-d3a59143263d",
+          "freed_device_units_before_service": {
+            "0": 7661,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 318.457275390625,
+          "request_wait_ms": 183.05996991693974,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11292:be64dc14b282",
+          "context_id": "deepagents:autonomous:django__django-11292:be64dc14b282:context:root",
+          "join_id": "deepagents-join:628a7392c33356e1",
+          "request_id": "beliefkv:01a12996-b1d0-7791-a4a7-2884e2f9f953",
+          "freed_device_units_before_service": {
+            "0": 19729
+          },
+          "last_child_return_to_first_service_ms": 198.442626953125,
+          "request_wait_ms": 89.77169822901487,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11276:21576a5c06fc",
+          "context_id": "deepagents:autonomous:django__django-11276:21576a5c06fc:context:root",
+          "join_id": "deepagents-join:87a26925f0219de7",
+          "request_id": "beliefkv:01a12996-e9a5-7ae0-8816-6782e63d7f92",
+          "freed_device_units_before_service": {
+            "0": 19260,
+            "2": 6
+          },
+          "last_child_return_to_first_service_ms": 230.99609375,
+          "request_wait_ms": 211.30148321390152,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-10914:2ef9209a9297",
+          "context_id": "deepagents:autonomous:django__django-10914:2ef9209a9297:context:root",
+          "join_id": "deepagents-join:3938e54b50632f7b",
+          "request_id": "beliefkv:01a12997-55c4-7473-976a-f0a3f522e2d3",
+          "freed_device_units_before_service": {
+            "0": 15173,
+            "2": 4
+          },
+          "last_child_return_to_first_service_ms": 1114.86865234375,
+          "request_wait_ms": 958.6578402668238,
+          "restore_lookahead_to_first_service_ms": 256.943115234375,
+          "queue_wait_before_restore_lookahead_ms": 701.7122004181147
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+          "context_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:context:root",
+          "join_id": "deepagents-join:c576d6d9813b49d5",
+          "request_id": "beliefkv:01a12997-6355-7011-9925-ec4648384cf0",
+          "freed_device_units_before_service": {
+            "0": 17031,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 670.526123046875,
+          "request_wait_ms": 442.8017092868686,
+          "restore_lookahead_to_first_service_ms": 305.044189453125,
+          "queue_wait_before_restore_lookahead_ms": 137.75470666587353
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pydata__xarray-6744:820d5e0e51b1",
+          "context_id": "deepagents:autonomous:pydata__xarray-6744:820d5e0e51b1:context:root",
+          "join_id": "deepagents-join:3bd5766fe04aa023",
+          "request_id": "beliefkv:01a12997-9f61-7902-81e8-3e59ec98141c",
+          "freed_device_units_before_service": {
+            "0": 15152,
+            "2": 2
+          },
+          "last_child_return_to_first_service_ms": 178.451416015625,
+          "request_wait_ms": 87.86201849579811,
+          "restore_lookahead_to_first_service_ms": 82.5927734375,
+          "queue_wait_before_restore_lookahead_ms": 5.266815423965454
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167",
+          "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+          "join_id": "deepagents-join:339fbd0c61a5747c",
+          "request_id": "beliefkv:01a12997-cc3e-7202-83d1-586573ef3136",
+          "freed_device_units_before_service": {
+            "0": 21374,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 96.438232421875,
+          "request_wait_ms": 97.35540207475424,
+          "restore_lookahead_to_first_service_ms": 85.66943359375,
+          "queue_wait_before_restore_lookahead_ms": 11.683566495776176
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da",
+          "context_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da:context:root",
+          "join_id": "deepagents-join:1711734c508e0fd3",
+          "request_id": "beliefkv:01a12998-2203-72e3-a8da-4bd2a8bf8325",
+          "freed_device_units_before_service": {
+            "0": 6067
+          },
+          "last_child_return_to_first_service_ms": 208.439697265625,
+          "request_wait_ms": 147.71442860364914,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-10999:ba6bc943cf20",
+          "context_id": "deepagents:autonomous:django__django-10999:ba6bc943cf20:context:root",
+          "join_id": "deepagents-join:5539d3786c8ae16f",
+          "request_id": "beliefkv:01a12998-58cb-7220-8eac-faab85c37e9a",
+          "freed_device_units_before_service": {
+            "0": 13062,
+            "2": 2
+          },
+          "last_child_return_to_first_service_ms": 690.826904296875,
+          "request_wait_ms": 509.42777283489704,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11066:1939ea8eb0a7",
+          "context_id": "deepagents:autonomous:django__django-11066:1939ea8eb0a7:context:root",
+          "join_id": "deepagents-join:ca02e4021afbe5d5",
+          "request_id": "beliefkv:01a12998-8b52-74d1-9028-d67ccb56559c",
+          "freed_device_units_before_service": {
+            "0": 18586,
+            "2": 1
+          },
+          "last_child_return_to_first_service_ms": 162.46923828125,
+          "request_wait_ms": 182.98761639744043,
+          "restore_lookahead_to_first_service_ms": 154.02490234375,
+          "queue_wait_before_restore_lookahead_ms": 28.960131108760834
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pallets__flask-5014:7d2b18204aa2",
+          "context_id": "deepagents:autonomous:pallets__flask-5014:7d2b18204aa2:context:root",
+          "join_id": "deepagents-join:6149c4c8aaa055e8",
+          "request_id": "beliefkv:01a12998-9750-70b3-88e0-b7b52d895558",
+          "freed_device_units_before_service": {
+            "0": 36234
+          },
+          "last_child_return_to_first_service_ms": 322.434326171875,
+          "request_wait_ms": 227.52800211310387,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pylint-dev__pylint-4661:52eff856c28a",
+          "context_id": "deepagents:autonomous:pylint-dev__pylint-4661:52eff856c28a:context:root",
+          "join_id": "deepagents-join:89db7ff320a7c603",
+          "request_id": "beliefkv:01a12998-b34d-7953-9b5e-3579ab504ad6",
+          "freed_device_units_before_service": {
+            "0": 7177
+          },
+          "last_child_return_to_first_service_ms": 164.8291015625,
+          "request_wait_ms": 103.65149937570095,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:pydata__xarray-3993:e66bd1ac565f",
+          "context_id": "deepagents:autonomous:pydata__xarray-3993:e66bd1ac565f:context:root",
+          "join_id": "deepagents-join:8e397896bd43157e",
+          "request_id": "beliefkv:01a12998-b325-7eb2-bc8e-edd42ff50d76",
+          "freed_device_units_before_service": {
+            "0": 19757,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 1013.810791015625,
+          "request_wait_ms": 973.0566665530205,
+          "restore_lookahead_to_first_service_ms": 153.84228515625,
+          "queue_wait_before_restore_lookahead_ms": 819.212225265801
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+          "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+          "join_id": "deepagents-join:375920fddd0dac61",
+          "request_id": "beliefkv:01a12999-5dc9-7013-ab6c-abe081af5be3",
+          "freed_device_units_before_service": {
+            "0": 15431,
+            "2": 3
+          },
+          "last_child_return_to_first_service_ms": 258.366943359375,
+          "request_wait_ms": 220.29493190348148,
+          "restore_lookahead_to_first_service_ms": 216.369873046875,
+          "queue_wait_before_restore_lookahead_ms": 3.9226925000548363
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-16255:07903d021612",
+          "context_id": "deepagents:autonomous:django__django-16255:07903d021612:context:root",
+          "join_id": "deepagents-join:9209248b579231fa",
+          "request_id": "beliefkv:01a12999-9403-75a3-a5cf-006dfd6bb6cd",
+          "freed_device_units_before_service": {
+            "0": 16772,
+            "2": 4
+          },
+          "last_child_return_to_first_service_ms": 301.46728515625,
+          "request_wait_ms": 301.873697899282,
+          "restore_lookahead_to_first_service_ms": 283.980712890625,
+          "queue_wait_before_restore_lookahead_ms": 17.888660542666912
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-13023:3b9d85055dc2",
+          "context_id": "deepagents:autonomous:django__django-13023:3b9d85055dc2:context:root",
+          "join_id": "deepagents-join:e17137ba67b19475",
+          "request_id": "beliefkv:01a12999-e3d1-7a91-a723-df679459583e",
+          "freed_device_units_before_service": {
+            "0": 14238,
+            "2": 2
+          },
+          "last_child_return_to_first_service_ms": 508.580810546875,
+          "request_wait_ms": 360.72447057813406,
+          "restore_lookahead_to_first_service_ms": 210.76806640625,
+          "queue_wait_before_restore_lookahead_ms": 149.95387382805347
+        }
+      ],
+      "semantics": "Actual terminal-suffix allocator release, linked to the first observed completed parent GPU batch, not kernel start; RETURN delivery observation and service observation use scheduler wall time, not client event time; not exclusive slot ownership, predictive H2D reuse, avoided D2H bytes, or a native-relative latency saving. Restore lookahead is selection evidence, not submission/ACK evidence. Aggregate releases include internal calls; scope breakdown and terminal_children use explicit invocation-create metadata or recorded runtime scope, never ID spelling. Only confirmed dynamic subagents link to JOIN parent services; absent metadata stays unknown. Missing pool byte sizes stay unknown."
+    },
+    "parent_capacity_restore_retries": {
+      "rearm_records": 0,
+      "rearmed_requests": 0,
+      "rearmed_requests_with_observed_parent_service": 0,
+      "scope": "linked child allocator release enables a demand retry; not pre-boundary H2D"
+    }
+  },
+  "source_summary_semantics": "Per-source node commands, not independent requests or workflow events. FULL reuse counts include only commands with positive FULL transfer units. Pool bytes come from reconciled physical ACKs; missing legacy pool-byte evidence is reported, never reconstructed by byte shares. Execution handoff is submitted demand, separate from anticipatory JOIN/tool actions. FULL residency groups use the initial observed registration lock and last observed release reason in log order; absent evidence stays unknown. Groups are lifecycle associations, not isolated causes. Lease expiry does not imply a reuse miss, nor does registration prove continuous protection until service; Mamba-only transfers are excluded.",
+  "native_reload_attribution_semantics": "Node/pool overlap before first service, not proof of repeated physical allocation or duplicate bytes. Mixed tagged batches retain untagged operations. Exact receipts carry per-operation units and bytes; legacy batch pool presence remains an ambiguous association. Evidence counts may overlap when a command has multiple reloads.",
+  "prepare_attribution_semantics": "Latest observed D2H writer per node/pool. A later D2H is not proof of byte overwrite or duplicate transfer: Host eviction/reallocation, node splitting and legacy merged pool attribution are unresolved. Intervening same-node/pool Host eviction is reported when available; it does not recover an allocation identity across radix splits. The lifetime summary separates restore associations before/after observed Host eviction without changing legacy latest-writer association counts. Observed restoration is not final model-forward reuse."
+}

@@ -2,6 +2,25 @@
 
 Status date: 2026-10-11.
 
+Early V23 evidence was read at 2026-10-11 14:14:39-14:15:42 CST.
+Tool PREPARE has 41 burst decisions, 270 node ACKs and 2.188 GB FULL
+across 19 independent waits. Actual HBM demotion has 18 node events,
+6 contexts and 7 independent tool waits, releasing 0.141 GB FULL and
+0.708 GB Mamba cumulatively. Six of seven first demotions still have at
+least 2 seconds remaining; all seven calls are glob, so this is not overall
+precision. JOIN PREPARE covers 103 parents; actual demotion covers 37,
+releasing 0.549 GB FULL and 2.318 GB Mamba. Preserve backup/demotion and
+node/agent distinctions. Keep v73_v23_wait_offload_live_20261011.json.
+
+The lifecycle read has 9 JOIN and 87 tool waits with early-started,
+next-request-reused FULL of 0.105/1.188 GB. The 20.646 GB handoff FULL
+reuse remains demand recovery. Independent-wait last-ACK-to-service
+P50/P90 is 533/1641 ms for JOIN and 420/819 ms for tools; JOIN has only
+10 paired events, and the tool maximum remains 17.257 seconds.
+Keep v73_v23_prefetch_lifecycle_live_20261011.json. These sequential
+live-log reads are not atomic snapshots, a code ablation or a native
+throughput comparison. Keep the started pair frozen and the goal active.
+
 V23 predictive started at2026-10-11 14:01:40CST after the complete V22
 pair, HTML export, workspace cleanup and performance comparison. At14:05:25
 server1088402 and client1090250 are live; health succeeds and client requests
