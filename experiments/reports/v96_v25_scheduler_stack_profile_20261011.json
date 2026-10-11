@@ -1,0 +1,193 @@
+{
+  "schema_version": 1,
+  "scope": "Live nonblocking GIL stacks for optimization diagnosis, not unbiased total CPU or removable GPU/JCT time.",
+  "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25",
+  "process_id": 3076435,
+  "process_start_ticks": 589560931,
+  "profiler": "py-spy 0.4.1",
+  "capture_start_local": "2026-10-11T21:48:28+08:00",
+  "raw_file_mtime_local": "2026-10-11T21:48:49.281741+08:00",
+  "command": [
+    "sudo",
+    "-n",
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/py-spy",
+    "record",
+    "--pid",
+    "3076435",
+    "--duration",
+    "20",
+    "--rate",
+    "49",
+    "--nonblocking",
+    "--gil",
+    "--threads",
+    "--format",
+    "raw",
+    "--full-filenames",
+    "--output",
+    "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v96_v25_scheduler_stack_samples_20261011.raw"
+  ],
+  "raw": {
+    "path": "experiments/reports/v96_v25_scheduler_stack_samples_20261011.raw",
+    "sha256": "92375aebce5a38bdca9ff9e41931c07ac56504bc45f3225f261b6bc7f8a022bd",
+    "bytes": 795044,
+    "samples": 371,
+    "read_errors_from_profiler_console": 120
+  },
+  "thread_samples": {
+    "thread (3076435): MainThread": 319,
+    "thread (3077741): native-reactive-audit": 39,
+    "thread (3096314): QueueFeederThread": 2,
+    "thread (3077807): admission-opportunity": 11
+  },
+  "selected_inclusive_function_samples": {
+    "_key_path_tokens": 10,
+    "_record_prefetch_first_service": 7,
+    "_track_prefetch_use": 4,
+    "inspect_beliefkv_reentry": 12,
+    "observe_unified_node_closure": 21,
+    "_write_status": 0,
+    "plan_native_prefill": 19,
+    "dispatch_join_prepare": 15
+  },
+  "leading_leaf_frames": [
+    [
+      "iterencode (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/json/encoder.py:258)",
+      23
+    ],
+    [
+      "_key_path_tokens (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py:345)",
+      8
+    ],
+    [
+      "match_at (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py:207)",
+      6
+    ],
+    [
+      "thread (3076435): MainThread",
+      6
+    ],
+    [
+      "inspect_beliefkv_reentry (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py:2253)",
+      5
+    ],
+    [
+      "observe_unified_node_closure (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py:654)",
+      4
+    ],
+    [
+      "__call__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/backends/nvidia/driver.py:328)",
+      4
+    ],
+    [
+      "__call__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_ops.py:1279)",
+      4
+    ],
+    [
+      "extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py:516)",
+      4
+    ],
+    [
+      "_insert_walk_step (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py:1273)",
+      3
+    ],
+    [
+      "_write_block_request_probe (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py:761)",
+      3
+    ],
+    [
+      "extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py:533)",
+      3
+    ],
+    [
+      "current_stream (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/__init__.py:1248)",
+      3
+    ],
+    [
+      "dynamic_func (<string>:4)",
+      3
+    ],
+    [
+      "terminal (/home/longhao/experiment/BeliefKV/beliefkv/control/causal_graph.py:37)",
+      3
+    ],
+    [
+      "__len__ (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py:106)",
+      3
+    ],
+    [
+      "send_pyobj (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/zmq/sugar/socket.py:1002)",
+      3
+    ],
+    [
+      "transfer_hicache_all_layer_staged_lf_pf (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/kvcache/hicache.py:305)",
+      3
+    ],
+    [
+      "_record_prefetch_first_service (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py:1721)",
+      3
+    ],
+    [
+      "forward_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/gdn_backend.py:854)",
+      3
+    ],
+    [
+      "observe_unified_node_closure (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py:606)",
+      2
+    ],
+    [
+      "run (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/runtime/jit.py:731)",
+      2
+    ],
+    [
+      "_prune_parent_pressure_candidates (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py:4027)",
+      2
+    ],
+    [
+      "fused_qkv_split_gdn_prefill (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/triton_gdn_fused_proj.py:727)",
+      2
+    ],
+    [
+      "_evict_component_and_detach_lru (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py:2009)",
+      2
+    ],
+    [
+      "<lambda> (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/runtime/jit.py:370)",
+      2
+    ],
+    [
+      "at_layer_idx (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py:428)",
+      2
+    ],
+    [
+      "_key_path_tokens (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py:339)",
+      2
+    ],
+    [
+      "free (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/mamba.py:82)",
+      2
+    ],
+    [
+      "observe_unified_node_closure (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py:602)",
+      2
+    ]
+  ],
+  "primary_performance_exclusion": {
+    "begin_local": "2026-10-11T21:48:26+08:00",
+    "end_local": "2026-10-11T21:48:52+08:00",
+    "begin_seconds_from_monitor_origin": 1015.164,
+    "end_seconds_from_monitor_origin": 1041.164
+  },
+  "frozen_source": {
+    "code_commit": "a77018068869f66e3cc55479009239ed30e47c97",
+    "patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+    "live_telemetry_sha256": "9b72c1b83b3f19e268a1364c79cbcb82791999804db6b287c00db5e006ab3d04"
+  },
+  "followup": "Keep ACK-time token snapshots immutable. Compare first-service input prefixes with native array operations, preserving exact mismatch position and all FULL/Mamba identity evidence. ACK prefix materialization remains a separate cost.",
+  "limitations": [
+    "371 valid samples and 120 read errors are both retained.",
+    "GIL sample frequencies do not estimate total CPU time, GPU stall or JCT savings.",
+    "The two completed 300-600s and 600-900s diagnostic windows precede this profiler.",
+    "Live sources and the frozen plan remain unchanged."
+  ]
+}
