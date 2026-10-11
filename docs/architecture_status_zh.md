@@ -18,9 +18,64 @@ v22_launch_after_v21_20261011.json。V22取消需求恢复的累计16-extent
 容量交接、容量结算后parent恢复重试、后台写入CPU证据、
 前缀写入减负、首次服务公共前缀比较复用、完整祖先观察、
 已老化准入检查减负和同次tool恢复计划复用；
-07:57 CST已观察到真实GPU请求、终态child回收、parent首次服务及
+08:20 CST前已观察到真实GPU请求、终态child回收、parent首次服务及
 物理动作ACK；native证据writer的dropped/failed均为0，
-writer_error为空。启动阶段尚不能判断繁忙窗口收益，吞吐目标仍未达成。
+writer_error为空。已采到下述完整繁忙窗口和局部容量交接证据；
+同版本native仍待后续运行，吞吐目标尚未达成。
+
+V22在线局部容量审计保存在
+v40_v22_capacity_handoff_live_20261011.json。117个观测JOIN中，
+54个已有完整完成边界，63个边界尚未观测；不能将后者当作失败。
+50个JOIN在完成前有确认dynamic subagent的设备容量释放；
+其中26个随后在JOIN前实际提交FULL，并由parent下一请求确认复用，
+合计259522560字节。相关JOIN前累计释放FULL9.558GB和
+Mamba5.216GB，并非同时可用或独占parent的容量。140个确认终态
+child累计实际释放FULL30.980GB、Mamba9.594GB；内部调用释放
+另行统计。54个parent首次服务均有关联child设备释放，服务端观察
+最后child RETURN至首个已完成GPU batch的P50/P90为
+327.57/1247.41ms，最长16.312秒；这不是RETURN预测误差或kernel
+启动延迟。21个parent先经过恢复lookahead再服务；lookahead仍是
+选择证据，不等于传输提交。当前无容量重试rearm事件，不能据此
+声称真实压力下已验证重试路径。该报告读取仍运行的多路日志，
+是局部观察，不是冻结终态或与native的收益对照。
+
+完整600–900秒窗口保存在v37_v22_busy_window_600_900_20261011.json，
+包含读取前缀SHA256与边界行SHA256。V22 predictive有6440个
+decode batch、平均可见上下文23068.33 token，worker decode区间
+均值39.187ms；旧V21 predictive/native为5642/7363 batch、
+21840.58/23703.38 token和44.189/35.510ms。此处版本和轨迹不同，
+只作诊断。V22已埋点Python独占墙钟累计46.428秒，旧predictive
+为60.398秒；最大阶段为准入规划6.338秒、reentry5.618秒、
+JOIN PREPARE4.724秒、control drain4.149秒、handoff enqueue
+3.510秒、opportunity采样3.239秒和execution handoff2.915秒。
+不能把累计墙钟直接从JCT扣除。
+
+后台writer的窗口差分首次提供具体CPU定位：Host驱逐重访
+request_probe的30个实测样本，平均thread CPU7.271ms、
+墙钟8.944ms，是原生writer样本中最大的处理类别；该窗口所有
+原生样本累计CPU421.851ms、墙钟632.605ms，opportunity样本
+累计CPU73.084ms、墙钟145.430ms。样本不乘64，不推断GIL争用。
+针对该类别的索引优化已在隔离工作区完成验证，当前V22保持冻结。
+
+Host驱逐归因索引新增按namespace和不超过终端长度的最大二次幂
+前缀路由。完整终端哈希仍负责最终身份匹配；超过32个候选长度时，
+单个递增hasher只在匹配路由上复制终端摘要，小集合保留直接路径。
+FULL/Mamba共用的终端索引引用分开维护，重访或容量淘汰后及时清除
+辅助路由。只有当前请求精确匹配全部待核验前缀时批量释放索引，
+部分匹配和其它namespace仍逐条保留原有归因与顺序。
+早期两遍哈希方案及单遍逐条清理方案有小集合/全匹配退化，
+证据分别保存在v38_eviction_route_writer_cpu_20261011.json和
+v39_eviction_route_single_pass_cpu_20261011.json，均未部署。
+最终v41_eviction_route_batched_cleanup_cpu_20261011.json包含36组
+各60轮交替CPU测量；记录、哈希、计数、历史与待匹配状态一致。
+512条前缀分布在32条分支时，1024/8192/32768-token重访均值为
+1.046/1.040/1.918→0.508/0.625/1.463ms；全部匹配场景为
+7.087/7.333/7.954→6.655/6.847/7.405ms。16条匹配前缀的小集合
+没有再出现先前退化；单条驱逐登记因辅助路由增加约2–4微秒。
+156项telemetry/lifecycle/writer/window检查通过，CPU夹具不包含
+真实scheduler并发、DMA或GPU，不能由此声称吞吐提升。
+保留当前V22的完整pair，提交后冻结该跟进并登记同配置V23：
+仍为predictive先行、冷native随后，不改变workload或预测窗口。
 
 闭合V21的predictive/native输出吞吐为738.64/831.87 token/s，
 GPU平均利用率为72.04%/80.15%。600–2400秒窗口的decode前平均

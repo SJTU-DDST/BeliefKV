@@ -22,7 +22,10 @@ sys.path.insert(0, str(ROOT))
 from beliefkv.runtime import v0520_native_telemetry as telemetry
 
 SOURCE = Path("beliefkv/runtime/v0520_native_telemetry.py")
-METHODS = ("_write_context_prefix", "_write_block_request_probe")
+METHODS = (
+    "_write_context_prefix", "_write_block_request_probe",
+    "_write_block_eviction", "_remove_block_eviction_index",
+)
 
 
 def load_writer(source: str, label: str) -> type:
@@ -55,6 +58,8 @@ def fixture(tokens: int, scenario: str, writer: type):
     audit._host_pool_geometry = {"full": {"bytes_per_unit": 20480}}
     audit._pending_block_evictions = OrderedDict()
     audit._block_eviction_index = {}
+    audit._block_eviction_routes = {}
+    audit._block_eviction_route_lengths = {}
     audit._block_eviction_lengths = {}
     audit._block_eviction_length_refs = Counter()
     audit._block_eviction_index_limit = 32768
@@ -91,13 +96,33 @@ def fixture(tokens: int, scenario: str, writer: type):
             {**record, "_internal_event": "context_prefix_probe", "input_ids": current},
         ]
         return audit, records, "_write_context_prefix"
-    for index in range(1, 17):
-        length = tokens * index // 16
-        audit._write_block_eviction({
-            "key_path": (array("q", prior[:length]),), "pool": "full",
-            "node_id": index, "units": tokens // 16, "ts_ms": 1.,
-            "extra_key": None, "cache_salt": None,
-        }, StringIO())
+    if scenario == "block_eviction":
+        return audit, [{
+            "key_path": (array("q", prior),), "pool": "full", "node_id": 1,
+            "units": tokens // 16, "ts_ms": 1., "extra_key": None, "cache_salt": None,
+        }], "_write_block_eviction"
+    if scenario in ("block_many_branches", "block_many_unrelated", "block_many_matches"):
+        for branch in range(32):
+            branch_tokens = array("q", prior)
+            if scenario != "block_many_matches":
+                branch_tokens[tokens // 4] = -branch - 1
+            for index in range(16):
+                length = tokens // 2 + branch * 16 + index + 1
+                audit._write_block_eviction({
+                    "key_path": (branch_tokens[:length],), "pool": "full",
+                    "node_id": branch * 16 + index, "units": tokens // 16, "ts_ms": 1.,
+                    "extra_key": None, "cache_salt": None,
+                }, StringIO())
+        if scenario == "block_many_branches":
+            current[tokens // 4] = -1
+    else:
+        for index in range(1, 17):
+            length = tokens * index // 16
+            audit._write_block_eviction({
+                "key_path": (array("q", prior[:length]),), "pool": "full",
+                "node_id": index, "units": tokens // 16, "ts_ms": 1.,
+                "extra_key": None, "cache_salt": None,
+            }, StringIO())
     if scenario == "block_array":
         current = array("q", current)
     elif scenario == "block_other_namespace":
@@ -241,7 +266,8 @@ def main() -> None:
             for scenario in (
                 "context_append", "context_middle_diverge", "context_late_diverge",
                 "context_shorter", "context_array", "block_list", "block_array",
-                "block_other_namespace",
+                "block_other_namespace", "block_many_branches", "block_many_unrelated",
+                "block_many_matches", "block_eviction",
             )
         ],
     }

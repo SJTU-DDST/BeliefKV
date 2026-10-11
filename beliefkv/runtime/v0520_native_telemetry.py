@@ -90,6 +90,8 @@ class NativeReactiveTelemetry:
         self._block_eviction_index: dict[
             tuple[str, int, str], set[tuple[str, str, int, str]]
         ] = {}
+        self._block_eviction_routes: dict[tuple[str, int, str], tuple[str, int, str]] = {}
+        self._block_eviction_route_lengths: dict[tuple[str, int, str], Counter[int]] = {}
         self._block_eviction_lengths: dict[str, OrderedDict[int, None]] = {}
         self._block_eviction_length_refs: Counter[tuple[str, int]] = Counter()
         self._block_eviction_index_limit = 32768
@@ -531,6 +533,15 @@ class NativeReactiveTelemetry:
             indexed.discard(identity)
             if not indexed:
                 self._block_eviction_index.pop(index_key, None)
+                route = self._block_eviction_routes.pop(index_key)
+                route_lengths = self._block_eviction_route_lengths[route]
+                references = route_lengths[prefix_tokens]
+                if references == 1:
+                    del route_lengths[prefix_tokens]
+                    if not route_lengths:
+                        del self._block_eviction_route_lengths[route]
+                else:
+                    route_lengths[prefix_tokens] = references - 1
                 length_key = (namespace_digest, prefix_tokens)
                 self._block_eviction_length_refs[length_key] -= 1
                 if self._block_eviction_length_refs[length_key] <= 0:
@@ -560,12 +571,14 @@ class NativeReactiveTelemetry:
         namespace_digest = self._namespace_digest(
             record["extra_key"], record["cache_salt"]
         )
-        prefix_digest = self._prefix_digests(
+        routing_tokens = 1 << (prefix_tokens.bit_length() - 1)
+        digests = self._prefix_digests(
             record["extra_key"],
             record["cache_salt"],
             token_ids,
-            [prefix_tokens],
-        )[prefix_tokens]
+            sorted({routing_tokens, prefix_tokens}),
+        )
+        prefix_digest = digests[prefix_tokens]
         identity = (
             str(record["pool"]),
             namespace_digest,
@@ -602,6 +615,13 @@ class NativeReactiveTelemetry:
         if indexed is None:
             indexed = set()
             self._block_eviction_index[index_key] = indexed
+            route = (namespace_digest, routing_tokens, digests[routing_tokens])
+            self._block_eviction_routes[index_key] = route
+            route_lengths = self._block_eviction_route_lengths.get(route)
+            if route_lengths is None:
+                route_lengths = Counter()
+                self._block_eviction_route_lengths[route] = route_lengths
+            route_lengths[prefix_tokens] += 1
             self._block_eviction_length_refs[
                 (namespace_digest, prefix_tokens)
             ] += 1
@@ -668,11 +688,52 @@ class NativeReactiveTelemetry:
             self._block_attribution_probe_overflow += overflow
             self._block_attribution_counts["probe_prefix_length_overflow"] += overflow
         prefix_lengths = sorted(available_lengths)
-        prefix_digests = self._prefix_digests(
-            record.get("extra_key"),
-            record.get("cache_salt"),
-            token_ids,
-            prefix_lengths,
+        candidate_prefix_lengths = len(prefix_lengths)
+        if candidate_prefix_lengths <= 32:
+            prefix_digests = self._prefix_digests(
+                record.get("extra_key"), record.get("cache_salt"),
+                token_ids, prefix_lengths,
+            )
+        else:
+            # A matching terminal prefix must match its power-of-two prefix.
+            # Advance one hasher; only snapshot terminals on matching routes.
+            hasher = hashlib.blake2b(
+                key=self._block_hash_key, digest_size=16, person=b"beliefkv-kv-v1",
+            )
+            hasher.update(self._namespace_bytes(
+                record.get("extra_key"), record.get("cache_salt"),
+            ))
+            token_bytes = memoryview(token_ids).cast("B")
+            previous_length = routing_tokens = 0
+            route_lengths = ()
+            routing_digest = None
+            prefix_digests = {}
+            for prefix_tokens in prefix_lengths:
+                boundary = 1 << (prefix_tokens.bit_length() - 1)
+                if boundary != routing_tokens:
+                    hasher.update(token_bytes[
+                        previous_length * token_ids.itemsize:
+                        boundary * token_ids.itemsize
+                    ])
+                    previous_length = routing_tokens = boundary
+                    routing_digest = hasher.copy().hexdigest()
+                    route_lengths = self._block_eviction_route_lengths.get(
+                        (namespace_digest, boundary, routing_digest), (),
+                    )
+                if prefix_tokens not in route_lengths:
+                    continue
+                if prefix_tokens == routing_tokens:
+                    prefix_digests[prefix_tokens] = routing_digest
+                else:
+                    hasher.update(token_bytes[
+                        previous_length * token_ids.itemsize:
+                        prefix_tokens * token_ids.itemsize
+                    ])
+                    previous_length = prefix_tokens
+                    prefix_digests[prefix_tokens] = hasher.copy().hexdigest()
+        clear_indexes = len(prefix_digests) == len(self._block_eviction_index) and all(
+            (namespace_digest, length, digest) in self._block_eviction_index
+            for length, digest in prefix_digests.items()
         )
         matches = 0
         cached_device = min(
@@ -690,7 +751,8 @@ class NativeReactiveTelemetry:
                 pending = self._pending_block_evictions.pop(identity, None)
                 if pending is None:
                     continue
-                self._remove_block_eviction_index(identity)
+                if not clear_indexes:
+                    self._remove_block_eviction_index(identity)
                 pool = identity[0]
                 start = max(
                     0,
@@ -780,13 +842,21 @@ class NativeReactiveTelemetry:
                              "exposed by native request telemetry"
                     ),
                 }, separators=(",", ":")) + "\n")
+        if clear_indexes:
+            # The writer processes one record at a time; all exact identities
+            # were consumed above, so their indexes can be released together.
+            self._block_eviction_index.clear()
+            self._block_eviction_routes.clear()
+            self._block_eviction_route_lengths.clear()
+            self._block_eviction_lengths.clear()
+            self._block_eviction_length_refs.clear()
         if overflow or matches:
             output.write(json.dumps({
                 "event": "eviction_probe_summary",
                 "ts_ms": record["ts_ms"],
                 "workflow_id": record.get("workflow_id"),
                 "request_id": record.get("request_id"),
-                "candidate_prefix_lengths": len(prefix_lengths),
+                "candidate_prefix_lengths": candidate_prefix_lengths,
                 "omitted_prefix_lengths": overflow,
                 "matched_evicted_blocks": matches,
             }, separators=(",", ":")) + "\n")

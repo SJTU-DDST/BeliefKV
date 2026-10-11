@@ -20,10 +20,68 @@ retaining terminal-child capacity handoff, capacity-settlement parent retries,
 background writer CPU evidence, prefix writer reduction, shared first-service
 input-prefix evidence, complete ancestor observation, aged-order inspection
 reduction and same-dispatch tool plan reuse.
-At07:57 CST, real GPU requests, terminal-child allocator release, parent first
+Before08:20 CST, real GPU requests, terminal-child allocator release, parent first
 service and physical ACKs are present. Native evidence has zero dropped/failed
-records and no writer error. Startup evidence does not establish busy-window
-benefit; the broad performance objective remains active.
+records and no writer error. Complete busy-window diagnostics and partial capacity
+handoff evidence are now available below; same-version native is still pending
+and the performance objective remains active.
+
+Keep v40_v22_capacity_handoff_live_20261011.json as a partial live audit.
+Of117 observed JOINs,54 have a known completion boundary and63 remain unobserved,
+not failed. Fifty have confirmed dynamic-child device release before completion;
+26 subsequently submit FULL before JOIN and prove reuse by the parent's following
+request, totaling259522560 bytes. Their cumulative pre-JOIN release is FULL9.558GB
+and Mamba5.216GB, neither simultaneously free nor exclusively assigned capacity.
+The140 confirmed terminal children cumulatively release FULL30.980GB and
+Mamba9.594GB; internal-call release is reported separately. All54 parent first
+services link to prior child device release. Scheduler-observed last-child RETURN
+to first completed GPU batch has P50/P90 of327.57/1247.41ms and a16.312s maximum,
+not a RETURN prediction error or kernel-start latency. Twenty-one parents have
+prior restore-lookahead selection, which is not transfer submission. No capacity
+restore rearm is observed yet; the real-pressure retry path is not verified by this
+snapshot. Multiple source logs remain live; this is neither a frozen final result
+nor a native-relative saving.
+
+Keep v37_v22_busy_window_600_900_20261011.json with input-prefix and boundary-line
+hashes. The complete V22 predictive600–900s window has6440 decode batches,
+23068.33 mean visible context tokens and39.187ms mean worker decode interval;
+old V21 predictive/native have5642/7363 batches,21840.58/23703.38 tokens and
+44.189/35.510ms. These versions and trajectories differ, so this is diagnostic.
+Instrumented V22 Python self wall totals46.428s versus60.398s in old predictive.
+Largest measured V22 phases are admission planning6.338s, reentry5.618s,
+JOIN PREPARE4.724s, control drain4.149s, handoff enqueue3.510s, opportunity
+sampling3.239s and execution handoff2.915s. Cumulative wall is not removable JCT.
+
+Background-writer window differences identify the next CPU target:
+Host-eviction request_probe has30 measured samples averaging7.271ms thread CPU
+and8.944ms wall. All native samples total421.851ms CPU/632.605ms wall;
+opportunity samples total73.084ms CPU/145.430ms wall. Do not multiply by64
+or infer GIL contention. Continue exact-routing index optimization for this
+writer category in the isolated follow-up while preserving the frozen V22 pair.
+
+The validated Host-eviction index routes by namespace and the largest power-of-two
+prefix no longer than each terminal. The existing complete terminal hash still
+proves identity. Above32 candidate lengths, advance one hasher and snapshot only
+terminals on matching routes; small sets retain direct hashing. Keep separate
+terminal references across FULL/Mamba, remove auxiliary routes after reaccess or
+bounded-index expiration, and batch-clear indexes only when the current request
+exactly matches every pending prefix. Partial matches and other namespaces retain
+their original evidence and ordering.
+
+Keep the undeployed two-pass and single-pass/per-entry-cleanup prototypes in
+v38_eviction_route_writer_cpu_20261011.json and
+v39_eviction_route_single_pass_cpu_20261011.json; they regress small/all-matching
+cases. The final v41_eviction_route_batched_cleanup_cpu_20261011.json has36 groups
+of60 alternating samples with equal records, hashes, counters, history and pending
+state. For512 prefixes across32 branches,1024/8192/32768-token probe wall means
+change1.046/1.040/1.918→0.508/0.625/1.463ms; all-matching cases change
+7.087/7.333/7.954→6.655/6.847/7.405ms. The16-prefix matching sets no longer show
+the prior regression; single eviction registration adds about2–4 microseconds for
+the auxiliary route. The156 telemetry/lifecycle/writer/window checks pass.
+These fixtures exclude real scheduler concurrency, DMA and GPU, and do not
+establish throughput improvement. After committing, freeze this follow-up and
+register a same-configuration V23 after the complete V22 pair: predictive first,
+cold native second, preserving workload and prediction windows.
 
 Closed V21 predictive/native output rates are738.64/831.87 token/s and mean
 GPU utilization72.04%/80.15%. In600–2400s, mean visible decode contexts are

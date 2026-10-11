@@ -169,6 +169,169 @@ def test_block_probe_covers_more_than_the_old_1024_length_limit(tmp_path):
     assert audit._block_attribution_counts["full_device_hit"] == 1029
 
 
+@pytest.mark.parametrize("length", (1, 2, 31, 32, 33, 63, 64, 65))
+def test_eviction_routes_keep_exact_prefix_matches_across_power_boundaries(tmp_path, length):
+    audit = NativeReactiveTelemetry(tmp_path / "blocks")
+    audit.close()
+    tokens = array("q", range(length))
+    audit._write_block_eviction({
+        "key_path": (tokens,), "pool": "full", "node_id": 1, "units": 1,
+        "ts_ms": 1., "extra_key": "key", "cache_salt": "salt",
+    }, StringIO())
+    output = StringIO()
+    audit._write_block_request_probe({
+        "input_ids": [*tokens, 100], "ts_ms": 2., "extra_key": "key", "cache_salt": "salt",
+        "cached_tokens_device": length, "cached_tokens_host": 0,
+    }, output)
+    result, summary = [json.loads(line) for line in output.getvalue().splitlines()]
+    assert result["prefix_tokens"] == length
+    assert result["outcome"] == "full_device_hit"
+    assert summary["candidate_prefix_lengths"] == 1
+    assert summary["matched_evicted_blocks"] == 1
+    assert not audit._block_eviction_routes
+    assert not audit._block_eviction_route_lengths
+
+
+def test_eviction_routes_retain_same_route_length_and_cross_pool_references(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "blocks")
+    audit.close()
+    first = array("q", range(40))
+    second = array("q", first)
+    second[35] = -1
+    for index, (tokens, pool) in enumerate(
+        ((first, "full"), (first, "mamba"), (second, "full")), 1,
+    ):
+        audit._write_block_eviction({
+            "key_path": (tokens,), "pool": pool, "node_id": index, "units": 1,
+            "ts_ms": 1., "extra_key": None, "cache_salt": None,
+        }, StringIO())
+    assert len(audit._block_eviction_route_lengths) == 1
+    assert list(audit._block_eviction_route_lengths.values())[0][40] == 2
+    record = {
+        "input_ids": first, "ts_ms": 2., "extra_key": None, "cache_salt": None,
+        "cached_tokens_device": 40, "cached_tokens_host": 0,
+    }
+    output = StringIO()
+    audit._write_block_request_probe(record, output)
+    rows = [json.loads(line) for line in output.getvalue().splitlines()]
+    assert {row["pool"] for row in rows[:-1]} == {"full", "mamba"}
+    assert rows[-1]["matched_evicted_blocks"] == 2
+    assert len(audit._pending_block_evictions) == 1
+    assert list(audit._block_eviction_route_lengths.values())[0][40] == 1
+    audit._write_block_request_probe({**record, "input_ids": second}, StringIO())
+    assert not audit._pending_block_evictions
+    assert not audit._block_eviction_routes
+    assert not audit._block_eviction_route_lengths
+
+
+def test_many_eviction_routes_use_exact_terminals_after_matching_boundaries(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "blocks")
+    audit.close()
+    first = array("q", range(128))
+    second = array("q", first)
+    second[40] = -1
+    for length in range(1, 129):
+        audit._write_block_eviction({
+            "key_path": (first[:length],), "pool": "full", "node_id": length, "units": 1,
+            "ts_ms": 1., "extra_key": None, "cache_salt": None,
+        }, StringIO())
+    output = StringIO()
+    audit._write_block_request_probe({
+        "input_ids": second, "ts_ms": 2., "extra_key": None, "cache_salt": None,
+        "cached_tokens_device": 128, "cached_tokens_host": 0,
+    }, output)
+    rows = [json.loads(line) for line in output.getvalue().splitlines()]
+    assert [row["prefix_tokens"] for row in rows[:-1]] == list(range(1, 41))
+    assert rows[-1]["candidate_prefix_lengths"] == 128
+    assert rows[-1]["matched_evicted_blocks"] == 40
+    assert len(audit._pending_block_evictions) == 88
+    audit._write_block_request_probe({
+        "input_ids": first, "ts_ms": 3., "extra_key": None, "cache_salt": None,
+        "cached_tokens_device": 128, "cached_tokens_host": 0,
+    }, StringIO())
+    assert not audit._pending_block_evictions
+    assert not audit._block_eviction_routes
+    assert not audit._block_eviction_route_lengths
+
+
+def test_eviction_route_expiry_removes_only_the_expired_prefix(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "blocks")
+    audit.close()
+    audit._block_eviction_index_limit = 2
+    for branch in range(3):
+        audit._write_block_eviction({
+            "key_path": (array("q", [branch, 2, 3]),), "pool": "full",
+            "node_id": branch, "units": 1, "ts_ms": 1.,
+            "extra_key": None, "cache_salt": None,
+        }, StringIO())
+    assert len(audit._pending_block_evictions) == 2
+    assert len(audit._block_eviction_routes) == 2
+    assert len(audit._block_eviction_route_lengths) == 2
+    record = {
+        "input_ids": [0, 2, 3, 4], "ts_ms": 2., "cached_tokens_device": 4,
+        "cached_tokens_host": 0, "extra_key": None, "cache_salt": None,
+    }
+    output = StringIO()
+    audit._write_block_request_probe(record, output)
+    assert output.getvalue() == ""
+    assert audit._block_attribution_counts["expired_without_reaccess"] == 1
+    audit._write_block_request_probe({**record, "input_ids": [1, 2, 3, 4]}, output)
+    assert len(audit._pending_block_evictions) == 1
+    assert len(audit._block_eviction_routes) == 1
+    assert len(audit._block_eviction_route_lengths) == 1
+
+
+def test_matching_namespace_preserves_other_namespace_pending_indexes(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "blocks")
+    audit.close()
+    for extra_key in ("first", "second"):
+        for length in range(1, 41):
+            audit._write_block_eviction({
+                "key_path": (array("q", range(length)),), "pool": "full",
+                "node_id": length, "units": 1, "ts_ms": 1.,
+                "extra_key": extra_key, "cache_salt": None,
+            }, StringIO())
+    probe = {
+        "input_ids": array("q", range(40)), "ts_ms": 2., "cache_salt": None,
+        "cached_tokens_device": 40, "cached_tokens_host": 0,
+    }
+    audit._write_block_request_probe({**probe, "extra_key": "first"}, StringIO())
+    assert len(audit._pending_block_evictions) == 40
+    assert len(audit._block_eviction_index) == 40
+    assert len(audit._block_eviction_routes) == 40
+    assert len(audit._block_eviction_lengths) == 1
+    audit._write_block_request_probe({**probe, "extra_key": "second"}, StringIO())
+    assert audit._block_attribution_counts["full_device_hit"] == 80
+    assert not audit._pending_block_evictions
+    assert not audit._block_eviction_index
+    assert not audit._block_eviction_routes
+    assert not audit._block_eviction_route_lengths
+    assert not audit._block_eviction_lengths
+    assert not audit._block_eviction_length_refs
+
+
+def test_eviction_routes_preserve_existing_overflow_and_candidate_count(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "blocks")
+    audit.close()
+    audit._max_prefix_lengths_per_probe = 2
+    for branch, tokens in enumerate(([0, 1, 2], [9, 1, 2, 3], [8, 1, 2, 3, 4])):
+        audit._write_block_eviction({
+            "key_path": (array("q", tokens),), "pool": "full", "node_id": branch,
+            "units": 1, "ts_ms": 1., "extra_key": None, "cache_salt": None,
+        }, StringIO())
+    output = StringIO()
+    audit._write_block_request_probe({
+        "input_ids": list(range(10)), "ts_ms": 2., "cached_tokens_device": 10,
+        "cached_tokens_host": 0, "extra_key": None, "cache_salt": None,
+    }, output)
+    [summary] = [json.loads(line) for line in output.getvalue().splitlines()]
+    assert summary["candidate_prefix_lengths"] == 2
+    assert summary["omitted_prefix_lengths"] == 1
+    assert summary["matched_evicted_blocks"] == 0
+    assert audit._block_attribution_probe_overflow == 1
+    assert len(audit._pending_block_evictions) == 3
+
+
 def _read(path: Path) -> list[dict]:
     return [json.loads(line) for line in path.read_text().splitlines()]
 
