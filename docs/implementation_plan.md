@@ -2,6 +2,31 @@
 
 Status date: 2026-10-11.
 
+V95: V24 was intentionally interrupted at 21:18:54 CST after 132
+completed outcomes; 24 unfinished tasks are administratively censored,
+not model failures. Native never started. Preserve the frozen plan,
+raw traces, outcomes and diagnostic windows; all old serving processes
+exited and GPU allocations were released. Remove 132 already archived
+root workspaces and the 24 V24-mounted containers, retaining unfinished
+workspaces. Free space reached about 104GiB after cleanup and was about
+85GiB at 21:36:57 CST after V25 created its initial workspaces.
+
+V25 deployed frozen a770180 at 21:28:52 CST under coordinator 3075855,
+with exactly the V24 environment, predictive first and cold native.
+It includes incremental status totals, prefill-work measurement and
+development restart support. Its first setup attempt hit an inactive
+control socket before any serving/workflow collection and is archived.
+The launcher now removes a confirmed inactive Unix socket; 10 related
+checks pass. Health passed at 21:31:26 CST and real submissions began
+around 21:32:04 CST. The 21:34:22 CST startup verification observed 1377
+native submissions, 1058 prefill batches and 1412 native-geometry samples,
+with writer_error=null. Separate file prefixes are sealed, not an atomic
+snapshot. The canonical patch still matches the engine tree.
+Main v25_launch_after_v24_20261011.json is authoritative; retain
+experiments/reports/v95_v25_development_start_20261011.json as evidence.
+Keep V95 stop/cleanup receipts and the full objective active; actual
+GPU/JCT and early FULL consumption still need validation.
+
 Development iterations may stop an ongoing run once an important fix is
 identified, verified and committed, preserving its frozen plan, raw trace,
 complete windows, written outcomes and interruption receipt. Do not wait
@@ -12,14 +37,11 @@ predictive-first pair. Partial work is censored, not model failure or a
 completed performance comparison. Retain a complete same-version native
 comparison for the stable candidate and final benefit claims.
 
-V25 registration is waiting_for_previous_pair as of 21:08:15 CST:
-coordinator 2951765/start 589435807 waits on V24 coordinator 1418070.
-Frozen f244c39 in beliefkv-v94-status-publication-20261011 includes
-94f579f, prefill geometry measurement and the latest main report commits.
-Keep the identical V24 environment, predictive first and cold native,
-after the complete V24 pair/postprocessing. Main's
-v25_launch_after_v24_20261011.json is authoritative; preserve the V94
-registration receipt. The editable checkout's existing tmp/ is retained.
+The 21:08:15 CST V25 full-pair waiting registration and coordinator
+2951765 are superseded and cancelled. Retain the original state and
+cancellation receipts, user report commits/template and editable tmp/.
+The current deployment is the a770180 cold run above. V94 and earlier
+entries below describe historical observations, not current run state.
 
 V94: a 20-second live V24 GIL stack sample contains _write_status in
 34 of 411 valid samples, with 89 read errors. Status publication scans up

@@ -2,21 +2,41 @@
 
 更新日期：2026-10-11。
 
+V95：已按开发快速迭代约定于 21:18:54 CST 主动结束 V24，
+132 个已写出终态均 completed，另 24 个任务记为主动截断；
+native 未启动，不形成完整 pair。旧执行进程全部退出、GPU
+占用释放；保留原计划、trace、结果和诊断窗口。清理 132 个
+已归档 root workspace 和 24 个仅属于 V24 的容器，未结束
+workspace 保留；清理后可用空间约 104 GiB，新批次创建初始
+workspace 后于 21:36:57 CST 为约 85 GiB。
+
+V25 已于 21:28:52 CST 冷启动冻结 a770180，协调器 3075855，
+配置与 V24 完全一致，先 predictive 后同版本冷 native；
+包含状态发布减负、prefill 工作量修正及开发重启支持。启动
+先前被失效控制 socket 阻止，没有启动服务或提交 workflow；
+失败计划/日志已归档，新 launcher 清理确认未监听的 Unix
+socket，10 项相关检查通过。21:31:26 CST 健康检查通过，
+21:32:04 CST 起已提交真实任务；21:34:22 CST 的分文件前缀
+核对记录 1377 次原生提交、1058 个 prefill batch、1412 条
+原生工作量样本，writer_error=null。规范 patch 与引擎树
+保持精确匹配。主工作区
+v25_launch_after_v24_20261011.json 为当前权威状态；
+V95 停止/清理回执保存截断及源修订，不将 CPU 改善算作
+GPU/JCT 收益，主性能目标仍 active。启动证据见
+experiments/reports/v95_v25_development_start_20261011.json；
+各文件读取前缀分别封存，不视为原子快照。
+
 开发部署按用户最新约定执行：重要优化提交后可以结束旧轮，
 保留截断证据，随即冷启动新 predictive；无需等旧完整 pair。
 现有 launcher 新增 --development-restart，只免除旧轮完整结果
 要求，仍等旧进程退出、沿用配置并冻结新目录的代码与产物。
 旧未结束任务视作主动截断，不计为模型失败；稳定候选再完成
-同版本 native 对照。下方 V25 等待完整 pair 的登记正在替换。
+同版本 native 对照。
 
-V25 已于 21:08:15 CST 登记为 waiting_for_previous_pair，协调器
-2951765、启动身份 589435807，等待 V24 协调器 1418070 的完整
-pair 及后处理。冻结 f244c39 包含本轮 94f579f、prefill 工作量
-修正和主分支最新月报提交；干净目标为
-beliefkv-v94-status-publication-20261011。配置沿用 V24，先
-predictive 后同版本冷 native。权威登记位于主工作区
-v25_launch_after_v24_20261011.json，V94 登记回执保留原状态。
-未在 V24 中途部署，原编辑 checkout 的未跟踪 tmp/ 保持原位。
+历史 21:08:15 CST 的 V25 完整 pair 等待登记及协调器 2951765
+已取消，原状态和取消回执保留；当前以上方 a770180 冷启动
+登记为准。用户月报提交、报告模板及编辑 checkout 的 tmp/
+均保留。以下 V94 及更早条目记录当时观测，不覆盖当前状态。
 
 V94：实际 V24 scheduler 的 20 秒 GIL 栈采样中，411 个有效样本
 有 34 个包含后台 `_write_status`。该发布路径每秒重新扫描最多

@@ -43,11 +43,18 @@ agent 调度、共用路径减负、predictive H2D 与 `PREPARE_HOST`，
 现有部署脚本的 --development-restart 支持这一流程，旧轮无需
 完整 summary/后处理，但部署仍在旧执行进程退出之后进行。
 
-V25 已登记冻结 f244c39，待 V24 完整 pair/后处理后部署；包含
-状态发布减负与 prefill 工作量修正，保持原配置，先 predictive
-再同版本冷 native。主工作区 v25_launch_after_v24_20261011.json
-为权威状态，当前 waiting_for_previous_pair；新修改的 CPU
-效果与实际服务收益分开验收，主性能目标仍 active。
+V24 已在开发阶段主动结束：132 completed、24 主动截断，
+未运行 native；旧计划、trace 和诊断窗口保留。V25 于
+21:28:52 CST 冷启动冻结 a770180，包含状态发布减负、
+prefill 工作量修正与开发重启支持，保持原配置，先 predictive
+再同版本冷 native。启动遗留的失效 Unix socket 已自动清理，
+21:31:26 CST 健康检查通过，21:32:04 CST 起已执行真实请求。
+21:34:22 CST 的启动核对确认 1058 个 prefill batch、1412 条
+原生工作量样本，writer_error=null；工作量修正已在实际服务中
+生效，尚不证明性能改善。主工作区
+v25_launch_after_v24_20261011.json 为权威状态，当前
+running_new_pair；CPU 效果与实际服务收益分开验收，主性能
+目标仍 active。以下历史 V24 观测保留为开发诊断。
 
 控制成本须包括后台状态发布，不能只依赖逐记录 writer 和
 scheduler 的既有计时。V24 实际 GIL 栈采样确认 `_write_status`
@@ -56,7 +63,7 @@ scheduler 的既有计时。V24 实际 GIL 栈采样确认 `_write_status`
 汇总不遍历记录，不增加锁、丢弃观测或缩小归因范围。84 项
 检查通过；32768 项 CPU 夹具中发布均值降至 0.132 ms，匹配
 更新路径约增加 6%，完整 GPU/JCT 净收益仍待同版本实验证明。
-冻结 V24 保持原代码，诊断采样重叠窗口从主性能比较中排除。
+旧 V24 全程保持原代码，诊断采样重叠窗口从主性能比较中排除。
 
 V24 完整 600-2400 秒窗口相对旧 V23 native 的 decode 吞吐
 高 5.07%，但 prefill worker 区间仍为 335.226 秒，已埋点独占
