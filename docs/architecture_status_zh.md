@@ -11,6 +11,18 @@ agent先占唯一ticket，随后发现恢复容量不足就结束整个扫描，
 池预算、原生准入或传输资格。4种双候选场景和相关447项检查
 通过；实际发生频率、控制成本及吞吐贡献仍待下一GPU实验。
 
+工具选择修复、固定前缀审计及文档已提交为606cc4e。
+2026-10-11 10:01:31 CST将尚未启动的V23更新为
+606cc4eb2ded154a8b1c79dd7a8a31e26483b1fb，
+冻结checkout为beliefkv-v55-tool-capacity-selection-20261011，
+等待协调器PID3111032。环境、前序pair、等待进程身份和原生
+patch与18ea788登记一致；主checkout仍为干净的3aa27dd，
+V23目录尚未创建。仅停止旧waiting coordinator2903493，
+V22采集进程未发信号。旧登记及日志保留，回执为
+v55_v23_tool_capacity_registration_20261011.json；
+实际登记仍在主工作区v23_launch_after_v22_20261011.json。
+V22完整pair与后处理结束后自动部署，predictive先、冷native后。
+
 补齐工具窗口离线审计的H2D服务时间比较，保存
 v54_v22_tool_service_window_fixedprefix_20261011.json及本地详细产物。
 重读与v48完全相同的817177733字节opportunity前缀和同一生命周期
@@ -54,6 +66,7 @@ V22 coordinator/driver/server/scheduler/client均未发信号。
 有界回执为v53_v23_restore_target_registration_20261011.json。
 V22完整pair及后处理结束后自动部署，predictive先、冷native后，
 真实容量、驻留复用和繁忙窗口收益仍待新版本GPU验证。
+该09:42登记现已由上方10:01的606cc4e登记替换。
 
 新增完整2400–3000秒繁忙窗口，局部产物为
 v52_v22_busy_control_2400_3000_20261011.json，保存源读取前缀和

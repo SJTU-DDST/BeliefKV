@@ -1,0 +1,58 @@
+{
+  "status": "waiting_for_previous_pair",
+  "registered_at_utc": "2026-10-11T02:01:31.213359+00:00",
+  "registered_at_cst": "2026-10-11T10:01:31.213359+08:00",
+  "verified_at_utc": "2026-10-11T02:02:07.968780+00:00",
+  "previous_target_revision": "18ea788a0ea1933782eb5051e211c866e2e29579",
+  "target_revision": "606cc4eb2ded154a8b1c79dd7a8a31e26483b1fb",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v55-tool-capacity-selection-20261011",
+  "target_patch_sha256": "498a2e8219f0d454776c7b967b87a82e7b49e3e75831389e08a9daabfb29998e",
+  "previous_registration": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_18ea788_superseded_20261011.json",
+  "current_registration": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_20261011.json",
+  "launch_log": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_606cc4e_20261011.log",
+  "stopped_waiting_coordinator": 2903493,
+  "current_waiting_coordinator": 3111032,
+  "current_waiting_coordinator_identity": ["S", 1, "585435387"],
+  "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22",
+  "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v23",
+  "current_main_revision": "3aa27dd67b340236310824d80a7e6e31038ea1f9",
+  "configuration_equal": true,
+  "previous_run_equal": true,
+  "previous_commit_equal": true,
+  "target_engine_patch_equal": true,
+  "wait_process_identities_equal": true,
+  "main_and_frozen_target_clean": true,
+  "new_run_directory_absent_at_verification": true,
+  "v22_processes_not_signalled": [1159560, 1166290, 1166319, 1166676, 1168306],
+  "wait_process_identities": {
+    "1159560": ["S", 2225719, "584605337"],
+    "1166290": ["S", 1159560, "584641989"]
+  },
+  "deployment": "Wait for the complete V22 predictive/native pair and postprocessing, deploy the committed follow-up and unchanged canonical engine patch, then run predictive followed by cold same-version native.",
+  "tool_candidate_fix": {
+    "behavior": "Use existing cold-capacity reclaim before choosing the sole tool ticket; continue to later hints when capacity remains insufficient or the target disappears.",
+    "refreshed_payload": "Re-estimate the existing service/start window after reclaim changes the bounded restore plan.",
+    "dispatch_revalidation_preserved": true,
+    "forecast_quantiles_and_500ms_configuration_preserved": true,
+    "v22_frequency_measured": false,
+    "new_gpu_performance_verified": false
+  },
+  "audit": {
+    "summary": "v54_v22_tool_service_window_fixedprefix_20261011.json",
+    "source_prefix_bytes": 817177733,
+    "source_prefix_sha256": "12eddc248f8428cc027c7f4bfb425725ba4141ba4711385d3038b8b2796d3d05",
+    "same_v48_input_and_original_results_verified": true,
+    "timely_window_snapshots": 655,
+    "timely_snapshots_below_recorded_h2d_p90": 361,
+    "free_capacity_snapshots": 100,
+    "free_capacity_snapshots_below_recorded_h2d_p90": 56,
+    "free_capacity_rounds_at_least_recorded_h2d_p90": 42,
+    "scope": "Service-only comparison with a recorded estimate; planning/enqueue time, actual completion and achievable savings are not proven."
+  },
+  "validation": {
+    "related_checks": 447,
+    "new_two_candidate_cases": 4,
+    "source_prefix_and_original_results_verified": true,
+    "diff_check_passed": true
+  }
+}

@@ -13,6 +13,18 @@ budgets and native dependencies. Four two-candidate cases and447 relevant checks
 pass. Actual frequency, control cost and throughput benefit require the next GPU
 pair; these checks do not demonstrate the goal.
 
+Commit the tool selection fix, fixed-prefix audit and documents as606cc4e.
+At2026-10-11 10:01:31 CST, register the not-yet-started V23 target as
+606cc4eb2ded154a8b1c79dd7a8a31e26483b1fb in
+beliefkv-v55-tool-capacity-selection-20261011; waiting coordinator3111032.
+Environment, previous pair, captured wait identities and canonical engine patch
+match18ea788. Main stays clean at3aa27dd and the V23 directory is absent.
+Stop only waiting coordinator2903493; preserve its registration/log and the
+v55_v23_tool_capacity_registration_20261011.json receipt. V22 collection processes
+are not signalled. The main v23_launch_after_v22_20261011.json is current.
+Deploy after the complete V22 pair and postprocessing, predictive first and cold
+same-version native second.
+
 Keepv54_v22_tool_service_window_fixedprefix_20261011.json and its local detailed
 artifact. Re-read exactly the same817177733-byte opportunity prefix and lifecycle
 labels asv48; input SHA256, original forecast errors and window categories match.
@@ -56,6 +68,7 @@ retainv53_v23_restore_target_registration_20261011.json as the bounded receipt.
 V22 processes are not signalled. Deploy after its complete pair and postprocessing,
 then run predictive followed by cold same-version native. Capacity, residence,
 useful early FULL reuse and busy-window performance still require GPU validation.
+This09:42 registration is superseded by the10:01 606cc4e registration above.
 
 Keep the complete2400–3000s V22 predictive window in the local
 v52_v22_busy_control_2400_3000_20261011.json artifact with read-prefix and boundary
