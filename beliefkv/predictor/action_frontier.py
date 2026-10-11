@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from bisect import bisect_left
 from dataclasses import dataclass
 import math
 from typing import Any, Iterable, Mapping, Sequence
@@ -283,16 +284,13 @@ class ActionTimingCurve:
         if tau >= self.tau_ms[-1]:
             return self.release_within_probability[-1]
         log_tau = math.log1p(tau)
-        for index in range(1, len(self.tau_ms)):
-            if tau > self.tau_ms[index]:
-                continue
-            left_tau = math.log1p(self.tau_ms[index - 1])
-            right_tau = math.log1p(self.tau_ms[index])
-            fraction = (log_tau - left_tau) / max(right_tau - left_tau, 1e-12)
-            left = self.release_within_probability[index - 1]
-            right = self.release_within_probability[index]
-            return left + fraction * (right - left)
-        return self.release_within_probability[-1]
+        index = bisect_left(self.tau_ms, tau, lo=1)
+        left_tau = math.log1p(self.tau_ms[index - 1])
+        right_tau = math.log1p(self.tau_ms[index])
+        fraction = (log_tau - left_tau) / max(right_tau - left_tau, 1e-12)
+        left = self.release_within_probability[index - 1]
+        right = self.release_within_probability[index]
+        return left + fraction * (right - left)
 
     def to_dict(self) -> dict[str, Any]:
         return {

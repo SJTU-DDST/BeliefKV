@@ -2,6 +2,26 @@
 
 Status date: 2026-10-11.
 
+V86 replaces linear CDF time-knot lookup with bisect while preserving
+interpolation, boundaries and tails. Leave quantile inversion, model and
+the one-second offload rule unchanged. The first32 distinct recorded
+forecasts have18 knots each;1911 query positions and29 additional
+duplicate/boundary cases preserve exact outputs. Over31 alternating
+samples, CDF thread CPU falls26.50% and the complete cached native
+survival-query bundle falls14.27% (10.899 to9.344 microseconds).
+The49 existing prediction checks pass. Keep the V86 CPU report and
+validation receipt; these exclude accuracy, allocator, DMA, GPU and JCT.
+Commit and include this follow-up in still-waiting V24; preserve live V23.
+
+The additional same-version V23 window at2700-3000s has predictive/
+native1016.18/1058.67 decode token/s, GPU81.55%/84.70% and weighted
+batch41.543/42.938. Preserve the4.01% deficit. H2D is only0.388/0.876GB,
+so this is not a strong migration-pressure acceptance window. Predictive's
+instrumented21.492s exclusive wall includes3.446s control_drain,
+3.210s tool_prefetch and2.452s opportunity sampling. Sparse socket/
+JSON samples do not identify total cost or GIL/GPU causality. Native
+remains live; require the completed same-version pair and keep the goal active.
+
 At17:30:54 CST, waiting V24 was updated to frozen
 dbcd95cfdd198acb0b29815d1b594d2a1ab9ed82 in
 beliefkv-v85-reentry-graph-20261011, including failed-prefix reentry
