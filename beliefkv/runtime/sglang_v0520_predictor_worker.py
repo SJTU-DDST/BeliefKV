@@ -69,10 +69,11 @@ def predict_tool_wait_batch(
     if model is None:
         raise RuntimeError("tool-wait predictor is not loaded")
     results = []
+    predict = getattr(model, "predict_tool_wait", model.predict)
     for key, features, revision in items:
         if features.state != "wait_tool":
             continue
-        prediction = model.predict(features)
+        prediction = predict(features)
         wait = prediction.wait_belief
         if (
             not math.isfinite(prediction.calibration_coverage)

@@ -878,6 +878,25 @@ def test_unchanged_long_wait_does_not_submit_prediction_every_decode_tick():
     assert runtime.counts["tool_unchanged_wait_prediction_skipped"] == 1
 
 
+def test_first_tool_prediction_does_not_wait_for_fifty_milliseconds():
+    runtime, _ = tool_runtime()
+    runtime._tool_timing_only = True
+    submitted = []
+    runtime._model_worker = NS(disabled=False, submit_tool_wait=submitted.append, close=Mock())
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=.01):
+            runtime._submit_tool_wait("ctx-tool")
+            runtime._submit_tool_wait("ctx-tool")
+        assert len(submitted) == 1
+        key, features, revision = submitted[0][0]
+        assert key == runtime.context_sessions["ctx-tool"]
+        assert features.elapsed_wait_ms == 8.
+        assert revision == 2.
+        assert runtime.counts["tool_unchanged_wait_prediction_skipped"] == 1
+    finally:
+        runtime.close()
+
+
 def test_tool_opportunity_cache_avoids_repeated_native_inspection():
     runtime, hint = tool_runtime()
     opportunity = NS(step=None, fits_current_free_lists=None)

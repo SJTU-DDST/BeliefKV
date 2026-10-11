@@ -2769,10 +2769,6 @@ class NativeAdmissionRuntime:
         if metadata and metadata[1] in ("announce_completion_intent", "ChildCompletion", "WorkflowCompletion"):
             return
         if self._tool_timing_only:
-            elapsed = max(0., now_ms - (invocation.active_tool_start_ms or now_ms))
-            if elapsed < 50.:
-                self.counts["tool_fast_wait_prediction_skipped"] += 1
-                return
             previous = self._tool_last_queries.get(key)
             hint = self.tool_wait_hints.get(context_id)
             remaining = 0.

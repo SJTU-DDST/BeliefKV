@@ -2,6 +2,34 @@
 
 Status date: 2026-10-11.
 
+Terminal-child to parent capacity handoff is already in the frozen V22: retire
+confirmed finished contexts, release session references, and directly discard
+settled unreferenced private suffixes through the native allocator without D2H.
+Keep shared ancestors and retry pending native dependencies. Track FULL/Mamba
+release separately; earlier sibling release can support restoration while the
+final child still generates. Restoration that needs the last child's post-RETURN
+capacity remains demand handoff. Use native free lists rather than fixed page
+identity, preserve next-input/decode reserves, and apply existing bounded ready-
+parent admission and residence until first service. The partial v49 GPU evidence
+below establishes observed release and following-request reuse, not native-relative
+performance improvement.
+
+Remove the first tool query's unconditional50ms delay while retaining unchanged-
+wait adaptive150/500/1000ms throttling. The worker now uses a tool-only prediction
+entry that retains residual wait, prompt-growth support, calibration, OOD and
+operational timing, but skips unused boundary, decode, next-output and child-
+completion heads. Preserve full predict call order/output and fallback for custom
+models. Five feature contracts, successful/failed repeated commands, project
+history, overrun, missing support and operational-curve parity are covered;565
+relevant model/worker/runtime/terminal/handoff/lifecycle checks pass.
+Keepv56_tool_wait_model_cpu_20261011.json: actual35MB calibrated artifact,
+606cc4e old predict and current tool-only entry share unchanged loaded components.
+Complete predict_tool_wait_batch mean wall is1.571→1.243ms for one input and
+19.743→15.322ms for16, reducing20.9%/22.4%; nonempty replies are exactly equal.
+The synthetic elapsed matrix is not a workload-frequency sample; exclude IPC,
+queueing, DMA and GPU and do not extrapolate throughput. Include this committed
+change in the not-yet-started V23; preserve the running V22 pair.
+
 Fix capacity blocking between tool-prefetch candidates in the isolated follow-up.
 Previously the nearest-ending tool took the sole ticket before reclaim was checked;
 when capacity remained insufficient, the dispatch ended and a later restorable

@@ -1609,6 +1609,15 @@ class FrontierBeliefModel:
         return dict(self.training_summary)
 
     def predict(self, features: LocalFrontierFeatures) -> LocalFrontierPrediction:
+        return self._predict(features)
+
+    def predict_tool_wait(self, features: LocalFrontierFeatures) -> LocalFrontierPrediction:
+        """Compute the tool timing and prompt support consumed by the wait worker."""
+        return self._predict(features, tool_wait_only=True)
+
+    def _predict(
+        self, features: LocalFrontierFeatures, *, tool_wait_only: bool = False,
+    ) -> LocalFrontierPrediction:
         key = _demand_feature_key(
             features.agent_definition_id,
             features.state,
@@ -1620,38 +1629,45 @@ class FrontierBeliefModel:
                 "command_class": features.command_class,
             },
         )
-        boundary, boundary_level, boundary_support = self.boundary.predict(
-            role=features.agent_definition_id,
-            state=features.state,
-            history=features.boundary_history,
-        )
-        pooled_boundary = self.pooled_boundary.predict(features)
-        if pooled_boundary and self.pooled_boundary.training_count >= 32:
-            boundary = pooled_boundary
-            boundary_level = "pooled"
-        boundary = _temperature_scale(boundary, self.boundary_temperature)
-        decode, decode_level = self.decode_demand.predict(key)
-        output, output_level = self.next_output.predict(key)
+        if tool_wait_only:
+            boundary = {}
+            boundary_support = 0
+            boundary_level = decode_level = output_level = child_level = "unavailable"
+            decode = output = child_completion = EmpiricalDistribution.empty()
+        else:
+            boundary, boundary_level, boundary_support = self.boundary.predict(
+                role=features.agent_definition_id,
+                state=features.state,
+                history=features.boundary_history,
+            )
+            pooled_boundary = self.pooled_boundary.predict(features)
+            if pooled_boundary and self.pooled_boundary.training_count >= 32:
+                boundary = pooled_boundary
+                boundary_level = "pooled"
+            boundary = _temperature_scale(boundary, self.boundary_temperature)
+            decode, decode_level = self.decode_demand.predict(key)
+            output, output_level = self.next_output.predict(key)
         prompt, prompt_level = self.prompt_growth.predict(key)
-        pooled_values, pooled_mass, pooled_support, pooled_level = (
-            self.pooled_decode_demand.predict(features)
-        )
-        if (
-            pooled_values
-            and features.state == InvocationState.RUNNING_LLM.value
-        ):
-            decode = EmpiricalDistribution(
-                pooled_values, pooled_mass, pooled_support
+        if not tool_wait_only:
+            pooled_values, pooled_mass, pooled_support, pooled_level = (
+                self.pooled_decode_demand.predict(features)
             )
-            decode_level = pooled_level
-        pooled_values, pooled_mass, pooled_support, pooled_level = (
-            self.pooled_next_output.predict(features)
-        )
-        if pooled_values:
-            output = EmpiricalDistribution(
-                pooled_values, pooled_mass, pooled_support
+            if (
+                pooled_values
+                and features.state == InvocationState.RUNNING_LLM.value
+            ):
+                decode = EmpiricalDistribution(
+                    pooled_values, pooled_mass, pooled_support
+                )
+                decode_level = pooled_level
+            pooled_values, pooled_mass, pooled_support, pooled_level = (
+                self.pooled_next_output.predict(features)
             )
-            output_level = pooled_level
+            if pooled_values:
+                output = EmpiricalDistribution(
+                    pooled_values, pooled_mass, pooled_support
+                )
+                output_level = pooled_level
         pooled_values, pooled_mass, pooled_support, pooled_level = (
             self.pooled_prompt_growth.predict(features)
         )
@@ -1660,14 +1676,15 @@ class FrontierBeliefModel:
                 pooled_values, pooled_mass, pooled_support
             )
             prompt_level = pooled_level
-        child_values, child_mass, child_support, child_level = (
-            self.pooled_child_completion.predict(features)
-        )
-        child_completion = (
-            EmpiricalDistribution(child_values, child_mass, child_support)
-            if child_values
-            else EmpiricalDistribution.empty()
-        )
+        if not tool_wait_only:
+            child_values, child_mass, child_support, child_level = (
+                self.pooled_child_completion.predict(features)
+            )
+            child_completion = (
+                EmpiricalDistribution(child_values, child_mass, child_support)
+                if child_values
+                else EmpiricalDistribution.empty()
+            )
         wait = EmpiricalDistribution.empty()
         terminal: Mapping[str, float] = {}
         wait_belief: WaitBelief

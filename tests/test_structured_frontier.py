@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+from unittest.mock import Mock
 
 import pytest
 
@@ -548,6 +549,126 @@ def _tool_row(decision: str, duration_ms: float, status: str) -> dict:
             }
         ],
     }
+
+
+@pytest.fixture(params=(
+    "legacy",
+    "observed_command_child_v1",
+    "observed_command_child_repeat_v2",
+    "observed_command_child_project_v3",
+    "observed_command_child_failed_repeat_v4",
+))
+def tool_fast_model(request):
+    rows = []
+    for child, status, duration in (
+        (False, "success", 80.),
+        (True, "success", 3000.),
+        (True, "error", 1200.),
+    ):
+        for index in range(40):
+            row = _tool_row(f"fast-{child}-{status}-{index}", duration + index, status)
+            row["workflow_id"] = f"fast-{child}-{status}-{index // 4}"
+            row["trigger_invocation_id"] = "worker"
+            row["trigger_attributes"].update({
+                "tool_name": "execute", "observed_command_class": "test_suite",
+                "is_child": child, "previous_same_input_status": status,
+                "previous_same_input_duration_ms": duration,
+                "project_class_duration_median_ms": duration,
+                "project_class_completed_support": 16,
+                "input_sha256": f"input-{child}-{status}-{index}",
+            })
+            row["invocations"][0]["is_child"] = child
+            row["labels"][0]["reentry_prompt_delta_tokens"] = 64 + index
+            rows.append(row)
+    model = FrontierBeliefModel(tool_feature_contract=request.param)
+    model.fit(rows)
+    model.calibration_coverage = .9
+    model.tool_survival_logit_scale = .8
+    model.tool_survival_logit_offset = .1
+    model.interval_slack["prompt_growth_tokens"] = 16.
+    model.action_timing_calibration = {
+        action: {"logit_scale": .8, "logit_offset": .1, "decision_threshold": .6}
+        for action in ("prepare_host", "prefetch_gpu")
+    }
+    return model
+
+
+@pytest.mark.parametrize("case", (
+    "root", "child", "repeat_success", "repeat_failure",
+    "project", "overrun", "unavailable_prompt", "unavailable_tool",
+))
+def test_fast_tool_wait_preserves_timing_prompt_calibration_and_ood(tool_fast_model, case):
+    model = tool_fast_model
+    features = LocalFrontierFeatures(
+        "worker", "wait_tool", agent_definition_id="worker",
+        tool_family="shell", command_class="execute",
+        observed_command_class="test_suite", current_sequence_tokens=4096,
+        active_tool_count=1, backend_pressure="active_family:1",
+        elapsed_wait_ms=25., state_elapsed_ms=25., is_child=case != "root",
+    )
+    changes = {
+        "repeat_success": {"previous_same_input_duration_ms": 3000.},
+        "repeat_failure": {"previous_failed_same_input_duration_ms": 1200.},
+        "project": {"project_class_duration_median_ms": 3000.},
+        "overrun": {"previous_same_input_duration_ms": 3000., "elapsed_wait_ms": 10000.},
+    }.get(case, {})
+    features = LocalFrontierFeatures.from_dict({**features.to_dict(), **changes})
+    if case == "unavailable_prompt":
+        model.prompt_growth = FrontierBeliefModel().prompt_growth
+        model.pooled_prompt_growth = FrontierBeliefModel().pooled_prompt_growth
+    elif case == "unavailable_tool":
+        empty = FrontierBeliefModel()
+        model.tool, model.child_tool = empty.tool, empty.child_tool
+    full = model.predict(features)
+    fast = model.predict_tool_wait(features)
+    for name in (
+        "invocation_id", "current_sequence_tokens", "remaining_external_wait",
+        "tool_terminal_distribution", "prompt_growth_tokens", "support_level",
+        "calibration_coverage", "ood_reasons", "wait_belief",
+        "action_timing_calibration", "operational_timing_curve",
+    ):
+        assert getattr(fast, name) == getattr(full, name), (model.tool_feature_contract, case, name)
+    for head in ("tool_wait", "prompt_growth"):
+        assert fast.head_support[head] == full.head_support[head]
+    assert fast.calibrated_intervals.get("prompt_growth_tokens") == (
+        full.calibrated_intervals.get("prompt_growth_tokens")
+    )
+    for action in ("prepare_host", "prefetch_gpu"):
+        for tau in (0., 100., 500., 3000.):
+            assert fast.action_timing(action, tau) == full.action_timing(action, tau)
+    if case == "unavailable_prompt":
+        assert "prompt_growth_unavailable" in fast.ood_reasons
+    if case == "unavailable_tool":
+        assert fast.wait_belief.support_level == "unavailable"
+
+
+def test_fast_tool_wait_skips_unused_heads_and_keeps_operational_curve(tool_fast_model, monkeypatch):
+    model = tool_fast_model
+    features = LocalFrontierFeatures(
+        "worker", "wait_tool", agent_definition_id="worker",
+        tool_family="shell", current_sequence_tokens=4096,
+    )
+    curve = ActionTimingCurve(
+        tau_ms=(100., 500.), release_within_probability=(.2, .8),
+        support_level="pooled", training_support=64.,
+    )
+    model.operational_release = Mock(curve=Mock(return_value=curve))
+    full = model.predict(features)
+    for name in (
+        "boundary", "pooled_boundary", "decode_demand", "pooled_decode_demand",
+        "next_output", "pooled_next_output", "pooled_child_completion",
+    ):
+        monkeypatch.setattr(getattr(model, name), "predict", Mock(
+            side_effect=AssertionError(f"tool wait must not evaluate {name}"),
+        ))
+    fast = model.predict_tool_wait(features)
+    assert fast.operational_timing_curve == full.operational_timing_curve == curve
+    assert fast.wait_belief == full.wait_belief
+    assert fast.action_timing("prefetch_gpu", 500.) == full.action_timing("prefetch_gpu", 500.)
+    assert not fast.boundary_distribution
+    assert not fast.remaining_decode_tokens.values
+    assert not fast.next_output_tokens.values
+    assert not fast.remaining_to_return_ms.values
 
 
 def _action_target(
