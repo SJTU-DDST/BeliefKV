@@ -1,0 +1,30 @@
+{
+  "schema_version": 1,
+  "scope": "Lossless archive of all 76 remaining V19b workspaces. Preserve raw server/workflow traces, result files, manifests and model artifacts.",
+  "source_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v19b",
+  "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v19b_partial_workspaces.tar.zst",
+  "archive_sha256": "502cc37b0902f553b6bb2074e17bba9d9038a689ec7bd5a9fd489792f18e2536",
+  "archive_bytes": 3014713292,
+  "source_workspace_allocated_bytes": 23633416192,
+  "workspace_count": 76,
+  "source_workspace_count_after_cleanup": 0,
+  "recorded_scheduler_pid": 4117498,
+  "recorded_scheduler_missing": true,
+  "obsolete_container_cleanup_receipt": "experiments/reports/v111_v19b_container_cleanup_20261012.json",
+  "comparison": {
+    "command": "tar --compare --use-compress-program='zstd -T1 --long=30' --file experiments/archive/20261012/v19b_partial_workspaces.tar.zst.partial --directory experiments/raw",
+    "exit_code": 0,
+    "diagnostics": ""
+  },
+  "cleanup": {
+    "command": "find experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v19b/predictive_h2d/client_156/workflows/*/workspace -depth -delete",
+    "exit_code": 0,
+    "filesystem_available_bytes_before_source_cleanup": 19591712768,
+    "filesystem_available_bytes_after_source_cleanup": 43154845696,
+    "semantics": "Live filesystem values also include concurrent V27 writes. Archive size and workspace allocation are separately measured."
+  },
+  "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v19b_partial_workspaces.tar.zst --directory experiments/raw",
+  "compression_policy": "One zstd thread, idle I/O priority and nice 19. Long-window mode deduplicates repeated compressed Git objects.",
+  "maintenance_overlap": "2026-10-12 after 04:08 CST; later native windows must disclose overlapping archive and local CPU development. Early 600-900s windows precede this work.",
+  "performance_goal_met": false
+}

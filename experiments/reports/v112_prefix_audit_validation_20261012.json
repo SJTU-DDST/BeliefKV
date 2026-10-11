@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "runtime_commit": "fa6f6c8",
+  "runtime_source_sha256": "c94dd42eaf04b43282e2ace835e2fe78ba968d6293df04873282f2b2f925d8c0",
+  "scope": "Exact prefix-evidence equivalence and CPU cost. No GPU throughput, request JCT or physical reuse improvement is established.",
+  "tests": {
+    "command": "python -m pytest -q tests/test_v0520_native_telemetry.py tests/test_analyze_busy_context_control.py",
+    "passed": 122,
+    "duration_seconds": 6.84
+  },
+  "first_service_benchmark": {
+    "path": "experiments/reports/v112_first_service_prefix_cpu_20261012.json",
+    "sha256": "3c120591f5a9495539049d3ecf3805f6f62627d123c89b175469404a01ec822e",
+    "baseline_revision": "0666bbf",
+    "cases": 32,
+    "alternating_trials_per_case": 100,
+    "records_and_pending_state_equal": true,
+    "matching_32768_token_16_command_wall_mean_ms": [0.47154831, 0.34080246],
+    "matching_131072_token_16_command_wall_mean_ms": [1.19808665, 0.65666017],
+    "negative_cases_retained": "Short prefixes have small costs. The 8192-token, 16-command matching optimized mean has outliers and exceeds baseline; its median is lower. No negative or unchanged cases are omitted."
+  },
+  "context_writer_benchmark": {
+    "path": "experiments/reports/v112_context_prefix_writer_cpu_20261012.json",
+    "sha256": "250d1040ff06b3bb1afcc2f4c835c688b31e55f80fb51be754fdee0f834c211e",
+    "cases": 36,
+    "alternating_trials_per_case": 100,
+    "records_and_state_equal": true,
+    "native_array_32768_token_wall_mean_ms": [0.09932793, 0.06868492]
+  },
+  "observed_first_service_prefixes": {
+    "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v27/predictive_h2d/server/physical_action_use.jsonl",
+    "source_bytes": 30065853,
+    "source_sha256": "f56cb25fc63b50d291b6588be7ccf12853ed70a8bd28a5ac38f252aca8e59313",
+    "window_seconds": [600, 900],
+    "first_service_begin_ts_ms": 1791734291247,
+    "first_service_end_ts_ms": 1791734591247,
+    "first_service_commands": 4218,
+    "first_service_requests": 1040,
+    "prefix_comparisons": 4218,
+    "prefix_tokens_sum": 62126341,
+    "prefix_tokens_p50": 14080,
+    "prefix_tokens_p90": 22998,
+    "comparisons_at_least_2048_tokens": 4218,
+    "exact_input_prefix_matches": 4218,
+    "semantics": "Recorded prefix evidence establishes the observed geometry, not the time spent comparing prefixes or proof that all these commands are early predictive restores."
+  },
+  "timing_semantics": "Benchmark report timestamps identify local maintenance overlap. Do not extrapolate fixture costs to full-window CPU, GPU stalls or JCT savings.",
+  "performance_goal_met": false
+}

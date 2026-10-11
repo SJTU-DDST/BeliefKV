@@ -1,0 +1,1326 @@
+{
+  "benchmark_started_at_utc": "2026-10-11T20:14:46.906160+00:00",
+  "scope": "Complete first-service prefix audit on identical native array inputs and per-command records; alternating baseline/current order, fixed record timestamps, no live cache or end-to-end benefit measurement.",
+  "baseline_revision": "0666bbf",
+  "baseline_source_sha256": "d4b1c8081eb2081ea11d2d35b0cd81e9179e7ac29268a3bb9f5a791f2772c177",
+  "optimized_source_sha256": "c94dd42eaf04b43282e2ace835e2fe78ba968d6293df04873282f2b2f925d8c0",
+  "benchmark_source_sha256": "66be21c4a03bb470e8f2456e8258070d0a3d8e07eda4da6b95ac467681a3b5a0",
+  "iterations_per_case": 100,
+  "warmup_iterations": 10,
+  "deployed": false,
+  "cases": [
+    {
+      "scenario": "match",
+      "prefix_tokens": 1024,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.01721561,
+            "p50_ms": 0.017163,
+            "p90_ms": 0.018663,
+            "max_ms": 0.021614
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.01652597,
+            "p50_ms": 0.0164655,
+            "p90_ms": 0.017949,
+            "max_ms": 0.020935
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.01791426,
+            "p50_ms": 0.0171135,
+            "p90_ms": 0.018622,
+            "max_ms": 0.089279
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.01727012,
+            "p50_ms": 0.016458,
+            "p90_ms": 0.017929,
+            "max_ms": 0.088502
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "middle_diverge",
+      "prefix_tokens": 1024,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.02137055,
+            "p50_ms": 0.0210005,
+            "p90_ms": 0.022601,
+            "max_ms": 0.042182
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.02070952,
+            "p50_ms": 0.020352000000000002,
+            "p90_ms": 0.021928,
+            "max_ms": 0.041521
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.02163981,
+            "p50_ms": 0.020841,
+            "p90_ms": 0.02428,
+            "max_ms": 0.061776
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.02098014,
+            "p50_ms": 0.0201665,
+            "p90_ms": 0.023555,
+            "max_ms": 0.061162
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "late_diverge",
+      "prefix_tokens": 1024,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.02163317,
+            "p50_ms": 0.0211395,
+            "p90_ms": 0.022839,
+            "max_ms": 0.057992
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.02098301,
+            "p50_ms": 0.0205255,
+            "p90_ms": 0.022137,
+            "max_ms": 0.057285
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.02172011,
+            "p50_ms": 0.0215725,
+            "p90_ms": 0.023236,
+            "max_ms": 0.039402
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.02107195,
+            "p50_ms": 0.02089,
+            "p90_ms": 0.022559,
+            "max_ms": 0.038736
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "short_request",
+      "prefix_tokens": 1024,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.01647864,
+            "p50_ms": 0.016249,
+            "p90_ms": 0.017746,
+            "max_ms": 0.021509
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.01584089,
+            "p50_ms": 0.015641500000000003,
+            "p90_ms": 0.017113,
+            "max_ms": 0.020846
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.01703856,
+            "p50_ms": 0.01663,
+            "p90_ms": 0.017955,
+            "max_ms": 0.054645
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.01639536,
+            "p50_ms": 0.0159685,
+            "p90_ms": 0.017297,
+            "max_ms": 0.053895
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "match",
+      "prefix_tokens": 1024,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.19635138,
+            "p50_ms": 0.190224,
+            "p90_ms": 0.212022,
+            "max_ms": 0.408196
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.19560021,
+            "p50_ms": 0.18941249999999998,
+            "p90_ms": 0.211246,
+            "max_ms": 0.407348
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.19380887,
+            "p50_ms": 0.19118000000000002,
+            "p90_ms": 0.212037,
+            "max_ms": 0.245161
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.1930589,
+            "p50_ms": 0.19042599999999998,
+            "p90_ms": 0.211324,
+            "max_ms": 0.244068
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "middle_diverge",
+      "prefix_tokens": 1024,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.23636573,
+            "p50_ms": 0.228749,
+            "p90_ms": 0.250971,
+            "max_ms": 0.491435
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.23553233,
+            "p50_ms": 0.2277945,
+            "p90_ms": 0.250043,
+            "max_ms": 0.49056
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.23149801,
+            "p50_ms": 0.22833350000000002,
+            "p90_ms": 0.25174,
+            "max_ms": 0.265038
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.23067405,
+            "p50_ms": 0.227469,
+            "p90_ms": 0.250975,
+            "max_ms": 0.263917
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "late_diverge",
+      "prefix_tokens": 1024,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.21131773,
+            "p50_ms": 0.2026155,
+            "p90_ms": 0.233504,
+            "max_ms": 0.301008
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.21053529,
+            "p50_ms": 0.201877,
+            "p90_ms": 0.232716,
+            "max_ms": 0.300038
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.21510744,
+            "p50_ms": 0.203237,
+            "p90_ms": 0.233827,
+            "max_ms": 0.444501
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.21425559,
+            "p50_ms": 0.2025095,
+            "p90_ms": 0.233057,
+            "max_ms": 0.443534
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "short_request",
+      "prefix_tokens": 1024,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.20550219,
+            "p50_ms": 0.196874,
+            "p90_ms": 0.234363,
+            "max_ms": 0.278189
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.20468225,
+            "p50_ms": 0.196087,
+            "p90_ms": 0.233266,
+            "max_ms": 0.277163
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.20976837,
+            "p50_ms": 0.1985715,
+            "p90_ms": 0.256266,
+            "max_ms": 0.430941
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.20892425,
+            "p50_ms": 0.19780999999999999,
+            "p90_ms": 0.255371,
+            "max_ms": 0.430156
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "match",
+      "prefix_tokens": 8192,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.02421934,
+            "p50_ms": 0.023254,
+            "p90_ms": 0.026535,
+            "max_ms": 0.070606
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.02358276,
+            "p50_ms": 0.022642500000000003,
+            "p90_ms": 0.025906,
+            "max_ms": 0.069927
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.01926942,
+            "p50_ms": 0.0189825,
+            "p90_ms": 0.021191,
+            "max_ms": 0.024497
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.01862694,
+            "p50_ms": 0.018342999999999998,
+            "p90_ms": 0.020542,
+            "max_ms": 0.023913
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "middle_diverge",
+      "prefix_tokens": 8192,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.03291653,
+            "p50_ms": 0.032173,
+            "p90_ms": 0.034876,
+            "max_ms": 0.072716
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.03228429,
+            "p50_ms": 0.031523499999999996,
+            "p90_ms": 0.034161,
+            "max_ms": 0.072026
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.0299278,
+            "p50_ms": 0.029221999999999998,
+            "p90_ms": 0.032964,
+            "max_ms": 0.051023
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.0292022,
+            "p50_ms": 0.028594500000000002,
+            "p90_ms": 0.032278,
+            "max_ms": 0.050325
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "late_diverge",
+      "prefix_tokens": 8192,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.03870191,
+            "p50_ms": 0.0379255,
+            "p90_ms": 0.040864,
+            "max_ms": 0.078252
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.03802739,
+            "p50_ms": 0.037214,
+            "p90_ms": 0.040214,
+            "max_ms": 0.07744
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.0319108,
+            "p50_ms": 0.0315725,
+            "p90_ms": 0.034525,
+            "max_ms": 0.03877
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.03123623,
+            "p50_ms": 0.0308955,
+            "p90_ms": 0.033815,
+            "max_ms": 0.03811
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "short_request",
+      "prefix_tokens": 8192,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.02022594,
+            "p50_ms": 0.0199505,
+            "p90_ms": 0.021836,
+            "max_ms": 0.028009
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.01957836,
+            "p50_ms": 0.019324,
+            "p90_ms": 0.021162,
+            "max_ms": 0.027288
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.02373392,
+            "p50_ms": 0.0184355,
+            "p90_ms": 0.020545,
+            "max_ms": 0.525348
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.02304372,
+            "p50_ms": 0.017818,
+            "p90_ms": 0.019725,
+            "max_ms": 0.524458
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "match",
+      "prefix_tokens": 8192,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.25454906,
+            "p50_ms": 0.2511605,
+            "p90_ms": 0.271649,
+            "max_ms": 0.296794
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.25371872,
+            "p50_ms": 0.2503825,
+            "p90_ms": 0.270874,
+            "max_ms": 0.296049
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.3343113,
+            "p50_ms": 0.221435,
+            "p90_ms": 0.246618,
+            "max_ms": 10.715769
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.33328084,
+            "p50_ms": 0.2205785,
+            "p90_ms": 0.245459,
+            "max_ms": 10.700085
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "middle_diverge",
+      "prefix_tokens": 8192,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.33730905,
+            "p50_ms": 0.33045250000000004,
+            "p90_ms": 0.352131,
+            "max_ms": 0.618623
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.33641769,
+            "p50_ms": 0.32941699999999996,
+            "p90_ms": 0.351144,
+            "max_ms": 0.617318
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.30767578,
+            "p50_ms": 0.3048245,
+            "p90_ms": 0.329137,
+            "max_ms": 0.338431
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.30680694,
+            "p50_ms": 0.3039945,
+            "p90_ms": 0.328295,
+            "max_ms": 0.337487
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "late_diverge",
+      "prefix_tokens": 8192,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.2705634,
+            "p50_ms": 0.267987,
+            "p90_ms": 0.288392,
+            "max_ms": 0.305868
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.26972724,
+            "p50_ms": 0.267207,
+            "p90_ms": 0.287578,
+            "max_ms": 0.304839
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.23785869,
+            "p50_ms": 0.23042600000000002,
+            "p90_ms": 0.249883,
+            "max_ms": 0.51171
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.23698714,
+            "p50_ms": 0.229575,
+            "p90_ms": 0.249066,
+            "max_ms": 0.510741
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "short_request",
+      "prefix_tokens": 8192,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.23635328,
+            "p50_ms": 0.22826249999999998,
+            "p90_ms": 0.254495,
+            "max_ms": 0.491747
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.23552863,
+            "p50_ms": 0.22740349999999998,
+            "p90_ms": 0.253698,
+            "max_ms": 0.490673
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.21684578,
+            "p50_ms": 0.21398699999999998,
+            "p90_ms": 0.234226,
+            "max_ms": 0.267634
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.2160111,
+            "p50_ms": 0.21312199999999998,
+            "p90_ms": 0.233334,
+            "max_ms": 0.266731
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "match",
+      "prefix_tokens": 32768,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.04627083,
+            "p50_ms": 0.0454195,
+            "p90_ms": 0.047365,
+            "max_ms": 0.097517
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.04562436,
+            "p50_ms": 0.0448045,
+            "p90_ms": 0.046768,
+            "max_ms": 0.096859
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.0245654,
+            "p50_ms": 0.0243335,
+            "p90_ms": 0.026775,
+            "max_ms": 0.02858
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.02392946,
+            "p50_ms": 0.023703000000000002,
+            "p90_ms": 0.026182,
+            "max_ms": 0.027852
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "middle_diverge",
+      "prefix_tokens": 32768,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.07110681,
+            "p50_ms": 0.070877,
+            "p90_ms": 0.074084,
+            "max_ms": 0.081605
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.0704454,
+            "p50_ms": 0.07020699999999999,
+            "p90_ms": 0.073478,
+            "max_ms": 0.080645
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.03629391,
+            "p50_ms": 0.035948499999999994,
+            "p90_ms": 0.039826,
+            "max_ms": 0.058636
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.03559548,
+            "p50_ms": 0.035251000000000005,
+            "p90_ms": 0.039115,
+            "max_ms": 0.05803
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "late_diverge",
+      "prefix_tokens": 32768,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.09266586,
+            "p50_ms": 0.093057,
+            "p90_ms": 0.096977,
+            "max_ms": 0.130795
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.09195553,
+            "p50_ms": 0.0923895,
+            "p90_ms": 0.096261,
+            "max_ms": 0.129962
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.04505429,
+            "p50_ms": 0.045758,
+            "p90_ms": 0.051754,
+            "max_ms": 0.056809
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.04437901,
+            "p50_ms": 0.045059,
+            "p90_ms": 0.050957,
+            "max_ms": 0.05605
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "short_request",
+      "prefix_tokens": 32768,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.03097194,
+            "p50_ms": 0.030463999999999998,
+            "p90_ms": 0.03322,
+            "max_ms": 0.040177
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.03032093,
+            "p50_ms": 0.029859999999999998,
+            "p90_ms": 0.032577,
+            "max_ms": 0.039502
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.02473251,
+            "p50_ms": 0.020081500000000002,
+            "p90_ms": 0.021724,
+            "max_ms": 0.480058
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.02408667,
+            "p50_ms": 0.019451,
+            "p90_ms": 0.021077,
+            "max_ms": 0.479162
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "match",
+      "prefix_tokens": 32768,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.47154831,
+            "p50_ms": 0.4652465,
+            "p90_ms": 0.487418,
+            "max_ms": 0.730028
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.47033213,
+            "p50_ms": 0.46404599999999996,
+            "p90_ms": 0.486434,
+            "max_ms": 0.728663
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.34080246,
+            "p50_ms": 0.3421405,
+            "p90_ms": 0.361824,
+            "max_ms": 0.386657
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.33952563,
+            "p50_ms": 0.34106250000000005,
+            "p90_ms": 0.360715,
+            "max_ms": 0.385509
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "middle_diverge",
+      "prefix_tokens": 32768,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.82038817,
+            "p50_ms": 0.694932,
+            "p90_ms": 0.723218,
+            "max_ms": 12.630557
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.81911992,
+            "p50_ms": 0.6936475,
+            "p90_ms": 0.722079,
+            "max_ms": 12.628506
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.42372285,
+            "p50_ms": 0.4224605,
+            "p90_ms": 0.456817,
+            "max_ms": 0.480704
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.42258122,
+            "p50_ms": 0.421199,
+            "p90_ms": 0.455642,
+            "max_ms": 0.47958
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "late_diverge",
+      "prefix_tokens": 32768,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.51388448,
+            "p50_ms": 0.51422,
+            "p90_ms": 0.53433,
+            "max_ms": 0.567071
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.51267521,
+            "p50_ms": 0.512989,
+            "p90_ms": 0.53302,
+            "max_ms": 0.565848
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.36389878999999997,
+            "p50_ms": 0.3615385,
+            "p90_ms": 0.378865,
+            "max_ms": 0.624684
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.36270047,
+            "p50_ms": 0.36037949999999996,
+            "p90_ms": 0.377616,
+            "max_ms": 0.623407
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "short_request",
+      "prefix_tokens": 32768,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.3806119,
+            "p50_ms": 0.38861650000000003,
+            "p90_ms": 0.421104,
+            "max_ms": 0.646063
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.37958388,
+            "p50_ms": 0.3875615,
+            "p90_ms": 0.420112,
+            "max_ms": 0.644813
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.27500817,
+            "p50_ms": 0.2769075,
+            "p90_ms": 0.308544,
+            "max_ms": 0.332532
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.27402906,
+            "p50_ms": 0.275835,
+            "p90_ms": 0.307451,
+            "max_ms": 0.331306
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "match",
+      "prefix_tokens": 131072,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.16519537,
+            "p50_ms": 0.16724699999999998,
+            "p90_ms": 0.180088,
+            "max_ms": 0.21709
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.16421544,
+            "p50_ms": 0.16637400000000002,
+            "p90_ms": 0.179056,
+            "max_ms": 0.216152
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.08518467,
+            "p50_ms": 0.0876645,
+            "p90_ms": 0.099743,
+            "max_ms": 0.107875
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.08436173,
+            "p50_ms": 0.0867705,
+            "p90_ms": 0.098777,
+            "max_ms": 0.106822
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "middle_diverge",
+      "prefix_tokens": 131072,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.28072647,
+            "p50_ms": 0.279705,
+            "p90_ms": 0.292621,
+            "max_ms": 0.300503
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.27977543,
+            "p50_ms": 0.27866250000000004,
+            "p90_ms": 0.29167,
+            "max_ms": 0.299359
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.06325859,
+            "p50_ms": 0.06385099999999999,
+            "p90_ms": 0.081643,
+            "max_ms": 0.103717
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.06262034,
+            "p50_ms": 0.06322649999999999,
+            "p90_ms": 0.081004,
+            "max_ms": 0.103027
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "late_diverge",
+      "prefix_tokens": 131072,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.37222895,
+            "p50_ms": 0.371679,
+            "p90_ms": 0.378367,
+            "max_ms": 0.410918
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.37127071,
+            "p50_ms": 0.37075349999999996,
+            "p90_ms": 0.37721,
+            "max_ms": 0.409802
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.13876732,
+            "p50_ms": 0.140766,
+            "p90_ms": 0.155915,
+            "max_ms": 0.160552
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.13793416,
+            "p50_ms": 0.13995800000000003,
+            "p90_ms": 0.154932,
+            "max_ms": 0.15959
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "short_request",
+      "prefix_tokens": 131072,
+      "commands": 1,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.0700022,
+            "p50_ms": 0.0715875,
+            "p90_ms": 0.076407,
+            "max_ms": 0.098002
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.06937921,
+            "p50_ms": 0.0709265,
+            "p90_ms": 0.075825,
+            "max_ms": 0.097228
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.04071991,
+            "p50_ms": 0.045576000000000005,
+            "p90_ms": 0.048482,
+            "max_ms": 0.365817
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.04015005,
+            "p50_ms": 0.044982,
+            "p90_ms": 0.047896,
+            "max_ms": 0.365121
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "match",
+      "prefix_tokens": 131072,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 1.19808665,
+            "p50_ms": 1.1692635,
+            "p90_ms": 1.193407,
+            "max_ms": 3.4917
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 1.19680852,
+            "p50_ms": 1.1680074999999999,
+            "p90_ms": 1.192149,
+            "max_ms": 3.490358
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.65666017,
+            "p50_ms": 0.6279005,
+            "p90_ms": 0.64604,
+            "max_ms": 3.359079
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.65541347,
+            "p50_ms": 0.626627,
+            "p90_ms": 0.644951,
+            "max_ms": 3.357788
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "middle_diverge",
+      "prefix_tokens": 131072,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 1.81465355,
+            "p50_ms": 1.810392,
+            "p90_ms": 1.825561,
+            "max_ms": 2.067745
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 1.81335494,
+            "p50_ms": 1.809121,
+            "p90_ms": 1.824332,
+            "max_ms": 2.066309
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.6728887,
+            "p50_ms": 0.671739,
+            "p90_ms": 0.68918,
+            "max_ms": 0.711575
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.67165927,
+            "p50_ms": 0.6706335,
+            "p90_ms": 0.687812,
+            "max_ms": 0.710225
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "late_diverge",
+      "prefix_tokens": 131072,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 1.35237373,
+            "p50_ms": 1.3486255,
+            "p90_ms": 1.377495,
+            "max_ms": 1.533867
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 1.35111862,
+            "p50_ms": 1.3474075,
+            "p90_ms": 1.376113,
+            "max_ms": 1.531787
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.8501574,
+            "p50_ms": 0.6969715000000001,
+            "p90_ms": 0.728351,
+            "max_ms": 15.179039
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.8489181,
+            "p50_ms": 0.695614,
+            "p90_ms": 0.727095,
+            "max_ms": 15.177134
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    },
+    {
+      "scenario": "short_request",
+      "prefix_tokens": 131072,
+      "commands": 16,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.8471250300000001,
+            "p50_ms": 0.845918,
+            "p90_ms": 0.856925,
+            "max_ms": 1.090014
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.84579643,
+            "p50_ms": 0.8444445,
+            "p90_ms": 0.855494,
+            "max_ms": 1.08871
+          }
+        },
+        "optimized": {
+          "wall": {
+            "samples": 100,
+            "mean_ms": 0.46577503,
+            "p50_ms": 0.465337,
+            "p90_ms": 0.483606,
+            "max_ms": 0.498665
+          },
+          "thread_cpu": {
+            "samples": 100,
+            "mean_ms": 0.46462804,
+            "p50_ms": 0.4643465,
+            "p90_ms": 0.482559,
+            "max_ms": 0.497505
+          }
+        }
+      },
+      "records_and_pending_state_equal": true,
+      "scope": "Complete first-service prefetch audit with native array request input and exact issuance-prefix snapshots. No live tree, physical FULL/Mamba reuse proof, concurrent writer, allocator, GPU or JCT measurement."
+    }
+  ],
+  "benchmark_finished_at_utc": "2026-10-11T20:14:49.681499+00:00"
+}
