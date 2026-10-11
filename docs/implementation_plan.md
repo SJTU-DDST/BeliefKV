@@ -15,6 +15,19 @@ later targets. Six indexed/unindexed FULL/Mamba regression cases and367 related
 checks pass. The actual V22 frequency and GPU throughput contribution of this
 limitation remain unmeasured. Include the fix in the next frozen pair.
 
+Commit the candidate fix as18ea788. At2026-10-11 09:42:56 CST, replace the
+still-waiting V23 target with18ea788a0ea1933782eb5051e211c866e2e29579 in
+beliefkv-v53-restore-target-candidates-20261011; coordinator2903493.
+Environment, previous pair, captured wait identities and canonical engine patch
+equal the prior e7bd8fa registration. Main remains clean at3aa27dd; V23 has not
+created its run directory. Stop only waiting coordinator2616411 and preserve its
+registration asv23_launch_after_v22_e7bd8fa_superseded_20261011.json and its log.
+The main v23_launch_after_v22_20261011.json is the current registration;
+retainv53_v23_restore_target_registration_20261011.json as the bounded receipt.
+V22 processes are not signalled. Deploy after its complete pair and postprocessing,
+then run predictive followed by cold same-version native. Capacity, residence,
+useful early FULL reuse and busy-window performance still require GPU validation.
+
 Keep the complete2400–3000s V22 predictive window in the local
 v52_v22_busy_control_2400_3000_20261011.json artifact with read-prefix and boundary
 hashes. It has14015 decode batches,24406.595 mean visible context tokens and
@@ -178,7 +191,8 @@ are V22 coordinator1159560 and driver1166290. Deploy only after the full pair an
 postprocessing complete, then run predictive first and cold native second,
 preserving workload and prediction windows. V22 source and processes remain
 frozen; the09:06 registration is superseded by the09:23 e7bd8fa registration
-above, and V23 is not yet running. Keep the objective active until useful early FULL
+above, which is in turn superseded by the09:42 18ea788 registration. V23 is not
+yet running. Keep the objective active until useful early FULL
 reuse and same-version busy-window performance benefit are both demonstrated.
 
 Keep the complete1200–1800s control evidence in

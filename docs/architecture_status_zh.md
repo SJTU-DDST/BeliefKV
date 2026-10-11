@@ -14,6 +14,19 @@
 FULL/Mamba稀疏池和有/无索引的6种回归场景；相关367项检查通过。
 尚未测清该限制在V22中的发生频率，也未证明GPU吞吐改善。
 
+候选修复与上述文档已提交为18ea788。2026-10-11 09:42:56 CST
+将仍未启动的V23登记更新为18ea788a0ea1933782eb5051e211c866e2e29579，
+冻结checkout为beliefkv-v53-restore-target-candidates-20261011，
+等待协调器PID2903493。运行配置、前序pair、等待进程身份和原生
+patch均与e7bd8fa登记相同，V23目录尚未创建；主checkout继续
+保持3aa27dd且干净。仅停止旧waiting coordinator2616411，
+V22 coordinator/driver/server/scheduler/client均未发信号。
+旧登记保存为v23_launch_after_v22_e7bd8fa_superseded_20261011.json，
+当前登记仍为主工作区v23_launch_after_v22_20261011.json；
+有界回执为v53_v23_restore_target_registration_20261011.json。
+V22完整pair及后处理结束后自动部署，predictive先、冷native后，
+真实容量、驻留复用和繁忙窗口收益仍待新版本GPU验证。
+
 新增完整2400–3000秒繁忙窗口，局部产物为
 v52_v22_busy_control_2400_3000_20261011.json，保存源读取前缀和
 边界SHA256。14015个decode batch的平均可见上下文为24406.595
@@ -95,9 +108,9 @@ runtime检查通过，合计361项。该修改尚未部署到冻结V22。
 协调器PID2616411。运行配置、前序pair和canonical原生patch均与
 上一登记相同；仅停止旧waiting coordinator2402814，V22进程未发
 信号。旧登记保存为v23_launch_after_v22_3644e8b_superseded_20261011.json；
-回执为v50_v23_handoff_protection_registration_20261011.json。等待V22
-完整pair及后处理后自动部署，仍为predictive先、冷native后；GPU
-效果及同版本native收益待验证。
+回执为v50_v23_handoff_protection_registration_20261011.json。
+该09:23登记现已由上方09:42的18ea788登记替换；GPU效果及同版本
+native收益待验证。
 
 工具窗口局部诊断v48_v22_tool_forecast_live_20261011.json由上述完整
 生命周期关联和带读取SHA256的opportunity前缀生成。6549个具有最后
@@ -162,7 +175,7 @@ v23_supersession_73c9ac1_to_3644e8b_20261011.json，
 V22 coordinator/driver/server/scheduler/client均未发送信号。
 新patch相对当前部署的差分已通过原生工作区git apply --check，
 回执为v23_single_spec_validated_engine_delta_20261011.patch。
-该09:06登记已由上方09:23的e7bd8fa登记替换。当前协调器2616411
+该09:06登记已由上方09:23的e7bd8fa登记替换。当时协调器2616411
 已捕获V22 coordinator
 1159560及driver1166290的进程身份，等待整个pair及后处理完成再
 部署；仍为predictive先行、冷native随后，不改变workload或预测
