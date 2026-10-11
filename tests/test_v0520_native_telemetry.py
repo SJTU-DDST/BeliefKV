@@ -1263,6 +1263,54 @@ def test_unattributed_startup_prefill_does_not_pollute_native_telemetry(
     assert status["record_counts"] == {}
 
 
+@pytest.mark.parametrize("length_source", ["batch", "range", "unavailable"])
+def test_prefill_uses_native_chunk_lengths_without_reading_device_tensors(
+    tmp_path: Path, length_source: str,
+) -> None:
+    audit = NativeReactiveTelemetry(tmp_path / "server")
+    request = SimpleNamespace(
+        rid="chunked",
+        beliefkv_metadata={
+            "root_workflow_id": "workflow", "invocation_id": "child",
+            "context_id": "context", "context_epoch": 0,
+        },
+        origin_input_ids=list(range(12000)), output_ids=[],
+        sampling_params=SimpleNamespace(max_new_tokens=8),
+        finished=lambda: False,
+    )
+    warmup = SimpleNamespace(rid="unattributed", beliefkv_metadata=None)
+    batch = SimpleNamespace(
+        forward_mode=_Mode("prefill"), launch_ts=time.monotonic(),
+        forward_iter=1, reqs=[warmup, request],
+    )
+    if length_source == "batch":
+        batch.prefix_lens, batch.extend_lens = [0, 4096], [1, 4096]
+        request.extend_range = SimpleNamespace(start=0, length=12000)
+        request.extend_input_len = 0
+    elif length_source == "range":
+        request.extend_range = SimpleNamespace(start=4096, length=4096)
+
+    audit.on_launch(batch)
+    if length_source != "unavailable":
+        request.extend_range = SimpleNamespace(start=8192, length=3808)
+    audit.on_completed(batch)
+    audit.close()
+
+    [record] = _read(tmp_path / "server/runtime_audit.jsonl")
+    [sample] = record["request_samples"]
+    assert record["batch_size"] == 2
+    assert sample["request_id"] == "chunked"
+    if length_source == "unavailable":
+        assert sample["sequence_tokens_before"] is None
+        assert sample["token_delta"] is None
+        assert sample["prefill_geometry_source"] == "unavailable"
+    else:
+        assert sample["sequence_tokens_before"] == sample["token_delta"] == 4096
+        assert sample["prefill_geometry_source"] == (
+            "native_batch" if length_source == "batch" else "native_request_range"
+        )
+
+
 def test_host_pool_usage_and_evictions_are_persisted_by_pool(
     tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
 ) -> None:

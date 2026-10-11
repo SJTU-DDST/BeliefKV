@@ -155,6 +155,56 @@ def test_native_writer_coverage_can_follow_the_last_gpu_row(tmp_path, collect_wr
         assert writer["reason"] == "writer_timing_not_collected"
 
 
+def test_prefill_cohorts_require_native_geometry_for_every_batch_row(tmp_path):
+    directory = tmp_path / "server"
+    directory.mkdir()
+    samples = [
+        (150., 1, [{"sequence_tokens_before": 12000, "token_delta": 0}]),
+        (155., 2, [{
+            "sequence_tokens_before": 4096, "token_delta": 4096,
+            "prefill_geometry_source": "native_batch",
+        }]),
+        (160., 2, [
+            {"sequence_tokens_before": 0, "token_delta": 1000,
+             "prefill_geometry_source": "native_batch"},
+            {"sequence_tokens_before": 4096, "token_delta": 500,
+             "prefill_geometry_source": "native_request_range"},
+        ]),
+        (165., 1, [{
+            "sequence_tokens_before": None, "token_delta": None,
+            "prefill_geometry_source": "unavailable",
+        }]),
+        (170., 1, [{
+            "sequence_tokens_before": 8000, "token_delta": 0,
+            "prefill_geometry_source": "native_batch",
+        }]),
+    ]
+    rows = [{
+        "event": "gpu_service_sample", "complete_ts_ms": timestamp,
+        "phase": "prefill", "batch_size": size, "service_elapsed_ms": 5.,
+        "request_samples": requests,
+    } for timestamp, size, requests in samples]
+    rows.extend([
+        {"event": "gpu_service_sample", "complete_ts_ms": 175.,
+         "phase": "decode", "batch_size": 1, "service_elapsed_ms": 10.,
+         "request_samples": [{"sequence_tokens_before": 1000}]},
+        {"event": "gpu_service_sample", "complete_ts_ms": 210.},
+    ])
+    (directory / "runtime_audit.jsonl").write_bytes(b"".join(encoded(row) for row in rows))
+
+    prefill = decode_geometry(tmp_path, 100., 200.)["prefill_geometry"]
+    assert prefill["batches"] == 5
+    assert prefill["worker_interval_ms"] == 25.
+    assert prefill["known_work_batches"] == 2
+    assert prefill["unknown_work_batches"] == 3
+    assert prefill["known_extend_tokens"] == 1500
+    assert prefill["request_geometry_sources"] == {
+        "native_batch": 3, "native_request_range": 1,
+        "unavailable": 1, "unverified_legacy": 1,
+    }
+    assert set(prefill["cohorts"]) == {"2/1024/2048", "1/0/6144"}
+
+
 @pytest.mark.parametrize("configuration", [
     b"ServerArgs(decode_log_interval=40)",
     b"server_args={'decode_log_interval': 40, 'cuda_graph_config': {'decode': {'bs': [40, 48]}}}",

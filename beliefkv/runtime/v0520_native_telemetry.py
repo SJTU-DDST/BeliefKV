@@ -967,9 +967,11 @@ class NativeReactiveTelemetry:
             )
         launch = float(batch.launch_ts)
         phase = "prefill" if mode.is_extend() else "decode"
+        prefix_lens = getattr(batch, "prefix_lens", None) if phase == "prefill" else None
+        extend_lens = getattr(batch, "extend_lens", None) if phase == "prefill" else None
         samples = []
         mamba_forward_candidates = []
-        for req in batch.reqs:
+        for index, req in enumerate(batch.reqs):
             identity = self._identity(req)
             if identity is None:
                 continue
@@ -1085,21 +1087,38 @@ class NativeReactiveTelemetry:
                 self._active.add(rid)
             output_before = len(req.output_ids)
             self._reported_output_tokens.setdefault(rid, output_before)
-            extend = max(0, int(getattr(req, "extend_input_len", 0) or 0))
+            geometry_source = None
+            if phase == "prefill":
+                # Prepared CPU batch lengths include chunking and mixed decode rows.
+                if prefix_lens is not None and extend_lens is not None:
+                    prefix, extend = prefix_lens[index], extend_lens[index]
+                    geometry_source = "native_batch"
+                elif (interval := getattr(req, "extend_range", None)) is not None:
+                    prefix, extend = interval.start, interval.length
+                    geometry_source = "native_request_range"
+                elif (extend := getattr(req, "extend_input_len", None)) is not None:
+                    prefix = len(req.origin_input_ids) + output_before - extend
+                    geometry_source = "legacy_request"
+                else:
+                    prefix = extend = None
+                    geometry_source = "unavailable"
+            else:
+                prefix = len(req.origin_input_ids) + output_before
+                extend = 0
             samples.append({
                 "request_id": rid,
                 **identity,
                 "phase": phase,
-                "sequence_tokens_before": (
-                    len(req.origin_input_ids) + output_before - extend
-                    if phase == "prefill"
-                    else len(req.origin_input_ids) + output_before
-                ),
+                "sequence_tokens_before": prefix,
                 "output_tokens_before": output_before,
                 "token_delta": extend if phase == "prefill" else 0,
                 "token_delta_semantics": (
                     "prefill_extend_input_len" if phase == "prefill"
                     else "observed_output_ids_delta"
+                ),
+                **(
+                    {"prefill_geometry_source": geometry_source}
+                    if phase == "prefill" else {}
                 ),
             })
         if samples:

@@ -2,6 +2,17 @@
 
 Status date: 2026-10-11.
 
+The isolated follow-up fixes prefill work measurement. The old
+req.extend_input_len defaults to zero in the current engine: V24's first
+200 prefill batches/285 request samples report zero without proving zero
+work. Read prepared CPU batch prefix_lens/extend_lens, then the native
+request extend_range, recording source and retaining missing values as
+unknown. No CUDA tensor reads or synchronization are added. Offline work
+cohorts require native geometry for every batch row; legacy defaults and
+partial attribution remain unknown. The 99 relevant checks pass. Keep both
+V24 arms frozen; use this correction in the next revision to compare actual
+prefill work before optimizing its cost. Measurement is not a speedup.
+
 V92: the live V24 action audit confirms948 tool PREPARE node commands/
 211 bursts/9.122GB FULL and zero speculative Mamba. First backups for
 116/140 known independent tools have at least1000ms remaining.

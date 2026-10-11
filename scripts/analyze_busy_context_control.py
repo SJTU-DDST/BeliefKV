@@ -5,7 +5,7 @@ from __future__ import annotations
 
 import argparse
 import ast
-from collections import defaultdict
+from collections import Counter, defaultdict
 import csv
 from datetime import datetime
 import hashlib
@@ -209,6 +209,9 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
     contexts, sums, durations, batches = [], [], [], []
     groups = defaultdict(list)
     graph_groups = defaultdict(list)
+    prefill_durations, prefill_work = [], []
+    prefill_sources = Counter()
+    prefill_groups = defaultdict(list)
     prefix, bytes_read = hashlib.sha256(), 0
     covered = False
     writer = WriterTimingWindow(begin, end)
@@ -231,7 +234,31 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
                 if not writer.collected or writer.covered:
                     break
                 continue
-            if row["complete_ts_ms"] < begin or row["phase"] != "decode":
+            if row["complete_ts_ms"] < begin:
+                continue
+            if row["phase"] == "prefill":
+                duration = row["service_elapsed_ms"]
+                prefill_durations.append(duration)
+                samples = row["request_samples"]
+                prefill_sources.update(
+                    item.get("prefill_geometry_source", "unverified_legacy")
+                    for item in samples
+                )
+                native = [
+                    item for item in samples
+                    if item.get("prefill_geometry_source") in (
+                        "native_batch", "native_request_range",
+                    )
+                ]
+                if len(native) == row["batch_size"] and native:
+                    work = sum(item["token_delta"] for item in native)
+                    context = mean(item["sequence_tokens_before"] for item in native)
+                    prefill_work.append(work)
+                    prefill_groups[
+                        row["batch_size"], work // 512, int(context) // 2048,
+                    ].append(duration)
+                continue
+            if row["phase"] != "decode":
                 continue
             observed = [
                 item["sequence_tokens_before"] for item in row["request_samples"]
@@ -279,6 +306,28 @@ def decode_geometry(arm: Path, begin: float, end: float) -> dict:
             "Absent legacy flags remain unknown; batch size alone does not prove replay. "
             "Worker intervals include scheduler/result processing and are not kernel timings."
         ),
+        "prefill_geometry": {
+            "batches": len(prefill_durations),
+            "worker_interval_ms": sum(prefill_durations),
+            "known_work_batches": len(prefill_work),
+            "unknown_work_batches": len(prefill_durations) - len(prefill_work),
+            "known_extend_tokens": sum(prefill_work) if prefill_work else None,
+            "request_geometry_sources": dict(sorted(prefill_sources.items())),
+            "cohorts": {
+                f"{size}/{work * 512}/{context * 2048}": {
+                    "batches": len(values), "mean_ms": mean(values),
+                    "median_ms": median(values),
+                }
+                for (size, work, context), values in sorted(prefill_groups.items())
+            },
+            "semantics": (
+                "Completed worker intervals, not CUDA kernel timings. Cohorts require "
+                "native prepared prefix/extend lengths for every batch row; they match "
+                "batch size, 512-token total-work bins and 2048-token mean-prefix bins. "
+                "Legacy missing fields or zero defaults do not establish zero prefill "
+                "work. Partial attributed batches retain unknown total work."
+            ),
+        },
     }
 
 
@@ -349,6 +398,7 @@ def main() -> None:
             "Control counters use preceding snapshots; exclusive Python wall time is not removable JCT.",
             "Writer CPU/wall differences use their own snapshot clocks and measured samples only.",
             "Periodic graph logs are separate samples; legacy per-batch graph flags stay unknown.",
+            "Prefill work cohorts require native prefix/extend lengths; old request-field zero defaults remain unknown.",
         ],
     }
     for name in ("predictive_h2d", "native"):

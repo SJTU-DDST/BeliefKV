@@ -4,6 +4,15 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+当前引擎的 prefill 工作量以已准备的 CPU `batch.prefix_lens`/
+`batch.extend_lens` 为准，原生请求备用字段为 `extend_range`；
+旧 `req.extend_input_len` 的默认零不能证明没有计算。后续埋点
+记录 `prefill_geometry_source`，缺失保留未知，不为取得长度
+读取设备 tensor。只有全批各行均有原生长度才建立工作量分组，
+部分归因及历史默认零保持未知。99 项相关检查通过；该修改
+位于后续隔离版本，不在冻结 V24 中途部署。worker 墙钟区间、
+请求级未缓存输入和实际分块工作量分开报告，不混作 kernel 时间。
+
 后续工具长等待窗口默认 1000 ms，替代旧的 2000 ms；CDF 的
 窗口内返回概率仍不超过 0.1，无 CDF 时使用残余 P10 至少
 1000 ms。备份候选和等待页回收使用同一条件，不增加策略开关。
