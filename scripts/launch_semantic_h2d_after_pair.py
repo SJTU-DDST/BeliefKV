@@ -72,7 +72,12 @@ def wait_for_processes(identities: dict[int, tuple | None]) -> None:
 
 
 def _require_clean(root: Path) -> None:
-    if git(root, "status", "--porcelain", "--untracked-files=normal").strip():
+    tracked = git(root, "status", "--porcelain", "--untracked-files=no").strip()
+    untracked = git(
+        root, "ls-files", "--others", "--exclude-standard", "--",
+        ".", ":(exclude)docs/",
+    ).strip()
+    if tracked or untracked:
         raise ValueError(f"checkout changed or contains uncommitted files: {root}")
 
 
