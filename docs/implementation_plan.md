@@ -79,9 +79,19 @@ change1.046/1.040/1.918→0.508/0.625/1.463ms; all-matching cases change
 the prior regression; single eviction registration adds about2–4 microseconds for
 the auxiliary route. The156 telemetry/lifecycle/writer/window checks pass.
 These fixtures exclude real scheduler concurrency, DMA and GPU, and do not
-establish throughput improvement. After committing, freeze this follow-up and
-register a same-configuration V23 after the complete V22 pair: predictive first,
-cold native second, preserving workload and prediction windows.
+establish throughput improvement. Code and evidence are committed asfe06e06.
+At2026-10-11 08:27:31 CST, same-configuration V23 is registered as
+waiting_for_previous_pair with coordinator1785294. Its frozen checkout is
+beliefkv-v41-prefix-writer-20261011, target revision
+fe06e06682485e642c759b40ad5c9885c67cb70b and canonical patch SHA256 remains
+03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83.
+Keep the live registration in the main workspace's
+experiments/reports/v23_launch_after_v22_20261011.json. Captured wait identities
+are V22 coordinator1159560 and driver1166290. Deploy only after the full pair and
+postprocessing complete, then run predictive first and cold native second,
+preserving workload and prediction windows. V22 source and processes remain
+frozen; V23 is not yet running. Keep the objective active until useful early FULL
+reuse and same-version busy-window performance benefit are both demonstrated.
 
 Closed V21 predictive/native output rates are738.64/831.87 token/s and mean
 GPU utilization72.04%/80.15%. In600–2400s, mean visible decode contexts are

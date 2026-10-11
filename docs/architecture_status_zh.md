@@ -74,8 +74,17 @@ v39_eviction_route_single_pass_cpu_20261011.json，均未部署。
 没有再出现先前退化；单条驱逐登记因辅助路由增加约2–4微秒。
 156项telemetry/lifecycle/writer/window检查通过，CPU夹具不包含
 真实scheduler并发、DMA或GPU，不能由此声称吞吐提升。
-保留当前V22的完整pair，提交后冻结该跟进并登记同配置V23：
-仍为predictive先行、冷native随后，不改变workload或预测窗口。
+上述代码与证据已提交为fe06e06。2026-10-11 08:27:31 CST已登记
+同配置V23，状态waiting_for_previous_pair，协调器PID1785294；
+冻结checkout为beliefkv-v41-prefix-writer-20261011，完整目标revision
+为fe06e06682485e642c759b40ad5c9885c67cb70b，原生patch SHA256仍为
+03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83。
+实际登记位于主工作区experiments/reports/
+v23_launch_after_v22_20261011.json。协调器已捕获V22 coordinator
+1159560及driver1166290的进程身份，等待整个pair及后处理完成再
+部署；仍为predictive先行、冷native随后，不改变workload或预测
+窗口。当前V22源码和运行进程保持冻结，V23尚未启动；性能目标仍
+待真正提前复用FULL和同版本繁忙窗口收益共同证明。
 
 闭合V21的predictive/native输出吞吐为738.64/831.87 token/s，
 GPU平均利用率为72.04%/80.15%。600–2400秒窗口的decode前平均
