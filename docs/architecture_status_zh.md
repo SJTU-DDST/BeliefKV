@@ -2,6 +2,27 @@
 
 更新日期：2026-10-11。
 
+V23 predictive 终态诊断确认两个 incomplete 的 root 最后两次
+LLM 输出均达到 8192 token；无文本的原响应触发关闭 thinking
+的恢复调用，恢复输出仍 length 截断并产生重复分析正文。
+django-12273 的 graph hard-budget 收尾发生在 test-analyst child，
+不是 root；django-11740 没有 hard-budget 收尾。两个 workflow
+均无 deadline 过期或 child 取消，所有 JOIN 已满足。当前终态
+分类正确保留 incomplete，不能将重复且截断的正文算作完成，
+也不能据此宣称预测或物理恢复失败；生成退化的根因尚未识别。
+
+同一完整 predictive 日志的 4720 次 no_cold_capacity handoff
+关闭均对应独立请求，随后原生首次 prefill 距关闭 P50/P90
+为 73.051/116.885 ms，最大 1654.871 ms；770 个超过 100 ms，
+48 个超过 500 ms。相关原生 FULL Host-hit 计数折合 1.390 TB，
+2702 个此前没有 handoff 提交。Host-hit 不是可提前恢复量，
+记录也不证明拒绝后出现了可用空闲容量。先不增加通用重试；
+现有 parent 关联 child 实际释放容量后的重试仍保留。已埋点
+独占墙钟较大的路径是 reentry 检查 113.822 秒、control_drain
+90.732 秒、机会采样 74.104 秒；不是可从 JCT 直接扣除的收益。
+保留 v83_v23_terminal_and_handoff_diagnostics_20261011.json，
+native 仍运行，同版本性能目标保持未完成。
+
 V82 后续版本减少后台驱逐归因的重复前缀遍历：用已有排序长度
 和二分边界跳过整段不匹配的 power-of-two 路由，仅在匹配路由内
 检查终端。完整前缀哈希、跨池/namespace 归因、容量过期、溢出

@@ -2,6 +2,27 @@
 
 Status date: 2026-10-11.
 
+The V83 diagnosis of the completed V23 predictive arm confirms that each
+incomplete root's final original and thinking-disabled recovery responses
+used 8192 output tokens and finished with length; the recovery text is
+repetitive analysis, not a finished report. The only hard-budget finalization
+in django-12273 belongs to its test-analyst child, not the root; django-11740
+has none. Deadlines did not expire, children were not cancelled and JOINs
+were satisfied. Retain incomplete classification and investigate generation
+degeneration without claiming a scheduling or recovery failure.
+
+All4720 no_cold_capacity handoff closures map to independent requests with
+later native prefill service. Close-to-first-prefill P50/P90 is73.051/116.885ms,
+max1654.871ms;770 exceed100ms and48 exceed500ms. Their1.390TB of native
+FULL Host-hit counters are neither a feasible early-recovery denominator nor
+proof that free capacity appeared after rejection. Do not add general retry
+polling from these counts; preserve rearming after linked child device release.
+The measured exclusive wall totals include113.822s of reentry inspection,
+90.732s control_drain and74.104s opportunity sampling. They are not JCT
+savings; select subsequent reductions from actual path evidence. Keep
+v83_v23_terminal_and_handoff_diagnostics_20261011.json. Native remains live,
+the V24 target stays dd12454 and the full performance goal remains unmet.
+
 The V82 follow-up skips unmatched power-of-two prefix ranges in the background
 eviction writer using the existing sorted lengths and binary boundaries.
 Keep exact terminal hashes, cross-pool/namespace attribution, expiry, overflow

@@ -1,0 +1,104 @@
+{
+  "schema_version": 1,
+  "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v23",
+  "scope": "Completed predictive-arm diagnosis; the native arm is still running and this is not a performance comparison.",
+  "inputs": {
+    "predictive_h2d/opportunities/admission_opportunities.jsonl": "88c765cdbd6251ae1b37c2d4a19724ebdb99cc1b58763aada27fd0a77c524d5b",
+    "predictive_h2d/server/runtime_events.sglang.jsonl": "cccd3de6d1983bed6965bcdc9bd60762b1dcdec53cbb0b307a3b5b908f2b639b",
+    "predictive_h2d/server/runtime_audit.jsonl": "7bc71a8a890788ad05c57c5aefd598e5b7c5ff7125ab6b9706e9d8f147de71ae",
+    "predictive_h2d/client_156/workflows/django__django-11740/result.json": "5431169d999a8252735352d446815ae17172b5efc3d3ee1593162710bcd10194",
+    "predictive_h2d/client_156/workflows/django__django-12273/result.json": "967916f07e14f5b00da17c5a9dfbf43ea8a261a8216f0ab31f47fd147427d587"
+  },
+  "incomplete_workflows": [
+    {
+      "instance_id": "django__django-11740",
+      "outcome": "incomplete",
+      "error": null,
+      "deadline_expired": false,
+      "child_cancel_count": 0,
+      "all_joins_satisfied": true,
+      "all_subagents_returned": true,
+      "final_text_chars": 39226,
+      "root_hard_budget_finalization_count": 0,
+      "last_root_responses": [
+        {
+          "request_id": "beliefkv:01a12a15-663f-7400-837f-808952d08f97",
+          "finish_reason": "length",
+          "output_tokens": 8192,
+          "visible_output_chars": 0
+        },
+        {
+          "request_id": "beliefkv:01a12a16-096a-7870-8857-dcd5ae6c845d",
+          "finish_reason": "length",
+          "output_tokens": 8192,
+          "visible_output_chars": 39226,
+          "is_empty_reasoning_recovery": true
+        }
+      ]
+    },
+    {
+      "instance_id": "django__django-12273",
+      "outcome": "incomplete",
+      "error": null,
+      "deadline_expired": false,
+      "child_cancel_count": 0,
+      "all_joins_satisfied": true,
+      "all_subagents_returned": true,
+      "final_text_chars": 30297,
+      "root_hard_budget_finalization_count": 0,
+      "child_hard_budget_finalization": {
+        "agent_scope": "autonomous:test-analyst",
+        "reason": "graph_step_hard_limit_low",
+        "graph_step": 2017,
+        "graph_step_hard_limit": 2048,
+        "graph_step_reserve": 32,
+        "graph_recursion_limit": 9999,
+        "retained_tools": 0
+      },
+      "last_root_responses": [
+        {
+          "request_id": "beliefkv:01a12a17-4067-7a20-b355-83619725cd8e",
+          "finish_reason": "length",
+          "output_tokens": 8192,
+          "visible_output_chars": 0
+        },
+        {
+          "request_id": "beliefkv:01a12a17-d154-7130-aa51-2da64558e79f",
+          "finish_reason": "length",
+          "output_tokens": 8192,
+          "visible_output_chars": 30297,
+          "is_empty_reasoning_recovery": true
+        }
+      ]
+    }
+  ],
+  "terminal_interpretation": "Both final original responses were empty reasoning-only outputs at the generation limit. The existing recovery call disabled thinking, but returned repetitive visible analysis truncated at the same limit. Keep incomplete outcomes; generation degeneration is observed, its root cause and any dependence on scheduling are not identified.",
+  "handoff_capacity_rejections": {
+    "closed_records": 4720,
+    "independent_requests": 4720,
+    "matched_prefill_services": 4720,
+    "close_to_first_prefill_ms": {
+      "p50": 73.051025390625,
+      "p90": 116.885498046875,
+      "max": 1654.871337890625
+    },
+    "more_than_100ms": 770,
+    "more_than_500ms": 48,
+    "requests_with_residual_full_host_hit": 4720,
+    "residual_full_host_hit_bytes": 1389764792320,
+    "requests_without_prior_handoff_issue": 2702,
+    "negative_clock_pairs": 0,
+    "service_boundary": "Earliest service_start_ts_ms of the request's observed prefill gpu_service_sample; llm_submit timestamps are ingress, not first GPU service.",
+    "interpretation": "Native service follows all rejections. FULL Host-hit counters do not identify feasible early transfer, free-capacity changes, exposed H2D waiting or an oracle saving.",
+    "decision": "Do not introduce generic retry polling from this evidence. Retain the existing parent retry after linked terminal-child device capacity is actually released."
+  },
+  "instrumented_exclusive_wall_ms": {
+    "reentry_inspection": 113821.912487,
+    "control_drain": 90732.20464,
+    "opportunity_sampling": 74103.939231,
+    "semantics": "Cumulative completed runtime calls without nested double counting; not isolated CPU/GIL attribution or subtractable JCT."
+  },
+  "queued_v24_revision": "dd1245477187e3a7ce925822d971117c76798307",
+  "policy_changed_by_diagnosis": false,
+  "performance_goal_achieved": false
+}
