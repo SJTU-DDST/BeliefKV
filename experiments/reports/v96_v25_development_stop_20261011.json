@@ -1,0 +1,691 @@
+{
+  "schema_version": 1,
+  "status": "development_interrupted",
+  "started_at_local": "2026-10-11T22:13:59.314748+08:00",
+  "reason": "User-authorized fast development restart with committed native-array first-service proof optimization 741d9d4; CPU records remain identical and real GPU effect requires validation.",
+  "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25",
+  "collection_commit": "a77018068869f66e3cc55479009239ed30e47c97",
+  "frozen_plan_sha256": "c1d4543b80470bae5387a119fdebf0b7c6a732a26da0e48c1a01f25a6612ebf0",
+  "pids": {
+    "coordinator": 3075855,
+    "pair_driver": 3076049,
+    "regime_driver": 3076064,
+    "client": 3077887,
+    "server": 3076082,
+    "scheduler": 3076435,
+    "detokenizer": 3076436,
+    "resource_tracker": 3076434
+  },
+  "process_identities_before_stop": {
+    "coordinator": [
+      "S",
+      1,
+      "589559438"
+    ],
+    "pair_driver": [
+      "S",
+      3075855,
+      "589559564"
+    ],
+    "regime_driver": [
+      "S",
+      3076049,
+      "589559633"
+    ],
+    "client": [
+      "S",
+      3076064,
+      "589574984"
+    ],
+    "server": [
+      "R",
+      3076064,
+      "589559646"
+    ],
+    "scheduler": [
+      "R",
+      3076082,
+      "589560931"
+    ],
+    "detokenizer": [
+      "S",
+      3076082,
+      "589560931"
+    ],
+    "resource_tracker": [
+      "S",
+      3076082,
+      "589560931"
+    ]
+  },
+  "written_outcomes_before_stop": {
+    "completed": 52
+  },
+  "written_results_before_stop": [
+    {
+      "instance_id": "django__django-10914",
+      "outcome": "completed",
+      "duration_seconds": 1194.1580987637863
+    },
+    {
+      "instance_id": "django__django-10973",
+      "outcome": "completed",
+      "duration_seconds": 823.7846592301503
+    },
+    {
+      "instance_id": "django__django-10999",
+      "outcome": "completed",
+      "duration_seconds": 2445.430238368921
+    },
+    {
+      "instance_id": "django__django-11066",
+      "outcome": "completed",
+      "duration_seconds": 1572.3616770152003
+    },
+    {
+      "instance_id": "django__django-11087",
+      "outcome": "completed",
+      "duration_seconds": 1645.233577992767
+    },
+    {
+      "instance_id": "django__django-11095",
+      "outcome": "completed",
+      "duration_seconds": 1419.64225950744
+    },
+    {
+      "instance_id": "django__django-11099",
+      "outcome": "completed",
+      "duration_seconds": 2056.5149169536307
+    },
+    {
+      "instance_id": "django__django-11119",
+      "outcome": "completed",
+      "duration_seconds": 1904.9654802940786
+    },
+    {
+      "instance_id": "django__django-11163",
+      "outcome": "completed",
+      "duration_seconds": 758.2360115488991
+    },
+    {
+      "instance_id": "django__django-11179",
+      "outcome": "completed",
+      "duration_seconds": 1685.6940790684894
+    },
+    {
+      "instance_id": "django__django-11239",
+      "outcome": "completed",
+      "duration_seconds": 1718.927615690045
+    },
+    {
+      "instance_id": "django__django-11276",
+      "outcome": "completed",
+      "duration_seconds": 2474.8437260352075
+    },
+    {
+      "instance_id": "django__django-11451",
+      "outcome": "completed",
+      "duration_seconds": 957.3904551416636
+    },
+    {
+      "instance_id": "django__django-11532",
+      "outcome": "completed",
+      "duration_seconds": 2029.8582538738847
+    },
+    {
+      "instance_id": "django__django-11820",
+      "outcome": "completed",
+      "duration_seconds": 1618.288126961328
+    },
+    {
+      "instance_id": "django__django-12741",
+      "outcome": "completed",
+      "duration_seconds": 887.6851033596322
+    },
+    {
+      "instance_id": "django__django-13023",
+      "outcome": "completed",
+      "duration_seconds": 1366.5784769821912
+    },
+    {
+      "instance_id": "django__django-14349",
+      "outcome": "completed",
+      "duration_seconds": 1142.3643223326653
+    },
+    {
+      "instance_id": "django__django-14631",
+      "outcome": "completed",
+      "duration_seconds": 1727.3974937340245
+    },
+    {
+      "instance_id": "django__django-15103",
+      "outcome": "completed",
+      "duration_seconds": 811.0043826671317
+    },
+    {
+      "instance_id": "django__django-15368",
+      "outcome": "completed",
+      "duration_seconds": 2267.4439003486186
+    },
+    {
+      "instance_id": "django__django-16255",
+      "outcome": "completed",
+      "duration_seconds": 1947.263690320775
+    },
+    {
+      "instance_id": "django__django-16667",
+      "outcome": "completed",
+      "duration_seconds": 1659.0796264912933
+    },
+    {
+      "instance_id": "django__django-16877",
+      "outcome": "completed",
+      "duration_seconds": 997.9578570211306
+    },
+    {
+      "instance_id": "pallets__flask-5014",
+      "outcome": "completed",
+      "duration_seconds": 1074.204603837803
+    },
+    {
+      "instance_id": "psf__requests-1142",
+      "outcome": "completed",
+      "duration_seconds": 856.9004431013018
+    },
+    {
+      "instance_id": "psf__requests-1766",
+      "outcome": "completed",
+      "duration_seconds": 1023.002374897711
+    },
+    {
+      "instance_id": "psf__requests-1921",
+      "outcome": "completed",
+      "duration_seconds": 1898.7461640024558
+    },
+    {
+      "instance_id": "psf__requests-2317",
+      "outcome": "completed",
+      "duration_seconds": 1369.2403316572309
+    },
+    {
+      "instance_id": "psf__requests-2931",
+      "outcome": "completed",
+      "duration_seconds": 2452.0360562242568
+    },
+    {
+      "instance_id": "psf__requests-6028",
+      "outcome": "completed",
+      "duration_seconds": 1731.251246476546
+    },
+    {
+      "instance_id": "pydata__xarray-3095",
+      "outcome": "completed",
+      "duration_seconds": 2254.5329111199826
+    },
+    {
+      "instance_id": "pydata__xarray-3305",
+      "outcome": "completed",
+      "duration_seconds": 2440.039499297738
+    },
+    {
+      "instance_id": "pydata__xarray-3677",
+      "outcome": "completed",
+      "duration_seconds": 1156.2696256358176
+    },
+    {
+      "instance_id": "pydata__xarray-3993",
+      "outcome": "completed",
+      "duration_seconds": 1015.7326919957995
+    },
+    {
+      "instance_id": "pydata__xarray-4075",
+      "outcome": "completed",
+      "duration_seconds": 2267.092835522257
+    },
+    {
+      "instance_id": "pydata__xarray-4094",
+      "outcome": "completed",
+      "duration_seconds": 2147.5353662911803
+    },
+    {
+      "instance_id": "pydata__xarray-4629",
+      "outcome": "completed",
+      "duration_seconds": 1372.5079180374742
+    },
+    {
+      "instance_id": "pydata__xarray-6744",
+      "outcome": "completed",
+      "duration_seconds": 2049.3489086404443
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4551",
+      "outcome": "completed",
+      "duration_seconds": 2512.1855802312493
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4661",
+      "outcome": "completed",
+      "duration_seconds": 2014.986090947874
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6386",
+      "outcome": "completed",
+      "duration_seconds": 1127.5201071901247
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6903",
+      "outcome": "completed",
+      "duration_seconds": 1958.568152738735
+    },
+    {
+      "instance_id": "pylint-dev__pylint-7277",
+      "outcome": "completed",
+      "duration_seconds": 1766.0575975077227
+    },
+    {
+      "instance_id": "pylint-dev__pylint-8898",
+      "outcome": "completed",
+      "duration_seconds": 2506.9590551406145
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10051",
+      "outcome": "completed",
+      "duration_seconds": 1150.7130011860281
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5262",
+      "outcome": "completed",
+      "duration_seconds": 1999.253274424933
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5809",
+      "outcome": "completed",
+      "duration_seconds": 2209.182587458752
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7205",
+      "outcome": "completed",
+      "duration_seconds": 1666.975877375342
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7432",
+      "outcome": "completed",
+      "duration_seconds": 2404.152972551994
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7521",
+      "outcome": "completed",
+      "duration_seconds": 2289.727762791328
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7982",
+      "outcome": "completed",
+      "duration_seconds": 1577.4594313176349
+    }
+  ],
+  "started_instances_before_stop": [
+    "django__django-10097",
+    "django__django-10554",
+    "django__django-10880",
+    "django__django-10914",
+    "django__django-10973",
+    "django__django-10999",
+    "django__django-11066",
+    "django__django-11087",
+    "django__django-11095",
+    "django__django-11099",
+    "django__django-11119",
+    "django__django-11138",
+    "django__django-11141",
+    "django__django-11149",
+    "django__django-11163",
+    "django__django-11179",
+    "django__django-11206",
+    "django__django-11211",
+    "django__django-11239",
+    "django__django-11265",
+    "django__django-11276",
+    "django__django-11292",
+    "django__django-11299",
+    "django__django-11333",
+    "django__django-11400",
+    "django__django-11433",
+    "django__django-11451",
+    "django__django-11477",
+    "django__django-11490",
+    "django__django-11532",
+    "django__django-11734",
+    "django__django-11820",
+    "django__django-12741",
+    "django__django-12754",
+    "django__django-13023",
+    "django__django-13964",
+    "django__django-14349",
+    "django__django-14500",
+    "django__django-14631",
+    "django__django-15103",
+    "django__django-15315",
+    "django__django-15368",
+    "django__django-16255",
+    "django__django-16502",
+    "django__django-16667",
+    "django__django-16877",
+    "django__django-16938",
+    "mwaskom__seaborn-3069",
+    "mwaskom__seaborn-3187",
+    "pallets__flask-5014",
+    "psf__requests-1142",
+    "psf__requests-1724",
+    "psf__requests-1766",
+    "psf__requests-1921",
+    "psf__requests-2317",
+    "psf__requests-2931",
+    "psf__requests-5414",
+    "psf__requests-6028",
+    "pydata__xarray-2905",
+    "pydata__xarray-3095",
+    "pydata__xarray-3151",
+    "pydata__xarray-3305",
+    "pydata__xarray-3677",
+    "pydata__xarray-3993",
+    "pydata__xarray-4075",
+    "pydata__xarray-4094",
+    "pydata__xarray-4356",
+    "pydata__xarray-4629",
+    "pydata__xarray-4687",
+    "pydata__xarray-4966",
+    "pydata__xarray-6461",
+    "pydata__xarray-6599",
+    "pydata__xarray-6721",
+    "pydata__xarray-6744",
+    "pydata__xarray-6938",
+    "pydata__xarray-6992",
+    "pydata__xarray-7229",
+    "pydata__xarray-7233",
+    "pydata__xarray-7393",
+    "pylint-dev__pylint-4551",
+    "pylint-dev__pylint-4604",
+    "pylint-dev__pylint-4661",
+    "pylint-dev__pylint-4970",
+    "pylint-dev__pylint-6386",
+    "pylint-dev__pylint-6528",
+    "pylint-dev__pylint-6903",
+    "pylint-dev__pylint-7080",
+    "pylint-dev__pylint-7277",
+    "pylint-dev__pylint-8898",
+    "pytest-dev__pytest-10051",
+    "pytest-dev__pytest-10081",
+    "pytest-dev__pytest-10356",
+    "pytest-dev__pytest-5262",
+    "pytest-dev__pytest-5631",
+    "pytest-dev__pytest-5787",
+    "pytest-dev__pytest-5809",
+    "pytest-dev__pytest-5840",
+    "pytest-dev__pytest-6197",
+    "pytest-dev__pytest-6202",
+    "pytest-dev__pytest-7205",
+    "pytest-dev__pytest-7236",
+    "pytest-dev__pytest-7324",
+    "pytest-dev__pytest-7432",
+    "pytest-dev__pytest-7490",
+    "pytest-dev__pytest-7521",
+    "pytest-dev__pytest-7571",
+    "pytest-dev__pytest-7982",
+    "pytest-dev__pytest-8399"
+  ],
+  "administratively_censored_instances": [
+    "django__django-10097",
+    "django__django-10554",
+    "django__django-10880",
+    "django__django-11138",
+    "django__django-11141",
+    "django__django-11149",
+    "django__django-11206",
+    "django__django-11211",
+    "django__django-11265",
+    "django__django-11292",
+    "django__django-11299",
+    "django__django-11333",
+    "django__django-11400",
+    "django__django-11433",
+    "django__django-11477",
+    "django__django-11490",
+    "django__django-11734",
+    "django__django-12754",
+    "django__django-13964",
+    "django__django-14500",
+    "django__django-15315",
+    "django__django-16502",
+    "django__django-16938",
+    "mwaskom__seaborn-3069",
+    "mwaskom__seaborn-3187",
+    "psf__requests-1724",
+    "psf__requests-5414",
+    "pydata__xarray-2905",
+    "pydata__xarray-3151",
+    "pydata__xarray-4356",
+    "pydata__xarray-4687",
+    "pydata__xarray-4966",
+    "pydata__xarray-6461",
+    "pydata__xarray-6599",
+    "pydata__xarray-6721",
+    "pydata__xarray-6938",
+    "pydata__xarray-6992",
+    "pydata__xarray-7229",
+    "pydata__xarray-7233",
+    "pydata__xarray-7393",
+    "pylint-dev__pylint-4604",
+    "pylint-dev__pylint-4970",
+    "pylint-dev__pylint-6528",
+    "pylint-dev__pylint-7080",
+    "pytest-dev__pytest-10081",
+    "pytest-dev__pytest-10356",
+    "pytest-dev__pytest-5631",
+    "pytest-dev__pytest-5787",
+    "pytest-dev__pytest-5840",
+    "pytest-dev__pytest-6197",
+    "pytest-dev__pytest-6202",
+    "pytest-dev__pytest-7236",
+    "pytest-dev__pytest-7324",
+    "pytest-dev__pytest-7490",
+    "pytest-dev__pytest-7571",
+    "pytest-dev__pytest-8399"
+  ],
+  "unarrived_instances": [
+    "django__django-11133",
+    "django__django-11551",
+    "django__django-11555",
+    "django__django-11603",
+    "django__django-11728",
+    "django__django-11740",
+    "django__django-11749",
+    "django__django-11790",
+    "django__django-11815",
+    "django__django-11848",
+    "django__django-11880",
+    "django__django-11885",
+    "django__django-11951",
+    "django__django-11964",
+    "django__django-11999",
+    "django__django-12039",
+    "django__django-12050",
+    "django__django-12125",
+    "django__django-12143",
+    "django__django-12155",
+    "django__django-12193",
+    "django__django-12209",
+    "django__django-12262",
+    "django__django-12273",
+    "django__django-12276",
+    "django__django-12304",
+    "django__django-12308",
+    "django__django-12325",
+    "django__django-12406",
+    "django__django-12419",
+    "django__django-12663",
+    "django__django-12708",
+    "django__django-12713",
+    "django__django-12774",
+    "django__django-12858",
+    "django__django-12965",
+    "django__django-13012",
+    "django__django-13028",
+    "django__django-13033",
+    "django__django-13089",
+    "django__django-13109",
+    "django__django-13112",
+    "django__django-13121",
+    "django__django-13128",
+    "django__django-13158",
+    "django__django-13195",
+    "django__django-13212",
+    "django__django-13279"
+  ],
+  "native_started": false,
+  "next_target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v96-first-service-20261011",
+  "next_target_revision": "2d25850d37caecbee8558f56c60d7d47ea46b706",
+  "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26",
+  "semantics": "Started unfinished tasks are administratively censored; unarrived tasks were never collected. Preserve frozen plan, raw traces and archived outcomes. This is not a completed native comparison.",
+  "signals": [
+    {
+      "name": "coordinator",
+      "pid": 3075855,
+      "signal": "SIGTERM",
+      "at_local": "2026-10-11T22:13:59.315765+08:00"
+    },
+    {
+      "name": "pair_driver",
+      "pid": 3076049,
+      "signal": "SIGTERM",
+      "at_local": "2026-10-11T22:13:59.315819+08:00"
+    },
+    {
+      "name": "regime_driver",
+      "pid": 3076064,
+      "signal": "SIGTERM",
+      "at_local": "2026-10-11T22:13:59.315860+08:00"
+    }
+  ],
+  "process_identities_after_stop": {
+    "coordinator": null,
+    "pair_driver": null,
+    "regime_driver": null,
+    "client": null,
+    "server": null,
+    "scheduler": null,
+    "detokenizer": null,
+    "resource_tracker": null
+  },
+  "remaining_live_processes": [],
+  "stopped_verified_at_local": "2026-10-11T22:15:24.469866+08:00",
+  "written_outcomes_after_stop": {
+    "completed": 52
+  },
+  "gpu_allocations_observed_empty_at_local": "2026-10-11T22:15:24.469903+08:00",
+  "new_coordinator_pid": 3845301,
+  "new_coordinator_start_identity": [
+    "R",
+    3845298,
+    "589838757"
+  ],
+  "new_launch_command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "-u",
+    "/home/longhao/experiment/.worktrees/beliefkv-v96-first-service-20261011/scripts/launch_semantic_h2d_after_pair.py",
+    "--repo",
+    "/home/longhao/experiment/BeliefKV",
+    "--previous-run",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25",
+    "--target-checkout",
+    "/home/longhao/experiment/.worktrees/beliefkv-v96-first-service-20261011",
+    "--run-root",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26",
+    "--state",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v26_launch_after_v25_20261011.json",
+    "--port",
+    "18454",
+    "--python",
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "--development-restart",
+    "--wait-pid",
+    "3075855",
+    "--wait-pid",
+    "3076049",
+    "--wait-pid",
+    "3076064",
+    "--wait-pid",
+    "3077887",
+    "--wait-pid",
+    "3076082",
+    "--wait-pid",
+    "3076435",
+    "--wait-pid",
+    "3076436",
+    "--wait-pid",
+    "3076434"
+  ],
+  "removed_completed_workspaces": 52,
+  "retained_completed_workspaces": 0,
+  "removed_matching_containers": 56,
+  "retained_partial_workspaces": [
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-10097/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-10554/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-10880/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-11138/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-11141/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-11149/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-11206/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-11211/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-11265/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-11292/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-11299/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-11333/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-11400/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-11433/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-11477/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-11490/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-11734/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-12754/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-13964/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-14500/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-15315/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-16502/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/django__django-16938/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/mwaskom__seaborn-3069/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/psf__requests-1724/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/psf__requests-5414/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pydata__xarray-2905/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pydata__xarray-3151/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pydata__xarray-4356/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pydata__xarray-4687/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pydata__xarray-4966/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pydata__xarray-6461/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pydata__xarray-6599/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pydata__xarray-6721/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pydata__xarray-6938/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pydata__xarray-6992/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pydata__xarray-7229/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pydata__xarray-7233/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pydata__xarray-7393/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pylint-dev__pylint-4604/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pylint-dev__pylint-7080/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pytest-dev__pytest-10081/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pytest-dev__pytest-10356/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pytest-dev__pytest-5631/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pytest-dev__pytest-5787/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pytest-dev__pytest-5840/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pytest-dev__pytest-6197/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pytest-dev__pytest-6202/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pytest-dev__pytest-7236/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pytest-dev__pytest-7324/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pytest-dev__pytest-7490/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pytest-dev__pytest-7571/workspace",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25/predictive_h2d/client_156/workflows/pytest-dev__pytest-8399/workspace"
+  ],
+  "cleanup_verified_at_local": "2026-10-11T22:19:04.675094+08:00",
+  "runtime_final_shutdown_receipts_available": [],
+  "shutdown_log_semantics": "SIGTERM at the recorded administrative stop and subsequent drain/reset/exit are shutdown effects, not spontaneous workflow or cache failures. Performance windows end before the administrative stop."
+}

@@ -1,0 +1,249 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-11T22:20:36.038084+08:00",
+  "scope": "Cold V26 real-workload startup with committed native-array first-service optimization; not a throughput or JCT improvement claim.",
+  "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26",
+  "authoritative_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v26_launch_after_v25_20261011.json",
+  "state_sha256": "a970a04e5ba76270a40dcbf3fc55b5334466d08422c60cc271cae8a535620914",
+  "state_snapshot": {
+    "status": "running_new_pair",
+    "previous_collection_scope": "interrupted_development",
+    "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25",
+    "previous_code_commit": "a77018068869f66e3cc55479009239ed30e47c97",
+    "previous_patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+    "previous_execution_verification": {
+      "collection_code_commit": "a77018068869f66e3cc55479009239ed30e47c97",
+      "verification_code_commit": "66b701a70233cb7d29d8d88429a92a95e0b8081e",
+      "execution_source_unchanged": true,
+      "non_execution_paths": [
+        "docs/",
+        "tests/",
+        "scripts/summarize_semantic_h2d_ab.py",
+        "scripts/launch_semantic_h2d_after_pair.py"
+      ],
+      "changed_committed_paths": [
+        "docs/architecture_status_zh.md",
+        "docs/beliefkv_design.md",
+        "docs/experiment_operating_notes_zh.md",
+        "docs/implementation_plan.md"
+      ]
+    },
+    "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v96-first-service-20261011",
+    "target_revision": "2d25850d37caecbee8558f56c60d7d47ea46b706",
+    "target_patch_sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+    "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26",
+    "wait_process_identities": {
+      "3075855": null,
+      "3076049": null,
+      "3076064": null,
+      "3077887": null,
+      "3076082": null,
+      "3076435": null,
+      "3076436": null,
+      "3076434": null
+    },
+    "environment": {
+      "PYTHON": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "RUN_ROOT": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26",
+      "ROOT_COUNT": "156",
+      "ARRIVAL_BATCH_SIZE": "108",
+      "ARRIVAL_BATCH_INTERVAL_MS": "3600000",
+      "ARM_ORDER": "predictive_h2d native",
+      "RESUME_PENDING": "0",
+      "HOST_SPLIT": "80:20",
+      "PORT": "18454",
+      "SAMPLING_SEED": "21",
+      "REPETITION_ID": "0",
+      "ACTIVATION_WALL_CLOCK_SECONDS": "14400.0",
+      "SEMANTIC_REPORT_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/child_semantic_work_live_v7_quantiles/semantic_event_calibrated.json",
+      "PREPARE_HOST": "1",
+      "H2D_SEED_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/native_h2d_ack_seed_20261004.json",
+      "TOOL_TIMING_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/qwen35_native_event_horizons_20260928_calibrated.json",
+      "TRANSFER_SERVICE_SEED": "/home/longhao/experiment/BeliefKV/experiments/models/native_transfer_service_seed_v4.json",
+      "ENABLE_TOOL_TIMING": "1",
+      "PREFETCH_LEAD_MS": "500",
+      "SEMANTIC_WORK_STATISTIC": "center",
+      "EOS_PROTOCOL_WINDOW_MS": "250",
+      "FANOUT_PROFILE": "native_in_graph_2to4",
+      "CHILD_FINAL_REPORT_SHADOW": "1",
+      "WORKLOAD_MANIFEST": "/home/longhao/experiment/BeliefKV/configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json"
+    },
+    "registered_at_utc": "2026-10-11T14:15:24.977033+00:00",
+    "stale_control_socket_removed": false,
+    "deployed_engine": {
+      "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+      "sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+      "expected_tree": "6e1dc30d83e05cbca3d470892d7cde1000e19ad9",
+      "actual_tree": "6e1dc30d83e05cbca3d470892d7cde1000e19ad9",
+      "matches_worktree": true,
+      "covered_untracked_paths": [
+        "test/srt/test_beliefkv_radix_prefix.py",
+        "test/srt/test_beliefkv_terminal_capacity.py",
+        "test/srt/test_beliefkv_text_prompt_ids.py"
+      ]
+    },
+    "started_at_utc": "2026-10-11T14:15:25.998950+00:00"
+  },
+  "ab_plan_sha256": "4ccfa183f385dee1d676bdb6c8e66f541ff9caebb62236b11ad7cb77e2b0fe6f",
+  "configuration_differences_from_v25": {
+    "code_commit": {
+      "previous": "a77018068869f66e3cc55479009239ed30e47c97",
+      "current": "2d25850d37caecbee8558f56c60d7d47ea46b706"
+    }
+  },
+  "full_environment_matches_v25": true,
+  "health_http_status": 200,
+  "optimized_telemetry_sha256": "a064d04ed67b95dc66341ce81a85b5d4cc6188652b202a31459aaa40f4eb627e",
+  "documentation_execution_verification": {
+    "collection_code_commit": "2d25850d37caecbee8558f56c60d7d47ea46b706",
+    "verification_code_commit": "2d25850d37caecbee8558f56c60d7d47ea46b706",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "process_identities": {
+    "3845301": [
+      "S",
+      1,
+      "589838757"
+    ],
+    "3845510": [
+      "S",
+      3845301,
+      "589838910"
+    ],
+    "3845525": [
+      "S",
+      3845510,
+      "589838980"
+    ],
+    "3845543": [
+      "R",
+      3845525,
+      "589838993"
+    ],
+    "3845905": [
+      "R",
+      3845543,
+      "589840303"
+    ],
+    "3849212": [
+      "S",
+      3845525,
+      "589855346"
+    ]
+  },
+  "prefix_inputs": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/server/runtime_events.sglang.jsonl": {
+      "read_prefix_bytes": 1447473,
+      "read_prefix_sha256": "a5b0e2fff97131d01ae7aebfe0afc9cd3c9d1cc728c78b23f8e93d17874574d9"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26/predictive_h2d/server/runtime_audit.jsonl": {
+      "read_prefix_bytes": 44453166,
+      "read_prefix_sha256": "8e22d1fb8e308cacc2393e3623600f4b1683a2aa4f5ecd6fa8b855214bb1586e"
+    }
+  },
+  "observed_llm_submits": 901,
+  "first_llm_submit_ts_ms": 1791728333528.3984,
+  "observed_prefill_batches": 695,
+  "prefill_geometry_sources": {
+    "native_batch": 930
+  },
+  "first_prefill_examples": [
+    {
+      "sample_id": "native-service-000000001",
+      "batch_size": 1,
+      "request_samples": [
+        {
+          "request_id": "beliefkv:01a12b54-af1d-7053-a0ff-0612d1497c2d",
+          "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31",
+          "invocation_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31:root",
+          "context_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31:context:root",
+          "context_epoch": 0,
+          "phase": "prefill",
+          "sequence_tokens_before": 0,
+          "output_tokens_before": 0,
+          "token_delta": 4096,
+          "token_delta_semantics": "prefill_extend_input_len",
+          "prefill_geometry_source": "native_batch"
+        }
+      ]
+    },
+    {
+      "sample_id": "native-service-000000002",
+      "batch_size": 1,
+      "request_samples": [
+        {
+          "request_id": "beliefkv:01a12b54-af1d-7053-a0ff-0612d1497c2d",
+          "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31",
+          "invocation_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31:root",
+          "context_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31:context:root",
+          "context_epoch": 0,
+          "phase": "prefill",
+          "sequence_tokens_before": 4096,
+          "output_tokens_before": 0,
+          "token_delta": 4096,
+          "token_delta_semantics": "prefill_extend_input_len",
+          "prefill_geometry_source": "native_batch"
+        }
+      ]
+    },
+    {
+      "sample_id": "native-service-000000003",
+      "batch_size": 3,
+      "request_samples": [
+        {
+          "request_id": "beliefkv:01a12b54-af1d-7053-a0ff-0612d1497c2d",
+          "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31",
+          "invocation_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31:root",
+          "context_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31:context:root",
+          "context_epoch": 0,
+          "phase": "prefill",
+          "sequence_tokens_before": 8192,
+          "output_tokens_before": 0,
+          "token_delta": 488,
+          "token_delta_semantics": "prefill_extend_input_len",
+          "prefill_geometry_source": "native_batch"
+        },
+        {
+          "request_id": "beliefkv:01a12b54-b2a3-7a92-bd22-0f9c09d230de",
+          "workflow_id": "deepagents:autonomous:pylint-dev__pylint-7277:7a081127326d",
+          "invocation_id": "deepagents:autonomous:pylint-dev__pylint-7277:7a081127326d:root",
+          "context_id": "deepagents:autonomous:pylint-dev__pylint-7277:7a081127326d:context:root",
+          "context_epoch": 0,
+          "phase": "prefill",
+          "sequence_tokens_before": 8192,
+          "output_tokens_before": 0,
+          "token_delta": 550,
+          "token_delta_semantics": "prefill_extend_input_len",
+          "prefill_geometry_source": "native_batch"
+        },
+        {
+          "request_id": "beliefkv:01a12b54-b211-7ba3-b0cd-ded89b376960",
+          "workflow_id": "deepagents:autonomous:django__django-11276:21576a5c06fc",
+          "invocation_id": "deepagents:autonomous:django__django-11276:21576a5c06fc:root",
+          "context_id": "deepagents:autonomous:django__django-11276:21576a5c06fc:context:root",
+          "context_epoch": 0,
+          "phase": "prefill",
+          "sequence_tokens_before": 4096,
+          "output_tokens_before": 0,
+          "token_delta": 3058,
+          "token_delta_semantics": "prefill_extend_input_len",
+          "prefill_geometry_source": "native_batch"
+        }
+      ]
+    }
+  ],
+  "writer_error": null,
+  "dropped_records": 0,
+  "failed_records": 0,
+  "telemetry_status_sha256": "1f0b421772621c1cf25158bbba8048b84b98bc0a4c042c368c21fd93d74f21a6",
+  "disk_available_bytes": 77661196288,
+  "old_stop_receipt": "experiments/reports/v96_v25_development_stop_20261011.json",
+  "semantics": "Each file prefix is read and sealed separately, not an atomic snapshot. V25 unfinished and unarrived tasks are retained separately; only the stabilized complete same-version pair establishes benefit."
+}
