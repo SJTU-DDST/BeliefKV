@@ -2,6 +2,35 @@
 
 Status date: 2026-10-11.
 
+V96: optimize the synchronous first-service proof for native token arrays
+using array comparisons and divergence search; retain the list shared-prefix
+walk, independent ACK snapshots and FULL/Mamba allocation identity checks.
+Commit741d9d4 passes85 telemetry checks. All48 alternating CPU cases retain
+identical records/consumed commands. Matching32K single/16-extent means fall
+from1.4742/1.9879 to0.0561/0.4277ms. Retain the8K/16-extent list cost
+0.7728 to0.8256ms and the unsuccessful eager-list-conversion report.
+ACK prefix materialization remains separate. Do not extrapolate CPU fixtures
+to throughput or JCT. Prepare a fresh V26 development restart with this
+committed fix, preserving V25 outcomes, active/unarrived tasks, frozen sources
+and diagnostic windows. No hot update of the running V25 source or engine.
+
+The complete V25 600-900s diagnostic window has43.732s instrumented
+exclusive Python wall,36.456ms mean decode worker,23295 mean context tokens
+and51.824s prefill worker intervals. Old V24/V23-native references have
+different source and realized demand. Exclude21:48:26-21:48:52 CST, or
+1015.164-1041.164s from the first GPU sample, from primary windows because
+of live profiling. Retain371 valid GIL samples/120 read errors;7 include
+first-service proof and10 key-path materialization, while status publication
+has zero. Sample frequencies are not total CPU, GPU stall or removable JCT.
+
+The21:59:28 CST separately sealed lifecycle audit verifies early-started,
+next-request-reused FULL for418 tools/6.922GB and26 JOINs/274.125MB.
+Tool/JOIN total FULL reuse is7.536/0.291GB; ACK-to-service P90 remains
+952.55/2792.28ms. Preserve59 unknown JOIN boundaries, keep84.081GB demand
+handoff separate, and do not treat477.752GB residual tool native Host hits
+as proven advance opportunity or oracle benefit. Continue shared-cost,
+JOIN-tail and useful-FULL coverage work; the full objective stays active.
+
 V95: V24 was intentionally interrupted at 21:18:54 CST after 132
 completed outcomes; 24 unfinished tasks are administratively censored,
 not model failures. Native never started. Preserve the frozen plan,
