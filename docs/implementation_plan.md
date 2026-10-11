@@ -2,6 +2,18 @@
 
 Status date: 2026-10-11.
 
+V23 registration at2026-10-11 13:55:19CST now targets committed
+a6dd627587827f376bed7022d15e538100c0c775 in the frozen
+beliefkv-v72-prefix-capacity-20261011 checkout. At13:55:51, new waiting
+coordinator1083828 has PPID1 and start identity586838240; old waiting
+coordinator1024560 is absent. V22 native and collection processes remain
+live:153 completed,1 incomplete,2 unfinished. Workload,observations,native
+patch,maximum lead500ms and previous wait identities match. Keep
+v72_v23_prefix_capacity_registration_20261011.json; main state
+v23_launch_after_v22_20261011.json is authoritative. After the complete
+V22 pair and postprocessing, run predictive then cold same-version native.
+GPU throughput/JCT and early reused FULL remain unverified for this code.
+
 Use a fitting continuous prefix after bounded cold reclaim for JOIN/tool
 prefetch. Previously the refreshed plan included global evictable capacity
 and required the entire burst to fit, even when some FULL ancestors were
@@ -31,8 +43,9 @@ V22 native django__django-11885 is incomplete after two length-terminated
 root results with repetitive text. Both children returned, JOIN was satisfied,
 the deadline did not expire, no guard intervened and runtime delivery did
 not fail. Retain it as an incomplete result, not a GPU policy benefit.
-The current waiting registration remains60c5502 until explicitly replaced.
+These changes are included in the page-top V23 registration; V22 stays frozen.
 
+The following13:32 registration is superseded by a6dd627 and is historical.
 Registered V23 at2026-10-11 13:32:18CST for committed
 60c55021e097750f2faeef175d206c906279eabf in the frozen
 beliefkv-v71-tool-overrun-20261011 checkout. At13:32:35, coordinator1024560

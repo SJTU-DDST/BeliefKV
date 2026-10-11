@@ -2,6 +2,19 @@
 
 更新日期：2026-10-11。
 
+2026-10-11 13:55:19 CST 将尚未启动 V23 更新为
+a6dd627587827f376bed7022d15e538100c0c775，冻结 checkout 为
+beliefkv-v72-prefix-capacity-20261011。13:55:51 核验新等待
+协调器 PID 1083828、PPID=1、启动身份 586838240，原等待
+协调器 1024560 已退出；V22 原生 server/client 和前序采集
+协调进程保持运行，153 completed、1 incomplete、2 未结束。
+只更新等待登记，workload、观测、原生 patch、500 ms 最大
+提前量和前序等待进程身份保持一致。回执为
+v72_v23_prefix_capacity_registration_20261011.json；主工作区
+v23_launch_after_v22_20261011.json 为权威状态。完整 V22 pair
+和后处理结束后运行新版 predictive，再冷启动同版本 native。
+仍未取得该版本实际 GPU 吞吐/JCT 及提前 FULL 复用证明。
+
 JOIN/tool 预取补齐按实际空闲容量恢复部分前缀的路径。有限冷页
 回收后，原逻辑重建包含全局可驱逐容量的整批计划，再要求整批
 全部放得下；即使连续祖先 FULL 已可容纳，也会拒绝提交。
@@ -34,8 +47,9 @@ V22 native 新增 django__django-11885 incomplete：两个 child
 均自然返回、JOIN 满足，root 最后两次 llm_result 为 length，
 正文出现重复解释，deadline 未到期、guard 未干预、控制
 交付未失败；不得将该工具/模型轨迹终态算成 GPU 性能收益。
-以上修改尚待登记到 V23，当前登记仍为下面的 60c5502。
+以上修改已纳入页首 V23 登记；冻结 V22 不变。
 
+以下 13:32 的登记已由页首 a6dd627 替换，保留为历史记录。
 2026-10-11 13:32:18 CST 已将尚未启动 V23 的目标更新为
 60c55021e097750f2faeef175d206c906279eabf，冻结 checkout 为
 beliefkv-v71-tool-overrun-20261011。13:32:35 核验等待协调器
