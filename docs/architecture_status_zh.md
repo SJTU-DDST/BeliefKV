@@ -2,6 +2,39 @@
 
 更新日期：2026-10-12。
 
+V106：隔离分支已提交 793e8ba。JOIN/tool 的批量预取在 FULL
+前缀可容纳、必要 Mamba 暂无 slot 或超出本次字节预算时，
+先恢复该 checkpoint 的缺失 FULL，保留 Mamba 供随后恢复。
+纯 Mamba 步骤没有容量时继续等待；连续祖先、prefill 预留、
+原生分配与数据依赖仍有效。提交前重新核对身份和实际容量，
+容量增加也沿用原定 FULL-only 内容，耗时与回执只计实际传输。
+计划记录增加 deferred_mamba_slots；FULL ACK 不代表完整状态
+已经就绪。511 项相关检查与 45 项原生恢复检查通过，另有
+27 项原生 subtest。八组 CPU 容量对照中，16 FULL 单位、
+零 Mamba slot 的 JOIN/tool 由 3 节点/12 单位增至 4 节点/
+16 单位；这只验证规划和记账，不证明 GPU 或 JCT 收益。
+
+02:02:05-02:03:12 CST 的独立文件固定前缀审计保留 319 份
+字节长度和 SHA256，重复读取核对前缀；并非跨文件原子快照。
+90 个 JOIN、479 个工具事件在完成前启动且随后复用 FULL，
+分别为 1.553/8.028 GB。末次 ACK 至服务 P50/P90 分别为
+355.32/1253.18、415.98/1017.78 ms；124.344 GB handoff
+FULL 复用仍属于需求恢复。108 个 JOIN 事件出现过仅 Mamba
+容量不足，对应每事件最大 FULL 快照合计 2.005 GB；工具
+16 个事件合计 0.530 GB。容量条件会重叠，这些快照既不能
+相加为互斥机会，也不是已证实的额外可预取字节或 oracle。
+JOIN 完成前驻留到期仍有 23 命令/303.022 MB，需继续优化
+提前量和消费时机。V105 未封存 CLI 输出保留为临时诊断，
+上述可复核证据采用 v106_v27_sealed_prefetch_lifecycle_summary。
+
+02:06 CST 分次观测为 153 completed、1 incomplete，另两项
+尚无终态；原有四个进程仍存活，遥测无丢失或失败。
+incomplete 为 django__django-12325：末次 root 输出重复展开，
+finish_reason=length，两个 child 均自然返回，JOIN 已满足，
+没有 child 取消或 workflow deadline 到期。V27 继续冻结
+df3dd3c 完成同版本 native 对照；V101/V104/V106 的隔离修订
+用于后续冷启动。完整相对 native 的吞吐/JCT 目标仍 active。
+
 V104：隔离分支已提交 0b26516。同一调度轮次的 handoff 与
 实际准入复用 resident-first 扫描名单，队列顺序、请求身份、
 语义或图版本变化时重新选取，下一轮继续轮转。物理观测失效、

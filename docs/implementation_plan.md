@@ -2,6 +2,40 @@
 
 Status date: 2026-10-12.
 
+V106 commits793e8ba in the isolated branch. Restore a fitting missing FULL
+checkpoint extent without its necessary Mamba state when the state slot
+or combined byte payload does not fit. A state-only step still waits.
+Apply actual free-list limits after bounded reclaim, preserving ancestor
+continuity and prefill reserves. Fresh enqueue validation retains the
+selected FULL-only mask even if state capacity grows; timing and receipts
+use that actual payload. Do not treat a FULL ACK as complete state
+readiness. Keep deferred_mamba_slots in plan evidence. The511 related
+checks and45 native checks pass, with27 native subtests. Eight CPU fixture
+cases show12 to16 FULL units restored when16 fit but no Mamba slot does.
+These are functional/plumbing results, not allocator/DMA or throughput
+evidence.
+
+Retain319 fixed source-prefix byte lengths/SHA256 from02:02:05-02:03:12
+CST; repeated reads verify the prefix, without atomic cross-file claims.
+Observed early-and-reused FULL is1.553GB/90 JOIN events and8.028GB/479
+tool events. Last-ACK-to-service P50/P90 is355.32/1253.18 and
+415.98/1017.78ms. Keep124.344GB handoff FULL reuse separate as demand
+restoration. Mamba-only shortfall occurs in108 JOIN/16 tool events,
+whose per-event maximum FULL snapshots sum2.005/0.530GB. Conditions
+overlap; these are not proven extra opportunities or an oracle limit.
+Investigate23 JOIN FULL commands/303.022MB expiring before completion.
+Use the V106 sealed summary as reproducible evidence; V105 is an
+unsealed temporary CLI diagnostic.
+
+Separate02:06 CST reads observe153 completed and1 incomplete, with two
+tasks unfinished and the four original handles alive. The incomplete
+django__django-12325 has a length-truncated repetitive root response,
+two natural child returns and a satisfied JOIN, with no cancellation
+or workflow deadline expiry. Continue V27df3dd3c through its same-version
+native, then cold-deploy the isolated V101/V104/V106 changes, predictive
+first under the same frozen settings. Verify actual early reuse and
+work-normalized service costs before claiming the full performance goal.
+
 V104 commits0b26516 in the isolated branch. Handoff and admission share
 resident scan targets within a scheduler cycle; queue order, request
 identity and graph/semantic changes invalidate the selection. Each new
