@@ -2,6 +2,33 @@
 
 Status date: 2026-10-11.
 
+Allow partial pre-boundary JOIN/tool H2D overlap. Remove the rejection when
+estimated submit-to-ACK P90 plus enqueue P90 exceeds maximum lead; continue
+clipping the start horizon to that configured lead. A 100ms remaining interval
+may start an 800ms transfer, while native capacity, identity, dependencies and
+residence remain authoritative. The 296 transfer-policy, tool, batch and runtime
+checks pass. Commit and register this follow-up for the still-waiting V23,
+preserving the live V22 pair and its workload/observation configuration.
+The 42 tool rounds covering recorded P90 with free capacity are a complete-hide
+diagnostic subset, not the count of all potentially useful partial overlaps.
+
+Keep v67_partial_prefetch_v21_costs_20261011.json. Corrected V21 pre-boundary
+reused FULL is JOIN 1.419GB/91 events and tool 2.530GB/84 events. Next-request
+residual native FULL Host-hit byte proxies are 0.499/585.285GB; they do not
+identify all bytes as physically prefetchable. Tool ancestry-bound evidence
+covers 4748 overlapping rounds and 299.286GB of that cache-accounted proxy.
+Do not infer a theoretical prefetch ceiling from the observed small coverage.
+
+The 1117.376s V21 scheduler-thread exclusive wall profile includes required
+control/planning and diagnostic sampling, not just logging. Opportunity and
+terminal sampling are 124.516/43.949s; their collection and record construction
+run synchronously, while the opportunity JSON/file writer is asynchronous
+and was not timed in V21. For later formal performance runs, reduce pure
+diagnostics and use a matched minimal common observation setup; keep causal
+prediction inputs, transfer/first-use proofs and required correctness evidence.
+Use a separate diagnostic pair for detailed profiling. Do not change frozen
+arms or subtract these counters from JCT.
+
 Reject the V65 shared-ancestry candidate for the current normal latest-anchor
 path. Each valid latest snapshot has one leaf per pool; a four-leaf CPU fixture
 does not represent that path. Across64 case/phase combinations with21 alternating

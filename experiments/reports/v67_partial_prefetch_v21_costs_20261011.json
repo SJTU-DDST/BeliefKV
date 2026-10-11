@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "scope": "V21 completed-trace coverage and control-cost interpretation; follow-up permits partial JOIN/tool H2D overlap without changing the frozen V22 configuration.",
+  "v21_revision": "597688c62aabc9667484aefe315664a447fea9bb",
+  "sources": {
+    "epoch_bound_lifecycle": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21/predictive_h2d/prefetch_lifecycle_v33_epoch_bound.json",
+      "sha256": "8c67955d2bb7b109084e3821ef62bed93b69266b9683fdb2e600509201eb2260"
+    },
+    "epoch_bound_receipt": {
+      "path": "experiments/reports/v33_v21_wait_round_attribution_20261011.json",
+      "sha256": "6107ccb6ae9df02e1b05110559d6a4883fad03390d024e4f1de52e316a70b44f"
+    },
+    "control_profile": {
+      "path": "experiments/reports/v21_control_profile_final_20261011.json",
+      "sha256": "bac3458f7ad1b4bc53df8177d6e1dde2acf638df7a5680b01ea40914145c03eb"
+    },
+    "tool_forecast_summary": {
+      "path": "experiments/reports/v31_v21_tool_forecast_window_summary_20261011.json",
+      "sha256": "8566ecdc6d30d9d274ba462af2631688e375f6d7ffe4244b4773cfcf35813bb4"
+    }
+  },
+  "v21_wait_coverage": {
+    "join_ticket": {
+      "observed_events": 187,
+      "events_with_positive_full_plan": 165,
+      "events_with_pre_boundary_reused_full": 91,
+      "pre_boundary_reused_full_bytes": 1418731520,
+      "sum_per_event_max_observed_full_plan_bytes": 3390586880,
+      "residual_native_full_host_hit_bytes_proxy": 499343360
+    },
+    "tool_wait": {
+      "observed_events": 11965,
+      "events_with_positive_full_plan": 1105,
+      "events_with_pre_boundary_reused_full": 84,
+      "pre_boundary_reused_full_bytes": 2529935360,
+      "sum_per_event_max_observed_full_plan_bytes": 93957447680,
+      "residual_native_full_host_hit_bytes_proxy": 585284997120,
+      "events_with_ancestry_bound_evidence": 4748,
+      "residual_host_hit_bytes_proxy_in_those_events": 299285852160,
+      "events_with_no_cold_capacity_evidence": 464,
+      "residual_host_hit_bytes_proxy_in_those_events": 122205962240
+    }
+  },
+  "v21_scheduler_thread_profile": {
+    "elapsed_ms": 11389050.852323,
+    "summed_exclusive_wall_ms": 1117376.0673800001,
+    "percent_of_profile_elapsed": 9.810967409563295,
+    "all_phase_calls": 27633291,
+    "phases_self_ms": {
+      "control_drain": 168852.691082,
+      "opportunity_sampling": 124516.088652,
+      "reentry_inspection": 107694.843094,
+      "scheduler_maintenance": 102539.113173,
+      "join_prepare": 101487.297763,
+      "semantic_updates": 86922.851541,
+      "admission_plan": 67041.63168,
+      "terminal_sampling": 43949.245047
+    },
+    "opportunity_plus_terminal_sampling_self_ms": 168465.333699,
+    "sampling_percent_of_profile_self": 15.0768696965216,
+    "opportunity_collection_record_build_and_enqueue": "synchronous scheduler thread",
+    "opportunity_json_encoding_and_file_write": "background writer thread",
+    "background_writer_cost_measured_in_v21_profile": false,
+    "pure_timing_wrapper_overhead_separately_measured": false
+  },
+  "partial_overlap_followup": {
+    "change": "Clip the horizon to maximum lead even when the whole estimated transfer and enqueue exceed it; do not require full early completion.",
+    "maximum_lead_configuration_changed": false,
+    "minimum_early_lead_required": false,
+    "native_capacity_identity_dependencies_and_residence_preserved": true,
+    "tool_and_join_100ms_remaining_800ms_h2d_routing_checks_passed": true,
+    "related_checks_passed": 296,
+    "target": "Register for waiting V23 after commit",
+    "running_v22_modified": false,
+    "gpu_performance_improvement_verified": false
+  },
+  "semantics": [
+    "A complete-H2D-P90-covering subset is not the number of all potentially useful partial-overlap opportunities.",
+    "Starting 100ms before a boundary can reduce demand-path exposed recovery only if useful data/dependencies advance and extra control, contention or residence does not offset that progress.",
+    "Observed per-event maximum planned FULL sums may share or revisit physical pages and are not unique transferable bytes or an oracle ceiling.",
+    "Residual FULL Host hits are native cache-accounting byte proxies at the next request, not proof that all of them were safely Host-only or prefetchable before the boundary.",
+    "Per-reason event groups overlap and their residual byte proxies must not be added.",
+    "The profile records exclusive function wall intervals, not pure logging overhead, full CPU utilization, GPU stall or removable JCT.",
+    "Background writing does not eliminate synchronous snapshot construction or possible CPU/GIL contention.",
+    "Later formal runs may reduce diagnostics using matched minimal common observation and separate diagnostic pairs; keep required causal inputs, physical dependency handling and outcome attribution."
+  ]
+}

@@ -18,14 +18,12 @@ class TransferStartWindow:
 def transfer_start_window(
     estimate: NativeServiceEstimate, *, max_lead_ms: float, observation_spacing_ms: float,
 ) -> TransferStartWindow | None:
+    """Bound early residence without requiring the whole transfer to finish early."""
     service_ms = estimate.submit_to_ack_p90_ms
     enqueue_ms = estimate.enqueue_to_submit_p90_ms or 0.
-    if (
-        not all(math.isfinite(value) and value >= 0 for value in (
-            service_ms, enqueue_ms, max_lead_ms, observation_spacing_ms,
-        ))
-        or service_ms + enqueue_ms > max_lead_ms
-    ):
+    if not all(math.isfinite(value) and value >= 0 for value in (
+        service_ms, enqueue_ms, max_lead_ms, observation_spacing_ms,
+    )):
         return None
     return TransferStartWindow(
         service_ms, enqueue_ms,

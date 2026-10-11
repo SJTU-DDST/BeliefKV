@@ -124,15 +124,28 @@ def test_start_window_includes_submit_delay_without_scaling_it_by_bytes():
     assert window.horizon_ms == 300.
 
 
-def test_large_transfer_retains_maximum_lead_and_unsupported_service_is_skipped():
+def test_large_transfer_retains_maximum_lead_and_allows_partial_overlap():
     supported = NativeServiceEstimate(500., 950., 20., 8, "matched_pool_shape_and_size")
     assert transfer_start_window(
         supported, max_lead_ms=1000., observation_spacing_ms=100.,
     ).horizon_ms == 1000.
-    unsupported = NativeServiceEstimate(500., 950., 80., 8, "matched_pool_shape_and_size")
-    assert transfer_start_window(
-        unsupported, max_lead_ms=1000., observation_spacing_ms=100.,
-    ) is None
+    partial = NativeServiceEstimate(500., 950., 80., 8, "matched_pool_shape_and_size")
+    window = transfer_start_window(
+        partial, max_lead_ms=1000., observation_spacing_ms=100.,
+    )
+    assert window.service_ms == 950.
+    assert window.enqueue_ms == 80.
+    assert window.horizon_ms == 1000.
+
+
+def test_one_hundred_ms_lead_does_not_require_a_complete_early_transfer():
+    estimate = NativeServiceEstimate(200., 300., 20., 8, "matched_pool_shape_and_size")
+    window = transfer_start_window(
+        estimate, max_lead_ms=100., observation_spacing_ms=100.,
+    )
+    assert window.service_ms == 300.
+    assert window.enqueue_ms == 20.
+    assert window.horizon_ms == 100.
 
 
 def test_runtime_reads_native_limits_instead_of_treating_idle_memory_as_slots():
@@ -1181,6 +1194,69 @@ def test_tool_latest_start_waits_until_measured_small_transfer_window():
         runtime.dispatch_tool_prefetch()
         issue.assert_called_once()
     assert runtime._tool_ticket.start_window_ms == pytest.approx(130.)
+
+
+def test_tool_starts_long_transfer_with_only_one_hundred_ms_remaining():
+    runtime, hint = tool_runtime()
+    runtime.prefetch_lead_ms = 500.
+    runtime._native_cache = NS(cache_controller=NS(mem_pool_host=NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=10)),
+        "mamba": NS(host_pool=NS(size_per_token=100)),
+    })))
+    runtime._native_service_samples.extend([
+        NativeServiceSample(100, 800., "h2d", "full", 10.),
+    ] * 3)
+    opportunity = NS(
+        step=PrefetchLoadStep(hint.key, 11, 4, 11, 4),
+        fits_current_free_lists=True, required_full_tokens=10, required_mamba_slots=0,
+    )
+    with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity), \
+        patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=opportunity.step), \
+        patch.object(runtime, "issue_prefetch_gpu_step", return_value="command") as issue, \
+        patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+              return_value=hint.issued_monotonic_ms / 1000. + .2):
+        assert hint.remaining_quantile(.5, now_ms=hint.issued_monotonic_ms + 200.) == 100.
+        runtime.dispatch_tool_prefetch()
+        issue.assert_called_once()
+    assert runtime._tool_ticket.start_window_ms == 500.
+    assert runtime.graph.invocations[hint.key.invocation_id].state is InvocationState.WAIT_TOOL
+    runtime.close()
+
+
+def test_join_starts_long_transfer_before_child_return_with_short_remaining_decode():
+    from beliefkv.core.events import RuntimeEventKind
+    from tests.test_sglang_v0520_runtime import event
+
+    runtime = final_stage_runtime()
+    runtime.prefetch_lead_ms = 500.
+    child = req("child")
+    child.beliefkv_metadata["context_epoch"] = 1
+    runtime.on_events((event(
+        7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+        context_id="ctx-child", context_epoch=1,
+        attributes={"request_id": "child"},
+    ),))
+    runtime.register_visible_request(child)
+    stage = runtime._final_stages["join"]
+    stage.generated_tokens = stage.expected_tokens - 4
+    stage.tokens_per_second = 40.
+    runtime._h2d_samples.extend([(105, 800.)] * 3)
+    runtime.attach_native_cache(NS(cache_controller=NS(mem_pool_host=NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=10)),
+        "mamba": NS(host_pool=NS(size_per_token=5)),
+    }))))
+    opportunity = NS(
+        step=PrefetchLoadStep(stage.key, 11, 4, 11, 4),
+        fits_current_free_lists=True, required_full_tokens=10, required_mamba_slots=1,
+    )
+    with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity), \
+        patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=opportunity.step), \
+        patch.object(runtime, "issue_prefetch_gpu_step", return_value="command") as issue:
+        runtime.dispatch_join_prefetch()
+        issue.assert_called_once()
+    assert not runtime.graph.joins["join"].satisfied
+    assert runtime._join_ticket.issued_nodes == 1
+    runtime.close()
 
 
 def test_join_eta_does_not_treat_a_descheduled_child_as_still_receiving_service():
