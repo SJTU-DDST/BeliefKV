@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-12T06:13:06.568177+08:00",
+  "scope": "Verified replacement of the waiting V29 target to include the native-reserve consistency fix and deferred observations. Collecting V28 source/engine remain frozen. CPU replay and registration do not establish GPU throughput or JCT gain.",
+  "queued_state_path": "/home/longhao/experiment/BeliefKV/experiments/reports/v29_launch_after_v28_20261012.json",
+  "queued_state_sha256": "122cc29501088b7a72889902abcaff95366d11a3fc81d4241e071b08b679cf7a",
+  "queued_status": "waiting_for_previous_pair",
+  "queued_coordinator_pid": 2298434,
+  "verified_process_identities": {
+    "883082": {
+      "ppid": 1,
+      "start_ticks": "592099218"
+    },
+    "965346": {
+      "ppid": 965328,
+      "start_ticks": "592274966"
+    },
+    "965697": {
+      "ppid": 965346,
+      "start_ticks": "592276249"
+    },
+    "2298434": {
+      "ppid": 1,
+      "start_ticks": "592699961"
+    }
+  },
+  "superseded_coordinator_pid": 1963156,
+  "superseded_state_path": "/home/longhao/experiment/BeliefKV/experiments/reports/v29_launch_after_v28_974b3db_superseded_20261012_v117.json",
+  "superseded_state_sha256": "63ad75dd0108f5857ecc44a400d3edf3effa1952f6789a84801341bf529d5ac9",
+  "superseded_log_path": "/home/longhao/experiment/BeliefKV/experiments/reports/v29_launch_after_v28_974b3db_superseded_20261012_v117.log",
+  "superseded_target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v115-after-dispatch-20261012",
+  "superseded_target_revision": "974b3dbca2ce99e60388bf83c5eb28ae30785eb9",
+  "superseded_waiting_process_exited": true,
+  "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v28",
+  "previous_collection_revision": "141d3df1181009c0045b890e4ea7b733a497c42d",
+  "previous_execution_verification": {
+    "collection_code_commit": "141d3df1181009c0045b890e4ea7b733a497c42d",
+    "verification_code_commit": "e69408f8c2baf89885979add63be5708b6ef6d88",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": [
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md"
+    ]
+  },
+  "collecting_engine_patch": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+    "expected_tree": "6e1dc30d83e05cbca3d470892d7cde1000e19ad9",
+    "actual_tree": "6e1dc30d83e05cbca3d470892d7cde1000e19ad9",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v117-wait-reserve-20261012",
+  "target_revision": "92e47d79ef1186dde954bc489fc38600ef5022ae",
+  "target_tracked_worktree_clean": true,
+  "main_revision": "e69408f8c2baf89885979add63be5708b6ef6d88",
+  "main_is_ancestor_of_target": true,
+  "canonical_patch_sha256": "1c3c7fc4eefc5a9ed12e18f5c99490f03cd4b79f9f58079ce08fae3d944cfc9e",
+  "runtime_change_commits": [
+    "11c8258",
+    "4a644d2",
+    "e7a1587"
+  ],
+  "environment_unchanged": true,
+  "arm_order": [
+    "predictive_h2d",
+    "native"
+  ],
+  "v29_started": false,
+  "performance_goal_met": false
+}
