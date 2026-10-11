@@ -1,0 +1,151 @@
+{
+  "source_revision": "1f75f554a5d9cbafa6231f65aaf3c8b2f7544848",
+  "reported_period": "2026-08-15 through 2026-10-11",
+  "source_revision_scope": "architecture baseline; generator identity is recorded by SHA256",
+  "generator_sha256": "684baf64a75d2cdbf7347c895d15347819aad69e27ffeb5e4a9989195649677f",
+  "drawing_helpers_sha256": "656ff099ec8617dde72d7b33122e136b073f5879bbecc81530b9d31917b6602b",
+  "schematic_not_empirical_performance": true,
+  "renderer": "CairoSVG / Pillow / python-pptx",
+  "figures": [
+    {
+      "stem": "01_system_overview_en",
+      "language": "en",
+      "title": "BeliefKV System Architecture",
+      "canvas": [
+        1440,
+        920
+      ],
+      "png_pixels": [
+        4320,
+        2760
+      ],
+      "paper_width_inches": 7.2,
+      "dpi": 600,
+      "text_objects": 44
+    },
+    {
+      "stem": "01_system_overview_zh",
+      "language": "zh",
+      "title": "BeliefKV System Architecture",
+      "canvas": [
+        1440,
+        920
+      ],
+      "png_pixels": [
+        4320,
+        2760
+      ],
+      "paper_width_inches": 7.2,
+      "dpi": 600,
+      "text_objects": 44
+    },
+    {
+      "stem": "02_prediction_and_overlap_en",
+      "language": "en",
+      "title": "Prediction and Scheduling Coordination",
+      "canvas": [
+        1440,
+        1010
+      ],
+      "png_pixels": [
+        4320,
+        3030
+      ],
+      "paper_width_inches": 7.2,
+      "dpi": 600,
+      "text_objects": 44
+    },
+    {
+      "stem": "02_prediction_and_overlap_zh",
+      "language": "zh",
+      "title": "Prediction and Scheduling Coordination",
+      "canvas": [
+        1440,
+        1010
+      ],
+      "png_pixels": [
+        4320,
+        3030
+      ],
+      "paper_width_inches": 7.2,
+      "dpi": 600,
+      "text_objects": 44
+    },
+    {
+      "stem": "03_pages_and_capacity_handoff_en",
+      "language": "en",
+      "title": "Page Migration and Child-Parent Capacity Handoff",
+      "canvas": [
+        1440,
+        995
+      ],
+      "png_pixels": [
+        4320,
+        2985
+      ],
+      "paper_width_inches": 7.2,
+      "dpi": 600,
+      "text_objects": 57
+    },
+    {
+      "stem": "03_pages_and_capacity_handoff_zh",
+      "language": "zh",
+      "title": "Page Migration and Child-Parent Capacity Handoff",
+      "canvas": [
+        1440,
+        995
+      ],
+      "png_pixels": [
+        4320,
+        2985
+      ],
+      "paper_width_inches": 7.2,
+      "dpi": 600,
+      "text_objects": 57
+    }
+  ],
+  "powerpoints": [
+    {
+      "file": "beliefkv_architecture_editable_zh.pptx",
+      "language": "zh",
+      "slides": [
+        {
+          "objects": 82,
+          "text_objects": 44,
+          "picture_objects": 0
+        },
+        {
+          "objects": 83,
+          "text_objects": 44,
+          "picture_objects": 0
+        },
+        {
+          "objects": 106,
+          "text_objects": 57,
+          "picture_objects": 0
+        }
+      ]
+    },
+    {
+      "file": "beliefkv_architecture_editable_en.pptx",
+      "language": "en",
+      "slides": [
+        {
+          "objects": 82,
+          "text_objects": 44,
+          "picture_objects": 0
+        },
+        {
+          "objects": 83,
+          "text_objects": 44,
+          "picture_objects": 0
+        },
+        {
+          "objects": 106,
+          "text_objects": 57,
+          "picture_objects": 0
+        }
+      ]
+    }
+  ]
+}

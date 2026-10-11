@@ -1,0 +1,95 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="7.2in" height="4.600000in" viewBox="0 0 1440 920" role="img" aria-labelledby="title">
+<title id="title">BeliefKV System Architecture</title>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs>
+<marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#263746"/></marker>
+<marker id="blue-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#3d6f9f"/></marker>
+<marker id="teal-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#357b73"/></marker>
+<marker id="amber-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#a96f1f"/></marker>
+</defs>
+<style>text{font-family:"DejaVu Sans",Arial,sans-serif;font-style:normal}.hair{stroke:#d4dbe0;stroke-width:1}</style>
+<style>text{font-family:'DejaVu Sans';letter-spacing:0}path,line{stroke-linejoin:round;stroke-linecap:round}</style>
+<text x="40" y="49" font-size="34" fill="#263746" font-weight="700" text-anchor="start">BeliefKV: Workflow-aware KV Management</text>
+<text x="40" y="81" font-size="22" fill="#687680" font-weight="400" text-anchor="start">Dynamic dependencies  /  Predictive transfers  /  Native execution</text>
+<rect x="40" y="111" width="1360" height="176" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="41" y1="112" x2="1399" y2="112" stroke="#3d6f9f" stroke-width="3"/>
+<text x="62" y="151" font-size="26" fill="#3d6f9f" font-weight="700" text-anchor="start">(a) Agent harness</text>
+<circle cx="104" cy="214" r="24" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.4"/>
+<text x="104" y="222.75" font-size="25" fill="#263746" font-weight="700" text-anchor="middle">P</text>
+<circle cx="247" cy="190" r="23" fill="#ffffff" stroke="#357b73" stroke-width="1.4"/>
+<text x="247" y="197.35" font-size="21" fill="#263746" font-weight="700" text-anchor="middle">C1</text>
+<circle cx="247" cy="250" r="23" fill="#ffffff" stroke="#357b73" stroke-width="1.4"/>
+<text x="247" y="257.35" font-size="21" fill="#263746" font-weight="700" text-anchor="middle">C2</text>
+<polygon points="390,186.5 435.5,220 390,253.5 344.5,220" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.5"/>
+<text x="390" y="226" font-size="21" fill="#263746" font-weight="700" text-anchor="middle">JOIN</text>
+<path d="M128 207 L221 192" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<path d="M128 221 L221 247" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<path d="M272 190 L323 190 L353 204" fill="none" stroke="#357b73" stroke-width="2.4" marker-end="url(#teal-arrow)"/>
+<path d="M272 250 L323 250 L353 236" fill="none" stroke="#357b73" stroke-width="2.4" marker-end="url(#teal-arrow)"/>
+<path d="M436 220 L511 220" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<circle cx="538" cy="220" r="24" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.4"/>
+<text x="538" y="228.75" font-size="25" fill="#263746" font-weight="700" text-anchor="middle">P</text>
+<text x="162" y="180" font-size="17" fill="#687680" font-weight="400" text-anchor="middle">SPAWN</text>
+<text x="316" y="274" font-size="17" fill="#687680" font-weight="400" text-anchor="middle">RETURN</text>
+<line x1="602" y1="174" x2="602" y2="267" stroke="#d4dbe0" stroke-width="1.5"/>
+<text x="630" y="191" font-size="24" fill="#263746" font-weight="400" text-anchor="start">Events: SPAWN, TOOL, RETURN, JOIN</text>
+<text x="630" y="226" font-size="24" fill="#263746" font-weight="400" text-anchor="start">Signals: completion notice and delivered text</text>
+<text x="630" y="261" font-size="24" fill="#263746" font-weight="400" text-anchor="start">Progress: observed decode and GPU service</text>
+<text x="233" y="319" font-size="21" fill="#3d6f9f" font-weight="400" text-anchor="middle">Causal updates</text>
+<path d="M233 287 L233 349" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<text x="676" y="319" font-size="21" fill="#a96f1f" font-weight="400" text-anchor="middle">Online observations</text>
+<path d="M676 287 L676 349" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<rect x="40" y="351" width="394" height="257" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="41" y1="352" x2="433" y2="352" stroke="#3d6f9f" stroke-width="3"/>
+<text x="62" y="391" font-size="26" fill="#3d6f9f" font-weight="700" text-anchor="start">(b) Causal state</text>
+<text x="63" y="433" font-size="24" fill="#263746" font-weight="400" text-anchor="start">Runtime workflow graph</text>
+<text x="63" y="472" font-size="24" fill="#263746" font-weight="400" text-anchor="start">JOIN_ALL / tool wait / ready</text>
+<text x="63" y="511" font-size="24" fill="#263746" font-weight="400" text-anchor="start">Context identity and epoch</text>
+<rect x="63" y="545" width="161" height="39" rx="2" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.3"/>
+<text x="143.5" y="571.3" font-size="20" fill="#263746" font-weight="600" text-anchor="middle">WAIT_JOIN</text>
+<rect x="242" y="545" width="161" height="39" rx="2" fill="#eaf3f1" stroke="#357b73" stroke-width="1.3"/>
+<text x="322.5" y="571.3" font-size="20" fill="#263746" font-weight="600" text-anchor="middle">READY</text>
+<rect x="470" y="351" width="414" height="257" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="471" y1="352" x2="883" y2="352" stroke="#a96f1f" stroke-width="3"/>
+<text x="492" y="391" font-size="26" fill="#a96f1f" font-weight="700" text-anchor="start">(c) Prediction</text>
+<text x="492" y="435" font-size="21" fill="#263746" font-weight="600" text-anchor="start">Child phase + remaining work</text>
+<text x="492" y="469" font-size="21" fill="#687680" font-weight="400" text-anchor="start">Text, notice and decode progress</text>
+<line x1="492" y1="493" x2="861" y2="493" stroke="#d4dbe0" stroke-width="1.4"/>
+<text x="492" y="530" font-size="21" fill="#263746" font-weight="600" text-anchor="start">Tool residual-time distribution</text>
+<text x="492" y="564" font-size="21" fill="#687680" font-weight="400" text-anchor="start">Type, elapsed time and history</text>
+<path d="M434 485 L469 485" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<path d="M884 485 L929 485" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<text x="907" y="464" font-size="17" fill="#a96f1f" font-weight="400" text-anchor="middle">Hints</text>
+<rect x="930" y="351" width="470" height="257" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="931" y1="352" x2="1399" y2="352" stroke="#357b73" stroke-width="3"/>
+<text x="952" y="391" font-size="26" fill="#357b73" font-weight="700" text-anchor="start">(d) Runtime decisions</text>
+<text x="952" y="429" font-size="24" fill="#263746" font-weight="400" text-anchor="start">Safe checkpoint + valid Host copy</text>
+<text x="952" y="470" font-size="24" fill="#263746" font-weight="400" text-anchor="start">Capacity + transfer service cost</text>
+<text x="952" y="511" font-size="24" fill="#263746" font-weight="400" text-anchor="start">Missing-page transfer planning</text>
+<text x="952" y="552" font-size="24" fill="#263746" font-weight="400" text-anchor="start">Admission + residency + aging</text>
+<path d="M1165 608 L1165 686" fill="none" stroke="#357b73" stroke-width="2.4" marker-end="url(#teal-arrow)"/>
+<text x="1185" y="653" font-size="21" fill="#357b73" font-weight="400" text-anchor="start">Intents</text>
+<path d="M666 686 L666 646 L985 646 L985 608" fill="none" stroke="#3d6f9f" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#blue-arrow)"/>
+<text x="685" y="636" font-size="21" fill="#3d6f9f" font-weight="400" text-anchor="start">Capacity / ACK / first use</text>
+<rect x="40" y="688" width="1360" height="178" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="41" y1="689" x2="1399" y2="689" stroke="#3d6f9f" stroke-width="3"/>
+<text x="62" y="728" font-size="26" fill="#3d6f9f" font-weight="700" text-anchor="start">(e) SGLang: physical cache and execution authority</text>
+<rect x="62" y="762" width="266" height="75" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.3"/>
+<text x="195.0" y="806.64" font-size="21" fill="#263746" font-weight="600" text-anchor="middle">Native GPU batches</text>
+<rect x="397" y="762" width="410" height="75" rx="2" fill="#f2f4f5" stroke="#89959d" stroke-width="1.3"/>
+<text x="602.0" y="807.32" font-size="23" fill="#263746" font-weight="600" text-anchor="middle">Radix / HiCache / Allocators</text>
+<path d="M329 799 L396 799" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<path d="M808 799 L867 799" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<rect x="867" y="757" width="188" height="83" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.8"/>
+<text x="961" y="790" font-size="25" fill="#3d6f9f" font-weight="700" text-anchor="middle">HBM</text>
+<text x="961" y="821" font-size="19" fill="#687680" font-weight="400" text-anchor="middle">FULL + Mamba</text>
+<rect x="1190" y="757" width="188" height="83" rx="2" fill="#eaf3f1" stroke="#357b73" stroke-width="1.8"/>
+<text x="1284" y="790" font-size="25" fill="#357b73" font-weight="700" text-anchor="middle">Host</text>
+<text x="1284" y="821" font-size="19" fill="#687680" font-weight="400" text-anchor="middle">FULL + Mamba</text>
+<path d="M1056 779 L1189 779" fill="none" stroke="#357b73" stroke-width="2.4" marker-end="url(#teal-arrow)"/>
+<text x="1121" y="768" font-size="18" fill="#357b73" font-weight="400" text-anchor="middle">D2H</text>
+<path d="M1190 823 L1056 823" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<text x="1121" y="813" font-size="18" fill="#a96f1f" font-weight="400" text-anchor="middle">H2D</text>
+<text x="40" y="900" font-size="22" fill="#687680" font-weight="400" text-anchor="start">Models estimate completion; runtime selects actions; native dependencies govern execution.</text>
+</svg>
