@@ -575,7 +575,7 @@ def test_same_prefetch_node_does_not_duplicate_lock_or_byte_budget():
     with patch(
         "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
         return_value=observation,
-    ):
+    ) as capture:
         for index in range(1, 5):
             other = PhysicalActionCompleted(
                 f"lease-{index}", "PREFETCH_GPU", hint.key.context_id,
@@ -583,6 +583,7 @@ def test_same_prefetch_node_does_not_duplicate_lock_or_byte_budget():
             )
             runtime._prefetch_steps[other.command_id] = (step, "tool_wait", 2.)
             runtime._register_prefetch_service_lease(other)
+    capture.assert_not_called()
     assert tree.inc_lock_ref.call_count == 1
     assert sum(item.protected_bytes for item in runtime._prefetch_service_leases.values()) == 300 * 1024 ** 2
 

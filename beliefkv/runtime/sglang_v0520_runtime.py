@@ -5426,21 +5426,7 @@ class NativeAdmissionRuntime:
         protection_reason = "native_protection_unobservable"
         protected_by_command_id = None
         try:
-            from beliefkv.runtime.sglang_v0520_observer import observe_unified_node_closure
-            observation = observe_unified_node_closure(cache, step.node_id)
-            entries = cache.host_pool_group.entry_map
-            protected_bytes = sum(
-                node.full_device_tokens * entries["kv"].host_pool.size_per_token
-                for node in observation.nodes
-            ) + sum(
-                int(node.mamba_device_present) * entries["mamba"].host_pool.size_per_token
-                for node in observation.nodes if node.node_id == step.node_id
-            )
             already_protected = False
-            ancestors = {
-                (node.node_id, node.creation_time) for node in observation.nodes
-            }
-            superseded = []
             for existing in self._prefetch_service_leases.values():
                 if existing.key != step.key or existing.lock_params is None:
                     continue
@@ -5450,9 +5436,6 @@ class NativeAdmissionRuntime:
                     already_protected = True
                     protected_by_command_id = existing.command_id
                     break
-                if (existing.node_id, existing.creation_time) in ancestors:
-                    superseded.append(existing)
-                    continue
                 current = cache.tree_core.node_by_id(existing.node_id)
                 visited = set()
                 while current is not None and current.id not in visited:
@@ -5464,6 +5447,29 @@ class NativeAdmissionRuntime:
                     current = current.parent
                 if already_protected:
                     break
+            observation = None
+            superseded = []
+            if not already_protected:
+                # Existing native locks cover their ancestors; only a new or
+                # deeper lock needs a fresh closure and byte-budget calculation.
+                from beliefkv.runtime.sglang_v0520_observer import observe_unified_node_closure
+                observation = observe_unified_node_closure(cache, step.node_id)
+                entries = cache.host_pool_group.entry_map
+                protected_bytes = sum(
+                    node.full_device_tokens * entries["kv"].host_pool.size_per_token
+                    for node in observation.nodes
+                ) + sum(
+                    int(node.mamba_device_present) * entries["mamba"].host_pool.size_per_token
+                    for node in observation.nodes if node.node_id == step.node_id
+                )
+                ancestors = {
+                    (node.node_id, node.creation_time) for node in observation.nodes
+                }
+                superseded = [
+                    existing for existing in self._prefetch_service_leases.values()
+                    if existing.key == step.key and existing.lock_params is not None
+                    and (existing.node_id, existing.creation_time) in ancestors
+                ]
             budget = self._current_residency_budget(
                 include_evictable=True,
             )
@@ -5487,8 +5493,10 @@ class NativeAdmissionRuntime:
                     item.protected_bytes for item in self._prefetch_service_leases.values()
                 ) - sum(item.protected_bytes for item in superseded) <= budget.byte_limit
             )
-            if (
-                observation.observable and not already_protected
+            if already_protected:
+                protection_reason = "covered_by_existing_lock"
+            elif (
+                observation.observable
                 and protection_slots > 0
                 and protection_slot_available and protection_bytes_fit
             ):
@@ -5534,7 +5542,6 @@ class NativeAdmissionRuntime:
             else:
                 protection_reason = (
                     "closure_unobservable" if not observation.observable
-                    else "covered_by_existing_lock" if already_protected
                     else "no_frontier_slot" if protection_slots < 1
                     else "frontier_slot_occupied" if not protection_slot_available
                     else "byte_budget_exceeded"

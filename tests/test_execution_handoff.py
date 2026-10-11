@@ -425,6 +425,63 @@ def test_handoff_extents_share_one_request_slot_and_release_together_on_pressure
     runtime.close()
 
 
+def test_descendant_lock_covers_restored_ancestor_without_recapturing_closure(monkeypatch):
+    runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
+    key = runtime.visible[cold.rid]
+    root = NS(id=0, creation_time=0, parent=None)
+    first = NS(id=1, creation_time=2, parent=root)
+    last = NS(id=2, creation_time=3, parent=first)
+    nodes = {1: first, 2: last}
+    for node in nodes.values():
+        node.component_data = {0: NS(value=object()), 2: NS(value=object())}
+    receipt = NS(node_id=2)
+    cache.tree_core = NS(
+        node_by_id=nodes.__getitem__,
+        inc_lock_ref=Mock(return_value=NS(to_dec_params=lambda: receipt)),
+        dec_lock_ref=Mock(),
+    )
+    cache.session_refs = NS(
+        _session_generations={key.session_id: key.session_generation},
+        _closed_session_ids=set(),
+    )
+    cache.host_pool_group = NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=10)),
+        "mamba": NS(host_pool=NS(size_per_token=20)),
+    })
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    observation = NS(observable=True, nodes=[
+        NS(node_id=node.id, creation_time=node.creation_time,
+           full_device_tokens=100, mamba_device_present=True)
+        for node in (first, last)
+    ])
+    with patch.object(
+        runtime, "_current_residency_budget",
+        return_value=PrefetchResidencyBudget(1, 1024 ** 3),
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
+        return_value=observation,
+    ) as capture:
+        for command, node in (("leaf", last), ("ancestor", first)):
+            step = PrefetchLoadStep(key, 2, 3, node.id, node.creation_time)
+            action = PhysicalActionCompleted(
+                command, "PREFETCH_GPU", key.context_id, key.context_epoch,
+                (node.id,), (("kv", 1000),), 1000,
+            )
+            runtime._prefetch_steps[command] = (step, "execution_handoff", None)
+            runtime._register_prefetch_service_lease(action)
+    capture.assert_called_once_with(cache, 2)
+    cache.tree_core.inc_lock_ref.assert_called_once_with(2)
+    assert records[-1]["protection_reason"] == "covered_by_existing_lock"
+    assert records[-1]["protected_by_command_id"] == "leaf"
+    assert runtime._prefetch_service_leases["ancestor"].protected_bytes == 0
+    runtime._release_prefetch_service_lease("ancestor", "first_gpu_service")
+    cache.tree_core.dec_lock_ref.assert_not_called()
+    runtime._release_prefetch_service_lease("leaf", "first_gpu_service")
+    cache.tree_core.dec_lock_ref.assert_called_once_with(2, receipt)
+    runtime.close()
+
+
 @pytest.mark.parametrize("condition,expected", (
     ("covered", "covered_by_existing_lock"),
     ("occupied", "frontier_slot_occupied"),
