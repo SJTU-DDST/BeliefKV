@@ -46,13 +46,31 @@ v63_child_parent_capacity_handoff_complete_20261011.json。
 当前只能确认联动已实现且发生了释放与提前复用，不能据此宣称
 相对 native 的吞吐/JCT 目标已达成。
 
-V22 native 已覆盖三个完整对照窗口，现已收集同版本忙碌阶段分析，
+V22 native 已覆盖四个完整对照窗口，现已收集同版本忙碌阶段分析，
 保存在 v64_v22_busy_window_same_version_20261011.json 和
-v64_v22_busy_context_600_900_20261011.json。600–900 秒窗口，
+v64_v22_busy_context_600_900_20261011.json，以及
+v66_v22_busy_window_2400_2700_20261011.json 和
+v66_v22_busy_context_2400_2700_20261011.json。600–900 秒窗口，
 predictive/native 输出吞吐为 1019.20/1219.52 token/s，GPU 利用率
 76.68%/89.81%，decode 时间加权 batch 为 47.27/47.38；
 1200–1500 秒吞吐为 1042.79/1197.59 token/s。容量交接和提前
-复用已发生，但当前冻结版本的忙碌阶段仍未取得性能优势。
+复用已发生，但当前冻结版本在这两个高迁移阶段仍未取得性能优势。
+
+2400–2700 秒完整窗口则为 1139.97/1082.35 token/s，
+predictive 高 5.32%；GPU 利用率 86.29%/79.59%，时间加权 decode
+batch 47.42/47.31，可见上下文均值 24084/23891 token。
+此时 predictive/native 全部 H2D 分别为 25.225/1.663 GB，
+transfer-stream 累计 0.964/0.066 秒，迁移压力已不同于较早窗口。
+batch=48、22528–24575 token 桶的 worker 均值为 22.63/22.55 ms；
+batch=47、同桶为 64.47/76.99 ms。这个局部窗口的优势尚不能归因
+于容量交接或预测迁移，也不能覆盖前段退化或替代完整 pair 的 JCT。
+
+该后段窗口 predictive Python 独占墙钟累计 31.495 秒，前列为
+reentry_inspection 7.526 秒、control_drain 3.408 秒、
+tool_prepare 2.370 秒和 opportunity_sampling 2.354 秒。
+普通单叶恢复观察仍是需要由 V23 实测核验的成本；不依据多叶
+夹具加速更新部署。来源前缀哈希及完整统计保存在 V66 两份报告，
+解释和容量交接关联证据见 v66_child_parent_handoff_status_20261011.json。
 
 600–900 秒的可见 decode 上下文均值为 23068/24068 token，
 predictive 并没有更长的平均上下文。batch=48、平均上下文落在

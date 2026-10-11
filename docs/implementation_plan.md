@@ -63,6 +63,21 @@ recycling on the GPU pair. Preserve the running V22 native and current V23
 registration; keep the performance goal active until actual improvements
 are verified.
 
+Retain the later complete 2400-2700s window in
+v66_v22_busy_window_2400_2700_20261011.json and
+v66_v22_busy_context_2400_2700_20261011.json. Predictive/native decode
+throughput is 1139.97/1082.35 token/s, a local 5.32% advantage; GPU utilization
+is 86.29%/79.59%, weighted decode batch 47.42/47.31, and visible context
+24084/23891 tokens. Total H2D is 25.225/1.663 GB, with transfer-stream
+0.964/0.066s. This later low-migration native window does not establish
+attributable handoff/prefetch gains or negate the early busy-window regression.
+Predictive exclusive Python wall remains 31.495s, including reentry 7.526s,
+control drain 3.408s, tool PREPARE 2.370s and opportunity sampling 2.354s.
+Keep the source-hashed interpretation and capacity handoff evidence in
+v66_child_parent_handoff_status_20261011.json. Preserve both unfavorable and
+favorable windows, the live V22 pair and queued V23 e82ad88; validate actual
+single-leaf normal-path costs and complete-pair JCT before accepting the goal.
+
 Fix the demonstrated terminal-history coverage loss before the next V23 launch.
 More than 64 indexed component anchors previously forced latest-only provenance
 in both direct retirement and close-before-RETURN, then released all references

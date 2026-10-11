@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "evidence_updated_at_cst": "2026-10-11T12:14:13+08:00",
+  "scope": "Requested child-to-parent capacity handoff is implemented; V22 later complete-window evidence and queued terminal-branch fix are recorded without claiming causal or completed-pair speedup.",
+  "deployed_v22_revision": "3aa27dd67b340236310824d80a7e6e31038ea1f9",
+  "deployed_v22_patch_sha256": "03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83",
+  "sources": {
+    "complete_child_parent_handoff": {
+      "path": "experiments/reports/v63_child_parent_capacity_handoff_complete_20261011.json",
+      "sha256": "404cc5067d867d70ba3adfb2e4b89760fe371bd7d91f9174c48b43b122d937a9"
+    },
+    "busy_window": {
+      "path": "experiments/reports/v66_v22_busy_window_2400_2700_20261011.json",
+      "sha256": "f731fc38a7f9eb5e45d837109f165d210ed798b6d37ba64d8f737ea41ca80c4e"
+    },
+    "context_and_control": {
+      "path": "experiments/reports/v66_v22_busy_context_2400_2700_20261011.json",
+      "sha256": "d8ea9b63d6d25c31e8fb1a904ead3cb9ad030e934f0e260babe613985f6ee6ab"
+    }
+  },
+  "requested_implementation": {
+    "plan_safe_parent_checkpoint_from_final_child_notifications": true,
+    "release_only_authoritatively_retired_child_private_suffixes": true,
+    "no_d2h_for_useless_terminal_private_data": true,
+    "preserve_shared_references_locks_and_inflight_transfers": true,
+    "use_actual_native_full_and_mamba_free_lists": true,
+    "reserve_next_input_and_decode_growth_capacity": true,
+    "coordinate_ready_parent_recovery_admission_and_first_consumption": true,
+    "sibling_release_can_enable_pre_join_prefetch": true,
+    "last_child_post_return_recovery_stays_demand_handoff": true,
+    "reuse_identical_child_page_ids_required": false
+  },
+  "completed_v22_predictive_capacity_evidence": {
+    "dynamic_children": 367,
+    "cumulative_freed_device_full_bytes": 117868339200,
+    "cumulative_freed_device_mamba_bytes": 111972679680,
+    "observed_join_events": 188,
+    "joins_with_pre_join_sibling_device_release": 172,
+    "joins_with_later_pre_join_submit_and_verified_parent_full_use": 91,
+    "verified_parent_full_bytes_in_those_joins": 1355550720,
+    "scheduler_last_return_to_completed_parent_batch_p50_ms": 222.459716796875,
+    "scheduler_last_return_to_completed_parent_batch_p90_ms": 689.10859375
+  },
+  "later_complete_window": {
+    "start_seconds": 2400,
+    "end_seconds": 2700,
+    "time_origin": "first GPU monitor sample of each arm",
+    "predictive": {
+      "decode_output_tokens_per_second": 1139.97,
+      "gpu_utilization_percent": 86.2890520694259,
+      "decode_time_weighted_batch_size": 47.41976080632371,
+      "mean_visible_decode_context_tokens": 24083.688905191513,
+      "total_h2d_bytes": 25225359360,
+      "h2d_transfer_stream_ms": 964.3624615445733,
+      "python_exclusive_wall_ms": 31494.526222000008,
+      "python_counter_observed_duration_ms": 300478.28271484375,
+      "reentry_inspection_exclusive_wall_ms": 7525.580212000008
+    },
+    "native": {
+      "decode_output_tokens_per_second": 1082.35,
+      "gpu_utilization_percent": 79.58811748998664,
+      "decode_time_weighted_batch_size": 47.30833820667629,
+      "mean_visible_decode_context_tokens": 23891.45659284236,
+      "total_h2d_bytes": 1663344640,
+      "h2d_transfer_stream_ms": 66.38073635101318
+    },
+    "local_decode_throughput_improvement_percent": 5.323601422829971
+  },
+  "deployment": {
+    "next_run": "v23",
+    "target_revision": "e82ad88446db6eb663c92fac47727c01308e5bb6",
+    "target_patch_sha256": "4af68951beefdf759901d0143ca747c6893aa1ffc7124a3738158512851f7e60",
+    "queued_fix": "Keep complete indexed terminal-session branch provenance beyond 64 anchors, with existing bounded reclamation and retries.",
+    "recorded_relevant_checks_passed": 628,
+    "state": "waiting_for_previous_pair",
+    "arm_order": ["predictive_h2d", "native"],
+    "cold_native_start": true,
+    "running_v22_or_frozen_configuration_modified": false
+  },
+  "v22_native_workflow_snapshot": {
+    "completed": 75,
+    "incomplete": 0,
+    "error": 0,
+    "complete_arm": false
+  },
+  "semantics": [
+    "Cumulative child release is neither simultaneous free space nor exclusive ownership by a parent.",
+    "Sibling release followed by early submit and verified reuse is a temporal association, not proof that the freed capacity caused the transfer or speedup.",
+    "The first parent GPU timestamp is a completed batch, not kernel start, prediction error or an exact runnable-slot handoff.",
+    "The later local throughput advantage has lower native H2D demand and does not negate the observed early high-migration regressions.",
+    "Different native and predictive execution trajectories prevent exact identical-demand attribution.",
+    "Python exclusive wall counters and cumulative transfer-stream intervals cannot be subtracted from JCT.",
+    "Implementation checks and next-run registration are complete for the requested handoff; full GPU comparison is pending and the broader native-relative performance goal remains active."
+  ]
+}
