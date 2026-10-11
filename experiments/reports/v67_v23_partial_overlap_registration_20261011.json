@@ -1,0 +1,66 @@
+{
+  "status": "waiting_for_previous_pair",
+  "coordinator_reparenting_verification": {
+    "verified_at_cst": "2026-10-11T12:27:33+08:00",
+    "parent_pid": 1,
+    "process_start_identity": "586305867",
+    "main_checkout_clean": true,
+    "v22_server_and_client_live": true
+  },
+  "registered_at_utc": "2026-10-11T04:26:36.001773+00:00",
+  "verified_at_utc": "2026-10-11T04:26:36.076861+00:00",
+  "previous_target_revision": "e82ad88446db6eb663c92fac47727c01308e5bb6",
+  "target_revision": "26633b4d2875f26cadb1706b47e182a84164a0b0",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v67-partial-h2d-20261011",
+  "target_patch_sha256": "4af68951beefdf759901d0143ca747c6893aa1ffc7124a3738158512851f7e60",
+  "previous_registration": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_e82ad88_superseded_20261011.json",
+  "current_registration": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_20261011.json",
+  "launch_log": "/home/longhao/experiment/BeliefKV/experiments/reports/v23_launch_after_v22_26633b4_20261011.log",
+  "stopped_waiting_coordinator": 3756458,
+  "current_waiting_coordinator": 384991,
+  "current_waiting_coordinator_identity": [
+    "S",
+    384752,
+    "586305867"
+  ],
+  "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22",
+  "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v23",
+  "current_main_revision": "3aa27dd67b340236310824d80a7e6e31038ea1f9",
+  "configuration_equal": true,
+  "wait_process_identities_equal": true,
+  "native_patch_equal_to_previous_target": true,
+  "main_and_frozen_target_clean": true,
+  "new_run_directory_absent_at_verification": true,
+  "v22_processes_not_signalled": [
+    1159560,
+    1166290,
+    3330270,
+    3332034
+  ],
+  "deployed_v22_engine_canonical_patch": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "03033a9e9d28fe217f9085752fd4db4618cda0430312238dd0e130579557aa83",
+    "expected_tree": "63d91509bee139b2d6a2285eb44b193a67a9e008",
+    "actual_tree": "63d91509bee139b2d6a2285eb44b193a67a9e008",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "deployed_delta_read_only_apply_check_passed": true,
+  "deployed_delta_sha256": "b224b002de7e2d47a9de2160a0c011118c1dbf34df04ece6c15881ca86ae60e3",
+  "validation_evidence": "v67_partial_prefetch_v21_costs_20261011.json",
+  "validation_evidence_sha256": "6bb9b042ba0ecfeb3e438fbdfd54948a310767202648efe4d4f1a36dfd3df917",
+  "related_checks_passed": 296,
+  "change": {
+    "partial_pre_boundary_join_and_tool_overlap_allowed": true,
+    "full_early_transfer_completion_required": false,
+    "maximum_lead_and_workload_configuration_changed": false,
+    "capacity_identity_dependencies_and_residence_preserved": true,
+    "observation_configuration_changed": false,
+    "gpu_performance_verified": false
+  },
+  "deployment": "After the complete frozen V22 pair and postprocessing, deploy 26633b4 and run predictive followed by cold same-version native."
+}

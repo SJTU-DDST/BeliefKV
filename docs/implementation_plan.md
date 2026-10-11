@@ -7,10 +7,23 @@ estimated submit-to-ACK P90 plus enqueue P90 exceeds maximum lead; continue
 clipping the start horizon to that configured lead. A 100ms remaining interval
 may start an 800ms transfer, while native capacity, identity, dependencies and
 residence remain authoritative. The 296 transfer-policy, tool, batch and runtime
-checks pass. Commit and register this follow-up for the still-waiting V23,
+checks pass. Committed as 26633b4 and registered for the still-waiting V23,
 preserving the live V22 pair and its workload/observation configuration.
 The 42 tool rounds covering recorded P90 with free capacity are a complete-hide
 diagnostic subset, not the count of all potentially useful partial overlaps.
+
+At 2026-10-11 12:26:36 CST, update V23 to
+26633b4d2875f26cadb1706b47e182a84164a0b0 in the frozen
+beliefkv-v67-partial-h2d-20261011 checkout. Coordinator 384991 is reverified
+at12:27:33 with PPID1 and start identity586305867. Native patch, maximum
+lead500ms, workload and observation configuration match the previous e82ad88
+target. Stop only old waiting coordinator3756458, preserving V22 server/client
+and the clean3aa27dd main checkout. Keep
+v67_v23_partial_overlap_registration_20261011.json and archive the superseded
+state asv23_launch_after_v22_e82ad88_superseded_20261011.json. The main
+v23_launch_after_v22_20261011.json remains authoritative. Prior e82ad88
+registration descriptions below are historical. Wait for complete V22 pair
+and postprocessing, then predictive followed by cold same-version native.
 
 Keep v67_partial_prefetch_v21_costs_20261011.json. Corrected V21 pre-boundary
 reused FULL is JOIN 1.419GB/91 events and tool 2.530GB/84 events. Next-request
