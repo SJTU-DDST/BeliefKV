@@ -1,0 +1,48 @@
+{
+  "scope": "Verified hardlink deduplication of four immutable completed-run log snapshots; all original paths and bytes remain readable.",
+  "date": "2026-10-11",
+  "read_priority": "ionice class 3, nice 19",
+  "open_file_check": "fuser returned no holders for all eight paths before replacement",
+  "allocated_duplicate_bytes_removed": 7755988992,
+  "pairs": [
+    {
+      "run": "qwen35_native_predictive_replenished_108plus48_20261009_v13",
+      "source_relative": "predictive_h2d/server/runtime_audit.jsonl",
+      "copy_relative": "predictive_h2d/client_156/server/runtime_audit.jsonl",
+      "size_bytes": 3984567730,
+      "sha256": "60bf9408276a4674fda8c44f474089fd9e80e166d2d385d59e431d2b2ea841d4",
+      "shared_inode": 139862933,
+      "verified_link_count": 2
+    },
+    {
+      "run": "qwen35_native_predictive_replenished_108plus48_20261009_v13",
+      "source_relative": "predictive_h2d/server/runtime_events.sglang.jsonl",
+      "copy_relative": "predictive_h2d/client_156/server/runtime_events.sglang.jsonl",
+      "size_bytes": 103200286,
+      "sha256": "cbfb38a6de6cfba5e4f0fa8572dfaad6eed5d7ac332557c663ec88288ac7a97c",
+      "shared_inode": 139862927,
+      "verified_link_count": 2
+    },
+    {
+      "run": "qwen35_native_predictive_replenished_108plus48_20261010_v14",
+      "source_relative": "predictive_h2d/server/runtime_audit.jsonl",
+      "copy_relative": "predictive_h2d/client_156/server/runtime_audit.jsonl",
+      "size_bytes": 3570127800,
+      "sha256": "7a6c109bf2ddccebf66a15c25341677d211c56b08f7257bd1faba092eba228c3",
+      "shared_inode": 139863045,
+      "verified_link_count": 2
+    },
+    {
+      "run": "qwen35_native_predictive_replenished_108plus48_20261010_v14",
+      "source_relative": "predictive_h2d/server/runtime_events.sglang.jsonl",
+      "copy_relative": "predictive_h2d/client_156/server/runtime_events.sglang.jsonl",
+      "size_bytes": 98074477,
+      "sha256": "b59d09aecf3b0cb3edd227a32b24524074ee7b432ec8806c3f04bca2913a4487",
+      "shared_inode": 139863043,
+      "verified_link_count": 2
+    }
+  ],
+  "different_server_logs_preserved": true,
+  "live_experiment_data_modified": false,
+  "model_artifacts_modified": false
+}

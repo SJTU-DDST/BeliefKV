@@ -2,6 +2,28 @@
 
 Status date: 2026-10-11.
 
+V86 reclaims about35.73GiB through verified immutable-log deduplication
+(7.22GiB) and compression of two obsolete failed repeat exports
+(28.51GiB net). The493.6MB archive passes full tar/source comparison
+before removal of16 large JSONL originals; both manifests and restore
+pointers remain. Preserve original training/calibration raw traces,
+usable exports, models andV22/V23. Current free space is about86GiB.
+Keep the archive inventory and both V86 cleanup receipts. Record the
+conservative17:52:00-18:04:35 CST maintenance interval when analyzing
+live native performance; idle priority does not prove zero interference.
+
+At17:58:19 CST, still-waiting V24 was updated to frozen
+ddeda0b8d788a974895a7ab7e7f9c010a2eeec84 in
+beliefkv-v86-tool-survival-20261011. Coordinator506123 has
+PPID1/start588296246; old121691 is absent and itsdbcd95c state/log
+are archived. Environment, engine patch and wait identities exactly match
+the old registration. Main stays clean ata6dd627; its engine matches
+the V23 frozen patch and native server/client identities are unchanged.
+Wait for the complete V23 pair and postprocessing, then predictive followed
+by cold same-version native. No V24 GPU arm has started. Keep authoritative
+main state andv86_v24_tool_survival_registration_20261011.json.
+The17:30 registration below is superseded history; retain its receipt.
+
 V86 replaces linear CDF time-knot lookup with bisect while preserving
 interpolation, boundaries and tails. Leave quantile inversion, model and
 the one-second offload rule unchanged. The first32 distinct recorded
@@ -11,7 +33,7 @@ samples, CDF thread CPU falls26.50% and the complete cached native
 survival-query bundle falls14.27% (10.899 to9.344 microseconds).
 The49 existing prediction checks pass. Keep the V86 CPU report and
 validation receipt; these exclude accuracy, allocator, DMA, GPU and JCT.
-Commit and include this follow-up in still-waiting V24; preserve live V23.
+Committed asddeda0b and registered for still-waiting V24; preserve live V23.
 
 The additional same-version V23 window at2700-3000s has predictive/
 native1016.18/1058.67 decode token/s, GPU81.55%/84.70% and weighted

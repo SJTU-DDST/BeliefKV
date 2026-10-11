@@ -4,6 +4,41 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-10-11 verified compression and snapshot deduplication
+
+Current archive:
+`experiments/archive/20261011/september27_failed_repeat_exports.tar.zst`
+
+SHA256: `a19fd9e58447fc25f32efc49cbc7c62a163e238317f952630d9a6a5711cd91e5`
+
+This 493,602,439-byte archive preserves the two
+`dataset_failed_repeat_v10_20260927` directories beneath the September 25
+training and calibration runs. The original raw server/workflow traces,
+usable datasets, manifests and model artifacts remain in place. All 18
+archived files were compared with their sources using GNU tar before removing
+the 16 large JSONL originals. Both source dataset manifests and `ARCHIVED.md`
+pointers remain under `experiments/raw/`. Net reclaimed allocation is about
+28.51 GiB. Restore the original paths from the repository root with:
+
+```bash
+tar --extract --use-compress-program=zstd \
+  --file experiments/archive/20261011/september27_failed_repeat_exports.tar.zst \
+  --directory experiments/raw
+```
+
+Separately, four byte-identical V13/V14 server snapshots now share hardlinks
+with the original completed-run logs, reclaiming about 7.22 GiB without
+changing any paths or bytes. The two differing `server.log` snapshots were
+preserved. Receipts are
+`experiments/reports/v86_september_failed_exports_archive_20261011.json` and
+`experiments/reports/v86_v13_v14_snapshot_dedup_20261011.json`.
+
+Read/compression work used idle I/O priority and one compression thread.
+The conservative maintenance interval is 2026-10-11 17:52:00-18:04:35 CST;
+record its overlap when evaluating live V23 native windows. V23/V22 raw data
+and the model artifacts were preserved. Older sections below are historical
+operation records, not a fresh verification of those archives' availability.
+
 ## 2026-07-27 P1-P5 raw consolidation
 
 Archive root: `experiments/archive/20260727/superseded_raw/`

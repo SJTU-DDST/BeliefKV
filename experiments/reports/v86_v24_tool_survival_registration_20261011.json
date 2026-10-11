@@ -1,0 +1,42 @@
+{
+  "status": "waiting_for_previous_pair",
+  "registered_at_utc": "2026-10-11T09:58:19.791715+00:00",
+  "authoritative_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v24_launch_after_v23_20261011.json",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v86-tool-survival-20261011",
+  "target_revision": "ddeda0b8d788a974895a7ab7e7f9c010a2eeec84",
+  "target_patch_sha256": "c9195d79d6598c43013d02f04773fb92336651794e9c79005010a9a2b9ec7500",
+  "coordinator": {
+    "pid": 506123,
+    "ppid": 1,
+    "start_identity": "588296246"
+  },
+  "superseded": {
+    "target_revision": "dbcd95cfdd198acb0b29815d1b594d2a1ab9ed82",
+    "coordinator_pid": 121691,
+    "coordinator_absent": true,
+    "archived_state": "v24_launch_after_v23_dbcd95c_superseded_20261011.json",
+    "archived_log": "v24_launch_after_v23_dbcd95c_superseded_20261011.log"
+  },
+  "v23_preserved": {
+    "main_revision": "a6dd627587827f376bed7022d15e538100c0c775",
+    "main_clean": true,
+    "live_engine_matches_frozen_patch": true,
+    "live_engine_patch_sha256": "4af68951beefdf759901d0143ca747c6893aa1ffc7124a3738158512851f7e60",
+    "coordinator_pid": 1083828,
+    "native_server": {
+      "pid": 3387765,
+      "start_identity": "587818316"
+    },
+    "native_client": {
+      "pid": 3389704,
+      "start_identity": "587834675"
+    }
+  },
+  "target_clean": true,
+  "environment_exactly_preserved": true,
+  "wait_identities_exactly_preserved": true,
+  "v24_gpu_started": false,
+  "order": ["predictive_h2d", "native"],
+  "tool_offload_wait_ms": 1000,
+  "performance_goal_complete": false
+}
