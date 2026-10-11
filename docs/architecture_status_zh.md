@@ -23,6 +23,20 @@ predictive/native pair。V27 native 汇总为 156 completed、
 不进入已经开始的 V28；保持本轮冻结，另登记后续 V29
 冷启动验证控制交付修改。不能再把 V28 当作等待任务替换。
 
+05:09:32 CST 核对 V29 协调器 1002829、start ticks
+592315475 存活，状态为 waiting_for_previous_pair，等待
+V28 协调器 883082 的既有身份。目标是干净的 d928da4
+独立 checkout，主工作区 141d3df 为其祖先，引擎 patch
+哈希不变；配置及先 predictive 后同版本 native 顺序保留。
+回执为 v113_v29_queue_registration_20261012.json，不能
+只凭未来运行目录或启动 PID 声称实验已经开始。
+V27 完整同版本对照的 155 个配对完成任务平均 JCT 为
+2969.228/2483.133 秒，100 个 predictive 更慢；600-2400
+秒按已完成请求计的输出速率为 1130.054/1201.674 token/s，
+prefill worker 区间为 320.683/286.702 秒。轨迹与真实需求
+不同，且晚期 native 有本地维护，不能据这些累计值精确
+归因；相对 native 的性能目标尚未达到，继续验证 V28/V29。
+
 V28 等待登记发现归档说明文件 `experiments/archive/README.md`
 被冻结源码校验误判为执行代码。将该文件按既有文档规则排除，
 保留引擎、runtime 和实验配置的冻结校验。新的 V28 登记必须

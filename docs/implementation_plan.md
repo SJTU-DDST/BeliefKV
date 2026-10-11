@@ -23,6 +23,17 @@ and server/scheduler are gone. Retain collecting V28 unchanged and
 queue V113 for a new V29 cold pair, predictive first then same-version
 native. The V28 registration is no longer a replaceable waiting target.
 
+At05:09:32 CST, V29 waiting coordinator1002829/start ticks592315475
+is live, waiting for the verified V28 coordinator883082. Its clean
+frozen target isd928da4, descended from main141d3df with unchanged
+canonical engine patch. Preservev113_v29_queue_registration_20261012.json;
+do not advance that registered target. Completed V27 still misses the
+goal:155 paired-completed mean JCT2969.228/2483.133s, with100 slower
+predictive workflows. In600-2400s, completed-request output rates are
+1130.054/1201.674token/s and prefill worker intervals320.683/286.702s.
+Actual trajectories/demand differ; later native also overlaps maintenance.
+These are diagnostic evidence, not exact control-cost attribution.
+
 V112 commits fa6f6c8. First-service prefetch and background same-session
 prefix audits compare long q-arrays without temporary token slices, using
 native RadixKey's GIL-retaining memory comparison. Retain exact token
