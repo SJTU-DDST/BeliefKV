@@ -8,9 +8,25 @@ queue and ACK/use flush semantics. Identity/HMAC serialization is unchanged.
 The236 relevant checks pass. All259 real records decode identically;
 60 alternating CPU trials reduce combined encoding means from2.916485
 to1.267997ms,56.5%. This does not measure filesystem, queue or GPU/JCT
-savings. Prepare a cold V27 deployment together with553fa7c after stopping
-V26 administratively; preserve frozen plans, traces and partial workspaces.
-V26 still executes frozen2d25850, without live code replacement.
+savings. Cold-deployed with553fa7c in V27 frozen df3dd3c.
+
+V26 was administratively stopped at2026-10-11 23:43:32 CST after106
+written completed outcomes;50 started unfinished tasks are censored,
+zero tasks are unarrived and native never started. All old processes
+exited and GPU allocations were verified released at23:44:42 CST.
+Retain plans, raw evidence and50 partial workspaces; remove106 archived
+workspaces and50 containers proven by V26 bind mounts. Available disk
+recovered from about52 to73GiB before the new initial workspaces.
+
+V27 cold-started at23:45:30 CST, predictive first then same-version cold
+native. Plans differ only in code_commit; V7 and the canonical engine patch
+are unchanged. Coordinator/server/scheduler/client are1060398/1060657/
+1061045/1062524. The23:48:59 CST independently sealed prefixes verify599
+real GPU service samples, health200, writer_error=null and zero dropped/
+failed records. Disk after new workspaces is53.35GiB. Main
+v27_launch_after_v26_20261011.json is authoritative,running_new_pair.
+Retain V98 stop/cleanup/start receipts. Busy throughput/JCT and early
+FULL consumption still require validation; the full objective stays active.
 
 Reject deployment of the latest128-token work-only candidate5c98ca9.
 Reconstruct8404 of8406 sealed V26 inputs, keeping2 missing-content records.
