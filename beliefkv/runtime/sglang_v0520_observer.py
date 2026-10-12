@@ -552,14 +552,23 @@ def observe_unified_node_closure(
     `creation_time` and pending/lock fields form a *local fingerprint*, not
     an atomic revision. Recheck the live tree before any physical command.
     """
-    capacity = observe_unified_full_mamba(cache)
-    if not capacity.observable:
+    # The common static layout has its own validator; it need not first fail
+    # the shared-buffer census on every action-local ancestry observation.
+    allocator_name = type(getattr(cache, "token_to_kv_pool_allocator", None)).__name__
+    capacity = (
+        None if allocator_name in ("TokenToKVPoolAllocator", "PagedTokenToKVPoolAllocator")
+        else observe_unified_full_mamba(cache)
+    )
+    if capacity is None or not capacity.observable:
         try:
             static = _static_full_mamba_pool_geometry(cache)
         except (AttributeError, KeyError, NotImplementedError, RuntimeError, TypeError, ValueError) as exc:
             return UnifiedNodeClosureObservation(
                 observable=False,
-                reason=f"unrecognized FULL/MAMBA pool layout: {capacity.reason}; {exc}",
+                reason=(
+                    f"unrecognized FULL/MAMBA pool layout: {exc}" if capacity is None
+                    else f"unrecognized FULL/MAMBA pool layout: {capacity.reason}; {exc}"
+                ),
             )
         device_full_tokens = static["device_full_tokens"]
         host_full_tokens = static["host_full_tokens"]

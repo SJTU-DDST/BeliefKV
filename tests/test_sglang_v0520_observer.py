@@ -703,6 +703,33 @@ def test_static_action_closure_reads_live_geometry_without_tensor_byte_census() 
     assert "allocator and physical pool disagree" in result.reason
 
 
+@pytest.mark.parametrize("allocator_name", ("TokenToKVPoolAllocator", "PagedTokenToKVPoolAllocator"))
+def test_static_closure_keeps_live_validation_on_both_allocator_layouts(allocator_name) -> None:
+    cache = _static_cache()
+    cache.token_to_kv_pool_allocator = type(allocator_name, (NS,), {})(
+        **vars(cache.token_to_kv_pool_allocator)
+    )
+    root = _node(0)
+    leaf = _node(5, root, device=[1], host=[2])
+    cache.tree_core = UnifiedTreeCore(node_by_id={0: root, 5: leaf}.__getitem__)
+
+    first = observe_unified_node_closure(cache, 5)
+    assert first.observable
+    assert first.nodes[0].full_device_tokens == 1
+    leaf.component_data[0].value = None
+    leaf.load_back_pending_id = 7
+    second = observe_unified_node_closure(cache, 5)
+    assert second.observable
+    assert second.nodes[0].full_device_tokens == 0
+    assert second.nodes[0].pending_load_id == 7
+
+    cache.host_pool_group.entry_map["kv"].device_pool = object()
+    rejected = observe_unified_node_closure(cache, 5)
+    assert not rejected.observable
+    assert rejected.nodes == ()
+    assert "ownership differs" in rejected.reason
+
+
 def test_node_closure_rejects_cycle_excess_depth_and_absent_id() -> None:
     cache = _cache()
     root = _node(1)

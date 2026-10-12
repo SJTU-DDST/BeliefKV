@@ -934,6 +934,100 @@ def test_prepare_reuses_backed_closure_and_does_not_register_after_parent_reentr
         assert capture.call_count == 1
 
 
+@pytest.mark.parametrize("source", ("join_prepare", "tool_wait"))
+def test_partial_prepare_registers_settled_input_copies_before_remaining_backup(source):
+    from dataclasses import replace
+
+    class Node(NS):
+        __hash__ = object.__hash__
+
+    if source == "join_prepare":
+        runtime = final_stage_runtime()
+        runtime._clear_final_stage("join")
+        key = runtime.context_sessions["ctx-parent"]
+    else:
+        runtime, hint = tool_runtime()
+        hint = replace(hint, wait_p10_ms=2000., wait_p50_ms=3000., wait_p90_ms=5000.)
+        runtime.tool_wait_hints[hint.key.context_id] = hint
+        key = hint.key
+    runtime.enable_prepare_host = True
+    root = NS(
+        node_id=0, creation_time=1, parent_id=None, key_tokens=0,
+        full_device_tokens=0, full_host_tokens=0,
+        mamba_device_present=False, mamba_host_present=False,
+        pending_write_id=None, pending_load_id=None,
+    )
+    unbacked = NS(
+        node_id=10, creation_time=3, parent_id=0, key_tokens=10,
+        full_device_tokens=10, full_host_tokens=0,
+        mamba_device_present=False, mamba_host_present=False,
+        pending_write_id=None, pending_load_id=None,
+    )
+    backed = NS(
+        node_id=11, creation_time=4, parent_id=10, key_tokens=10,
+        full_device_tokens=10, full_host_tokens=10,
+        mamba_device_present=True, mamba_host_present=True,
+        pending_write_id=None, pending_load_id=None,
+    )
+    generated = NS(
+        node_id=12, creation_time=5, parent_id=11, key_tokens=10,
+        full_device_tokens=10, full_host_tokens=10,
+        mamba_device_present=False, mamba_host_present=False,
+        pending_write_id=None, pending_load_id=None,
+    )
+    anchors = ContextSessionAnchors(
+        key, ((0, ((12, 5),)), (2, ((11, 4),))), 1., reusable_input_tokens=20,
+    )
+    candidate = ActionLocalShadowCandidate(
+        anchors, (generated, backed, unbacked, root), 10, 0,
+    )
+    node = Node(
+        id=11, creation_time=4, backuped=True,
+        write_through_pending_id=None, load_back_pending_id=None,
+        component_data={
+            0: NS(value=[1] * 10, host_value=[1] * 10, lock_ref=0, session_ref=1),
+            2: NS(value=[2], host_value=[2], lock_ref=0, session_ref=1),
+        },
+    )
+    cache = NS(
+        tree_core=NS(node_by_id=lambda _: node, evictable_device_leaves={node}),
+        ongoing_write_through={},
+    )
+    runtime._native_cache = cache
+    try:
+        with patch.object(runtime, "capture_shadow_candidate", return_value=candidate) as capture, \
+                patch.object(runtime, "snapshot_session_anchors") as snapshot:
+            step = runtime.refreshed_shadow_backup_step(
+                context_id=key.context_id, source=source,
+            )
+            assert step == ShadowBackupStep(
+                key, 12, 5, 10, 3, missing_full_prefix_tokens=10,
+            )
+            capture.assert_called_once()
+            snapshot.assert_not_called()
+        assert runtime._parent_pressure_candidates == {11: (key, 4)}
+        assert runtime._live_parent_pressure_node(11, 4)
+        runtime._publish_parent_pressure_candidates()
+        assert cache.beliefkv_join_pressure_candidates_by_component == {
+            0: ((11, 4),), 2: ((11, 4),),
+        }
+        node.load_back_pending_id = 7
+        runtime._publish_parent_pressure_candidates()
+        assert cache.beliefkv_join_pressure_candidates == ()
+        assert cache.beliefkv_join_pressure_candidates_by_component == {0: (), 2: ()}
+        node.load_back_pending_id = None
+        node.component_data[0].session_ref = 2
+        node.component_data[2].lock_ref = 1
+        runtime._publish_parent_pressure_candidates()
+        assert cache.beliefkv_join_pressure_candidates == ()
+        assert cache.beliefkv_join_pressure_candidates_by_component == {0: (), 2: ()}
+        runtime.graph.invocations[key.invocation_id].state = InvocationState.READY
+        runtime._prune_parent_pressure_candidates()
+        assert not runtime._parent_pressure_candidates
+    finally:
+        runtime.close()
+
+
 def test_pressure_maintenance_groups_contexts_and_still_expires_real_locks():
     runtime, hint, _, action, _, _ = locked_runtime()
     runtime._parent_pressure_candidates = {

@@ -4143,7 +4143,9 @@ class NativeAdmissionRuntime:
             host_full_free_tokens=host_full_free_tokens,
         )
         step = next_shadow_backup_step(candidate) if candidate is not None else None
-        if step is None and candidate is not None:
+        if candidate is not None:
+            # Settled cold copies remain reclaimable while other extents still
+            # need PREPARE; publication rechecks native locks and ownership.
             self._register_backed_pressure_nodes(candidate.anchors.key, candidate=candidate)
         return step
 

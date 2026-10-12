@@ -678,7 +678,9 @@ def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():
     now = time.monotonic() * 1000
     hint = NativeToolWaitHint(key, 100.0, 300.0, 600.0, now, now + 5_000, "a" * 64, revision)
     worker.poll = lambda: (hint,)
-    sentinel = object()
+    sentinel = ActionLocalShadowCandidate(
+        ContextSessionAnchors(key, (), time.monotonic()), (), 0, 0,
+    )
     with patch.object(runtime, "capture_shadow_candidate", return_value=sentinel) as capture:
         runtime.scheduler_step()
     assert runtime.tool_wait_hint == hint
@@ -1148,7 +1150,10 @@ def test_native_shadow_transaction_waits_for_matching_ack():
     runtime.attach_native_cache(NS(
         cache_controller=controller, prepare_host_shadow=native_shadow
     ))
-    with patch.object(runtime, "capture_shadow_candidate", return_value=object()), patch(
+    candidate = ActionLocalShadowCandidate(
+        ContextSessionAnchors(key, (), time.monotonic()), (), 0, 0,
+    )
+    with patch.object(runtime, "capture_shadow_candidate", return_value=candidate), patch(
         "beliefkv.runtime.sglang_v0520_runtime.next_shadow_backup_step",
         return_value=step,
     ):
@@ -1214,7 +1219,10 @@ def test_native_shadow_explicit_decline_cancels_unsubmitted_reservation():
     runtime.attach_native_cache(NS(
         cache_controller=controller, prepare_host_shadow=decline
     ))
-    with patch.object(runtime, "capture_shadow_candidate", return_value=object()), patch(
+    candidate = ActionLocalShadowCandidate(
+        ContextSessionAnchors(key, (), time.monotonic()), (), 0, 0,
+    )
+    with patch.object(runtime, "capture_shadow_candidate", return_value=candidate), patch(
         "beliefkv.runtime.sglang_v0520_runtime.next_shadow_backup_step",
         return_value=step,
     ):
