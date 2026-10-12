@@ -1,0 +1,698 @@
+{
+  "schema_version": 1,
+  "baseline_revision": "bb311a5",
+  "baseline_source_sha256": "7efaa3f0689011bfad6b3cd7a078558ade1ac6ebcb197c932b8eb083c854eb24",
+  "optimized_source_sha256": "317c295e4f4974400e1811543a092b4829431c64d7e47776b52fbf100ae82129",
+  "benchmark_source_sha256": "0b8ef49d773bd2648e84e8c00d7d0b77da0b1abdd81b4dbf412e390351067d4c",
+  "scope": "CPU dispatch and maintenance on identical graph/cache fixtures. Real checkpoint planning and live headroom reads; model submission and physical enqueue are stubbed. No native allocator, DMA, GPU throughput or JCT evidence.",
+  "cases": [
+    {
+      "workflows": 24,
+      "mode": "unbacked",
+      "iterations": 150,
+      "checkpoint_depth": 16,
+      "decision_clock_step_ms": 60,
+      "prepare_actions_tool_refresh_rotation_and_publication_equal": true,
+      "native_session_snapshot_calls": {
+        "baseline": 1200,
+        "optimized": 1200
+      },
+      "costs": {
+        "baseline": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.017162746666666666,
+              "p50_ms": 0.022699,
+              "p99_ms": 0.029138,
+              "max_ms": 0.03119
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.016375306666666666,
+              "p50_ms": 0.021844,
+              "p99_ms": 0.028398,
+              "max_ms": 0.030354
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 1.7551909666666667,
+              "p50_ms": 1.755226,
+              "p99_ms": 1.792635,
+              "max_ms": 1.849888
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 1.7542566666666666,
+              "p50_ms": 1.754334,
+              "p99_ms": 1.791579,
+              "max_ms": 1.848822
+            }
+          }
+        },
+        "optimized": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.01299752,
+              "p50_ms": 0.014578,
+              "p99_ms": 0.018171,
+              "max_ms": 0.01984
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.012217093333333333,
+              "p50_ms": 0.013793,
+              "p99_ms": 0.017233,
+              "max_ms": 0.01902
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 1.73304934,
+              "p50_ms": 1.730215,
+              "p99_ms": 1.786339,
+              "max_ms": 2.160655
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 1.7321472666666666,
+              "p50_ms": 1.729173,
+              "p99_ms": 1.785409,
+              "max_ms": 2.159346
+            }
+          }
+        }
+      },
+      "thread_cpu_reduction": {
+        "maintenance": 0.242689981246203,
+        "join_prepare": 0.012614938822706256
+      }
+    },
+    {
+      "workflows": 156,
+      "mode": "unbacked",
+      "iterations": 150,
+      "checkpoint_depth": 16,
+      "decision_clock_step_ms": 60,
+      "prepare_actions_tool_refresh_rotation_and_publication_equal": true,
+      "native_session_snapshot_calls": {
+        "baseline": 1200,
+        "optimized": 1200
+      },
+      "costs": {
+        "baseline": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.0478023,
+              "p50_ms": 0.079708,
+              "p99_ms": 0.095448,
+              "max_ms": 0.105919
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.047034113333333336,
+              "p50_ms": 0.078807,
+              "p99_ms": 0.094558,
+              "max_ms": 0.116315
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 2.0317335533333334,
+              "p50_ms": 2.029665,
+              "p99_ms": 2.125852,
+              "max_ms": 2.274748
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 2.030637153333333,
+              "p50_ms": 2.028686,
+              "p99_ms": 2.124788,
+              "max_ms": 2.273414
+            }
+          }
+        },
+        "optimized": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.017019566666666666,
+              "p50_ms": 0.020929,
+              "p99_ms": 0.027367,
+              "max_ms": 0.031902
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.016205993333333335,
+              "p50_ms": 0.020158,
+              "p99_ms": 0.026579,
+              "max_ms": 0.031099
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 1.9239262866666667,
+              "p50_ms": 1.932187,
+              "p99_ms": 2.020721,
+              "max_ms": 2.153179
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 1.92289316,
+              "p50_ms": 1.931266,
+              "p99_ms": 2.019388,
+              "max_ms": 2.151746
+            }
+          }
+        }
+      },
+      "thread_cpu_reduction": {
+        "maintenance": 0.6439592516120214,
+        "join_prepare": 0.05306171495262968
+      }
+    },
+    {
+      "workflows": 512,
+      "mode": "unbacked",
+      "iterations": 150,
+      "checkpoint_depth": 16,
+      "decision_clock_step_ms": 60,
+      "prepare_actions_tool_refresh_rotation_and_publication_equal": true,
+      "native_session_snapshot_calls": {
+        "baseline": 1200,
+        "optimized": 1200
+      },
+      "costs": {
+        "baseline": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.16669803333333333,
+              "p50_ms": 0.308108,
+              "p99_ms": 0.339217,
+              "max_ms": 0.34352
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.16575783333333333,
+              "p50_ms": 0.307142,
+              "p99_ms": 0.338247,
+              "max_ms": 0.342398
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 2.463564706666667,
+              "p50_ms": 2.474605,
+              "p99_ms": 2.641716,
+              "max_ms": 2.945678
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 2.462189066666667,
+              "p50_ms": 2.473308,
+              "p99_ms": 2.64016,
+              "max_ms": 2.944127
+            }
+          }
+        },
+        "optimized": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.025383706666666665,
+              "p50_ms": 0.036124,
+              "p99_ms": 0.043714,
+              "max_ms": 0.05935
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.0244794,
+              "p50_ms": 0.035313,
+              "p99_ms": 0.042794,
+              "max_ms": 0.05854
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 2.1030503266666667,
+              "p50_ms": 2.141703,
+              "p99_ms": 2.224886,
+              "max_ms": 2.234966
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 2.1025145333333333,
+              "p50_ms": 2.140461,
+              "p99_ms": 2.223862,
+              "max_ms": 2.233762
+            }
+          }
+        }
+      },
+      "thread_cpu_reduction": {
+        "maintenance": 0.8477264178881534,
+        "join_prepare": 0.14633850656506409
+      }
+    },
+    {
+      "workflows": 156,
+      "mode": "backed",
+      "iterations": 150,
+      "checkpoint_depth": 16,
+      "decision_clock_step_ms": 60,
+      "prepare_actions_tool_refresh_rotation_and_publication_equal": true,
+      "native_session_snapshot_calls": {
+        "baseline": 1200,
+        "optimized": 1200
+      },
+      "costs": {
+        "baseline": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.07151849333333334,
+              "p50_ms": 0.120115,
+              "p99_ms": 0.193184,
+              "max_ms": 0.282711
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.0705599,
+              "p50_ms": 0.119287,
+              "p99_ms": 0.191604,
+              "max_ms": 0.281746
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 4.648210433333333,
+              "p50_ms": 4.637406,
+              "p99_ms": 5.269328,
+              "max_ms": 5.842936
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 4.646728173333333,
+              "p50_ms": 4.636111,
+              "p99_ms": 5.266615,
+              "max_ms": 5.83979
+            }
+          }
+        },
+        "optimized": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.02208588,
+              "p50_ms": 0.025064,
+              "p99_ms": 0.049824,
+              "max_ms": 0.05393
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.021143426666666666,
+              "p50_ms": 0.024149,
+              "p99_ms": 0.048847,
+              "max_ms": 0.053046
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 4.52824024,
+              "p50_ms": 4.516513,
+              "p99_ms": 4.711742,
+              "max_ms": 5.474217
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 4.526811146666667,
+              "p50_ms": 4.514772,
+              "p99_ms": 4.709612,
+              "max_ms": 5.472893
+            }
+          }
+        }
+      },
+      "thread_cpu_reduction": {
+        "maintenance": 0.6911864474400747,
+        "join_prepare": 0.0258099746244278
+      }
+    },
+    {
+      "workflows": 512,
+      "mode": "backed",
+      "iterations": 150,
+      "checkpoint_depth": 16,
+      "decision_clock_step_ms": 60,
+      "prepare_actions_tool_refresh_rotation_and_publication_equal": true,
+      "native_session_snapshot_calls": {
+        "baseline": 1200,
+        "optimized": 1200
+      },
+      "costs": {
+        "baseline": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.18592884,
+              "p50_ms": 0.348761,
+              "p99_ms": 0.37368,
+              "max_ms": 0.384204
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.18504754,
+              "p50_ms": 0.347719,
+              "p99_ms": 0.372794,
+              "max_ms": 0.383208
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 9.099876886666667,
+              "p50_ms": 9.091652,
+              "p99_ms": 9.451104,
+              "max_ms": 9.920796
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 9.09894416,
+              "p50_ms": 9.09002,
+              "p99_ms": 9.465324,
+              "max_ms": 9.918818
+            }
+          }
+        },
+        "optimized": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.025614286666666666,
+              "p50_ms": 0.036124,
+              "p99_ms": 0.044748,
+              "max_ms": 0.044824
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.02485778,
+              "p50_ms": 0.035374,
+              "p99_ms": 0.043935,
+              "max_ms": 0.044067
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 8.6949993,
+              "p50_ms": 8.694527,
+              "p99_ms": 8.92095,
+              "max_ms": 9.363786
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 8.69378778,
+              "p50_ms": 8.693658,
+              "p99_ms": 8.919068,
+              "max_ms": 9.36123
+            }
+          }
+        }
+      },
+      "thread_cpu_reduction": {
+        "maintenance": 0.8622360755509115,
+        "join_prepare": 0.04449264442905854
+      }
+    },
+    {
+      "workflows": 156,
+      "mode": "no_join",
+      "iterations": 150,
+      "checkpoint_depth": 16,
+      "decision_clock_step_ms": 60,
+      "prepare_actions_tool_refresh_rotation_and_publication_equal": true,
+      "native_session_snapshot_calls": {
+        "baseline": 0,
+        "optimized": 0
+      },
+      "costs": {
+        "baseline": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.028659793333333333,
+              "p50_ms": 0.050925,
+              "p99_ms": 0.057997,
+              "max_ms": 0.058345
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.028130906666666667,
+              "p50_ms": 0.050396,
+              "p99_ms": 0.057464,
+              "max_ms": 0.057787
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.05796070666666667,
+              "p50_ms": 0.057522,
+              "p99_ms": 0.063786,
+              "max_ms": 0.070544
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.05739186,
+              "p50_ms": 0.056957,
+              "p99_ms": 0.063252,
+              "max_ms": 0.070029
+            }
+          }
+        },
+        "optimized": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.007753046666666667,
+              "p50_ms": 0.009053,
+              "p99_ms": 0.011748,
+              "max_ms": 0.01516
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.007233293333333333,
+              "p50_ms": 0.008557,
+              "p99_ms": 0.011203,
+              "max_ms": 0.014631
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.01363262,
+              "p50_ms": 0.013379,
+              "p99_ms": 0.018053,
+              "max_ms": 0.047207
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.01309824,
+              "p50_ms": 0.012875,
+              "p99_ms": 0.017587,
+              "max_ms": 0.046491
+            }
+          }
+        }
+      },
+      "thread_cpu_reduction": {
+        "maintenance": 0.7294800218377941,
+        "join_prepare": 0.7647954832848829
+      }
+    },
+    {
+      "workflows": 156,
+      "mode": "churn",
+      "iterations": 150,
+      "checkpoint_depth": 16,
+      "decision_clock_step_ms": 60,
+      "prepare_actions_tool_refresh_rotation_and_publication_equal": true,
+      "native_session_snapshot_calls": {
+        "baseline": 1200,
+        "optimized": 1200
+      },
+      "costs": {
+        "baseline": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.0402803,
+              "p50_ms": 0.067109,
+              "p99_ms": 0.076875,
+              "max_ms": 0.089525
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.039585826666666664,
+              "p50_ms": 0.066364,
+              "p99_ms": 0.076155,
+              "max_ms": 0.088822
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 1.6037673266666668,
+              "p50_ms": 1.592666,
+              "p99_ms": 1.70757,
+              "max_ms": 2.031093
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 1.6028959666666667,
+              "p50_ms": 1.591697,
+              "p99_ms": 1.706655,
+              "max_ms": 2.030133
+            }
+          }
+        },
+        "optimized": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.06206776,
+              "p50_ms": 0.107462,
+              "p99_ms": 0.119613,
+              "max_ms": 0.309929
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.0613571,
+              "p50_ms": 0.106707,
+              "p99_ms": 0.118821,
+              "max_ms": 0.30917
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 1.5662265666666666,
+              "p50_ms": 1.561524,
+              "p99_ms": 1.63953,
+              "max_ms": 2.976291
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 1.5657012866666666,
+              "p50_ms": 1.563336,
+              "p99_ms": 1.638667,
+              "max_ms": 2.974125
+            }
+          }
+        }
+      },
+      "thread_cpu_reduction": {
+        "maintenance": -0.5408961700881076,
+        "join_prepare": 0.023407859342057025
+      }
+    },
+    {
+      "workflows": 512,
+      "mode": "churn",
+      "iterations": 150,
+      "checkpoint_depth": 16,
+      "decision_clock_step_ms": 60,
+      "prepare_actions_tool_refresh_rotation_and_publication_equal": true,
+      "native_session_snapshot_calls": {
+        "baseline": 1200,
+        "optimized": 1200
+      },
+      "costs": {
+        "baseline": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.14187254,
+              "p50_ms": 0.261466,
+              "p99_ms": 0.285252,
+              "max_ms": 0.285422
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.1410874,
+              "p50_ms": 0.260577,
+              "p99_ms": 0.284342,
+              "max_ms": 0.284587
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 1.9492238733333334,
+              "p50_ms": 1.933456,
+              "p99_ms": 2.136726,
+              "max_ms": 2.186734
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 1.94815158,
+              "p50_ms": 1.932202,
+              "p99_ms": 2.135665,
+              "max_ms": 2.185403
+            }
+          }
+        },
+        "optimized": {
+          "maintenance": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 0.17426488666666667,
+              "p50_ms": 0.329676,
+              "p99_ms": 0.349832,
+              "max_ms": 0.350332
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 0.17346002666666666,
+              "p50_ms": 0.328721,
+              "p99_ms": 0.348968,
+              "max_ms": 0.349355
+            }
+          },
+          "join_prepare": {
+            "thread_cpu": {
+              "count": 150,
+              "mean_ms": 1.7689410466666666,
+              "p50_ms": 1.728391,
+              "p99_ms": 1.963443,
+              "max_ms": 1.974658
+            },
+            "wall": {
+              "count": 150,
+              "mean_ms": 1.7679673133333333,
+              "p50_ms": 1.72751,
+              "p99_ms": 1.962433,
+              "max_ms": 1.973584
+            }
+          }
+        }
+      },
+      "thread_cpu_reduction": {
+        "maintenance": -0.22832005874192918,
+        "join_prepare": 0.09248954372714935
+      }
+    }
+  ]
+}

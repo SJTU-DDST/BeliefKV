@@ -539,6 +539,8 @@ class NativeAdmissionRuntime:
         self.frontier = CausalFrontierScheduler(self.graph)
         self.visible: dict[str, PrefillCandidateKey] = {}
         self.context_sessions: dict[str, PrefillCandidateKey] = {}
+        self._context_sessions_revision = 0
+        self._wait_context_cache = None
         self.physical_ledger = PhysicalTransactionLedger()
         self.completed_physical_actions: deque[PhysicalActionCompleted] = deque(
             maxlen=128
@@ -792,6 +794,7 @@ class NativeAdmissionRuntime:
             self.demand_hints.clear()
             self._last_model_signature = None
             self.context_sessions.clear()
+            self._wait_context_cache = None
             self._terminal_child_reclaims.clear()
             self._parent_capacity_handoffs.clear()
             self.tool_wait_hint = None
@@ -917,6 +920,7 @@ class NativeAdmissionRuntime:
                         self._tool_last_queries.pop(key, None)
                         self._tool_opportunity_cache.pop(key, None)
                         del self.context_sessions[context_id]
+                        self._context_sessions_revision += 1
                         self._context_tokens.pop(context_id, None)
                     if event.kind in (
                         RuntimeEventKind.TOOL_END,
@@ -988,6 +992,7 @@ class NativeAdmissionRuntime:
                         for context, key in self.context_sessions.items()
                         if key.root_workflow_id != event.workflow_id
                     }
+                    self._context_sessions_revision += 1
                     self._context_tokens = {
                         context: tokens
                         for context, tokens in self._context_tokens.items()
@@ -1507,9 +1512,7 @@ class NativeAdmissionRuntime:
         if self._tool_timing_only and now_ms >= self._tool_refresh_next_ms:
             self._tool_refresh_next_ms = now_ms + 100.
             contexts = [
-                key.context_id for key in self.context_sessions.values()
-                if (inv := self.graph.invocations.get(key.invocation_id)) is not None
-                and inv.state is InvocationState.WAIT_TOOL
+                key.context_id for key in self._waiting_context_keys(InvocationState.WAIT_TOOL)
             ]
             if contexts:
                 offset = self._scan_offsets["tool_wait"] % len(contexts)
@@ -1918,13 +1921,29 @@ class NativeAdmissionRuntime:
             self._submit_tool_wait(tool.key.context_id)
             self.counts["tool_wait_refresh_submitted"] += 1
 
+    def _waiting_context_keys(self, state: InvocationState) -> tuple[PrefillCandidateKey, ...]:
+        signature = (self.graph.graph_version, self._context_sessions_revision)
+        cached = self._wait_context_cache
+        if cached is None or cached[0] != signature:
+            cached = (signature, {})
+            self._wait_context_cache = cached
+        if state not in cached[1]:
+            keys = [
+                key for key in self.context_sessions.values()
+                if (invocation := self.graph.invocations.get(key.invocation_id)) is not None
+                and invocation.state is state
+            ]
+            # Tool refresh keeps session insertion order; PREPARE keeps context order.
+            if state is InvocationState.WAIT_JOIN:
+                keys.sort(key=lambda key: key.context_id)
+            cached[1][state] = tuple(keys)
+        return cached[1][state]
+
     def _scan_unhinted_wait(self) -> bool:
         """Revisit overflowed or unhinted waits only while the worker is idle."""
         tools = sorted(
-            context_id for context_id, key in self.context_sessions.items()
-            if context_id not in self.tool_wait_hints
-            and (invocation := self.graph.invocations.get(key.invocation_id)) is not None
-            and invocation.state is InvocationState.WAIT_TOOL
+            key.context_id for key in self._waiting_context_keys(InvocationState.WAIT_TOOL)
+            if key.context_id not in self.tool_wait_hints
             and not self._terminal(key)
         )
         joins = sorted(
@@ -4372,12 +4391,7 @@ class NativeAdmissionRuntime:
             self._publish_parent_pressure_candidates()
             self.counts["prepare_mamba_pressure_only"] += 1
             return
-        parents = sorted(
-            (key for key in self.context_sessions.values()
-             if (parent := self.graph.invocations.get(key.invocation_id)) is not None
-             and parent.state is InvocationState.WAIT_JOIN),
-            key=lambda key: key.context_id,
-        )
+        parents = self._waiting_context_keys(InvocationState.WAIT_JOIN)
         if not parents:
             self._publish_parent_pressure_candidates()
             return
@@ -6372,6 +6386,7 @@ class NativeAdmissionRuntime:
             self.context_sessions[key.context_id] = key
         else:
             self.context_sessions.pop(key.context_id, None)
+        self._context_sessions_revision += 1
         self.semantic_revision += 1
         self._execution_handoff_next_ms = 0.
         self._refresh_prefetch_service_leases(context_id=key.context_id)
@@ -6435,6 +6450,7 @@ class NativeAdmissionRuntime:
                 self.context_sessions[key.context_id] = key
             else:
                 self.context_sessions.pop(key.context_id, None)
+            self._context_sessions_revision += 1
             self.demand_hints.pop(key.request_id, None)
             self.semantic_revision += 1
 
@@ -6445,6 +6461,7 @@ class NativeAdmissionRuntime:
                 self._tool_last_queries.pop(key, None)
                 self._tool_opportunity_cache.pop(key, None)
                 del self.context_sessions[context_id]
+                self._context_sessions_revision += 1
                 self._context_tokens.pop(context_id, None)
                 self.tool_wait_hints.pop(context_id, None)
                 self.join_wait_hints = {
@@ -7100,6 +7117,7 @@ class NativeAdmissionRuntime:
         for context_id, key in tuple(self.context_sessions.items()):
             if getattr(abort, "abort_all", False) or key.request_id.startswith(abort.rid):
                 del self.context_sessions[context_id]
+                self._context_sessions_revision += 1
                 self._context_tokens.pop(context_id, None)
                 self.tool_wait_hints.pop(context_id, None)
                 self.join_wait_hints = {
