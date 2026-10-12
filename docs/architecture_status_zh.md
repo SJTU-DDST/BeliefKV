@@ -36,7 +36,15 @@ reentry 检查 87.615 秒、准入 32.719 秒、工具预取 29.605 秒。
 完整证据为 v133_v32_complete_prefetch/busy、
 v134_v32_complete_development，继续优先检查最新 predictive。
 
-下一轮 V33 部署已复现的冷 FULL 祖先回收修复：旧路径释放
+V33 已于 2026-10-12 17:12:32 CST 从 e0fe3f2 冷启动，
+只跑 predictive，固定 native 参照及全部实验参数保持。
+17:19:38 的部署核验确认健康检查 200、7,899 个实际 GPU
+服务样本、physical_disabled=false，FULL/Mamba 的设备
+与 Host 容量逐项等于 V32；8192-token 上限及 harness
+续接行为均未改。回执为 v134_v33_deployment_validation。
+这是启动核验，尚不证明有效提前复用或吞吐/JCT 改善。
+
+V33 部署已复现的冷 FULL 祖先回收修复：旧路径释放
 叶节点后不继续回收新暴露的冷祖先，真实 allocator 案例仅释放
 2 token 而需要 6 token。现在沿新暴露的原生 device leaf 继续，
 每节点重新核验 identity、因果等待、Host 副本、引用与传输状态，

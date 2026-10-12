@@ -37,7 +37,14 @@ demand, local analysis and archive maintenance overlap.
 Evidence: v133_v32_complete_prefetch/busy and
 v134_v32_complete_development.
 
-Cold-start V33 predictive only against the unchanged fixed native.
+V33 cold-started e0fe3f2 at 17:12:32 CST on October 12,
+predictive only against the unchanged fixed native. Its 17:19:38
+deployment receipt confirms HTTP 200, 7899 real GPU service samples,
+physical_disabled=false and physical pool capacities equal to V32.
+Keep output8192 and the current harness continuation behavior.
+Evidence: v134_v33_deployment_validation. Startup validation does
+not establish early FULL consumption or throughput/JCT improvement.
+
 Deploy newly exposed cold FULL ancestor reclamation: after each
 actual leaf demotion, revalidate the ancestor's native identity,
 device-leaf membership, causal wait, sharing, pending transfers

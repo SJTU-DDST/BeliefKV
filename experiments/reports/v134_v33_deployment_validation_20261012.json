@@ -1,0 +1,109 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-12T17:19:38.936550+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v33",
+  "code_commit": "e0fe3f288490ae9af6c22735f8f2c3b648d61086",
+  "sglang_patch_sha256": "06d491ae9d326ed220d273d88ae6d1c68144aff01f99e80514bb47b423c91edc",
+  "frozen_plan_sha256": "5058723243032a5cee0ac00dc479920b365fb15cf2a68e8626cc1987046a822c",
+  "execution_verification": {
+    "collection_code_commit": "e0fe3f288490ae9af6c22735f8f2c3b648d61086",
+    "verification_code_commit": "e0fe3f288490ae9af6c22735f8f2c3b648d61086",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "06d491ae9d326ed220d273d88ae6d1c68144aff01f99e80514bb47b423c91edc",
+    "expected_tree": "27f9d9ae0fa539abdc4121cfcdf0afa2b1faa5b7",
+    "actual_tree": "27f9d9ae0fa539abdc4121cfcdf0afa2b1faa5b7",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "unchanged_configuration_fields": [
+    "workload_sha256",
+    "root_count",
+    "arrival_schedule",
+    "server_running",
+    "context_tokens",
+    "max_completion_tokens",
+    "host_gb",
+    "host_split",
+    "mamba_full_memory_ratio",
+    "mem_fraction_static",
+    "native_write_policy",
+    "fanout_profile",
+    "sampling_seed",
+    "temperature",
+    "sandbox_command_timeout_s",
+    "activation_wall_clock_seconds",
+    "child_final_report_shadow",
+    "prefetch_lead_ms",
+    "native_reference_run"
+  ],
+  "actual_capacity": {
+    "device_full_bytes": 36843438080,
+    "device_full_tokens": 1798995,
+    "device_mamba_bytes": 33096007680,
+    "device_mamba_slots": 513,
+    "device_total_bytes": 69939445760,
+    "host_full_bytes": 160000020480,
+    "host_full_tokens": 7812501,
+    "host_mamba_bytes": 40050032640,
+    "host_mamba_slots": 622,
+    "host_total_bytes": 200050053120,
+    "pool_layout": "static_separate_full_mamba"
+  },
+  "max_completion_tokens": 8192,
+  "output_budget_user_decision": "Keep the upper limit unchanged for this iteration.",
+  "physical_disabled": false,
+  "runtime_snapshot_ts_ms": 1791796776718.723,
+  "observed_gpu_service_samples": 7899,
+  "health_http_status": "200",
+  "live_process_identities": {
+    "coordinator": {
+      "pid": 2436216,
+      "state": "S",
+      "ppid": 1,
+      "pgid": 2436216,
+      "start_ticks": "596661401"
+    },
+    "server": {
+      "pid": 2436455,
+      "state": "R",
+      "ppid": 2436436,
+      "pgid": 2436455,
+      "start_ticks": "596661632"
+    },
+    "scheduler": {
+      "pid": 2436809,
+      "state": "R",
+      "ppid": 2436455,
+      "pgid": 2436455,
+      "start_ticks": "596662894"
+    },
+    "client": {
+      "pid": 2438603,
+      "state": "S",
+      "ppid": 2436436,
+      "pgid": 2438603,
+      "start_ticks": "596678887"
+    }
+  },
+  "implementation_commit": "991abce",
+  "related_checks_passed": 572,
+  "scope": "Source, real-service and unchanged-capacity validation. No early FULL consumption, complete busy window or causal gain inferred."
+}

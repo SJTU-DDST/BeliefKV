@@ -14,7 +14,14 @@ decode 吞吐为 -9.24%/+1.43%/-5.77%，未达性能目标。
 完整审计为 v133_v32_complete_prefetch/busy 和
 v134_v32_complete_development；优先追踪最新实验。
 
-V33 冷启动加入新暴露冷祖先的容量回收：已备份 FULL
+V33 于 2026-10-12 17:12:32 CST 冷启动 e0fe3f2，只跑
+predictive。17:19:38 核验健康 200、7,899 个实际 GPU
+服务样本及 physical_disabled=false，实际物理容量等于
+V32。保持 8192-token 预算和 harness 行为，固定 native
+参照不变。v134_v33_deployment_validation 保存启动回执；
+提前 FULL 消费、完整繁忙窗口及 JCT 收益继续采集。
+
+V33 加入新暴露冷祖先的容量回收：已备份 FULL
 叶释放后，沿实际变成 device leaf 的父节点继续，重新
 检查因果身份、共享/锁/在途状态及完整目标前缀排除。
 保持 live Mamba 独立驻留，使用实际 allocator 释放量，
