@@ -845,6 +845,7 @@ def test_prepare_rejects_window_too_short_to_copy_then_prefetch():
 
 def test_backed_full_without_mamba_is_available_for_pressure_demotion():
     runtime = final_stage_runtime()
+    runtime.enable_prepare_host = True
     key = runtime.context_sessions["ctx-parent"]
     anchors = NS(reusable_input_tokens=100)
     node = NS(
@@ -858,6 +859,41 @@ def test_backed_full_without_mamba_is_available_for_pressure_demotion():
     ):
         runtime._register_backed_pressure_nodes(key)
     assert runtime._parent_pressure_candidates[11] == (key, 4)
+    assert "join" in runtime._final_stages
+    assert runtime._final_stages["join"].last_service_at is None
+    runtime._prune_parent_pressure_candidates()
+    assert runtime._parent_pressure_candidates[11] == (key, 4)
+    assert runtime._live_parent_pressure_node(11, 4)
+    runtime.close()
+
+
+def test_join_cold_candidate_remains_protected_during_live_restore_window():
+    import time
+
+    from beliefkv.runtime.sglang_v0520_runtime import _JoinPrefetchTicket
+
+    runtime = final_stage_runtime()
+    runtime.enable_prepare_host = True
+    key = runtime.context_sessions["ctx-parent"]
+    try:
+        runtime._parent_pressure_candidates[11] = (key, 4)
+        assert runtime._live_parent_pressure_node(11, 4)
+        runtime._join_ticket = _JoinPrefetchTicket(
+            key, "join", "all", ("child",), "provisional",
+            time.monotonic() + 10., stage_bound=True,
+        )
+        assert runtime._live_join_ticket()
+        assert not runtime._live_parent_pressure_node(11, 4)
+        runtime._prune_parent_pressure_candidates()
+        assert not runtime._parent_pressure_candidates
+
+        runtime._join_ticket.expires_at = time.monotonic() - 1.
+        runtime._parent_pressure_candidates[11] = (key, 4)
+        assert runtime._live_parent_pressure_node(11, 4)
+        runtime.graph.invocations[key.invocation_id].state = InvocationState.READY
+        assert not runtime._live_parent_pressure_node(11, 4)
+    finally:
+        runtime.close()
 
 
 def test_prepare_reuses_backed_closure_and_does_not_register_after_parent_reentry():
@@ -948,6 +984,7 @@ def test_pressure_maintenance_distinguishes_keys_with_the_same_context():
 
 @pytest.mark.parametrize("case", (
     "backed", "new_backed", "submitted", "declined", "mamba_only", "no_parents",
+    "cold_report", "cold_report_live_mamba",
 ))
 def test_join_prepare_publishes_current_pressure_state_once(case):
     from beliefkv.control.causal_graph import InvocationState
@@ -956,7 +993,8 @@ def test_join_prepare_publishes_current_pressure_state_once(case):
         __hash__ = object.__hash__
 
     runtime = final_stage_runtime()
-    runtime._clear_final_stage("join")
+    if not case.startswith("cold_report"):
+        runtime._clear_final_stage("join")
     runtime.enable_prepare_host = True
     key = runtime.context_sessions["ctx-parent"]
     node = Node(
@@ -967,6 +1005,9 @@ def test_join_prepare_publishes_current_pressure_state_once(case):
             2: NS(value=None, host_value=None, lock_ref=0, session_ref=0),
         },
     )
+    if case == "cold_report_live_mamba":
+        node.component_data[2].value = [2]
+        node.component_data[2].session_ref = 1
     cache = NS(
         tree_core=NS(node_by_id=lambda _: node, evictable_device_leaves={node}),
         ongoing_write_through={},
@@ -1010,9 +1051,18 @@ def test_join_prepare_publishes_current_pressure_state_once(case):
             runtime.dispatch_join_prepare([req("child")])
             publish.assert_called_once()
             assert submit.call_count == int(case in ("submitted", "declined"))
-        expected = ((11, 4),) if case in ("backed", "new_backed", "mamba_only") else ()
+        expected = ((11, 4),) if case in (
+            "backed", "new_backed", "mamba_only", "cold_report", "cold_report_live_mamba",
+        ) else ()
         assert cache.beliefkv_join_pressure_candidates == expected
         assert cache.beliefkv_join_pressure_candidates_by_component[0] == expected
+        if case.startswith("cold_report"):
+            assert runtime._live_parent_pressure_node(11, 4)
+            assert "join" in runtime._final_stages
+        if case == "cold_report_live_mamba":
+            assert cache.beliefkv_join_pressure_candidates_by_component[2] == ()
+            assert node.component_data[2].value == [2]
+            assert node.component_data[2].host_value is None
     finally:
         runtime.close()
 

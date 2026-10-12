@@ -5,6 +5,22 @@
 完成/剩余工作预测，runtime 根据因果状态和真实缓存容量
 安排传输；吞吐和 JCT 收益仍待验证。
 
+后续冷部署修订WAIT_JOIN冷候选：child收尾通知本身不等于
+parent马上执行，只有同parent实际存活的恢复ticket和节点驻留
+租约继续保护。没有进入恢复窗口的等待parent可以发布已备份
+FULL候选，原生操作仍重验当前身份、引用、锁、Host副本及
+在途状态。FULL-backed不要求Mamba也有备份；活跃且无Host
+副本的Mamba留在原生池。READY/终态parent无候选资格。
+434项检查通过，v172绑定源码和审计；尚未部署到冻结V39。
+
+V39完整600–900秒仍比固定V29 native少12.68% decode request
+steps，已埋点Python独占墙钟57.799秒不是可减少JCT。v170早期
+独立前缀确认JOIN2个/13.804MB、tool9个/250.163MB提前FULL
+消费；96个JOIN边界未知。容量审计未观察到wait-prefetch实际
+冷页释放，free-list可远低于输入预留，不能用池利用率代替它。
+修订提交并核验旧workspace归档后以同配置V40快速冷验证；
+实际释放/完整恢复/提前消费和繁忙窗口性能分别报告。见v171。
+
 当前 V39 于 2026-10-13 01:19:38 CST 从 aa3e7c1/cf0243b6
 冷启动，actual tree 仍为 c7c27e0d，沿用冻结 workload、各池
 容量和固定 V29 native。工具窗口外查询依据固定单调分布推导

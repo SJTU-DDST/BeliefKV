@@ -2,6 +2,32 @@
 
 Status date: 2026-10-13.
 
+V39's complete 600-900s window remains below fixed V29 native:
+332453/380722 decode request steps, 12.68% lower at about
+22.62k/23.24k visible-context tokens. Instrumented exclusive Python
+wall is 57.799s; tool/reentry/admission costs are 7.282/8.462/8.297s,
+not removable JCT. Full48 CUDA graph cohorts are close, while some
+46/47 cohorts adjacent to prefill remain slower. See v171.
+V170's independent early prefix confirms pre-completion started,
+next-request consumed FULL: two JOINs/13.804MB and nine tools/250.163MB.
+Completed-boundary positive-FULL/window/submit counts are JOIN 13/13/3,
+tool 81/10/10; preserve 96 unknown JOIN boundaries. Capacity refusals
+affect 15 JOIN and 498 tool-wait identities, with no observed actual
+wait-prefetch reclaim in this prefix. These are not failed workflows.
+
+Next cold deployment removes report-stage-only exclusion of a waiting
+parent from cold FULL candidates. Protect an actual live restore ticket
+for that parent and existing node residency leases; preserve current
+identity, references, Host backing, in-flight and native allocator checks.
+READY and terminal parents remain invalid. Backed FULL can be reclaimed
+without evicting a referenced unbacked Mamba state. All 434 focused checks
+pass; v172 binds final source and audit hashes. Commit before stopping
+V39, archive and compare its actual workspace inventory, then cold-start
+predictive-only V40 with unchanged workload, patch and fixed V29 native.
+Do not hot-edit V39 or infer GPU gains from candidate fixtures.
+Measure actual FULL release, complete restoration, early next-request
+consumption and busy-window costs. The goal remains active.
+
 V39 predictive cold-started aa3e7c1/cf0243b6 at 01:19:38 CST,
 deploying bounded survival probes, indexed quantiles and fresh
 observation reuse. Deployed tree remains c7c27e0d; keep frozen

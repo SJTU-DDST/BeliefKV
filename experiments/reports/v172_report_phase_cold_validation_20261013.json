@@ -1,0 +1,54 @@
+{
+  "schema_version": 1,
+  "validation_date_local": "2026-10-13",
+  "base_commit": "7e0997f",
+  "live_collection_commit": "aa3e7c145e58e412a555493e14a077cc39629407",
+  "live_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v39",
+  "scope": "Followup source validation before a predictive-only cold deployment; live V39 execution sources remain frozen.",
+  "change": "Keep WAIT_JOIN parent cold FULL candidates during a child report phase until an actual live restore ticket or existing node residency lease protects them.",
+  "final_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "46a1b152681a939652df4a752bdeee1dc3a1b4984834fabddaaf9c7b1549eb11",
+    "tests/test_native_transfer_policy.py": "898e55c4f110849e0ccff242e149114d2639f60395aaf0ed5c27368fef40c3d3"
+  },
+  "unchanged_canonical_patch_sha256": "cf0243b6331c2be8f24491efd7a4b2306e72610b4cd8cb8ddc586c4e12b18b2b",
+  "focused_checks": {
+    "command": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python -m pytest -q tests/test_native_transfer_policy.py tests/test_sglang_v0520_runtime.py tests/test_tool_predictive_transfers.py tests/test_wait_prefetch_batch.py tests/test_wait_prefetch_partial_extent.py tests/test_join_transfer_windows.py",
+    "exit_code": 0,
+    "passed": 434,
+    "duration_seconds_reported_by_pytest": 1.74,
+    "cases": [
+      "A stage-only cold parent keeps a Host-backed FULL candidate before its child obtains service.",
+      "A live real-graph restore ticket excludes the parent; an expired ticket restores candidacy.",
+      "A READY parent is not a waiting pressure victim.",
+      "FULL-backed report-phase candidates publish without selecting a referenced, unbacked Mamba state."
+    ]
+  },
+  "evidence_sha256": {
+    "experiments/reports/v170_v39_early_wait_prefetch_20261013.json.gz": "2d347793521942cc9aa256b14afdef1a81a65651f32d9af9a47fac2b05b10b2b",
+    "experiments/reports/v170_v39_early_wait_prefetch_20261013_summary.json": "4171256ba184f026a7cacf9fc2a1809807e0fc197d4a1e40b27cf448a8f02e3c",
+    "experiments/reports/v170_v39_early_capacity_20261013.json": "acc70dcdd3a6c2c335c8e0a5f72413611072e71bf568a122d30ab1c17ac94138",
+    "experiments/reports/v171_v39_busy_600_900_20261013.json": "4f385c84732726367b25536ad7db5395b87c3651e1d24b7a55b216269f75b355"
+  },
+  "v39_observed_busy_window": {
+    "start_seconds": 600,
+    "end_seconds": 900,
+    "predictive_decode_request_steps": 332453,
+    "fixed_v29_native_decode_request_steps": 380722,
+    "predictive_python_exclusive_wall_seconds": 57.799308821
+  },
+  "retained_requirements": [
+    "Current causal state, context/session identity and terminal/reentry invalidation.",
+    "Actual live restore ticket and node-specific residency protection.",
+    "Native Host backing, ownership, references, locks and in-flight validation.",
+    "No deletion of the sole effective Mamba state.",
+    "Input/decode/state reserves, shared byte budget and actual allocator capacity.",
+    "Partial ACK alone never authorizes execution."
+  ],
+  "limitations": [
+    "Fixture candidate eligibility does not prove actual GPU capacity release, transfer, next-request consumption or throughput benefit.",
+    "Audits use independent complete file prefixes rather than an atomic cross-file snapshot.",
+    "Capacity refusal identities and repeated decisions are not failed workflows or proven predictive opportunities.",
+    "Busy-window worker intervals and Python wall are not isolated kernel times or removable JCT.",
+    "The performance goal remains active and unproven."
+  ]
+}

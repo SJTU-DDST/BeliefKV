@@ -4,6 +4,23 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+V39最新完整600–900秒窗口仍少12.68% decode request steps，
+Python独占墙钟57.799秒，不是可扣除JCT。v170早期封存
+前缀的提前且下一请求复用FULL为JOIN13.804MB、tool250.163MB；
+96个未知JOIN边界保持未知。容量审计中的15个JOIN/498个工具
+等待身份是重复决策关联，不是失败workflow数，也不是oracle收益。
+实际free-list与缓存利用率打印分开，扫描截断不证明没有冷KV。
+
+后续冷部署允许仅发出child收尾通知、尚未进入实际恢复窗口的
+WAIT_JOIN parent继续发布冷FULL候选。实际同parent存活ticket
+和节点驻留租约继续保护，原生操作仍验身份、Host副本、引用、
+锁和在途状态。FULL-backed不表示Mamba也已备份；不得因此
+删除唯一有效Mamba状态。434项检查通过，v172保存最终源码/
+patch及v170/v171审计绑定；这是待冷部署修订，不能热改V39。
+先提交、封存行政停止、核验实际workspace库存归档，再启动
+同配置V40 predictive。行政删失与shutdown结果分开记录，
+CPU/fixture结果不能代替GPU消费、吞吐或JCT验证。
+
 当前 V39 于 2026-10-13 01:19:38 CST 从 aa3e7c1/cf0243b6
 冷启动；actual tree 保持 c7c27e0d，冻结参数和固定 V29 native
 沿用。01:26:33 核验 HTTP200、GC 初始化、独立尾部中的556个

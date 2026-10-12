@@ -2,6 +2,30 @@
 
 更新日期：2026-10-13。
 
+V39 的完整 600–900 秒繁忙窗口仍未达标：predictive/固定
+V29 native 的 decode request steps 为 332,453/380,722，
+少 12.68%；可见上下文约 22.62k/23.24k token。已埋点 Python
+独占墙钟 57.799 秒，tool/reentry/admission 分别为
+7.282/8.462/8.297 秒。满48请求、相同粗几何的 CUDA graph
+区间接近 native，但相邻 prefill 的46/47请求区间仍偏长；
+这不是孤立 kernel 耗时或同需求因果加速。见 v171。
+
+v170 早期独立封存前缀确认完成前启动且下一请求复用 FULL：
+JOIN 2个/13.804MB、tool 9个/250.163MB。已知完成边界的
+正FULL/窗口/提交事件为 JOIN 13/13/3、tool 81/10/10，
+96个 JOIN 边界未知。容量审计记录15个JOIN、498个工具等待
+身份被FULL预算拒绝；不是独立失败数或收益。该前缀未观察到
+wait-prefetch实际冷页释放；实际free-list可低至352/453 token，
+不能用缓存打印利用率替代原生allocator的可分配容量。
+
+后续冷部署修订：child 的收尾通知不再使整个WAIT_JOIN
+parent提前失去冷页候选资格。只有实际存活的同parent恢复
+ticket、节点驻留租约及既有身份/引用/Host副本/在途约束
+保护相应页面；READY或终态parent仍不能作为等待victim。
+有Host副本的FULL可回收，仍被引用且没有Host副本的Mamba
+保持原生驻留。434项检查通过，v172绑定最终源码和输入审计；
+尚未部署到V39，不以fixture资格证明实际GPU收益。
+
 V39 predictive 已于 2026-10-13 01:19:38 CST 从
 aa3e7c1/cf0243b6 冷启动，部署工具生存查询减负、quantile
 索引及同轮观察复用。规范 patch 未变，actual tree 仍为
