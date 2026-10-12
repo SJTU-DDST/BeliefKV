@@ -4,6 +4,34 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-10-12 verified superseded trace compression
+
+Large JSONL/log files from V10, V12-V15 and V17-V26 are preserved in
+`experiments/archive/20261012/vN_superseded_traces.tar.zst`, where `N`
+is the run version. All 3,814 files passed GNU tar comparison before
+source removal: 154,156,393,660 logical source bytes compressed to
+3,787,630,948 archive bytes. Per-run `TRACE_ARCHIVED.md` pointers,
+outcomes, summaries, frozen plans, models and HTML remain in raw.
+V29 native, V27-V33 recent evidence and training/calibration traces
+were excluded.
+
+Receipts: `experiments/reports/v138_superseded_trace_inventory_20261012.json`
+and `experiments/reports/v138_superseded_trace_archive_20261012.json`.
+The receipt records each archive SHA256, comparison and exact restore
+command. Restore the required run from the repository root, for example:
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261012/v26_superseded_traces.tar.zst \
+  --directory experiments/raw
+```
+
+Maintenance at 19:00:39-19:10:29 CST used two zstd workers, nice 19
+and idle I/O with the GPU collector stopped. Actual filesystem free
+space grew from 65,009,352,704 to 199,390,887,936 bytes: 125.153 GiB
+reclaimed and 185.697 GiB available. Hard links mean the logical
+source-minus-archive difference is not the physical reclaimed space.
+
 ## 2026-10-12 verified workspace compression
 
 Archive: `experiments/archive/20261012/v33_development_workspaces.tar.zst`

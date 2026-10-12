@@ -13,6 +13,12 @@ suffix；保留所有共享 session refs 和 Host indices。规划
 不分配、不拆树、不 DMA，最终重新捕获节点身份后才提交。
 该部分 FULL 可以供后续完整恢复使用，不是新 Mamba checkpoint。
 
+重启前旧 trace 归档已于 19:10:29 CST 完成，15 轮大日志
+154.156→3.788 GB，实际磁盘回收 125.153 GiB。逐文件比较、
+SHA256 与恢复命令见 v138_superseded_trace_inventory/archive；
+V29 native、近期证据、训练/模型和结果均保留。该维护期间
+GPU collector 已停止，不与下一轮服务重叠。
+
 若 native 额度为零但已有实时有效的已备份冷等待 FULL
 候选，模型时机通过后允许有界回收探查；之后按真实 free-list
 重新规划，可能恢复部分前缀。失败重试复用观察周期，保留

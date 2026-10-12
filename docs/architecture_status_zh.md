@@ -10,6 +10,16 @@ error 为 xarray-6721 的历史 assistant tool arguments 非法 JSON，
 可用磁盘恢复至约 60.55 GiB；raw、结果与冻结计划保留。
 停止/归档回执为 v136_v33_development_stop/workspace_archive。
 
+旧大 trace 已于 19:00:39–19:10:29 CST 完成无损归档，期间无
+活动 GPU collector。V10/12–15/17–26 共 3,814 个 JSONL/log，
+154.156 GB 压为 3.788 GB；逐文件 tar compare 通过后清理原件。
+按文件系统实际可用空间计算回收 125.153 GiB，结束时可用
+185.697 GiB；硬链接使逻辑字节差不等于实际回收量。V29 native、
+V27–V33 近期 trace、训练/校准证据、模型、结果、计划和 HTML
+保留。每轮 raw 下 TRACE_ARCHIVED.md 与 archive README 提供
+恢复路径，v138_superseded_trace_inventory/archive 保存 SHA256、
+逐轮核验及恢复命令。归档先于下一轮冷启动，不计入新轮服务。
+
 V33 有 6 次首个完整 FULL extent 放不下但预算仍为正的拒绝，
 涉及 4 个独立工具等待，均在记录的启动窗口内。可用额度为
 318/161/5304/234 token，完整恢复请求为 9728/1880/9498/523

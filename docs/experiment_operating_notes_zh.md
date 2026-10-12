@@ -13,6 +13,15 @@ predictive 与固定 V29 native 比较；训练/模型、最新证据、
 结果、冻结计划和 HTML 保留。归档逐文件 tar compare 成功
 并保存 SHA256、原路径与恢复命令后才清理原文件。
 
+本次旧 trace 归档已完成：19:00:39–19:10:29 CST、无活动
+GPU collector，15 轮的 3,814 个大 JSONL/log 由 154.156 GB
+压为 3.788 GB。GNU tar 逐文件比较全部通过；实际回收
+125.153 GiB，结束时可用 185.697 GiB，不能按逻辑文件差
+估算硬链接的物理回收。V29 native 与 V27–V33 trace、
+训练/校准、结果、计划、模型和 HTML 保留；恢复前查看各轮
+TRACE_ARCHIVED.md，使用 zstd --long=30。清单及核验见
+v138_superseded_trace_inventory/archive，维护先于新轮启动。
+
 Host-only FULL 部分预取必须页对齐、保持连续前缀，由原生
 split 更新 indices、session refs、LRU 和树结构；检查阶段
 不能改树。原 Mamba checkpoint 留在 suffix，部分 ACK

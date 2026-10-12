@@ -11,6 +11,16 @@ User-requested large superseded V10-V26 trace archiving precedes
 the next predictive cold restart. Keep V29 native and recent
 V27-V33 evidence, all outcomes, summaries, models and HTML.
 
+This archival step finished at 19:10:29 CST with no GPU collector
+running: 3814 large JSONL/log files from V10/12-15/17-26, 154.156GB
+logical sources and 3.788GB archives. Every archive passed GNU tar
+comparison before source removal. Actual filesystem free space
+increased by 125.153GiB to 185.697GiB; do not substitute the
+logical size difference for reclaimed space because of hard links.
+Per-run TRACE_ARCHIVED.md and archive README retain restore paths;
+v138_superseded_trace_inventory/archive record hashes and receipts.
+Archival completed before the next predictive cold restart.
+
 Capacity audit v137 observes six positive-FULL-budget first-extent
 refusals across four independent V33 tool episodes, all inside
 their recorded start window. Their remaining FULL allowances are

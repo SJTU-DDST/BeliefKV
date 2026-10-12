@@ -1,0 +1,310 @@
+{
+  "schema_version": 1,
+  "started_at_local": "2026-10-12T19:00:39.203530+08:00",
+  "status": "verified_and_cleaned",
+  "inventory": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v138_superseded_trace_inventory_20261012.json",
+  "inventory_sha256": "c9cd48263491ef12f93b36fe1068af6ad648f53ce587d9888f6bdef841181009",
+  "compression_policy": "Two zstd workers, long window 30, level3, nice19 and idle I/O; GPU collector stopped",
+  "filesystem_available_bytes_before": 65009352704,
+  "runs": [
+    {
+      "version": 10,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v10",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v10_superseded_traces.tar.zst",
+      "file_count": 401,
+      "source_bytes": 19121757813,
+      "started_at_local": "2026-10-12T19:00:40.998165+08:00",
+      "status": "verified_and_cleaned",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "archive_sha256": "49f9d602a0240a08c1c2e4cae2e6f155cc1deb318d51d0939c2eae949c843400",
+      "archive_bytes": 489511489,
+      "verified_at_local": "2026-10-12T19:01:52.005451+08:00",
+      "completed_at_local": "2026-10-12T19:01:54.979083+08:00",
+      "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v10_superseded_traces.tar.zst --directory experiments/raw",
+      "filesystem_available_bytes_after_cleanup": 83642998784
+    },
+    {
+      "version": 12,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v12",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v12_superseded_traces.tar.zst",
+      "file_count": 12,
+      "source_bytes": 405011279,
+      "started_at_local": "2026-10-12T19:01:56.577998+08:00",
+      "status": "verified_and_cleaned",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "archive_sha256": "6fde8da8bc2ac5ba93242158980f7d792c51b2622e64dff1a9aa0c629455d80f",
+      "archive_bytes": 14612506,
+      "verified_at_local": "2026-10-12T19:01:58.525912+08:00",
+      "completed_at_local": "2026-10-12T19:02:00.150102+08:00",
+      "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v12_superseded_traces.tar.zst --directory experiments/raw",
+      "filesystem_available_bytes_after_cleanup": 84033466368
+    },
+    {
+      "version": 13,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261009_v13",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v13_superseded_traces.tar.zst",
+      "file_count": 249,
+      "source_bytes": 10911285114,
+      "started_at_local": "2026-10-12T19:02:01.734959+08:00",
+      "status": "verified_and_cleaned",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "archive_sha256": "1811e1a0be734f269c32d36d145da60460e70f1822b42fd5a62ce9e5caa3b644",
+      "archive_bytes": 221588776,
+      "verified_at_local": "2026-10-12T19:02:30.427928+08:00",
+      "completed_at_local": "2026-10-12T19:02:32.680417+08:00",
+      "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v13_superseded_traces.tar.zst --directory experiments/raw",
+      "filesystem_available_bytes_after_cleanup": 90636808192
+    },
+    {
+      "version": 14,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v14",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v14_superseded_traces.tar.zst",
+      "file_count": 227,
+      "source_bytes": 9706857555,
+      "started_at_local": "2026-10-12T19:02:34.226232+08:00",
+      "status": "verified_and_cleaned",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "archive_sha256": "6e3c6fbce4a297ac515aed5761fcdc787b4b616d81718a39c22bd0de5ed1ab25",
+      "archive_bytes": 195224131,
+      "verified_at_local": "2026-10-12T19:02:58.950476+08:00",
+      "completed_at_local": "2026-10-12T19:03:01.148158+08:00",
+      "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v14_superseded_traces.tar.zst --directory experiments/raw",
+      "filesystem_available_bytes_after_cleanup": 96328654848
+    },
+    {
+      "version": 15,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v15",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v15_superseded_traces.tar.zst",
+      "file_count": 356,
+      "source_bytes": 19373006377,
+      "started_at_local": "2026-10-12T19:03:02.716301+08:00",
+      "status": "verified_and_cleaned",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "archive_sha256": "35e8de42c16ff6863b31ceaef51606543580c1887b2af2ca858427808d5e5282",
+      "archive_bytes": 500782062,
+      "verified_at_local": "2026-10-12T19:04:13.768641+08:00",
+      "completed_at_local": "2026-10-12T19:04:16.698449+08:00",
+      "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v15_superseded_traces.tar.zst --directory experiments/raw",
+      "filesystem_available_bytes_after_cleanup": 115202899968
+    },
+    {
+      "version": 17,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v17",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v17_superseded_traces.tar.zst",
+      "file_count": 121,
+      "source_bytes": 1784837273,
+      "started_at_local": "2026-10-12T19:04:18.307320+08:00",
+      "status": "verified_and_cleaned",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "archive_sha256": "4cb14fdcde3895b858a84acd17622e35d7d328ebae566367f4f939cdb29557af",
+      "archive_bytes": 57190123,
+      "verified_at_local": "2026-10-12T19:04:26.251330+08:00",
+      "completed_at_local": "2026-10-12T19:04:28.033960+08:00",
+      "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v17_superseded_traces.tar.zst --directory experiments/raw",
+      "filesystem_available_bytes_after_cleanup": 116931223552
+    },
+    {
+      "version": 18,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v18",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v18_superseded_traces.tar.zst",
+      "file_count": 174,
+      "source_bytes": 2426294233,
+      "started_at_local": "2026-10-12T19:04:29.659995+08:00",
+      "status": "verified_and_cleaned",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "archive_sha256": "a838995dd257652e55bfc7553b64e85c90c66844f9fe90cd63abdb21fd7c94ae",
+      "archive_bytes": 78785742,
+      "verified_at_local": "2026-10-12T19:04:41.554093+08:00",
+      "completed_at_local": "2026-10-12T19:04:43.609188+08:00",
+      "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v18_superseded_traces.tar.zst --directory experiments/raw",
+      "filesystem_available_bytes_after_cleanup": 119279722496
+    },
+    {
+      "version": 19,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v19",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v19_superseded_traces.tar.zst",
+      "file_count": 17,
+      "source_bytes": 314516042,
+      "started_at_local": "2026-10-12T19:04:45.370675+08:00",
+      "status": "verified_and_cleaned",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "archive_sha256": "8a3fc6ce40a1f134b50848fecddb214908dd1c6b9397af686ecaa1650ae3d417",
+      "archive_bytes": 9674574,
+      "verified_at_local": "2026-10-12T19:04:47.053299+08:00",
+      "completed_at_local": "2026-10-12T19:04:48.922953+08:00",
+      "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v19_superseded_traces.tar.zst --directory experiments/raw",
+      "filesystem_available_bytes_after_cleanup": 119584661504
+    },
+    {
+      "version": 20,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v20",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v20_superseded_traces.tar.zst",
+      "file_count": 414,
+      "source_bytes": 19095339887,
+      "started_at_local": "2026-10-12T19:04:50.725952+08:00",
+      "status": "verified_and_cleaned",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "archive_sha256": "2a3104c36c2f1843df092d50a9f42b9a179da587ec8ca1df1527022b5cce5de5",
+      "archive_bytes": 319151328,
+      "verified_at_local": "2026-10-12T19:05:36.178071+08:00",
+      "completed_at_local": "2026-10-12T19:05:39.015957+08:00",
+      "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v20_superseded_traces.tar.zst --directory experiments/raw",
+      "filesystem_available_bytes_after_cleanup": 130266599424
+    },
+    {
+      "version": 21,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v21",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v21_superseded_traces.tar.zst",
+      "file_count": 411,
+      "source_bytes": 19884457521,
+      "started_at_local": "2026-10-12T19:05:40.631302+08:00",
+      "status": "verified_and_cleaned",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "archive_sha256": "b100b66e59ee712ae890ee5814a40f6ad341d2f0c99e67f2acad604d8ec1c5a5",
+      "archive_bytes": 517501400,
+      "verified_at_local": "2026-10-12T19:06:52.850778+08:00",
+      "completed_at_local": "2026-10-12T19:06:56.410079+08:00",
+      "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v21_superseded_traces.tar.zst --directory experiments/raw",
+      "filesystem_available_bytes_after_cleanup": 149635620864
+    },
+    {
+      "version": 22,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v22",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v22_superseded_traces.tar.zst",
+      "file_count": 412,
+      "source_bytes": 19969540067,
+      "started_at_local": "2026-10-12T19:06:58.010467+08:00",
+      "status": "verified_and_cleaned",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "archive_sha256": "a995872d1f25616799ea1f5298245e1a11962dd2f3c3a3ceb0b7df0af89bfba1",
+      "archive_bytes": 515117950,
+      "verified_at_local": "2026-10-12T19:08:08.841303+08:00",
+      "completed_at_local": "2026-10-12T19:08:11.977369+08:00",
+      "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v22_superseded_traces.tar.zst --directory experiments/raw",
+      "filesystem_available_bytes_after_cleanup": 169090158592
+    },
+    {
+      "version": 23,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v23",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v23_superseded_traces.tar.zst",
+      "file_count": 394,
+      "source_bytes": 20037678388,
+      "started_at_local": "2026-10-12T19:08:13.580988+08:00",
+      "status": "verified_and_cleaned",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "archive_sha256": "cc00c4ca6736209adc485ddc7afff0984fedd06b26345b2bb71926c2188f7f93",
+      "archive_bytes": 520092214,
+      "verified_at_local": "2026-10-12T19:09:27.514095+08:00",
+      "completed_at_local": "2026-10-12T19:09:30.840121+08:00",
+      "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v23_superseded_traces.tar.zst --directory experiments/raw",
+      "filesystem_available_bytes_after_cleanup": 188609871872
+    },
+    {
+      "version": 24,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v24",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v24_superseded_traces.tar.zst",
+      "file_count": 239,
+      "source_bytes": 4825384278,
+      "started_at_local": "2026-10-12T19:09:32.353942+08:00",
+      "status": "verified_and_cleaned",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "archive_sha256": "f7aed091c49a863f144194416cfddb811efeb7c2ca47df78a13838fb6ea5a0b1",
+      "archive_bytes": 147111631,
+      "verified_at_local": "2026-10-12T19:09:52.921347+08:00",
+      "completed_at_local": "2026-10-12T19:09:54.880255+08:00",
+      "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v24_superseded_traces.tar.zst --directory experiments/raw",
+      "filesystem_available_bytes_after_cleanup": 193289531392
+    },
+    {
+      "version": 25,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v25",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v25_superseded_traces.tar.zst",
+      "file_count": 153,
+      "source_bytes": 2239721278,
+      "started_at_local": "2026-10-12T19:09:56.407346+08:00",
+      "status": "verified_and_cleaned",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "archive_sha256": "eafb5f60767d327dd1d04d5f50916356e4fe9bc1aef87a7b5dd144c136e2a9be",
+      "archive_bytes": 74369569,
+      "verified_at_local": "2026-10-12T19:10:06.126066+08:00",
+      "completed_at_local": "2026-10-12T19:10:07.812834+08:00",
+      "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v25_superseded_traces.tar.zst --directory experiments/raw",
+      "filesystem_available_bytes_after_cleanup": 195455770624
+    },
+    {
+      "version": 26,
+      "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v26",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261012/v26_superseded_traces.tar.zst",
+      "file_count": 234,
+      "source_bytes": 4060706555,
+      "started_at_local": "2026-10-12T19:10:09.386206+08:00",
+      "status": "verified_and_cleaned",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "archive_sha256": "89f28623890a6728a9f0908e0ebac1aa49ef0c3f0ec32a2287b522ddb2a8a8fb",
+      "archive_bytes": 126917453,
+      "verified_at_local": "2026-10-12T19:10:27.144688+08:00",
+      "completed_at_local": "2026-10-12T19:10:29.156760+08:00",
+      "restore_command_from_repository_root": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261012/v26_superseded_traces.tar.zst --directory experiments/raw",
+      "filesystem_available_bytes_after_cleanup": 199390887936
+    }
+  ],
+  "preserved": [
+    "V29 fixed native",
+    "V27-V33 recent traces",
+    "all results and summaries",
+    "frozen plans",
+    "manifests",
+    "model artifacts",
+    "HTML reports",
+    "training/calibration traces"
+  ],
+  "completed_at_local": "2026-10-12T19:10:29.157486+08:00",
+  "source_bytes": 154156393660,
+  "archive_bytes": 3787630948,
+  "filesystem_available_bytes_after": 199390887936
+}
