@@ -2,6 +2,18 @@
 
 Status date: 2026-10-12.
 
+V30 was administratively stopped at 12:49:22 CST. Preserve its cutoff
+receipt: 80 completed, one incomplete, and 75 censored unfinished tasks.
+The complete common 0-3600s window shows decode throughput 1118.33 versus
+1158.58 token/s for the fixed V29 native reference, a 3.474% deficit.
+Retain v30_stopped_vs_v29_native_20261012.md and the busy/lifecycle evidence.
+Exclude the partially covered 3600-3780s diagnostic window, completed-only
+JCT and final workflow throughput from performance claims. V30's frozen
+fca7ad3 source did not include the FULL-only reclaim/EOS lifetime followups.
+The historical instructions below to stop or keep collecting V30 are
+superseded by the preserved stop receipt. Validate the followups in a fresh
+predictive development run; the native-relative performance goal remains open.
+
 V130 reuses the sealed V129 inputs to examine valid native EOS.
 For 49 complete natural ALL JOINs, EOS-to-RETURN P50/P90 is
 98.900/273.410ms; 7 exceed the old 250ms evidence age. Among
