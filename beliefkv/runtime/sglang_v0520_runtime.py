@@ -458,6 +458,7 @@ class NativeAdmissionRuntime:
         self._tool_ticket: _ToolPrefetchTicket | None = None
         self._tool_prefetch_budget: Counter[PrefillCandidateKey] = Counter()
         self._wait_prefetch_records: OrderedDict[tuple, tuple[float, tuple]] = OrderedDict()
+        self._wait_capacity_probe_next_ms = 0.
         self._tool_timing_only = False
         self._tool_refresh_next_ms = 0.
         self._tool_prepare_next_ms = 0.
@@ -3626,6 +3627,7 @@ class NativeAdmissionRuntime:
         ))
         nodes = {node.node_id: node for node in candidate.nodes}
         selected, full, mamba, deferred_mamba = [], 0, 0, 0
+        partial_step, partial_tokens = None, 0
         blocked = None
         leaf = (opportunity.step.leaf_node_id, opportunity.step.leaf_creation_time)
         for step in opportunity.steps:
@@ -3641,11 +3643,30 @@ class NativeAdmissionRuntime:
             if (step.leaf_node_id, step.leaf_creation_time) != leaf:
                 blocked = "prefetch_checkpoint_identity_changed"
                 break
-            if next_full > full_limit:
-                blocked = "prefetch_full_capacity_budget"
-                break
-            if next_full * full_unit + mamba * mamba_unit > byte_limit:
-                blocked = "prefetch_byte_capacity_budget"
+            if (
+                next_full > full_limit
+                or next_full * full_unit + mamba * mamba_unit > byte_limit
+            ):
+                blocked = (
+                    "prefetch_full_capacity_budget" if next_full > full_limit
+                    else "prefetch_byte_capacity_budget"
+                )
+                splitter = getattr(
+                    self._native_cache, "split_beliefkv_prefetch_full_prefix", None,
+                )
+                page_size = max(1, self._native_page_size)
+                available = max(0, min(
+                    full_limit - full,
+                    (byte_limit - full * full_unit - mamba * mamba_unit) // full_unit,
+                ))
+                available = available // page_size * page_size
+                if batched and callable(splitter) and 0 < available < missing_full:
+                    # This is still a plan. Split only after the live timing and
+                    # reclaim checks, then recapture the native fragment identity.
+                    partial_step, partial_tokens = step, available
+                    selected.append(replace(step, include_mamba=False))
+                    full += available
+                    deferred_mamba += missing_mamba
                 break
             if (
                 next_mamba > mamba_limit
@@ -3674,8 +3695,49 @@ class NativeAdmissionRuntime:
             "remaining_byte_limit": byte_limit,
             "requested_full_tokens": opportunity.required_full_tokens,
             "requested_mamba_slots": opportunity.required_mamba_slots,
+            "partial_full_tokens": partial_tokens,
         } if self._opportunity_writer is not None else None
         if not selected:
+            now_ms = time.monotonic() * 1000.
+            waiting = getattr(
+                self._native_cache, "beliefkv_join_pressure_candidates_by_component", {},
+            ).get(0, ())
+            excluded = {node.node_id for node in candidate.nodes}
+            # Native evictable counts need not include waiting session pages.
+            # Test a known backed cold victim only at an actual start window.
+            can_probe = bool(
+                not fit_current_capacity and batched
+                and blocked == "prefetch_full_capacity_budget"
+                and callable(getattr(
+                    self._native_cache, "reclaim_beliefkv_handoff_capacity", None,
+                ))
+                and now_ms >= self._wait_capacity_probe_next_ms
+                and any(
+                    node_id not in excluded
+                    and self._live_parent_pressure_node(node_id, created)
+                    for node_id, created in waiting[:8]
+                )
+            )
+            if can_probe:
+                first = opportunity.steps[0]
+                missing = nodes[first.node_id].full_host_tokens
+                probe_tokens = min(missing, byte_limit // full_unit)
+                probe_tokens = probe_tokens // max(1, self._native_page_size) * max(
+                    1, self._native_page_size,
+                )
+                if probe_tokens > 0:
+                    first = replace(first, include_mamba=False)
+                    return replace(
+                        opportunity, step=first, steps=(first,),
+                        required_full_tokens=probe_tokens, required_mamba_slots=0,
+                        deferred_mamba_slots=int(opportunity.steps[0].include_mamba),
+                        partial_full_step=first if probe_tokens < missing else None,
+                        partial_full_tokens=probe_tokens if probe_tokens < missing else 0,
+                        capacity_reclaim_probe=True, fits_current_free_lists=False,
+                        capacity_budget=capacity_budget,
+                        blocked_detail=blocked,
+                        no_step_reason="prefetch_capacity_reclaim_probe",
+                    )
             self.counts["wait_prefetch_capacity_budget"] += 1
             return replace(
                 opportunity, step=None, steps=(), required_full_tokens=0,
@@ -3687,9 +3749,11 @@ class NativeAdmissionRuntime:
             opportunity, step=selected[0], steps=tuple(selected),
             required_full_tokens=full, required_mamba_slots=mamba,
             deferred_mamba_slots=deferred_mamba,
+            partial_full_step=partial_step, partial_full_tokens=partial_tokens,
             capacity_budget=capacity_budget,
             fits_current_free_lists=(
-                full <= max(0, headroom.device_full_free_tokens - budget.reserve_full_tokens)
+                partial_step is None
+                and full <= max(0, headroom.device_full_free_tokens - budget.reserve_full_tokens)
                 and mamba <= max(
                     0, headroom.device_mamba_free_slots - budget.reserve_mamba_slots,
                 )
@@ -3731,6 +3795,8 @@ class NativeAdmissionRuntime:
             reason, getattr(opportunity, "no_step_reason", None),
             getattr(opportunity, "blocked_detail", None), full, mamba,
             tuple((item.node_id, item.creation_time, item.include_mamba) for item in steps),
+            getattr(opportunity, "partial_full_tokens", 0),
+            getattr(opportunity, "capacity_reclaim_probe", False),
         )
         now = time.monotonic()
         previous = self._wait_prefetch_records.get(identity)
@@ -3756,6 +3822,9 @@ class NativeAdmissionRuntime:
             "deferred_mamba_slots": getattr(opportunity, "deferred_mamba_slots", 0),
             "planned_pool_bytes": planned_bytes,
             "capacity_budget": getattr(opportunity, "capacity_budget", None),
+            "partial_full_tokens": getattr(opportunity, "partial_full_tokens", 0),
+            "capacity_reclaim_probe": getattr(opportunity, "capacity_reclaim_probe", False),
+            "capacity_reclaim": getattr(opportunity, "capacity_reclaim", None),
             "planned_nodes": [
                 {"node_id": item.node_id, "creation_time": item.creation_time,
                  "include_mamba": item.include_mamba} for item in steps
@@ -3829,16 +3898,47 @@ class NativeAdmissionRuntime:
             return opportunity
         reclaim = getattr(self._native_cache, "reclaim_beliefkv_handoff_capacity", None)
         candidate = getattr(opportunity, "candidate", None)
-        if not callable(reclaim) or candidate is None:
+        if candidate is None:
+            return opportunity
+        splitter = getattr(
+            self._native_cache, "split_beliefkv_prefetch_full_prefix", None,
+        )
+        if not callable(reclaim) and not (
+            opportunity.partial_full_step is not None and callable(splitter)
+        ):
             return opportunity
         excluded = tuple(node.node_id for node in candidate.nodes)
         budget = self._current_residency_budget(include_evictable=True)
-        self._publish_parent_pressure_candidates(exclude_node_ids=excluded)
-        freed = reclaim(
-            full_tokens=opportunity.required_full_tokens + budget.reserve_full_tokens,
-            mamba_slots=opportunity.required_mamba_slots + budget.reserve_mamba_slots,
-            exclude_node_ids=excluded,
-        )
+        freed, diagnosis = {}, None
+        if callable(reclaim):
+            if opportunity.capacity_reclaim_probe:
+                self._wait_capacity_probe_next_ms = (
+                    time.monotonic() * 1000. + SEMANTIC_FRAME_INTERVAL_MS
+                )
+                self.counts["wait_prefetch_backed_capacity_probe"] += 1
+            self._publish_parent_pressure_candidates(exclude_node_ids=excluded)
+            freed = reclaim(
+                full_tokens=opportunity.required_full_tokens + budget.reserve_full_tokens,
+                mamba_slots=opportunity.required_mamba_slots + budget.reserve_mamba_slots,
+                exclude_node_ids=excluded,
+                **({"collect_diagnostics": True} if self._opportunity_writer is not None else {}),
+            )
+            observed = getattr(
+                self._native_cache, "beliefkv_handoff_last_capacity", None,
+            )
+            if isinstance(observed, dict):
+                checks = []
+                for check in observed.get("waiting_candidate_checks", ()):
+                    owner = self._parent_pressure_candidates.get(check["node_id"])
+                    invocation = (
+                        self.graph.invocations.get(owner[0].invocation_id) if owner else None
+                    )
+                    checks.append({
+                        **check,
+                        "context_id": owner[0].context_id if owner else None,
+                        "invocation_state": invocation.state.value if invocation else None,
+                    })
+                diagnosis = {**observed, "waiting_candidate_checks": checks}
         if freed:
             self.counts[f"{source}_cold_reclaimed"] += 1
             if self._opportunity_writer is not None:
@@ -3848,10 +3948,43 @@ class NativeAdmissionRuntime:
                     "workflow_id": key.root_workflow_id, "context_id": key.context_id,
                     "context_epoch": key.context_epoch, "freed_units": freed,
                     "victims": getattr(self._native_cache, "beliefkv_handoff_last_victims", ()),
+                    "capacity_reclaim_probe": opportunity.capacity_reclaim_probe,
+                    "capacity_reclaim": diagnosis,
                 })
         # Bounded reclaim need not fit the whole checkpoint. Restore the
         # continuous prefix that fits now and leave the tail for a later load.
-        return self._wait_prefetch_opportunity(key, fit_current_capacity=True)
+        refreshed = self._wait_prefetch_opportunity(key, fit_current_capacity=True)
+        if refreshed is None:
+            return None
+        partial = refreshed.partial_full_step
+        if partial is not None and callable(splitter):
+            fragment = splitter(
+                session_id=key.session_id, session_generation=key.session_generation,
+                leaf_node_id=partial.leaf_node_id,
+                leaf_creation_time=partial.leaf_creation_time,
+                node_id=partial.node_id, node_creation_time=partial.creation_time,
+                prefix_tokens=refreshed.partial_full_tokens,
+            )
+            if fragment is not None:
+                self.counts["wait_prefetch_full_extent_split"] += 1
+                self.counts["wait_prefetch_full_extent_split_tokens"] += (
+                    refreshed.partial_full_tokens
+                )
+                refreshed = self._wait_prefetch_opportunity(
+                    key, fit_current_capacity=True,
+                )
+            else:
+                self.counts["wait_prefetch_full_extent_split_declined"] += 1
+                refreshed = replace(
+                    refreshed, step=None, steps=(), required_full_tokens=0,
+                    required_mamba_slots=0, partial_full_step=None,
+                    partial_full_tokens=0, fits_current_free_lists=None,
+                    no_step_reason="prefetch_partial_extent_unavailable",
+                )
+        return (
+            replace(refreshed, capacity_reclaim=diagnosis)
+            if refreshed is not None and diagnosis is not None else refreshed
+        )
 
     def refreshed_shadow_backup_step(
         self, *, context_id: str | None = None, source: str = "tool_wait",
@@ -5154,6 +5287,7 @@ class NativeAdmissionRuntime:
         )
         if (
             fresh is None or fresh.fits_current_free_lists is not True
+            or fresh.partial_full_step is not None
             or len(fresh.steps) != len(steps)
         ):
             self.counts["prefetch_burst_plan_changed"] += 1

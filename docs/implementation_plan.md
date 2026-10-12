@@ -2,6 +2,42 @@
 
 Status date: 2026-10-12.
 
+V33 stopped at 18:40:59 CST for the next capacity correction:
+106 completed, one xarray-6721 invalid historical tool-argument
+error and 49 administratively censored workflows. Its 156
+workspaces were losslessly archived after tar comparison
+(38.898 to 4.352GB); raw evidence and frozen configuration remain.
+User-requested large superseded V10-V26 trace archiving precedes
+the next predictive cold restart. Keep V29 native and recent
+V27-V33 evidence, all outcomes, summaries, models and HTML.
+
+Capacity audit v137 observes six positive-FULL-budget first-extent
+refusals across four independent V33 tool episodes, all inside
+their recorded start window. Their remaining FULL allowances are
+318/161/5304/234 tokens. More refusals have zero allowance after
+reserves: 4752 tool records across 2746 waits and 740 JOIN records
+across 99 waits; categories overlap. V32 lacks detailed budgets
+and cannot retrospectively establish the first-extent fraction.
+These are sampled proposals, not observed early reuse or benefits.
+
+Deploy page-aligned partial Host-only FULL radix extents at action
+time, retaining the original suffix Mamba checkpoint and all
+session/index bookkeeping. Planning does not split, allocate or
+submit DMA. A published live Host-backed waiting FULL victim
+permits a timed bounded reclaim probe even when native accounting
+gives zero allowance; preserve target exclusions and input/decode
+reserves, then replan against actual free lists. Retry failed
+probes at the existing observation cadence, not per child.
+Do not synchronously offload unbacked agents or premaintain a
+fixed free pool. Existing FULL-only incremental PREPARE remains;
+evaluate more proactive asynchronous backup separately with
+action-local diagnostics, transfer contention and return churn.
+624 runtime and 123 engine checks pass; canonical patch 3e23c770
+matches tree 0b3deb75. Cold-start V34 predictive only with the
+same frozen parameters and cached V29 native. Measure real
+probe/partial submission, independent early consumed FULL and
+busy-window service performance. The performance goal stays active.
+
 The future baseline reproduction plan is recorded in section 6.4 of
 [the related-work comparison](related_work_comparison_2026-07-21_zh.md).
 Use common-model/native-executor policy comparisons as the main table,
@@ -74,8 +110,9 @@ consume that candidate limit. Revalidate live state before actual
 reclaim; allocator capacity and target-prefix exclusions remain
 authoritative. The real allocator fixture previously misses the
 ninth usable victim. Related 108 engine and 470 runtime checks pass.
-Patch 943d7165 matches tree bcaae4ea; deploy at a subsequent cold
-restart, with V33 source frozen. Evidence:
+The standalone scan patch 943d7165 matches tree bcaae4ea; it is now
+included with partial extents in 3e23c770 for the next cold restart.
+V33 stayed frozen before its administrative stop. Evidence:
 v135_cold_native_candidate_scan_validation. No measured GPU
 benefit or workload-wide missed fraction is inferred from the fixture.
 
@@ -87,7 +124,7 @@ only three have a simultaneous fitting free-list observation.
 Keep overlapping timing/capacity categories and sampled coverage;
 do not equate per-round maximum plan bytes to achievable benefit.
 
-While V33 collects, focus on measured reentry/admission costs,
+During the next collection, focus on measured reentry/admission costs,
 tool positive plans that never reach their start window and
 ACK-to-first-service delay. Preserve workload, pools, model,
 lead, output budget and tool180s parameters for attribution.

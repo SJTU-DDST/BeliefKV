@@ -4,6 +4,29 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+最新 V33 在 18:40:59 CST 行政停止：106 completed、1 个
+非法历史 tool arguments error、49 个已创建未完成任务删失。
+156 个 workspace 逐文件比较后已归档；不要把 shutdown
+输出计为自发失败，也不要因此改 8192 或 harness 续接。
+用户要求先归档旧大 trace，再冷启动容量修订，继续单跑
+predictive 与固定 V29 native 比较；训练/模型、最新证据、
+结果、冻结计划和 HTML 保留。归档逐文件 tar compare 成功
+并保存 SHA256、原路径与恢复命令后才清理原文件。
+
+Host-only FULL 部分预取必须页对齐、保持连续前缀，由原生
+split 更新 indices、session refs、LRU 和树结构；检查阶段
+不能改树。原 Mamba checkpoint 留在 suffix，部分 ACK
+不能证明 checkpoint 可执行。实际动作重新核验身份、锁和
+在途状态，真实 allocator 容量继续覆盖输入/decode 预留。
+额度为零不是全系统无冷 KV 的证明：若有已发布、实时有效的
+Host-backed 冷 FULL 等待候选，可在启动窗口做有界回收后
+重规划。失败重试复用既有观察周期；不加入同步 D2H、
+全量卸载或固定空闲池。默认 demand handoff 不采新诊断，
+wait-prefetch 只随已有 writer 复用实际候选扫描。
+V33 正预算首段拒绝仅 4 个工具等待；其余大量零额度记录
+可能是早期拒绝或有限回收后仍不足，旧日志不能给出同动作
+完整冷页普查。v137 审计与 624+123 检查不代表吞吐收益。
+
 V32 已于 16:14:15 CST 完整结束：153 completed、3 incomplete。
 三例 root 最后响应均为 length，deadline 未过期且无 child
 取消；保留用户指定的 8192-token 输出上限和既有 harness。
@@ -38,7 +61,8 @@ free-list 判断满足需求。不能预记释放容量、驱逐活跃共享页
 在途传输的有效候选。前八个不可用节点不能遮住后续
 可用节点；实际回收继续核验身份、引用、池容量与目标
 排除。108 引擎+470 runtime 检查通过，新 patch
-943d7165 等待后续冷启动部署，不替换 V33 的 06d491ae。
+943d7165 已合并到最新 3e23c770，等待后续冷启动部署；
+已停止 V33 的运行源始终是 06d491ae。
 CPU 回归不说明实际漏失比例或 GPU 收益，验证见
 v135_cold_native_candidate_scan_validation。
 

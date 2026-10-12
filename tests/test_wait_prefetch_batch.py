@@ -629,6 +629,7 @@ def test_wait_restore_keeps_native_reserve_from_planning_through_enqueue(source)
             commands = runtime._issue_wait_prefetch_steps(key, plan.steps, source=source)
         cache.reclaim_beliefkv_handoff_capacity.assert_called_once_with(
             full_tokens=24, mamba_slots=2, exclude_node_ids=(0, 1, 2, 3, 4),
+            collect_diagnostics=True,
         )
         assert len(commands) == 4
         assert runtime.physical_ledger.pending_count == 4
@@ -1014,6 +1015,7 @@ def test_uncertain_tool_window_reaches_reclaim_and_revalidated_batch_submission(
         if requires_reclaim:
             cache.reclaim_beliefkv_handoff_capacity.assert_called_once_with(
                 full_tokens=24, mamba_slots=2, exclude_node_ids=(0, 1, 2, 3, 4),
+                collect_diagnostics=True,
             )
         cache.prefetch_gpu_session_nodes.assert_called_once()
         assert runtime.physical_ledger.pending_count == 4

@@ -2,6 +2,39 @@
 
 更新日期：2026-10-12。
 
+最新容量审计与修订：V33 在 18:40:59 CST 主动停止，停止前
+106 completed、1 error，49 个已创建未完成任务单列行政截断。
+error 为 xarray-6721 的历史 assistant tool arguments 非法 JSON，
+不归为容量或 shutdown 失败，输出 8192 和 harness 行为不变。
+156 个 workspace 经 tar 逐文件比较后无损归档，38.898→4.352 GB，
+可用磁盘恢复至约 60.55 GiB；raw、结果与冻结计划保留。
+停止/归档回执为 v136_v33_development_stop/workspace_archive。
+
+V33 有 6 次首个完整 FULL extent 放不下但预算仍为正的拒绝，
+涉及 4 个独立工具等待，均在记录的启动窗口内。可用额度为
+318/161/5304/234 token，完整恢复请求为 9728/1880/9498/523
+token；后者不是首节点大小。Mamba 与字节额度未阻塞这些记录，
+但不证明真实完成时间或最终复用。更多记录是预留后 FULL
+额度为零：工具 4752 条/2746 个等待，JOIN 740 条/99 个等待；
+原因与独立等待可重叠。V32 缺具体额度及 blocked_detail，
+不能回填首节点拒绝比例。证据见 v137_v32/v33_wait_capacity。
+
+新修订允许在实际动作时将 Host-only FULL 节点拆成页对齐的
+连续前缀，预算不足时先恢复可装入部分；检查阶段不改树，
+不分配或 DMA，保留 suffix 身份、Host indices、所有 session
+引用和原始 Mamba checkpoint。部分 FULL 不是新状态 checkpoint，
+不能把部分 ACK 单独算可执行或复用。预算为零但有已发布、
+实时有效的已备份冷等待 FULL 候选时，允许在启动窗口尝试
+有界回收，再按真实 free-list 重新规划；失败重试复用现有
+语义观察周期。保留输入/decode 预留、保护租约和活跃/共享页。
+动作诊断复用实际扫描，不另做全树普查，不加入同步 D2H。
+采用近期预取缺口驱动的回收；不维持固定空闲池、不全量卸载
+冷 agent。未备份对象仍通过既有增量 FULL-only PREPARE，
+更主动的异步 PREPARE 时机需依据新诊断单独验证。
+624 runtime 与 123 引擎检查通过，patch 3e23c770 与实际
+tree 0b3deb75 一致。等待冷启动 V34 验证，性能目标仍 active。
+回执为 v137_partial_full_and_cold_capacity_validation。
+
 后续 baseline 对照方案已写入
 [相关工作总表第 6.4 节](related_work_comparison_2026-07-21_zh.md#64-当前-baseline-复现与-beliefkv-对照方案2026-10-12)：
 以统一模型/原生物理底座的策略对照为主，作者原实现另表；
@@ -69,8 +102,9 @@ V33 部署已复现的冷 FULL 祖先回收修复：旧路径释放
 问题：未备份、有引用或在途节点不再占用八个有效候选额度，
 非目标检查最多 64 个节点，实际回收仍逐项核验并以 allocator
 容量裁决。真实回归旧版未释放第九个可用节点，修复后满足
-需求，108 引擎及 470 runtime 检查通过。待冷启动部署的新
-patch 为 943d7165；V33 仍使用 06d491ae，不热改本轮。
+需求，108 引擎及 470 runtime 检查通过。该项早期单独验证的
+patch 为 943d7165；合并部分前缀等修订后的 patch 为 3e23c770。
+已停止的 V33 始终使用 06d491ae，未热改本轮。
 该案例不能量化当前 workload 的漏失比例，详见
 v135_cold_native_candidate_scan_validation。
 

@@ -93,6 +93,12 @@ class SessionH2DOpportunity:
     capacity_budget: dict[str, int | str] | None = field(
         default=None, compare=False, repr=False,
     )
+    partial_full_step: PrefetchLoadStep | None = None
+    partial_full_tokens: int = 0
+    capacity_reclaim_probe: bool = False
+    capacity_reclaim: dict | None = field(
+        default=None, compare=False, repr=False,
+    )
 
 
 def _prefetch_block_detail(candidate: ActionLocalPrefetchCandidate) -> str:

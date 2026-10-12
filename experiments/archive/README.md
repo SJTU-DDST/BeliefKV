@@ -6,6 +6,29 @@ tracked inventory.
 
 ## 2026-10-12 verified workspace compression
 
+Archive: `experiments/archive/20261012/v33_development_workspaces.tar.zst`
+
+SHA256: `5b8969803c5746c781330fc99e6b70c9aea28273251b15d158e753a77de522db`
+
+All 156 V33 workspaces are preserved in this 4,351,509,208-byte archive.
+Source allocation was 38,897,971,200 bytes. GNU tar compared every archived
+file before source removal. V33 stopped at 18:40:59 CST with 106 completed,
+one invalid historical tool-argument error and 49 administratively censored
+workflows. Raw traces, outcomes, manifest and frozen plan remain with an
+`ARCHIVED.md` restore pointer. Restore from the repository root:
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261012/v33_development_workspaces.tar.zst \
+  --directory experiments/raw
+```
+
+Receipts: `experiments/reports/v136_v33_development_stop_20261012.json` and
+`experiments/reports/v136_v33_workspace_archive_20261012.json`.
+Maintenance at 18:42:30-18:44:38 CST took place after stopping the collector.
+Net source-minus-archive allocation is about 32.17 GiB; available disk at
+verification was 65,010,868,224 bytes.
+
 Archive: `experiments/archive/20261012/v31_development_workspaces.tar.zst`
 
 SHA256: `5a6ed74a07ad5415a2d02bcd954508009ad9eaa5bbf6dc10de4b1a835575d3da`

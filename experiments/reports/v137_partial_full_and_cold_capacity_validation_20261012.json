@@ -1,0 +1,60 @@
+{
+  "schema_version": 1,
+  "scope": "Implementation and historical capacity evidence; no measured GPU throughput gain inferred",
+  "base_commit": "2984641",
+  "implementation": {
+    "partial_full_restore": "Expose a page-aligned Host-only FULL prefix using native radix segmentation at action time; preserve suffix identity, Host indices, session references and the original Mamba checkpoint",
+    "inspection_mutates_tree": false,
+    "split_allocates_or_submits_dma": false,
+    "split_identity_revalidation": true,
+    "actual_allocator_and_input_decode_reserves_authoritative": true,
+    "zero_capacity_probe": "A timed target with a published live Host-backed FULL waiting candidate can attempt bounded reclaim even when native evictable accounting leaves zero budget; replan against actual free lists before submission",
+    "failed_probe_retry_spacing": "Existing semantic observation cadence; no per-child agent guard",
+    "reclaim_diagnostics": "Use actual action-local candidate reads; default off for demand handoff, enabled for wait-prefetch only with the opportunity writer",
+    "new_synchronous_d2h": false,
+    "prepare_remains_incremental_full_only": true,
+    "new_unbacked_cold_agent_offload_policy": false,
+    "output_limit_or_harness_behavior_changed": false
+  },
+  "checks": [
+    {
+      "files": [
+        "tests/test_wait_prefetch_batch.py",
+        "tests/test_wait_prefetch_partial_extent.py",
+        "tests/test_sglang_v0520_runtime.py",
+        "tests/test_sglang_v0520_physical.py",
+        "tests/test_tool_predictive_transfers.py",
+        "tests/test_execution_handoff.py",
+        "tests/test_native_transfer_policy.py",
+        "tests/test_terminal_child_capacity.py"
+      ],
+      "result": "624 passed",
+      "duration_seconds": 1.57
+    },
+    {
+      "files": [
+        "third_party/sglang-v0.5.20/test/srt/test_beliefkv_terminal_capacity.py",
+        "third_party/sglang-v0.5.20/test/srt/test_beliefkv_execution_handoff.py"
+      ],
+      "result": "123 passed",
+      "duration_seconds": 8.46
+    }
+  ],
+  "canonical_patch": {
+    "sha256": "3e23c770524958b81820487cc5141c7d63ebe999b8f1fe2ab452c98e3c6f5280",
+    "expected_tree": "0b3deb754136392f872201c00ff3903b0ee00f8a",
+    "actual_tree": "0b3deb754136392f872201c00ff3903b0ee00f8a",
+    "matches_worktree": true
+  },
+  "historical_audits": [
+    "v137_v32_wait_capacity_20261012.json",
+    "v137_v33_wait_capacity_20261012.json"
+  ],
+  "historical_limitations": [
+    "V32 capacity rejections lack explicit budget and blocked-detail fields and cannot be retrospectively attributed to oversized first extents",
+    "V33 positive free-budget first-extent refusals prove a recorded partial opportunity, not actual completion timing or subsequent reuse",
+    "Zero recorded FULL budget is not a complete live census of safe migratable KV; initial refusal and unsuccessful bounded reclaim may both appear",
+    "V33 stopped at 2026-10-12T18:40:59.036876+08:00: 106 completed, one error and 49 administratively censored workflows"
+  ],
+  "next_validation": "Cold predictive-only V34 with the same frozen parameters and cached V29 native reference; inspect real capacity-probe and partial-prefix submission, early consumed FULL and complete busy-window throughput"
+}

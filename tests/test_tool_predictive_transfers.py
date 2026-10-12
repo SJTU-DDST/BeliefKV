@@ -1117,7 +1117,9 @@ def test_fresh_tool_plan_is_revalidated_after_event_drain_before_native_enqueue(
         PrefetchLoadStep(hint.key, 12, 5, 11, 4, False),
         PrefetchLoadStep(hint.key, 12, 5, 12, 5, True),
     )
-    opportunity = NS(step=steps[0], steps=steps, fits_current_free_lists=True)
+    opportunity = NS(
+        step=steps[0], steps=steps, fits_current_free_lists=True, partial_full_step=None,
+    )
     runtime._native_cache = NS(cache_controller=NS(
         mem_pool_host=NS(entry_map={
             "kv": NS(host_pool=NS(size_per_token=10)),
@@ -1134,7 +1136,10 @@ def test_fresh_tool_plan_is_revalidated_after_event_drain_before_native_enqueue(
         nonlocal opportunity
         if during_drain == "checkpoint_changed":
             changed = replace(steps[0], creation_time=99)
-            opportunity = NS(step=changed, steps=(changed,), fits_current_free_lists=True)
+            opportunity = NS(
+                step=changed, steps=(changed,), fits_current_free_lists=True,
+                partial_full_step=None,
+            )
         elif during_drain == "tool_returned":
             runtime.on_events((event(
                 3, RuntimeEventKind.TOOL_END, invocation_id="tool",

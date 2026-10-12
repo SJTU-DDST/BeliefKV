@@ -1,0 +1,241 @@
+from dataclasses import replace
+from types import SimpleNamespace as NS
+from unittest.mock import Mock, patch
+
+import pytest
+
+from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget, TransferStartWindow
+from beliefkv.runtime.sglang_v0520_physical import inspect_session_h2d_opportunity
+from tests.test_sglang_v0520_physical import prefetch_node
+from tests.test_wait_prefetch_batch import batch_fixture, provisional_join_batch_fixture
+
+
+@pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
+@pytest.mark.parametrize(
+    "free_full,reserve,byte_limit,page_size,expected_tokens,reclaimed_full",
+    ((3, 1, 1024, 1, 2, 0), (4, 1, 1024, 2, 2, 0),
+     (10, 1, 25, 1, 2, 0), (1, 1, 1024, 1, 0, 0),
+     (2, 1, 1024, 2, 0, 0), (1, 1, 1024, 1, 2, 2)),
+)
+def test_partial_first_extent_reaches_native_enqueue_without_consuming_reserve(
+    source, free_full, reserve, byte_limit, page_size, expected_tokens, reclaimed_full,
+):
+    fixture = (
+        provisional_join_batch_fixture() if source == "join_ticket"
+        else batch_fixture(source)
+    )
+    runtime, key, original, cache, _ = fixture
+    runtime._h2d_samples.extend(((20, 10.), (40, 10.)) * 3)
+    if runtime._semantic_worker is not None:
+        runtime._semantic_worker.error = ""
+    runtime._native_page_size = page_size
+    nodes = {node.node_id: node for node in original.candidate.nodes}
+    headroom = [replace(original.headroom, device_full_free_tokens=free_full)]
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    if reclaimed_full:
+        cache.beliefkv_join_pressure_candidates_by_component = {0: ((99, 100.),)}
+
+    def reclaim(**kwargs):
+        headroom[0] = replace(
+            headroom[0], device_full_free_tokens=free_full + reclaimed_full,
+        )
+        return {0: reclaimed_full} if reclaimed_full else {}
+
+    cache.reclaim_beliefkv_handoff_capacity = Mock(side_effect=reclaim)
+
+    def split(**kwargs):
+        assert kwargs["node_id"] == 1
+        assert kwargs["session_id"] == key.session_id
+        assert kwargs["prefix_tokens"] == expected_tokens
+        node = nodes[1]
+        nodes[5] = prefetch_node(
+            5, node.parent_id, node.creation_time,
+            full_host=expected_tokens, key_tokens=expected_tokens,
+        )
+        nodes[1] = NS(
+            **{**vars(node), "parent_id": 5,
+               "full_host_tokens": node.full_host_tokens - expected_tokens,
+               "key_tokens": node.key_tokens - expected_tokens},
+        )
+        return 5, node.creation_time
+
+    cache.split_beliefkv_prefetch_full_prefix = Mock(side_effect=split)
+
+    def enqueue(**kwargs):
+        outcomes = []
+        for node_id, _, include_mamba, command in kwargs["nodes"]:
+            assert node_id == 5
+            assert not include_mamba
+            tokens = nodes[node_id].full_host_tokens
+            op = NS(
+                beliefkv_command_id=command, node_ids=[node_id],
+                host_indices=tuple(range(tokens)), device_indices=tuple(range(tokens)),
+                pool_transfers=None,
+            )
+            assert kwargs["beliefkv_before_enqueue"](op)
+            outcomes.append(NS(issued=True, node_id=node_id, load_started=True))
+        return tuple(outcomes)
+
+    cache.prefetch_gpu_session_nodes.side_effect = enqueue
+
+    def inspect(**kwargs):
+        return inspect_session_h2d_opportunity(
+            cache, original.anchors, max_steps=kwargs["max_steps"],
+            fit_current_capacity=kwargs["fit_current_capacity"],
+        )
+
+    def closure(_cache, node_id, **kwargs):
+        chain = []
+        while node_id is not None:
+            node = nodes[node_id]
+            chain.append(node)
+            node_id = node.parent_id
+        return NS(observable=True, nodes=tuple(chain))
+
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity", side_effect=inspect), \
+            patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+                1, byte_limit, reserve_full_tokens=reserve,
+            )), \
+            patch.object(runtime, "_publish_parent_pressure_candidates"), \
+            patch.object(runtime, "_live_parent_pressure_node", return_value=True), \
+            patch.object(runtime, "_h2d_start_window",
+                         return_value=TransferStartWindow(200., 0., 500.)), \
+            patch("beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+                  side_effect=closure), \
+            patch("beliefkv.runtime.sglang_v0520_physical.observe_static_full_mamba_headroom",
+                  side_effect=lambda *args: headroom[0]):
+            if source == "tool_wait":
+                runtime.dispatch_tool_prefetch()
+            else:
+                runtime.dispatch_join_prefetch()
+        assert runtime.physical_ledger.pending_count == int(expected_tokens > 0), (
+            dict(runtime.counts), records,
+        )
+        assert cache.split_beliefkv_prefetch_full_prefix.call_count == int(expected_tokens > 0)
+        assert not runtime.physical_disabled
+        if expected_tokens:
+            assert headroom[0].device_full_free_tokens - expected_tokens >= reserve
+            assert expected_tokens * 10 <= byte_limit
+            assert nodes[4].mamba_host_present
+            submitted = next(
+                row for row in records
+                if row["event"] == "wait_prefetch_plan" and row["reason"] == "submitted"
+            )
+            assert submitted["planned_pool_bytes"] == {"kv": expected_tokens * 10, "mamba": 0}
+            assert submitted["partial_full_tokens"] == 0
+            assert runtime.counts["wait_prefetch_full_extent_split_tokens"] == expected_tokens
+            command = next(iter(runtime._prefetch_steps))
+            runtime.on_native_transfer_commit(NS(
+                direction="h2d", status="completed", node_ids=(5,),
+                num_tokens_by_pool=(("kv", expected_tokens),),
+                child_commits=(NS(
+                    command_id=command, anchor_node_id=5, published_node_ids=(5,),
+                    num_tokens_by_pool=(("kv", expected_tokens),),
+                    num_bytes=expected_tokens * 10,
+                ),),
+            ))
+            assert runtime.physical_ledger.pending_count == 0
+            assert runtime.completed_physical_actions[-1].num_bytes == expected_tokens * 10
+        else:
+            cache.prefetch_gpu_session_nodes.assert_not_called()
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
+@pytest.mark.parametrize("reclaim_succeeds", (False, True))
+def test_zero_native_budget_can_reclaim_a_backed_waiting_session_at_latest_start(
+    source, reclaim_succeeds,
+):
+    fixture = (
+        provisional_join_batch_fixture() if source == "join_ticket"
+        else batch_fixture(source)
+    )
+    runtime, key, opportunity, cache, _ = fixture
+    runtime._h2d_samples.extend(((40, 10.),) * 3)
+    if runtime._semantic_worker is not None:
+        runtime._semantic_worker.error = ""
+    headroom = [replace(opportunity.headroom, device_full_free_tokens=1)]
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    cache.beliefkv_join_pressure_candidates_by_component = {0: ((99, 100.),)}
+
+    def reclaim(**kwargs):
+        assert kwargs["full_tokens"] == 5
+        assert kwargs["exclude_node_ids"] == (0, 1, 2, 3, 4)
+        if reclaim_succeeds:
+            headroom[0] = replace(headroom[0], device_full_free_tokens=5)
+        return {0: 4} if reclaim_succeeds else {}
+
+    cache.reclaim_beliefkv_handoff_capacity = Mock(side_effect=reclaim)
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity",
+                          side_effect=lambda **kwargs: replace(
+                              opportunity, headroom=headroom[0],
+                          )), \
+            patch.object(runtime, "_current_residency_budget",
+                         return_value=PrefetchResidencyBudget(
+                             1, 1024, reserve_full_tokens=1,
+                         )), \
+            patch.object(runtime, "_publish_parent_pressure_candidates"), \
+            patch.object(runtime, "_live_parent_pressure_node", return_value=True), \
+            patch.object(runtime, "_h2d_start_window",
+                         return_value=TransferStartWindow(200., 0., 500.)), \
+            patch("beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+                  return_value=NS(
+                      observable=True, nodes=tuple(reversed(opportunity.candidate.nodes)),
+                  )):
+            if source == "tool_wait":
+                runtime.dispatch_tool_prefetch()
+            else:
+                runtime.dispatch_join_prefetch()
+        cache.reclaim_beliefkv_handoff_capacity.assert_called_once()
+        assert runtime.counts["wait_prefetch_backed_capacity_probe"] == 1
+        assert not runtime.physical_disabled
+        if reclaim_succeeds:
+            assert runtime.physical_ledger.pending_count == 1
+            assert headroom[0].device_full_free_tokens - 4 == 1
+            cache.prefetch_gpu_session_nodes.assert_called_once()
+            reclaimed = next(
+                row for row in records
+                if row["event"] == "wait_prefetch_capacity_reclaimed"
+            )
+            assert reclaimed["capacity_reclaim_probe"]
+        else:
+            cache.prefetch_gpu_session_nodes.assert_not_called()
+            assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("blocked", ("not_cold", "excluded", "before_start_window"))
+def test_zero_budget_reclaim_probe_does_not_evict_without_a_live_timed_opportunity(blocked):
+    runtime, key, opportunity, cache, _ = batch_fixture("tool_wait")
+    runtime._h2d_samples.extend(((40, 10.),) * 3)
+    cache.beliefkv_join_pressure_candidates_by_component = {
+        0: ((1 if blocked == "excluded" else 99, 100.),),
+    }
+    cache.reclaim_beliefkv_handoff_capacity = Mock(return_value={0: 4})
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity",
+                          return_value=replace(
+                              opportunity, headroom=replace(
+                                  opportunity.headroom, device_full_free_tokens=1,
+                              ),
+                          )), \
+            patch.object(runtime, "_current_residency_budget",
+                         return_value=PrefetchResidencyBudget(
+                             1, 1024, reserve_full_tokens=1,
+                         )), \
+            patch.object(runtime, "_live_parent_pressure_node",
+                         return_value=blocked != "not_cold"), \
+            patch.object(runtime, "_h2d_start_window",
+                         return_value=TransferStartWindow(10., 0., 50.)):
+            runtime.dispatch_tool_prefetch()
+        cache.reclaim_beliefkv_handoff_capacity.assert_not_called()
+        cache.prefetch_gpu_session_nodes.assert_not_called()
+        assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
