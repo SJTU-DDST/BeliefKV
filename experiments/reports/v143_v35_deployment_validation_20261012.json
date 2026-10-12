@@ -1,0 +1,117 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-12T21:42:02.073035+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v35",
+  "code_commit": "e673af51fb8c7788a2d3b5cd684fb8d2cf3e86b6",
+  "sglang_patch_sha256": "838d2ed84d878ffe4193d07482f3f69512d143c106d5c967ba3a83311ee6c995",
+  "frozen_plan_sha256": "e4540173b69f8bf53c0e2d3219fb0144e783b52e0ec832fbaa3a43fe8d6899ac",
+  "execution_verification": {
+    "collection_code_commit": "e673af51fb8c7788a2d3b5cd684fb8d2cf3e86b6",
+    "verification_code_commit": "e673af51fb8c7788a2d3b5cd684fb8d2cf3e86b6",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "838d2ed84d878ffe4193d07482f3f69512d143c106d5c967ba3a83311ee6c995",
+    "expected_tree": "d8abddb5a706b040e2728589efd1a3374a59387f",
+    "actual_tree": "d8abddb5a706b040e2728589efd1a3374a59387f",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "unchanged_configuration_fields": [
+    "workload_sha256",
+    "root_count",
+    "arrival_schedule",
+    "server_running",
+    "context_tokens",
+    "max_completion_tokens",
+    "host_gb",
+    "host_split",
+    "mamba_full_memory_ratio",
+    "mem_fraction_static",
+    "native_write_policy",
+    "fanout_profile",
+    "sampling_seed",
+    "temperature",
+    "sandbox_command_timeout_s",
+    "activation_wall_clock_seconds",
+    "child_final_report_shadow",
+    "prefetch_lead_ms",
+    "eos_protocol_window_ms",
+    "eos_prefetch_evidence_window_ms",
+    "native_reference_run",
+    "semantic_artifact_sha256",
+    "tool_timing_sha256",
+    "transfer_service_seed_sha256",
+    "native_reactive_guard_profile",
+    "completion_gate_enabled",
+    "semantic_work_statistic"
+  ],
+  "actual_capacity": {
+    "device_full_bytes": 36843438080,
+    "device_full_tokens": 1798995,
+    "device_mamba_bytes": 33096007680,
+    "device_mamba_slots": 513,
+    "device_total_bytes": 69939445760,
+    "host_full_bytes": 160000020480,
+    "host_full_tokens": 7812501,
+    "host_mamba_bytes": 40050032640,
+    "host_mamba_slots": 622,
+    "host_total_bytes": 200050053120,
+    "pool_layout": "static_separate_full_mamba"
+  },
+  "physical_disabled": false,
+  "runtime_snapshot_ts_ms": 1791812519763.5583,
+  "observed_gpu_service_samples": 8896,
+  "health_http_status": "200",
+  "live_process_identities": {
+    "coordinator": {
+      "pid": 78439,
+      "state": "S",
+      "ppid": 1,
+      "pgid": 78439,
+      "start_ticks": "598241148"
+    },
+    "scheduler": {
+      "pid": 79109,
+      "state": "R",
+      "ppid": 78729,
+      "pgid": 78729,
+      "start_ticks": "598242662"
+    },
+    "client": {
+      "pid": 80842,
+      "state": "S",
+      "ppid": 78706,
+      "pgid": 80842,
+      "start_ticks": "598257808"
+    },
+    "engine_parent": {
+      "pid": 78729,
+      "state": "R",
+      "ppid": 78706,
+      "pgid": 78729,
+      "start_ticks": "598241359"
+    }
+  },
+  "opportunity_writer_has_error": false,
+  "observed_valid_capacity_boolean_records": 0,
+  "native_extent_split_records_observed": 0,
+  "max_completion_tokens": 8192,
+  "scope": "Real service, frozen source, physical action availability and unchanged configuration/capacity only. Startup is not proof of complete restoration, early FULL consumption or throughput improvement."
+}

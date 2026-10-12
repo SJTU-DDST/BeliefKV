@@ -2,6 +2,21 @@
 
 更新日期：2026-10-12。
 
+当前运行 V35 predictive，2026-10-12 21:35:49 CST 从 e673af5/
+838d2ed8 冷启动。21:42:02 核验 HTTP 200、8,896 个实际 GPU
+服务样本、physical_disabled=false，FULL/Mamba 各池实际容量及
+冻结 workload/模型/8192/180 秒配置逐项等于 V34。继续固定
+V29 native，不重跑对照；运行源保持冻结，启动不证明吞吐收益。
+v143_v35_deployment_validation 保存源身份、实际容量与进程回执。
+
+后续独立 checkout 已准备工具扫描减负：同一时刻的 P50 用于
+排序、筛选和窗口判断，回收后及实际 enqueue 前仍重新检查。
+301 项相关检查通过；156 个长工具等待、3,000 个固定 CPU tick
+中，总调用成本为 236.278→128.941 ms，两侧候选检查均 9,360。
+这是窗口外的 CPU fixture，不是实际 GPU 吞吐或预测精度改善；
+尚未部署到 V35，不能据此改变正在采集的源。验证为
+v144_tool_scan_center_reuse_cpu_final，后续重启再纳入。
+
 V34 于 2026-10-12 20:15:59 CST 因 opportunity writer 拒绝
 NumPy 布尔值退出：np.True_ is not JSON serializable，不是 GPU
 OOM。冻结源仍为 0b45f4b/3e23c770；20:01 的成功部署核验
@@ -27,7 +42,7 @@ admission 8.200 秒、handoff 4.510 秒，不是可扣除 JCT。
 提前确认 FULL 为 JOIN 1 个/7.66 MB、tool 2 个/82.08 MB。
 83 个未知 JOIN 完成边界单列。六次 split decline 不能全部
 归因于同一原生条件。证据为 v141_v34_fault_prefix_prefetch/busy。
-先归档故障 workspace，再同配置单跑 V35 predictive，继续
+故障 workspace 已归档，同配置单跑 V35 predictive，继续
 使用固定 V29 native；优先降低检查/规划成本和工具机会漏失，
 主吞吐/JCT 目标仍 active。
 

@@ -5,6 +5,17 @@
 完成/剩余工作预测，runtime 根据因果状态和真实缓存容量
 安排传输；吞吐和 JCT 收益仍待验证。
 
+V35 已于 21:35:49 CST 冷启动 e673af5/838d2ed8，单跑 predictive。
+21:42:02 核验实际服务 8,896 个样本、HTTP 200、物理动作启用，
+各池实际容量与冻结参数逐项等于 V34。v143 保存部署回执；
+固定 V29 native，运行源码冻结，性能目标继续 active。
+
+followup 减少同一扫描内工具 P50 的重复计算，不改变 CDF 或
+启动额度；回收后和最终提交前仍重新判断。301 项检查通过，
+窗口外的 156-context CPU fixture 为 236.278→128.941 ms，
+候选检查均 9,360 次。这不是 GPU/预测精度结果，尚未部署到
+V35，等待后续冷启动纳入；证据为 v144_tool_scan_center_reuse_cpu_final。
+
 V34 在 20:15:59 CST 因 opportunity writer 无法编码 NumPy bool
 退出，冻结源为 0b45f4b/3e23c770。六个 completed、102 个已创建
 及 48 个未到达任务故障删失；不是 GPU OOM 或 agent 自发失败。

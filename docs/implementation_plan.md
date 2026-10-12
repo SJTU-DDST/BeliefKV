@@ -2,6 +2,21 @@
 
 Status date: 2026-10-12.
 
+V35 predictive-only cold-started e673af5/838d2ed8 at 21:35:49 CST.
+Deployment validation at 21:42:02 confirms HTTP200, 8896 GPU-service samples
+and physical_disabled=false. Actual FULL/Mamba device/Host capacities and
+all frozen workload, model, output8192 and tool180s fields equal V34.
+Keep fixed V29 native and freeze the running source. Startup does not
+prove service improvement; see v143_v35_deployment_validation.
+
+The separate followup checkout prepares same-scan P50 reuse across tool
+sorting, filtering and window checks, with fresh post-reclaim and enqueue
+validation. 301 focused checks pass. A 156-context long-wait CPU fixture
+uses 236.278/128.941ms across 3000 ticks with 9360 candidate checks on each
+variant. This is outside-window CPU cost, not GPU throughput or prediction
+accuracy. It is not deployed to V35; include it only at a later cold start.
+Evidence: v144_tool_scan_center_reuse_cpu_final.
+
 V34 failed at 20:15:59 CST on October 12: the opportunity writer rejected
 a NumPy boolean, and the scheduler propagated its background error.
 This is not GPU OOM. Six workflows completed; 102 created and 48 unarrived
@@ -26,8 +41,8 @@ JOIN positive-FULL/start/submit is 32/27/2; tool is 566/3/3.
 Confirmed early FULL is JOIN one event/7.66MB and tool two/82.08MB;
 83 unknown JOIN boundaries remain unknown. The six native split declines
 are not proven to share one predicate. See v141 fault-prefix audits.
-Archive the failed workspaces before a same-configuration V35 predictive-only
-cold start using fixed V29 native. Continue with lower planning/inspection
+The failed workspaces were archived before the same-configuration V35
+predictive-only cold start using fixed V29 native. Continue with lower planning/inspection
 costs and better tool opportunity conversion; the performance goal is active.
 
 V34's 108 workspaces passed full tar comparison and were archived at

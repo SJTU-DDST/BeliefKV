@@ -1,0 +1,41 @@
+{
+  "scope": "CPU candidate scans outside transfer windows; not GPU throughput",
+  "baseline_revision": "e673af5",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "6e1db6ad33c310c11a6f5a721958dae4646366b0d9ea8599efae56a903d2711e",
+    "beliefkv/runtime/sglang_v0520_physical.py": "0dfc1bbd1c3f9010dffddc117b991884063db9bcdb1f4a175d90363c4737672b",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "949e81581df08be8867af654296f534262076a3baf2028126ebb09f9e0a4d163"
+  },
+  "tool_wait_contexts": 156,
+  "iterations": 3000,
+  "scheduler_tick_ms": 2.0,
+  "timeline_ms": 5998.0,
+  "physical_actions": 0,
+  "costs": {
+    "baseline": {
+      "count": 3000,
+      "mean_ms": 0.07875943166666667,
+      "p50_ms": 0.007949,
+      "p99_ms": 2.996717,
+      "max_ms": 16.821043
+    },
+    "optimized": {
+      "count": 3000,
+      "mean_ms": 0.04298033266666667,
+      "p50_ms": 0.007997,
+      "p99_ms": 1.704885,
+      "max_ms": 1.910167
+    }
+  },
+  "total_cpu_ms": {
+    "baseline": 236.27829500000033,
+    "optimized": 128.94099799999987
+  },
+  "candidate_checks": {
+    "baseline": 9360,
+    "optimized": 9360
+  },
+  "optimized_scans": 60,
+  "optimized_deferred": 2940,
+  "mean_reduction_fraction": 0.45428335683563315
+}
