@@ -1,0 +1,183 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-13T06:34:44.856253+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v45",
+  "code_commit": "6a3715629b403bdcab955a8bd0fa57e458746314",
+  "sglang_patch_sha256": "3698ce2f8eca9be50cebfecbf25a698f93b872227683ac9fe4671e2dc74480c1",
+  "frozen_plan_sha256": "fef6714babdb0ef69659b51f019e525e2a8eea3d0cf84a3253614428f895b51b",
+  "execution_verification": {
+    "collection_code_commit": "6a3715629b403bdcab955a8bd0fa57e458746314",
+    "verification_code_commit": "6a3715629b403bdcab955a8bd0fa57e458746314",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "validated_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "63f4a0f054aed0e9d035ecd0a33ec3bb123d4ff961881c53977cbdddc6a3d8ca",
+    "tests/test_tool_predictive_transfers.py": "285e6fcca482efbafae22544ca4f9e38a401ddf9d25d934bcbc93c3bd4563e11",
+    "scripts/benchmark_tool_lease_scan_cpu.py": "ab6b70e25c01bda690d73a82a270d774028c7f74c57d2252bec8dc52ac7485b9"
+  },
+  "engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "3698ce2f8eca9be50cebfecbf25a698f93b872227683ac9fe4671e2dc74480c1",
+    "expected_tree": "6d6af094ea8e0fb6c0e3bc06fb12dd006ec41e14",
+    "actual_tree": "6d6af094ea8e0fb6c0e3bc06fb12dd006ec41e14",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "unchanged_configuration_fields": [
+    "workload_sha256",
+    "root_count",
+    "arrival_schedule",
+    "server_running",
+    "context_tokens",
+    "max_completion_tokens",
+    "host_gb",
+    "host_split",
+    "mamba_full_memory_ratio",
+    "mem_fraction_static",
+    "native_write_policy",
+    "fanout_profile",
+    "sampling_seed",
+    "temperature",
+    "sandbox_command_timeout_s",
+    "activation_wall_clock_seconds",
+    "child_final_report_shadow",
+    "prefetch_lead_ms",
+    "eos_protocol_window_ms",
+    "eos_prefetch_evidence_window_ms",
+    "native_reference_run",
+    "semantic_artifact_sha256",
+    "tool_timing_sha256",
+    "transfer_service_seed_sha256",
+    "native_reactive_guard_profile",
+    "completion_gate_enabled",
+    "semantic_work_statistic"
+  ],
+  "actual_capacity": {
+    "device_full_bytes": 36843438080,
+    "device_full_tokens": 1798995,
+    "device_mamba_bytes": 33096007680,
+    "device_mamba_slots": 513,
+    "device_total_bytes": 69939445760,
+    "host_full_bytes": 160000020480,
+    "host_full_tokens": 7812501,
+    "host_mamba_bytes": 40050032640,
+    "host_mamba_slots": 622,
+    "host_total_bytes": 200050053120,
+    "pool_layout": "static_separate_full_mamba"
+  },
+  "gc_freeze_receipt_sha256": "dd7b9a8cae9a8ab8b106d529308ba6ee6c9077ea3240c1a045ba3117c8664892",
+  "physical_disabled": false,
+  "runtime_snapshot_ts_ms": 1791844482803.4387,
+  "observed_runtime_residency_budget": {
+    "request_slots": 1,
+    "byte_limit": 56607498240,
+    "reserve_full_tokens": 4144,
+    "reserve_mamba_slots": 1,
+    "source": "native_next_prefill",
+    "evictable_full_tokens": 193682,
+    "evictable_mamba_slots": 322
+  },
+  "residency_budget_semantics": "Native Mamba reserve equals the imminent request-slot count; it is dynamic, not a frozen one-slot configuration field. FULL retains input/decode reserve.",
+  "observed_gpu_service_samples_in_tail": 570,
+  "runtime_counts": {
+    "semantic_worker_ready": 1,
+    "semantic_worker_disabled": 0,
+    "semantic_worker_dropped": 0,
+    "join_wait_expired": 0,
+    "physical_expired": 0,
+    "tool_prefetch_scans": 1329,
+    "prepare_no_service_demand": 2061,
+    "execution_handoff_no_waiting_requests": 1551,
+    "tool_prefetch_scan_deferred": 270122,
+    "native_admitted": 537,
+    "admission_causal_cache_hits": 229,
+    "admission_residency_scan_reused": 149,
+    "native_OTHER": 4,
+    "semantic_native_tool_marker_invalidated": 524,
+    "semantic_text_received": 1300,
+    "semantic_text_after_tool_ignored": 778,
+    "semantic_tool_chunk_invalidated": 412,
+    "tool_wait_submitted": 594,
+    "tool_wait_accepted": 370,
+    "tool_hint_physical_inspection_deferred": 370,
+    "tool_unchanged_wait_prediction_skipped": 627,
+    "tool_prefetch_admission_budget_busy": 6,
+    "execution_handoff_no_frontier_slots": 3,
+    "tool_wait_context_stale": 400,
+    "resident_first_ordered": 507,
+    "tool_wait_result_stale": 202,
+    "tool_prefetch_no_restore_target": 971,
+    "tool_wait_parallel_group_pending": 298,
+    "semantic_no_transfer_target_skipped": 273,
+    "prepare_mamba_pressure_only": 315,
+    "tool_prefetch_not_in_time_window": 619,
+    "tool_prefetch_survival_deferred": 567
+  },
+  "health_http_status": 200,
+  "live_process_identities": {
+    "coordinator": {
+      "pid": 3816382,
+      "state": "S",
+      "ppid": 1,
+      "pgid": 3816382,
+      "start_ticks": "601445041"
+    },
+    "scheduler": {
+      "pid": 3816975,
+      "state": "R",
+      "ppid": 3816619,
+      "pgid": 3816619,
+      "start_ticks": "601446550"
+    },
+    "client": {
+      "pid": 3818629,
+      "state": "S",
+      "ppid": 3816601,
+      "pgid": 3818629,
+      "start_ticks": "601461716"
+    },
+    "engine_parent": {
+      "pid": 3816619,
+      "state": "R",
+      "ppid": 3816601,
+      "pgid": 3816619,
+      "start_ticks": "601445262"
+    }
+  },
+  "audit_input_tail": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v45/predictive_h2d/server/runtime_audit.jsonl",
+    "start_offset": 22156418,
+    "complete_bytes_read": 8380473,
+    "sha256": "70e4995f42581941beedb5ed420806124b6204d253e204a770b0284503f8d8e7",
+    "scope": "Complete lines in one bounded observed tail, not an atomic cross-file snapshot"
+  },
+  "runtime_state_input_tail": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v45/predictive_h2d/opportunities/admission_opportunities.jsonl",
+    "start_offset": 0,
+    "complete_bytes_read": 5180665,
+    "sha256": "f52f520ce61706d8b26b4238ef9586005761bd749d6b5ea0c87a480faf4828d1",
+    "scope": "Complete lines in one bounded observed tail, not an atomic cross-file snapshot"
+  },
+  "deployment_script_sha256": "04fdc17e28b062bd4f6b5de92a94567f4b8601a2ff15e965a5d8ab2a24486194",
+  "validator_template_sha256": "2f61cc60a18d91022d4155d8b93a47da52546e034e3b5c567388a37b8e5f6f59",
+  "rendered_validator_sha256": "1b2df820d88309674a9ceee9325ef6a0002a6053dd5b66e2e7cc5469a607233b",
+  "rendered_validator_utf8_source": "\"\"\"Verify cold V40 source, unchanged physical capacity and actual GPU service.\"\"\"\n\nfrom datetime import datetime\nimport hashlib\nimport json\nimport os\nfrom pathlib import Path\nimport subprocess\nimport sys\nfrom urllib.request import urlopen\n\nROOT = Path(\"/home/longhao/experiment/BeliefKV\")\nFOLLOWUP = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nRUN = ROOT / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v45\"\nPREVIOUS = ROOT / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v44\"\nCHECKOUT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v215-tool-scan-20261013\")\nOUTPUT = FOLLOWUP / \"experiments/reports/v217_v45_deployment_validation_20261013.json\"\nsys.path.insert(0, str(ROOT))\n\nfrom beliefkv.experiments.source_provenance import git_source_state\nfrom scripts.summarize_semantic_h2d_ab import verify_frozen_execution_source\n\n\ndef identity(pid):\n    raw = Path(f\"/proc/{pid}/stat\").read_text()\n    fields = raw[raw.rfind(\")\") + 2:].split()\n    return {\n        \"pid\": pid, \"state\": fields[0], \"ppid\": int(fields[1]),\n        \"pgid\": int(fields[2]), \"start_ticks\": fields[19],\n    }\n\n\ndef command(pid):\n    return Path(f\"/proc/{pid}/cmdline\").read_bytes().replace(b\"\\0\", b\" \").decode()\n\n\ndef tail_records(path, limit=8 * 1024 * 1024):\n    with path.open(\"rb\") as stream:\n        stream.seek(0, 2)\n        end = stream.tell()\n        start = max(0, end - limit)\n        stream.seek(start)\n        if start:\n            stream.readline()\n        start = stream.tell()\n        payload = stream.read(end - start)\n    if payload and not payload.endswith(b\"\\n\"):\n        payload = payload[:payload.rfind(b\"\\n\") + 1]\n    rows = [json.loads(line) for line in payload.splitlines() if line.strip()]\n    return rows, {\n        \"path\": str(path), \"start_offset\": start, \"complete_bytes_read\": len(payload),\n        \"sha256\": hashlib.sha256(payload).hexdigest(),\n        \"scope\": \"Complete lines in one bounded observed tail, not an atomic cross-file snapshot\",\n    }\n\n\nif OUTPUT.exists():\n    raise ValueError(\"preserve deployment receipt\")\nplan_path = RUN / \"ab_plan.json\"\nplan_payload = plan_path.read_bytes()\nplan = json.loads(plan_payload)\nrevision = subprocess.check_output(\n    [\"git\", \"rev-parse\", \"HEAD\"], cwd=CHECKOUT, text=True,\n).strip()\nif plan[\"code_commit\"] != revision:\n    raise ValueError(\"plan does not use the new frozen checkout\")\nold_plan = json.loads((PREVIOUS / \"ab_plan.json\").read_bytes())\nold_receipt = json.loads(\n    (ROOT / \"experiments/reports/v207_v44_deployment_validation_20261013.json\").read_bytes()\n)\nfields = old_receipt[\"unchanged_configuration_fields\"]\nfor field in fields:\n    if plan.get(field) != old_plan.get(field):\n        raise ValueError(f\"frozen configuration changed: {field}\")\nexecution = verify_frozen_execution_source(ROOT, plan[\"code_commit\"])\nvalidation = json.loads(\n    (ROOT / \"experiments/reports/v215_tool_scan_validation_20261013.json\").read_bytes()\n)\nsource_hashes = {}\nfor relative, expected in validation[\"qualified_paths_sha256\"].items():\n    actual = hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()\n    if actual != expected:\n        raise ValueError(f\"validated source differs: {relative}\")\n    source_hashes[relative] = actual\nengine = git_source_state(\n    ROOT / \"third_party/sglang-v0.5.20\",\n    canonical_patch=ROOT / \"patches/sglang-v0.5.20-beliefkv-staging.patch\",\n)[\"canonical_patch\"]\nif (\n    engine[\"sha256\"] != plan[\"sglang_patch_sha256\"]\n    or engine[\"sha256\"] != old_plan[\"sglang_patch_sha256\"]\n    or not engine[\"matches_worktree\"]\n):\n    raise ValueError(\"engine differs from frozen validated patch\")\nserver = RUN / \"predictive_h2d/server\"\ncapacity = json.loads((server / \"native_capacity_census.json\").read_bytes())[\"capacity\"]\nif capacity != old_receipt[\"actual_capacity\"]:\n    raise ValueError(\"physical capacities changed\")\nfreeze_payload = (server / \"gc_freeze_initialization.txt\").read_bytes()\nif b\"Garbage collection frozen.\" not in freeze_payload:\n    raise ValueError(\"GC initialization unconfirmed\")\nrows, source = tail_records(server / \"runtime_audit.jsonl\")\nstate_rows, state_source = tail_records(\n    RUN / \"predictive_h2d/opportunities/admission_opportunities.jsonl\",\n)\nstates = [row for row in state_rows if row.get(\"event\") == \"admission_runtime_state\"]\nsamples = [row for row in rows if row.get(\"event\") == \"gpu_service_sample\"]\nif not states or not samples:\n    raise ValueError(\"no runtime state or real GPU service in observed tail\")\nstate = states[-1]\nif state[\"physical_disabled\"] or state.get(\"semantic_worker_error\"):\n    raise ValueError(\"physical actions disabled or semantic worker failed\")\nif not state.get(\"tool_predictor_configured\") or not state.get(\"semantic_worker_configured\"):\n    raise ValueError(\"predictors unconfigured\")\nbudget = state.get(\"prefetch_residency_budget\")\nif (\n    budget is None or budget.get(\"source\") != \"native_next_prefill\"\n    or budget.get(\"reserve_full_tokens\", 0) < 4096\n):\n    raise ValueError(\"actual FULL input/decode reserve unconfirmed\")\nif (\n    budget.get(\"request_slots\", 0) < 1\n    or budget.get(\"reserve_mamba_slots\") != budget[\"request_slots\"]\n):\n    raise ValueError(\"actual Mamba reserve does not match next-prefill request slots\")\nready = json.loads((server / \"native_telemetry_ready.json\").read_bytes())\nscheduler = identity(ready[\"scheduler_pid\"])\nengine_parent = identity(scheduler[\"ppid\"])\nif scheduler[\"state\"] == \"Z\" or engine_parent[\"state\"] == \"Z\":\n    raise ValueError(\"engine exited\")\nif \"sglang.launch_server\" not in command(engine_parent[\"pid\"]):\n    raise ValueError(\"scheduler parent is not the serving engine\")\ncoordinator = client = None\nfor proc in Path(\"/proc\").iterdir():\n    if not proc.name.isdecimal() or int(proc.name) == os.getpid():\n        continue\n    try:\n        text = command(int(proc.name))\n        if str(RUN) not in text:\n            continue\n        if \"launch_semantic_h2d_after_pair.py\" in text and \"--run-root\" in text:\n            coordinator = identity(int(proc.name))\n        if \"run_deepagents_swebench.py\" in text:\n            client = identity(int(proc.name))\n    except OSError:\n        continue\nif coordinator is None or client is None or any(\n    row[\"state\"] == \"Z\" for row in (coordinator, client)\n):\n    raise ValueError(\"coordinator or workload client missing\")\nwith urlopen(\"http://127.0.0.1:18454/health\", timeout=10) as response:\n    health = response.status\nif health != 200:\n    raise ValueError(\"health is not HTTP 200\")\npayload = {\n    \"schema_version\": 1,\n    \"observed_at_local\": datetime.now().astimezone().isoformat(),\n    \"run_root\": str(RUN), \"code_commit\": plan[\"code_commit\"],\n    \"sglang_patch_sha256\": plan[\"sglang_patch_sha256\"],\n    \"frozen_plan_sha256\": hashlib.sha256(plan_payload).hexdigest(),\n    \"execution_verification\": execution, \"validated_source_sha256\": source_hashes,\n    \"engine\": engine, \"unchanged_configuration_fields\": fields,\n    \"actual_capacity\": capacity,\n    \"gc_freeze_receipt_sha256\": hashlib.sha256(freeze_payload).hexdigest(),\n    \"physical_disabled\": state[\"physical_disabled\"],\n    \"runtime_snapshot_ts_ms\": state[\"ts_ms\"],\n    \"observed_runtime_residency_budget\": budget,\n    \"residency_budget_semantics\": \"Native Mamba reserve equals the imminent request-slot count; it is dynamic, not a frozen one-slot configuration field. FULL retains input/decode reserve.\",\n    \"observed_gpu_service_samples_in_tail\": len(samples),\n    \"runtime_counts\": state[\"counts\"], \"health_http_status\": health,\n    \"live_process_identities\": {\n        \"coordinator\": coordinator, \"scheduler\": scheduler,\n        \"client\": client, \"engine_parent\": engine_parent,\n    },\n    \"audit_input_tail\": source, \"runtime_state_input_tail\": state_source,\n    \"deployment_script_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n    \"validator_template_sha256\": TEMPLATE_SHA,\n    \"rendered_validator_sha256\": RENDERED_SHA,\n    \"rendered_validator_utf8_source\": RENDERED_SOURCE,\n    \"deployment_helper_utf8_source\": Path(__file__).read_text(),\n    \"scope\": \"Frozen validated source, unchanged configuration/capacity and real physical/GPU service. Startup is not proof of consumed FULL or throughput/JCT improvement.\",\n}\nOUTPUT.write_text(json.dumps(payload, indent=2, allow_nan=False) + \"\\n\")\nprint(json.dumps({\n    key: payload[key] for key in (\n        \"observed_at_local\", \"code_commit\", \"observed_gpu_service_samples_in_tail\",\n        \"physical_disabled\", \"health_http_status\", \"observed_runtime_residency_budget\",\n    )\n}, indent=2))\n",
+  "deployment_helper_utf8_source": "\"\"\"Validate V45 source, frozen configuration/capacity and actual GPU service.\"\"\"\n\nimport hashlib\nfrom pathlib import Path\nfrom types import ModuleType\n\nTEMPLATE = Path(\"/tmp/beliefkv_v174_v40_deployment.py\")\nsource = TEMPLATE.read_text()\nreplacements = (\n    (\"qwen35_native_predictive_replenished_108plus48_20261013_v40\",\n     \"qwen35_native_predictive_replenished_108plus48_20261013_v45\"),\n    (\"qwen35_native_predictive_replenished_108plus48_20261013_v39\",\n     \"qwen35_native_predictive_replenished_108plus48_20261013_v44\"),\n    (\"beliefkv-v172-report-cold-20261013\", \"beliefkv-v215-tool-scan-20261013\"),\n    (\"v174_v40_deployment_validation_20261013.json\",\n     \"v217_v45_deployment_validation_20261013.json\"),\n    (\"v169_v39_deployment_validation_20261013.json\",\n     \"v207_v44_deployment_validation_20261013.json\"),\n    (\"v172_report_phase_cold_validation_20261013.json\",\n     \"v215_tool_scan_validation_20261013.json\"),\n    ('validation[\"final_source_sha256\"]', 'validation[\"qualified_paths_sha256\"]'),\n    ('validation[\"unchanged_canonical_patch_sha256\"]', 'old_plan[\"sglang_patch_sha256\"]'),\n    ('\"deployment_script_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),',\n     '\"deployment_script_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\\n'\n     '    \"validator_template_sha256\": TEMPLATE_SHA,\\n'\n     '    \"rendered_validator_sha256\": RENDERED_SHA,\\n'\n     '    \"rendered_validator_utf8_source\": RENDERED_SOURCE,\\n'\n     '    \"deployment_helper_utf8_source\": Path(__file__).read_text(),'),\n)\nfor before, after in replacements:\n    if before not in source:\n        raise ValueError(f\"missing deployment validator field: {before}\")\n    source = source.replace(before, after)\nmodule = ModuleType(\"v217_v45_deployment\")\nmodule.__file__ = str(Path(__file__).resolve())\nmodule.TEMPLATE_SHA = hashlib.sha256(TEMPLATE.read_bytes()).hexdigest()\nmodule.RENDERED_SHA = hashlib.sha256(source.encode()).hexdigest()\nmodule.RENDERED_SOURCE = source\nexec(compile(source, str(TEMPLATE), \"exec\"), vars(module))\n",
+  "scope": "Frozen validated source, unchanged configuration/capacity and real physical/GPU service. Startup is not proof of consumed FULL or throughput/JCT improvement."
+}

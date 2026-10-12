@@ -2,7 +2,30 @@
 
 Status date: 2026-10-13.
 
-Current development run is V44, cold-started at 05:44:21 CST on October 13
+Current development run is V45, cold-started at 06:29:48 CST on October 13
+from 6a37156/3698ce2f, actual engine tree 6d6af094. It deploys the
+qualified tool-scan lease reduction below. Keep frozen configuration
+and fixed V29 native for development; freeze running sources. V217 at
+06:34:44 verifies HTTP200, 570 real GPU-service samples in an independent
+tail, enabled predictors/physical actions, matching sources/engine, all
+27 frozen fields and pool capacities. Observed reserve is 4144 FULL
+tokens and one Mamba slot following the imminent batch. A complete
+busy-window performance outcome remains unverified.
+
+V44 stopped administratively at 06:24:32: 34 completed, 74 created
+unfinished and 48 unarrived; the latter 122 remain censored. All 108
+workspaces passed full tar comparison before cleanup at 06:29:09,
+20.932GB allocated source to 2.249GB archive. Only 74 owned stopped
+containers were removed; preserve raw/results/plan. V216 seals known
+pre-completion positive-FULL/start/submit: JOIN 63/62/18 and tool
+1652/203/194, with 47/3 unknown boundaries. Proven early next-request
+FULL consumption: ten JOINs/120.177MB and 182 tools/10.756GB.
+Demand handoff confirmed FULL 141.648GB remains separate.
+JOIN ACK-to-service P90 13.700s is not arrival-to-service P90 494.102ms;
+do not combine denominators, add overlapping prefixes or train from
+administrative stop outcomes. The performance goal stays active.
+
+V44 cold-started at 05:44:21 CST on October 13
 from f55e136/3698ce2f, engine tree 6d6af094. It deploys committed exact
 H2D-statistics reuse and live Tensor closure lengths. V207 verifies HTTP200,
 1851 real GPU-service samples, enabled predictors/physical actions,
@@ -45,7 +68,7 @@ and 12 output-equal CPU fixtures pass. At 156 contexts with 4-48 leases,
 maintenance-plus-scan thread CPU falls 1.6-34.3%; no-lease cases are
 essentially unchanged, with a retained 0.35% slowdown. Absolute costs
 remain in V214. No throughput extrapolation; V44 was not hot-edited.
-Cold-deploy this committed change and measure live controls and consumption.
+V45 cold-deploys this committed change; measure live controls and consumption.
 V213 preserves 779 nonblocking GIL stacks and 214 errors. Closure/reentry/
 lease-validity leaf samples are 56/26/10; these identify further inspection
 work, not wall costs, GPU stalls or removable JCT.
