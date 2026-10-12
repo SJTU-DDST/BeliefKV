@@ -2,13 +2,21 @@
 
 Status date: 2026-10-13.
 
-V41's complete 600-900s window remains below fixed V29 native:
-341902/380722 decode request steps, 10.20% lower at 22.47k/23.24k
-visible context. Instrumented exclusive Python wall is 60.585s;
-reentry/admission/tool cost 8.827/8.363/6.665s. Matched full48
-CUDA graph cohorts are close, while 46/47 remain longer. These are
-not isolated kernels or removable JCT. See v184. The whole-queue
-exhaustion skip is still observed only once.
+V42's complete 600-900s window remains below fixed V29 native:
+323732/380722 decode request steps, 14.97% lower at 23.254k/23.240k
+visible context. Worker decode interval means are 36.122/32.467ms.
+Instrumented exclusive Python wall is 55.787s versus V41's 60.585s;
+different trajectories preclude attributing all change to the patch.
+Reentry/admission/tool cost 7.086/5.199/7.744s, with handoff self/total
+5.491/17.339s. Full48 matched CUDA graph cohorts are close; 46/47
+intervals followed by prefill are about 9-18% longer. Several matched
+single-request prefill intervals followed by decode are 2.8-3.2x native.
+These are scheduler/worker intervals including control and overlap,
+not isolated kernels, specific function attribution or removable JCT.
+V190 reuses V184's verified fixed-native summary without rereading raw.
+Prioritize separating prefill preparation, restore dependencies and
+result processing, alongside capacity and next-request consumption.
+V41 was 10.20% lower and its whole-queue skip appeared only once.
 
 V42 cold-validates an exhausted aged FIFO handoff frontier despite new tail
 requests. Read bounded tagged identities once in the same call; retain
@@ -46,6 +54,15 @@ Partial ACK is not execution readiness. Measure the
 execution_handoff_aged_frontier_already_attempted counter, synchronous
 control cost, early FULL consumption and a complete busy window.
 Freeze V42 execution sources. The performance goal remains active.
+
+V191 independently seals V42 prefixes at 03:47:10-03:47:24. JOIN
+positive-FULL/start/submit is 24/23/11 over 27 known completion
+boundaries, retaining 84 unknown; tool is 578/54/53 over 4037 known,
+retaining two unknown. Early started and next-request consumed FULL
+is six JOINs/90.276MB and 50 tools/3.117GB. Last-ACK to first-service
+P90 is 11.263s/2.653s. This partial prefix cannot be compared with
+V41's longer run by raw counts; unknown boundaries are not misses.
+Demand handoff remains separate from predictive consumption.
 
 V41 stopped administratively at 03:24:35: 21 completed, 87 created
 unfinished and 48 unarrived. Preserve the latter 135 as censoring.

@@ -2,13 +2,20 @@
 
 更新日期：2026-10-13。
 
-V41完整600–900秒仍未达标：predictive/固定V29 native的
-decode request steps为341,902/380,722，少10.20%；可见上下文
-22.47k/23.24k token。已埋点Python独占墙钟60.585秒，
-reentry/admission/tool为8.827/8.363/6.665秒。满48请求的同
-粗几何CUDA graph接近native，46/47区间仍偏长；这些不是
-可直接扣除的JCT或孤立kernel计时。见v184。原整队已耗尽
-skip仍只观察到一次，不能用其CPU fixture解释GPU差异。
+V42完整600–900秒仍未达标：predictive/固定V29 native的
+decode request steps为323,732/380,722，少14.97%；可见上下文
+23.254k/23.240k token，worker decode区间均值36.122/32.467ms。
+已埋点Python独占墙钟55.787秒，低于V41的60.585秒，轨迹不同
+不能把差异全归因于改动，更不能扣作JCT。reentry/admission/tool
+为7.086/5.199/7.744秒；handoff独占5.491秒、含嵌套17.339秒。
+满48请求的同粗几何CUDA graph接近native，46/47后接prefill
+区间仍长约9%–18%；单请求prefill后接decode的若干同粗几何
+区间约为native的2.8–3.2倍。这些是scheduler/worker区间，
+包含控制和overlap，不是纯kernel或已定位的具体函数成本。
+见v190；固定native复用v184核验摘要，没有重读其raw。
+下一步优先拆分prefill准备、恢复依赖与结果处理，同时继续
+减少正恢复计划到提前提交和实际服务消费的缺口。V41窗口少
+10.20%服务量，原整队skip仅一次，不能用CPU fixture解释GPU差异。
 
 V42扩展到已尝试的老化FIFO准入前沿：后方新请求不能
 替换当前下一批前沿时，省略无动作的整队handoff规划。
@@ -41,6 +48,13 @@ v189在03:36:50记录387次老化前沿skip、395次handoff选择。
 观察execution_handoff_aged_frontier_already_attempted的真实频率、
 同步控制成本、提前FULL消费及完整繁忙窗口，运行源码冻结，
 目标仍active。启动及CPU fixture本身不证明吞吐收益。
+
+v191为V42在03:47:10–03:47:24的独立密封前缀：JOIN已知完成
+27个、未知84个，完成前正FULL/启动/提交24/23/11；tool已知
+4,037个、未知2个，漏斗578/54/53。提前启动且下一请求消费
+FULL为JOIN6个/90.276MB、tool50个/3.117GB；最后ACK到首次
+服务P90为11.263/2.653秒。该前缀未覆盖全程，不能按原始数量
+与较长V41比较，也不能把未知边界当漏报。需求handoff继续单列。
 
 V41于03:24:35行政停止：21 completed、87个已创建未完成、
 48个未到达，后两类135个任务单列行政删失。108个workspace
