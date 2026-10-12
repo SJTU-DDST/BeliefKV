@@ -2,6 +2,36 @@
 
 Status date: 2026-10-12.
 
+V126 commits ce56b8f: use the live semantic remaining-work interval in
+JOIN startup timing, converting the selected work endpoint minus the
+progress-adjusted lower bound with the current decode rate. Initial
+selection, after-reclaim planning and final enqueue share this rule;
+an existing ticket keeps its selected endpoint. New tool evidence,
+lost service or a narrowed interval can change the final decision.
+Prediction remains about work/completion; runtime decides migration.
+
+Of V29's latest positive before_start_window observations, 108 JOINs
+have actual remaining P50 553ms and signed overestimate P50/P90
+778/1,518ms. For 1,239 tool events these are 310ms and 9/331ms.
+These errors pair a recorded prediction with retrospective completion;
+future boundaries are never online inputs. Keep v126_v29_trigger_gap.
+
+Test the next V30 pair with a 2,000ms maximum residency lead instead
+of 500ms, rather than subtracting one constant from every prediction.
+JOIN uses its own live work interval; tool timing retains queued V121
+conditional P50-P10. Measured transfer costs, current capacity and
+near-term admission still apply, and a partial early overlap is allowed.
+Related 365 cases pass; actual DMA, first consumption and GPU/JCT
+improvement await the new pair.
+
+Capacity is a distinct constraint: fitting observed snapshots in the
+actual last 500ms/2s occur in 38/61 JOINs and 39/67 tool events.
+Do not treat positive plans as continuously available transfer volume.
+Include V126 with V120-V125 in the unstarted immutable V30 candidate.
+Keep V29 execution/configuration frozen, predictive first then cold
+same-version native. Local development begins 10:43 CST; qualify
+overlapping native windows. The performance objective stays active.
+
 V125 commits 23ad8a5: separate strictly pre-completion physical plan
 snapshots from post-boundary native demand. Signed timestamps refer to the
 complete JOIN/all-tool END, not model error; exactly-at-boundary observations
@@ -22,14 +52,14 @@ There are 16,553 tool episodes with only zero pre-completion plans and
 316.676GB subsequent native FULL Host hits, plus 60 episodes with positive
 plans only at/after completion. Do not treat later evictions or demand
 restoration as available early Host-only checkpoints. Keep 107.091GB
-handoff FULL separate. Validate queued V121 timing and V120-V124 CPU
-changes before layering more policy changes onto unmeasured opportunities.
+handoff FULL separate. Validate queued V121/V126 timing together with
+V120-V124 CPU changes before accepting coverage or throughput improvements.
 
 Continue both reducing control cost and improving causal event exploitation:
 JOIN progress/terminal sibling capacity, long-tool parking, actual missing
 pages, timely restoration and admission/first consumption. Completion/work
 prediction stays in the model; runtime decides transfer feasibility. V30
-retains the queued runtime changes and includes V125 offline attribution;
+retains the queued runtime changes and includes V125 attribution and V126 timing;
 collecting V29 remains frozen. Native is incomplete; its first 300-600s
 window's +6.93% predictive decode is not the full throughput/JCT result or
 an early-prefetch attribution. Local analysis begins 10:27 CST; qualify
