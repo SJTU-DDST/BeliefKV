@@ -2,6 +2,18 @@
 
 Status date: 2026-10-12.
 
+The future baseline reproduction plan is recorded in section 6.4 of
+[the related-work comparison](related_work_comparison_2026-07-21_zh.md).
+Use common-model/native-executor policy comparisons as the main table,
+and original-stack reproductions separately. Keep online dynamic and
+predeclared-graph workloads distinct. The first batch covers native,
+reactive common-path, CONCUR, ThunderAgent, CacheScout and BeliefKV;
+then add graph/TTL/multi-step prediction methods with explicit fidelity
+and model-support records. Formal comparisons retain four repeated
+blocks and held-out tasks. This is a future execution proposal, not a
+completed reproduction; the native-relative optimization objective
+and predictive-only development cadence remain unchanged.
+
 V32 completed collection and postprocessing at 16:14:15 CST on
 October 12: 153 completed and three incomplete workflows. Each
 incomplete root ends with finish_reason=length, with no child

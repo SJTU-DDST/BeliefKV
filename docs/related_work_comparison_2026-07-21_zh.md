@@ -1,8 +1,12 @@
 # BeliefKV 相关工作与竞品对比总表
 
-更新日期：2026-09-14
+更新日期：2026-10-12
 用途：研究定位、reference policy 设计、原生系统部署和论文 baseline 选择。
 范围：合并此前整理的 Agent serving、workflow scheduling 和 KV-cache 工作，并加入截至本日期检索到的最新直接竞品。2026-09-14 增量检索重点覆盖 arXiv 2026 年 7-9 月的新稿与旧表漏项。
+
+2026-10-12 更新重点是第 6.4 节的可执行对照方案，以及 Continuum、
+KVFlow 和 TokenCake 的公开代码核验。其余论文状态主要保留 9 月调研
+记录，不能据此声称已完成当前 Qwen3.5 / SGLang 0.5.20 上的复现。
 
 ## 1. 使用说明
 
@@ -130,7 +134,9 @@ Continuum 的跨工具 KV 生命周期** 三者交集中的剩余空间，不能
 
 | 工作 | 证据与复现状态 | 当前使用方式 |
 |---|---|---|
-| Continuum | arXiv v7；公开 [vLLM artifact](https://github.com/Hanchenli/vllm-continuum)；含真实 Agent benchmark、单卡和多卡 | 优先原生复现，作为 tool-gap lifecycle + program scheduling 强 baseline |
+| Continuum | arXiv v7；公开 [vLLM artifact](https://github.com/Hanchenli/vllm-continuum)，但 README 明确不含论文 estimation；包含 SWE-bench 运行说明 | 区分 public-artifact 与补全估计器后的 paper reimplementation；不能直接把仓库默认策略称为完整论文复现 |
+| KVFlow / ScaleSim | [官方仓库](https://github.com/PanZaifeng/KVFlow)可访问；当前仓库同时含两项工作，须锁定 commit 与实际启用机制 | 从官方实现提取对应 eviction/prefetch；原生和统一底座适配分别命名，不把 ScaleSim 的额外功能归入 KVFlow |
+| TokenCake | 最新 arXiv v5（2026-09-28）声明 [公开代码](https://github.com/pkulemonade/TokenCake)，但 2026-10-12 页面和 GitHub API 均返回 404 | 先按论文核对算法；代码可用性待核实，不能宣称已获得可运行官方 artifact |
 | CacheScout | 完整算法与实机多 workload 实验；截至检索日未发现公开代码 | 忠实 same-data-plane 实现；所有作者结果标记为 paper-reported |
 | TOPAS | 8 页 arXiv 稿；单 A100/SGLang 实验；截至检索日未发现公开代码 | 固定 DAG 子集实现 post-decision joint search；不外推到 opaque workflow |
 | SMetric | 两份大规模生产 coding-agent trace，外部真实性强；代码/trace 声明将在发表后公开 | 用于目标函数和 workload 证据，目前不能作为可复现 native baseline |
@@ -163,7 +169,10 @@ runtime/physical trace；不要求运行本节的 B1-B4 或 native system。
 
 ### 6.2 L2：Same-data-plane reference policies
 
-所有策略必须经过同一个 `PolicyInput -> JointPlan -> SGLang/HiCache` 执行路径：
+策略对照应使用相同 SGLang/HiCache 物理执行接口，各策略独立输出决策；
+不能强制竞品经过 BeliefKV 的 JointPlan、预测触发、优先级或额外门槛。
+共同部分限定为真实容量、页/状态有效性、引用和传输依赖等正确性契约，
+并保留独立 native 对照测量适配层成本。当前原生路径的具体实施见第 6.4 节。
 
 | P8 顺序 | Reference policy | 项目内实现状态/限制 |
 |---|---|---|
@@ -185,7 +194,7 @@ runtime/physical trace；不要求运行本节的 B1-B4 或 native system。
 原生部署按可复现性和与当前硬件的匹配程度排序：
 
 1. SGLang/HiCache：当前底座和强 baseline。
-2. Continuum：公开 vLLM artifact，优先复现单卡 tool-gap TTL 与 Program-FCFS；数据面不同的影响单独消融。
+2. Continuum：公开 vLLM artifact，优先复现单卡 tool-gap TTL 与 Program-FCFS；公开仓库未包含论文估计器，需单列该差异，数据面不同的影响单独消融。
 3. KVFlow：代码公开、SGLang 路径已掌握；在其能表达的 common-denominator workflow 上优先
    尝试原生对比，不要求其直接执行完整动态 nested workflow。
 4. ThunderAgent：代码公开，支持 vLLM/SGLang；单 GPU 只比较本地 program-aware scheduler，不夸大全局队列收益。
@@ -193,7 +202,173 @@ runtime/physical trace；不要求运行本节的 B1-B4 或 native system。
 6. CacheScout、TOPAS：先做忠实 same-data-plane policy；截至检索日无公开代码，不能声称原生系统胜负。
 7. PBKV、CacheWise：优先寻找作者代码；若未公开，先做忠实 reference policy，并明确不能声称原生系统胜负。
 8. AgentServe：llama.cpp + Green Context 数据面不同，先隔离 phase policy，再视硬件/代码可用性部署。
-9. TokenCake、ScaleSim、AugServe：无可运行原生实现时，保留 reference + hindsight 上界，不伪造系统级复现。
+9. TokenCake、ScaleSim、AugServe：逐项核对可运行原生实现。ScaleSim 已在 KVFlow 官方仓库公开；TokenCake 最新论文给出的仓库地址本次返回 404。未取得代码时仅保留明确命名的 paper reimplementation/reference，不伪造系统级复现。
+
+### 6.4 当前 baseline 复现与 BeliefKV 对照方案（2026-10-12）
+
+本节是后续实施方案。本轮只维护文档；不将旧 P6 的 baseline manifest
+或历史部署视为当前模型、引擎和 workload 的复现，也不改变正在采集的
+V32 运行源。当前相对 native 的吞吐/JCT 优化目标继续保持。
+
+#### 6.4.1 分开回答策略效果和完整系统效果
+
+| 对照层 | 固定什么 | 可以改变什么 | 结果名称与解释 |
+|---|---|---|---|
+| 主表：统一底座策略 | GPU/CPU/NUMA、模型权重与精度、SGLang 版本、实际池容量、harness、任务和到达流 | 论文原有 eviction、保留/换出、prefetch、准入与并发控制决策 | `method-adapted-sglang`；说明策略在同一执行底座的效果 |
+| 补充：作者原实现 | 尽量统一硬件、模型、任务和工具环境；独立隔离安装作者依赖 | 作者引擎、数据结构、kernel 与原有控制路径 | `method-original-stack`；完整系统对照，不能把底座差异全归为算法 |
+| 复现核对 | 作者支持的模型和具有对应机制的 workload | 原实现开关及论文配置 | 检查机制与趋势；不要求重现不同硬件上的绝对倍数 |
+
+每个原实现同时运行该引擎自身的 native 对照，报告其相对本底的改善。
+该改善不能直接换算为对当前 SGLang 的加速；原生系统间的绝对性能
+另表报告，说明版本、容量和功能差异。论文报告数字不进入实测主表。
+
+统一适配只共用物理动作执行器和必要正确性检查，不共用 BeliefKV
+的预测头、latest-start 选择、restore-ready 排序或预取收益判断。
+baseline 本身提出的动作也要计入其规划、代理、传输及保护成本。
+原生缓存有效性和数据依赖继续由原生 allocator/cache 管理。
+
+#### 6.4.2 候选与优先级
+
+| 顺序 | 候选 | 要检验的问题 | 复现边界 |
+|---|---|---|---|
+| 第一批 | Native SGLang/HiCache + reactive common-path | 相对原生是否有净收益；共同事件/传输适配成本有多大 | native 不运行 BeliefKV 策略；common-path 只接入共同接口，独立标出开销 |
+| 第一批 | CONCUR | 只控制活跃并发是否已足以解释收益 | 按论文拥塞反馈实现，保留同一外部到达流；排队等待计入 JCT |
+| 第一批 | ThunderAgent | program/phase 工作集管理是否足够 | 官方代码支持 SGLang；先做单 GPU 本地策略，保留代理成本，不引用集群收益 |
+| 第一批 | CacheScout | 无预定义图的在线转移学习是否已能有效 eviction/prefetch | 按论文实现在线转移、缓存价值与预取；本次未核实可运行官方 artifact，标为 paper reimplementation |
+| 第二批 | KVFlow | 已知依赖/Step Graph 的距离驱逐和预取有多强 | 官方仓库可访问；保留固定 prompt/shared-prefix 语义，不强行扩成整 agent 传输 |
+| 第二批 | Continuum | 工具 TTL + program FCFS 是否已能解释工具等待收益 | 公开 artifact 与补全论文估计器的版本分列；估计器使用统一离线训练划分 |
+| 第二批 | PBKV | 历史+当前上下文预测未来 agent 调用，相比我们的事件/内容信号如何 | 按论文保留多步调用预测及保守缓存策略；未核实官方 artifact，不用简化 Markov 策略冒充 |
+| 第二批 | TokenCake | 工具预测上传 + 图/运行状态驱动空间预留，是否覆盖我们的组合 | 先核对 v5 的图和预测输入；官方链接本次 404，先明确 paper reimplementation 范围 |
+| 条件扩展 | TOPAS / ScaleSim / Agentix | joint residency-admission、显式距离及 program 调度的额外解释力 | 按真实输入与单卡适用性增加；不先把全部相关工作都移植 |
+
+第一批加 BeliefKV 构成六个系统/策略条件。第二批完成后再扩大主表，
+避免只和 native 比较，也避免同时移植所有框架拖慢开发。可组合的强策略
+另设 `composed-reference`，在开发集选择组合，不能冠以任一论文原系统名。
+
+#### 6.4.3 模型与推理框架
+
+主表优先保留当前 Qwen3.5-35B-A3B BF16、SGLang 0.5.20。
+各条件锁定权重/tokenizer/chat template、采样、context/completion
+预算、chunked prefill、运行请求上限及实际 FULL/Mamba 池容量。
+共享容量以 allocator 普查的可用 token/slot/bytes 为准，不能只比较
+`mem_fraction_static` 或 max-running 数字。原方法的内部保留/共享
+分区属于策略，可以在相同总容量内调整。
+
+不支持混合模型的论文方法，统一底座适配保留其 FULL 决策，对必要
+recurrent state 采用同一原生有效性/恢复处理，并明确这项扩展。
+不删除状态依赖、不只给 BeliefKV 额外可用容量；Mamba 字节、恢复
+和重算单列。若该方法核心假设无法这样保持，则不放入混合模型主表。
+
+原实现兼容性不足时，另选共同支持的纯 Attention 模型；优先核对
+Qwen2.5-32B-Instruct BF16，再确定共同可运行的 context 配置。
+BeliefKV 也运行相同模型、精度和 workload，双方一起换模型。
+两套模型分别成表，不将原实现的小模型结果与 BeliefKV 大模型结果
+直接相除，也不把两套结果合成一个性能倍数。
+
+#### 6.4.4 动态 workflow 和已知图分别比较
+
+| 实验组 | 信息规则 | 方法与结果边界 |
+|---|---|---|
+| 动态主组 | 多轮 spawn、每轮 2-4 child、真实工具；只暴露截至当前的 spawn/RETURN/JOIN、工具和 decode/通知事件 | native、CONCUR、ThunderAgent、CacheScout、Continuum、PBKV 与 BeliefKV；仅在对应实现完成后纳入 |
+| 已知图组 | 固定角色和调用结构，包含分支/汇合；所有方法可读取相同预声明图 | KVFlow、TokenCake、TOPAS 等在输入假设成立时比较；BeliefKV 也得到图，仍不读取未来实际时长 |
+| 在线图适配组 | 只提供已经展开的 parent/child 和当前 JOIN 成员；未知未来节点不补造 | `KVFlow-observed` 等明确作为扩展，不能冒充原论文标准实现 |
+| 诊断 oracle | 显式标记 hindsight 信息，只用于机会分析 | 不作为可部署 baseline，也不是实际端到端收益上界的自动证明 |
+
+KVFlow 的 Step Graph 可以表达条件分支和同步，不能简单描述成只支持
+固定线性链；它所需要的预声明图/距离与动态新建 child 的在线图仍有差别。
+不因方法需要图就把 hindsight 的完整动态轨迹偷偷提供给它，也不在
+不满足输入条件的任务上把崩溃或回退称为算法性能落后。
+
+已知图组优先使用作者公开的代表性应用/生成规则，并保留固定角色前缀
+的复用机会；工具主导方法同时在共同的单 agent 多轮工具应用上比较。
+每一组内所有方法执行相同应用，另列静态前缀与增长 suffix 的 token
+占比。不能只在我们刻意增加多轮 spawn 的 workload 上给出总排名，
+也不能为了复现固定角色前缀策略，把每个新建 child 强行视为从未出现
+过的角色。角色/前缀识别按原方法执行，识别失败率单列。
+
+所有条件使用相同 harness、prompt、工具 schema、通知机制和初始任务。
+`announce_completion_intent` 等可观察信号对全部方法开放；增加通知
+造成的生成/调用成本属于共同 harness 成本。利用信号产生的服务优先级、
+预取和驻留策略是各方法的决策，另用开关消融，不能隐藏在公共 executor。
+对通知关闭的敏感性只在后续冻结的独立组中比较，不能中途改变采集配置。
+
+#### 6.4.5 workload、调参与统计
+
+开发主候选沿用当前 108+48、第二波 +3600 秒、running=48、Host
+200 GB FULL:Mamba=80:20、HBM recurrent/FULL ratio=0.9、
+context=131072、completion=8192、工具 180 秒、workflow 14400 秒。
+这是现有开发配置，不证明它是最优压力档。另选择一个有实测迁移机会的
+中压力档，以及低压力检查；依照驱逐、需求恢复、重算和可回收容量分类，
+不只按 root 数命名。工具/CPU/sandbox 限额及外部到达流对所有方法一致。
+并发控制 baseline 可以改变内部活跃数量，其排队时间仍从外部到达计时。
+
+当前 156 个任务反复参与开发，不作为未见测试。正式比较重新冻结
+未参与模型拟合、校准及策略调参的任务，优先项目隔离；训练、校准、
+评测划分及所有方法可见 trace 一并登记。需要学习的论文方法在同一
+离线划分重训，保留自身预测目标，不要求其学习动作净收益。
+每项策略含 native 获得相同的开发调参预算，允许 native 的 write
+policy 等正常调优，主配置和各自调优结果分列，评测集不参与选参数。
+
+开发仍先运行 predictive 或新适配条件，在输入/底座未变时复用固定
+历史 native；只作迭代筛选。正式对照按当前四轮重复目标进行：每轮
+共享任务、到达流和 seed 块，均衡轮换各方法运行顺序，冷启动同等状态。
+统计每轮结果、均值、波动及 run/block 层面的置信区间；不能把同一轮
+上千个 request 当成独立重复。同 seed 不保证动态模型轨迹相同，不用
+固定需求回放替代真实 workflow，也不选择事后最有利的轨迹。
+四轮不足以支持稳定结论时报告不确定性；增加重复须对比较组一致实施。
+
+原生/策略/工作负载三者配置不变时开发可复用 native；原生执行路径、
+模型、容量、harness、工具配置或 workload 改变后刷新本底。
+正式运行同时限制本地开发、归档和评测的 CPU/磁盘干扰，记录重叠维护。
+目前不是启动上述对照；第二批兼容性失败也不阻塞第一批完成。
+
+#### 6.4.6 复现检查、指标和交付物
+
+每个方法登记论文版本、官方/重实现来源、源码 commit、算法到代码
+对应表、metadata 接口、FULL/Mamba 扩展、参数和不支持项。
+先用相同的短完整 workload 检查其实际决策与论文示例、容量及恢复行为，
+再运行完整开发 workload；不采用 canary 限制正常调度动作。
+只有固定源、功能和输入假设成立的版本进入正式四轮比较；
+不能把关闭 offload、缺少预测器或静默回退的运行标为完整复现。
+
+主结果报告全部到达任务的 workflow 完成吞吐、质量合格吞吐、JCT
+均值/分位数及公平性。harness `completed` 与 SWE-bench `resolved`
+分别报告，输出提交不等于修复正确。保留 error、incomplete、
+未完成和行政截断，不仅统计两侧都已完成的任务。
+繁忙窗口按预先冻结的时间段报告 decode 吞吐、GPU service 与 batch；
+工具长尾、GPU 空转和模型轨迹差异另列，不能从汇总中悄悄删去。
+
+机制解释至少包含：需求 H2D 与恢复阻塞、重算、HBM/Host 驱逐、
+控制面同步/异步成本、ACK 到首次服务及重复加载；按独立 JOIN/tool
+事件区分可恢复 FULL、完成前已提交 FULL、下一请求确认消费 FULL。
+Mamba、需求 handoff 和仅 ACK 未证实消费的字节分开，不能用迁移字节
+或 ACK 数量替代吞吐收益。BeliefKV 分别去掉 PREPARE、JOIN/tool
+预测预取及恢复就绪优先级，解释相对 strongest baseline 的增量来源。
+
+交付物沿用现有冻结计划、native 容量普查、对照分析和 timeline HTML
+工具，但当前 arm 名与策略开关只支持有限条件，实施时需显式扩展。
+旧 `predictive_joint_baseline.py`/P6 manifest 使用旧 SGLang 和模型，
+仅复用校验设计，不能直接拿来启动当前竞品。
+实现时分别提交每项适配及其短运行证据，再冻结正式比较矩阵；
+复用模型文件和只读数据，按独立环境/工作树安装作者依赖，避免复制
+整个 workspace 或保留多份重复 raw。按实际开发整轮时长估算 GPU
+预算，不承诺未经运行核实的完成日期。
+
+本次核验的一手资料：
+
+- KVFlow paper 与 [官方 KVFlow/ScaleSim 仓库](https://github.com/PanZaifeng/KVFlow)：
+  [arXiv:2507.07400](https://arxiv.org/abs/2507.07400)。
+- ThunderAgent [官方仓库](https://github.com/ThunderAgent-org/ThunderAgent)：
+  明确提供 `program_id` 接入及 SGLang/vLLM 支持。
+- CONCUR：[arXiv:2601.22705](https://arxiv.org/abs/2601.22705)。
+- Continuum：[arXiv:2511.02230v7](https://arxiv.org/abs/2511.02230v7) 与
+  [public artifact README](https://github.com/Hanchenli/vllm-continuum)；
+  README 明确缺少 paper estimation。
+- CacheScout：[arXiv:2608.14624v1](https://arxiv.org/abs/2608.14624v1)；
+  PBKV：[arXiv:2605.06472v1](https://arxiv.org/abs/2605.06472v1)。
+- TokenCake：[arXiv:2510.18586v5](https://arxiv.org/abs/2510.18586v5)；
+  论文所列仓库 `pkulemonade/TokenCake` 本次页面/API 均返回 404，
+  这只说明本次不能取得公开 artifact，不断言作者不存在代码。
 
 ## 7. 指标映射
 

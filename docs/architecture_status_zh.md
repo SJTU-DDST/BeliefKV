@@ -2,6 +2,14 @@
 
 更新日期：2026-10-12。
 
+后续 baseline 对照方案已写入
+[相关工作总表第 6.4 节](related_work_comparison_2026-07-21_zh.md#64-当前-baseline-复现与-beliefkv-对照方案2026-10-12)：
+以统一模型/原生物理底座的策略对照为主，作者原实现另表；
+动态在线图与预声明图实验分开。第一批为 native、reactive
+common-path、CONCUR、ThunderAgent、CacheScout 与 BeliefKV。
+这是实施方案，不是已完成的复现或性能结论；相对 native
+的优化目标和单跑 predictive 的开发节奏继续保持。
+
 最新完整结果是 V32：2026-10-12 16:14:15 CST 完成采集和
 后处理，153 completed、3 incomplete，无 workflow deadline
 过期或 child 取消。三个 incomplete 为 django-11206/11299/11885，
