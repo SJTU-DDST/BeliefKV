@@ -2,6 +2,13 @@
 
 更新日期：2026-10-13。
 
+v192记录V42的30秒非阻塞GIL采样：1,033个有效栈样本、
+286次采样错误。按调用栈区分batch selection/launch/result为
+340/404/164个；selection中reentry检查、RadixKey长度和前缀
+比较的叶样本为79/38/27个。优先检验完整前缀检查减负，但
+共享祖先单次复用已存在。保留原始压缩栈和qualified报告；
+样本份额不是墙钟、GPU stall或可移除JCT，运行源码未热改。
+
 V42完整600–900秒仍未达标：predictive/固定V29 native的
 decode request steps为323,732/380,722，少14.97%；可见上下文
 23.254k/23.240k token，worker decode区间均值36.122/32.467ms。

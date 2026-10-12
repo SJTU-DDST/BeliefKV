@@ -2,6 +2,14 @@
 
 Status date: 2026-10-13.
 
+V192 records a 30s nonblocking GIL profile with 1033 stack samples and
+286 sampling errors. Caller routes selection/launch/result have 340/404/164
+samples; selection leaf counts for reentry/length/prefix are 79/38/27.
+Investigate complete prefix inspection cost without adding cross-call stale
+residency. Shared ancestry reuse already exists within each inspection.
+Retain compressed raw stacks and the qualified report. Samples do not
+measure wall time, GPU stalls or removable JCT; running sources stay frozen.
+
 V42's complete 600-900s window remains below fixed V29 native:
 323732/380722 decode request steps, 14.97% lower at 23.254k/23.240k
 visible context. Worker decode interval means are 36.122/32.467ms.

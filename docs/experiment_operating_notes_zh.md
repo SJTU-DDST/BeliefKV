@@ -4,6 +4,12 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+v192为30秒非阻塞GIL采样，保留1,033个栈样本及286次错误、
+原始压缩栈和qualified报告。selection/launch/result归并依据
+真实调用栈，不能把函数叶样本份额当墙钟、CPU利用率或GPU
+阻塞。运行Main和实际引擎不热改；完整前缀检查优化先在隔离
+源码验证当前buffer、namespace、limit、驻留与在途状态语义。
+
 V42完整600–900秒仍少14.97% decode request steps，可见上下文
 23.254k/23.240k，worker decode区间均值36.122/32.467ms。
 Python独占墙钟55.787秒低于V41的60.585秒；不同轨迹不能
