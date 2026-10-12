@@ -2,6 +2,37 @@
 
 更新日期：2026-10-12。
 
+V131 在 13:12:21–13:12:33 CST 独立封存 V31 的完整 JSONL
+前缀：29 个已观测完成 JOIN 中，26 个有完成前正 FULL
+计划、24 个启动、3 个提交；2,511 个完整工具等待对应
+383/5/5。完成前容量预算截断分别出现在 23/782 个事件，
+JOIN 准入预算忙出现在 20 个事件，原因可重叠。已确认
+提前 FULL 复用为 JOIN 1 个/8.991 MB、工具 4 个/347.853 MB；
+80 个未知 JOIN 边界和待确认复用保持未知。不能把这些
+采集前缀总量直接与完整 V27/V29 比较。
+
+同一封存前缀有 990 个 runtime 快照，其中 808 个保存
+native_next_prefill 预算，354 个 request_slots=0。快照预算
+可能来自最近一次检查，不能据此断言 354 次独立错拒。
+独立 followup 的 4f4567f 修正满批 decode 占满请求行时
+预算被归零的问题：缓存恢复本身不分配 request row，允许
+提前恢复一个上下文，继续保留 FULL/Mamba、新输入和
+decode 增长预留；真正执行仍由原生空行与准入裁决。
+旧代码在 JOIN/tool 的有容量案例均无法提交；修复后
+提交且未调用 request-row alloc，容量不足或非满批无行
+仍不提交。380 项相关检查通过。这不量化 V29 的该项
+损失；V31 运行源仍是 5c1a646，尚未部署此修订。
+
+V31 的完整 300–600 秒窗口复用固定 V29 native 已保存的
+摘要，未重扫 native 原始日志：观测 decode request steps
+310,198/344,185，worker 区间均值 39.418/36.991 ms，
+Python 独占墙钟累计 47.533 秒/300 秒。这仍是跨版本、
+轨迹不同的开发诊断，不是 kernel 耗时或可扣除的 JCT。
+保留本地分析重叠，继续检查准入规划、PREPARE、handoff
+和前缀检查成本；目标尚未完成。证据见 v131_v31_sealed_prefetch、
+v131_v31_capacity_and_busy_window，以及 V29 原因说明
+v29_prefetch_drop_root_cause_20261012.md。
+
 采集中同步离线报告时，冻结检查现仅豁免
 experiments/reports 下 JSON、压缩 JSON 和 Markdown
 报告；运行时 Python、模型产物和引擎 patch 继续作为

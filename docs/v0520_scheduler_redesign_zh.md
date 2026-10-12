@@ -1,11 +1,28 @@
 # v0.5.20 调度适配边界
 
-状态：2026-09-22，native admission 可显式启用；预测 demand 仅在
-目标模型/运行时匹配的合格 artifact 下参与 admission。
-action-eligible artifact 门禁下的 pre-admission H2D lease 已接入
-staging，但现有 artifact 均非 action-eligible，线上物理动作仍关闭。
+状态：2026-10-12。JOIN/tool 预测恢复、FULL-only PREPARE、
+执行 handoff 和首次服务复用归因已用于开发实验。模型提供
+完成/剩余工作预测，runtime 根据因果状态和真实缓存容量
+安排传输；吞吐和 JCT 收益仍待验证。当前 V31 冻结在
+5c1a646，固定使用完整 V29 native 作开发参照。
 
-## Native reactive 数据采集通道
+独立 followup 4f4567f 将预取额度与当下 request-row
+可用性区分：满批 decode 占满行时，允许一个上下文的
+缓存恢复与当前服务重叠；恢复不分配 request row。
+FULL/Mamba、新输入和 decode 增长预留、实际数据依赖、
+身份/锁及原生执行准入继续保持。JOIN/tool 旧版回归均
+无法提交，修复后提交且未分配请求行；380 项相关检查
+通过。此修订尚未部署 V31，也不构成 GPU 性能结论。
+
+V29 的主要预取损失发生在提交之前：同口径的 JOIN
+启动/提交从 V27 的 129/92 变为 147/25，工具从 504/484
+变为 17/17；已发出正 FULL 命令 48/73 条均确认复用。
+下一批原生预留改变了 fit/reclaim 口径；容量与临近
+EOS 的有效期/重规划可同时阻塞。旧日志缺少精确零计划
+原因，不能给各实现问题编造独立损失百分比。以 V128
+完整事件证据和 V131 封存前缀继续验证实际机会转化。
+
+## 2026-09-22 的 Native reactive 数据采集通道
 
 Qwen3.5/v0.5.20 训练 trace 可以先在 predictor 和 BeliefKV admission
 均关闭的 native HiCache (`write_back` 或 `write_through`) 通道采集。
