@@ -2,6 +2,26 @@
 
 Status date: 2026-10-12.
 
+V122 commits7749e32: reuse identities already parsed in the same synchronous
+admission call, and read the identity once when constructing reentry anchors.
+Live bindings, invocation state and context epoch remain checked. Resident
+ordering needs no physical probe for a singleton unaged causal group; selected
+handoff still inspects its checkpoint. Cache pure group cardinalities with the
+existing versioned ranks, subtract aging only in a local copy, and preserve scan
+rotation. Keep the50ms physical observation expiry and fresh enqueue validation.
+
+Related558 unique cases pass. Twelve alternating CPU fixtures use the actual
+native inspector/RadixKey,60ms clock steps and changing mixed residency; complete
+queue order agrees, with only singleton-group probes skipped. Two-call48/156
+request plans reduce mean thread CPU about0.9%-3.1%; a four-candidate mixed group
+improves17.45%, singleton queues61%-92%. The512-request case increases about0.15%
+and is effectively flat. Keepv122_reentry_reuse_cpu_final. This is measured local
+CPU work, not allocator/DMA/GPU throughput or JCT evidence. Include this revision
+with V120/V121 in the frozen waiting V30, after complete V29 predictive/native
+and postprocessing. Do not restart V29 for this modest CPU optimization. Qualify
+V29 windows overlapping local development from08:07:42 CST to the registration
+receipt's local_development_ended_at. The full performance objective stays active.
+
 V121 commits19a83b1: include survival-conditioned tool remaining P50-P10
 in the service/enqueue/observation start window, capped by the existing500ms
 residence allowance. Initial selection, post-reclaim planning and final
