@@ -4,6 +4,31 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+当前开发实验按 2026-10-12 新约定默认只跑 predictive，
+复用固定历史 native；以下历史条目中“每轮再跑冷 native”
+的频率要求不再适用。V127 的 cddd60d 已实现该流程，
+61 项相关检查通过。V30 固定引用 V29 完整 native，
+仍用 2,000 ms lead、108+48 到达和原物理/工具配置；
+当前 V29 native 完成后再启动，不截断已经接近完成的基线。
+
+使用 --native-reference-run 显式选择基线，写入新一轮
+ab_plan.json 的 native_reference_run；后续轮沿用该路径。
+ARM_ORDER 默认 predictive_h2d；需要更新基线或正式配对
+时显式用 --arm-order "predictive_h2d native"。单臂后处理
+保留自身 audit、HTML 和 workspace 清理，并生成
+native_reference_comparison.json，不伪造本轮 native 目录。
+已有 native 汇总的路径与时间分箱匹配时直接复用，减少
+重复扫旧日志。版本/配置不一致需在开发结果中明确记录。
+
+开发阶段先用这一固定基线判断忙窗吞吐、JCT 和实际提前
+FULL 复用的变化，不在看到结果后挑选最慢 native。当
+native 执行路径、workload、容量、模型或 harness/工具
+配置改变时刷新基线；正式验收继续使用重复配对。本段
+改变采集频率，不改变 active /goal 的性能和归因标准。
+V127 本地开发从 11:14 CST 开始，结束时刻由登记回执
+记录；重叠 native 窗口须标注开发负载。仅替换尚未启动
+的等待 coordinator，当前 V29 执行继续冻结。
+
 V126 的 ce56b8f 让 JOIN 初选、容量回收后重算及最终提交
 一致使用 live 语义剩余工作区间。当前进度、速率和区间
 下界决定余量，ticket 保留所选端点；不要给所有预测固定

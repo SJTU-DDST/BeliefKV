@@ -2,6 +2,24 @@
 
 Status date: 2026-10-12.
 
+Current development cadence follows the October 12 user update. V127
+commits cddd60d: default to a predictive-only cold collection against
+a fixed historical native reference, rather than collecting native on
+every iteration. Schedule V30 against completed V29 native, retaining
+V126's 2,000ms lead and all workload/physical settings. Let the already
+collecting V29 native finish. This supersedes the per-iteration fresh
+native requirement in historical entries below.
+
+Record the selected reference in the frozen predictive plan and carry
+it across subsequent development runs. Produce native_reference_comparison
+with version/configuration differences and reuse completed native metrics
+when their bins match, avoiding repeated raw scans. Related 61 cases pass.
+Use this comparison to screen improvements; refresh native after changes
+to its service path, workload, capacity or harness/tool configuration,
+and retain repeated paired runs for formal performance acceptance.
+The throughput/JCT and attributable early FULL objective stays active.
+Local V127 development begins 11:14 CST; qualify overlapping V29 windows.
+
 V126 commits ce56b8f: use the live semantic remaining-work interval in
 JOIN startup timing, converting the selected work endpoint minus the
 progress-adjusted lower bound with the current decode rate. Initial
