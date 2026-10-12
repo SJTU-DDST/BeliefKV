@@ -2,6 +2,14 @@
 
 更新日期：2026-10-12。
 
+当前运行 V36 predictive，2026-10-12 22:27:27 CST 从
+9d2bf8e/838d2ed8 冷启动，已纳入工具扫描 P50 复用和恢复名额
+分离。22:31:42 核验 HTTP 200、2,256 个实际 GPU 服务样本及
+physical_disabled=false，FULL/Mamba 各池容量和全部冻结配置
+逐项等于 V35。继续固定 V29 native；源码冻结，性能目标 active。
+早期 HBM 尚低压，启动不能证明提前恢复或吞吐改善，回执为
+v147_v36_deployment_validation。未实现 DMA 在途持续冷页回收。
+
 V35 已于 2026-10-12 22:21:14 CST 行政停止，停止前库存为
 39 completed、69 个已创建未完成及 48 个未到达任务；后两类
 117 个任务单列行政删失，不是 agent 自发失败。冻结源为
@@ -35,13 +43,13 @@ v146_v35_restore_frontier 保存锁生命周期、容量及局限。
 均使用一致口径，不修改预测器或时机阈值。403 项传输/运行时及
 120 项 handoff/消费归因检查通过；尚待 V36 实际吞吐与消费验证。
 
-后续独立 checkout 已准备工具扫描减负：同一时刻的 P50 用于
+V36 已纳入工具扫描减负：同一时刻的 P50 用于
 排序、筛选和窗口判断，回收后及实际 enqueue 前仍重新检查。
 301 项相关检查通过；156 个长工具等待、3,000 个固定 CPU tick
 中，总调用成本为 236.278→128.941 ms，两侧候选检查均 9,360。
 这是窗口外的 CPU fixture，不是实际 GPU 吞吐或预测精度改善；
-尚未部署到 V35，不能据此改变正在采集的源。验证为
-v144_tool_scan_center_reuse_cpu_final，后续重启再纳入。
+V35 未部署此改动，V36 冷启动后纳入；运行源码继续冻结。
+验证为 v144_tool_scan_center_reuse_cpu_final。
 
 V34 于 2026-10-12 20:15:59 CST 因 opportunity writer 拒绝
 NumPy 布尔值退出：np.True_ is not JSON serializable，不是 GPU

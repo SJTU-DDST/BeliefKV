@@ -2,6 +2,16 @@
 
 Status date: 2026-10-12.
 
+V36 predictive-only cold-started 9d2bf8e/838d2ed8 at 22:27:27 CST,
+including same-scan tool P50 reuse and separate restore frontiers.
+At 22:31:42, validation confirms HTTP200, 2256 GPU-service samples,
+physical_disabled=false and unchanged frozen configuration and actual
+FULL/Mamba device/Host capacities versus V35. Keep fixed V29 native
+and freeze the running source. Low-pressure startup does not prove
+early consumed FULL or throughput gains; the goal remains active.
+See v147_v36_deployment_validation. Continuous reclamation during
+in-flight DMA remains unimplemented.
+
 V35 was administratively stopped at 22:21:14 CST on October 12:
 39 completed, 69 created unfinished and 48 unarrived workflows.
 The latter 117 are censored for the development restart, not autonomous
@@ -40,12 +50,12 @@ protection. 403 transfer/runtime and 120 handoff/lifecycle checks pass.
 Deploy together with same-scan tool P50 reuse in V36; measure real
 early consumed FULL, reclamation costs and busy-window service first.
 
-The separate followup checkout prepares same-scan P50 reuse across tool
+V36 includes same-scan P50 reuse across tool
 sorting, filtering and window checks, with fresh post-reclaim and enqueue
 validation. 301 focused checks pass. A 156-context long-wait CPU fixture
 uses 236.278/128.941ms across 3000 ticks with 9360 candidate checks on each
 variant. This is outside-window CPU cost, not GPU throughput or prediction
-accuracy. It is not deployed to V35; include it only at a later cold start.
+accuracy. It was not deployed to V35; V36 includes it at its cold start.
 Evidence: v144_tool_scan_center_reuse_cpu_final.
 
 V34 failed at 20:15:59 CST on October 12: the opportunity writer rejected
