@@ -4795,16 +4795,16 @@ class NativeAdmissionRuntime:
         self._tool_prefetch_next_ms = now_ms + SEMANTIC_FRAME_INTERVAL_MS
         self.counts["tool_prefetch_scans"] += 1
         budget = None
-        for hint in sorted(
-            self.tool_wait_hints.values(),
-            key=lambda item: (
-                remaining if (remaining := item.remaining_quantile(.5, now_ms=now_ms))
-                is not None else math.inf
+        for hint, remaining in sorted(
+            (
+                (item, item.remaining_quantile(.5, now_ms=now_ms))
+                for item in self.tool_wait_hints.values()
             ),
+            key=lambda item: item[1] if item[1] is not None else math.inf,
         ):
             if self._live_tool_hint(hint.key) is None:
                 continue
-            if not self._tool_prefetch_ready(hint):
+            if remaining is None or remaining > self.prefetch_lead_ms:
                 self.counts["tool_prefetch_not_in_time_window"] += 1
                 continue
             if budget is None:
@@ -4838,12 +4838,12 @@ class NativeAdmissionRuntime:
                 )
                 continue
             horizon = window.horizon_ms
-            if not self._tool_prefetch_ready(hint, horizon_ms=horizon):
+            if remaining > horizon:
                 self.counts["tool_prefetch_not_latest_start"] += 1
                 self._record_wait_prefetch_plan(
                     "tool_wait", hint.key, opportunity,
                     reason="before_start_window", window=window,
-                    remaining_ms=hint.remaining_quantile(.5, now_ms=now_ms),
+                    remaining_ms=remaining,
                 )
                 continue
             if opportunity.fits_current_free_lists is not True:
@@ -4857,7 +4857,7 @@ class NativeAdmissionRuntime:
                     self._record_wait_prefetch_plan(
                         "tool_wait", hint.key, opportunity,
                         reason="no_restore_plan", window=window,
-                        remaining_ms=hint.remaining_quantile(.5, now_ms=now_ms),
+                        remaining_ms=remaining,
                     )
                     continue
                 if opportunity.fits_current_free_lists is not True:
@@ -4865,24 +4865,23 @@ class NativeAdmissionRuntime:
                     self._record_wait_prefetch_plan(
                         "tool_wait", hint.key, opportunity,
                         reason="no_cold_capacity", window=window,
-                        remaining_ms=hint.remaining_quantile(.5, now_ms=now_ms),
+                        remaining_ms=remaining,
                     )
                     continue
                 window = self._h2d_start_window(opportunity)
-                if window is None or not self._tool_prefetch_ready(
-                    hint, horizon_ms=window.horizon_ms,
-                ):
+                remaining = hint.remaining_quantile(.5, now_ms=time.monotonic() * 1000.)
+                if window is None or remaining is None or remaining > window.horizon_ms:
                     self.counts["tool_prefetch_reclaimed_plan_timing_changed"] += 1
                     self._record_wait_prefetch_plan(
                         "tool_wait", hint.key, opportunity,
                         reason="service_unsupported" if window is None else "before_start_window",
-                        window=window, remaining_ms=hint.remaining_quantile(.5, now_ms=now_ms),
+                        window=window, remaining_ms=remaining,
                     )
                     continue
                 horizon = window.horizon_ms
             self._record_wait_prefetch_plan(
                 "tool_wait", hint.key, opportunity, reason="start_window",
-                window=window, remaining_ms=hint.remaining_quantile(.5, now_ms=now_ms),
+                window=window, remaining_ms=remaining,
             )
             self._tool_ticket = _ToolPrefetchTicket(
                 hint.key, hint.invocation_revision_ts_ms, start_window_ms=horizon,
@@ -4894,7 +4893,7 @@ class NativeAdmissionRuntime:
                     "context_id": hint.key.context_id,
                     "context_epoch": hint.key.context_epoch,
                     "wait_revision_ts_ms": hint.invocation_revision_ts_ms,
-                    "remaining_p50_ms": hint.remaining_quantile(.5, now_ms=now_ms),
+                    "remaining_p50_ms": remaining,
                     "start_window_ms": horizon,
                     "h2d_ms": window.service_ms,
                     "enqueue_to_submit_p90_ms": window.enqueue_ms,

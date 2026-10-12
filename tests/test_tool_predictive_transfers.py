@@ -1053,6 +1053,71 @@ def test_tool_opportunity_cache_avoids_repeated_native_inspection():
     assert runtime._tool_ticket is None
 
 
+@pytest.mark.parametrize("remaining", (300., 1500.))
+def test_tool_scan_reuses_its_survival_center_for_sorting_and_window(remaining):
+    runtime, hint = tool_runtime()
+    runtime.prefetch_lead_ms = 500.
+    hint = replace(hint, wait_p50_ms=remaining)
+    runtime.tool_wait_hints[hint.key.context_id] = hint
+    queries = []
+    original = NativeToolWaitHint.remaining_quantile
+
+    def query(item, quantile, *, now_ms):
+        queries.append((item.key, quantile, now_ms))
+        return original(item, quantile, now_ms=now_ms)
+
+    step = PrefetchLoadStep(hint.key, 11, 4, 11, 4)
+    opportunity = NS(step=step, fits_current_free_lists=True)
+    try:
+        with patch.object(NativeToolWaitHint, "remaining_quantile", new=query), \
+             patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                   return_value=hint.issued_monotonic_ms / 1000.), \
+             patch.object(runtime, "inspect_context_h2d_opportunity",
+                          return_value=opportunity) as inspect, \
+             patch.object(runtime, "_h2d_start_window",
+                          return_value=TransferStartWindow(200., 0., 500.)):
+            selected = runtime._roll_tool_prefetch()
+        assert queries == [(hint.key, .5, hint.issued_monotonic_ms)]
+        assert (selected is opportunity) == (remaining == 300.)
+        assert inspect.call_count == int(remaining == 300.)
+    finally:
+        runtime.close()
+
+
+def test_tool_survival_window_is_rechecked_after_capacity_reclaim():
+    runtime, hint = tool_runtime()
+    hint = replace(
+        hint, release_cdf=((1., 0.), (200., .5), (500., .6), (3000., 1.)),
+    )
+    runtime.tool_wait_hints[hint.key.context_id] = hint
+    runtime.prefetch_lead_ms = 500.
+    clock = [hint.issued_monotonic_ms / 1000.]
+    step = PrefetchLoadStep(hint.key, 11, 4, 11, 4)
+    before = NS(step=step, fits_current_free_lists=False)
+    after = NS(step=step, fits_current_free_lists=True)
+
+    def reclaim(*args, **kwargs):
+        clock[0] += .5
+        return after
+
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                   side_effect=lambda: clock[0]), \
+             patch.object(runtime, "inspect_context_h2d_opportunity", return_value=before), \
+             patch.object(runtime, "_h2d_start_window",
+                          return_value=TransferStartWindow(200., 0., 500.)), \
+             patch.object(runtime, "_reclaim_wait_prefetch_capacity",
+                          side_effect=reclaim) as restore, \
+             patch.object(runtime, "issue_prefetch_gpu_step") as issue:
+            runtime.dispatch_tool_prefetch()
+        restore.assert_called_once()
+        issue.assert_not_called()
+        assert runtime._tool_ticket is None
+        assert runtime.counts["tool_prefetch_reclaimed_plan_timing_changed"] == 1
+    finally:
+        runtime.close()
+
+
 def test_tool_scan_rereads_admission_capacity_after_reclaim():
     runtime, hint = tool_runtime()
     request = req("second")
