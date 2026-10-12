@@ -2,6 +2,44 @@
 
 Status date: 2026-10-12.
 
+V129 seals independently capped V30 JSONL prefixes read at
+12:11:56-12:12:14 CST. Among 48 JOINs with observed completion,
+38 record pre-boundary capacity-budget truncation, 38 enter the
+start window, and 4 submit. Unavailable service progress occurs in
+23 and busy admission budget in 31; reasons overlap. Among 3,794
+complete tool episodes, 1,268 record capacity truncation and 12/11
+enter/submit. Keep 69 unknown JOIN boundaries unknown. Verified
+early FULL reuse is 2 JOIN events/17.224MB and 7 tool events/403.825MB.
+This is a collecting prefix, not a completed-run rate comparison.
+Retain v129_v30_sealed_prefetch detail/summary and per-input hashes.
+
+The followup removes a reproduced FULL-only reclaim dependency.
+For an eligible backed cold leaf in a FULL/Mamba tree, reclaim FULL
+without first backing up the live unbacked Mamba state. Preserve its
+device value, references and LRU; a simultaneous state-slot shortfall
+still follows asynchronous backup and ACK. Unsupported component
+combinations retain the existing path. Recheck locks, session sharing,
+identity, pending DMA and target exclusions. The real CPU allocator
+regression fails on the old unnecessary D2H, then passes with FULL
+capacity returned and state reused after FULL restoration.
+Related 157 native cases plus 27 subtests and 182 runtime/audit cases
+pass. Canonical forward-tree/reverse validation matches SHA256
+7b4832ef4e998d36aff6c91847194c50f3cc869bf3296d01bca43de212f5a162.
+This does not isolate the dependency's share of V29/V30 losses or
+prove GPU throughput/JCT benefit. Keep collecting V30 frozen;
+validate the followup in a later predictive-only development round.
+
+Retain v129_v30_v29_native_300_600 as a complete developmental window.
+Observed steps are 345,167/344,185 and mean decode worker intervals
+35.414/36.991ms, but matching 48-request/context buckets still show
+about 2.1%-2.9% higher predictive intervals. Worker wall intervals
+are not isolated kernels; coarse cohorts and differing demand are
+not causal speedup. Python exclusive timing sums to 42.598s over
+300s; continue reducing control costs without subtracting these
+totals directly from JCT. Qualify local analysis beginning 11:52:47
+CST and overlapping this window. Keep V30 on fca7ad3/1c3c7fc4 and
+the fixed V29 native reference; the full performance goal stays active.
+
 V128 compares completed V27/V29 lifecycle evidence. Early-started,
 next-request FULL reuse drops from 90 to 25 JOIN events and from 479
 to 17 tool events, or 9.581GB to 1.330GB combined. Model artifacts,

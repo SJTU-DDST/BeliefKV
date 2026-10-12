@@ -1,6 +1,23 @@
 # SGLang Runtime Patches
 
-Updated: 2026-10-11.
+Updated: 2026-10-12.
+
+The V129 followup decouples a FULL-only opportunistic capacity
+shortfall from backup of live unbacked Mamba. On an eligible backed
+FULL/Mamba leaf, release FULL device pages and retain the state value,
+references and native LRU. A simultaneous Mamba-slot shortfall retains
+the existing asynchronous backup/ACK path; unsupported component
+combinations retain cascading demotion. Locks, shared references,
+identity, pending DMA and restore-target exclusions still apply.
+The real CPU allocator regression reproduces the old extra state D2H,
+then verifies immediate FULL release and state reuse after FULL
+restoration. Related 157 native cases (plus 27 subtests) and 182 runtime
+and audit cases pass. Exact source-tree and reverse-application checks
+match canonical SHA256
+7b4832ef4e998d36aff6c91847194c50f3cc869bf3296d01bca43de212f5a162.
+This is an undeployed followup; collecting V30 retains its frozen
+1c3c7fc4 patch. CPU correctness does not establish GPU speedup or the
+fraction of actual prefetch losses attributable to this dependency.
 
 Generic handoff capacity scans skip restoration-target exclusions before
 spending their existing eight-candidate quota, for both FULL leaves and

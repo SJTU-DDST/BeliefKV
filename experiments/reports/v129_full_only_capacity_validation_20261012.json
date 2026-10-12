@@ -1,0 +1,78 @@
+{
+  "scope": "CPU physical allocator correctness and sealed live diagnosis; not GPU performance acceptance",
+  "base_revision": "099bf93",
+  "collecting_run": "qwen35_native_predictive_replenished_108plus48_20261012_v30",
+  "collecting_revision": "fca7ad3ade0642fe49d5e8303558b5f94a1a0271",
+  "collecting_patch_sha256": "1c3c7fc4eefc5a9ed12e18f5c99490f03cd4b79f9f58079ce08fae3d944cfc9e",
+  "candidate_deployed": false,
+  "candidate_patch": {
+    "sha256": "7b4832ef4e998d36aff6c91847194c50f3cc869bf3296d01bca43de212f5a162",
+    "expected_tree": "24a48a503977bf1b6b656e655042a4d56253c32e",
+    "actual_tree": "24a48a503977bf1b6b656e655042a4d56253c32e",
+    "matches_worktree": true,
+    "reverse_application_check": "passed"
+  },
+  "reproduction": {
+    "test": "test_full_only_reclaim_preserves_live_unbacked_state_without_waiting_for_d2h",
+    "baseline_result": "failed: unexpected D2H",
+    "baseline_stack": [
+      "reclaim_beliefkv_handoff_capacity",
+      "_prepare_beliefkv_full_demote",
+      "_preserve_mamba_reentry_node",
+      "_execute_and_commit_kv_backup"
+    ],
+    "candidate_result": "passed",
+    "verified_contract": [
+      "real CPU FULL allocator returns four tokens immediately",
+      "Mamba device allocation, value, references and LRU remain unchanged",
+      "FULL Host copy remains intact",
+      "read-only reentry reports four missing FULL tokens and zero missing state slots",
+      "restoring FULL permits native hybrid prefix reuse with the original state",
+      "no Mamba D2H or synchronous write drain"
+    ]
+  },
+  "native_checks": {
+    "passed": 157,
+    "additional_subtests_passed": 27,
+    "files": [
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_execution_handoff.py",
+      "test/srt/test_beliefkv_latest_mamba_state.py",
+      "test/srt/test_beliefkv_shadow_dispatch.py",
+      "test/srt/test_beliefkv_unified_ack.py"
+    ]
+  },
+  "runtime_audit_checks": {
+    "passed": 182,
+    "files": [
+      "tests/test_native_join_residency.py",
+      "tests/test_wait_prefetch_batch.py",
+      "tests/test_execution_handoff.py",
+      "tests/test_prefetch_lifecycle_audit.py"
+    ]
+  },
+  "validation_environment": {
+    "python": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "device": "cpu",
+    "cuda_visible_devices": "9",
+    "cuda_home": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia/cu13",
+    "sglang_import_root": "isolated followup third_party/sglang-v0.5.20/python",
+    "initial_validation_environment_failures": [
+      "missing CUDA_HOME during DeepGEMM import",
+      "empty CUDA_VISIBLE_DEVICES rejected by SGLang test port helper"
+    ]
+  },
+  "evidence": [
+    "v129_v30_sealed_prefetch_20261012.json.gz",
+    "v129_v30_sealed_prefetch_20261012_summary.json",
+    "v129_v30_v29_native_300_600_20261012.json"
+  ],
+  "limitations": [
+    "live JSONL prefixes are independently sealed, not an atomic snapshot",
+    "unobserved completion boundaries remain unknown",
+    "reason groups overlap and are not exclusive loss attribution",
+    "the FULL/Mamba reclaim dependency has not been isolated as a fraction of V29/V30 losses",
+    "candidate GPU transfer reuse, throughput and workflow JCT remain unverified",
+    "V30 busy-window worker intervals are not isolated CUDA kernel times or matched-demand causal speedup"
+  ]
+}
