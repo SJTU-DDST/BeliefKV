@@ -1,0 +1,1109 @@
+{
+  "scope": "CPU maintenance plus outside-window tool scans; not live frequency or GPU throughput",
+  "baseline_revision": "f55e136c952a18b40198c254a93acb02ebf5c228",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "2147ab88594a871617a83e0a123980f94842178a1f09f8023077352c70fdd1db",
+    "beliefkv/runtime/sglang_v0520_physical.py": "0dfc1bbd1c3f9010dffddc117b991884063db9bcdb1f4a175d90363c4737672b",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "999c3151b9928a4879af587edc87c9bd139faceab86d43a0fbc3b6911ae767a2"
+  },
+  "optimized_runtime_sha256": "63f4a0f054aed0e9d035ecd0a33ec3bb123d4ff961881c53977cbdddc6a3d8ca",
+  "benchmark_source_sha256": "ab6b70e25c01bda690d73a82a270d774028c7f74c57d2252bec8dc52ac7485b9",
+  "physical_actions": 0,
+  "cases": [
+    {
+      "workflows": 8,
+      "leases": 0,
+      "tick_ms": 2.0,
+      "iterations": 400,
+      "outputs_equal": true,
+      "canonical_output_sha256": "c7a9156682828b60d4e828000c55d356e92a8eeb04b8851f007cc622281ae6a5",
+      "scans": 9,
+      "deferred": 396,
+      "costs": {
+        "baseline": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.00427934,
+              "p50_ms": 0.00295,
+              "p99_ms": 0.064738,
+              "max_ms": 0.073875
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.0037387475,
+              "p50_ms": 0.002409,
+              "p99_ms": 0.064083,
+              "max_ms": 0.073217
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.0166491775,
+              "p50_ms": 0.015362,
+              "p99_ms": 0.076795,
+              "max_ms": 0.085307
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.016121375,
+              "p50_ms": 0.014829,
+              "p99_ms": 0.076135,
+              "max_ms": 0.084658
+            }
+          }
+        },
+        "optimized": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.0039392325,
+              "p50_ms": 0.002688,
+              "p99_ms": 0.059514,
+              "max_ms": 0.066265
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.0034003025,
+              "p50_ms": 0.002151,
+              "p99_ms": 0.058958,
+              "max_ms": 0.065587
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.016442655,
+              "p50_ms": 0.015109,
+              "p99_ms": 0.073412,
+              "max_ms": 0.08059
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.015917055,
+              "p50_ms": 0.014605,
+              "p99_ms": 0.072877,
+              "max_ms": 0.079967
+            }
+          }
+        }
+      },
+      "native_reads": {
+        "baseline": {},
+        "optimized": {}
+      },
+      "thread_cpu_reduction": {
+        "scan": 0.09052363124281582,
+        "maintenance_and_scan": 0.012673856913569814
+      }
+    },
+    {
+      "workflows": 8,
+      "leases": 0,
+      "tick_ms": 20.0,
+      "iterations": 400,
+      "outputs_equal": true,
+      "canonical_output_sha256": "ed52487c82daa552ad8aa944ba197a79ed062505475ce4ef4f72659aaf9101e9",
+      "scans": 81,
+      "deferred": 324,
+      "costs": {
+        "baseline": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.0144374075,
+              "p50_ms": 0.003152,
+              "p99_ms": 0.06416,
+              "max_ms": 0.068591
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.0138820925,
+              "p50_ms": 0.002596,
+              "p99_ms": 0.063588,
+              "max_ms": 0.067888
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.027246135,
+              "p50_ms": 0.016037,
+              "p99_ms": 0.076777,
+              "max_ms": 0.081444
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.02670507,
+              "p50_ms": 0.015516,
+              "p99_ms": 0.07608,
+              "max_ms": 0.080771
+            }
+          }
+        },
+        "optimized": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.01394326,
+              "p50_ms": 0.002856,
+              "p99_ms": 0.062749,
+              "max_ms": 0.065356
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.0133907275,
+              "p50_ms": 0.002307,
+              "p99_ms": 0.062124,
+              "max_ms": 0.064732
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.026543475,
+              "p50_ms": 0.015457,
+              "p99_ms": 0.076482,
+              "max_ms": 0.077741
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.0260045725,
+              "p50_ms": 0.014916,
+              "p99_ms": 0.075879,
+              "max_ms": 0.077077
+            }
+          }
+        }
+      },
+      "native_reads": {
+        "baseline": {},
+        "optimized": {}
+      },
+      "thread_cpu_reduction": {
+        "scan": 0.0353956004831405,
+        "maintenance_and_scan": 0.026230880503215315
+      }
+    },
+    {
+      "workflows": 8,
+      "leases": 4,
+      "tick_ms": 2.0,
+      "iterations": 400,
+      "outputs_equal": true,
+      "canonical_output_sha256": "20e2219371c793e7ffbbed38dadcb2c09788c5816d4e7239f86736e1ff288b6c",
+      "scans": 9,
+      "deferred": 396,
+      "costs": {
+        "baseline": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.024793755,
+              "p50_ms": 0.023381,
+              "p99_ms": 0.090048,
+              "max_ms": 0.096758
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.0241216125,
+              "p50_ms": 0.022691,
+              "p99_ms": 0.089325,
+              "max_ms": 0.096034
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.06161943,
+              "p50_ms": 0.060163,
+              "p99_ms": 0.131394,
+              "max_ms": 0.138823
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.0609678025,
+              "p50_ms": 0.059502,
+              "p99_ms": 0.130558,
+              "max_ms": 0.138085
+            }
+          }
+        },
+        "optimized": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.0050245574999999995,
+              "p50_ms": 0.003839,
+              "p99_ms": 0.063104,
+              "max_ms": 0.064326
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.0044062325,
+              "p50_ms": 0.003208,
+              "p99_ms": 0.062416,
+              "max_ms": 0.063627
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.0418652025,
+              "p50_ms": 0.041736,
+              "p99_ms": 0.103064,
+              "max_ms": 0.104977
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.0412659975,
+              "p50_ms": 0.041198,
+              "p99_ms": 0.102441,
+              "max_ms": 0.104408
+            }
+          }
+        }
+      },
+      "native_reads": {
+        "baseline": {
+          "node_lookup": 3240
+        },
+        "optimized": {
+          "node_lookup": 1620
+        }
+      },
+      "thread_cpu_reduction": {
+        "scan": 0.8173325891873937,
+        "maintenance_and_scan": 0.323150977928063
+      }
+    },
+    {
+      "workflows": 8,
+      "leases": 4,
+      "tick_ms": 20.0,
+      "iterations": 400,
+      "outputs_equal": true,
+      "canonical_output_sha256": "a4b9c1d05545ef4ab6e67b54e10095dc32b47eb32b1e757f6b309214fc09f23f",
+      "scans": 81,
+      "deferred": 324,
+      "costs": {
+        "baseline": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.0348160075,
+              "p50_ms": 0.022923,
+              "p99_ms": 0.087717,
+              "max_ms": 0.093147
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.03414756,
+              "p50_ms": 0.022215,
+              "p99_ms": 0.086942,
+              "max_ms": 0.092006
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.0719973875,
+              "p50_ms": 0.061667,
+              "p99_ms": 0.128323,
+              "max_ms": 0.132338
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.07134697,
+              "p50_ms": 0.060949,
+              "p99_ms": 0.127607,
+              "max_ms": 0.13126
+            }
+          }
+        },
+        "optimized": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.015886729999999998,
+              "p50_ms": 0.003897,
+              "p99_ms": 0.068604,
+              "max_ms": 0.072257
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.015265495,
+              "p50_ms": 0.003265,
+              "p99_ms": 0.067846,
+              "max_ms": 0.071413
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.05262611,
+              "p50_ms": 0.042665,
+              "p99_ms": 0.108509,
+              "max_ms": 0.113621
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.0520143425,
+              "p50_ms": 0.042016,
+              "p99_ms": 0.107809,
+              "max_ms": 0.112826
+            }
+          }
+        }
+      },
+      "native_reads": {
+        "baseline": {
+          "node_lookup": 3240
+        },
+        "optimized": {
+          "node_lookup": 1620
+        }
+      },
+      "thread_cpu_reduction": {
+        "scan": 0.5529550281191393,
+        "maintenance_and_scan": 0.270966342368849
+      }
+    },
+    {
+      "workflows": 156,
+      "leases": 0,
+      "tick_ms": 2.0,
+      "iterations": 400,
+      "outputs_equal": true,
+      "canonical_output_sha256": "46350b520187930d16fe919e5cfaef91c4cfff85b5892845d6ef2931781a2006",
+      "scans": 9,
+      "deferred": 396,
+      "costs": {
+        "baseline": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.0254516825,
+              "p50_ms": 0.003317,
+              "p99_ms": 1.104005,
+              "max_ms": 1.145286
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.0248606,
+              "p50_ms": 0.002716,
+              "p99_ms": 1.1029,
+              "max_ms": 1.144352
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.16687404249999999,
+              "p50_ms": 0.14644,
+              "p99_ms": 1.244608,
+              "max_ms": 1.284136
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.166342675,
+              "p50_ms": 0.145935,
+              "p99_ms": 1.243833,
+              "max_ms": 1.283283
+            }
+          }
+        },
+        "optimized": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.0252496125,
+              "p50_ms": 0.003116,
+              "p99_ms": 1.105316,
+              "max_ms": 1.131032
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.024622255,
+              "p50_ms": 0.002524,
+              "p99_ms": 1.104389,
+              "max_ms": 1.129229
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.1646278425,
+              "p50_ms": 0.14407,
+              "p99_ms": 1.250742,
+              "max_ms": 1.28126
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.1640596225,
+              "p50_ms": 0.143545,
+              "p99_ms": 1.250024,
+              "max_ms": 1.280129
+            }
+          }
+        }
+      },
+      "native_reads": {
+        "baseline": {},
+        "optimized": {}
+      },
+      "thread_cpu_reduction": {
+        "scan": 0.009587258553695466,
+        "maintenance_and_scan": 0.013724995705401422
+      }
+    },
+    {
+      "workflows": 156,
+      "leases": 0,
+      "tick_ms": 20.0,
+      "iterations": 400,
+      "outputs_equal": true,
+      "canonical_output_sha256": "3705b5e11497a04f9389739de83932b116ecd12494d93d1a240f07c0f2ac9776",
+      "scans": 81,
+      "deferred": 324,
+      "costs": {
+        "baseline": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.2115743225,
+              "p50_ms": 0.003584,
+              "p99_ms": 1.06307,
+              "max_ms": 1.0967
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.2109515675,
+              "p50_ms": 0.003,
+              "p99_ms": 1.062203,
+              "max_ms": 1.095957
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.34948445499999997,
+              "p50_ms": 0.143175,
+              "p99_ms": 1.20589,
+              "max_ms": 1.240234
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.3488970125,
+              "p50_ms": 0.142655,
+              "p99_ms": 1.205183,
+              "max_ms": 1.239585
+            }
+          }
+        },
+        "optimized": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.21463914,
+              "p50_ms": 0.003334,
+              "p99_ms": 1.079318,
+              "max_ms": 1.091373
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.214020215,
+              "p50_ms": 0.002747,
+              "p99_ms": 1.078519,
+              "max_ms": 1.090581
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.3507115675,
+              "p50_ms": 0.140931,
+              "p99_ms": 1.222471,
+              "max_ms": 1.232405
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.3501201275,
+              "p50_ms": 0.140391,
+              "p99_ms": 1.221764,
+              "max_ms": 1.231714
+            }
+          }
+        }
+      },
+      "native_reads": {
+        "baseline": {},
+        "optimized": {}
+      },
+      "thread_cpu_reduction": {
+        "scan": -0.014546692097938685,
+        "maintenance_and_scan": -0.0035056620039128905
+      }
+    },
+    {
+      "workflows": 156,
+      "leases": 4,
+      "tick_ms": 2.0,
+      "iterations": 400,
+      "outputs_equal": true,
+      "canonical_output_sha256": "863d867569633a0f10b57d0f047c66fbcda5ad8905d5277e5c6d3f98e52bb4a5",
+      "scans": 9,
+      "deferred": 396,
+      "costs": {
+        "baseline": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.0515609125,
+              "p50_ms": 0.029458,
+              "p99_ms": 1.134235,
+              "max_ms": 1.151735
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.050849385,
+              "p50_ms": 0.028747,
+              "p99_ms": 1.133403,
+              "max_ms": 1.150634
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.2182184775,
+              "p50_ms": 0.196592,
+              "p99_ms": 1.301355,
+              "max_ms": 1.323178
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.2175489025,
+              "p50_ms": 0.195941,
+              "p99_ms": 1.300526,
+              "max_ms": 1.322166
+            }
+          }
+        },
+        "optimized": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.026064245,
+              "p50_ms": 0.003942,
+              "p99_ms": 1.10824,
+              "max_ms": 1.11705
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.0254026075,
+              "p50_ms": 0.003296,
+              "p99_ms": 1.107286,
+              "max_ms": 1.116277
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.1902942275,
+              "p50_ms": 0.168632,
+              "p99_ms": 1.276846,
+              "max_ms": 1.291414
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.1896798025,
+              "p50_ms": 0.168022,
+              "p99_ms": 1.276047,
+              "max_ms": 1.290569
+            }
+          }
+        }
+      },
+      "native_reads": {
+        "baseline": {
+          "node_lookup": 3240
+        },
+        "optimized": {
+          "node_lookup": 1620
+        }
+      },
+      "thread_cpu_reduction": {
+        "scan": 0.5004343218703629,
+        "maintenance_and_scan": 0.12810499009527299
+      }
+    },
+    {
+      "workflows": 156,
+      "leases": 4,
+      "tick_ms": 20.0,
+      "iterations": 400,
+      "outputs_equal": true,
+      "canonical_output_sha256": "8dc100022e2de77930f3b4353739b6e6b1f632fc2672747e8ec1badcc32fe9e2",
+      "scans": 81,
+      "deferred": 324,
+      "costs": {
+        "baseline": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.24457911499999999,
+              "p50_ms": 0.030497,
+              "p99_ms": 1.138049,
+              "max_ms": 1.288232
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.2438068675,
+              "p50_ms": 0.02975,
+              "p99_ms": 1.137036,
+              "max_ms": 1.287371
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.413957825,
+              "p50_ms": 0.199411,
+              "p99_ms": 1.317546,
+              "max_ms": 1.461417
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.41324323,
+              "p50_ms": 0.198612,
+              "p99_ms": 1.316712,
+              "max_ms": 1.460666
+            }
+          }
+        },
+        "optimized": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.2404727425,
+              "p50_ms": 0.004229,
+              "p99_ms": 1.226958,
+              "max_ms": 1.286742
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.239723605,
+              "p50_ms": 0.003564,
+              "p99_ms": 1.226078,
+              "max_ms": 1.285886
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.4074268025,
+              "p50_ms": 0.171883,
+              "p99_ms": 1.391106,
+              "max_ms": 1.446143
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.406730975,
+              "p50_ms": 0.17126,
+              "p99_ms": 1.390384,
+              "max_ms": 1.445239
+            }
+          }
+        }
+      },
+      "native_reads": {
+        "baseline": {
+          "node_lookup": 3240
+        },
+        "optimized": {
+          "node_lookup": 1620
+        }
+      },
+      "thread_cpu_reduction": {
+        "scan": 0.01674793881677672,
+        "maintenance_and_scan": 0.015758890956302007
+      }
+    },
+    {
+      "workflows": 156,
+      "leases": 16,
+      "tick_ms": 2.0,
+      "iterations": 400,
+      "outputs_equal": true,
+      "canonical_output_sha256": "0a1401f6abd5d865a1d412042670eb7ecb45ed436edaf1fe13ab1d67c088c581",
+      "scans": 9,
+      "deferred": 396,
+      "costs": {
+        "baseline": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.099468915,
+              "p50_ms": 0.078287,
+              "p99_ms": 1.214636,
+              "max_ms": 1.246832
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.0986637425,
+              "p50_ms": 0.077551,
+              "p99_ms": 1.213622,
+              "max_ms": 1.245982
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.31192185,
+              "p50_ms": 0.294058,
+              "p99_ms": 1.434912,
+              "max_ms": 1.472319
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.311179645,
+              "p50_ms": 0.293411,
+              "p99_ms": 1.43405,
+              "max_ms": 1.471493
+            }
+          }
+        },
+        "optimized": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.0265058425,
+              "p50_ms": 0.004176,
+              "p99_ms": 1.152903,
+              "max_ms": 1.162958
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.025814965,
+              "p50_ms": 0.003492,
+              "p99_ms": 1.151848,
+              "max_ms": 1.162148
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.2376600875,
+              "p50_ms": 0.219155,
+              "p99_ms": 1.381764,
+              "max_ms": 1.390569
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.2370160825,
+              "p50_ms": 0.218534,
+              "p99_ms": 1.380884,
+              "max_ms": 1.389841
+            }
+          }
+        }
+      },
+      "native_reads": {
+        "baseline": {
+          "node_lookup": 12960
+        },
+        "optimized": {
+          "node_lookup": 6480
+        }
+      },
+      "thread_cpu_reduction": {
+        "scan": 0.7383540868622533,
+        "maintenance_and_scan": 0.2383303782610845
+      }
+    },
+    {
+      "workflows": 156,
+      "leases": 16,
+      "tick_ms": 20.0,
+      "iterations": 400,
+      "outputs_equal": true,
+      "canonical_output_sha256": "cb86692a017f85b26fa7b2efa631155eac8ed52d133c40ac992e65cafd953f0c",
+      "scans": 81,
+      "deferred": 324,
+      "costs": {
+        "baseline": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.232077045,
+              "p50_ms": 0.061225,
+              "p99_ms": 0.942914,
+              "max_ms": 0.963231
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.2314359825,
+              "p50_ms": 0.060638,
+              "p99_ms": 0.942112,
+              "max_ms": 0.962432
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.406598725,
+              "p50_ms": 0.235392,
+              "p99_ms": 1.123517,
+              "max_ms": 1.144998
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.4060086975,
+              "p50_ms": 0.23491,
+              "p99_ms": 1.122908,
+              "max_ms": 1.144517
+            }
+          }
+        },
+        "optimized": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.173456465,
+              "p50_ms": 0.003533,
+              "p99_ms": 0.871631,
+              "max_ms": 0.884643
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.1728620825,
+              "p50_ms": 0.002975,
+              "p99_ms": 0.870908,
+              "max_ms": 0.88373
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.3442383225,
+              "p50_ms": 0.174389,
+              "p99_ms": 1.04811,
+              "max_ms": 1.06421
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.34359577,
+              "p50_ms": 0.173859,
+              "p99_ms": 1.04753,
+              "max_ms": 1.063466
+            }
+          }
+        }
+      },
+      "native_reads": {
+        "baseline": {
+          "node_lookup": 12960
+        },
+        "optimized": {
+          "node_lookup": 6480
+        }
+      },
+      "thread_cpu_reduction": {
+        "scan": 0.2530889940590806,
+        "maintenance_and_scan": 0.15372312929330778
+      }
+    },
+    {
+      "workflows": 156,
+      "leases": 48,
+      "tick_ms": 2.0,
+      "iterations": 400,
+      "outputs_equal": true,
+      "canonical_output_sha256": "7e3240770de8c6967e8fe779702aa65cc466d287aa5321d94c0a9ea666a4c582",
+      "scans": 9,
+      "deferred": 396,
+      "costs": {
+        "baseline": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.17738274,
+              "p50_ms": 0.158668,
+              "p99_ms": 1.0613,
+              "max_ms": 1.218239
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.17670882,
+              "p50_ms": 0.158022,
+              "p99_ms": 1.060494,
+              "max_ms": 1.217574
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.45452318,
+              "p50_ms": 0.434003,
+              "p99_ms": 1.331438,
+              "max_ms": 1.4872
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.453900355,
+              "p50_ms": 0.433268,
+              "p99_ms": 1.330774,
+              "max_ms": 1.486576
+            }
+          }
+        },
+        "optimized": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.021778587500000002,
+              "p50_ms": 0.003456,
+              "p99_ms": 0.900311,
+              "max_ms": 1.070273
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.0212060725,
+              "p50_ms": 0.002896,
+              "p99_ms": 0.899378,
+              "max_ms": 1.069538
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.29853608,
+              "p50_ms": 0.277935,
+              "p99_ms": 1.196761,
+              "max_ms": 1.370483
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.29802094,
+              "p50_ms": 0.277404,
+              "p99_ms": 1.196072,
+              "max_ms": 1.369856
+            }
+          }
+        }
+      },
+      "native_reads": {
+        "baseline": {
+          "node_lookup": 38880
+        },
+        "optimized": {
+          "node_lookup": 19440
+        }
+      },
+      "thread_cpu_reduction": {
+        "scan": 0.8799942611806247,
+        "maintenance_and_scan": 0.3434221041752654
+      }
+    },
+    {
+      "workflows": 156,
+      "leases": 48,
+      "tick_ms": 20.0,
+      "iterations": 400,
+      "outputs_equal": true,
+      "canonical_output_sha256": "b93f22d7b83e2b77d378ee5e53dfa943e21fce28aaa3754b021fbf19be11ea65",
+      "scans": 81,
+      "deferred": 324,
+      "costs": {
+        "baseline": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.33389563,
+              "p50_ms": 0.15943,
+              "p99_ms": 1.058515,
+              "max_ms": 1.228862
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.3331910075,
+              "p50_ms": 0.1588,
+              "p99_ms": 1.057663,
+              "max_ms": 1.228067
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.6205178125,
+              "p50_ms": 0.442988,
+              "p99_ms": 1.378248,
+              "max_ms": 1.498176
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.61985548,
+              "p50_ms": 0.442337,
+              "p99_ms": 1.37763,
+              "max_ms": 1.497392
+            }
+          }
+        },
+        "optimized": {
+          "scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.17712346,
+              "p50_ms": 0.003641,
+              "p99_ms": 0.88697,
+              "max_ms": 0.93284
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.17650979,
+              "p50_ms": 0.003054,
+              "p99_ms": 0.886261,
+              "max_ms": 0.932144
+            }
+          },
+          "maintenance_and_scan": {
+            "wall": {
+              "count": 400,
+              "mean_ms": 0.4572683325,
+              "p50_ms": 0.282366,
+              "p99_ms": 1.201693,
+              "max_ms": 1.205843
+            },
+            "thread_cpu": {
+              "count": 400,
+              "mean_ms": 0.4567003525,
+              "p50_ms": 0.28182,
+              "p99_ms": 1.201023,
+              "max_ms": 1.205225
+            }
+          }
+        }
+      },
+      "native_reads": {
+        "baseline": {
+          "node_lookup": 38880
+        },
+        "optimized": {
+          "node_lookup": 19440
+        }
+      },
+      "thread_cpu_reduction": {
+        "scan": 0.47024443629379764,
+        "maintenance_and_scan": 0.2632147859691424
+      }
+    }
+  ],
+  "semantics": [
+    "Both arms execute scheduler maintenance on every tick and retain live native lease checks.",
+    "Only a redundant tool-scan refresh is removed when no forecast enters the start window.",
+    "Native cache fixtures expose real graph/session/node conditions, with no GPU or DMA.",
+    "Alternating arm order and thread CPU separate scheduling noise from measured call wall.",
+    "Small regressions and raw distributions remain; no fixture frequency is extrapolated to JCT."
+  ]
+}

@@ -1422,6 +1422,85 @@ def test_new_tool_forecast_rechecks_candidate_before_next_scan_deadline():
         assert runtime.counts["tool_prefetch_scans"] == 2
 
 
+def test_deferred_tool_scan_leaves_expiry_to_scheduler_maintenance():
+    runtime, hint, node, action, receipt, _ = locked_runtime()
+    lease = runtime._prefetch_service_leases[action.command_id]
+    runtime._tool_prefetch_next_ms = (lease.expires_at + 1.) * 1000.
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                   return_value=lease.expires_at), \
+             patch.object(runtime, "_refresh_prefetch_service_leases",
+                          wraps=runtime._refresh_prefetch_service_leases) as refresh:
+            runtime.dispatch_tool_prefetch()
+            refresh.assert_not_called()
+            runtime.scheduler_step(defer_observations=True)
+        assert action.command_id not in runtime._prefetch_service_leases
+        runtime._native_cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
+        assert node.component_data[0].value is not None
+    finally:
+        runtime.close()
+
+
+def test_tool_scan_without_eligible_forecast_does_not_refresh_all_leases():
+    runtime, hint, _, action = leased_runtime()
+    runtime.prefetch_lead_ms = 500.
+    runtime.tool_wait_hints[hint.key.context_id] = replace(
+        hint, wait_p50_ms=5000., wait_p90_ms=8000.,
+    )
+    try:
+        with patch.object(runtime, "_refresh_prefetch_service_leases",
+                          wraps=runtime._refresh_prefetch_service_leases) as refresh:
+            runtime.dispatch_tool_prefetch()
+        refresh.assert_not_called()
+        assert action.command_id in runtime._prefetch_service_leases
+        assert runtime.counts["tool_prefetch_not_in_time_window"] == 1
+    finally:
+        runtime.close()
+
+
+def test_eligible_tool_scan_releases_lost_residency_before_budgeting():
+    runtime, hint, node, action, receipt, _ = locked_runtime()
+    node.component_data[0].value = None
+    step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)
+
+    def capacity(*, include_evictable=False):
+        assert include_evictable
+        assert action.command_id not in runtime._prefetch_service_leases
+        runtime._native_cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
+        return PrefetchResidencyBudget(4, 1024)
+
+    try:
+        with patch.object(runtime, "_current_residency_budget", side_effect=capacity), \
+             patch.object(runtime, "inspect_context_h2d_opportunity",
+                          return_value=NS(step=step, fits_current_free_lists=True)), \
+             patch.object(runtime, "_h2d_start_window",
+                          return_value=TransferStartWindow(200., 0., 1000.)), \
+             patch.object(runtime, "refreshed_prefetch_gpu_step", return_value=step), \
+             patch.object(runtime, "issue_prefetch_gpu_step", return_value="next") as issue:
+            runtime.dispatch_tool_prefetch()
+        issue.assert_called_once()
+        assert runtime.counts["prefetch_residency_released:native_residency_lost"] == 1
+    finally:
+        runtime.close()
+
+
+def test_tool_scan_stops_after_native_lock_release_failure():
+    runtime, _, node, action, _, _ = locked_runtime()
+    node.component_data[0].value = None
+    runtime._native_cache.tree_core.dec_lock_ref.side_effect = RuntimeError("unknown release")
+    try:
+        with patch.object(runtime, "_current_residency_budget") as capacity, \
+             patch.object(runtime, "issue_prefetch_gpu_step") as issue:
+            runtime.dispatch_tool_prefetch()
+        capacity.assert_not_called()
+        issue.assert_not_called()
+        assert runtime.physical_disabled
+        assert action.command_id in runtime._prefetch_service_leases
+        runtime._native_cache.tree_core.dec_lock_ref.assert_called_once()
+    finally:
+        runtime.close()
+
+
 def test_tool_ack_does_not_drain_overlap_again_for_already_restored_pages():
     runtime, hint = tool_runtime()
     step = PrefetchLoadStep(hint.key, 1, 2, 1, 2)

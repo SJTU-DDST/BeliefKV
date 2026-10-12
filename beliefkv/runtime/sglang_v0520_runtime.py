@@ -4859,7 +4859,6 @@ class NativeAdmissionRuntime:
     def _roll_tool_prefetch(self) -> SessionH2DOpportunity | None:
         if not self.enable_tool_prefetch or self.physical_disabled:
             return
-        self._refresh_prefetch_service_leases()
         ticket = self._tool_ticket
         if ticket is not None:
             if ticket.command_id is not None:
@@ -4935,6 +4934,13 @@ class NativeAdmissionRuntime:
                 context: probe for context, probe in self._tool_survival_probes.items()
                 if self.tool_wait_hints.get(context) is probe[0] and now_ms < probe[1]
             }
+        if not candidates:
+            return
+        # Scheduler/event/batch maintenance already expires leases. Revalidate
+        # them here only when this scan will use restoration capacity.
+        self._refresh_prefetch_service_leases()
+        if self.physical_disabled:
+            return
         for hint, remaining in sorted(candidates, key=lambda item: item[1]):
             if self._live_tool_hint(hint.key) is None:
                 continue

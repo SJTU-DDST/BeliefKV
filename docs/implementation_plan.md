@@ -36,6 +36,20 @@ Inspect repeated lease refresh within an iteration; no new change is
 deployed. Preserve deadline/identity/residency checks at mutations and
 native execution dependencies; no cross-iteration physical cache.
 
+V214/V215 qualify moving the tool path's additional global lease refresh
+after eligible-candidate discovery. Deferred scans, in-flight transfers
+and empty candidate lists avoid the repeated walk. Scheduler/event/batch/
+abort maintenance remains; eligible planning refreshes live leases before
+budgeting and stops on native lock-release failure. All 406 focused checks
+and 12 output-equal CPU fixtures pass. At 156 contexts with 4-48 leases,
+maintenance-plus-scan thread CPU falls 1.6-34.3%; no-lease cases are
+essentially unchanged, with a retained 0.35% slowdown. Absolute costs
+remain in V214. No throughput extrapolation; V44 was not hot-edited.
+Cold-deploy this committed change and measure live controls and consumption.
+V213 preserves 779 nonblocking GIL stacks and 214 errors. Closure/reentry/
+lease-validity leaf samples are 56/26/10; these identify further inspection
+work, not wall costs, GPU stalls or removable JCT.
+
 V43 stopped administratively at 05:27:59: 78 completed, 30 created
 unfinished and 48 unarrived; the latter 78 are censoring. All 108
 workspaces passed full tar comparison before cleanup at 05:32:08,

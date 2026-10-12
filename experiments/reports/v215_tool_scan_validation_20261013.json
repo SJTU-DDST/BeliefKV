@@ -1,0 +1,59 @@
+{
+  "scope": "Tool-scan redundant lease maintenance reduction; no GPU-performance proof",
+  "at_local": "2026-10-13T06:21:15.089271+08:00",
+  "baseline_execution_revision": "f55e136c952a18b40198c254a93acb02ebf5c228",
+  "parent_revision": "bdf9927b11f3a7f5fdead383182803733274ca9c",
+  "qualified_paths_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "63f4a0f054aed0e9d035ecd0a33ec3bb123d4ff961881c53977cbdddc6a3d8ca",
+    "tests/test_tool_predictive_transfers.py": "285e6fcca482efbafae22544ca4f9e38a401ddf9d25d934bcbc93c3bd4563e11",
+    "scripts/benchmark_tool_lease_scan_cpu.py": "ab6b70e25c01bda690d73a82a270d774028c7f74c57d2252bec8dc52ac7485b9"
+  },
+  "focused_checks": {
+    "command": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "-m",
+      "pytest",
+      "-q",
+      "tests/test_tool_predictive_transfers.py",
+      "tests/test_native_transfer_policy.py",
+      "tests/test_sglang_v0520_runtime.py",
+      "tests/test_execution_handoff.py",
+      "tests/test_join_transfer_windows.py"
+    ],
+    "result": "406 passed in 1.24s",
+    "new_safety_checks": [
+      "Deferred tool scan leaves expiry to scheduler maintenance.",
+      "Outside-window scan does not repeat all-lease refresh.",
+      "Eligible scan revokes lost residency before computing restoration budget.",
+      "Native lock release failure stops physical issuance and retains its receipt."
+    ]
+  },
+  "cpu_comparison": {
+    "path": "experiments/reports/v214_tool_lease_scan_cpu_20261013.json",
+    "sha256": "10fe2f06d8b57145324016f5e03a6e98cfddb4680a08c4a5e314573aea3a499e",
+    "cases": 12,
+    "all_outputs_equal": true,
+    "thread_cpu_reduction_for_156_contexts_with_4_to_48_leases": [
+      0.12810499009527299,
+      0.015758890956302007,
+      0.2383303782610845,
+      0.15372312929330778,
+      0.3434221041752654,
+      0.2632147859691424
+    ],
+    "absolute_costs_remain_in_report": true
+  },
+  "preserved": [
+    "Scheduler/event/batch/abort lease maintenance.",
+    "Fresh residency and capacity checks for eligible transfer planning.",
+    "Native lock receipts, allocator authority and data dependencies.",
+    "Frozen V44 sources and actual engine; no hot edit."
+  ],
+  "limits": [
+    "Fixture repeats known outside-window waits; no live hit frequency or JCT benefit is implied.",
+    "Not a solution to JOIN remaining-work error, tool-round classification or throughput deficit.",
+    "No cache of physical residency across scheduler iterations is added."
+  ],
+  "helper_utf8_source": "\"\"\"Bind the qualified tool-scan reduction to its evidence and source hashes.\"\"\"\n\nfrom datetime import datetime\nimport hashlib\nimport json\nfrom pathlib import Path\nimport subprocess\n\nROOT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nOUTPUT = ROOT / \"experiments/reports/v215_tool_scan_validation_20261013.json\"\nBENCHMARK = ROOT / \"experiments/reports/v214_tool_lease_scan_cpu_20261013.json\"\nif OUTPUT.exists():\n    raise ValueError(\"preserve previous qualification\")\npaths = (\n    \"beliefkv/runtime/sglang_v0520_runtime.py\",\n    \"tests/test_tool_predictive_transfers.py\",\n    \"scripts/benchmark_tool_lease_scan_cpu.py\",\n)\nchecks = (\n    \"tests/test_tool_predictive_transfers.py\",\n    \"tests/test_native_transfer_policy.py\",\n    \"tests/test_sglang_v0520_runtime.py\",\n    \"tests/test_execution_handoff.py\",\n    \"tests/test_join_transfer_windows.py\",\n)\nsource = {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths}\nbenchmark = json.loads(BENCHMARK.read_bytes())\nif benchmark[\"optimized_runtime_sha256\"] != source[paths[0]]:\n    raise ValueError(\"CPU comparison source changed\")\nif len(benchmark[\"cases\"]) != 12 or not all(case[\"outputs_equal\"] for case in benchmark[\"cases\"]):\n    raise ValueError(\"missing or unequal CPU cases\")\nrecord = {\n    \"scope\": \"Tool-scan redundant lease maintenance reduction; no GPU-performance proof\",\n    \"at_local\": datetime.now().astimezone().isoformat(),\n    \"baseline_execution_revision\": \"f55e136c952a18b40198c254a93acb02ebf5c228\",\n    \"parent_revision\": subprocess.check_output([\"git\", \"rev-parse\", \"HEAD\"], cwd=ROOT, text=True).strip(),\n    \"qualified_paths_sha256\": source,\n    \"focused_checks\": {\n        \"command\": [\"/home/longhao/miniconda3/envs/beliefkv-next/bin/python\", \"-m\", \"pytest\", \"-q\", *checks],\n        \"result\": \"406 passed in 1.24s\",\n        \"new_safety_checks\": [\n            \"Deferred tool scan leaves expiry to scheduler maintenance.\",\n            \"Outside-window scan does not repeat all-lease refresh.\",\n            \"Eligible scan revokes lost residency before computing restoration budget.\",\n            \"Native lock release failure stops physical issuance and retains its receipt.\",\n        ],\n    },\n    \"cpu_comparison\": {\n        \"path\": str(BENCHMARK.relative_to(ROOT)),\n        \"sha256\": hashlib.sha256(BENCHMARK.read_bytes()).hexdigest(),\n        \"cases\": 12, \"all_outputs_equal\": True,\n        \"thread_cpu_reduction_for_156_contexts_with_4_to_48_leases\": [\n            case[\"thread_cpu_reduction\"][\"maintenance_and_scan\"]\n            for case in benchmark[\"cases\"] if case[\"workflows\"] == 156 and case[\"leases\"] > 0\n        ],\n        \"absolute_costs_remain_in_report\": True,\n    },\n    \"preserved\": [\n        \"Scheduler/event/batch/abort lease maintenance.\",\n        \"Fresh residency and capacity checks for eligible transfer planning.\",\n        \"Native lock receipts, allocator authority and data dependencies.\",\n        \"Frozen V44 sources and actual engine; no hot edit.\",\n    ],\n    \"limits\": [\n        \"Fixture repeats known outside-window waits; no live hit frequency or JCT benefit is implied.\",\n        \"Not a solution to JOIN remaining-work error, tool-round classification or throughput deficit.\",\n        \"No cache of physical residency across scheduler iterations is added.\",\n    ],\n    \"helper_utf8_source\": Path(__file__).read_text(),\n    \"helper_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n}\nOUTPUT.write_text(json.dumps(record, indent=2, allow_nan=False) + \"\\n\")\nprint(json.dumps({\"path\": str(OUTPUT), \"checks\": 406, \"cpu_cases\": 12}))\n",
+  "helper_sha256": "9eb6f37fa8c79c4c026ab22ab05a5389ed3be800b994da192f09a0e4dfe38ae3"
+}
