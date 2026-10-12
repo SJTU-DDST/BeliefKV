@@ -2,6 +2,29 @@
 
 Status date: 2026-10-12.
 
+The latest collecting arm is now V32. V31 was administratively
+stopped at 13:50:40.618 CST with 63 observed completed workflows,
+45 created unfinished and 48 unarrived tasks censored separately.
+No spontaneous error/incomplete result was observed before signals.
+Verified principal process groups and 45 run-owned containers exited;
+raw evidence, frozen plans and all workspace files remain intact.
+After old Host memory release, the unchanged 200 GB NUMA preflight
+passed with 222.75 GiB estimated available capacity.
+
+V32 cold-started 8495c89 at 13:52:45 CST, containing the
+4f4567f full-batch rowless restoration fix; its client began at
+13:55:27 CST. The 13:57:38 validation observes healthy HTTP 200,
+4209 real GPU service samples and physical_disabled=false.
+Actual pool capacities equal V31 and the engine patch stays
+7b4832ef. Keep the frozen workload/model/lead configuration and
+predictive-only development cadence against the fixed cached native.
+Measure conversion from positive plans into early consumed FULL,
+ACK-to-first-service waiting and complete busy-window service
+throughput. Startup validation and prior CPU checks do not
+complete the throughput/JCT goal. Receipts:
+v132_v31_development_stop and v132_v32_deployment_validation.
+The V31 collection observations below are historical pre-stop snapshots.
+
 Prioritize the newest predictive collection rather than continuing to
 diagnose V29 as though it were current. V132 seals V31 at
 13:39:02-13:39:32 CST: completed JOIN positive-plan/start/submit

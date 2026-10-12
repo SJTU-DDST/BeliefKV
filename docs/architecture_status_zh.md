@@ -2,6 +2,27 @@
 
 更新日期：2026-10-12。
 
+最新采集已切换到 V32。V31 在 13:50:40.618 CST 主动
+停止，截止前观测到 63 completed，45 个已创建未结束和
+48 个未到达任务单列行政截断；未观测自发 error/incomplete。
+进程 start ticks/PGID 核对后退出，45 个仅所属 V31 的
+容器已清理，所有 raw、冻结计划及 workspace 文件保留。
+旧 Host 内存释放后 NUMA 预检恢复到 222.75 GiB 估计可用，
+未缩池或绕过预检。
+
+V32 于 13:52:45 CST 冷启动 8495c89，客户端于
+13:55:27 CST 开始，部署 4f4567f 的满批无空请求行恢复
+修复。13:57:38 的验证确认健康检查 200、4,209 个实际
+GPU 服务样本、physical_disabled=false，实际 FULL/Mamba
+设备和 Host 容量与 V31 相同。引擎 patch 仍为 7b4832ef；
+108+48、running=48、200 GB Host 80:20、HBM 比例 0.9、
+工具 180 秒、workflow 14,400 秒、2 秒 lead 保持，单跑
+predictive 并复用固定 native。下一步检查机会到提交、
+提前 FULL 消费、ACK 后首次服务和完整繁忙窗口；启动
+验证不构成吞吐/JCT 收益，目标继续 active。
+回执为 v132_v31_development_stop、v132_v32_deployment_validation。
+以下 V31 采集中数据均为停止前的历史快照。
+
 当前诊断优先跟踪最新 predictive，不以 V29 的历史问题替代
 当前结果。V132 在 13:39:02–13:39:32 CST 封存 V31 前缀：
 75 个已观测完成 JOIN 中，70 个有完成前正 FULL 计划、

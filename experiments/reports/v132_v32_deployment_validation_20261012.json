@@ -1,0 +1,106 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-12T13:57:38.072695+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v32",
+  "code_commit": "8495c890282be7c07c0d4cd17a30e8153ae516a8",
+  "sglang_patch_sha256": "7b4832ef4e998d36aff6c91847194c50f3cc869bf3296d01bca43de212f5a162",
+  "frozen_plan_sha256": "2410b8345db4decd1ad04c251b9dbdbd0df8003315b38b6a613ee85d04a794d9",
+  "execution_verification": {
+    "collection_code_commit": "8495c890282be7c07c0d4cd17a30e8153ae516a8",
+    "verification_code_commit": "8495c890282be7c07c0d4cd17a30e8153ae516a8",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "actual_capacity": {
+    "device_full_bytes": 36843438080,
+    "device_full_tokens": 1798995,
+    "device_mamba_bytes": 33096007680,
+    "device_mamba_slots": 513,
+    "device_total_bytes": 69939445760,
+    "host_full_bytes": 160000020480,
+    "host_full_tokens": 7812501,
+    "host_mamba_bytes": 40050032640,
+    "host_mamba_slots": 622,
+    "host_total_bytes": 200050053120,
+    "pool_layout": "static_separate_full_mamba"
+  },
+  "unchanged_previous_configuration_fields": [
+    "workload_sha256",
+    "root_count",
+    "arrival_schedule",
+    "server_running",
+    "context_tokens",
+    "max_completion_tokens",
+    "host_gb",
+    "host_split",
+    "mamba_full_memory_ratio",
+    "mem_fraction_static",
+    "native_write_policy",
+    "fanout_profile",
+    "sampling_seed",
+    "temperature",
+    "sandbox_command_timeout_s",
+    "activation_wall_clock_seconds",
+    "child_final_report_shadow",
+    "prefetch_lead_ms",
+    "native_reference_run"
+  ],
+  "physical_disabled": false,
+  "latest_runtime_snapshot_ts_ms": 1791784656453.421,
+  "latest_restore_budget": {
+    "request_slots": 1,
+    "byte_limit": 55754874880,
+    "reserve_full_tokens": 16432,
+    "reserve_mamba_slots": 1,
+    "source": "native_next_prefill",
+    "evictable_full_tokens": 245864,
+    "evictable_mamba_slots": 325
+  },
+  "prefetch_lead_ms": 2000.0,
+  "eos_prefetch_evidence_window_ms": 2000.0,
+  "observed_gpu_service_samples": 4209,
+  "health_http_status": "200",
+  "live_process_identities": {
+    "coordinator": {
+      "pid": 421770,
+      "state": "S",
+      "ppid": 1,
+      "pgid": 421770,
+      "start_ticks": "595462764"
+    },
+    "server": {
+      "pid": 421997,
+      "state": "R",
+      "ppid": 421979,
+      "pgid": 421997,
+      "start_ticks": "595462983"
+    },
+    "scheduler": {
+      "pid": 422358,
+      "state": "R",
+      "ppid": 421997,
+      "pgid": 421997,
+      "start_ticks": "595464284"
+    },
+    "client": {
+      "pid": 423924,
+      "state": "S",
+      "ppid": 421979,
+      "pgid": 423924,
+      "start_ticks": "595479130"
+    }
+  },
+  "runtime_fix_commit": "4f4567f",
+  "prior_relevant_checks": 380,
+  "scope": "Cold-start source, physical configuration and live-service validation only. No complete busy-window throughput, workload JCT, rowless DMA success or predictive performance gain is inferred from startup."
+}
