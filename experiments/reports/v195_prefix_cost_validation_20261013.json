@@ -1,0 +1,96 @@
+{
+  "schema_version": 1,
+  "validated_at_local": "2026-10-13T04:23:18.430955+08:00",
+  "running_v42_collection_commit": "028bb6be6c7b69ac6864bd0b2e9446ba0490bd3b",
+  "change": [
+    "Compute current RadixKey length without a nested _raw_len call.",
+    "Keep namespace mismatch errors while avoiding the compatibility helper on matching keys.",
+    "Read the current Host FULL index tensor shape instead of Tensor.__len__ during reentry.",
+    "Update CPU-only index fixtures and supply deque to the existing AST reclaim harness."
+  ],
+  "final_source_sha256": {
+    "patches/sglang-v0.5.20-beliefkv-staging.patch": "3698ce2f8eca9be50cebfecbf25a698f93b872227683ac9fe4671e2dc74480c1",
+    "scripts/benchmark_native_reentry_cpu.py": "1df92051adfec888ea779a5080d67471f11c6247ea148eb64833c1a0fcf17299",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "67f21727c967444b785111a06a18ce72cab15bbc810b03a4dee63dfdc45c57fe",
+    "third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py": "05e6332956b0ac4f256eff26303779b2511c93ab4c61621a2bf7491cbb1ba402",
+    "third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py": "7800f84c46feb41a7a4ede1c741deea886e80f305ab87384395cf7efde3ab37f",
+    "third_party/sglang-v0.5.20/test/srt/test_beliefkv_radix_prefix.py": "15b6f68ea31d40f310dd55875ac819baab65e77f4ffe52d32408c200dc2bbc9f",
+    "third_party/sglang-v0.5.20/test/srt/test_beliefkv_execution_handoff.py": "215bb1f97d8e8321b31ac2a809b20e99de054e4dfebde5fdf48fd141040f21fe"
+  },
+  "canonical_patch_sha256": "3698ce2f8eca9be50cebfecbf25a698f93b872227683ac9fe4671e2dc74480c1",
+  "canonical_patch_expected_tree": "6d6af094ea8e0fb6c0e3bc06fb12dd006ec41e14",
+  "canonical_patch_matches_isolated_source": true,
+  "cpu_evidence": {
+    "path": "v194_tensor_prefix_reentry_cpu_20261013.json",
+    "sha256": "6ef30cd6885b9f42bb8c7763213773ab5f1ea2b70deeda3562421cf57658603b",
+    "index_storage": "torch.int64 CPU tensors",
+    "cases": 27,
+    "samples_per_case": 21,
+    "calls_per_sample": 80,
+    "outputs_equal": true,
+    "median_thread_cpu_reduction_fraction_by_case": {
+      "match-4096-4-depth-1-leaves": 0.14272768683885928,
+      "match-4096-4-depth-8-leaves": 0.12052369072618474,
+      "match-32768-8-depth-1-leaves": 0.11405265797246811,
+      "match-32768-8-depth-8-leaves": 0.119903847353515,
+      "match-98304-24-depth-1-leaves": 0.04309964678216893,
+      "match-98304-24-depth-8-leaves": 0.12241143493747841,
+      "match-32768-256-depth-1-leaves": 0.19698935680261376,
+      "match-32768-256-depth-8-leaves": 0.18408654775771094,
+      "match-32768-1024-depth-1-leaves": 0.19099717616989043,
+      "match-32768-1024-depth-8-leaves": 0.18271910325724083,
+      "first-divergence": 0.05800978087595576,
+      "middle-divergence": 0.042328917227223206,
+      "last-divergence": 0.09977419221370609,
+      "short-request": 0.06457582228330139,
+      "page-aligned": 0.14434356314355545,
+      "shared-first-divergence-8-depth": 0.005686174775855535,
+      "shared-middle-divergence-8-depth": 0.055169137821408865,
+      "shared-late-shared-divergence-8-depth": 0.08991963551224447,
+      "shared-short-request-8-depth": 0.03725244998210031,
+      "shared-first-divergence-256-depth": 0.0023092389116611267,
+      "shared-middle-divergence-256-depth": 0.05876113222229795,
+      "shared-late-shared-divergence-256-depth": 0.17470174527572135,
+      "shared-short-request-256-depth": 0.06047472089914441,
+      "shared-first-divergence-1024-depth": 0.012343276023183858,
+      "shared-middle-divergence-1024-depth": 0.05837215424832487,
+      "shared-late-shared-divergence-1024-depth": 0.18842220898422957,
+      "shared-short-request-1024-depth": 0.06292577602413385
+    }
+  },
+  "pytest_batches": [
+    {
+      "files": [
+        "test/srt/test_beliefkv_radix_prefix.py",
+        "test/srt/test_beliefkv_execution_handoff.py",
+        "test/srt/test_beliefkv_terminal_capacity.py",
+        "test/registered/unit/mem_cache/test_radix_cache_unit.py"
+      ],
+      "passed": 257,
+      "subtests_passed": 61,
+      "exit_code": 0,
+      "environment": {
+        "CUDA_HOME": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia/cu13",
+        "CPATH": "/home/longhao/miniconda3/envs/beliefkv-next/include",
+        "LIBRARY_PATH": "/home/longhao/miniconda3/envs/beliefkv-next/lib",
+        "TORCH_EXTENSIONS_DIR": "/tmp/beliefkv-v195-nativehash",
+        "PYTHONPATH": "/home/longhao/experiment/.worktrees/sglang-v193-prefix-length-20261013/python"
+      }
+    },
+    {
+      "files": [
+        "tests/test_summarize_semantic_h2d_ab.py"
+      ],
+      "passed": 45,
+      "exit_code": 0
+    }
+  ],
+  "preliminary_check_failures": [
+    "Initial native collection imported the installed engine without CUDA_HOME; rerun uses isolated source.",
+    "Existing AST reclaim test harness lacked deque; only the harness was repaired.",
+    "Broader native hash tests lacked OpenSSL include/library paths; final rerun uses the existing Conda headers and a separate extension directory."
+  ],
+  "checks_qualification": "Earlier native batches overlap the final 257 checks and must not be added.",
+  "qualification": "Real native keys/inspector and CPU int64 index tensors on synthetic radix trees. Matching cases reduce thread CPU about 4.3-19.7%; some mismatch cases change by only about 0.2%. No DMA, live allocator, model precision, GPU throughput or JCT gain is measured. No cross-call token or residency cache was added. The running Main and actual engine were not modified; deployment must be cold. Current V42 complete busy-window service remains 14.97% below fixed V29 native.",
+  "helper_sha256": "cfa6352c4a3f2ccd30a202cb5096afd543d5888340eb7c341c32aca790d078b2"
+}

@@ -5,6 +5,14 @@
 完成/剩余工作预测，runtime 根据因果状态和真实缓存容量
 安排传输；吞吐和 JCT 收益仍待验证。
 
+v195在隔离引擎减少RadixKey当前长度和正常namespace检查的
+重复调用，Host FULL索引读取当前Tensor形状；不缓存跨调用
+驻留或token匹配。257项原生检查、61个子检查及45项报告检查
+通过；27种CPU int64索引fixture输出一致。成功匹配减负约
+4.3%–19.7%，部分不匹配仅约0.2%。新patch 3698ce2f/tree
+6d6af094待冷验证，V42源码冻结，完整FULL/Mamba/在途依赖保持，
+部分ACK不授权执行，不将CPU减负当GPU/JCT收益。
+
 v192的30秒非阻塞GIL采样为1,033个记录栈、286次错误。
 selection/launch/result调用路线为340/404/164个样本；
 selection中reentry/长度/前缀叶样本79/38/27。完整检查的

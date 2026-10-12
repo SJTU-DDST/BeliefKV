@@ -2,6 +2,15 @@
 
 更新日期：2026-10-13。
 
+v195已在隔离引擎验证前缀检查减负：RadixKey长度直接读取当前
+buffer/limit，正常namespace匹配减少函数调用，Host FULL索引
+长度读取当前Tensor形状。未加入跨调用驻留或token缓存。
+257项原生检查及61个子检查、45项报告检查通过；27种真实
+CPU int64索引fixture输出一致，成功匹配减负约4.3%–19.7%，
+部分不匹配场景仅约0.2%。v194/v195保存源码与证据；新patch
+3698ce2f/engine tree 6d6af094尚待冷部署。V42执行源码未热改，
+模型、容量、部分ACK及完整依赖语义保持，CPU减负不证明GPU收益。
+
 v192记录V42的30秒非阻塞GIL采样：1,033个有效栈样本、
 286次采样错误。按调用栈区分batch selection/launch/result为
 340/404/164个；selection中reentry检查、RadixKey长度和前缀

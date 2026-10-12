@@ -2,6 +2,16 @@
 
 Status date: 2026-10-13.
 
+V195 qualifies isolated-engine prefix-cost reduction: compute live RadixKey
+length directly, avoid a compatibility helper for matching namespaces, and
+read live Host FULL tensor shape. No cross-call token/residency cache.
+257 native checks, 61 subtests and 45 reporting checks pass. All 27 real
+CPU int64-index fixtures preserve outputs; matching cases reduce thread
+CPU about 4.3-19.7%, some mismatches about 0.2%. V194/V195 bind evidence.
+Patch 3698ce2f/tree 6d6af094 awaits cold deployment. V42 execution stays
+frozen. CPU reduction does not prove GPU/JCT gains; partial ACK still
+does not authorize execution and full data dependencies remain live.
+
 V192 records a 30s nonblocking GIL profile with 1033 stack samples and
 286 sampling errors. Caller routes selection/launch/result have 340/404/164
 samples; selection leaf counts for reentry/length/prefix are 79/38/27.

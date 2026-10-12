@@ -4,6 +4,15 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+v195的隔离引擎及原生测试须设置本机CUDA_HOME、PYTHONPATH；
+native hash测试额外使用现有Conda的CPATH/LIBRARY_PATH和独立
+TORCH_EXTENSIONS_DIR，不能把缺失编译环境算生产回归。AST
+reclaim fixture已补deque，未改变生产回收策略。257项检查和
+61个子检查通过，之前重叠批次不相加。v194真实CPU Tensor
+比较的4.3%–19.7%成功匹配减负不是GPU收益；v195绑定源码。
+报告用.raw.gz归档GIL栈，按报告后缀排除，不能扩大为排除可执行
+helper。新patch 3698ce2f只待冷部署，运行Main和实际引擎不热改。
+
 v192为30秒非阻塞GIL采样，保留1,033个栈样本及286次错误、
 原始压缩栈和qualified报告。selection/launch/result归并依据
 真实调用栈，不能把函数叶样本份额当墙钟、CPU利用率或GPU

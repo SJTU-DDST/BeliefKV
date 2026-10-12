@@ -15,6 +15,14 @@ import time
 from types import SimpleNamespace as NS
 
 
+class IndexRange:
+    def __init__(self, size):
+        self.shape = (size,)
+
+    def __len__(self):
+        return self.shape[0]
+
+
 def variant(engine_root):
     sources = {
         name: engine_root / "python/sglang/srt/mem_cache" / filename
@@ -64,12 +72,17 @@ def fixture(implementation, case):
     nodes, common = {0: root}, root
     anchors = []
     raw = array("q", range(tokens + 1))
+    if case.get("tensor_indices"):
+        import torch
+        indices = lambda size: torch.arange(size, dtype=torch.int64)
+    else:
+        indices = IndexRange
 
     def node(segment, parent, offset):
         node_id = len(nodes)
         on_device = offset < depth // 2
-        full_value = range(len(segment))
-        state = range(1) if (offset + 1) % 4 == 0 or offset == depth - 1 else None
+        full_value = indices(len(segment))
+        state = indices(1) if (offset + 1) % 4 == 0 or offset == depth - 1 else None
         result = NS(
             id=node_id, creation_time=float(node_id), parent=parent,
             key=implementation.key(segment),
@@ -110,7 +123,7 @@ def fixture(implementation, case):
     return cache, request
 
 
-def benchmark(baseline, optimized, *, samples, iterations):
+def benchmark(baseline, optimized, *, samples, iterations, tensor_indices=False):
     cases = []
     for tokens, depth in (
         (4096, 4), (32768, 8), (98304, 24), (32768, 256), (32768, 1024),
@@ -145,6 +158,7 @@ def benchmark(baseline, optimized, *, samples, iterations):
             })
     results = []
     for case in cases:
+        case["tensor_indices"] = tensor_indices
         variants = {
             name: (implementation, *fixture(implementation, case))
             for name, implementation in (("baseline", baseline), ("optimized", optimized))
@@ -199,6 +213,8 @@ def benchmark(baseline, optimized, *, samples, iterations):
         "baseline_source_sha256": baseline.source_sha256,
         "optimized_source_sha256": optimized.source_sha256,
         "samples": samples, "iterations_per_sample": iterations,
+        "index_storage": "torch.int64 CPU tensors" if tensor_indices else "IndexRange CPU fixture",
+        "benchmark_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "timing_semantics": {
             "p50_cpu_us": "Historical field: per-call perf_counter wall time in CPU fixtures.",
             "p50_thread_cpu_us": "Per-call thread_time CPU time, excluding scheduler waiting.",
@@ -213,13 +229,14 @@ def main():
     parser.add_argument("--optimized-engine-root", type=Path, required=True)
     parser.add_argument("--samples", type=int, default=7)
     parser.add_argument("--iterations", type=int, default=200)
+    parser.add_argument("--tensor-indices", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.samples <= 0 or args.iterations <= 0:
         parser.error("samples and iterations must be positive")
     report = benchmark(
         variant(args.baseline_engine_root), variant(args.optimized_engine_root),
-        samples=args.samples, iterations=args.iterations,
+        samples=args.samples, iterations=args.iterations, tensor_indices=args.tensor_indices,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")

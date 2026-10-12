@@ -1519,7 +1519,7 @@ index 006b52a..83c96cf 100644
      kv_host_pool = build_kv_host_pool(
          kv_pool=kv_pool,
 diff --git a/python/sglang/srt/mem_cache/radix_cache.py b/python/sglang/srt/mem_cache/radix_cache.py
-index e7bee63..ffc30a0 100644
+index e7bee63..41abf6b 100644
 --- a/python/sglang/srt/mem_cache/radix_cache.py
 +++ b/python/sglang/srt/mem_cache/radix_cache.py
 @@ -21,6 +21,7 @@ limitations under the License.
@@ -1542,13 +1542,25 @@ index e7bee63..ffc30a0 100644
      def __init__(
          self,
          token_ids: array[int],
-@@ -219,6 +225,35 @@ class RadixKey:
+@@ -94,7 +100,9 @@ class RadixKey:
+         return t if n == len(t) else t[:n]
+ 
+     def __len__(self) -> int:
+-        n = self._raw_len()
++        n = len(self.token_ids)
++        if self.limit is not None and self.limit < n:
++            n = self.limit
+         if self.is_bigram:
+             return n - 1 if n > 0 else 0
+         return n
+@@ -219,6 +227,36 @@ class RadixKey:
              return matched_tokens
          return (matched_tokens // page_size) * page_size
  
 +    def is_prefix_at(self, other: RadixKey, offset: int, page_size: int = 1) -> bool:
 +        """Check a complete segment without computing the longest common prefix."""
-+        self._check_compatible(other)
++        if self.extra_key != other.extra_key or self.cache_salt != other.cache_salt:
++            self._check_compatible(other)
 +        if self.is_bigram != other.is_bigram:
 +            raise ValueError("RadixKey operations require matching bigram modes")
 +        other_len = len(other)
@@ -2075,7 +2087,7 @@ index 6815679..8132f2c 100644
      def evict_device_end(self, component_type: ComponentType) -> None:
          """Finish the component's device-eviction walk."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..04ed5a2 100644
+index d417d7d..ade72f1 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -4,9 +4,10 @@ import atexit
@@ -3046,7 +3058,7 @@ index d417d7d..04ed5a2 100644
 +                    full.value is not None or full.host_value is not None
 +                )
 +                if full.value is None and full.host_value is not None:
-+                    missing_full += len(full.host_value)
++                    missing_full += full.host_value.shape[0]
 +                pending = pending or (
 +                    node.write_through_pending_id is not None
 +                    or node.load_back_pending_id is not None
@@ -3937,13 +3949,14 @@ index b219467..6ca04e5 100644
          cache, allocator, _ = build_fixture(self.cfg)
 diff --git a/test/srt/test_beliefkv_execution_handoff.py b/test/srt/test_beliefkv_execution_handoff.py
 new file mode 100644
-index 0000000..588eb28
+index 0000000..18b17ed
 --- /dev/null
 +++ b/test/srt/test_beliefkv_execution_handoff.py
-@@ -0,0 +1,724 @@
+@@ -0,0 +1,736 @@
 +"""CPU checks for read-only reentry and cold-only capacity exchange."""
 +
 +import ast
++from collections import deque
 +from enum import IntEnum
 +from pathlib import Path
 +from types import SimpleNamespace as NS
@@ -4001,6 +4014,7 @@ index 0000000..588eb28
 +    ast.fix_missing_locations(module)
 +    namespace = {
 +        "RadixKey": Key, "ComponentType": ComponentType, "BASE_COMPONENT_TYPE": 0,
++        "deque": deque,
 +        "BackupKV": lambda node_ids: NS(node_ids=node_ids),
 +    }
 +    exec(compile(module, str(SOURCE), "exec"), namespace)
@@ -4014,8 +4028,15 @@ index 0000000..588eb28
 +    __hash__ = object.__hash__
 +
 +
++class Indices(list):
++    @property
++    def shape(self):
++        return (len(self),)
++
++
 +def data(device=True, host=True, refs=1):
-+    return NS(value=[1, 2] if device else None, host_value=[1, 2] if host else None,
++    return NS(value=Indices([1, 2]) if device else None,
++              host_value=Indices([1, 2]) if host else None,
 +              lock_ref=0, session_ref=refs)
 +
 +
@@ -4238,7 +4259,10 @@ index 0000000..588eb28
 +        node = Node(
 +            id=node_id, parent=parent, creation_time=node_id,
 +            key=Key([node_id]),
-+            component_data=[NS(**{**vars(data()), "value": [node_id], "host_value": [node_id]}),
++            component_data=[NS(**{
++                **vars(data()), "value": Indices([node_id]),
++                "host_value": Indices([node_id]),
++            }),
 +                            data(False, False, 0), data()],
 +            write_through_pending_id=None, load_back_pending_id=None,
 +        )
@@ -5564,10 +5588,10 @@ index 0000000..0f6eaa2
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_radix_prefix.py b/test/srt/test_beliefkv_radix_prefix.py
 new file mode 100644
-index 0000000..7c61304
+index 0000000..da0ca58
 --- /dev/null
 +++ b/test/srt/test_beliefkv_radix_prefix.py
-@@ -0,0 +1,191 @@
+@@ -0,0 +1,209 @@
 +"""CPU equivalence checks for complete-segment matching in reentry inspection."""
 +
 +import ast
@@ -5732,6 +5756,24 @@ index 0000000..7c61304
 +    assert left.is_prefix_at(other, 1)
 +    other.token_ids[2049] = -2
 +    assert not left.is_prefix_at(other, 1)
++
++
++@pytest.mark.parametrize("container", (list, lambda tokens: array("q", tokens)))
++@pytest.mark.parametrize("bigram", (False, True))
++def test_length_tracks_mutable_storage_and_current_limit(container, bigram):
++    tokens = container([10, 11, 12])
++    current = RadixKey(tokens, is_bigram=bigram, limit=5)
++    for replacement in ([10, 11, 12], list(range(16)), [10], []):
++        tokens[:] = container(replacement)
++        raw = replacement[:5]
++        expected = list(zip(raw, raw[1:])) if bigram else raw
++        assert len(current) == len(expected)
++        assert list(current) == expected
++    current.limit = None
++    tokens.extend(container(range(8)))
++    raw = list(tokens)
++    expected = list(zip(raw, raw[1:])) if bigram else raw
++    assert len(current) == len(expected)
 +
 +
 +@pytest.mark.parametrize("container", (list, lambda tokens: array("q", tokens)))
