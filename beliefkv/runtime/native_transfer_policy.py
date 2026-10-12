@@ -64,10 +64,14 @@ def native_residency_budget(
     evictable_full_tokens: int = 0,
     evictable_mamba_slots: int = 0,
 ) -> PrefetchResidencyBudget:
-    # A full decode batch may overlap one frontier restore with its next
-    # completion. This allowance never substitutes for native admission.
+    # Cache restoration does not allocate a request row. A full decode batch
+    # may overlap one frontier restore with its next completion, even while
+    # all rows are occupied. Native admission still requires an actual row.
+    rows = max(0, available_request_rows)
+    if rows == 0 and running_requests >= max_running_requests > 0:
+        rows = 1
     slots = max(0, min(
-        available_request_rows, prefill_slots,
+        rows, prefill_slots,
         max(1, max_running_requests - running_requests),
     ))
     full_reserve = max(0, input_token_reserve) + max(1, page_size) * (

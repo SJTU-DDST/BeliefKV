@@ -107,6 +107,64 @@ def provisional_join_batch_fixture():
     return runtime, key, opportunity, cache, reserved
 
 
+@pytest.mark.parametrize("source", ["join_ticket", "tool_wait"])
+@pytest.mark.parametrize("running_count,free_full,expected_nodes", [
+    (48, 100, 4), (47, 100, 0), (48, 64, 0),
+])
+def test_full_decode_batch_can_restore_one_waiting_context_without_a_request_row(
+    source, running_count, free_full, expected_nodes,
+):
+    fixture = (
+        provisional_join_batch_fixture()
+        if source == "join_ticket" else batch_fixture(source)
+    )
+    runtime, _, opportunity, cache, _ = fixture
+    cache.req_to_token_pool = NS(
+        available_size=Mock(return_value=0), alloc=Mock(),
+        mamba_pool=NS(size=8),
+    )
+    cache.host_pool_group = cache.cache_controller.mem_pool_host
+    cache.token_to_kv_pool_allocator = NS(size=1024)
+    cache.full_evictable_size = lambda: 0
+    cache.mamba_evictable_size = lambda: 0
+    runtime._observe_native_admission_capacity(
+        running_batch=NS(reqs=[NS(rid=f"running-{n}") for n in range(running_count)]),
+        adder=NS(
+            max_running_requests=48, max_prefill_bs=4,
+            page_size=1, rem_input_tokens=16,
+        ),
+    )
+    headroom = replace(
+        opportunity.headroom, device_full_free_tokens=free_full,
+    )
+    opportunity = replace(opportunity, headroom=headroom)
+    try:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+            return_value=headroom,
+        ), patch.object(
+            runtime, "inspect_context_h2d_opportunity", return_value=opportunity,
+        ), patch.object(
+            runtime, "_h2d_start_window", return_value=TransferStartWindow(200., 0., 500.),
+        ):
+            if source == "tool_wait":
+                runtime.dispatch_tool_prefetch()
+            else:
+                runtime.dispatch_join_prefetch()
+        assert runtime.physical_ledger.pending_count == expected_nodes
+        assert cache.prefetch_gpu_session_nodes.call_count == int(expected_nodes > 0)
+        assert cache.req_to_token_pool.available_size() == 0
+        cache.req_to_token_pool.alloc.assert_not_called()
+        assert not runtime.physical_disabled
+        if expected_nodes:
+            assert runtime._residency_budget.request_slots == 1
+            assert runtime._residency_budget.reserve_full_tokens == 65
+            assert runtime._residency_budget.reserve_mamba_slots == 1
+            assert runtime._residency_budget.byte_limit == 410
+    finally:
+        runtime.close()
+
+
 def semantic_join_batch_fixture(*, center_tokens=48., lower_tokens=4., lead_ms=2000.):
     from beliefkv.runtime.semantic_report_worker import SemanticReportInput, SemanticReportReply
 

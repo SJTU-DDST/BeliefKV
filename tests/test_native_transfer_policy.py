@@ -46,8 +46,12 @@ def test_budget_expands_beyond_legacy_limits_only_with_real_capacity():
     ({"prefill_slots": 0}, 0),
     ({"available_request_rows": 3}, 3),
     ({"running_requests": 48}, 1),
+    ({"available_request_rows": 0, "running_requests": 48}, 1),
+    ({"available_request_rows": 0, "running_requests": 48, "prefill_slots": 0}, 0),
+    ({"available_request_rows": 0, "running_requests": 0}, 0),
+    ({"available_request_rows": 0, "running_requests": 0, "max_running_requests": 0}, 0),
 ])
-def test_budget_obeys_rows_and_next_batch_with_one_full_batch_frontier(changes, slots):
+def test_budget_obeys_next_batch_with_one_rowless_full_batch_restore_frontier(changes, slots):
     assert native_residency_budget(**capacity(**changes)).request_slots == slots
 
 
@@ -194,7 +198,7 @@ def test_runtime_reads_native_limits_instead_of_treating_idle_memory_as_slots():
     assert budget.reserve_full_tokens == 100 + 16 * 48
 
 
-@pytest.mark.parametrize("available_rows,expected_slots", [(6, 1), (0, 0)])
+@pytest.mark.parametrize("available_rows,expected_slots", [(6, 1), (0, 1)])
 def test_completed_prefill_selections_do_not_consume_next_restore_frontier(
     available_rows, expected_slots,
 ):
