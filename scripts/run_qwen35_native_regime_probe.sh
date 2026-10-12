@@ -77,7 +77,7 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || [[ "$PREPARE_HOST" != "0" && "$PREPARE_HOST" != "1" ]] \
   || [[ "$CHILD_FINAL_REPORT_SHADOW" != "0" && "$CHILD_FINAL_REPORT_SHADOW" != "1" ]] \
   || [[ "$ENABLE_TOOL_TIMING" != "0" && "$ENABLE_TOOL_TIMING" != "1" ]] \
-  || [[ ! "$PREFETCH_LEAD_MS" =~ ^[0-9]+$ ]] || (( PREFETCH_LEAD_MS < 100 || PREFETCH_LEAD_MS > 1000 )) \
+  || [[ ! "$PREFETCH_LEAD_MS" =~ ^[0-9]+$ ]] \
   || [[ "$SEMANTIC_WORK_STATISTIC" != upper && "$SEMANTIC_WORK_STATISTIC" != center ]] \
   || [[ ! "$EOS_PROTOCOL_WINDOW_MS" =~ ^[0-9]+$ ]] || (( EOS_PROTOCOL_WINDOW_MS < 50 || EOS_PROTOCOL_WINDOW_MS > 500 )) \
   || [[ "$AB_MODE" != "off" && "$CONFIRMED_JOIN_CANARY" != "0" ]] \
