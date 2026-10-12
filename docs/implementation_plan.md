@@ -2,13 +2,25 @@
 
 Status date: 2026-10-12.
 
+V37 predictive cold-started c48b3dd/838d2ed8 at 23:15:08 CST,
+including 29eb3d2's native chunk/input reserve correction and Enum
+allocation reduction. At 23:20:14, validation observes HTTP200,
+6788 actual GPU-service samples, physical_disabled=false and unchanged
+frozen configuration/physical pool capacities versus V36. Actual FULL
+reserve is 4145 tokens: 4096 input plus 49 pages; Mamba reserve stays
+one slot. This confirms deployment, not throughput or early reuse.
+Freeze the running source, keep fixed V29 native and the goal active.
+See v154. Next measure actual early FULL, completion of partial tails,
+first consumption and the 600-900s control/service window.
+Continuous cold reclamation during in-flight DMA remains unimplemented.
+
 V36 was administratively stopped at 23:08:23 CST: 39 completed,
 69 created unfinished and 48 unarrived workflows; the latter 117
 are administrative censoring, not agent failures. At 23:10:45, all
 108 workspaces passed full archive comparison before removal,
 20.905GB to 2.408GB. Remove only its 69 stopped owned containers;
 preserve raw evidence. Available space is 173.83GiB; see v153 and
-raw/ARCHIVED.md. Commit 29eb3d2 prepares the same-configuration
+raw/ARCHIVED.md. Commit 29eb3d2 is deployed in the same-configuration
 V37 predictive cold start, keeping fixed V29 native and the goal active.
 
 V36's first complete 600-900s window still trails fixed V29 native:
@@ -27,7 +39,7 @@ V151 follows 192 repeated JOIN starts by no_restore_plan; these are
 decisions, not independent JOIN events. Of 37 successful reclaim
 receipts, 34 miss FULL plus input reserves, 32 without published
 waiting victims. A truncated bounded scan does not prove no cold KV.
-Prepare the next cold-start correction: bound input reserve by the
+V37's cold-start correction bounds input reserve by the
 observed native chunk/input compute limits instead of reserving 16384
 tokens when chunked prefill is bounded at 4096. Retain decode pages,
 Mamba reserve, actual allocator/identity checks and shared protection.
