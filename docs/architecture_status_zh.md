@@ -2,6 +2,14 @@
 
 更新日期：2026-10-12。
 
+后续 baseline 对照方案已写入
+[相关工作总表第 6.4 节](related_work_comparison_2026-07-21_zh.md#64-当前-baseline-复现与-beliefkv-对照方案2026-10-12)：
+以统一模型/原生物理底座的策略对照为主，作者原实现另表；
+动态在线图与预声明图实验分开。第一批为 native、reactive
+common-path、CONCUR、ThunderAgent、CacheScout 与 BeliefKV。
+这是实施方案，不是已完成的复现或性能结论；当前 V32 运行源、
+配置及相对 native 的优化目标继续保持。
+
 最新采集已切换到 V32。V31 在 13:50:40.618 CST 主动
 停止，截止前观测到 63 completed，45 个已创建未结束和
 48 个未到达任务单列行政截断；未观测自发 error/incomplete。

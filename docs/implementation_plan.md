@@ -2,6 +2,18 @@
 
 Status date: 2026-10-12.
 
+The future baseline reproduction plan is recorded in section 6.4 of
+[the related-work comparison](related_work_comparison_2026-07-21_zh.md).
+Use common-model/native-executor policy comparisons as the main table,
+and original-stack reproductions separately. Keep online dynamic and
+predeclared-graph workloads distinct. The first batch covers native,
+reactive common-path, CONCUR, ThunderAgent, CacheScout and BeliefKV;
+then add graph/TTL/multi-step prediction methods with explicit fidelity
+and model-support records. Formal comparisons retain four repeated
+blocks and held-out tasks. This is a future execution proposal, not a
+completed reproduction; V32's frozen runtime and native-relative
+optimization objective remain unchanged.
+
 The latest collecting arm is now V32. V31 was administratively
 stopped at 13:50:40.618 CST with 63 observed completed workflows,
 45 created unfinished and 48 unarrived tasks censored separately.
