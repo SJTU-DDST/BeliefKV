@@ -14,6 +14,23 @@ busy-window comparison is now sealed in V219 and remains below native.
 V45 running sources stay frozen; the changes below are validated in
 Followup but await a later cold deployment.
 
+V224 refines actual single-request prefill geometry. For work below512
+tokens, 970/1039 batches average218.72/227.09 tokens; scheduler/worker
+intervals are21.403/7.059ms and run_batch-to-result70.494/53.222ms.
+Matched16-token work bins,2048-token prefix bins,CUDA flags and neighboring
+phases retain a2.26-3.53x short-prefill gap;4096-token cohorts are0.971-1.009x.
+Retain per-batch rows for reuse. Equal backend settings do not isolate
+kernel cost; continue attributing controls, restore dependencies and turnover.
+
+Commit7bc7fbe allows cold WAIT_JOIN FULL backup during the report stage
+unless this parent's actual restore ticket is live. Noncontinuing joins,
+reentry,session changes and native mutation checks remain restrictive;
+Mamba PREPARE remains disabled and partial restoration never grants execution.
+All467 related checks pass. Cold-deploy with c8fa8c7's two qualified changes,
+then measure real reclaim,early consumption and busy throughput before
+claiming improvement. V45 has not been hot-edited. V226 retains769 GIL
+stacks and196 errors across second-wave arrival; shares are not wall costs.
+
 V219 seals V45 600-900s: 337096/380722 decode request steps,
 11.459% below fixed native; 7.962% above V44 is observed, not causal.
 Visible context is 22.722k/23.240k; worker decode interval

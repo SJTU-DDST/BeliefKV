@@ -13,6 +13,20 @@ v217于06:34:44核验HTTP200、独立尾部570个真实GPU服务样本、
 FULL预留4,144 token，Mamba按下一批名额动态变化，该样本一份，
 v219已完成完整繁忙窗口，仍未达标，不能以启动资格认定收益。
 
+v224细化短prefill几何：小于512 token的单请求区间均值为
+21.403/7.059ms，run_batch入口到结果处理70.494/53.222ms；
+匹配16-token工作量、2,048-token前缀、CUDA标志及相邻阶段后
+仍有2.26–3.53倍差距，4,096-token组约0.971–1.009倍。
+区间仍含调度/overlap；逐批数据已保存，不能归为纯kernel慢。
+
+7bc7fbe将JOIN PREPARE保护与实际恢复ticket对齐：报告通知
+不再禁止冷WAIT_JOIN parent补FULL Host副本；有效恢复窗口、
+非继续JOIN、reentry和session失效仍拒绝，实际入队仍核验原生
+身份、锁、引用和在途传输。467项检查通过，Mamba PREPARE及
+完整执行依赖约定不变。与c8fa8c7两项资格改动待下一冷部署，
+V45未热改。v226的769个GIL栈/196次错误跨第二波到达，保留
+原始压缩栈，不将样本份额称为GPU stall或可移除JCT。
+
 V45的600–900秒decode request steps为337,096/固定native
 380,722，少11.459%；比V44多7.962%不构成因果加速。
 Python独占墙钟54.565秒，worker decode区间34.812/32.467ms，
