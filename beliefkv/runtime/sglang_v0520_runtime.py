@@ -4163,8 +4163,11 @@ class NativeAdmissionRuntime:
                 or parent.state is not InvocationState.WAIT_JOIN
                 or self._join_parent_key(parent.join_id) != key
                 or parent.join_id in self._noncontinuing_joins
-                or parent.join_id in self._final_stages
             ):
+                return None
+            ticket = self._join_ticket
+            if ticket is not None and ticket.key == key and self._live_join_ticket():
+                self.counts["prepare_join_restore_window_protected"] += 1
                 return None
             return self.capture_shadow_candidate(
                 self._native_cache, context_id=key.context_id,

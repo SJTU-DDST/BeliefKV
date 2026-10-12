@@ -896,6 +896,81 @@ def test_join_cold_candidate_remains_protected_during_live_restore_window():
         runtime.close()
 
 
+@pytest.mark.parametrize("ticket_state", ("absent", "expired", "live"))
+def test_join_report_notice_allows_full_backup_until_its_restore_window(ticket_state):
+    import time
+
+    from beliefkv.runtime.sglang_v0520_runtime import _JoinPrefetchTicket
+
+    runtime = final_stage_runtime()
+    runtime.enable_prepare_host = True
+    key = runtime.context_sessions["ctx-parent"]
+    root = NS(
+        node_id=0, creation_time=1, parent_id=None, key_tokens=0,
+        full_device_tokens=0, full_host_tokens=0,
+        mamba_device_present=False, mamba_host_present=False,
+        pending_write_id=None, pending_load_id=None,
+    )
+    leaf = NS(
+        node_id=11, creation_time=4, parent_id=0, key_tokens=10,
+        full_device_tokens=10, full_host_tokens=0,
+        mamba_device_present=True, mamba_host_present=False,
+        pending_write_id=None, pending_load_id=None,
+    )
+    anchors = ContextSessionAnchors(
+        key, ((0, ((11, 4),)), (2, ((11, 4),))), 1., reusable_input_tokens=10,
+    )
+    candidate = ActionLocalShadowCandidate(anchors, (leaf, root), 10, 0)
+    if ticket_state != "absent":
+        runtime._join_ticket = _JoinPrefetchTicket(
+            key, "join", "all", ("child",), "provisional",
+            time.monotonic() + (10. if ticket_state == "live" else -1.),
+            stage_bound=True,
+        )
+    try:
+        assert runtime._live_final_stage(runtime._final_stages["join"])
+        with patch.object(runtime, "capture_shadow_candidate", return_value=candidate) as capture:
+            step = runtime.refreshed_shadow_backup_step(
+                context_id=key.context_id, source="join_prepare",
+            )
+            if ticket_state == "live":
+                assert runtime._live_join_ticket()
+                assert step is None
+                capture.assert_not_called()
+                assert runtime.counts["prepare_join_restore_window_protected"] == 1
+            else:
+                assert step == ShadowBackupStep(
+                    key, 11, 4, 11, 4, missing_full_prefix_tokens=10,
+                )
+                assert not step.include_mamba
+                capture.assert_called_once()
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("invalidated_by", ("noncontinuing", "reentry", "session"))
+def test_report_stage_prepare_still_rejects_invalid_waiting_parent(invalidated_by):
+    from dataclasses import replace
+
+    runtime = final_stage_runtime()
+    runtime.enable_prepare_host = True
+    key = runtime.context_sessions["ctx-parent"]
+    if invalidated_by == "noncontinuing":
+        runtime._noncontinuing_joins.add("join")
+    elif invalidated_by == "reentry":
+        runtime.graph.invocations[key.invocation_id].state = InvocationState.READY
+    else:
+        runtime.context_sessions[key.context_id] = replace(key, invocation_id="other")
+    try:
+        with patch.object(runtime, "capture_shadow_candidate") as capture:
+            assert runtime.refreshed_shadow_backup_step(
+                context_id=key.context_id, source="join_prepare",
+            ) is None
+            capture.assert_not_called()
+    finally:
+        runtime.close()
+
+
 def test_prepare_reuses_backed_closure_and_does_not_register_after_parent_reentry():
     runtime = final_stage_runtime()
     runtime._clear_final_stage("join")
