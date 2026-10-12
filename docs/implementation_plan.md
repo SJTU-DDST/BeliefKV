@@ -2,6 +2,15 @@
 
 Status date: 2026-10-12.
 
+V36 was administratively stopped at 23:08:23 CST: 39 completed,
+69 created unfinished and 48 unarrived workflows; the latter 117
+are administrative censoring, not agent failures. At 23:10:45, all
+108 workspaces passed full archive comparison before removal,
+20.905GB to 2.408GB. Remove only its 69 stopped owned containers;
+preserve raw evidence. Available space is 173.83GiB; see v153 and
+raw/ARCHIVED.md. Commit 29eb3d2 prepares the same-configuration
+V37 predictive cold start, keeping fixed V29 native and the goal active.
+
 V36's first complete 600-900s window still trails fixed V29 native:
 322277/380722 decode request steps, 15.35% lower at 23.79k/23.24k
 visible-context tokens. Full 48-request decode cohorts are similar;

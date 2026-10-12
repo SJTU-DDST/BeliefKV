@@ -4,6 +4,14 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+V36 于 23:08:23 CST 行政停止，停止前 39 completed，
+69 个已创建未完成与 48 个未到达按行政删失保存，不能把
+shutdown 记录当作 agent 故障。23:10:45 全量比较后归档
+108 个 workspace，20.905→2.408 GB，仅清理该轮 69 个
+已停容器；原始 trace 和计划保留，可用空间约 173.83 GiB。
+恢复路径见 v153 与 raw/ARCHIVED.md。29eb3d2 修订已提交，
+维护结束后才冷启动同配置 V37 predictive，继续固定 V29 native。
+
 V36 完整 600–900 秒窗口仍比固定 V29 native 少 15.35%
 decode steps；61.904 秒 Python 独占墙钟不等于可减少的 JCT。
 V150 确认提前且下一请求复用 FULL 为 JOIN 12.145 MB、
@@ -23,7 +31,7 @@ V149 CPU Enum 改动验证行为一致，计时结果有波动；
 49 条有部分额度，是同一记录 free-list 下的预算反事实；
 不得计为已提交、完整 ACK、可执行或实际复用的事件数。
 
-当前 V36 predictive 于 22:27:27 CST 从 9d2bf8e/838d2ed8
+V36 predictive 曾于 22:27:27 CST 从 9d2bf8e/838d2ed8
 冷启动，已部署工具 P50 复用与恢复名额分离；22:31:42 核验
 HTTP 200、2,256 个 GPU 服务样本及 physical_disabled=false。
 所有冻结参数和实际 FULL/Mamba 各池容量逐项等于 V35，

@@ -34,6 +34,27 @@ source-minus-archive difference is not the physical reclaimed space.
 
 ## 2026-10-12 verified workspace compression
 
+Archive: `experiments/archive/20261012/v36_development_workspaces.tar.zst`
+
+SHA256: `e7f0bd61ddd96565dd612d4882afc4b48ae84b4cb7dd6d955789ab5310004bab`
+
+All 108 V36 workspaces passed full GNU tar comparison before source
+removal at 23:10:45 CST: 20,905,279,488 allocated source bytes and
+2,407,891,014 archive bytes. The collector stopped at 23:08:23 CST
+with 39 completed and 117 administratively censored tasks: 69 created
+unfinished and 48 unarrived. Only its 69 stopped owned containers were
+removed. Raw traces, outcomes, manifest and frozen plan remain.
+Maintenance precedes V37; available space was 186,651,115,520 bytes.
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261012/v36_development_workspaces.tar.zst \
+  --directory experiments/raw
+```
+
+Receipts: `experiments/reports/v153_v36_development_stop_20261012.json`
+and `experiments/reports/v153_v36_workspace_archive_20261012.json`.
+
 Archive: `experiments/archive/20261012/v35_development_workspaces.tar.zst`
 
 SHA256: `910520b960a88ec2237ac9c9a05cbc7a26728d4429febac0b9a011602b3893bb`
