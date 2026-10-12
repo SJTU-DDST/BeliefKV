@@ -4,6 +4,14 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+V34 已于 19:56:16 CST 冷启动 0b45f4b/3e23c770，单跑
+predictive，固定 V29 native。20:01:26 核验健康 200、
+4,032 个真实 GPU 服务样本和物理动作启用；各池实际容量、
+到达表、模型、8192 输出与 180 秒工具上限逐项等于 V33。
+新 FULL 余量与 Host-only Mamba 字段已记录，尚未观测
+实际 split。不要在运行中修改源码或把启动当收益验证；
+见 v140_v34_deployment_validation，性能目标继续 active。
+
 最新 V33 在 18:40:59 CST 行政停止：106 completed、1 个
 非法历史 tool arguments error、49 个已创建未完成任务删失。
 156 个 workspace 逐文件比较后已归档；不要把 shutdown

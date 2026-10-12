@@ -2,6 +2,16 @@
 
 Status date: 2026-10-12.
 
+V34 predictive-only cold-started 0b45f4b at 19:56:16 CST, retaining
+the fixed V29 native reference. Deployment validation at 20:01:26
+observes HTTP 200, 4032 real GPU service samples, physical_disabled=false
+and the new FULL remainder/Host-only Mamba telemetry. Actual physical
+pool capacities and frozen workload, model, output8192 and tool180s
+configuration match V33. Canonical patch 3e23c770 matches tree 0b3deb75.
+No native split has been observed at this startup snapshot. Freeze the
+running execution source. v140_v34_deployment_validation confirms
+deployment only, not complete restoration, early reuse or performance gain.
+
 V33 stopped at 18:40:59 CST for the next capacity correction:
 106 completed, one xarray-6721 invalid historical tool-argument
 error and 49 administratively censored workflows. Its 156
@@ -43,7 +53,7 @@ fixed free pool. Existing FULL-only incremental PREPARE remains;
 evaluate more proactive asynchronous backup separately with
 action-local diagnostics, transfer contention and return churn.
 624 runtime and 123 engine checks pass; canonical patch 3e23c770
-matches tree 0b3deb75. Cold-start V34 predictive only with the
+matches tree 0b3deb75. V34 predictive is running with the
 same frozen parameters and cached V29 native. Measure real
 probe/partial submission, independent early consumed FULL and
 busy-window service performance. The performance goal stays active.

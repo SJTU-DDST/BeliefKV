@@ -2,6 +2,16 @@
 
 更新日期：2026-10-12。
 
+V34 已于 2026-10-12 19:56:16 CST 从 0b45f4b 冷启动，只跑
+predictive，继续使用固定 V29 native。20:01:26 的部署核验确认
+健康 200、4,032 个实际 GPU 服务样本、physical_disabled=false；
+新 FULL 余量/Host-only Mamba 字段已出现在真实日志中，尚未
+观测到实际节点 split。Host/HBM 各池容量、108+48 到达、模型
+产物、工具 180 秒、输出 8192 等冻结参数逐项等于 V33。
+规范 patch 3e23c770 与实际 tree 0b3deb75 一致，回执为
+v140_v34_deployment_validation。运行源保持冻结；启动核验
+不证明完整恢复、提前 FULL 复用或吞吐收益，性能目标仍 active。
+
 最新容量审计与修订：V33 在 18:40:59 CST 主动停止，停止前
 106 completed、1 error，49 个已创建未完成任务单列行政截断。
 error 为 xarray-6721 的历史 assistant tool arguments 非法 JSON，
@@ -42,7 +52,7 @@ token；后者不是首节点大小。Mamba 与字节额度未阻塞这些记录
 冷 agent。未备份对象仍通过既有增量 FULL-only PREPARE，
 更主动的异步 PREPARE 时机需依据新诊断单独验证。
 624 runtime 与 123 引擎检查通过，patch 3e23c770 与实际
-tree 0b3deb75 一致。等待冷启动 V34 验证，性能目标仍 active。
+tree 0b3deb75 一致。已部署至 V34，等待实际容量与性能验证。
 回执为 v137_partial_full_and_cold_capacity_validation。
 
 部分恢复验收进一步区分树拆分、批次提交、ACK、原生依赖就绪与

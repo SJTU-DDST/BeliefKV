@@ -1,0 +1,131 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-12T20:01:26.768005+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v34",
+  "code_commit": "0b45f4b6292f1efe3f412c1155d2324647f1e950",
+  "sglang_patch_sha256": "3e23c770524958b81820487cc5141c7d63ebe999b8f1fe2ab452c98e3c6f5280",
+  "frozen_plan_sha256": "b7956df777fc77a812f2a91b766132bf62ba645512ed1a88ec6662a785745268",
+  "execution_verification": {
+    "collection_code_commit": "0b45f4b6292f1efe3f412c1155d2324647f1e950",
+    "verification_code_commit": "0b45f4b6292f1efe3f412c1155d2324647f1e950",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "3e23c770524958b81820487cc5141c7d63ebe999b8f1fe2ab452c98e3c6f5280",
+    "expected_tree": "0b3deb754136392f872201c00ff3903b0ee00f8a",
+    "actual_tree": "0b3deb754136392f872201c00ff3903b0ee00f8a",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "unchanged_configuration_fields": [
+    "workload_sha256",
+    "root_count",
+    "arrival_schedule",
+    "server_running",
+    "context_tokens",
+    "max_completion_tokens",
+    "host_gb",
+    "host_split",
+    "mamba_full_memory_ratio",
+    "mem_fraction_static",
+    "native_write_policy",
+    "fanout_profile",
+    "sampling_seed",
+    "temperature",
+    "sandbox_command_timeout_s",
+    "activation_wall_clock_seconds",
+    "child_final_report_shadow",
+    "prefetch_lead_ms",
+    "eos_protocol_window_ms",
+    "eos_prefetch_evidence_window_ms",
+    "native_reference_run",
+    "semantic_artifact_sha256",
+    "tool_timing_sha256",
+    "transfer_service_seed_sha256",
+    "native_reactive_guard_profile",
+    "completion_gate_enabled",
+    "semantic_work_statistic"
+  ],
+  "actual_capacity": {
+    "device_full_bytes": 36843438080,
+    "device_full_tokens": 1798995,
+    "device_mamba_bytes": 33096007680,
+    "device_mamba_slots": 513,
+    "device_total_bytes": 69939445760,
+    "host_full_bytes": 160000020480,
+    "host_full_tokens": 7812501,
+    "host_mamba_bytes": 40050032640,
+    "host_mamba_slots": 622,
+    "host_total_bytes": 200050053120,
+    "pool_layout": "static_separate_full_mamba"
+  },
+  "max_completion_tokens": 8192,
+  "physical_disabled": false,
+  "runtime_snapshot_ts_ms": 1791806485195.6072,
+  "observed_gpu_service_samples": 4032,
+  "health_http_status": "200",
+  "live_process_identities": {
+    "coordinator": {
+      "pid": 3980934,
+      "state": "S",
+      "ppid": 1,
+      "pgid": 3980934,
+      "start_ticks": "597643869"
+    },
+    "scheduler": {
+      "pid": 3981540,
+      "state": "R",
+      "ppid": 3981174,
+      "pgid": 3981174,
+      "start_ticks": "597645368"
+    },
+    "client": {
+      "pid": 3983244,
+      "state": "S",
+      "ppid": 3981152,
+      "pgid": 3983244,
+      "start_ticks": "597660954"
+    },
+    "engine_parent": {
+      "pid": 3981174,
+      "state": "S",
+      "ppid": 3981152,
+      "pgid": 3981174,
+      "start_ticks": "597644090"
+    }
+  },
+  "restore_scope_telemetry_fields_observed": [
+    "host_backed_full_missing_device_tokens",
+    "host_only_mamba_nodes_in_observed_closure",
+    "restore_batch_scope",
+    "unplanned_host_backed_full_tokens"
+  ],
+  "native_extent_split_records_observed": 0,
+  "implementation_commits": [
+    "79bef79",
+    "0b45f4b"
+  ],
+  "related_checks": {
+    "previous_runtime": 624,
+    "previous_engine": 123,
+    "latest_restore_scope": 90,
+    "counts_overlap": true
+  },
+  "scope": "Source, real service, physical action availability and unchanged-capacity validation. No complete checkpoint readiness, early FULL consumption, complete busy window or causal gain is inferred from startup."
+}
