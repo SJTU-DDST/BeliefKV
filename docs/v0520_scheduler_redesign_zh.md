@@ -5,14 +5,36 @@
 完成/剩余工作预测，runtime 根据因果状态和真实缓存容量
 安排传输；吞吐和 JCT 收益仍待验证。
 
-当前 V37 已于 23:15:08 CST 从 c48b3dd/838d2ed8 冷启动，
-包含 29eb3d2 的实际 chunk/input 预留修订与 Enum 检查减负。
-23:20:14 核验 6,788 个实际 GPU 服务样本、HTTP 200、
-physical_disabled=false，配置和各池容量等于 V36。FULL
-预留实际为 4,145 token，含 4,096 输入和 49 页余量；
-Mamba 仍预留一份。v154 证明部署，不证明提前消费或吞吐。
-运行源码冻结，固定 V29 native；继续检验实际 FULL 消费、
-部分尾部补齐和繁忙窗口成本。DMA 在途持续回收尚未实现。
+V37 完整 600–900 秒窗口仍低于固定 V29 native：decode request
+steps 337,529/380,722，差 11.35%，上下文约 23.57k/23.24k。
+worker decode 区间均值 35.003/32.467 ms，Python 独占墙钟
+56.834 秒，不可直接扣作 JCT。v155 的早期独立前缀确认
+JOIN 2 个/13.332 MB、tool 11 个/641.495 MB 提前 FULL 消费；
+94 个 JOIN 边界未知，handoff 仍单列需求恢复。见 v155–v157。
+
+v156 的容量拒绝中，原生 bounded scan 重复检查同一 set
+前缀。新修订保存 FULL 叶快照的剩余扫描队列，跨调用推进；
+每次最多校验 64 个非目标候选、选择 8 个，实际事务仍有界。
+目标前缀排除不占校验额度，Mamba 单独短缺跳过 FULL 扫描；
+新 snapshot 只在确有 FULL 缺口且旧队列耗尽时创建。
+当前叶、Host backing、引用、锁、创建身份和在途检查仍由
+原生操作执行，动态快照不能证明单时刻完整冷容量。
+
+runtime 在首段 native enqueue 后、pending 和因果等待仍有效
+时尝试一次冷容量衔接，目标是同一 safe input checkpoint
+未提交的 FULL 尾部，不能使用包含旧输出的 closure 总量。
+尾部按实时字节预算和页对齐缩小，再加 input/decode/Mamba
+预留交给原生 reclaimer，整个目标 closure 排除。没有同步
+DMA 等待、尾部 enqueue 或准入授权，后续沿现有 ACK 重规划；
+不是连续在途维护，部分 ACK 仍须补齐原 checkpoint 才能执行。
+冷候选校验仅刷新所属 context 的保护租约，减少重复全局维护。
+647 runtime 与 124 原生检查通过，规范 patch cf0243b6 与
+独立 tree c7c27e0d 一致，v158 保存验证。
+
+运行中的 V37 保持 c48b3dd/838d2ed8 冻结，v154 部署回执
+继续保留。提交新修订后先封存行政停止和核验 workspace 归档，
+再同配置冷启动 V38 predictive，固定 V29 native；重点观察
+实际扫描覆盖、尾部恢复/首次消费与繁忙窗口成本，目标 active。
 
 V36 已于 23:08:23 CST 行政停止：39 completed，
 69 个已创建与 48 个未到达任务行政删失，不能算作 agent 失败。

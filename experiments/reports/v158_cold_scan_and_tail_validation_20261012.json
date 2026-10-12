@@ -1,0 +1,56 @@
+{
+  "schema_version": 1,
+  "scope": "Independent CPU validation before the V37 administrative cutoff and V38 cold deployment",
+  "source_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011",
+  "independent_engine_checkout": "/tmp/sglang-v158-cold-scan-20261012",
+  "running_v37_source_unchanged": true,
+  "canonical_engine": {
+    "commit": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
+    "patch_sha256": "cf0243b6331c2be8f24491efd7a4b2306e72610b4cd8cb8ddc586c4e12b18b2b",
+    "expected_tree": "c7c27e0db82a18a41d305b6c98176869ba14aa62",
+    "actual_tree": "c7c27e0db82a18a41d305b6c98176869ba14aa62",
+    "matches_worktree": true,
+    "provenance_state_sha256": "6ba42d79e7ba3959a11cede5badbcaaee7bb1a59cad94318078b6f15d5d0c5c2",
+    "verification": "git_source_state applies the canonical patch to a temporary pinned-base index and compares the full worktree tree without modifying the real index."
+  },
+  "checks": {
+    "runtime_related_passed": 647,
+    "native_terminal_capacity_and_shadow_dispatch_passed": 124,
+    "native_subtests_passed": 27,
+    "native_final_duration_seconds": 10.31,
+    "native_gpu_visibility": "CUDA_VISIBLE_DEVICES=9; CPU-only with the physical experiment GPU untouched",
+    "runtime_diff_check": "passed",
+    "independent_engine_diff_check": "passed"
+  },
+  "new_regressions": [
+    "JOIN/tool partial enqueue plans the same safe input checkpoint tail, excluding older output beyond the next reusable prefix.",
+    "A reduced live byte budget bounds the tail target and input/decode/Mamba reserves remain present.",
+    "Invalidation during enqueue prevents subsequent cold reclaim.",
+    "Post-enqueue reclaim leaves commands pending, does not wait for ACK, does not enqueue the tail and does not mark execution ready.",
+    "A bounded leaf scan advances past eight unbacked, referenced or in-flight candidates to a later eligible victim.",
+    "A later victim becoming in-flight is rejected after scan continuation.",
+    "Excluded restore target nodes do not hide a legal cold victim behind the non-target validation quota."
+  ],
+  "implementation_bounds": {
+    "native_non_target_candidate_checks_per_pass": 64,
+    "native_selected_full_candidates_per_pass": 8,
+    "native_transaction_attempts_per_pass": 64,
+    "tail_reclaim_passes_per_successful_wait_burst": 1,
+    "full_scan_on_mamba_only_shortage": false,
+    "continuous_dma_inflight_maintenance": false,
+    "partial_ack_authorizes_execution": false
+  },
+  "evidence": [
+    "v155_v37_early_wait_prefetch_20261012.json.gz",
+    "v155_v37_early_wait_prefetch_20261012_summary.json",
+    "v156_v37_wait_capacity_20261012.json",
+    "v157_v37_early_busy_600_900_20261012.json"
+  ],
+  "limitations": [
+    "A progressing dynamic leaf snapshot is not an atomic census of every cache state.",
+    "Only a validated Host-backed cold victim can be reclaimed; active, shared, locked and in-flight pages remain protected.",
+    "A safe-tail capacity receipt proves allocator release only, not tail transfer, complete checkpoint readiness or next-request consumption.",
+    "CPU checks and source verification do not prove GPU throughput or JCT improvement.",
+    "V37 source remains frozen; deployment and performance must be verified on a new cold-started predictive run with fixed V29 native."
+  ]
+}

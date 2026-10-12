@@ -5,7 +5,9 @@ from unittest.mock import Mock, patch
 import pytest
 
 from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget, TransferStartWindow
-from beliefkv.runtime.sglang_v0520_physical import inspect_session_h2d_opportunity
+from beliefkv.runtime.sglang_v0520_physical import (
+    inspect_session_h2d_opportunity, plan_prefetch_gpu_steps,
+)
 from tests.test_sglang_v0520_physical import prefetch_node
 from tests.test_wait_prefetch_batch import batch_fixture, provisional_join_batch_fixture
 
@@ -174,8 +176,12 @@ def test_zero_native_budget_can_reclaim_a_backed_waiting_session_at_latest_start
     cache.beliefkv_join_pressure_candidates_by_component = {0: ((99, 100.),)}
 
     def reclaim(**kwargs):
-        assert kwargs["full_tokens"] == 5
         assert kwargs["exclude_node_ids"] == (0, 1, 2, 3, 4)
+        if runtime.physical_ledger.pending_count:
+            assert kwargs["full_tokens"] == 13
+            assert runtime.physical_ledger.pending_count == 1
+            return {}
+        assert kwargs["full_tokens"] == 5
         if reclaim_succeeds:
             headroom[0] = replace(headroom[0], device_full_free_tokens=5)
         return {0: 4} if reclaim_succeeds else {}
@@ -202,7 +208,9 @@ def test_zero_native_budget_can_reclaim_a_backed_waiting_session_at_latest_start
                 runtime.dispatch_tool_prefetch()
             else:
                 runtime.dispatch_join_prefetch()
-        cache.reclaim_beliefkv_handoff_capacity.assert_called_once()
+        assert cache.reclaim_beliefkv_handoff_capacity.call_count == (
+            2 if reclaim_succeeds else 1
+        )
         assert runtime.counts["wait_prefetch_backed_capacity_probe"] == 1
         assert not runtime.physical_disabled
         if reclaim_succeeds:
@@ -248,5 +256,96 @@ def test_zero_budget_reclaim_probe_does_not_evict_without_a_live_timed_opportuni
         cache.reclaim_beliefkv_handoff_capacity.assert_not_called()
         cache.prefetch_gpu_session_nodes.assert_not_called()
         assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
+@pytest.mark.parametrize("byte_limit,tail_target", ((1024, 8), (60, 6)))
+@pytest.mark.parametrize("wait_ends_after_enqueue", (False, True))
+def test_partial_enqueue_reclaims_only_the_bounded_safe_input_tail_without_waiting(
+    source, byte_limit, tail_target, wait_ends_after_enqueue,
+):
+    fixture = (
+        provisional_join_batch_fixture() if source == "join_ticket"
+        else batch_fixture(source)
+    )
+    runtime, key, original, cache, _ = fixture
+    runtime._h2d_samples.extend(((20, 10.), (40, 10.)) * 3)
+    if runtime._semantic_worker is not None:
+        runtime._semantic_worker.error = ""
+    nodes = original.candidate.nodes[:3] + (
+        prefetch_node(3, 2, 4, full_host=4, mamba_host=True, key_tokens=4),
+        prefetch_node(4, 3, 5, full_host=4, key_tokens=4),
+    )
+    anchors = replace(
+        original.anchors,
+        component_leaves=((0, ((4, 5),)), (2, ((3, 4),))),
+        reusable_input_tokens=12,
+    )
+    candidate = replace(original.candidate, anchors=anchors, nodes=nodes)
+    steps = plan_prefetch_gpu_steps(candidate)
+    assert len(steps) == 3
+    opportunity = replace(
+        original, anchors=anchors, candidate=candidate, steps=steps, step=steps[0],
+        required_full_tokens=12,
+        host_backed_full_missing_device_tokens=16,
+        headroom=replace(original.headroom, device_full_free_tokens=5),
+    )
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+
+    def reclaim(**kwargs):
+        assert runtime.physical_ledger.pending_count == 1, (dict(runtime.counts), records)
+        assert kwargs["full_tokens"] == tail_target + 1
+        assert kwargs["mamba_slots"] == 1
+        assert kwargs["exclude_node_ids"] == (0, 1, 2, 3, 4)
+        assert not runtime.completed_physical_actions
+        return {0: tail_target}
+
+    cache.reclaim_beliefkv_handoff_capacity = Mock(side_effect=reclaim)
+    original_enqueue = cache.prefetch_gpu_session_nodes.side_effect
+
+    def enqueue(**kwargs):
+        outcomes = original_enqueue(**kwargs)
+        if wait_ends_after_enqueue:
+            if source == "tool_wait":
+                runtime._tool_ticket = None
+            else:
+                runtime._join_ticket = None
+        return outcomes
+
+    cache.prefetch_gpu_session_nodes.side_effect = enqueue
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity",
+                          return_value=opportunity), \
+             patch.object(runtime, "_current_residency_budget",
+                          return_value=PrefetchResidencyBudget(
+                              1, byte_limit, reserve_full_tokens=1, reserve_mamba_slots=1,
+                          )), \
+             patch.object(runtime, "_publish_parent_pressure_candidates"), \
+             patch.object(runtime, "_h2d_start_window",
+                          return_value=TransferStartWindow(200., 0., 500.)):
+            if source == "tool_wait":
+                runtime.dispatch_tool_prefetch()
+            else:
+                runtime.dispatch_join_prefetch()
+        assert runtime.physical_ledger.pending_count == 1
+        cache.prefetch_gpu_session_nodes.assert_called_once()
+        assert not cache.prefetch_gpu_session_nodes.call_args.kwargs["nodes"][0][2]
+        assert not runtime.completed_physical_actions
+        assert not runtime.physical_disabled
+        if wait_ends_after_enqueue:
+            cache.reclaim_beliefkv_handoff_capacity.assert_not_called()
+        else:
+            cache.reclaim_beliefkv_handoff_capacity.assert_called_once()
+            row = next(
+                row for row in records
+                if row["event"] == "wait_prefetch_tail_capacity_reclaimed"
+            )
+            assert row["safe_input_tail_full_tokens"] == 8
+            assert row["budgeted_tail_full_tokens"] == tail_target
+            assert row["reserve_full_tokens"] == 1
+            assert row["freed_units"] == {0: tail_target}
     finally:
         runtime.close()

@@ -62,6 +62,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     missing_prepare_full_prefix_tokens,
     next_prefetch_gpu_step,
     next_shadow_backup_step,
+    plan_prefetch_gpu_steps,
     prefetch_expectation_from_native_op,
     shadow_backup_steps,
     shadow_expectation_from_native_op,
@@ -4057,6 +4058,79 @@ class NativeAdmissionRuntime:
             if refreshed is not None and diagnosis is not None else refreshed
         )
 
+    @timed_runtime("wait_prefetch_tail_reclaim")
+    def _reclaim_wait_prefetch_tail_capacity(
+        self, key: PrefillCandidateKey, opportunity: SessionH2DOpportunity,
+        issued_steps: tuple[PrefetchLoadStep, ...], *, source: str,
+        commands: tuple[str, ...],
+    ) -> None:
+        candidate = getattr(opportunity, "candidate", None)
+        reclaim = getattr(self._native_cache, "reclaim_beliefkv_handoff_capacity", None)
+        if (
+            candidate is None or not issued_steps or not callable(reclaim)
+            or not self._live_wait_prefetch(key, source)
+            or not any(self.physical_ledger.is_pending(command) for command in commands)
+        ):
+            return
+        sent = {(step.node_id, step.creation_time) for step in issued_steps}
+        checkpoint = (
+            issued_steps[0].leaf_node_id, issued_steps[0].leaf_creation_time,
+        )
+        nodes = {node.node_id: node for node in candidate.nodes}
+        # Use the pre-enqueue safe input plan, not total closure bytes: the
+        # latter can include generated output that the next request cannot use.
+        tail_tokens = sum(
+            nodes[step.node_id].full_host_tokens
+            for step in plan_prefetch_gpu_steps(candidate)
+            if (step.node_id, step.creation_time) not in sent
+            and (step.leaf_node_id, step.leaf_creation_time) == checkpoint
+            and nodes[step.node_id].full_device_tokens == 0
+        )
+        if not tail_tokens:
+            return
+        budget = self._current_residency_budget(include_evictable=True)
+        entries = self._native_cache.cache_controller.mem_pool_host.entry_map
+        full_unit = entries["kv"].host_pool.size_per_token
+        allowance = max(0, budget.byte_limit - sum(
+            lease.protected_bytes for lease in self._prefetch_service_leases.values()
+        ))
+        target_tokens = min(tail_tokens, allowance // full_unit)
+        page_size = max(1, self._native_page_size)
+        target_tokens = target_tokens // page_size * page_size
+        if not target_tokens:
+            return
+        excluded = tuple(nodes)
+        self._publish_parent_pressure_candidates(exclude_node_ids=excluded)
+        self.counts["wait_prefetch_tail_capacity_checks"] += 1
+        freed = reclaim(
+            full_tokens=target_tokens + budget.reserve_full_tokens,
+            mamba_slots=budget.reserve_mamba_slots,
+            exclude_node_ids=excluded,
+            **({"collect_diagnostics": True} if self._opportunity_writer is not None else {}),
+        )
+        if freed:
+            self.counts["wait_prefetch_tail_cold_reclaimed"] += 1
+        if self._opportunity_writer is not None:
+            self._opportunity_writer.record({
+                "event": "wait_prefetch_tail_capacity_reclaimed",
+                "ts_ms": time.time() * 1000., "source": source,
+                "workflow_id": key.root_workflow_id, "context_id": key.context_id,
+                "context_epoch": key.context_epoch, "session_id": key.session_id,
+                "session_generation": key.session_generation,
+                "pending_command_ids": commands,
+                "safe_input_tail_full_tokens": tail_tokens,
+                "budgeted_tail_full_tokens": target_tokens,
+                "reserve_full_tokens": budget.reserve_full_tokens,
+                "freed_units": freed,
+                "capacity_reclaim": getattr(
+                    self._native_cache, "beliefkv_handoff_last_capacity", None,
+                ),
+                "scope": (
+                    "One bounded cold-capacity pass after native enqueue. No "
+                    "DMA wait, tail enqueue, admission or execution readiness."
+                ),
+            })
+
     def refreshed_shadow_backup_step(
         self, *, context_id: str | None = None, source: str = "tool_wait",
         host_full_free_tokens: int | None = None,
@@ -4289,7 +4363,7 @@ class NativeAdmissionRuntime:
         record = self._parent_pressure_candidates.get(node_id)
         if record is None or record[1] != creation_time:
             return False
-        self._refresh_prefetch_service_leases()
+        self._refresh_prefetch_service_leases(context_id=record[0].context_id)
         if any(
             lease.node_id == node_id and lease.creation_time == creation_time
             for lease in self._prefetch_service_leases.values()
@@ -5462,6 +5536,10 @@ class NativeAdmissionRuntime:
             self._record_wait_prefetch_plan(
                 source, key, fresh,
                 reason="submitted" if len(issued) == len(steps) else "submitted_partial",
+            )
+            self._reclaim_wait_prefetch_tail_capacity(
+                key, fresh, steps[:len(issued)], source=source,
+                commands=tuple(issued),
             )
         return tuple(issued)
 

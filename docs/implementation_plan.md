@@ -2,17 +2,51 @@
 
 Status date: 2026-10-12.
 
-V37 predictive cold-started c48b3dd/838d2ed8 at 23:15:08 CST,
-including 29eb3d2's native chunk/input reserve correction and Enum
-allocation reduction. At 23:20:14, validation observes HTTP200,
-6788 actual GPU-service samples, physical_disabled=false and unchanged
-frozen configuration/physical pool capacities versus V36. Actual FULL
-reserve is 4145 tokens: 4096 input plus 49 pages; Mamba reserve stays
-one slot. This confirms deployment, not throughput or early reuse.
-Freeze the running source, keep fixed V29 native and the goal active.
-See v154. Next measure actual early FULL, completion of partial tails,
-first consumption and the 600-900s control/service window.
-Continuous cold reclamation during in-flight DMA remains unimplemented.
+V37's complete 600-900s window still trails fixed V29 native:
+337529/380722 decode request steps, 11.35% lower with about
+23.57k/23.24k visible-context tokens. Mean worker decode intervals are
+35.003/32.467ms. Instrumented exclusive Python wall is 56.834s;
+reentry/admission/tool self costs are 8.678/7.792/6.948s, not removable
+JCT. The separate V155 early prefix confirms two JOIN events/13.332MB
+and eleven tools/641.495MB of pre-completion started, next-request
+consumed FULL. Completed-boundary positive-FULL/window/submit funnels
+are JOIN 11/11/4 and tool 164/12/12; keep 94 unknown JOIN boundaries
+unknown. Different prefixes and trajectories do not prove causal gains.
+See v155-v157.
+
+V156 finds repeated FULL capacity refusals with truncated scans for
+1299 tool-wait identities and 17 JOIN identities. Actual wait reclaims
+are JOIN seven records/19631 FULL tokens and tool four/10968; seventeen
+tool extent splits contain 4791 tokens. Rechecking the same set prefix
+does not establish absence of other cold KV. Continue a bounded leaf
+snapshot across reclaim calls, validating at most 64 non-target
+candidates and selecting at most eight per pass. Revalidate current
+leaf membership, identity, backing, references and in-flight state for
+actual victims. Target exclusions do not consume the validation quota;
+Mamba-only shortages skip FULL scans. This is not an atomic cache census.
+
+After a partial native enqueue, one bounded cold-capacity pass can
+prepare the unsubmitted safe-input FULL tail while a command remains
+pending and the causal wait is live. Derive the tail from the original
+safe input plan for the same checkpoint, not closure bytes that can
+include unusable generated output. Respect the live shared byte budget,
+page alignment and input/decode/Mamba reserves; exclude the full target
+closure. Do not wait for DMA, enqueue the tail or authorize service in
+this pass. Existing ACK-time replanning remains responsible for the
+next burst; this is not continuous in-flight maintenance. Partial ACK
+alone never makes a checkpoint executable. Restrict lease refresh in
+cold-candidate validation to its own context. Runtime 647 and native 124
+checks pass; canonical patch cf0243b6 matches independent tree c7c27e0d.
+See v158_cold_scan_and_tail_validation.
+
+Keep V37 frozen at c48b3dd/838d2ed8 until the new code is committed.
+Preserve its administrative cutoff, archive and compare all owned
+workspaces, then cold-start V38 predictive with the same frozen workload
+and fixed V29 native. Verify deployed engine/source identity, actual
+service, capacity and physical actions before measuring early consumed
+FULL, tail completion and busy-window service/control cost. The goal
+remains active; V154's V37 deployment receipt is retained as historical
+evidence, not a throughput claim.
 
 V36 was administratively stopped at 23:08:23 CST: 39 completed,
 69 created unfinished and 48 unarrived workflows; the latter 117

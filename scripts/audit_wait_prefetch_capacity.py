@@ -32,6 +32,7 @@ def audit(path):
     events = defaultdict(lambda: defaultdict(set))
     examples = defaultdict(list)
     reclaimed, demoted = defaultdict(Counter), defaultdict(Counter)
+    tail_reclaimed = defaultdict(Counter)
     split = defaultdict(Counter)
     last_reclaim = {}
     range_ms = [None, None]
@@ -41,6 +42,14 @@ def audit(path):
             range_ms[0] = ts if range_ms[0] is None else min(range_ms[0], ts)
             range_ms[1] = ts if range_ms[1] is None else max(range_ms[1], ts)
         kind, source = row["event"], row.get("source", "unknown")
+        if kind == "wait_prefetch_tail_capacity_reclaimed":
+            tail_reclaimed[source]["checks"] += 1
+            units = row.get("freed_units") or {}
+            full_units = units.get("0", units.get(0, 0))
+            tail_reclaimed[source]["checks_with_actual_full_reclaim"] += int(full_units > 0)
+            tail_reclaimed[source]["full_tokens"] += full_units
+            tail_reclaimed[source]["mamba_slots"] += units.get("2", units.get(2, 0))
+            continue
         if kind == "wait_prefetch_full_extent_split":
             split[source]["records"] += 1
             split[source]["fragment_full_tokens"] += row["fragment_full_tokens"]
@@ -102,6 +111,8 @@ def audit(path):
             else:
                 if diagnosis.get("native_full_scan_truncated"):
                     categories.append("same_action_native_scan_truncated")
+                if diagnosis.get("native_full_scan_cycle_started") is False:
+                    categories.append("same_action_native_scan_continued")
                 if diagnosis.get("full_target_satisfied") is False:
                     categories.append("same_action_bounded_reclaim_insufficient")
                 for check in diagnosis.get("waiting_candidate_checks", ()):
@@ -129,6 +140,9 @@ def audit(path):
             for source, counter in counts.items()
         },
         "actual_reclaim_records": {source: dict(value) for source, value in reclaimed.items()},
+        "actual_tail_capacity_reclaim_records": {
+            source: dict(value) for source, value in tail_reclaimed.items()
+        },
         "actual_waiting_agent_demotions": {source: dict(value) for source, value in demoted.items()},
         "actual_full_extent_splits": {source: dict(value) for source, value in split.items()},
         "observed_timestamp_range_ms": range_ms,
@@ -150,6 +164,10 @@ def audit(path):
             "Observed FULL remainders describe the captured closure, which may include "
             "output beyond the next reusable input checkpoint. A burst covering all "
             "observed Host-backed FULL still does not prove required state is resident.",
+            "Tail-capacity checks run once after a partial native enqueue. Their freed "
+            "units are capacity evidence, not a tail transfer, completed checkpoint "
+            "or consumer service. Continuing a bounded leaf snapshot is not a census "
+            "of every cache state at a single instant.",
         ],
     }
 
@@ -179,6 +197,7 @@ def main():
             for source, data in report["sources"].items()
         },
         "actual_reclaim_records": report["actual_reclaim_records"],
+        "actual_tail_capacity_reclaim_records": report["actual_tail_capacity_reclaim_records"],
         "actual_waiting_agent_demotions": report["actual_waiting_agent_demotions"],
         "actual_full_extent_splits": report["actual_full_extent_splits"],
     }, indent=2))
