@@ -1,0 +1,156 @@
+{
+  "schema_version": 1,
+  "started_at_local": "2026-10-12T10:19:38.419300+08:00",
+  "registered_at_local": "2026-10-12T10:19:38.987147+08:00",
+  "status": "waiting_for_previous_pair",
+  "coordinator_pid": 1744907,
+  "coordinator_identity": [
+    "S",
+    1744735,
+    "594184165"
+  ],
+  "superseded_coordinator_pid": 1155761,
+  "superseded_coordinator_identity": [
+    "S",
+    1,
+    "593981937"
+  ],
+  "superseded_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v30_launch_after_v29_5565b71_superseded_20261012_v124.json",
+  "superseded_log": "/home/longhao/experiment/BeliefKV/experiments/reports/v30_launch_after_v29_5565b71_superseded_20261012_v124.log",
+  "previous_process_identities_verified": {
+    "2492201": [
+      "S",
+      1,
+      "592763842"
+    ],
+    "2573163": [
+      "S",
+      2492201,
+      "592794467"
+    ],
+    "504513": [
+      "S",
+      2573163,
+      "593738948"
+    ],
+    "504522": [
+      "R",
+      504513,
+      "593738954"
+    ],
+    "504842": [
+      "R",
+      504522,
+      "593740248"
+    ],
+    "505757": [
+      "S",
+      504513,
+      "593754693"
+    ]
+  },
+  "collecting_native_identities_verified_after_registration": {
+    "2573163": [
+      "S",
+      2492201,
+      "592794467"
+    ],
+    "504513": [
+      "S",
+      2573163,
+      "593738948"
+    ],
+    "504522": [
+      "R",
+      504513,
+      "593738954"
+    ],
+    "504842": [
+      "R",
+      504522,
+      "593740248"
+    ],
+    "505757": [
+      "S",
+      504513,
+      "593754693"
+    ]
+  },
+  "original_predictive_handles_no_longer_live": {},
+  "previous_execution_verification": {
+    "collection_code_commit": "92e47d79ef1186dde954bc489fc38600ef5022ae",
+    "verification_code_commit": "f7edfdaf91c9b306a5099d21ef1c28766d79332c",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": [
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md",
+      "experiments/archive/README.md"
+    ]
+  },
+  "previous_written_outcomes": {
+    "predictive_h2d": {
+      "completed": 156
+    },
+    "native": {
+      "completed": 77
+    }
+  },
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v124-wait-candidates-20261012",
+  "target_revision": "d966cb5d66ee838e0009793a720ed42f8b58173d",
+  "target_patch_sha256": "1c3c7fc4eefc5a9ed12e18f5c99490f03cd4b79f9f58079ce08fae3d944cfc9e",
+  "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v30",
+  "state": "/home/longhao/experiment/BeliefKV/experiments/reports/v30_launch_after_v29_20261012.json",
+  "log": "/home/longhao/experiment/BeliefKV/experiments/reports/v30_launch_after_v29_20261012.log",
+  "environment": {
+    "PYTHON": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "RUN_ROOT": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v30",
+    "ROOT_COUNT": "156",
+    "ARRIVAL_BATCH_SIZE": "108",
+    "ARRIVAL_BATCH_INTERVAL_MS": "3600000",
+    "ARM_ORDER": "predictive_h2d native",
+    "RESUME_PENDING": "0",
+    "HOST_SPLIT": "80:20",
+    "PORT": "18454",
+    "SAMPLING_SEED": "21",
+    "REPETITION_ID": "0",
+    "ACTIVATION_WALL_CLOCK_SECONDS": "14400.0",
+    "SEMANTIC_REPORT_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/child_semantic_work_live_v7_quantiles/semantic_event_calibrated.json",
+    "PREPARE_HOST": "1",
+    "H2D_SEED_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/native_h2d_ack_seed_20261004.json",
+    "TOOL_TIMING_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/qwen35_native_event_horizons_20260928_calibrated.json",
+    "TRANSFER_SERVICE_SEED": "/home/longhao/experiment/BeliefKV/experiments/models/native_transfer_service_seed_v4.json",
+    "ENABLE_TOOL_TIMING": "1",
+    "PREFETCH_LEAD_MS": "500",
+    "SEMANTIC_WORK_STATISTIC": "center",
+    "EOS_PROTOCOL_WINDOW_MS": "250",
+    "FANOUT_PROFILE": "native_in_graph_2to4",
+    "CHILD_FINAL_REPORT_SHADOW": "1",
+    "WORKLOAD_MANIFEST": "/home/longhao/experiment/BeliefKV/configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json"
+  },
+  "conditions": [
+    "V29 predictive and same-version cold native finish with postprocessing.",
+    "Collecting V29 execution code remains frozen; main receives docs only.",
+    "Only the waiting coordinator was stopped after checking PID and start ticks.",
+    "V30 includes V120 JOIN reuse, V121 tool timing, V122 reentry, V123 service estimates and V124 waiting candidates.",
+    "Predictive starts first, followed by same-version cold native."
+  ],
+  "evidence": [
+    "experiments/reports/v124_wait_candidates_cpu_20261012.json",
+    "experiments/reports/v124_wait_candidates_cpu_first_attempt_20261012.json",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29/predictive_h2d/prefetch_lifecycle.json"
+  ],
+  "local_development_started_at": "2026-10-12T09:53:25+08:00",
+  "local_development_ended_at": "2026-10-12T10:19:38.987326+08:00",
+  "local_development_overlap_semantics": "Qualify V29 windows overlapping local analysis/CPU development.",
+  "helper_source_sha256": "c474d3e960f5ccb2148a3954bb645c75334dc94b677f6cbeaef8e5d225ec8f8c",
+  "performance_goal_met": false
+}
