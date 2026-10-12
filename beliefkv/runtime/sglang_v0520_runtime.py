@@ -1171,14 +1171,27 @@ class NativeAdmissionRuntime:
         self._semantic_keys[rid] = key
         self._semantic_frames[rid] = event
 
+    @property
+    def eos_prefetch_evidence_window_ms(self) -> float:
+        return max(
+            self.eos_protocol_window_ms, min(self.prefetch_lead_ms, 2_000.),
+        )
+
+    def _observed_final_eos_live(self, key: PrefillCandidateKey, now_ms: float) -> bool:
+        ended = self._semantic_finished.get(key.request_id)
+        # EOS remains a completed native fact while causal identity is intact.
+        # Bound its use by the existing restore lead and semantic-key lifetime.
+        return bool(
+            self._semantic_eos_proofs.get(key.request_id) is True
+            and ended is not None
+            and 0 <= now_ms - ended[0] <= self.eos_prefetch_evidence_window_ms
+            and self._semantic_key_live(key, now_ms)
+        )
+
     def _ensure_observed_final_stage(self, key: PrefillCandidateKey) -> None:
         ended = self._semantic_finished.get(key.request_id)
         now_ms = time.monotonic() * 1000
-        if not (
-            self._semantic_eos_proofs.get(key.request_id) is True
-            and ended is not None and 0 <= now_ms - ended[0] <= self.eos_protocol_window_ms
-            and self._semantic_key_live(key, now_ms)
-        ):
+        if not self._observed_final_eos_live(key, now_ms):
             return
         parent = self._semantic_parent(key.invocation_id)
         if parent is None:
@@ -1194,7 +1207,7 @@ class NativeAdmissionRuntime:
             self._final_request_stages.pop(previous.request_id, None)
         stage = _ChildFinalStage(
             parent_key, join_id, key.invocation_id, key.context_epoch, ended[1],
-            time.monotonic() + self.eos_protocol_window_ms / 1000.,
+            (ended[0] + self.eos_prefetch_evidence_window_ms) / 1000.,
             request_id=key.request_id, generated_tokens=ended[1],
             semantic_only=True,
             issued_nodes=self._issued_join_nodes(join_id, parent_key),
@@ -1589,6 +1602,7 @@ class NativeAdmissionRuntime:
                 "prefetch_lead_ms": self.prefetch_lead_ms,
                 "semantic_work_statistic": self.semantic_work_statistic,
                 "eos_protocol_window_ms": self.eos_protocol_window_ms,
+                "eos_prefetch_evidence_window_ms": self.eos_prefetch_evidence_window_ms,
                 "terminal_cache_diagnostics": self._terminal_cache_diagnostics,
                 "h2d_seed_samples": self._h2d_seed_count,
                 "h2d_service_samples": len(self._h2d_samples),
@@ -2283,12 +2297,8 @@ class NativeAdmissionRuntime:
             effective_work_statistic = self.semantic_work_statistic
             if self._semantic_worker is not None and observed_eos:
                 now_ms = time.monotonic() * 1000
-                ended_ms = self._semantic_finished[stage.request_id][0]
-                if (
-                    not 0 <= now_ms - ended_ms <= self.eos_protocol_window_ms
-                    or not self._semantic_key_live(child_key, now_ms)
-                ):
-                    self.counts["semantic_eos_protocol_window_expired"] += 1
+                if not self._observed_final_eos_live(child_key, now_ms):
+                    self.counts["semantic_eos_evidence_window_expired"] += 1
                     continue
                 remaining, remaining_ms = 0., 0.
                 trigger_kind = "observed_no_tool_eos"
@@ -3760,10 +3770,10 @@ class NativeAdmissionRuntime:
             ) is not None:
                 rid = stage.request_id
                 if self._semantic_eos_proofs.get(rid) is True:
-                    ended = self._semantic_finished.get(rid)
-                    if ended is not None and 0 <= (
-                        time.monotonic() * 1000. - ended[0]
-                    ) <= self.eos_protocol_window_ms:
+                    child_key = self.visible.get(rid) or self._semantic_keys.get(rid)
+                    if child_key is not None and self._observed_final_eos_live(
+                        child_key, time.monotonic() * 1000.,
+                    ):
                         remaining = 0.
                 elif self._final_stage_service_available(stage):
                     progress = self._semantic_progress.get(rid, ())

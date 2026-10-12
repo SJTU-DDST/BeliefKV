@@ -217,7 +217,10 @@ def test_reused_join_plan_cannot_bypass_causal_physical_or_time_revalidation(cha
                 context_id="ctx-parent", context_epoch=1,
             ),))
         elif change == "eos_expired":
-            runtime._semantic_finished["child"] = (time.monotonic() * 1000. - 251., 3)
+            age = max(
+                runtime.eos_protocol_window_ms, min(runtime.prefetch_lead_ms, 2000.),
+            ) + 1.
+            runtime._semantic_finished["child"] = (time.monotonic() * 1000. - age, 3)
 
     runtime.event_server = NS(drain=drain, close=lambda: None)
     changed = replace(opportunity, step=None, steps=()) if change == "plan_changed" else opportunity
@@ -227,6 +230,48 @@ def test_reused_join_plan_cannot_bypass_causal_physical_or_time_revalidation(cha
             runtime.dispatch_join_prefetch()
         cache.prefetch_gpu_session_nodes.assert_not_called()
         assert runtime.physical_ledger.pending_count == 0
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("eos_age_ms,change,expected_nodes", [
+    (300., None, 4), (750., None, 4), (1999., None, 4),
+    (2001., None, 0), (750., "tool_started", 0),
+    (750., "child_advanced", 0), (750., "parent_advanced", 0),
+])
+def test_observed_eos_survives_bounded_enqueue_delay_with_causal_revalidation(
+    eos_age_ms, change, expected_nodes,
+):
+    runtime, _, opportunity, cache, _ = provisional_join_batch_fixture()
+    runtime.prefetch_lead_ms = 2000.
+    now = time.monotonic()
+    runtime._semantic_finished["child"] = (now * 1000., 3)
+
+    def drain(**kwargs):
+        runtime._semantic_finished["child"] = (now * 1000. - eos_age_ms, 3)
+        if change == "tool_started":
+            runtime.on_events((event(
+                8, RuntimeEventKind.TOOL_START, invocation_id="child",
+                context_id="ctx-child", attributes={"tool_run_id": "new"},
+            ),))
+        elif change in ("child_advanced", "parent_advanced"):
+            child = change == "child_advanced"
+            runtime.on_events((event(
+                8, RuntimeEventKind.CONTEXT_ADVANCE,
+                invocation_id="child" if child else "parent",
+                context_id="ctx-child" if child else "ctx-parent",
+                context_epoch=2 if child else 1,
+            ),))
+
+    runtime.event_server = NS(drain=drain, close=lambda: None)
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=now), \
+            patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity):
+            runtime.dispatch_join_prefetch()
+        assert runtime.physical_ledger.pending_count == expected_nodes
+        assert cache.prefetch_gpu_session_nodes.call_count == int(expected_nodes > 0)
+        assert not runtime.graph.joins["join"].satisfied
         assert not runtime.physical_disabled
     finally:
         runtime.close()
@@ -952,7 +997,12 @@ def test_tool_window_uses_surviving_cdf_and_join_keeps_its_service_window():
 
 
 def test_join_batch_window_rechecks_live_work_progress_and_service_availability():
-    runtime, key, opportunity, _, _ = batch_fixture("join_ticket")
+    runtime, key, opportunity, _, _ = provisional_join_batch_fixture()
+    with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity):
+        runtime._roll_final_stage()
+    assert runtime._join_ticket is not None
+    runtime._semantic_eos_proofs.clear()
+    runtime._semantic_finished.clear()
     runtime._join_ticket.phase = "provisional"
     runtime._join_ticket.stage_bound = True
     runtime._join_ticket.work_endpoint_tokens = 128.

@@ -2970,7 +2970,10 @@ def test_observed_native_final_body_does_not_require_a_model_forecast(
     if should_issue:
         assert runtime._final_stages["join"].semantic_only
         assert runtime._final_stages["join"].tokens_per_second is None
-        runtime._semantic_finished["child"] = (now - 251, 3)
+        expired_age = max(
+            runtime.eos_protocol_window_ms, min(runtime.prefetch_lead_ms, 2000.),
+        ) + 1.
+        runtime._semantic_finished["child"] = (now - expired_age, 3)
         runtime._join_ticket = None
         runtime._roll_final_stage()
         assert runtime._join_ticket is None

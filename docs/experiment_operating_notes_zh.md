@@ -4,6 +4,25 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+V130 区分正常 EOS 证据寿命与 protocol-only 窗口：
+仅已确认正常停止、有正文且无工具证据的请求使用前者。
+按既有 restore lead 与语义身份寿命派生，当前 2 s lead
+下最长 2 s，从 EOS 计时、不重新续期；child RETURN、
+工具和请求/session/context 变化仍立即失效。计划与
+runtime 都记录 eos_prefetch_evidence_window_ms，旧计划
+缺少该字段时保持历史兼容，不改旧采集产物。
+
+已封存输入的 49 个完整自然 ALL JOIN 中，7 个
+EOS→RETURN 超过 250 ms，34 个启动未提交事件中
+5 个在旧窗口过期后、JOIN 完成前记录进度不可用。
+容量原因可重叠，不当作全部损失或可恢复动作数。
+318 项相关检查通过，仍须在新 V31 检查真实提交和复用。
+准备 V31 后再停止 V30；用进程 start ticks/PGID 核对
+身份，保留已写终态和行政截止时间，将未完成/未到达任务
+单列删失。V30 原始轨迹保留，清理容器只匹配本轮
+/workspace bind mount。V31 单跑 predictive 并固定引用
+V29 native，不修改仍在执行的 V30 源，也不伪造完整对照。
+
 采集中审计可用 `scripts/audit_sealed_wait_prefetch.py`，
 为每个 JSONL 固定首次读取长度、只取完整行，重复读取
 核对长度和 SHA256；跨文件不是原子快照。未观测完成

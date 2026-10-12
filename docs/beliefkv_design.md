@@ -37,6 +37,23 @@ agent 调度、共用路径减负、predictive H2D 与 `PREPARE_HOST`，
 3. 提高有用 FULL 预取覆盖，验证 handoff 能否替代需求恢复，
    并以实际首次复用、吞吐、JCT 与重算评价收益。
 
+V130 区分正常 EOS 事实与 protocol-only 回退窗口。
+已确认正常停止、可见正文且无工具证据的请求，在 child
+尚未 RETURN 且请求/session/context 身份仍有效时，按
+既有 restore lead 与语义身份寿命保留有界终态证据。
+当前 2 s lead 下允许最长 2 s；stage 到期时间锚定
+真实 EOS，不因重新规划而续期。普通工作预测继续要求
+服务进度，child RETURN 或新工具/身份变化立即失效；
+这不延迟 agent RETURN，不保证存在容量或后续复用。
+
+同一封存 V30 输入的 49 个完整自然 ALL JOIN 中，
+EOS→RETURN P50/P90 为 98.900/273.410 ms，7 个超过
+旧 250 ms。34 个启动未提交事件中，5 个随后在
+EOS+250 ms 至 JOIN 完成之间记录进度不可用；容量
+不足与此原因可重叠，不能外推为全部损失。318 项相关
+检查通过。将本修订与 V129 FULL-only 回收在新 V31
+开发轮验证，固定 V29 native；当前采集 V30 源不改变。
+
 V129 在独立 followup 将 FULL 容量交接与不必要的状态
 备份解耦：只缺 FULL 空间时，符合既有冷页/身份/引用/
 传输条件的 Host-backed FULL 可以释放，活跃 Mamba

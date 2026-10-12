@@ -524,6 +524,14 @@ def main() -> None:
             "prefetch_lead_ms": args.prefetch_lead_ms,
             "semantic_work_statistic": args.semantic_work_statistic,
             "eos_protocol_window_ms": args.eos_protocol_window_ms,
+            "eos_prefetch_evidence_window_ms": max(
+                args.eos_protocol_window_ms, min(args.prefetch_lead_ms, 2000.),
+            ),
+            "eos_prefetch_evidence_semantics": (
+                "normal native EOS and visible body; causal request/epoch/tool/JOIN "
+                "checks remain live; evidence age is bounded by existing restore lead "
+                "and semantic-key lifetime, distinct from the protocol-only window"
+            ),
             "tool_timing_enabled": bool(args.enable_tool_timing),
             "tool_timing_artifact": str(args.tool_timing_artifact.resolve()) if args.tool_timing_artifact else None,
             "tool_timing_sha256": (
@@ -751,7 +759,10 @@ def main() -> None:
         )
         if state["prepare_host"] != arm_prepare or not state["final_stage_priority"]:
             raise ValueError(f"{name}: mismatched PREPARE/priority configuration")
-        for setting in ("semantic_work_statistic", "eos_protocol_window_ms"):
+        for setting in (
+            "semantic_work_statistic", "eos_protocol_window_ms",
+            "eos_prefetch_evidence_window_ms",
+        ):
             if setting in plan and state.get(setting) != plan[setting]:
                 raise ValueError(f"{name}: mismatched {setting}")
         expected = name == "predictive_h2d"

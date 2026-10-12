@@ -1,0 +1,55 @@
+{
+  "schema_version": 1,
+  "date_local": "2026-10-12",
+  "scope": "Causal native EOS validity and batch-enqueue CPU validation; no GPU performance claim",
+  "evidence": {
+    "report": "experiments/reports/v130_v30_sealed_join_eos_20261012.json",
+    "source": "Reuse the independently capped V129 V30 prefixes; not a new moving-input sample",
+    "complete_natural_all_joins": 49,
+    "eos_to_return_p50_ms": 98.899658203125,
+    "eos_to_return_p90_ms": 273.41015625,
+    "eos_to_return_over_250ms": 7,
+    "eos_to_return_over_2000ms": 0,
+    "startup_without_submission": 34,
+    "unsubmitted_with_progress_unavailable_after_eos_250ms_before_join": 5,
+    "limitations": [
+      "This matched population differs from the lifecycle audit's 48 complete JOINs",
+      "Capacity constraints overlap; the signal expiry does not explain every lost submission",
+      "No physical capacity or transfer counterfactual is inferred from this audit"
+    ]
+  },
+  "change": {
+    "normal_eos_evidence_window": "max(protocol_window_ms, min(prefetch_lead_ms, 2000)); existing semantic-key validity still applies",
+    "current_lead_ms": 2000,
+    "current_protocol_only_window_ms": 250,
+    "current_normal_eos_evidence_window_ms": 2000,
+    "stage_expiry": "Actual native EOS timestamp plus evidence window; no renewal on stage recreation",
+    "retained_checks": [
+      "Normal native stop and visible nonempty body",
+      "Child remains nonterminal",
+      "No decoded or active tool evidence",
+      "Workflow, request, session and context identity",
+      "Current JOIN and physical checkpoint identity",
+      "Non-EOS forecasts retain live service progress and work-endpoint checks",
+      "Physical capacity, native reserves and final enqueue validation"
+    ]
+  },
+  "regression": {
+    "test": "tests/test_wait_prefetch_batch.py::test_observed_eos_survives_bounded_enqueue_delay_with_causal_revalidation",
+    "before_change": "The 300/750/1999ms positive enqueue cases failed under the old 250ms evidence window; the four expiry/tool/identity negative cases passed",
+    "after_change": "All seven batch-enqueue cases pass",
+    "positive_ages_ms": [300, 750, 1999],
+    "negative_cases": ["2001ms expiry", "new tool", "child context advances", "parent context advances"]
+  },
+  "related_validation": {
+    "command": "python -m pytest tests/test_wait_prefetch_batch.py tests/test_sglang_v0520_runtime.py tests/test_native_transfer_policy.py tests/test_summarize_semantic_h2d_ab.py tests/test_launch_semantic_h2d_after_pair.py tests/test_resume_semantic_h2d_ab.py -q --tb=short",
+    "passed": 318,
+    "failed": 0
+  },
+  "deployment": {
+    "collecting_v30_unchanged": true,
+    "next_candidate": "V31 predictive-only with this fix and 0046741 FULL-only reclaim",
+    "native_reference": "V29 completed native",
+    "goal_status": "active"
+  }
+}

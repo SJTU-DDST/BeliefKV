@@ -2,6 +2,32 @@
 
 Status date: 2026-10-12.
 
+V130 reuses the sealed V129 inputs to examine valid native EOS.
+For 49 complete natural ALL JOINs, EOS-to-RETURN P50/P90 is
+98.900/273.410ms; 7 exceed the old 250ms evidence age. Among
+34 startup-without-submit JOINs, 5 report unavailable progress
+after EOS+250ms and before the JOIN boundary. This matched
+population differs from the lifecycle audit's 48 completed JOINs.
+Capacity still overlaps; do not assign all 34 losses to expiry.
+
+Keep normal EOS/body proof separate from the protocol-only fallback.
+The evidence window derives from existing restore lead and semantic
+identity lifetime, reaching 2s with the current lead. Anchor stage
+expiry to the actual EOS timestamp, without renewal on recreation.
+Require a live nonterminal child, no tool evidence, and intact
+request/session/context identity at selection and final enqueue.
+Non-EOS forecasts retain service/progress checks. Related 318 cases
+pass, including delayed 300/750/1999ms batch enqueue and rejection
+for expiry, tools and changed identity. Retain v130_v30_sealed_join_eos.
+
+Prepare a clean immutable V31 with this change and V129's FULL-only
+reclaimer, then administratively stop V30 for a fresh predictive-only
+development run. Preserve its written outcomes, frozen plan, traces
+and cutoff; unfinished or unarrived workflows are censored, not model
+errors. Keep the V29 native reference and existing workload/settings.
+Do not alter V30's executing source before its processes exit, or
+treat CPU validation as GPU coverage/throughput/JCT improvement.
+
 V129 seals independently capped V30 JSONL prefixes read at
 12:11:56-12:12:14 CST. Among 48 JOINs with observed completion,
 38 record pre-boundary capacity-budget truncation, 38 enter the
