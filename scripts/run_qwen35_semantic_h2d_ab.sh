@@ -9,7 +9,7 @@ ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
 HOST_SPLIT="${HOST_SPLIT:-80:20}"
 PORT="${PORT:-18454}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_joint_wait_h2d_ab_${ROOT_COUNT}root_2to4_v8c}"
-ARM_ORDER="${ARM_ORDER:-predictive_h2d native}"
+ARM_ORDER="${ARM_ORDER:-predictive_h2d}"
 RESUME_PENDING="${RESUME_PENDING:-0}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 REPETITION_ID="${REPETITION_ID:-0}"
@@ -24,6 +24,11 @@ PREFETCH_LEAD_MS="${PREFETCH_LEAD_MS:-500}"
 SEMANTIC_WORK_STATISTIC="${SEMANTIC_WORK_STATISTIC:-center}"
 EOS_PROTOCOL_WINDOW_MS="${EOS_PROTOCOL_WINDOW_MS:-250}"
 FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_2to4}"
+NATIVE_REFERENCE_RUN="${NATIVE_REFERENCE_RUN:-}"
+reference_args=()
+if [[ -n "$NATIVE_REFERENCE_RUN" ]]; then
+  reference_args=(--native-reference-run "$NATIVE_REFERENCE_RUN")
+fi
 
 if [[ $# -ne 0 || ! -f "$ARTIFACT" ]] \
   || [[ "$RESUME_PENDING" != "0" && "$RESUME_PENDING" != "1" ]] \
@@ -53,6 +58,7 @@ if [[ "$RESUME_PENDING" == "0" ]]; then
   --semantic-work-statistic "$SEMANTIC_WORK_STATISTIC" \
   --eos-protocol-window-ms "$EOS_PROTOCOL_WINDOW_MS" \
   --sampling-seed "$SAMPLING_SEED" --repetition-id "$REPETITION_ID" \
+  "${reference_args[@]}" \
   --workload-manifest "${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
 fi
 for arm in $ARM_ORDER; do
@@ -122,6 +128,15 @@ done
 if [[ "$ARM_ORDER" == "predictive_h2d" ]]; then
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
     --run-root "$RUN_ROOT" --allow-incomplete
+  if [[ -n "$NATIVE_REFERENCE_RUN" ]]; then
+    "$PYTHON" "$ROOT/scripts/compare_native_policy_runs.py" \
+      --arm "predictive_h2d=$RUN_ROOT/predictive_h2d" \
+      --arm "native=$NATIVE_REFERENCE_RUN/native" \
+      --timeline "predictive_h2d=$RUN_ROOT/timelines/predictive_h2d.json.gz" \
+      --timeline "native=$NATIVE_REFERENCE_RUN/timelines/native.json.gz" \
+      --native-reference-run "$NATIVE_REFERENCE_RUN" \
+      --output "$RUN_ROOT/native_reference_comparison.json"
+  fi
 else
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" --run-root "$RUN_ROOT"
   comparison_args=()

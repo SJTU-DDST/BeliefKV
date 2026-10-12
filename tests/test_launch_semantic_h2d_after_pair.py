@@ -30,6 +30,7 @@ def test_new_pair_uses_same_workload_and_artifacts_with_fresh_predictive_first()
     snapshot = json.dumps(configuration, sort_keys=True)
     environment = launcher.fresh_pair_environment(
         configuration, Path("/fresh-run"), python="/python", port=18454,
+        arm_order="predictive_h2d native",
     )
     assert environment["RESUME_PENDING"] == "0"
     assert environment["ARM_ORDER"] == "predictive_h2d native"
@@ -65,6 +66,31 @@ def test_next_pair_lead_override_preserves_previous_plan_and_every_other_setting
     )
     assert revised == {**original, "PREFETCH_LEAD_MS": "2000"}
     assert json.dumps(configuration, sort_keys=True) == snapshot
+
+
+def test_development_defaults_to_predictive_and_keeps_fixed_reference():
+    configuration = plan()
+    snapshot = json.dumps(configuration, sort_keys=True)
+    environment = launcher.fresh_pair_environment(
+        configuration, Path("/fresh-run"), python="/python", port=18454,
+        native_reference_run=Path("/old-native-run"),
+    )
+    assert environment["ARM_ORDER"] == "predictive_h2d"
+    assert environment["NATIVE_REFERENCE_RUN"] == "/old-native-run"
+    assert json.dumps(configuration, sort_keys=True) == snapshot
+
+
+def test_completed_single_arm_needs_no_local_native_but_preserves_reference_report(tmp_path):
+    configuration = completed_pair(tmp_path)
+    configuration["order"] = ["predictive_h2d"]
+    (tmp_path / "native_policy_comparison.json").unlink()
+    (tmp_path / "native/client_156/summary.json").unlink()
+    launcher.validate_completed_pair(tmp_path, configuration)
+    configuration["native_reference_run"] = "/old-native-run"
+    with pytest.raises(ValueError, match="historical native comparison"):
+        launcher.validate_completed_pair(tmp_path, configuration)
+    (tmp_path / "native_reference_comparison.json").write_text("{}")
+    launcher.validate_completed_pair(tmp_path, configuration)
 
 
 def test_partial_arrival_table_does_not_deploy_new_code(tmp_path):

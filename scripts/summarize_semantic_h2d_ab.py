@@ -445,6 +445,7 @@ def main() -> None:
     parser.add_argument("--tool-timing-artifact", type=Path)
     parser.add_argument("--enable-tool-timing", type=int, choices=(0, 1), default=0)
     parser.add_argument("--prefetch-lead-ms", type=int, default=1000)
+    parser.add_argument("--native-reference-run", type=Path)
     parser.add_argument("--semantic-work-statistic", choices=("upper", "center"), default="upper")
     parser.add_argument("--eos-protocol-window-ms", type=int, default=50)
     parser.add_argument("--transfer-service-seed", type=Path)
@@ -537,7 +538,7 @@ def main() -> None:
             "tool_prepare_in_both_arms": bool(args.enable_tool_timing and args.prepare_host),
             "tool_prefetch_predictive_only": bool(args.enable_tool_timing),
             "scope": (
-                "single-arm development mechanism observation; no throughput comparison"
+                "single-arm development; historical native references are separate from paired tests"
                 if args.arm_order.split() == ["predictive_h2d"]
                 else "single-pair live pressure exploration; trajectory-sensitive, not final paper test"
             ),
@@ -546,8 +547,11 @@ def main() -> None:
             "same_seed_is_not_same_trajectory": True,
             "formal_paired_repetition_target": 4,
             "formal_repetition_order": (
-                ["predictive_h2d native"] if native_pair
+                ["predictive_h2d native"] if native_pair or order == ["predictive_h2d"]
                 else ["predictive_h2d reactive"]
+            ),
+            "native_reference_run": (
+                str(args.native_reference_run.resolve()) if args.native_reference_run else None
             ),
             "code_commit": subprocess.check_output(
                 ["git", "rev-parse", "HEAD"], cwd=root, text=True,

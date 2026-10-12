@@ -48,3 +48,11 @@ def test_resume_derives_environment_from_frozen_configuration_including_arrivals
     assert environment["PREPARE_HOST"] == "1"
     assert environment["ARM_ORDER"] == "native predictive_h2d"
     assert environment["SEMANTIC_REPORT_ARTIFACT"] == "/models/semantic.json"
+
+
+def test_resume_retains_historical_native_reference_across_development_iterations():
+    configuration = plan()
+    configuration.update(order=["predictive_h2d"], native_reference_run="/native-reference")
+    environment = resume_environment(configuration, Path("/next"), python="/python", port=18454)
+    assert environment["ARM_ORDER"] == "predictive_h2d"
+    assert environment["NATIVE_REFERENCE_RUN"] == "/native-reference"

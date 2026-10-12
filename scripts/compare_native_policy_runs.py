@@ -8,6 +8,7 @@ from collections import Counter, defaultdict
 import csv
 from datetime import datetime
 import gzip
+import hashlib
 from itertools import combinations
 import json
 from pathlib import Path
@@ -111,6 +112,61 @@ def paired_workflow_jct(left_summary: dict, right_summary: dict) -> dict:
             "matching tasks does not match execution traces or establish causal speedup."
         ),
     }
+
+
+def native_reference_metadata(current_run: Path, reference_run: Path) -> dict:
+    reference_path = reference_run / "ab_plan.json"
+    reference_bytes = reference_path.read_bytes()
+    reference = json.loads(reference_bytes)
+    current = json.loads((current_run / "ab_plan.json").read_bytes())
+    fields = (
+        "workload_sha256", "root_count", "arrival_schedule", "server_running",
+        "context_tokens", "max_completion_tokens", "host_gb", "host_split",
+        "mamba_full_memory_ratio", "mem_fraction_static", "native_write_policy",
+        "fanout_profile", "sampling_seed", "temperature", "sandbox_command_timeout_s",
+        "activation_wall_clock_seconds", "child_final_report_shadow",
+    )
+    recorded = [field for field in fields if field in current and field in reference]
+    return {
+        "kind": "historical_native_reference",
+        "selection": (
+            "fixed reference recorded in predictive collection plan"
+            if current.get("native_reference_run") == str(reference_run.resolve())
+            else "reference supplied to retrospective analysis"
+        ),
+        "reference_run": str(reference_run.resolve()),
+        "reference_code_commit": reference["code_commit"],
+        "current_code_commit": current["code_commit"],
+        "reference_plan_sha256": hashlib.sha256(reference_bytes).hexdigest(),
+        "same_engine_patch": current["sglang_patch_sha256"] == reference["sglang_patch_sha256"],
+        "matched_configuration_fields": [
+            field for field in recorded if current[field] == reference[field]
+        ],
+        "configuration_differences": {
+            field: {"current": current[field], "reference": reference[field]}
+            for field in recorded if current[field] != reference[field]
+        },
+        "unrecorded_configuration_fields": [field for field in fields if field not in recorded],
+        "formal_paired_evidence": False,
+        "semantics": (
+            "Development comparison against a preselected historical native run; "
+            "task pairing does not match live trajectories. Patch equality alone "
+            "does not prove every native/client path unchanged."
+        ),
+    }
+
+
+def cached_native_reference(reference_run: Path, bin_seconds: int) -> dict | None:
+    path = reference_run / "native_policy_comparison.json"
+    if not path.is_file():
+        return None
+    cached = json.loads(path.read_bytes()).get("runs", {}).get("native")
+    if cached is None or cached.get("run") != str((reference_run / "native").resolve()):
+        return None
+    bands = cached.get("bands", ())
+    if len(bands) < 2 or bands[1]["start_seconds"] - bands[0]["start_seconds"] != bin_seconds:
+        return None
+    return cached
 
 
 def transfer_parts(
@@ -799,6 +855,7 @@ def main() -> None:
     parser.add_argument("--timeline", action="append", default=[], help="NAME=JSON_GZ_PATH")
     parser.add_argument("--busy-window", action="append", help="START_SECONDS:END_SECONDS; supports live arms")
     parser.add_argument("--bin-seconds", type=int, default=600)
+    parser.add_argument("--native-reference-run", type=Path)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.bin_seconds <= 0:
@@ -822,13 +879,29 @@ def main() -> None:
     timelines = dict(item.split("=", 1) for item in args.timeline)
     if set(arms) != set(timelines):
         parser.error("each arm requires its corresponding timeline")
+    cached_native = None
+    reference = None
+    if args.native_reference_run is not None:
+        reference_run = args.native_reference_run.resolve()
+        if (
+            "native" not in arms or "predictive_h2d" not in arms
+            or Path(arms["native"]).resolve() != reference_run / "native"
+        ):
+            parser.error("historical reference requires predictive_h2d and its referenced native arm")
+        reference = native_reference_metadata(Path(arms["predictive_h2d"]).parent, reference_run)
+        cached_native = cached_native_reference(reference_run, args.bin_seconds)
+        reference["reused_cached_native_metrics"] = cached_native is not None
     report = {
         "schema_version": 2, "scope": "retrospective live-run diagnosis, not causal speedup",
         "runs": {
-            name: compare_run(Path(path), Path(timelines[name]), args.bin_seconds)
+            name: cached_native if name == "native" and cached_native is not None
+            else compare_run(Path(path), Path(timelines[name]), args.bin_seconds)
             for name, path in arms.items()
         },
     }
+    if reference is not None:
+        report["native_reference"] = reference
+        report["scope"] = "development comparison with historical native; not a fresh paired experiment"
     report["same_task_set"] = len({
         tuple(sorted(run["instance_ids"])) for run in report["runs"].values()
     }) == 1

@@ -7,7 +7,43 @@ from scripts.compare_native_policy_runs import (
     acknowledged_prefetch_sources, busy_window_statistics, h2d_source_parts,
     interval_milliseconds, last_runtime_state, percentile,
     paired_workflow_jct, phase_statistics, transfer_parts, restore_wait_statistics,
+    cached_native_reference, native_reference_metadata,
 )
+
+
+def test_historical_reference_records_configuration_differences_without_claiming_pair(tmp_path):
+    current, reference = tmp_path / "current", tmp_path / "reference"
+    current.mkdir()
+    reference.mkdir()
+    base = {
+        "code_commit": "native-version", "sglang_patch_sha256": "engine",
+        "root_count": 156, "host_split": "80:20",
+    }
+    (reference / "ab_plan.json").write_text(json.dumps(base))
+    (current / "ab_plan.json").write_text(json.dumps({
+        **base, "code_commit": "new-predictive", "host_split": "70:30",
+    }))
+    metadata = native_reference_metadata(current, reference)
+    assert metadata["same_engine_patch"] is True
+    assert metadata["formal_paired_evidence"] is False
+    assert metadata["configuration_differences"] == {
+        "host_split": {"current": "70:30", "reference": "80:20"},
+    }
+    assert "root_count" in metadata["matched_configuration_fields"]
+    assert "workload_sha256" in metadata["unrecorded_configuration_fields"]
+
+
+def test_native_reference_reuses_completed_metrics_only_with_matching_bins(tmp_path):
+    cached = {
+        "run": str((tmp_path / "native").resolve()),
+        "bands": [{"start_seconds": 0.}, {"start_seconds": 600.}],
+    }
+    assert cached_native_reference(tmp_path, 600) is None
+    (tmp_path / "native_policy_comparison.json").write_text(
+        json.dumps({"runs": {"native": cached}}),
+    )
+    assert cached_native_reference(tmp_path, 600) == cached
+    assert cached_native_reference(tmp_path, 300) is None
 
 
 def test_split_transfer_conserves_bytes_and_native_remainder():

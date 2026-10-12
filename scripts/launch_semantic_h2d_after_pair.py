@@ -33,17 +33,22 @@ from scripts.summarize_semantic_h2d_ab import verify_frozen_execution_source
 def fresh_pair_environment(
     plan: dict, run_root: Path, *, python: str, port: int,
     prefetch_lead_ms: int | None = None,
+    arm_order: str = "predictive_h2d",
+    native_reference_run: Path | None = None,
 ) -> dict[str, str]:
     environment = resume_environment(plan, run_root, python=python, port=port)
-    environment.update(RESUME_PENDING="0", ARM_ORDER="predictive_h2d native")
+    environment.update(RESUME_PENDING="0", ARM_ORDER=arm_order)
+    environment.pop("NATIVE_REFERENCE_RUN", None)
+    if native_reference_run is not None:
+        environment["NATIVE_REFERENCE_RUN"] = str(native_reference_run)
     if prefetch_lead_ms is not None:
         environment["PREFETCH_LEAD_MS"] = str(prefetch_lead_ms)
     return environment
 
 
 def validate_completed_pair(run_root: Path, plan: dict) -> None:
-    if plan["order"] != ["predictive_h2d", "native"]:
-        raise ValueError("the previous run must preserve its predictive/native pair")
+    if plan["order"] not in (["predictive_h2d", "native"], ["predictive_h2d"]):
+        raise ValueError("unsupported previous collection order")
     for arm in plan["order"]:
         summary = run_root / arm / f"client_{plan['root_count']}" / "summary.json"
         if json.loads(summary.read_text())["workflow_count"] != plan["root_count"]:
@@ -55,8 +60,12 @@ def validate_completed_pair(run_root: Path, plan: dict) -> None:
         ):
             if not artifact.is_file():
                 raise ValueError(f"previous pair postprocessing is incomplete: {artifact}")
-    if not (run_root / "native_policy_comparison.json").is_file():
+    if len(plan["order"]) > 1 and not (run_root / "native_policy_comparison.json").is_file():
         raise ValueError("the previous pair has no final native-policy comparison")
+    if plan.get("native_reference_run") and not (
+        run_root / "native_reference_comparison.json"
+    ).is_file():
+        raise ValueError("the previous collection has no historical native comparison")
 
 
 def wait_for_processes(identities: dict[int, tuple | None]) -> None:
@@ -122,6 +131,15 @@ def main() -> None:
     )
     parser.add_argument("--port", type=int, default=18454)
     parser.add_argument(
+        "--arm-order", choices=("predictive_h2d", "predictive_h2d native"),
+        default="predictive_h2d",
+        help="Development defaults to predictive only; request a fresh native arm explicitly.",
+    )
+    parser.add_argument(
+        "--native-reference-run", type=Path,
+        help="Completed run containing the fixed native reference; defaults to the previous reference.",
+    )
+    parser.add_argument(
         "--prefetch-lead-ms", type=int,
         help="Explicitly override the next pair's residency lead while preserving the previous plan.",
     )
@@ -147,9 +165,16 @@ def main() -> None:
     patch = target / PATCH_PATH
     patch_sha = hashlib.sha256(patch.read_bytes()).hexdigest()
     identities = {pid: process_identity(pid) for pid in args.wait_pid}
+    native_reference = None
+    if args.arm_order == "predictive_h2d":
+        native_reference = (
+            args.native_reference_run
+            or Path(original.get("native_reference_run") or previous)
+        ).resolve()
     environment = fresh_pair_environment(
         original, run_root, python=args.python, port=args.port,
         prefetch_lead_ms=args.prefetch_lead_ms,
+        arm_order=args.arm_order, native_reference_run=native_reference,
     )
     state = {
         "status": (
@@ -169,6 +194,7 @@ def main() -> None:
         "new_run": str(run_root),
         "wait_process_identities": identities,
         "environment": environment,
+        "native_reference_run": str(native_reference) if native_reference else None,
         "registered_at_utc": datetime.now(timezone.utc).isoformat(),
     }
     state_path.parent.mkdir(parents=True, exist_ok=True)
@@ -219,7 +245,10 @@ def main() -> None:
         state["deployed_engine"] = git_source_state(
             engine, canonical_patch=repo / PATCH_PATH,
         )["canonical_patch"]
-        state["status"] = "running_new_pair"
+        state["status"] = (
+            "running_new_predictive" if args.arm_order == "predictive_h2d"
+            else "running_new_pair"
+        )
         state["started_at_utc"] = datetime.now(timezone.utc).isoformat()
         write_json(state_path, state)
         print(json.dumps(state), flush=True)

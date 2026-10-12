@@ -226,6 +226,7 @@ def test_initialize_records_explicit_long_budget_and_manifest_selection(tmp_path
         "--semantic-artifact", str(artifact),
         "--activation-wall-clock-seconds", "21600",
         "--workload-manifest", str(manifest),
+        "--native-reference-run", str(tmp_path / "native-reference"),
     ])
     main()
     plan = json.loads((tmp_path / "ab_plan.json").read_text())
@@ -233,7 +234,9 @@ def test_initialize_records_explicit_long_budget_and_manifest_selection(tmp_path
     assert plan["workload_instance_ids_in_manifest_order"] == ["z", "a"]
     assert plan["workflow_arrival_batch_size"] == 0
     assert plan["order"] == ["predictive_h2d"]
-    assert "no throughput comparison" in plan["scope"]
+    assert "historical native references" in plan["scope"]
+    assert plan["native_reference_run"] == str(tmp_path / "native-reference")
+    assert plan["formal_repetition_order"] == ["predictive_h2d native"]
 
 
 def test_native_pair_freezes_disjoint_108_plus_48_fixed_arrivals(tmp_path, monkeypatch):
