@@ -341,6 +341,79 @@ def test_prefetch_slot_loss_before_enqueue_leaves_no_dma_or_issue_allowance():
     assert runtime.counts["prefetch_slot_lost_before_enqueue"] == 1
 
 
+@pytest.mark.parametrize("source,other_ready,slot_available", [
+    ("native_next_prefill", True, True),
+    ("native_next_prefill", False, False),
+    ("legacy_capacity_unavailable", True, False),
+])
+def test_demand_restore_does_not_consume_a_validated_speculative_frontier(
+    source, other_ready, slot_available,
+):
+    from dataclasses import replace
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, hint, _, action, _, _ = locked_runtime()
+    original = runtime._prefetch_service_leases[action.command_id]
+    runtime._prefetch_service_leases[action.command_id] = replace(
+        original, key=replace(hint.key, context_id="ctx-demand"),
+        demand_ready=other_ready,
+    )
+    budget = PrefetchResidencyBudget(1, 1024, source=source)
+    try:
+        assert runtime._prefetch_slot_available(hint.key, budget=budget) is slot_available
+        assert runtime._prefetch_slot_available(
+            hint.key, budget=budget, demand_ready=True,
+        ) is (
+            source == "native_next_prefill" and not other_ready
+        )
+        assert runtime._prefetch_slot_available(
+            runtime._prefetch_service_leases[action.command_id].key, budget=budget,
+        )
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("ack_byte_limit,locked", [(1024, True), (99, False)])
+def test_speculative_enqueue_and_ack_share_bytes_with_demand_restoration(
+    ack_byte_limit, locked,
+):
+    from dataclasses import replace
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, hint, _, old_action, _, observation = locked_runtime()
+    original = runtime._prefetch_service_leases[old_action.command_id]
+    runtime._release_prefetch_service_lease(old_action.command_id, "test_reissue")
+    demand = replace(
+        original, command_id="demand", key=replace(hint.key, context_id="ctx-demand"),
+        source="execution_handoff", demand_ready=True,
+    )
+    runtime._prefetch_service_leases[demand.command_id] = demand
+    runtime._native_cache.tree_core.inc_lock_ref.reset_mock()
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    command, commit = issue_restore_with_budget(
+        runtime, hint.key, PrefetchResidencyBudget(1, 1024, source="native_next_prefill"),
+    )
+    assert command is not None
+    with patch.object(
+        runtime, "_current_residency_budget",
+        return_value=PrefetchResidencyBudget(1, ack_byte_limit, source="native_next_prefill"),
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_observer.observe_unified_node_closure",
+        return_value=observation,
+    ):
+        runtime.on_native_transfer_commit(commit)
+    lease = runtime._prefetch_service_leases[command]
+    assert (lease.lock_params is not None) is locked
+    assert runtime._prefetch_service_leases[demand.command_id] == demand
+    registered = next(row for row in records if row["event"] == "prefetch_residency_registered")
+    assert registered["protection_slot_role"] == "speculative"
+    assert registered["protection_reason"] == (
+        "native_locked" if locked else "byte_budget_exceeded"
+    )
+    runtime.close()
+
+
 def test_issued_restore_cannot_take_another_contexts_protection_allowance():
     from dataclasses import replace
     from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget

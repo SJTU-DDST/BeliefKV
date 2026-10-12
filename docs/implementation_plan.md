@@ -2,12 +2,39 @@
 
 Status date: 2026-10-12.
 
-V35 predictive-only cold-started e673af5/838d2ed8 at 21:35:49 CST.
-Deployment validation at 21:42:02 confirms HTTP200, 8896 GPU-service samples
-and physical_disabled=false. Actual FULL/Mamba device/Host capacities and
-all frozen workload, model, output8192 and tool180s fields equal V34.
-Keep fixed V29 native and freeze the running source. Startup does not
-prove service improvement; see v143_v35_deployment_validation.
+V35 was administratively stopped at 22:21:14 CST on October 12:
+39 completed, 69 created unfinished and 48 unarrived workflows.
+The latter 117 are censored for the development restart, not autonomous
+agent failures. Frozen source is e673af5/838d2ed8; preserve all raw
+evidence. Prepare the same-configuration V36 predictive cold start
+using fixed V29 native; the performance objective remains active.
+See v146_v35_development_stop for outcomes and process identities.
+
+The complete V35 600-900s window contains 319567/380722 predictive/native
+decode request steps, 16.06% lower with similar visible contexts.
+Instrumented exclusive Python wall is 55.245s, not removable JCT;
+reentry and admission self costs are 9.438s and 8.381s.
+Early completed-boundary JOIN positive-FULL/start/early-submit is
+30/27/0; tool is 744/6/6. Confirmed early tool FULL is 266.445MB.
+Keep 80.218GB demand handoff FULL separate; see v145 audits.
+
+The 22:13 sealed lease reconstruction observes 153 JOIN budget refusals,
+152 with only demand locks occupying the common frontier, across 44
+JOINs. All plans fit recorded byte allowances, but only one fits actual
+free lists without reclamation. Periodic state budgets are not exact
+refusal-time slot records. Actual partial splits are JOIN3/tool23;
+splits do not prove complete dependency readiness or consumption.
+Evidence: v146_v35_restore_frontier.
+
+Separate bounded demand and speculative cache frontiers only with
+validated native capacity. A full decode batch can overlap one
+speculative restoration with the next demand restoration, with a shared
+live byte budget and unchanged native admission, input/decode reserves,
+identity checks and lease release. Keep legacy unobservable capacity
+combined. Apply the same role accounting at selection, enqueue and ACK
+protection. 403 transfer/runtime and 120 handoff/lifecycle checks pass.
+Deploy together with same-scan tool P50 reuse in V36; measure real
+early consumed FULL, reclamation costs and busy-window service first.
 
 The separate followup checkout prepares same-scan P50 reuse across tool
 sorting, filtering and window checks, with fresh post-reclaim and enqueue

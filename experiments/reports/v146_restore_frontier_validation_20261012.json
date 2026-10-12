@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "scope": "Focused runtime verification; not GPU throughput or a live speedup",
+  "baseline_collection_commit": "e673af51fb8c7788a2d3b5cd684fb8d2cf3e86b6",
+  "diagnosis": "v146_v35_restore_frontier_20261012.json",
+  "change": "Separate validated-native demand and speculative cache protection frontiers under one live byte budget",
+  "preserved": [
+    "Native request admission and request-row allocation",
+    "Input and decode capacity reserves",
+    "Native allocator, causal identity and in-flight checks",
+    "Current byte limits shared by every protected lease",
+    "Legacy combined slots when native capacity is unobservable",
+    "Post-enqueue ACK protection and release lifecycle",
+    "Existing predictor and transfer timing thresholds"
+  ],
+  "checks": [
+    {
+      "command": "python -m pytest -q tests/test_native_transfer_policy.py tests/test_wait_prefetch_batch.py tests/test_wait_prefetch_partial_extent.py tests/test_tool_predictive_transfers.py tests/test_sglang_v0520_runtime.py",
+      "passed": 403,
+      "duration_seconds": 1.53
+    },
+    {
+      "command": "python -m pytest -q tests/test_execution_handoff.py tests/test_prefetch_lifecycle_audit.py",
+      "passed": 120,
+      "duration_seconds": 0.62
+    }
+  ],
+  "new_regression_coverage": [
+    "An existing demand lock does not consume the native speculative frontier",
+    "Another speculative context still consumes its speculative frontier",
+    "Unobservable legacy capacity keeps the combined frontier",
+    "Selection and enqueue allow coexistence without allocating a request row",
+    "ACK protection admits coexistence only inside the shared byte limit",
+    "The existing demand lease remains intact when speculative bytes do not fit"
+  ],
+  "deployment_status": "Prepared for a cold predictive-only V36 restart; not hot-applied to V35",
+  "performance_objective_complete": false
+}

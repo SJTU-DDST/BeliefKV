@@ -1612,6 +1612,13 @@ class NativeAdmissionRuntime:
                     lease.lock_params is not None
                     for lease in self._prefetch_service_leases.values()
                 ),
+                "prefetch_locked_contexts_by_role": {
+                    role: len({
+                        lease.key for lease in self._prefetch_service_leases.values()
+                        if lease.lock_params is not None and lease.demand_ready == ready
+                    })
+                    for role, ready in (("demand", True), ("speculative", False))
+                },
                 "prefetch_protected_bytes": sum(
                     lease.protected_bytes
                     for lease in self._prefetch_service_leases.values()
@@ -3862,6 +3869,16 @@ class NativeAdmissionRuntime:
                  "include_mamba": item.include_mamba} for item in steps
             ],
             "fits_current_free_lists": getattr(opportunity, "fits_current_free_lists", None),
+            "restore_frontier": {
+                "budget": asdict(self._residency_budget),
+                "locked_contexts_by_role": {
+                    role: len({
+                        lease.key for lease in self._prefetch_service_leases.values()
+                        if lease.lock_params is not None and lease.demand_ready == ready
+                    })
+                    for role, ready in (("demand", True), ("speculative", False))
+                },
+            } if reason == "admission_budget_busy" else None,
             "predicted_remaining_ms": remaining_ms,
             "start_window_ms": window.horizon_ms if window else None,
             "h2d_p90_ms": window.service_ms if window else None,
@@ -5850,12 +5867,9 @@ class NativeAdmissionRuntime:
                 # A completed restore uses its issued protection allowance,
                 # while bytes and actual request admission remain live.
                 protection_slots = max(protection_slots, issue_budget.request_slots)
-            locked_keys = {
-                item.key for item in self._prefetch_service_leases.values()
-                if item.lock_params is not None
-            }
-            protection_slot_available = (
-                step.key in locked_keys or len(locked_keys) < protection_slots
+            protection_slot_available = self._prefetch_slot_available(
+                step.key, budget=replace(budget, request_slots=protection_slots),
+                demand_ready=lease.demand_ready,
             )
             protection_bytes_fit = (
                 protected_bytes + sum(
@@ -5942,6 +5956,9 @@ class NativeAdmissionRuntime:
                 "budget": asdict(budget),
                 "residency_issue_budget": asdict(issue_budget) if issue_budget is not None else None,
                 "protection_request_slots": protection_slots,
+                "protection_slot_role": (
+                    "demand" if lease.demand_ready else "speculative"
+                ) if budget.source == "native_next_prefill" else "combined",
                 "scope": "bounded restore protection; native admission remains authoritative",
             })
 
@@ -6026,6 +6043,7 @@ class NativeAdmissionRuntime:
 
     def _prefetch_slot_available(
         self, key: PrefillCandidateKey, *, budget: PrefetchResidencyBudget | None = None,
+        demand_ready: bool = False,
     ) -> bool:
         if budget is None:
             budget = self._current_residency_budget()
@@ -6033,10 +6051,18 @@ class NativeAdmissionRuntime:
             lease for lease in self._prefetch_service_leases.values()
             if lease.lock_params is not None
         ]
-        return budget.request_slots > 0 and (
-            any(lease.key == key for lease in locked)
-            or len({lease.key for lease in locked}) < budget.request_slots
-        )
+        if budget.request_slots < 1:
+            return False
+        if any(lease.key == key for lease in locked):
+            return True
+        # Demand restoration feeds the next native batch. Speculative cache
+        # restoration can overlap it without allocating a request row; both
+        # remain subject to the same live byte and native allocator budgets.
+        return len({
+            lease.key for lease in locked
+            if budget.source != "native_next_prefill"
+            or lease.demand_ready == demand_ready
+        }) < budget.request_slots
 
     def _executable_waiting_key(
         self, req: object, *, key: PrefillCandidateKey | None = None,
