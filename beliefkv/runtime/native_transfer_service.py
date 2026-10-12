@@ -70,23 +70,25 @@ def estimate_native_service(
     """Do not multiply polling/fixed overhead by a transfer's byte ratio."""
     if size_bytes <= 0:
         return None
-    compatible = []
+    compatible, exact = [], []
     for item in samples:
         sample = item if isinstance(item, NativeServiceSample) else NativeServiceSample(*item)
         if sample.direction != direction:
             continue
+        # Known foreign pool shapes cannot contribute to either support path.
+        matched_shape = sample.shape == shape
+        if not matched_shape and shape != "unknown" and sample.shape != "unknown":
+            continue
         distance = abs(math.log2(size_bytes / sample.size_bytes))
         if distance <= 2.:
-            compatible.append((sample, distance))
-    exact = [(row, distance) for row, distance in compatible if row.shape == shape]
+            pair = (sample, distance)
+            compatible.append(pair)
+            if matched_shape:
+                exact.append(pair)
     if len(exact) >= minimum:
         compatible = exact
         support = "matched_pool_shape_and_size"
     else:
-        compatible = [
-            (row, distance) for row, distance in compatible
-            if row.shape in ("unknown", shape) or shape == "unknown"
-        ]
         support = "nearby_size_with_legacy_shape"
     if len(compatible) < minimum:
         return None

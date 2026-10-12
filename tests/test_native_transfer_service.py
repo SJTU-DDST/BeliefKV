@@ -29,3 +29,24 @@ def test_unknown_transfer_size_requires_evidence_instead_of_linear_extrapolation
     assert estimate_native_service([(10, 100.)] * 3, 80_000_000) is None
     with pytest.raises(ValueError):
         NativeServiceSample(100, float("nan"))
+
+
+@pytest.mark.parametrize("shape", ("full", "mamba", "hybrid"))
+def test_foreign_shapes_do_not_displace_legacy_fallback_or_exact_support(shape):
+    samples = [
+        NativeServiceSample(80_000_000, 1., shape=foreign)
+        for foreign in ("full", "mamba", "hybrid") if foreign != shape
+        for _ in range(16)
+    ] + [(80_000_000, delay) for delay in (40., 50., 60.)]
+    fallback = estimate_native_service(samples, 80_000_000, shape=shape)
+    assert fallback.sample_count == 3
+    assert fallback.submit_to_ack_p90_ms == 58.
+    assert fallback.support == "nearby_size_with_legacy_shape"
+    samples.extend(
+        NativeServiceSample(80_000_000, delay, shape=shape)
+        for delay in (20., 25., 30.)
+    )
+    matched = estimate_native_service(samples, 80_000_000, shape=shape)
+    assert matched.sample_count == 3
+    assert matched.submit_to_ack_p90_ms == 29.
+    assert matched.support == "matched_pool_shape_and_size"
