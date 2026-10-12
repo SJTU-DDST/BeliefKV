@@ -177,6 +177,11 @@ def _bounded(value: object, ceiling: int, label: str) -> int:
     return value
 
 
+def _index_length(indices: object) -> int:
+    shape = getattr(indices, "shape", None)
+    return shape[0] if shape else len(indices)
+
+
 def _named(value: object, name: str) -> object:
     if type(value).__name__ != name:
         raise ValueError(
@@ -596,10 +601,14 @@ def observe_unified_node_closure(
             if type(mamba) is not component_type:
                 _named(mamba, "ComponentData")
             full_device_tokens = (
-                0 if full.value is None else _bounded(len(full.value), device_full_tokens, "FULL device length")
+                0 if full.value is None else _bounded(
+                    _index_length(full.value), device_full_tokens, "FULL device length",
+                )
             )
             full_host_tokens = (
-                0 if full.host_value is None else _bounded(len(full.host_value), host_full_tokens, "FULL host length")
+                0 if full.host_value is None else _bounded(
+                    _index_length(full.host_value), host_full_tokens, "FULL host length",
+                )
             )
             locks = (full.lock_ref, full.host_lock_ref, mamba.lock_ref, mamba.host_lock_ref)
             for value in locks:

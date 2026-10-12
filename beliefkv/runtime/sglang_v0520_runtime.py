@@ -83,6 +83,7 @@ from beliefkv.runtime.clock_evidence import (
 )
 from beliefkv.runtime.native_h2d_seed import load_h2d_seed
 from beliefkv.runtime.native_transfer_service import (
+    NativeServiceEstimate,
     NativeServiceSample,
     estimate_native_service,
     load_native_service_seed,
@@ -333,6 +334,7 @@ class NativeAdmissionRuntime:
         self._final_request_stages: dict[str, _ChildFinalStage] = {}
         self._h2d_samples: deque[tuple[int, float]] = deque(maxlen=64)
         self._native_service_samples: deque[NativeServiceSample] = deque(maxlen=256)
+        self._h2d_service_estimates: dict[tuple[int, str], NativeServiceEstimate | None] = {}
         service_path = os.environ.get("BELIEFKV_TRANSFER_SERVICE_SEED")
         service_sha = os.environ.get("BELIEFKV_TRANSFER_SERVICE_SEED_SHA256")
         if bool(service_path) != bool(service_sha):
@@ -2412,9 +2414,7 @@ class NativeAdmissionRuntime:
             shape = pool_shape(
                 observation.required_full_tokens, observation.required_mamba_slots,
             )
-            estimate = estimate_native_service(
-                self._native_service_samples, required_bytes, shape=shape,
-            ) or estimate_native_service(self._h2d_samples, required_bytes)
+            estimate = self._estimate_h2d_service(required_bytes, shape=shape)
             if estimate is None:
                 self.counts["prefetch_service_size_unsupported"] += 1
                 self._record_wait_prefetch_plan(
@@ -5042,6 +5042,25 @@ class NativeAdmissionRuntime:
             self.prefetch_lead_ms if horizon_ms is None else horizon_ms
         )
 
+    def _estimate_h2d_service(
+        self, size_bytes: int, *, shape: str,
+    ) -> NativeServiceEstimate | None:
+        # Both bounded histories change only on completed controller receipts.
+        # Reuse statistics until then; physical plans and timing stay live.
+        identity = (size_bytes, shape)
+        cache = self._h2d_service_estimates
+        if identity in cache:
+            self.counts["h2d_service_estimate_reused"] += 1
+            return cache[identity]
+        estimate = estimate_native_service(
+            self._native_service_samples, size_bytes, shape=shape,
+        ) or estimate_native_service(self._h2d_samples, size_bytes)
+        if len(cache) >= 256:
+            cache.clear()
+        cache[identity] = estimate
+        self.counts["h2d_service_estimate_computed"] += 1
+        return estimate
+
     def _h2d_start_window(
         self, opportunity: SessionH2DOpportunity,
     ) -> TransferStartWindow | None:
@@ -5053,10 +5072,11 @@ class NativeAdmissionRuntime:
             )
         except (AttributeError, KeyError, TypeError):
             return None
-        estimate = estimate_native_service(
-            self._native_service_samples, size,
-            shape=pool_shape(opportunity.required_full_tokens, opportunity.required_mamba_slots),
-        ) or estimate_native_service(self._h2d_samples, size)
+        estimate = self._estimate_h2d_service(
+            size, shape=pool_shape(
+                opportunity.required_full_tokens, opportunity.required_mamba_slots,
+            ),
+        )
         if estimate is None:
             return None
         prediction_early_ms = 0.
@@ -6814,6 +6834,7 @@ class NativeAdmissionRuntime:
             and math.isfinite(ack_ms) and 0 < ack_ms <= 60_000
         ):
             self._h2d_samples.append((actual_bytes, float(ack_ms)))
+            self._h2d_service_estimates.clear()
             self.counts["h2d_service_sample"] += 1
         if (
             getattr(commit, "status", None) == "completed"
@@ -6829,6 +6850,7 @@ class NativeAdmissionRuntime:
                 actual_bytes, float(ack_ms), getattr(commit, "direction"),
                 pool_shape(full, mamba), getattr(commit, "enqueue_to_submit_ms", None),
             ))
+            self._h2d_service_estimates.clear()
         # A burst's deepest node locks its FULL ancestry once; registering its
         # ancestors first would consume the budget without protecting the state.
         for action in reversed(completed):

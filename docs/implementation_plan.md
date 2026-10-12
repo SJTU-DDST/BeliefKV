@@ -2,6 +2,37 @@
 
 Status date: 2026-10-13.
 
+V199 seals the complete V43 600-900s window: 331539/380722 decode
+request steps versus fixed V29 native, 12.918% lower, at 23.334k/23.240k
+visible context. Worker decode intervals average 35.340/32.467ms.
+Instrumented exclusive Python wall is 53.979s: tool/reentry/admission
+7.888/5.749/5.009s, handoff self/inclusive 5.259/16.266s.
+Trajectories differ; none of these is a removable JCT or causal gain.
+
+V200 reuses V42 sealed evidence. Of 27 tool ACK/service events without
+proven early FULL consumption, three are late FULL, 22 expire before
+completion and two invalidate on summary. None of the 22 expiration cases
+has runtime-observed demand then. Their later arrival-to-service P50
+11.98s cannot explain the earlier expiration. Ten analogous JOIN events
+all expire before completion, with last FULL-submit lead P50 6.926s
+versus 1.435s for consumed JOINs. Missing submitted-plan records are
+not proof of no DMA: retain one proven early consumption in each source.
+Investigate live forecast timing and capacity alongside post-arrival
+admission; do not apply one offset or blindly extend leases.
+
+Followup-only qualified changes reuse exact size/shape H2D statistics,
+including unknown support, bounded to 256 keys and invalidated on each
+valid completed H2D/D2H receipt. Closure reads live Tensor index shapes.
+588 focused checks pass. V202 preserves all outputs across 144 estimate
+groups and 12 closures. Tensor closure thread CPU is 6.8-10.6% lower;
+4/16-query groups including the cold query are 68.3-74.2%/90.6-93.2%
+lower. Retain single-query/range slowdowns up to 4.12%/3.0%.
+V201 retains 769 nonblocking GIL samples and 209 sampling errors;
+the estimator appears in only two inclusive samples. Do not label it a
+major measured system bottleneck or extrapolate fixture reuse to live
+frequency. Commit before any restart. V43 execution stays frozen; CPU
+qualification does not satisfy the active performance goal.
+
 V43 cold-started at 04:28:33 CST on October 13 from 50df863/3698ce2f,
 with engine tree 6d6af094 and the qualified prefix-cost change below.
 Keep the frozen workload/capacities and fixed V29 native. At 04:34:14,

@@ -816,3 +816,38 @@ def test_node_closure_fails_closed_on_unimplemented_tree_lookup() -> None:
 
     cache.tree_core = UnifiedTreeCore(node_by_id=unavailable)
     assert not observe_unified_node_closure(cache, 5).observable
+
+
+def test_node_closure_reads_live_tensor_index_shapes_without_tensor_len(monkeypatch) -> None:
+    import torch
+
+    cache = _static_cache()
+    node = _node(5, device=(1, 2, 3), host=(1, 2))
+    node.component_data[0].value = torch.arange(3, dtype=torch.int64)
+    node.component_data[0].host_value = torch.arange(2, dtype=torch.int64)
+    cache.tree_core = UnifiedTreeCore(node_by_id=lambda _: node)
+
+    def forbidden_len(_):
+        raise AssertionError("native index shape should not use Tensor.__len__")
+
+    monkeypatch.setattr(torch.Tensor, "__len__", forbidden_len)
+    first = observe_unified_node_closure(cache, 5)
+    assert first.observable
+    assert first.nodes[0].full_device_tokens == 3
+    assert first.nodes[0].full_host_tokens == 2
+    node.component_data[0].value.resize_(4)
+    second = observe_unified_node_closure(cache, 5)
+    assert second.observable
+    assert second.nodes[0].full_device_tokens == 4
+
+
+def test_node_closure_keeps_bounds_for_tensor_index_shapes() -> None:
+    import torch
+
+    cache = _static_cache()
+    node = _node(5)
+    node.component_data[0].host_value = torch.empty(1_000_000, dtype=torch.int64)
+    cache.tree_core = UnifiedTreeCore(node_by_id=lambda _: node)
+    observed = observe_unified_node_closure(cache, 5)
+    assert not observed.observable
+    assert "FULL host length" in observed.reason
