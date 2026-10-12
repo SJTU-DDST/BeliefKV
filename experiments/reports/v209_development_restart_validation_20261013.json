@@ -1,0 +1,46 @@
+{
+  "schema_version": 1,
+  "validated_at_local": "2026-10-13T05:43:01.153063+08:00",
+  "qualified_code_commit": "f55e136c952a18b40198c254a93acb02ebf5c228",
+  "final_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "999c3151b9928a4879af587edc87c9bd139faceab86d43a0fbc3b6911ae767a2",
+    "beliefkv/runtime/sglang_v0520_observer.py": "2147ab88594a871617a83e0a123980f94842178a1f09f8023077352c70fdd1db",
+    "scripts/launch_semantic_h2d_after_pair.py": "a519d9fb84d1ffb04d5a70328d319d34990c4e3b6d1719bdc1cd25eacf61987b"
+  },
+  "unchanged_canonical_patch_sha256": "3698ce2f8eca9be50cebfecbf25a698f93b872227683ac9fe4671e2dc74480c1",
+  "runtime_qualification": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v205_control_cost_validation_20261013.json",
+  "runtime_qualification_sha256": "8eac7b3acea4c51176e65231922d5e5b719b8aff621b431fdad7059842e61898",
+  "previous_execution_root": "/home/longhao/experiment/.worktrees/beliefkv-v195-prefix-cost-20261013",
+  "previous_execution_verification": {
+    "collection_code_commit": "50df8634c462d64d7c4c6fe3af327cf30ad854ea",
+    "verification_code_commit": "50df8634c462d64d7c4c6fe3af327cf30ad854ea",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": [],
+    "execution_root": "/home/longhao/experiment/.worktrees/beliefkv-v195-prefix-cost-20261013"
+  },
+  "launch_provenance_checks": "68 passed in 1.41s",
+  "first_launch_failure": {
+    "log": "/home/longhao/experiment/BeliefKV/experiments/reports/v44_launch_after_v43_20261013_preverification_failed.log",
+    "sha256": "1fd01e1c78326b482193bca1406b45b9a7b0d6d127986699f91d446c0c2ac319",
+    "before_workload_creation": true,
+    "reason": "Deployment repo had advanced while the old launcher verified previous execution only against that repo."
+  },
+  "semantics": [
+    "The retained V43 checkout and frozen revision are verified, with explicit root recorded. It is not modified.",
+    "Historical checkout verification requires development-restart; normal formal pairs retain current repo source verification.",
+    "Runtime evidence remains the original 588 checks and exact CPU-output comparisons. The launcher adds 68 focused provenance/resume checks.",
+    "No forecast model, workload, capacity or physical data dependency changes here. Cold-start eligibility is not a performance claim."
+  ],
+  "helper_sha256": "9977f1518f073f11968a5c26330e4c129fca02d3a6fbc8539927b2c0b3b5cbe7"
+}

@@ -2,6 +2,41 @@
 
 Status date: 2026-10-13.
 
+Current development run is V44, cold-started at 05:44:21 CST on October 13
+from f55e136/3698ce2f, engine tree 6d6af094. It deploys committed exact
+H2D-statistics reuse and live Tensor closure lengths. V207 verifies HTTP200,
+1851 real GPU-service samples, enabled predictors/physical actions,
+matching sources/engine, all 27 frozen fields and pool capacities.
+Observed reserve is 4144 FULL tokens and 45 Mamba slots following the
+imminent batch. Keep running sources frozen and fixed V29 native for
+development. The complete busy-window outcome remains unverified.
+V209 qualifies historical-checkout verification for development restarts,
+with 68 checks. The initial launch failed before workload creation;
+preserve its log and do not count it as a workflow failure.
+
+V43 stopped administratively at 05:27:59: 78 completed, 30 created
+unfinished and 48 unarrived; the latter 78 are censoring. All 108
+workspaces passed full tar comparison before cleanup at 05:32:08,
+20.973GB allocated source to 2.501GB archive; only 30 owned stopped
+containers were removed. Preserve raw/results/plan. V206 seals known
+pre-completion positive-FULL/start/submit: JOIN 92/86/43, tool
+1483/203/198, with 14/6 unknown boundaries. Proven early next-request
+FULL consumption is 37 JOINs/753.193MB and 180 tools/12.127GB.
+Keep demand handoff separate and never add overlapping prefixes.
+
+V204 separates nine natural JOIN work underestimates of 57-303 tokens
+from one later tool round with EOS-to-JOIN 177.49s. Consumed natural
+JOIN EOS-to-boundary P50/P90 is 88.846/277.805ms. V208 uses labels
+only after actual RETURN and excludes same-project donors: across 76
+natural last-pre-EOS requests, a simple bucketed median residual
+worsens token MAE 80.936->110.818 and P50 70.917->105.738.
+Sampled 2s natural triggers fall 44->15. Do not deploy this pilot.
+Continue phase/content/service-conditioned work prediction, separately
+evaluate tool-round classification, capacity-to-submit and consumption.
+No capacity/enqueue replay or throughput proof is established.
+V210 archives 11 temporary helper sources; never rerun completed
+administrative helpers unchanged.
+
 V199 seals the complete V43 600-900s window: 331539/380722 decode
 request steps versus fixed V29 native, 12.918% lower, at 23.334k/23.240k
 visible context. Worker decode intervals average 35.340/32.467ms.
@@ -20,7 +55,7 @@ not proof of no DMA: retain one proven early consumption in each source.
 Investigate live forecast timing and capacity alongside post-arrival
 admission; do not apply one offset or blindly extend leases.
 
-Followup-only qualified changes reuse exact size/shape H2D statistics,
+The cold-deployed qualified changes reuse exact size/shape H2D statistics,
 including unknown support, bounded to 256 keys and invalidated on each
 valid completed H2D/D2H receipt. Closure reads live Tensor index shapes.
 588 focused checks pass. V202 preserves all outputs across 144 estimate
@@ -30,8 +65,8 @@ lower. Retain single-query/range slowdowns up to 4.12%/3.0%.
 V201 retains 769 nonblocking GIL samples and 209 sampling errors;
 the estimator appears in only two inclusive samples. Do not label it a
 major measured system bottleneck or extrapolate fixture reuse to live
-frequency. Commit before any restart. V43 execution stays frozen; CPU
-qualification does not satisfy the active performance goal.
+frequency. V43 was not hot-edited; V44 keeps execution frozen.
+CPU qualification does not satisfy the active performance goal.
 
 V43 cold-started at 04:28:33 CST on October 13 from 50df863/3698ce2f,
 with engine tree 6d6af094 and the qualified prefix-cost change below.
@@ -40,7 +75,7 @@ V197 verifies HTTP200, 575 real GPU-service samples in the independent
 tail, enabled physical actions/predictors, matching source/engine, all
 27 frozen fields and pool capacities. Observed reserve is 4145 FULL
 tokens/one Mamba slot, with Mamba following imminent request slots.
-Freeze running sources. A complete busy-window gain remains unproven;
+V43 has stopped and the complete window above remains below native;
 the performance goal remains active.
 
 V42 stopped administratively at 04:24:59: 69 completed, 39 created
