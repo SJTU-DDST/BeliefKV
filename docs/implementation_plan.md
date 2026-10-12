@@ -2,6 +2,35 @@
 
 Status date: 2026-10-12.
 
+V123 commits 941156c: classify exact and compatible transfer support in one
+scan, skipping known foreign pool shapes before size-distance calculation.
+Preserve unknown and legacy-tuple support, minimum support, encounter order
+and every estimate field. Related 408 cases pass. All 120 comparisons on
+fixed recorded histories return identical outputs. Four actual 256-sample
+histories reduce equally weighted thread CPU about 17.1%-19.2%; the legacy
+fixture improves about 1.6%. Individual unknown/FULL queries regress by up
+to 15.6%/8.6%; do not claim universal savings or GPU/JCT improvement. Keep
+both the initial and final v123_transfer_estimate_cpu measurements.
+
+V29 predictive completes all 156 workflows in 8991.395s; same-version native
+is collecting. The first complete 300-600s window yields 1219.89/1140.88
+decode token/s (+6.93%), 87.315%/84.712% GPU utilization and
+565.544/634.388GB total H2D (-10.85%). Only 4.321MB FULL carries JOIN/tool
+tags; 17.003GB handoff FULL remains demand restoration. This does not
+attribute the throughput difference to anticipatory prefetch. Matched
+single-request prefill with actual extend 0-511 tokens remains 1.476-1.921
+times slower; matched graph decode at batch 48 is 1.0035-1.0241 times.
+Exclusive profiled Python wall totals 41.441s/300s, not removable JCT.
+Keep v123_v29_same_version_pipeline and busy reports; await full successful
+workflow throughput/JCT before accepting the native-performance objective.
+
+Local V123 development begins at 09:19:18 CST, after native's first
+300-600s window. Qualify later overlapping windows. Keep implementation
+and reports in followup; only docs may enter collecting main. Include V123
+with V120-V122 in the next immutable cold-start candidate, predictive first
+then same-version native. Preserve V29 execution and frozen configuration.
+The full performance objective remains active.
+
 V122 commits7749e32: reuse identities already parsed in the same synchronous
 admission call, and read the identity once when constructing reentry anchors.
 Live bindings, invocation state and context epoch remain checked. Resident
