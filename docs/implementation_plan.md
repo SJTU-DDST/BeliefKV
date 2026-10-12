@@ -9,10 +9,32 @@ H2D-statistics reuse and live Tensor closure lengths. V207 verifies HTTP200,
 matching sources/engine, all 27 frozen fields and pool capacities.
 Observed reserve is 4144 FULL tokens and 45 Mamba slots following the
 imminent batch. Keep running sources frozen and fixed V29 native for
-development. The complete busy-window outcome remains unverified.
+development. The complete busy window below remains below native.
 V209 qualifies historical-checkout verification for development restarts,
 with 68 checks. The initial launch failed before workload creation;
 preserve its log and do not count it as a workflow failure.
+
+V212 seals V44 600-900s: 312235/380722 decode request steps, about
+18% below fixed native, with visible context 22.716k/23.240k and worker
+decode intervals 37.655/32.467ms. Exclusive instrumented Python wall
+is 58.511s: tool/reentry/admission 7.984/6.057/5.647s; handoff
+self/inclusive 6.030/18.657s. Full48 coarse matched decode is close
+to native; request turnover/prefill intervals remain slower. These
+include controls/overlap, not isolated kernels or removable JCT.
+Reuse V199 native geometry; analysis after 06:02:44 overlaps later
+collection and is not part of the primary completed window.
+
+V211 independent sealed prefix has 23/3846 known JOIN/tool boundaries
+and 88/2 unknown. Known pre-completion positive-FULL/start/submit:
+20/19/5 and 517/55/52. Proven early next-request FULL consumption
+is zero JOINs and 49 tools/2.461GB. Demand handoff confirmed FULL
+reuse 41.942GB stays separate. Six JOIN ACK/service events have
+ACK-to-service P50/P90 7.677/12.565s, versus native arrival-to-service
+212/425ms across 23 known JOIN events. Do not explain pre-completion
+expiration with later admission or merge different denominators.
+Inspect repeated lease refresh within an iteration; no new change is
+deployed. Preserve deadline/identity/residency checks at mutations and
+native execution dependencies; no cross-iteration physical cache.
 
 V43 stopped administratively at 05:27:59: 78 completed, 30 created
 unfinished and 48 unarrived; the latter 78 are censoring. All 108

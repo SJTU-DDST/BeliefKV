@@ -43,9 +43,23 @@ agent 调度、共用路径减负、predictive H2D 与 `PREPARE_HOST`，
 1,851个真实GPU服务样本、预测器/物理动作启用、源码/引擎、
 27项冻结配置及各池容量一致。FULL预留4,144 token，Mamba
 预留随下一批名额变化，该样本45份。固定V29 native继续用于
-开发比较，完整繁忙窗口尚待验证，运行源码冻结，目标active。
+开发比较，下述完整繁忙窗口仍未达标，运行源码冻结，目标active。
 v209修复开发重启的历史工作树核验，68项检查通过；首次启动
 在创建workload前被源码检查阻止，不能计入workflow错误。
+
+v212封存V44完整600–900秒：312,235/380,722 decode request
+steps，较固定native少约18%；可见上下文22.716k/23.240k，
+worker decode区间37.655/32.467ms。Python独占墙钟58.511秒，
+tool/reentry/admission为7.984/6.057/5.647秒，handoff独占/
+含嵌套6.030/18.657秒。满48请求同粗几何decode接近native，
+请求更替及prefill附近仍较慢；含控制/overlap的区间不能当纯
+kernel或可扣除JCT。v211密封前缀已知JOIN/tool完成23/3,846个、
+未知88/2个；完成前正FULL/启动/提交20/19/5和517/55/52，
+提前且下一请求消费FULL为JOIN0、tool49个/2.461GB。
+需求handoff的41.942GB确认复用单列。JOIN ACK到服务P90
+12.565秒，native arrival到服务P90仅425ms，继续区分提前
+驻留与后来准入。优先检查同迭代重复租约维护，未部署新减负；
+不跨迭代缓存物理驻留，部分ACK仍不授权执行。
 
 V43于05:27:59行政停止，78 completed、30已创建未完成、
 48未到达，后78个任务保留行政删失。108个workspace全量tar
