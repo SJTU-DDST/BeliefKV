@@ -31,6 +31,11 @@ admission 8.200 秒、handoff 4.510 秒，不是可扣除 JCT。
 使用固定 V29 native；优先降低检查/规划成本和工具机会漏失，
 主吞吐/JCT 目标仍 active。
 
+V34 的 108 个 workspace 已于 21:29:17 CST 逐文件比较后无损归档，
+20.841→2.113 GB；仅清理其 102 个已停容器。原始 trace、结果、
+冻结计划与故障状态保留，可用磁盘约 182.77 GiB，归档早于新轮
+启动。v142_v34_workspace_archive 与 raw/ARCHIVED.md 保存恢复路径。
+
 最新容量审计与修订：V33 在 18:40:59 CST 主动停止，停止前
 106 completed、1 error，49 个已创建未完成任务单列行政截断。
 error 为 xarray-6721 的历史 assistant tool arguments 非法 JSON，

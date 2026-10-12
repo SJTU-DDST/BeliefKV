@@ -34,6 +34,30 @@ source-minus-archive difference is not the physical reclaimed space.
 
 ## 2026-10-12 verified workspace compression
 
+Archive: `experiments/archive/20261012/v34_failed_workspaces.tar.zst`
+
+SHA256: `887c2e7006fc278739c2bbf5dc99604e27e8b04b1e85ce79652604d12f202a12`
+
+All 108 V34 workspaces are preserved in this 2,112,889,955-byte archive.
+Source allocation was 20,840,755,200 bytes. GNU tar compared every archived
+file before source removal at 21:29:17 CST, with no GPU collector running.
+Only the 102 remaining containers with binds under V34 were removed.
+Six completed results remain; 102 created and 48 unarrived tasks are
+runtime-failure censored by the NumPy boolean writer failure at 20:15:59 CST.
+Raw traces, outcomes, manifest, frozen plan and the failed launch state
+remain. Available disk after verification was 196,249,567,232 bytes.
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261012/v34_failed_workspaces.tar.zst \
+  --directory experiments/raw
+```
+
+Receipts: `experiments/reports/v142_v34_runtime_failure_20261012.json` and
+`experiments/reports/v142_v34_workspace_archive_20261012.json`.
+The raw run's `ARCHIVED.md` repeats this restore path. Fault classification
+remains runtime failure, not an administrative stop.
+
 Archive: `experiments/archive/20261012/v33_development_workspaces.tar.zst`
 
 SHA256: `5b8969803c5746c781330fc99e6b70c9aea28273251b15d158e753a77de522db`

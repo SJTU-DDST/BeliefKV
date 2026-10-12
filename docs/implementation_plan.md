@@ -30,6 +30,12 @@ Archive the failed workspaces before a same-configuration V35 predictive-only
 cold start using fixed V29 native. Continue with lower planning/inspection
 costs and better tool opportunity conversion; the performance goal is active.
 
+V34's 108 workspaces passed full tar comparison and were archived at
+21:29:17 CST, 20.841GB to 2.113GB. Only its 102 stopped containers were
+removed; traces, outcomes, manifest, frozen plan and failure state remain.
+Available disk is about 182.77GiB. v142_v34_workspace_archive and raw
+ARCHIVED.md retain the restore path. Maintenance precedes the new collector.
+
 V33 stopped at 18:40:59 CST for the next capacity correction:
 106 completed, one xarray-6721 invalid historical tool-argument
 error and 49 administratively censored workflows. Its 156

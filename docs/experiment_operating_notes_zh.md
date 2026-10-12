@@ -26,6 +26,11 @@ V34 的停止容器、逐文件核验 workspace 归档，再单跑 V35；
 继续固定 workload、模型、8192、180 秒工具、14400 秒 workflow
 以及 V29 native 参照，不增加 guard 或输出预算。
 
+V34 workspace 归档已于 21:29:17 CST 完成逐文件核验，108 个
+workspace 20.841→2.113 GB，只清理该轮 102 个停止容器。
+raw 与故障状态均保留，可用磁盘约 182.77 GiB，维护先于新轮
+启动。恢复路径见 raw/ARCHIVED.md 与 v142_v34_workspace_archive。
+
 最新 V33 在 18:40:59 CST 行政停止：106 completed、1 个
 非法历史 tool arguments error、49 个已创建未完成任务删失。
 156 个 workspace 逐文件比较后已归档；不要把 shutdown
