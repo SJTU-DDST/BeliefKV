@@ -1,0 +1,126 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-13T00:09:39.478089+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v38",
+  "code_commit": "71d4d445a5154e77a7502f7483d9e90be73bb2c5",
+  "sglang_patch_sha256": "cf0243b6331c2be8f24491efd7a4b2306e72610b4cd8cb8ddc586c4e12b18b2b",
+  "frozen_plan_sha256": "f87391e55475530d6b19d92cd65ffdb7f18029f73aba2c6281a291808f77ad19",
+  "execution_verification": {
+    "collection_code_commit": "71d4d445a5154e77a7502f7483d9e90be73bb2c5",
+    "verification_code_commit": "71d4d445a5154e77a7502f7483d9e90be73bb2c5",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "cf0243b6331c2be8f24491efd7a4b2306e72610b4cd8cb8ddc586c4e12b18b2b",
+    "expected_tree": "c7c27e0db82a18a41d305b6c98176869ba14aa62",
+    "actual_tree": "c7c27e0db82a18a41d305b6c98176869ba14aa62",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "unchanged_configuration_fields": [
+    "workload_sha256",
+    "root_count",
+    "arrival_schedule",
+    "server_running",
+    "context_tokens",
+    "max_completion_tokens",
+    "host_gb",
+    "host_split",
+    "mamba_full_memory_ratio",
+    "mem_fraction_static",
+    "native_write_policy",
+    "fanout_profile",
+    "sampling_seed",
+    "temperature",
+    "sandbox_command_timeout_s",
+    "activation_wall_clock_seconds",
+    "child_final_report_shadow",
+    "prefetch_lead_ms",
+    "eos_protocol_window_ms",
+    "eos_prefetch_evidence_window_ms",
+    "native_reference_run",
+    "semantic_artifact_sha256",
+    "tool_timing_sha256",
+    "transfer_service_seed_sha256",
+    "native_reactive_guard_profile",
+    "completion_gate_enabled",
+    "semantic_work_statistic"
+  ],
+  "actual_capacity": {
+    "device_full_bytes": 36843438080,
+    "device_full_tokens": 1798995,
+    "device_mamba_bytes": 33096007680,
+    "device_mamba_slots": 513,
+    "device_total_bytes": 69939445760,
+    "host_full_bytes": 160000020480,
+    "host_full_tokens": 7812501,
+    "host_mamba_bytes": 40050032640,
+    "host_mamba_slots": 622,
+    "host_total_bytes": 200050053120,
+    "pool_layout": "static_separate_full_mamba"
+  },
+  "physical_disabled": false,
+  "runtime_snapshot_ts_ms": 1791821378034.7305,
+  "observed_runtime_residency_budget": {
+    "request_slots": 1,
+    "byte_limit": 55850106880,
+    "reserve_full_tokens": 4145,
+    "reserve_mamba_slots": 1,
+    "source": "native_next_prefill",
+    "evictable_full_tokens": 148434,
+    "evictable_mamba_slots": 323
+  },
+  "observed_gpu_service_samples": 5549,
+  "health_http_status": "200",
+  "live_process_identities": {
+    "coordinator": {
+      "pid": 2363819,
+      "state": "S",
+      "ppid": 1,
+      "pgid": 2363819,
+      "start_ticks": "599137541"
+    },
+    "scheduler": {
+      "pid": 2364411,
+      "state": "R",
+      "ppid": 2364057,
+      "pgid": 2364057,
+      "start_ticks": "599139034"
+    },
+    "client": {
+      "pid": 2365979,
+      "state": "S",
+      "ppid": 2364039,
+      "pgid": 2365979,
+      "start_ticks": "599154290"
+    },
+    "engine_parent": {
+      "pid": 2364057,
+      "state": "R",
+      "ppid": 2364039,
+      "pgid": 2364057,
+      "start_ticks": "599137740"
+    }
+  },
+  "opportunity_writer_has_error": false,
+  "observed_valid_capacity_boolean_records": 0,
+  "native_extent_split_records_observed": 0,
+  "max_completion_tokens": 8192,
+  "scope": "Real service, frozen source, physical action availability and unchanged configuration/capacity only. Startup is not proof of complete restoration, early FULL consumption or throughput improvement."
+}

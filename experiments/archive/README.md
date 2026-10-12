@@ -4,6 +4,30 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-10-13 verified workspace compression
+
+Archive: `experiments/archive/20261013/v37_development_workspaces.tar.zst`
+
+SHA256: `ed523dc91103258849a10fa834c1f813ce1eadde081db6e19c8e60750c9fb87a`
+
+All 108 V37 workspaces passed full GNU tar comparison before removal
+at 00:04:30 CST: 20,932,739,072 allocated source bytes and
+2,497,263,666 archive bytes. The collector stopped at 00:01:59 CST
+with 49 completed workflows and 107 administratively censored tasks:
+59 created unfinished and 48 unarrived. Only this run's 59 stopped
+owned containers were removed. Raw traces, outcomes, manifest and
+frozen plan remain. Maintenance precedes the V38 cold start;
+available space was 181,146,755,072 bytes.
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261013/v37_development_workspaces.tar.zst \
+  --directory experiments/raw
+```
+
+Receipts: `experiments/reports/v159_v37_development_stop_20261013.json`
+and `experiments/reports/v159_v37_workspace_archive_20261013.json`.
+
 ## 2026-10-12 verified superseded trace compression
 
 Large JSONL/log files from V10, V12-V15 and V17-V26 are preserved in

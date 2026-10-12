@@ -1,6 +1,25 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-12.
+Status date: 2026-10-13.
+
+V38 predictive cold-started 71d4d44/cf0243b6 at 00:05:13 CST
+on October 13, deploying advancing cold-leaf scans, one bounded
+post-enqueue safe-input tail capacity pass and context-local lease
+refresh. At 00:09:39, HTTP200, 5549 actual GPU-service samples,
+physical_disabled=false and unchanged configuration/physical
+capacities versus V37 are confirmed. Actual FULL/Mamba reserves are
+4145 tokens/one slot; canonical patch matches deployed tree c7c27e0d.
+See v160. Low-pressure startup does not prove actual scan/tail
+reclamation benefit or throughput improvement. Keep running sources
+frozen, fixed V29 native and the goal active.
+
+V37 stopped administratively at 00:01:59 CST: 49 completed,
+59 created unfinished and 48 unarrived; preserve the latter 107
+as administrative censoring. At 00:04:30, all 108 workspaces passed
+full archive comparison before removal, 20.933GB to 2.497GB.
+Remove only its 59 stopped owned containers; raw evidence and plan
+remain. Maintenance precedes V38; available space is 168.71GiB.
+See v159, the raw run's ARCHIVED.md and the existing archive README.
 
 V37's complete 600-900s window still trails fixed V29 native:
 337529/380722 decode request steps, 11.35% lower with about
@@ -39,14 +58,13 @@ cold-candidate validation to its own context. Runtime 647 and native 124
 checks pass; canonical patch cf0243b6 matches independent tree c7c27e0d.
 See v158_cold_scan_and_tail_validation.
 
-Keep V37 frozen at c48b3dd/838d2ed8 until the new code is committed.
-Preserve its administrative cutoff, archive and compare all owned
-workspaces, then cold-start V38 predictive with the same frozen workload
-and fixed V29 native. Verify deployed engine/source identity, actual
-service, capacity and physical actions before measuring early consumed
+V37 collection remains frozen at c48b3dd/838d2ed8. Commit 71d4d44
+was deployed after preserving its cutoff and comparing the workspace
+archive, using a cold V38 predictive run with the same frozen workload
+and fixed V29 native. V160 confirms engine/source identity, actual
+service, capacity and physical actions. Next measure early consumed
 FULL, tail completion and busy-window service/control cost. The goal
-remains active; V154's V37 deployment receipt is retained as historical
-evidence, not a throughput claim.
+remains active; V154's V37 receipt stays historical deployment evidence.
 
 V36 was administratively stopped at 23:08:23 CST: 39 completed,
 69 created unfinished and 48 unarrived workflows; the latter 117

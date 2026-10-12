@@ -1,9 +1,25 @@
 # v0.5.20 调度适配边界
 
-状态：2026-10-12。JOIN/tool 预测恢复、FULL-only PREPARE、
+状态：2026-10-13。JOIN/tool 预测恢复、FULL-only PREPARE、
 执行 handoff 和首次服务复用归因已用于开发实验。模型提供
 完成/剩余工作预测，runtime 根据因果状态和真实缓存容量
 安排传输；吞吐和 JCT 收益仍待验证。
+
+当前 V38 于 2026-10-13 00:05:13 CST 从
+71d4d44/cf0243b6 冷启动，已部署推进式冷叶扫描、一次 enqueue
+后安全尾部容量回收及 context 范围租约刷新。00:09:39 验证
+HTTP 200、5,549 个真实 GPU 服务样本、physical_disabled=false，
+配置和各池容量等于 V37，FULL/Mamba 预留为 4,145 token/一份；
+实际 tree c7c27e0d 与规范 patch 一致，回执为 v160。低压启动
+阶段不能证明实际尾部补齐/提前消费或吞吐收益，运行源码冻结，
+固定 V29 native，目标 active。
+
+V37 已于 00:01:59 CST 行政停止，49 completed、59 个已创建
+未完成和 48 个未到达任务，后两类单列行政删失。00:04:30
+完成 108 workspace 的全量比较归档，20.933→2.497 GB，
+只删除该轮 59 个已停容器，raw/计划保留，结束可用约
+168.71 GiB。维护先于 V38，v159 及现有 archive README
+保存回执和恢复路径。
 
 V37 完整 600–900 秒窗口仍低于固定 V29 native：decode request
 steps 337,529/380,722，差 11.35%，上下文约 23.57k/23.24k。
@@ -31,9 +47,9 @@ DMA 等待、尾部 enqueue 或准入授权，后续沿现有 ACK 重规划；
 647 runtime 与 124 原生检查通过，规范 patch cf0243b6 与
 独立 tree c7c27e0d 一致，v158 保存验证。
 
-运行中的 V37 保持 c48b3dd/838d2ed8 冻结，v154 部署回执
-继续保留。提交新修订后先封存行政停止和核验 workspace 归档，
-再同配置冷启动 V38 predictive，固定 V29 native；重点观察
+V37 采集源保持 c48b3dd/838d2ed8 冻结，v154 回执继续保留。
+新修订提交后已封存行政停止和核验 workspace 归档，并同配置
+冷启动 V38 predictive，固定 V29 native；重点观察
 实际扫描覆盖、尾部恢复/首次消费与繁忙窗口成本，目标 active。
 
 V36 已于 23:08:23 CST 行政停止：39 completed，

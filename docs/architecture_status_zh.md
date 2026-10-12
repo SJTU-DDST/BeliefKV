@@ -1,6 +1,23 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-10-12。
+更新日期：2026-10-13。
+
+V38 predictive 于 2026-10-13 00:05:13 CST 从
+71d4d44/cf0243b6 冷启动，已部署跨调用冷叶扫描、单次
+enqueue 后安全输入尾部容量回收及 context 范围租约刷新。
+00:09:39 核验 HTTP 200、5,549 个实际 GPU 服务样本、
+physical_disabled=false，配置和各池容量逐项等于 V37；
+实际 FULL/Mamba 预留为 4,145 token/一份。规范 patch 与
+实际 tree c7c27e0d 一致，回执为 v160。当前仍为低压启动
+阶段，新增实际扫描/尾部回收收益尚待观察，不能视为吞吐达标。
+运行源码冻结，继续固定 V29 native，目标 active。
+
+V37 已于 2026-10-13 00:01:59 CST 行政停止：49 completed，
+59 个已创建未完成和 48 个未到达任务单列行政删失。00:04:30
+完成 108 个 workspace 的全量归档比较，20.933→2.497 GB，
+仅删除该轮 59 个已停容器。raw 证据及冻结计划保留，维护
+先于 V38；归档结束可用约 168.71 GiB，见 v159 与该轮
+ARCHIVED.md，恢复命令也写入现有 archive README。
 
 V37 的完整 600–900 秒窗口仍未达标：predictive/固定 V29 native
 decode request steps 为 337,529/380,722，少 11.35%，可见上下文
@@ -34,11 +51,11 @@ Mamba 单独短缺不再扫描 FULL；不是单时刻的完整缓存普查。
 检查和 124 项原生检查通过，规范 patch cf0243b6 与独立引擎
 tree c7c27e0d 一致，见 v158_cold_scan_and_tail_validation。
 
-V37 仍冻结在 c48b3dd/838d2ed8，未热改运行代码。该轮于
+V37 采集源码保持 c48b3dd/838d2ed8，未热改运行代码。该轮于
 23:15:08 CST 冷启动，v154 已确认 HTTP 200、实际 GPU 服务、
-physical_disabled=false 和 4,145-token FULL 预留。新代码提交后
-封存并行政停止 V37，核验 workspace 归档，再同配置冷启动
-V38 predictive，继续固定 V29 native。目标 active，下一轮重点
+physical_disabled=false 和 4,145-token FULL 预留。71d4d44 提交后
+已封存并行政停止 V37，核验 workspace 归档并同配置冷启动
+V38 predictive，继续固定 V29 native。目标 active，本轮重点
 验证扫描覆盖、真实尾部补齐、提前 FULL 消费和繁忙窗口成本。
 
 V36 已于 23:08:23 CST 行政停止，停止前 39 completed、
