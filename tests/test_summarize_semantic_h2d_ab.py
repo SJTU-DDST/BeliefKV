@@ -18,6 +18,7 @@ from scripts.summarize_semantic_h2d_ab import (
     ("scripts/launch_semantic_h2d_after_pair.py", True),
     ("experiments/reports/analysis.json", True),
     ("experiments/reports/analysis.json.gz", True),
+    ("experiments/reports/profile.raw.gz", True),
     ("experiments/reports/analysis.md", True),
     ("experiments/reports/nested/analysis.json", True),
     ("experiments/reports/helper.py", False),
