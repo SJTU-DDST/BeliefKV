@@ -1,0 +1,449 @@
+{
+  "started_at_local": "2026-10-12T11:35:10.511071+08:00",
+  "runs": {
+    "v27": {
+      "code_commit": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+      "client": {
+        "completed_workflows": 155,
+        "duration_seconds": 9812.319053038023,
+        "llm_request_count": 48278,
+        "tool_call_count": 47977,
+        "workflow_count": 156
+      },
+      "event_funnel": {
+        "join_ticket": {
+          "observed_events": 194,
+          "events_with_observed_full_plan": 163,
+          "events_with_early_reused_full": 90,
+          "early_started_and_reused_full_bytes": 1553018880,
+          "remaining_native_full_host_hit_bytes_known": 422973440,
+          "last_ack_to_first_service_ms": {
+            "count": 99,
+            "p50": 355.32177734375,
+            "p90": 1253.1796386718756,
+            "max": 11829.30810546875
+          },
+          "observed_reason_events": {
+            "admission_budget_busy": 40,
+            "before_start_window": 103,
+            "closure_unobservable": 2,
+            "fits_current_free_lists": 160,
+            "insufficient_free_lists": 161,
+            "no_cold_capacity": 37,
+            "no_restore_plan": 108,
+            "no_reusable_input_restore_step": 188,
+            "service_progress_unavailable": 10,
+            "service_unsupported": 17,
+            "start_window": 133,
+            "submitted": 99
+          }
+        },
+        "tool_wait": {
+          "observed_events": 18476,
+          "events_with_observed_full_plan": 1963,
+          "events_with_early_reused_full": 479,
+          "early_started_and_reused_full_bytes": 8027832320,
+          "remaining_native_full_host_hit_bytes_known": 518091100160,
+          "last_ack_to_first_service_ms": {
+            "count": 525,
+            "p50": 415.983154296875,
+            "p90": 1017.779296875,
+            "max": 82335.73022460938
+          },
+          "observed_reason_events": {
+            "before_start_window": 1124,
+            "fits_current_free_lists": 70,
+            "insufficient_free_lists": 274,
+            "no_cold_capacity": 577,
+            "no_restore_plan": 15424,
+            "no_reusable_input_restore_step": 4592,
+            "service_unsupported": 13,
+            "start_window": 543,
+            "submitted": 525
+          }
+        }
+      },
+      "dma_funnel": {
+        "join_ticket": {
+          "issued_commands": 219,
+          "full_reused_commands": 180,
+          "full_not_reused_commands": 39,
+          "full_transferred_bytes_known": 1999544320,
+          "full_verified_reused_bytes_known": 1633075200
+        },
+        "tool_wait": {
+          "issued_commands": 2197,
+          "full_reused_commands": 2100,
+          "full_not_reused_commands": 97,
+          "full_transferred_bytes_known": 8808488960,
+          "full_verified_reused_bytes_known": 8416092160
+        }
+      },
+      "prepare": {
+        "prepare_issued_commands": 1911,
+        "prepare_acknowledged_commands": 1911,
+        "pressure_events": 166,
+        "unique_prepared_nodes_demoted": 126
+      },
+      "window_observations": {
+        "join_ticket:before_start_window": {
+          "distributions": {
+            "start_window_ms": {
+              "count": 914,
+              "p50": 183.64192070439458,
+              "p90": 204.85882070023536,
+              "max": 239.75204638016385
+            },
+            "h2d_p90_ms": {
+              "count": 914,
+              "p50": 82.43558475158454,
+              "p90": 102.33147615065575,
+              "max": 138.19337141511005
+            },
+            "predicted_remaining_ms": {
+              "count": 914,
+              "p50": 1525.5490850445221,
+              "p90": 1969.7604927735986,
+              "max": 1999.0602488921584
+            }
+          },
+          "mamba_slot_observation_counts": {
+            "1": 913,
+            "0": 1
+          }
+        },
+        "join_ticket:start_window": {
+          "distributions": {
+            "start_window_ms": {
+              "count": 161,
+              "p50": 183.43130533128144,
+              "p90": 198.4668316583093,
+              "max": 234.64090740308166
+            },
+            "h2d_p90_ms": {
+              "count": 161,
+              "p50": 82.16994726132233,
+              "p90": 96.2730589586254,
+              "max": 133.58466932550073
+            },
+            "predicted_remaining_ms": {
+              "count": 161,
+              "p50": 0.0,
+              "p90": 149.604419259928,
+              "max": 186.6524597702517
+            }
+          },
+          "mamba_slot_observation_counts": {
+            "1": 161
+          }
+        },
+        "tool_wait:before_start_window": {
+          "distributions": {
+            "start_window_ms": {
+              "count": 1173,
+              "p50": 181.7831545136869,
+              "p90": 201.65555440971303,
+              "max": 327.5364766828716
+            },
+            "h2d_p90_ms": {
+              "count": 1173,
+              "p50": 79.64875525072058,
+              "p90": 98.29928819090128,
+              "max": 150.48171300441027
+            },
+            "predicted_remaining_ms": {
+              "count": 1173,
+              "p50": 393.55018520355225,
+              "p90": 484.696382522583,
+              "max": 663.1971262978728
+            }
+          },
+          "mamba_slot_observation_counts": {
+            "1": 1148,
+            "0": 25
+          }
+        },
+        "tool_wait:start_window": {
+          "distributions": {
+            "start_window_ms": {
+              "count": 590,
+              "p50": 180.94705197987716,
+              "p90": 210.38328223091256,
+              "max": 500.0
+            },
+            "h2d_p90_ms": {
+              "count": 590,
+              "p50": 78.2577850541824,
+              "p90": 105.16819812985133,
+              "max": 721.2655895389619
+            },
+            "predicted_remaining_ms": {
+              "count": 590,
+              "p50": 81.91744528768633,
+              "p90": 155.15194120407105,
+              "max": 204.00160026550293
+            }
+          },
+          "mamba_slot_observation_counts": {
+            "1": 176,
+            "0": 414
+          }
+        }
+      },
+      "last_runtime_counts": {
+        "tool_prefetch_scans": 118661,
+        "tool_prefetch_scan_deferred": 1598484,
+        "tool_prefetch_no_restore_target": 46404,
+        "tool_prefetch_not_in_time_window": 183528,
+        "tool_prefetch_admission_budget_busy": 33024,
+        "semantic_h2d_child_waiting_for_service": 23034,
+        "semantic_h2d_no_host_target": 798,
+        "semantic_h2d_too_early": 74854,
+        "semantic_h2d_not_latest_start": 10903,
+        "semantic_h2d_no_free_capacity": 158,
+        "join_prefetch_provisional_issued": 219,
+        "join_prefetch_acked": 200,
+        "join_prefetch_no_cpu_node": 98,
+        "semantic_h2d_admission_budget_busy": 185,
+        "tool_prefetch_not_latest_start": 1613,
+        "tool_prefetch_no_free_capacity": 657,
+        "tool_prefetch_window_entered": 590,
+        "tool_prefetch_issued": 2197,
+        "tool_prefetch_acked": 2197,
+        "wait_prefetch_batch_timing_changed": 75,
+        "tool_prefetch_reclaimed_plan_timing_changed": 35
+      },
+      "opportunity_input": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v27/predictive_h2d/opportunities/admission_opportunities.jsonl",
+        "bytes": 1499794140,
+        "sha256": "cedbdc7cc0edd3c40ac9b1f58c7c258bd5672bb06d003abcde721ec6e0f99e80"
+      }
+    },
+    "v29": {
+      "code_commit": "92e47d79ef1186dde954bc489fc38600ef5022ae",
+      "client": {
+        "completed_workflows": 156,
+        "duration_seconds": 8991.395384473726,
+        "llm_request_count": 46375,
+        "tool_call_count": 45993,
+        "workflow_count": 156
+      },
+      "event_funnel": {
+        "join_ticket": {
+          "observed_events": 197,
+          "events_with_observed_full_plan": 164,
+          "events_with_early_reused_full": 25,
+          "early_started_and_reused_full_bytes": 675143680,
+          "remaining_native_full_host_hit_bytes_known": 536084480,
+          "last_ack_to_first_service_ms": {
+            "count": 26,
+            "p50": 298.5958251953125,
+            "p90": 1222.0330810546875,
+            "max": 2384.44091796875
+          },
+          "observed_reason_events": {
+            "admission_budget_busy": 29,
+            "before_start_window": 108,
+            "closure_unobservable": 3,
+            "fits_current_free_lists": 161,
+            "insufficient_free_lists": 161,
+            "no_restore_plan": 44,
+            "no_reusable_input_restore_step": 189,
+            "service_progress_unavailable": 41,
+            "service_unsupported": 6,
+            "start_window": 150,
+            "submitted": 26
+          }
+        },
+        "tool_wait": {
+          "observed_events": 20269,
+          "events_with_observed_full_plan": 1494,
+          "events_with_early_reused_full": 17,
+          "early_started_and_reused_full_bytes": 654356480,
+          "remaining_native_full_host_hit_bytes_known": 729029529600,
+          "last_ack_to_first_service_ms": {
+            "count": 17,
+            "p50": 461.886474609375,
+            "p90": 1411.0442382812503,
+            "max": 7207.333740234375
+          },
+          "observed_reason_events": {
+            "before_start_window": 1292,
+            "closure_unobservable": 4,
+            "fits_current_free_lists": 75,
+            "insufficient_free_lists": 276,
+            "no_live_session_or_anchors": 1,
+            "no_restore_plan": 18134,
+            "no_reusable_input_restore_step": 5213,
+            "start_window": 17,
+            "submitted": 17
+          }
+        }
+      },
+      "dma_funnel": {
+        "join_ticket": {
+          "issued_commands": 48,
+          "full_reused_commands": 48,
+          "full_not_reused_commands": 0,
+          "full_transferred_bytes_known": 682864640,
+          "full_verified_reused_bytes_known": 682864640
+        },
+        "tool_wait": {
+          "issued_commands": 73,
+          "full_reused_commands": 73,
+          "full_not_reused_commands": 0,
+          "full_transferred_bytes_known": 654356480,
+          "full_verified_reused_bytes_known": 654356480
+        }
+      },
+      "prepare": {
+        "prepare_issued_commands": 2345,
+        "prepare_acknowledged_commands": 2345,
+        "pressure_events": 136,
+        "unique_prepared_nodes_demoted": 104
+      },
+      "window_observations": {
+        "join_ticket:before_start_window": {
+          "distributions": {
+            "start_window_ms": {
+              "count": 863,
+              "p50": 175.92245982959867,
+              "p90": 187.35562330145677,
+              "max": 232.09480186924338
+            },
+            "h2d_p90_ms": {
+              "count": 863,
+              "p50": 75.26098198054513,
+              "p90": 87.35562330145677,
+              "max": 128.8623884320259
+            },
+            "predicted_remaining_ms": {
+              "count": 863,
+              "p50": 1444.9988424023177,
+              "p90": 1969.8366820130207,
+              "max": 1999.8566118284962
+            }
+          },
+          "mamba_slot_observation_counts": {
+            "1": 862,
+            "0": 1
+          }
+        },
+        "join_ticket:start_window": {
+          "distributions": {
+            "start_window_ms": {
+              "count": 176,
+              "p50": 177.0254978971378,
+              "p90": 187.32135100882888,
+              "max": 224.95089368894696
+            },
+            "h2d_p90_ms": {
+              "count": 176,
+              "p50": 75.97626756800057,
+              "p90": 86.73043527308683,
+              "max": 122.11574707180262
+            },
+            "predicted_remaining_ms": {
+              "count": 176,
+              "p50": 0.0,
+              "p90": 115.0954871548291,
+              "max": 213.12809286223546
+            }
+          },
+          "mamba_slot_observation_counts": {
+            "1": 176
+          }
+        },
+        "tool_wait:before_start_window": {
+          "distributions": {
+            "start_window_ms": {
+              "count": 1366,
+              "p50": 165.60560415563424,
+              "p90": 186.1715873334706,
+              "max": 232.02567818720698
+            },
+            "h2d_p90_ms": {
+              "count": 1366,
+              "p50": 63.47402874840935,
+              "p90": 83.35823123233976,
+              "max": 130.4385652873373
+            },
+            "predicted_remaining_ms": {
+              "count": 1366,
+              "p50": 382.568102118665,
+              "p90": 477.8792095184326,
+              "max": 501.39981174468994
+            }
+          },
+          "mamba_slot_observation_counts": {
+            "1": 1366
+          }
+        },
+        "tool_wait:start_window": {
+          "distributions": {
+            "start_window_ms": {
+              "count": 17,
+              "p50": 172.36521504819393,
+              "p90": 208.02148589142163,
+              "max": 209.98679045587778
+            },
+            "h2d_p90_ms": {
+              "count": 17,
+              "p50": 69.96068801120543,
+              "p90": 104.46056834631166,
+              "max": 108.60553290694952
+            },
+            "predicted_remaining_ms": {
+              "count": 17,
+              "p50": 93.40062522888184,
+              "p90": 168.21826629638673,
+              "max": 186.26834392547607
+            }
+          },
+          "mamba_slot_observation_counts": {
+            "1": 14,
+            "0": 3
+          }
+        }
+      },
+      "last_runtime_counts": {
+        "tool_prefetch_scans": 113054,
+        "tool_prefetch_scan_deferred": 1088329,
+        "tool_prefetch_admission_budget_busy": 33116,
+        "tool_prefetch_no_restore_target": 59409,
+        "tool_prefetch_not_in_time_window": 189619,
+        "semantic_h2d_no_host_target": 219,
+        "semantic_h2d_child_waiting_for_service": 17859,
+        "semantic_h2d_too_early": 72967,
+        "semantic_h2d_not_latest_start": 11688,
+        "wait_prefetch_capacity_budget": 2501,
+        "join_prefetch_no_cpu_node": 738,
+        "wait_prefetch_batch_timing_changed": 84,
+        "tool_prefetch_not_latest_start": 1956,
+        "semantic_h2d_admission_budget_busy": 132,
+        "tool_prefetch_window_entered": 17,
+        "tool_prefetch_issued": 73,
+        "tool_prefetch_acked": 73,
+        "join_prefetch_provisional_issued": 48,
+        "join_prefetch_acked": 38
+      },
+      "opportunity_input": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29/predictive_h2d/opportunities/admission_opportunities.jsonl",
+        "bytes": 1449249134,
+        "sha256": "1fab5fe32bf5bbbef20f001b66ae2f342a760ce5bd09c1a0ddf1389f7fb6a164"
+      }
+    }
+  },
+  "configuration_differences": {
+    "sglang_patch_sha256": {
+      "v27": "826993c171b8bdc771828358f90a34acb5e9d3e6111bf135bc397d3627acfa65",
+      "v29": "1c3c7fc4eefc5a9ed12e18f5c99490f03cd4b79f9f58079ce08fae3d944cfc9e"
+    },
+    "code_commit": {
+      "v27": "df3dd3c71a1cfc1100eb49148098869a546f519a",
+      "v29": "92e47d79ef1186dde954bc489fc38600ef5022ae"
+    }
+  },
+  "completed_at_local": "2026-10-12T11:35:33.378925+08:00",
+  "semantics": "Reuse and event counts come from completed lifecycle artifacts. Positive-plan counts in those older artifacts include post-boundary snapshots; they are not the strictly pre-completion denominator from V125. Reasons overlap. Startup distributions count recorded positive-plan snapshots, not independent events or causal attribution. Completed runtime counts are cumulative checks, not unique rejections. No capacity or policy counterfactual is replayed."
+}

@@ -2,6 +2,36 @@
 
 Status date: 2026-10-12.
 
+V128 compares completed V27/V29 lifecycle evidence. Early-started,
+next-request FULL reuse drops from 90 to 25 JOIN events and from 479
+to 17 tool events, or 9.581GB to 1.330GB combined. Model artifacts,
+500ms lead, workload and physical settings match; code/engine patches
+change. JOIN/tool waits increase from 194/18,476 to 197/20,269.
+All 48 JOIN and 73 tool positive-FULL node commands issued by V29
+have verified reuse; investigate selection/reclaim/enqueue losses,
+rather than treating post-transfer failure as the primary cause.
+
+Strictly before completion, tool startup events fall from 504 to 17
+and FULL-only startup snapshots from 377 to 3. Of 1,239 V29 tool
+events with a positive before_start_window plan, 293 subsequently
+have a zero plan without detail, resembling budget truncation.
+Old logs lack no_step_reason, so this is not a directly confirmed
+capacity rejection count. JOIN startups increase from 129 to 147,
+but pre-boundary submission falls from 92 to 25; 36 of the 122
+unsubmitted startups subsequently report unavailable service progress.
+These reason groups overlap and are not exhaustive causal partitions.
+
+V117 now subtracts native next-prefill reserves in fit checks and
+reclaim targets; do not equate old fit snapshots with new available
+capacity. Validate queued V121/V126 timing alongside partial FULL
+recovery and first consumption. Keep v128_v27_v29_prefetch_drop/funnel
+evidence and input hashes. The offline analysis starts 11:35 CST;
+qualify overlapping native windows. V29 native completes during this
+analysis: 156/156 completed in 9,195.415s. V30 starts predictive-only
+at 11:45:12 CST from fca7ad3, with V29 native as its fixed reference.
+Commit this offline evidence/docs only in followup; keep collecting
+V30 frozen. The throughput/JCT and attributable FULL goal stays active.
+
 Current development cadence follows the October 12 user update. V127
 commits cddd60d: default to a predictive-only cold collection against
 a fixed historical native reference, rather than collecting native on
