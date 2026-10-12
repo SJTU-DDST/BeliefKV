@@ -2,6 +2,28 @@
 
 更新日期：2026-10-13。
 
+当前开发轮为V40 predictive：2026-10-13 01:57:38 CST从
+9f42c24/cf0243b6冷启动，部署收尾阶段等待parent的冷FULL
+候选修订，actual tree仍为c7c27e0d。沿用108+48 roots、
+running48、Host200GB 80:20、HBM Mamba/FULL0.9、工具180秒
+和固定V29 native。02:04:16核验HTTP200、GC初始化、观察尾部
+565个真实GPU服务样本及physical_disabled=false，各池容量和
+27项冻结配置等于V39；v174绑定源码/引擎和独立输入尾部。
+FULL预留样本为4,145 token，Mamba按下一批名额动态预留，
+该样本为一份，不能把所有快照固定要求一份。运行执行源码
+冻结，吞吐和提前消费收益仍未证明，目标active。
+
+v175早期容量前缀记录等待agent释放：JOIN30条/28,627 FULL
+token、tool6条/7,894 FULL token；也包括需求准入路径，不能
+全部算wait-prefetch收益。该前缀尚无wait-prefetch实际冷页回收
+或尾部回收，不以启动期低压和候选资格认定覆盖/吞吐改善。
+
+V39于01:53:51行政停止：31 completed、77个已创建未完成及
+48个未到达任务，后两类125个任务单列行政删失。01:57:11完成
+108个workspace全量tar比较后清理，20.890→2.492GB，仅删除
+该轮77个已停容器，raw/结果/manifest/冻结计划保留。维护早于
+V40，可用157.24GiB；v173回执及现有archive README保存恢复路径。
+
 V39 的完整 600–900 秒繁忙窗口仍未达标：predictive/固定
 V29 native 的 decode request steps 为 332,453/380,722，
 少 12.68%；可见上下文约 22.62k/23.24k token。已埋点 Python
@@ -18,21 +40,21 @@ JOIN 2个/13.804MB、tool 9个/250.163MB。已知完成边界的
 wait-prefetch实际冷页释放；实际free-list可低至352/453 token，
 不能用缓存打印利用率替代原生allocator的可分配容量。
 
-后续冷部署修订：child 的收尾通知不再使整个WAIT_JOIN
+V40已冷部署修订：child 的收尾通知不再使整个WAIT_JOIN
 parent提前失去冷页候选资格。只有实际存活的同parent恢复
 ticket、节点驻留租约及既有身份/引用/Host副本/在途约束
 保护相应页面；READY或终态parent仍不能作为等待victim。
 有Host副本的FULL可回收，仍被引用且没有Host副本的Mamba
 保持原生驻留。434项检查通过，v172绑定最终源码和输入审计；
-尚未部署到V39，不以fixture资格证明实际GPU收益。
+V39采集期间未热改，不以fixture资格证明实际GPU收益。
 
-V39 predictive 已于 2026-10-13 01:19:38 CST 从
+V39 predictive 曾于 2026-10-13 01:19:38 CST 从
 aa3e7c1/cf0243b6 冷启动，部署工具生存查询减负、quantile
 索引及同轮观察复用。规范 patch 未变，actual tree 仍为
 c7c27e0d；沿用 108+48 roots、running48、Host200GB 80:20、
 HBM Mamba/FULL0.9、工具180秒与固定 V29 native。01:26:33
 核验 HTTP200、GC 初始化和日志尾部 556 个真实 GPU 服务样本，
-physical_disabled=false；各池容量及28项冻结配置等于 V38，
+physical_disabled=false；各池容量及27项冻结配置等于 V38，
 实际 FULL/Mamba 预留仍为 4,145 token/一份。v169 保存
 独立输入尾部长度/SHA256、源码和进程身份，不以启动认定
 性能改善。运行源码冻结，目标仍 active。

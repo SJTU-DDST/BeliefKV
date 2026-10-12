@@ -1,0 +1,60 @@
+{
+  "sources": {
+    "tool_wait": {
+      "record_counts": {
+        "plan_records": 3566
+      },
+      "distinct_recorded_wait_episodes": {},
+      "examples": {}
+    },
+    "join_ticket": {
+      "record_counts": {
+        "plan_records": 4
+      },
+      "distinct_recorded_wait_episodes": {},
+      "examples": {}
+    }
+  },
+  "actual_reclaim_records": {},
+  "actual_tail_capacity_reclaim_records": {},
+  "actual_waiting_agent_demotions": {
+    "join_wait": {
+      "records": 30,
+      "full_tokens": 28627,
+      "mamba_slots": 26
+    },
+    "tool_wait": {
+      "records": 6,
+      "full_tokens": 7894,
+      "mamba_slots": 6
+    }
+  },
+  "actual_full_extent_splits": {},
+  "observed_timestamp_range_ms": [
+    1791828016863.7034,
+    1791828319974.8792
+  ],
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 47138980,
+      "complete_prefix_sha256": "164d95f0c21d41d750e653214b1753f3b6425c17c49afecf34d92a1806793b95",
+      "first_read_limit_bytes": 47138980
+    }
+  },
+  "interpretation": [
+    "Categories overlap; records are not independent events or a performance benefit.",
+    "A zero-step FULL capacity rejection with a positive FULL limit proves the first complete extent did not fit the recorded budget. It does not prove that timing, DMA and next-request reuse would all have succeeded.",
+    "A positive limit that includes evictable counts is not actual allocator capacity.",
+    "A refusal within 100ms of the same context's reclaim is a temporal association, not a global census or unique reclaim-attempt identifier.",
+    "Absent action-local diagnostics, sampled sessions from other timestamps cannot prove that no safe migratable KV existed when the action was rejected.",
+    "Actual waiting-agent demotions also occur for demand admission; keep them separate from predictive wait-prefetch reclaim.",
+    "A native extent split changes the tree only; it is not DMA, complete checkpoint readiness, admission, or next-request reuse.",
+    "Observed FULL remainders describe the captured closure, which may include output beyond the next reusable input checkpoint. A burst covering all observed Host-backed FULL still does not prove required state is resident.",
+    "Tail-capacity checks run once after a partial native enqueue. Their freed units are capacity evidence, not a tail transfer, completed checkpoint or consumer service. Continuing a bounded leaf snapshot is not a census of every cache state at a single instant."
+  ],
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d",
+  "collection_commit": "9f42c24593c524bf6985abc710409482caf03204",
+  "audit_started_at_local": "2026-10-13T02:05:20.128977+08:00",
+  "audit_finished_at_local": "2026-10-13T02:05:20.697264+08:00",
+  "helper_sha256": "c844643d156e983bd2f224451c65e75f941c886171289ae663638625a243e17a"
+}

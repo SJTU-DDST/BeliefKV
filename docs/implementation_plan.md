@@ -2,6 +2,28 @@
 
 Status date: 2026-10-13.
 
+Current development run is predictive-only V40, cold-started at
+01:57:38 CST from 9f42c24/cf0243b6 with unchanged engine tree c7c27e0d.
+Deploy report-phase waiting-parent cold FULL candidacy; preserve
+108+48 arrivals, running48, Host200GB 80:20, HBM Mamba/FULL0.9,
+180s tools and fixed V29 native. At 02:04:16, v174 verifies HTTP200,
+GC initialization, 565 actual GPU-service samples in the observed tail,
+physical_disabled=false, unchanged capacities and 27 frozen fields,
+and validated source/engine identity. Mamba reserve follows imminent
+request slots; the observed budget has one slot and 4145 FULL tokens.
+Do not require a fixed one-slot reserve when the next batch has more
+requests. Freeze running execution sources; goal active.
+V175's early capacity prefix records 30 JOIN/28627 FULL-token and
+six tool/7894 FULL-token waiting-agent demotions, including demand
+admission paths. No actual wait-prefetch or tail reclaim is observed
+in this prefix; these counts do not prove early consumption or gains.
+V39 stopped at 01:53:51: 31 completed, 77 created unfinished and
+48 unarrived, with the latter 125 administratively censored.
+All 108 workspaces passed full archive comparison before cleanup
+at 01:57:11: 20.890GB to 2.492GB. Remove only 77 stopped owned
+containers; preserve raw/plan/results. Maintenance precedes V40.
+See v173, raw/ARCHIVED.md and the existing archive README.
+
 V39's complete 600-900s window remains below fixed V29 native:
 332453/380722 decode request steps, 12.68% lower at about
 22.62k/23.24k visible-context tokens. Instrumented exclusive Python
@@ -15,16 +37,16 @@ tool 81/10/10; preserve 96 unknown JOIN boundaries. Capacity refusals
 affect 15 JOIN and 498 tool-wait identities, with no observed actual
 wait-prefetch reclaim in this prefix. These are not failed workflows.
 
-Next cold deployment removes report-stage-only exclusion of a waiting
+V40 cold deployment removes report-stage-only exclusion of a waiting
 parent from cold FULL candidates. Protect an actual live restore ticket
 for that parent and existing node residency leases; preserve current
 identity, references, Host backing, in-flight and native allocator checks.
 READY and terminal parents remain invalid. Backed FULL can be reclaimed
 without evicting a referenced unbacked Mamba state. All 434 focused checks
-pass; v172 binds final source and audit hashes. Commit before stopping
-V39, archive and compare its actual workspace inventory, then cold-start
-predictive-only V40 with unchanged workload, patch and fixed V29 native.
-Do not hot-edit V39 or infer GPU gains from candidate fixtures.
+pass; v172 binds final source and audit hashes. Commit 9f42c24 preceded
+V39's administrative stop and verified workspace archive. V40 uses
+unchanged workload, patch and fixed V29 native. V39 was not hot-edited;
+do not infer GPU gains from candidate fixtures.
 Measure actual FULL release, complete restoration, early next-request
 consumption and busy-window costs. The goal remains active.
 
@@ -34,7 +56,7 @@ observation reuse. Deployed tree remains c7c27e0d; keep frozen
 108+48 arrivals, running48, Host200GB 80:20, HBM Mamba/FULL0.9,
 180s tools and fixed V29 native. At 01:26:33, v169 confirms HTTP200,
 GC initialization, 556 actual GPU-service samples in the observed tail,
-physical_disabled=false, unchanged capacities and 28 configuration
+physical_disabled=false, unchanged capacities and 27 configuration
 fields, and 4145-token/one-Mamba reserves. Independent input tails,
 source and process identities are preserved. Startup does not prove
 performance gains. Running sources frozen, goal active.
