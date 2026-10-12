@@ -353,6 +353,7 @@ class NativeAdmissionRuntime:
         self._native_prefill_slots: int | None = None
         self._native_page_size = 1
         self._native_input_reserve = 0
+        self._native_chunk_input_reserve: int | None = None
         self._residency_budget = PrefetchResidencyBudget(4, 1024 ** 3)
         self._visible_since: dict[str, float] = {}
         lead_setting = float(os.environ.get("BELIEFKV_PREFETCH_LEAD_MS", "1000"))
@@ -5983,6 +5984,18 @@ class NativeAdmissionRuntime:
         self._native_input_reserve = max(
             0, int(getattr(adder, "rem_input_tokens", 0)),
         )
+        chunk_tokens = getattr(adder, "rem_chunk_tokens", None)
+        if type(chunk_tokens) is int and getattr(adder, "dllm_config", None) is None:
+            if chunk_tokens > 0:
+                self._native_chunk_input_reserve = max(
+                    self._native_chunk_input_reserve or 0, chunk_tokens,
+                )
+            # Reserve the observed chunk bound for the next batch, even when
+            # the current continuation has exhausted its remaining budget.
+            if self._native_chunk_input_reserve is not None:
+                self._native_input_reserve = min(
+                    self._native_input_reserve, self._native_chunk_input_reserve,
+                )
 
     def _current_residency_budget(
         self, *, include_evictable: bool = False,

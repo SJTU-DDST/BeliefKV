@@ -198,6 +198,71 @@ def test_runtime_reads_native_limits_instead_of_treating_idle_memory_as_slots():
     assert budget.reserve_full_tokens == 100 + 16 * 48
 
 
+@pytest.mark.parametrize("chunk_tokens,input_reserve", [
+    (4096, 4096), (32768, 16384), (0, 16384), (None, 16384),
+])
+def test_chunked_prefill_reserve_uses_joint_native_compute_budget(
+    chunk_tokens, input_reserve,
+):
+    runtime, *_ = locked_runtime()
+    runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
+    runtime._native_cache.host_pool_group.entry_map["mamba"].host_pool.size_per_token = 64
+    try:
+        runtime._observe_native_admission_capacity(
+            running_batch=NS(reqs=[NS()] * 48),
+            adder=NS(
+                max_running_requests=48, max_prefill_bs=8, page_size=16,
+                rem_input_tokens=16384, rem_chunk_tokens=chunk_tokens,
+            ),
+        )
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+            return_value=StaticPoolHeadroomObservation(
+                True, device_full_free_tokens=6000, device_mamba_free_slots=10,
+            ),
+        ):
+            budget = runtime._current_residency_budget()
+        assert budget.request_slots == 1
+        assert budget.reserve_full_tokens == input_reserve + 16 * 49
+        assert budget.reserve_mamba_slots == 1
+    finally:
+        runtime.close()
+
+
+def test_consumed_chunk_keeps_observed_next_batch_input_reserve():
+    runtime, *_ = locked_runtime()
+    try:
+        adder = NS(
+            max_running_requests=48, page_size=16, rem_input_tokens=16384,
+            rem_chunk_tokens=4096,
+        )
+        runtime._observe_native_admission_capacity(running_batch=NS(reqs=[]), adder=adder)
+        adder.rem_chunk_tokens = 0
+        adder.rem_input_tokens = 12288
+        runtime._observe_native_admission_capacity(running_batch=NS(reqs=[]), adder=adder)
+        assert runtime._native_input_reserve == 4096
+        adder.rem_chunk_tokens = 8192
+        runtime._observe_native_admission_capacity(running_batch=NS(reqs=[]), adder=adder)
+        assert runtime._native_input_reserve == 8192
+    finally:
+        runtime.close()
+
+
+def test_dllm_compute_budget_keeps_existing_input_reserve():
+    runtime, *_ = locked_runtime()
+    try:
+        runtime._observe_native_admission_capacity(
+            running_batch=NS(reqs=[]),
+            adder=NS(
+                max_running_requests=48, page_size=16, rem_input_tokens=16384,
+                rem_chunk_tokens=4096, dllm_config=NS(),
+            ),
+        )
+        assert runtime._native_input_reserve == 16384
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("available_rows,expected_slots", [(6, 1), (0, 1)])
 def test_completed_prefill_selections_do_not_consume_next_restore_frontier(
     available_rows, expected_slots,

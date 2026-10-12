@@ -34,7 +34,7 @@ class InvocationState(str, Enum):
 
     @property
     def terminal(self) -> bool:
-        return self in {InvocationState.DONE, InvocationState.CANCELLED}
+        return self is InvocationState.DONE or self is InvocationState.CANCELLED
 
 
 class JoinMode(str, Enum):

@@ -1,0 +1,3361 @@
+{
+  "summary": {
+    "join_commands": 0,
+    "tool_commands": 10,
+    "handoff_commands": 1210,
+    "by_source": {
+      "execution_handoff": {
+        "issued_commands": 1210,
+        "acknowledged_commands": 1210,
+        "actual_bytes": 20323655680,
+        "full_transfer_commands": 1210,
+        "full_reused_commands": 1210,
+        "full_not_reused_commands": 0,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 6995107840,
+        "full_verified_reused_bytes_known": 6995107840,
+        "full_reuse_proof_versions": {
+          "2": 1210
+        },
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": false,
+            "protection_reason_at_registration": "covered_by_existing_lock",
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 665,
+            "full_reused_commands": 665,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 3840757760,
+            "full_verified_reused_bytes_known": 3840757760,
+            "full_reuse_proof_versions": {
+              "2": 665
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 665,
+              "p50": 53.366943359375,
+              "p90": 143.51171875,
+              "max": 765.025146484375
+            }
+          },
+          {
+            "native_locked_at_registration": false,
+            "protection_reason_at_registration": "frontier_slot_occupied",
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 8,
+            "full_reused_commands": 8,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 22036480,
+            "full_verified_reused_bytes_known": 22036480,
+            "full_reuse_proof_versions": {
+              "2": 8
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 8,
+              "p50": 14.8443603515625,
+              "p90": 47.312841796874984,
+              "max": 111.544677734375
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "protection_reason_at_registration": "native_locked",
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 537,
+            "full_reused_commands": 537,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 3132313600,
+            "full_verified_reused_bytes_known": 3132313600,
+            "full_reuse_proof_versions": {
+              "2": 537
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 537,
+              "p50": 51.942626953125,
+              "p90": 142.31372070312506,
+              "max": 765.07958984375
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 207,
+        "ack_to_first_service_ms": {
+          "count": 1210,
+          "p50": 52.510498046875,
+          "p90": 143.4782470703125,
+          "max": 765.07958984375
+        }
+      },
+      "join_ticket": {
+        "issued_commands": 0,
+        "acknowledged_commands": 0,
+        "actual_bytes": 0,
+        "full_transfer_commands": 0,
+        "full_reused_commands": 0,
+        "full_not_reused_commands": 0,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 0,
+        "full_verified_reused_bytes_known": 0,
+        "full_reuse_proof_versions": {},
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "full_reuse_by_residency": [],
+        "mamba_forward_verified_commands": 0,
+        "ack_to_first_service_ms": {
+          "count": 0
+        }
+      },
+      "tool_wait": {
+        "issued_commands": 10,
+        "acknowledged_commands": 10,
+        "actual_bytes": 181698560,
+        "full_transfer_commands": 10,
+        "full_reused_commands": 10,
+        "full_not_reused_commands": 0,
+        "full_use_unknown_commands": 0,
+        "full_pool_bytes_unknown_commands": 0,
+        "full_transferred_bytes_known": 117309440,
+        "full_verified_reused_bytes_known": 117309440,
+        "full_reuse_proof_versions": {
+          "2": 10
+        },
+        "native_reloaded_prefetched_full_before_first_service": 0,
+        "full_reuse_by_residency": [
+          {
+            "native_locked_at_registration": false,
+            "protection_reason_at_registration": "covered_by_existing_lock",
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 8,
+            "full_reused_commands": 8,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 84049920,
+            "full_verified_reused_bytes_known": 84049920,
+            "full_reuse_proof_versions": {
+              "2": 8
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 8,
+              "p50": 1116.14404296875,
+              "p90": 1116.171337890625,
+              "max": 1116.177490234375
+            }
+          },
+          {
+            "native_locked_at_registration": true,
+            "protection_reason_at_registration": "native_locked",
+            "last_observed_release_reason": "first_gpu_service",
+            "full_transfer_commands": 2,
+            "full_reused_commands": 2,
+            "full_not_reused_commands": 0,
+            "full_use_unknown_commands": 0,
+            "full_pool_bytes_unknown_commands": 0,
+            "full_transferred_bytes_known": 33259520,
+            "full_verified_reused_bytes_known": 33259520,
+            "full_reuse_proof_versions": {
+              "2": 2
+            },
+            "native_reloaded_prefetched_full_before_first_service": 0,
+            "ack_to_first_service_ms": {
+              "count": 2,
+              "p50": 909.014892578125,
+              "p90": 1074.760009765625,
+              "max": 1116.1962890625
+            }
+          }
+        ],
+        "mamba_forward_verified_commands": 1,
+        "ack_to_first_service_ms": {
+          "count": 10,
+          "p50": 1116.14404296875,
+          "p90": 1116.1793701171875,
+          "max": 1116.1962890625
+        }
+      }
+    },
+    "trigger_kinds": {
+      "unrecorded_legacy": 1220
+    },
+    "join_bytes": 0,
+    "tool_bytes": 181698560,
+    "handoff_bytes": 20323655680,
+    "join_submitted_before_eos": 0,
+    "full_reused": 1220,
+    "full_not_reused": 0,
+    "full_use_unknown": 0,
+    "full_reuse_proof_versions": {
+      "2": 1220
+    },
+    "mamba_forward_verified": 208,
+    "redemoted_before_first_service": 0,
+    "native_reloaded_before_first_service": 0,
+    "native_reloaded_prefetched_full_before_first_service": 0,
+    "native_reloaded_prefetched_mamba_before_first_service": 0,
+    "native_reload_pool_associations_by_evidence": {
+      "kv": {
+        "reconciled_native_receipt": 0,
+        "legacy_batch_pool_presence": 0
+      },
+      "mamba": {
+        "reconciled_native_receipt": 0,
+        "legacy_batch_pool_presence": 0
+      }
+    },
+    "issue_to_submit_ms": {
+      "count": 1220,
+      "p50": 1.29248046875,
+      "p90": 2.887451171875,
+      "max": 4.933349609375
+    },
+    "enqueue_to_submit_ms": {
+      "count": 1220,
+      "p50": 1.077192835509777,
+      "p90": 2.5524254888296127,
+      "max": 3.787086345255375
+    },
+    "submit_to_ack_ms": {
+      "count": 1220,
+      "p50": 9.765007067471743,
+      "p90": 52.74723283946514,
+      "max": 123.4975066035986
+    },
+    "ack_to_first_service_ms": {
+      "count": 1220,
+      "p50": 53.027587890625,
+      "p90": 146.1634521484375,
+      "max": 1116.1962890625
+    },
+    "join_submit_after_eos_ms": {
+      "count": 0
+    },
+    "completion_lead_ms": {
+      "count": 0
+    },
+    "pressure_events": 43,
+    "pressure_events_with_prior_prepare_ack": 38,
+    "unique_prepared_nodes_demoted": 38,
+    "prepare_issued_commands": 290,
+    "prepare_acknowledged_commands": 290,
+    "prepare_commands_with_observed_restore": 12,
+    "prepare_commands_with_native_restore": 3,
+    "prepare_commands_with_controlled_restore": 12,
+    "prepare_commands_without_observed_restore": 278,
+    "prepare_commands_with_later_node_pool_d2h": 0,
+    "prepare_commands_with_host_eviction_before_later_d2h": 0,
+    "prepare_host_lifetime": {
+      "host_eviction_evidence_available": true,
+      "command_categories": {
+        "no_restore": 278,
+        "before_observed_eviction_only": 12,
+        "after_observed_eviction_only": 0,
+        "mixed": 0,
+        "unknown_eviction_evidence": 0
+      },
+      "restore_node_pool_associations": {
+        "before_observed_eviction": 22,
+        "after_observed_eviction": 0,
+        "unknown": 0
+      },
+      "by_pool": {
+        "kv": {
+          "prepared_commands": 290,
+          "commands_with_observed_eviction": 0,
+          "ack_to_first_observed_eviction_ms": {
+            "count": 0
+          }
+        }
+      },
+      "repeated_context_epoch_node_creation_groups": 0,
+      "additional_prepares_on_same_identity": 0,
+      "max_commands_on_same_identity": 1,
+      "prepare_identity_evidence_missing_commands": 0,
+      "scope": "Node/pool associations, not allocation continuity or model-forward reuse. A restore after observed Host eviction cannot establish consumption of the original prepared copy. Eviction latency stops at the next observed same-node/pool D2H write; absent eviction records are not zero evictions. Reported latencies include only observed evictions, excluding censored copies. Repeated context/epoch/node/creation identities are not exact duplicate bytes and do not establish the same wait episode across splits."
+    },
+    "prepare_selection": {
+      "candidate_records": 116,
+      "records_without_command_id": 0,
+      "burst_records": 50,
+      "explicit_burst_commands": 290,
+      "acknowledged_burst_commands": 290,
+      "by_source": {
+        "join_prepare": {
+          "candidate_records": 96,
+          "acknowledged_command_records": 96,
+          "direct_reclaim_potential_commands": 63,
+          "zero_direct_reclaim_potential_commands": 33,
+          "direct_reclaim_potential_unknown_commands": 0,
+          "selected_transfer_bytes_known": 1243996160.0,
+          "selected_transfer_bytes_unknown_records": 0,
+          "zero_direct_reclaim_selected_transfer_bytes_known": 250224640.0,
+          "missing_full_prefix_tokens": {
+            "count": 96,
+            "p50": 581.0,
+            "p90": 2226.0,
+            "max": 9088.0
+          }
+        },
+        "tool_wait": {
+          "candidate_records": 20,
+          "acknowledged_command_records": 20,
+          "direct_reclaim_potential_commands": 0,
+          "zero_direct_reclaim_potential_commands": 20,
+          "direct_reclaim_potential_unknown_commands": 0,
+          "selected_transfer_bytes_known": 192061440.0,
+          "selected_transfer_bytes_unknown_records": 0,
+          "zero_direct_reclaim_selected_transfer_bytes_known": 192061440.0,
+          "missing_full_prefix_tokens": {
+            "count": 20,
+            "p50": 7176.5,
+            "p90": 14301.700000000006,
+            "max": 19849.0
+          }
+        }
+      },
+      "scope": "Candidate selection-time estimates, not reclaimed bytes, DMA bytes or forward-use credit. Zero direct reclaim may be a necessary ancestor backup before an exclusive checkpoint becomes reclaimable. Match ACKs by command ID only; legacy records without it remain unassociated. Missing candidate estimates remain unknown. For a burst, candidate transfer/reclaim estimates describe the selected first extent only; explicit burst IDs link additional per-node receipts without multiplying this estimate or granting reuse credit."
+    },
+    "wait_events": {
+      "observed_wait_events": 2716,
+      "records_without_wait_event_identity": 0,
+      "plan_timing": {
+        "by_source": {
+          "join_ticket": {
+            "observed_wait_events": 108,
+            "first_plan_relative_to_completion_ms": {
+              "count": 3,
+              "p50": -228452.10791015625,
+              "p90": -151807.63818359375,
+              "max": -132646.52075195312
+            },
+            "first_positive_full_plan_relative_to_completion_ms": {
+              "count": 2,
+              "p50": -59006.883544921875,
+              "p90": -38703.90815429688,
+              "max": -33628.164306640625
+            },
+            "plan_timing_categories": {
+              "completion_boundary_unknown": {
+                "independent_events": 105,
+                "max_snapshot_pre_completion_full_bytes_known": 0,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 105,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              },
+              "only_zero_full_plan_before_completion": {
+                "independent_events": 1,
+                "max_snapshot_pre_completion_full_bytes_known": 0,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              },
+              "positive_full_plan_before_completion": {
+                "independent_events": 2,
+                "max_snapshot_pre_completion_full_bytes_known": 11243520,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 11202560,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              }
+            }
+          },
+          "tool_wait": {
+            "observed_wait_events": 2608,
+            "first_plan_relative_to_completion_ms": {
+              "count": 2608,
+              "p50": -124.95458984375,
+              "p90": 2.4374755859375163,
+              "max": 196.1787109375
+            },
+            "first_positive_full_plan_relative_to_completion_ms": {
+              "count": 33,
+              "p50": -598.321533203125,
+              "p90": -100.27558593749998,
+              "max": 127.9287109375
+            },
+            "plan_timing_categories": {
+              "no_plan_observation_before_completion": {
+                "independent_events": 293,
+                "max_snapshot_pre_completion_full_bytes_known": 0,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+                "remaining_native_full_host_hit_bytes_known": 5146050560,
+                "remaining_native_full_evidence_unknown_events": 1,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              },
+              "only_zero_full_plan_before_completion": {
+                "independent_events": 2283,
+                "max_snapshot_pre_completion_full_bytes_known": 0,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+                "remaining_native_full_host_hit_bytes_known": 37897154560,
+                "remaining_native_full_evidence_unknown_events": 29,
+                "events_with_early_reused_full": 0,
+                "early_started_and_reused_full_bytes": 0
+              },
+              "positive_full_plan_before_completion": {
+                "independent_events": 32,
+                "max_snapshot_pre_completion_full_bytes_known": 1136066560,
+                "max_snapshot_pre_completion_fitting_full_bytes_known": 140615680,
+                "remaining_native_full_host_hit_bytes_known": 2870906880,
+                "remaining_native_full_evidence_unknown_events": 12,
+                "events_with_early_reused_full": 2,
+                "early_started_and_reused_full_bytes": 117309440
+              }
+            }
+          }
+        }
+      },
+      "by_source": {
+        "join_ticket": {
+          "observed_events": 108,
+          "events_with_observed_full_plan": 107,
+          "events_with_capacity_observation": 107,
+          "events_with_capacity_condition": {
+            "none": 98,
+            "full_only": 106,
+            "mamba_only": 6,
+            "both": 0
+          },
+          "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 0,
+          "max_snapshot_planned_full_bytes_known": 1852190720,
+          "planned_full_bytes_unknown_events": 0,
+          "events_with_early_reused_full": 0,
+          "completion_boundary_unknown_events": 105,
+          "events_first_observed_after_completion": 0,
+          "events_with_tool_ids_outside_request_round": 0,
+          "early_started_and_reused_full_bytes": 0,
+          "remaining_native_full_host_hit_bytes_known": 0,
+          "remaining_native_full_evidence_unknown_events": 105,
+          "plan_evidence_categories": {
+            "only_zero_full_plan": {
+              "independent_events": 1,
+              "events_with_known_completion_boundary": 1,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            },
+            "positive_full_plan": {
+              "independent_events": 107,
+              "events_with_known_completion_boundary": 2,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 105,
+              "events_with_early_reused_full": 0
+            }
+          },
+          "restore_burst_size_evidence": {
+            "one_to_fifteen_nodes_observed": {
+              "independent_events": 107,
+              "events_with_known_completion_boundary": 2,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 105,
+              "events_with_early_reused_full": 0
+            },
+            "only_empty_plan_observed": {
+              "independent_events": 1,
+              "events_with_known_completion_boundary": 1,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0
+            }
+          },
+          "residual_native_demand_by_observed_planning_evidence": {
+            "observed_plan_reasons": {
+              "before_start_window": {
+                "independent_events": 1,
+                "events_with_known_completion_boundary": 1,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "fits_current_free_lists": {
+                "independent_events": 98,
+                "events_with_known_completion_boundary": 2,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 96,
+                "events_with_early_reused_full": 0
+              },
+              "insufficient_free_lists": {
+                "independent_events": 106,
+                "events_with_known_completion_boundary": 1,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 105,
+                "events_with_early_reused_full": 0
+              },
+              "no_restore_plan": {
+                "independent_events": 3,
+                "events_with_known_completion_boundary": 3,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "no_reusable_input_restore_step": {
+                "independent_events": 108,
+                "events_with_known_completion_boundary": 3,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 105,
+                "events_with_early_reused_full": 0
+              },
+              "start_window": {
+                "independent_events": 2,
+                "events_with_known_completion_boundary": 2,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              }
+            },
+            "observed_planning_no_step_reasons": {
+              "no_reusable_input_restore_step": {
+                "independent_events": 1,
+                "events_with_known_completion_boundary": 1,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "prefetch_capacity_budget": {
+                "independent_events": 2,
+                "events_with_known_completion_boundary": 2,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              }
+            },
+            "observed_planning_blocked_details": {
+              "input_checkpoint_unavailable_or_already_resident": {
+                "independent_events": 108,
+                "events_with_known_completion_boundary": 3,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 105,
+                "events_with_early_reused_full": 0
+              },
+              "prefetch_full_capacity_budget": {
+                "independent_events": 2,
+                "events_with_known_completion_boundary": 2,
+                "remaining_native_full_host_hit_bytes_known": 0,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              }
+            },
+            "observed_no_live_details": {}
+          },
+          "planning_gap_semantics": "One count per independent wait per observed reason, regardless of repeated samples. Evidence categories partition waits; reason/detail groups overlap and must not be summed. Zero or missing plans do not prove zero physical demand. Residual bytes are next-request native FULL Host hits, not a proven pre-boundary opportunity, exclusive rejection cause or oracle speedup. Burst categories partition waits by the largest explicitly observed plan, not lifetime node commands. A sixteen-node plan is not proof of truncation or that a larger early transfer would fit capacity or the service window.",
+          "client_submit_to_native_arrival_ms": {
+            "count": 3,
+            "p50": 162.664794921875,
+            "p90": 337.028271484375,
+            "max": 380.619140625
+          },
+          "client_submit_to_http_request_ms": {
+            "count": 2,
+            "p50": 4.68115234375,
+            "p90": 5.31533203125,
+            "max": 5.473876953125
+          },
+          "http_request_to_body_sent_ms": {
+            "count": 2,
+            "p50": 10.360107421875,
+            "p90": 16.501708984375,
+            "max": 18.037109375
+          },
+          "body_sent_to_native_arrival_ms": {
+            "count": 2,
+            "p50": 256.6007080078125,
+            "p90": 337.0066650390625,
+            "max": 357.108154296875
+          },
+          "http_request_to_response_headers_ms": {
+            "count": 2,
+            "p50": 783.6298828125,
+            "p90": 1139.671484375,
+            "max": 1228.681884765625
+          },
+          "body_sent_to_api_received_ms": {
+            "count": 2,
+            "p50": 187.75634765625,
+            "p90": 282.34755859375,
+            "max": 305.995361328125
+          },
+          "api_received_to_chat_conversion_ms": {
+            "count": 3,
+            "p50": 14.877197265625,
+            "p90": 14.946142578125,
+            "max": 14.96337890625
+          },
+          "chat_conversion_ms": {
+            "count": 3,
+            "p50": 23.8876953125,
+            "p90": 24.9517578125,
+            "max": 25.2177734375
+          },
+          "chat_conversion_to_tokenized_ms": {
+            "count": 3,
+            "p50": 0.349853515625,
+            "p90": 0.352392578125,
+            "max": 0.35302734375
+          },
+          "tokenized_to_dispatch_ms": {
+            "count": 3,
+            "p50": 0.00439453125,
+            "p90": 0.00458984375,
+            "max": 0.004638671875
+          },
+          "dispatch_to_scheduler_received_ms": {
+            "count": 3,
+            "p50": 10.472412109375,
+            "p90": 40.175927734375,
+            "max": 47.601806640625
+          },
+          "scheduler_received_to_queue_registered_ms": {
+            "count": 3,
+            "p50": 0.113037109375,
+            "p90": 0.171240234375,
+            "max": 0.185791015625
+          },
+          "client_submit_to_first_service_ms": {
+            "count": 3,
+            "p50": 274.63818359375,
+            "p90": 413.58857421875,
+            "max": 448.326171875
+          },
+          "submit_to_first_service_ms": {
+            "count": 3,
+            "p50": 71.39404296875,
+            "p90": 170.08232421875002,
+            "max": 194.75439453125
+          },
+          "last_ack_to_first_service_ms": {
+            "count": 0
+          },
+          "full_expiration_commands_by_stage": {},
+          "full_expiration_bytes_by_stage": {}
+        },
+        "tool_wait": {
+          "observed_events": 2608,
+          "events_with_observed_full_plan": 33,
+          "events_with_capacity_observation": 7,
+          "events_with_capacity_condition": {
+            "none": 3,
+            "full_only": 4,
+            "mamba_only": 0,
+            "both": 0
+          },
+          "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 0,
+          "max_snapshot_planned_full_bytes_known": 875786240,
+          "planned_full_bytes_unknown_events": 0,
+          "events_with_early_reused_full": 2,
+          "completion_boundary_unknown_events": 0,
+          "events_first_observed_after_completion": 293,
+          "events_with_tool_ids_outside_request_round": 0,
+          "early_started_and_reused_full_bytes": 117309440,
+          "remaining_native_full_host_hit_bytes_known": 45914112000,
+          "remaining_native_full_evidence_unknown_events": 42,
+          "plan_evidence_categories": {
+            "only_zero_full_plan": {
+              "independent_events": 2575,
+              "events_with_known_completion_boundary": 2575,
+              "remaining_native_full_host_hit_bytes_known": 42754191360,
+              "remaining_native_full_evidence_unknown_events": 30,
+              "events_with_early_reused_full": 0
+            },
+            "positive_full_plan": {
+              "independent_events": 33,
+              "events_with_known_completion_boundary": 33,
+              "remaining_native_full_host_hit_bytes_known": 3159920640,
+              "remaining_native_full_evidence_unknown_events": 12,
+              "events_with_early_reused_full": 2
+            }
+          },
+          "restore_burst_size_evidence": {
+            "one_to_fifteen_nodes_observed": {
+              "independent_events": 32,
+              "events_with_known_completion_boundary": 32,
+              "remaining_native_full_host_hit_bytes_known": 2725601280,
+              "remaining_native_full_evidence_unknown_events": 12,
+              "events_with_early_reused_full": 1
+            },
+            "only_empty_plan_observed": {
+              "independent_events": 2575,
+              "events_with_known_completion_boundary": 2575,
+              "remaining_native_full_host_hit_bytes_known": 42754191360,
+              "remaining_native_full_evidence_unknown_events": 30,
+              "events_with_early_reused_full": 0
+            },
+            "sixteen_or_more_nodes_observed": {
+              "independent_events": 1,
+              "events_with_known_completion_boundary": 1,
+              "remaining_native_full_host_hit_bytes_known": 434319360,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 1
+            }
+          },
+          "residual_native_demand_by_observed_planning_evidence": {
+            "observed_plan_reasons": {
+              "before_start_window": {
+                "independent_events": 26,
+                "events_with_known_completion_boundary": 26,
+                "remaining_native_full_host_hit_bytes_known": 1360629760,
+                "remaining_native_full_evidence_unknown_events": 12,
+                "events_with_early_reused_full": 1
+              },
+              "fits_current_free_lists": {
+                "independent_events": 3,
+                "events_with_known_completion_boundary": 3,
+                "remaining_native_full_host_hit_bytes_known": 673710080,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "insufficient_free_lists": {
+                "independent_events": 4,
+                "events_with_known_completion_boundary": 4,
+                "remaining_native_full_host_hit_bytes_known": 1125580800,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 1
+              },
+              "no_restore_plan": {
+                "independent_events": 2572,
+                "events_with_known_completion_boundary": 2572,
+                "remaining_native_full_host_hit_bytes_known": 45230632960,
+                "remaining_native_full_evidence_unknown_events": 38,
+                "events_with_early_reused_full": 2
+              },
+              "no_reusable_input_restore_step": {
+                "independent_events": 127,
+                "events_with_known_completion_boundary": 127,
+                "remaining_native_full_host_hit_bytes_known": 1282703360,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 0
+              },
+              "start_window": {
+                "independent_events": 2,
+                "events_with_known_completion_boundary": 2,
+                "remaining_native_full_host_hit_bytes_known": 434319360,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 2
+              },
+              "submitted": {
+                "independent_events": 2,
+                "events_with_known_completion_boundary": 2,
+                "remaining_native_full_host_hit_bytes_known": 434319360,
+                "remaining_native_full_evidence_unknown_events": 0,
+                "events_with_early_reused_full": 2
+              }
+            },
+            "observed_planning_no_step_reasons": {
+              "no_reusable_input_restore_step": {
+                "independent_events": 2420,
+                "events_with_known_completion_boundary": 2420,
+                "remaining_native_full_host_hit_bytes_known": 27458437120,
+                "remaining_native_full_evidence_unknown_events": 5,
+                "events_with_early_reused_full": 1
+              },
+              "prefetch_capacity_budget": {
+                "independent_events": 164,
+                "events_with_known_completion_boundary": 164,
+                "remaining_native_full_host_hit_bytes_known": 18793082880,
+                "remaining_native_full_evidence_unknown_events": 36,
+                "events_with_early_reused_full": 1
+              }
+            },
+            "observed_planning_blocked_details": {
+              "input_checkpoint_unavailable_or_already_resident": {
+                "independent_events": 2448,
+                "events_with_known_completion_boundary": 2448,
+                "remaining_native_full_host_hit_bytes_known": 27668971520,
+                "remaining_native_full_evidence_unknown_events": 5,
+                "events_with_early_reused_full": 1
+              },
+              "prefetch_full_capacity_budget": {
+                "independent_events": 164,
+                "events_with_known_completion_boundary": 164,
+                "remaining_native_full_host_hit_bytes_known": 18793082880,
+                "remaining_native_full_evidence_unknown_events": 36,
+                "events_with_early_reused_full": 1
+              }
+            },
+            "observed_no_live_details": {}
+          },
+          "planning_gap_semantics": "One count per independent wait per observed reason, regardless of repeated samples. Evidence categories partition waits; reason/detail groups overlap and must not be summed. Zero or missing plans do not prove zero physical demand. Residual bytes are next-request native FULL Host hits, not a proven pre-boundary opportunity, exclusive rejection cause or oracle speedup. Burst categories partition waits by the largest explicitly observed plan, not lifetime node commands. A sixteen-node plan is not proof of truncation or that a larger early transfer would fit capacity or the service window.",
+          "client_submit_to_native_arrival_ms": {
+            "count": 2566,
+            "p50": 225.1943359375,
+            "p90": 436.0235595703125,
+            "max": 1282.566162109375
+          },
+          "client_submit_to_http_request_ms": {
+            "count": 2530,
+            "p50": 23.444091796875,
+            "p90": 85.87065429687499,
+            "max": 761.0537109375
+          },
+          "http_request_to_body_sent_ms": {
+            "count": 2471,
+            "p50": 34.596923828125,
+            "p90": 132.136962890625,
+            "max": 1055.279052734375
+          },
+          "body_sent_to_native_arrival_ms": {
+            "count": 2471,
+            "p50": 114.487060546875,
+            "p90": 363.3193359375,
+            "max": 1037.799560546875
+          },
+          "http_request_to_response_headers_ms": {
+            "count": 2530,
+            "p50": 11284.853515625,
+            "p90": 14513.040112304687,
+            "max": 17619.56591796875
+          },
+          "body_sent_to_api_received_ms": {
+            "count": 1961,
+            "p50": 80.5966796875,
+            "p90": 335.48046875,
+            "max": 979.647705078125
+          },
+          "api_received_to_chat_conversion_ms": {
+            "count": 2566,
+            "p50": 14.6298828125,
+            "p90": 17.464599609375,
+            "max": 69.551025390625
+          },
+          "chat_conversion_ms": {
+            "count": 2566,
+            "p50": 24.064208984375,
+            "p90": 40.398681640625,
+            "max": 93.061279296875
+          },
+          "chat_conversion_to_tokenized_ms": {
+            "count": 2566,
+            "p50": 0.348388671875,
+            "p90": 0.541748046875,
+            "max": 33.7138671875
+          },
+          "tokenized_to_dispatch_ms": {
+            "count": 2566,
+            "p50": 0.004150390625,
+            "p90": 0.004638671875,
+            "max": 0.011962890625
+          },
+          "dispatch_to_scheduler_received_ms": {
+            "count": 2566,
+            "p50": 15.92529296875,
+            "p90": 49.543701171875,
+            "max": 263.5859375
+          },
+          "scheduler_received_to_queue_registered_ms": {
+            "count": 2566,
+            "p50": 0.108154296875,
+            "p90": 0.174072265625,
+            "max": 0.83984375
+          },
+          "client_submit_to_first_service_ms": {
+            "count": 2572,
+            "p50": 11083.199462890625,
+            "p90": 14625.204687500001,
+            "max": 18107.677490234375
+          },
+          "submit_to_first_service_ms": {
+            "count": 2566,
+            "p50": 10808.179931640625,
+            "p90": 14331.679809570312,
+            "max": 17274.425048828125
+          },
+          "last_ack_to_first_service_ms": {
+            "count": 2,
+            "p50": 959.3604736328125,
+            "p90": 1115.5910400390626,
+            "max": 1154.648681640625
+          },
+          "full_expiration_commands_by_stage": {},
+          "full_expiration_bytes_by_stage": {}
+        }
+      }
+    },
+    "terminal_capacity_handoff": {
+      "reclaim_records": 46,
+      "terminal_contexts": 46,
+      "freed_device_units": {
+        "0": 350792,
+        "2": 112
+      },
+      "freed_host_units": {
+        "0": 46952,
+        "2": 33
+      },
+      "freed_device_bytes_known": {
+        "0": 7184220160,
+        "2": 7211581440
+      },
+      "freed_host_bytes_known": {
+        "0": 961576960,
+        "2": 2124840960
+      },
+      "freed_device_units_with_unknown_byte_size": {},
+      "freed_host_units_with_unknown_byte_size": {},
+      "terminal_children": 44,
+      "by_invocation_scope": {
+        "dynamic_subagent": {
+          "reclaim_records": 44,
+          "terminal_contexts": 44,
+          "freed_device_units": {
+            "0": 315103,
+            "2": 107
+          },
+          "freed_host_units": {
+            "0": 36712,
+            "2": 29
+          },
+          "freed_device_bytes_known": {
+            "0": 6453309440,
+            "2": 6889635840
+          },
+          "freed_host_bytes_known": {
+            "0": 751861760,
+            "2": 1867284480
+          },
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        },
+        "runtime_internal": {
+          "reclaim_records": 2,
+          "terminal_contexts": 2,
+          "freed_device_units": {
+            "0": 35689,
+            "2": 5
+          },
+          "freed_host_units": {
+            "0": 10240,
+            "2": 4
+          },
+          "freed_device_bytes_known": {
+            "0": 730910720,
+            "2": 321945600
+          },
+          "freed_host_bytes_known": {
+            "0": 209715200,
+            "2": 257556480
+          },
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        }
+      },
+      "parent_first_services": 3,
+      "parent_services_with_prior_device_release": 3,
+      "last_child_return_to_first_service_ms": {
+        "count": 3,
+        "p50": 264.6982421875,
+        "p90": 1158.9701171875001,
+        "max": 1382.5380859375
+      },
+      "request_wait_ms": {
+        "count": 3,
+        "p50": 165.52941408008337,
+        "p90": 204.60367929190397,
+        "max": 214.37224559485912
+      },
+      "restore_lookahead_records": 2,
+      "parent_services_with_prior_restore_lookahead": 2,
+      "restore_lookahead_to_first_service_ms": {
+        "count": 2,
+        "p50": 136.3572998046875,
+        "p90": 179.4777099609375,
+        "max": 190.2578125
+      },
+      "queue_wait_before_restore_lookahead_ms": {
+        "count": 2,
+        "p50": 14.438807964324951,
+        "p90": 22.17376157641411,
+        "max": 24.107499979436398
+      },
+      "sibling_release_windows": {
+        "observed_join_events": 108,
+        "completion_unobserved_events": 105,
+        "joins_with_sibling_device_release_before_join": 3,
+        "joins_with_early_reused_full_after_sibling_release": 0,
+        "early_reused_full_bytes_after_sibling_release_known": 0,
+        "cumulative_sibling_device_release_before_join": {
+          "reclaim_records": 3,
+          "terminal_contexts": 3,
+          "freed_device_units": {
+            "0": 13043,
+            "2": 4
+          },
+          "freed_host_units": {},
+          "freed_device_bytes_known": {
+            "0": 267120640,
+            "2": 257556480
+          },
+          "freed_host_bytes_known": {},
+          "freed_device_units_with_unknown_byte_size": {},
+          "freed_host_units_with_unknown_byte_size": {}
+        },
+        "sibling_device_release_lead_ms": {
+          "count": 3,
+          "p50": 79172.8251953125,
+          "p90": 212296.25019531252,
+          "max": 245577.1064453125
+        },
+        "rows": [
+          {
+            "workflow_id": "deepagents:autonomous:django__django-13023:3b9d85055dc2",
+            "context_id": "deepagents:autonomous:django__django-13023:3b9d85055dc2:context:root",
+            "join_id": "deepagents-join:cf9a12428a0f9188",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11734:08aaffab09f0",
+            "context_id": "deepagents:autonomous:django__django-11734:08aaffab09f0:context:root",
+            "join_id": "deepagents-join:cf7656366730ec9e",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-4661:52eff856c28a",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-4661:52eff856c28a:context:root",
+            "join_id": "deepagents-join:7e036ae3756fcc3c",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-7277:7a081127326d",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-7277:7a081127326d:context:root",
+            "join_id": "deepagents-join:7eadcdd4bff69ae7",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11292:be64dc14b282",
+            "context_id": "deepagents:autonomous:django__django-11292:be64dc14b282:context:root",
+            "join_id": "deepagents-join:370e7451dadb3f24",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-16938:d91cfa323992",
+            "context_id": "deepagents:autonomous:django__django-16938:d91cfa323992:context:root",
+            "join_id": "deepagents-join:6c246954cc419a61",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-4966:d00cd9a2049b",
+            "context_id": "deepagents:autonomous:pydata__xarray-4966:d00cd9a2049b:context:root",
+            "join_id": "deepagents-join:61ad500eaec72b04",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-10880:daee8fcbdad8",
+            "context_id": "deepagents:autonomous:django__django-10880:daee8fcbdad8:context:root",
+            "join_id": "deepagents-join:9dccf05eebd65e35",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-4687:82c20df6dc5c",
+            "context_id": "deepagents:autonomous:pydata__xarray-4687:82c20df6dc5c:context:root",
+            "join_id": "deepagents-join:e2f4b7098da88156",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-10081:c3a4d77d4e00",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-10081:c3a4d77d4e00:context:root",
+            "join_id": "deepagents-join:a4ab7e870e356379",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-4970:c8f21f2860b8",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-4970:c8f21f2860b8:context:root",
+            "join_id": "deepagents-join:30c453f7b47b8a8f",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11333:48f4b5412f44",
+            "context_id": "deepagents:autonomous:django__django-11333:48f4b5412f44:context:root",
+            "join_id": "deepagents-join:4da4376fde9a4243",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-6197:85f8e156c71f",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-6197:85f8e156c71f:context:root",
+            "join_id": "deepagents-join:485df91650721510",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef",
+            "context_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef:context:root",
+            "join_id": "deepagents-join:7321553651b04df4",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7982:a33aa66d617b",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7982:a33aa66d617b:context:root",
+            "join_id": "deepagents-join:8814c02d0b334131",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-15368:aaaed32f1769",
+            "context_id": "deepagents:autonomous:django__django-15368:aaaed32f1769:context:root",
+            "join_id": "deepagents-join:a60d70b3fa83d322",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-6992:70d940bd9758",
+            "context_id": "deepagents:autonomous:pydata__xarray-6992:70d940bd9758:context:root",
+            "join_id": "deepagents-join:dec10cc13ccaf0e8",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-1724:23d571538f57",
+            "context_id": "deepagents:autonomous:psf__requests-1724:23d571538f57:context:root",
+            "join_id": "deepagents-join:1071101a6cd87ca2",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11066:1939ea8eb0a7",
+            "context_id": "deepagents:autonomous:django__django-11066:1939ea8eb0a7:context:root",
+            "join_id": "deepagents-join:188b7a4802ea55d9",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-10554:1e17758de0c7",
+            "context_id": "deepagents:autonomous:django__django-10554:1e17758de0c7:context:root",
+            "join_id": "deepagents-join:c16f60476d2c67dd",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-1921:dce78325b625",
+            "context_id": "deepagents:autonomous:psf__requests-1921:dce78325b625:context:root",
+            "join_id": "deepagents-join:7edc1d1ea36c0bdf",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-14631:2f18f23667cc",
+            "context_id": "deepagents:autonomous:django__django-14631:2f18f23667cc:context:root",
+            "join_id": "deepagents-join:f0ecac0f18d3f50e",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7490:b35d0808a2de",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7490:b35d0808a2de:context:root",
+            "join_id": "deepagents-join:6bc7be021a8f9ea7",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-16255:07903d021612",
+            "context_id": "deepagents:autonomous:django__django-16255:07903d021612:context:root",
+            "join_id": "deepagents-join:28552b4a52092766",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-12754:bf286e722ba0",
+            "context_id": "deepagents:autonomous:django__django-12754:bf286e722ba0:context:root",
+            "join_id": "deepagents-join:cebc3b5ecae64a5d",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31:context:root",
+            "join_id": "deepagents-join:f2b934fc297f6b04",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-7080:6a2c45052f84",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-7080:6a2c45052f84:context:root",
+            "join_id": "deepagents-join:d7f4f8aac4716e9f",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-2931:377555fe20ed",
+            "context_id": "deepagents:autonomous:psf__requests-2931:377555fe20ed:context:root",
+            "join_id": "deepagents-join:97ecfd78500a5ef1",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pallets__flask-5014:7d2b18204aa2",
+            "context_id": "deepagents:autonomous:pallets__flask-5014:7d2b18204aa2:context:root",
+            "join_id": "deepagents-join:4d23b7b5750a644e",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-5809:0e3d26e69f47",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-5809:0e3d26e69f47:context:root",
+            "join_id": "deepagents-join:997db94968261ce2",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa",
+            "context_id": "deepagents:autonomous:pydata__xarray-3305:a5a7b7e967fa:context:root",
+            "join_id": "deepagents-join:b563c99ca99eda94",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-7393:6f40fcc1312b",
+            "context_id": "deepagents:autonomous:pydata__xarray-7393:6f40fcc1312b:context:root",
+            "join_id": "deepagents-join:ff1e2500ab15d7aa",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11179:0c9bffcebd6e",
+            "context_id": "deepagents:autonomous:django__django-11179:0c9bffcebd6e:context:root",
+            "join_id": "deepagents-join:d0701de322999059",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-6599:7ae66091b513",
+            "context_id": "deepagents:autonomous:pydata__xarray-6599:7ae66091b513:context:root",
+            "join_id": "deepagents-join:05db8e8fb9f0d99d",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-6461:ba706c945707",
+            "context_id": "deepagents:autonomous:pydata__xarray-6461:ba706c945707:context:root",
+            "join_id": "deepagents-join:fec6051634e54a86",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:context:root",
+            "join_id": "deepagents-join:eda8f63966bbb42c",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-3095:fa0d3057575d",
+            "context_id": "deepagents:autonomous:pydata__xarray-3095:fa0d3057575d:context:root",
+            "join_id": "deepagents-join:4f0d71a6f678f3fa",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-7229:5d945f3f7125",
+            "context_id": "deepagents:autonomous:pydata__xarray-7229:5d945f3f7125:context:root",
+            "join_id": "deepagents-join:344c4029135dc4db",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-4075:1e023990fab6",
+            "context_id": "deepagents:autonomous:pydata__xarray-4075:1e023990fab6:context:root",
+            "join_id": "deepagents-join:2be0b4d962753d61",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11490:787e449e49a3",
+            "context_id": "deepagents:autonomous:django__django-11490:787e449e49a3:context:root",
+            "join_id": "deepagents-join:1d65d88db9655d47",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-3993:e66bd1ac565f",
+            "context_id": "deepagents:autonomous:pydata__xarray-3993:e66bd1ac565f:context:root",
+            "join_id": "deepagents-join:ed0221e628b96643",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:mwaskom__seaborn-3187:b49fcc2a0fb8",
+            "context_id": "deepagents:autonomous:mwaskom__seaborn-3187:b49fcc2a0fb8:context:root",
+            "join_id": "deepagents-join:2a4dfaf975653c14",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7236:ff63795bc147",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7236:ff63795bc147:context:root",
+            "join_id": "deepagents-join:68f732cf6c2b83a7",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+            "context_id": "deepagents:autonomous:django__django-11211:497274ba2e12:context:root",
+            "join_id": "deepagents-join:d186437fb87055ba",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11163:413b51e7d0af",
+            "context_id": "deepagents:autonomous:django__django-11163:413b51e7d0af:context:root",
+            "join_id": "deepagents-join:bb3131cb97206822",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11400:9a33693a5b5e",
+            "context_id": "deepagents:autonomous:django__django-11400:9a33693a5b5e:context:root",
+            "join_id": "deepagents-join:4b4e60a0f8b3581e",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11206:2d80ef444f55",
+            "context_id": "deepagents:autonomous:django__django-11206:2d80ef444f55:context:root",
+            "join_id": "deepagents-join:0f2851858565c369",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-10356:8f4d35e3c180",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-10356:8f4d35e3c180:context:root",
+            "join_id": "deepagents-join:8ec8c5e287b03bde",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7324:d3a2f3016288",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7324:d3a2f3016288:context:root",
+            "join_id": "deepagents-join:f1c289113e9e1c4c",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-16502:bc51eaebfdea",
+            "context_id": "deepagents:autonomous:django__django-16502:bc51eaebfdea:context:root",
+            "join_id": "deepagents-join:5329ae9136647f53",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-4604:5e4de9858f1d",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-4604:5e4de9858f1d:context:root",
+            "join_id": "deepagents-join:9363706623c0072e",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-15103:5b84e72a0da8",
+            "context_id": "deepagents:autonomous:django__django-15103:5b84e72a0da8:context:root",
+            "join_id": "deepagents-join:8dee533310769094",
+            "completion_ts_ms": 1791815734002.254,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 5384,
+                "2": 1
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 110264320,
+                "2": 64389120
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 79172.8251953125,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-1766:beba0016a51c",
+            "context_id": "deepagents:autonomous:psf__requests-1766:beba0016a51c:context:root",
+            "join_id": "deepagents-join:630dfe7bc98c075f",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11276:21576a5c06fc",
+            "context_id": "deepagents:autonomous:django__django-11276:21576a5c06fc:context:root",
+            "join_id": "deepagents-join:9ccd1680a661be35",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-10914:2ef9209a9297",
+            "context_id": "deepagents:autonomous:django__django-10914:2ef9209a9297:context:root",
+            "join_id": "deepagents-join:fa2df341cf119761",
+            "completion_ts_ms": 1791815638196.6667,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 6910,
+                "2": 2
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 141516800,
+                "2": 128778240
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 14653.204345703125,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11141:93106db8a8ab",
+            "context_id": "deepagents:autonomous:django__django-11141:93106db8a8ab:context:root",
+            "join_id": "deepagents-join:c6d70a41e5fe1667",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-12741:874cc5a30550",
+            "context_id": "deepagents:autonomous:django__django-12741:874cc5a30550:context:root",
+            "join_id": "deepagents-join:639f5f718b2bce76",
+            "completion_ts_ms": 1791815800192.7932,
+            "sibling_device_release_before_join": {
+              "reclaim_records": 1,
+              "terminal_contexts": 1,
+              "freed_device_units": {
+                "0": 749,
+                "2": 1
+              },
+              "freed_host_units": {},
+              "freed_device_bytes_known": {
+                "0": 15339520,
+                "2": 64389120
+              },
+              "freed_host_bytes_known": {},
+              "freed_device_units_with_unknown_byte_size": {},
+              "freed_host_units_with_unknown_byte_size": {}
+            },
+            "sibling_device_release_lead_ms": 245577.1064453125,
+            "early_reused_full_commands_after_sibling_release": [],
+            "early_reused_full_bytes_after_sibling_release_known": 0
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-5787:d7623016e855",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-5787:d7623016e855:context:root",
+            "join_id": "deepagents-join:360a9afe27f7b40e",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11532:0dc6c9c614c2",
+            "context_id": "deepagents:autonomous:django__django-11532:0dc6c9c614c2:context:root",
+            "join_id": "deepagents-join:0cfa43545481608c",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da",
+            "context_id": "deepagents:autonomous:django__django-10973:cd96cba5e4da:context:root",
+            "join_id": "deepagents-join:1da3f0461c7af8fd",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-2905:2bab764734a6",
+            "context_id": "deepagents:autonomous:pydata__xarray-2905:2bab764734a6:context:root",
+            "join_id": "deepagents-join:fd56271df04ae33e",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11239:606be0a8f4e9",
+            "context_id": "deepagents:autonomous:django__django-11239:606be0a8f4e9:context:root",
+            "join_id": "deepagents-join:41be3a8f26f591c3",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-5840:2d9c45ac09be",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-5840:2d9c45ac09be:context:root",
+            "join_id": "deepagents-join:2d95379d75b1994d",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-6744:820d5e0e51b1",
+            "context_id": "deepagents:autonomous:pydata__xarray-6744:820d5e0e51b1:context:root",
+            "join_id": "deepagents-join:78d4a7efcc76ae25",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-16877:22a8438bda7c",
+            "context_id": "deepagents:autonomous:django__django-16877:22a8438bda7c:context:root",
+            "join_id": "deepagents-join:7d6a72789b2fcc13",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-6721:9efc8a1d5ea5",
+            "context_id": "deepagents:autonomous:pydata__xarray-6721:9efc8a1d5ea5:context:root",
+            "join_id": "deepagents-join:2d4b1f4bd4c61682",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-3151:d162a2fc458d",
+            "context_id": "deepagents:autonomous:pydata__xarray-3151:d162a2fc458d:context:root",
+            "join_id": "deepagents-join:7fb8ba3d5a85ded4",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-5262:2bf485d2d225",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-5262:2bf485d2d225:context:root",
+            "join_id": "deepagents-join:5fd81c6ab92cd894",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11119:7ad073658ab1",
+            "context_id": "deepagents:autonomous:django__django-11119:7ad073658ab1:context:root",
+            "join_id": "deepagents-join:0466b04c4e482ee2",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-4356:b0d352fb3fb5",
+            "context_id": "deepagents:autonomous:pydata__xarray-4356:b0d352fb3fb5:context:root",
+            "join_id": "deepagents-join:2524bbc9d948f2f4",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-6028:85c9df3aa89f",
+            "context_id": "deepagents:autonomous:psf__requests-6028:85c9df3aa89f:context:root",
+            "join_id": "deepagents-join:d3e1f9a2a869a0a0",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11299:7cd18225e0da",
+            "context_id": "deepagents:autonomous:django__django-11299:7cd18225e0da:context:root",
+            "join_id": "deepagents-join:c27580a30a4d6dff",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+            "context_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:context:root",
+            "join_id": "deepagents-join:48ca83e6d7bcb9dc",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11820:90dadb463ed8",
+            "context_id": "deepagents:autonomous:django__django-11820:90dadb463ed8:context:root",
+            "join_id": "deepagents-join:7d52e13505bbba90",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6903:7fb6fff00c5e",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-6903:7fb6fff00c5e:context:root",
+            "join_id": "deepagents-join:859ccf33670430fd",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-14349:49dd7dfb0765",
+            "context_id": "deepagents:autonomous:django__django-14349:49dd7dfb0765:context:root",
+            "join_id": "deepagents-join:b3ba22b788a50f3f",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11477:7cdaa6ef05b8",
+            "context_id": "deepagents:autonomous:django__django-11477:7cdaa6ef05b8:context:root",
+            "join_id": "deepagents-join:232278126b96c58a",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11433:8d519930d2f1",
+            "context_id": "deepagents:autonomous:django__django-11433:8d519930d2f1:context:root",
+            "join_id": "deepagents-join:398495fb9407963a",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-4629:f0dd665f5155",
+            "context_id": "deepagents:autonomous:pydata__xarray-4629:f0dd665f5155:context:root",
+            "join_id": "deepagents-join:dcae95352378bca5",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-10999:ba6bc943cf20",
+            "context_id": "deepagents:autonomous:django__django-10999:ba6bc943cf20:context:root",
+            "join_id": "deepagents-join:7602d087b8abdc2a",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7521:243a2a0e112c",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7521:243a2a0e112c:context:root",
+            "join_id": "deepagents-join:87d2e4c60044de09",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-2317:5b0e8c907878",
+            "context_id": "deepagents:autonomous:psf__requests-2317:5b0e8c907878:context:root",
+            "join_id": "deepagents-join:3d58bc9f79c0ff4d",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7571:037b0ce77a94",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7571:037b0ce77a94:context:root",
+            "join_id": "deepagents-join:d2c91e7932b17f26",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11095:67d9455d8566",
+            "context_id": "deepagents:autonomous:django__django-11095:67d9455d8566:context:root",
+            "join_id": "deepagents-join:643ca4f350d4c374",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11099:1b1795f9c2a6",
+            "context_id": "deepagents:autonomous:django__django-11099:1b1795f9c2a6:context:root",
+            "join_id": "deepagents-join:85b159470f968120",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+            "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+            "join_id": "deepagents-join:e96276e94149077b",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11265:e92f680cdb72",
+            "context_id": "deepagents:autonomous:django__django-11265:e92f680cdb72:context:root",
+            "join_id": "deepagents-join:28fc6012ad64919a",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7205:c503ff72f7b8",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7205:c503ff72f7b8:context:root",
+            "join_id": "deepagents-join:6e752b867f541696",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-1142:68ffd976de2b",
+            "context_id": "deepagents:autonomous:psf__requests-1142:68ffd976de2b:context:root",
+            "join_id": "deepagents-join:5a3b4ca9a8d43ec6",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72",
+            "context_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72:context:root",
+            "join_id": "deepagents-join:a58e4abf48317ff0",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-8399:17f02ffbae36",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-8399:17f02ffbae36:context:root",
+            "join_id": "deepagents-join:cd957edbceb211f4",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:mwaskom__seaborn-3069:78c3db8f4fc5",
+            "context_id": "deepagents:autonomous:mwaskom__seaborn-3069:78c3db8f4fc5:context:root",
+            "join_id": "deepagents-join:165a2626e3ddc6e6",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-14500:ad07c81188ab",
+            "context_id": "deepagents:autonomous:django__django-14500:ad07c81188ab:context:root",
+            "join_id": "deepagents-join:fecfa765396b4847",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-4551:45683c620cb4",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-4551:45683c620cb4:context:root",
+            "join_id": "deepagents-join:60e3d9046f358e49",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-5631:79cb6b51ae8c",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-5631:79cb6b51ae8c:context:root",
+            "join_id": "deepagents-join:d592e392d91f024e",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9",
+            "context_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9:context:root",
+            "join_id": "deepagents-join:992d10105289567b",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7432:4159262db3c2",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-7432:4159262db3c2:context:root",
+            "join_id": "deepagents-join:89138ed48b25d52e",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11149:763c4aad1784",
+            "context_id": "deepagents:autonomous:django__django-11149:763c4aad1784:context:root",
+            "join_id": "deepagents-join:7301309d9ff25f74",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-16667:1f7731acce8b",
+            "context_id": "deepagents:autonomous:django__django-16667:1f7731acce8b:context:root",
+            "join_id": "deepagents-join:985ae6167fd9e5bb",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167",
+            "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+            "join_id": "deepagents-join:76a4f7e9635b1bb5",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-10097:b43eaad6ac36",
+            "context_id": "deepagents:autonomous:django__django-10097:b43eaad6ac36:context:root",
+            "join_id": "deepagents-join:e3e2fef27ae219f1",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:psf__requests-5414:a1327c8dd67d",
+            "context_id": "deepagents:autonomous:psf__requests-5414:a1327c8dd67d:context:root",
+            "join_id": "deepagents-join:08567b39d4a861d4",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-6202:31098ed45ef5",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-6202:31098ed45ef5:context:root",
+            "join_id": "deepagents-join:b7a02440dd783f46",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-7233:5875d36e871e",
+            "context_id": "deepagents:autonomous:pydata__xarray-7233:5875d36e871e:context:root",
+            "join_id": "deepagents-join:db9b2155f1dcd83f",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-11087:7b6c6e76c748",
+            "context_id": "deepagents:autonomous:django__django-11087:7b6c6e76c748:context:root",
+            "join_id": "deepagents-join:6750ad62a2fe0da0",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:django__django-13964:e2a7b10e8f1f",
+            "context_id": "deepagents:autonomous:django__django-13964:e2a7b10e8f1f:context:root",
+            "join_id": "deepagents-join:cb287cd3133d919c",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pydata__xarray-6938:07a5c6540129",
+            "context_id": "deepagents:autonomous:pydata__xarray-6938:07a5c6540129:context:root",
+            "join_id": "deepagents-join:49e5c6c69bdaeb5e",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          },
+          {
+            "workflow_id": "deepagents:autonomous:pytest-dev__pytest-10051:ce010bfbbfdd",
+            "context_id": "deepagents:autonomous:pytest-dev__pytest-10051:ce010bfbbfdd:context:root",
+            "join_id": "deepagents-join:4969cf4cad204594",
+            "completion_ts_ms": null,
+            "sibling_device_release_before_join": null,
+            "sibling_device_release_lead_ms": null,
+            "early_reused_full_commands_after_sibling_release": null,
+            "early_reused_full_bytes_after_sibling_release_known": null
+          }
+        ],
+        "semantics": "Independent observed JOIN episodes, not all workload JOINs. Actual allocator release uses scheduler wall time; complete JOIN uses the existing client-clock offset conversion. Only explicitly identified dynamic subagents link by workflow/parent context/JOIN. Host-only or post-JOIN releases cannot support pre-JOIN H2D. A command qualifies only with the existing proof of actual pre-JOIN submission and FULL reuse by the following request. Temporal association does not prove exclusive capacity, child-to-parent page identity, that these bytes were necessary for prefetch, or a native-relative saving. Cumulative releases are not simultaneously free capacity; transferred FULL bytes are command receipts, not a count of unique pages. Unobserved JOIN completion leaves the release window unknown."
+      },
+      "rows": [
+        {
+          "workflow_id": "deepagents:autonomous:django__django-10914:2ef9209a9297",
+          "context_id": "deepagents:autonomous:django__django-10914:2ef9209a9297:context:root",
+          "join_id": "deepagents-join:fa2df341cf119761",
+          "request_id": "beliefkv:01a13088-e009-7dc1-8fbd-96c72946b0d7",
+          "freed_device_units_before_service": {
+            "0": 13416,
+            "2": 5
+          },
+          "last_child_return_to_first_service_ms": 1382.5380859375,
+          "request_wait_ms": 165.52941408008337,
+          "restore_lookahead_to_first_service_ms": null,
+          "queue_wait_before_restore_lookahead_ms": null
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-15103:5b84e72a0da8",
+          "context_id": "deepagents:autonomous:django__django-15103:5b84e72a0da8:context:root",
+          "join_id": "deepagents-join:8dee533310769094",
+          "request_id": "beliefkv:01a1308a-5302-7be3-b652-312907d6aa4c",
+          "freed_device_units_before_service": {
+            "0": 11282,
+            "2": 4
+          },
+          "last_child_return_to_first_service_ms": 264.6982421875,
+          "request_wait_ms": 214.37224559485912,
+          "restore_lookahead_to_first_service_ms": 190.2578125,
+          "queue_wait_before_restore_lookahead_ms": 24.107499979436398
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-12741:874cc5a30550",
+          "context_id": "deepagents:autonomous:django__django-12741:874cc5a30550:context:root",
+          "join_id": "deepagents-join:639f5f718b2bce76",
+          "request_id": "beliefkv:01a1308b-5599-7b10-b16b-6ebf35ac19ca",
+          "freed_device_units_before_service": {
+            "0": 10954,
+            "2": 1
+          },
+          "last_child_return_to_first_service_ms": 240.93017578125,
+          "request_wait_ms": 87.2313566505909,
+          "restore_lookahead_to_first_service_ms": 82.456787109375,
+          "queue_wait_before_restore_lookahead_ms": 4.770115949213505
+        }
+      ],
+      "semantics": "Actual terminal-suffix allocator release, linked to the first observed completed parent GPU batch, not kernel start; RETURN delivery observation and service observation use scheduler wall time, not client event time; not exclusive slot ownership, predictive H2D reuse, avoided D2H bytes, or a native-relative latency saving. Restore lookahead is selection evidence, not submission/ACK evidence. Aggregate releases include internal calls; scope breakdown and terminal_children use explicit invocation-create metadata or recorded runtime scope, never ID spelling. Only confirmed dynamic subagents link to JOIN parent services; absent metadata stays unknown. Missing pool byte sizes stay unknown."
+    },
+    "parent_capacity_restore_retries": {
+      "rearm_records": 0,
+      "rearmed_requests": 0,
+      "rearmed_requests_with_observed_parent_service": 0,
+      "scope": "linked child allocator release enables a demand retry; not pre-boundary H2D"
+    }
+  },
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 77109819,
+      "complete_prefix_sha256": "bb336fdd860177853ccd40b0d3849c8bb547ced58c9ad036fb203d3e2847ec4a",
+      "first_read_limit_bytes": 77109819
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/server/transfer_telemetry.jsonl": {
+      "complete_prefix_bytes": 3564759,
+      "complete_prefix_sha256": "ad14ad7701783595680e98e93ceecd9f76b989a78242e2e55f33c3ab136692d0",
+      "first_read_limit_bytes": 3564759
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 7476300,
+      "complete_prefix_sha256": "18764966744eb922598e61d20b32fe439f50eb4013a0344b43c07b37ea5a6119",
+      "first_read_limit_bytes": 7476300
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/server/physical_action_use.jsonl": {
+      "complete_prefix_bytes": 1388018,
+      "complete_prefix_sha256": "76fbca07507864c1453845fe45fb57155f2cee63a36a1ebeeb3277806398efc2",
+      "first_read_limit_bytes": 1388018
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/server/physical_action_ack.jsonl": {
+      "complete_prefix_bytes": 588170,
+      "complete_prefix_sha256": "708ccfd2e3f61f43628c274c829a2347b569c4889a6a3819a56a27a81c81896a",
+      "first_read_limit_bytes": 588170
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/server/eviction_attribution.jsonl": {
+      "complete_prefix_bytes": 4090300,
+      "complete_prefix_sha256": "7092e61756d9884cb1118ea11e30d342c766fd36f1d3b7acb127ee748d4d322c",
+      "first_read_limit_bytes": 4090300
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-16938/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 414665,
+      "complete_prefix_sha256": "6b87e245f3821367cb84d3c20376055bffcb3884ceb05492eedf853ad0d774e9",
+      "first_read_limit_bytes": 414665
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-5262/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 389573,
+      "complete_prefix_sha256": "36efae45785188c2a34ee0584deec3a9c310046ec8e5860eacd9bc10a86598f5",
+      "first_read_limit_bytes": 389573
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-5631/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 576891,
+      "complete_prefix_sha256": "845425a08f5aefbd897f37261b8e06846aeb3ebd0b5f9f36bcc253b180e279ec",
+      "first_read_limit_bytes": 576891
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-16502/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 361183,
+      "complete_prefix_sha256": "087463973ff849f5ce7d3f33422027ef824dc8e4483b5ff582827f92657eb085",
+      "first_read_limit_bytes": 361183
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11400/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 750762,
+      "complete_prefix_sha256": "200e7f43275b1f45323ebed6e863504704dc61c6ac374a4a3162f3cbec4e80b6",
+      "first_read_limit_bytes": 750762
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11066/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 532215,
+      "complete_prefix_sha256": "c1ea955aa90fa76470af85ea93f76943b8d67c58c715436c9297648f5f93adbb",
+      "first_read_limit_bytes": 532215
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-6028/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 373413,
+      "complete_prefix_sha256": "45dbcf85f9808e8533530cb8f3dd1abb447fae3806aacd2b20842a04602dff62",
+      "first_read_limit_bytes": 373413
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-3095/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 392141,
+      "complete_prefix_sha256": "80a86eae7be1427367d15c1b73a8f5cea9bca9ee3d15541c391c26d515efdefe",
+      "first_read_limit_bytes": 392141
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-5840/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 404725,
+      "complete_prefix_sha256": "ddae2daf4ba2c2bf88448ce477687d2ff8bf0e802b8bf561ae3c69e2109aafd2",
+      "first_read_limit_bytes": 404725
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/mwaskom__seaborn-3069/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 364425,
+      "complete_prefix_sha256": "7e6aff5071c87d11a91b039f2b9f239638717c27949d30d40c74457812fef545",
+      "first_read_limit_bytes": 364425
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-14349/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 384490,
+      "complete_prefix_sha256": "4dd329a4d4663e515b4f3ea76e4c118293d5ea387efe3edea4a9b78ad5b5648c",
+      "first_read_limit_bytes": 384490
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 368814,
+      "complete_prefix_sha256": "676da395df4d22d06d64ab95df3ebe20319c8d495a4bd9c738dd75d714f2adeb",
+      "first_read_limit_bytes": 368814
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 473589,
+      "complete_prefix_sha256": "d95d12c422bb9b25046eb70a5744e981df120d17274512aaf7bf3a1d9dc049b9",
+      "first_read_limit_bytes": 473589
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-16667/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 466409,
+      "complete_prefix_sha256": "671dd124e61d347d37715589e4716e754aa60b086a872753309a277f624894ad",
+      "first_read_limit_bytes": 466409
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11211/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 374558,
+      "complete_prefix_sha256": "862d12b323b3e59144b9581e5c02c27f38c9bae6525f7fc63cb777b6e7584779",
+      "first_read_limit_bytes": 374558
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11333/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 797936,
+      "complete_prefix_sha256": "0d1fa1be21ffef0a67e62d0fdc6611ef0251b5c012fd318a1b995d748fb19225",
+      "first_read_limit_bytes": 797936
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-10554/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 388244,
+      "complete_prefix_sha256": "77e08fc90ae2b7516edd2552acbdfa6e66ff5994087f347f4dd7d440bded156d",
+      "first_read_limit_bytes": 388244
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11099/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 389966,
+      "complete_prefix_sha256": "0a27bc3a385b7adcb02595a5b247a96d79bafdc1bed3ba5bd8be878e74ef56fb",
+      "first_read_limit_bytes": 389966
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11087/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 382079,
+      "complete_prefix_sha256": "60a3d815e553449eaa8c79f255f9767dab9ecf457b91de71afd6fa48baad4328",
+      "first_read_limit_bytes": 382079
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-6744/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 539642,
+      "complete_prefix_sha256": "1dad396751a109a775ed25aa1e7a131cb5096f6019ecd2f43d445e5917fc17db",
+      "first_read_limit_bytes": 539642
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11276/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 647688,
+      "complete_prefix_sha256": "0ce14a1ccfd3296d2798a6572bdbadbe88731e618934f55b7abc50c4b33575e7",
+      "first_read_limit_bytes": 647688
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-6386/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 420220,
+      "complete_prefix_sha256": "a3ca816b0d76d2822b435a8a921dd759f689f638df792c96d3b91fd59d8ba8e2",
+      "first_read_limit_bytes": 420220
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-10097/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 632501,
+      "complete_prefix_sha256": "8acd7d0cbbb13a3e6ed7bb855e5be1eccddc1546c415027a6c6e500ad24f0737",
+      "first_read_limit_bytes": 632501
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-4551/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 383892,
+      "complete_prefix_sha256": "52f9ffeef7aaadba8fee468ca2c2883ffcdd07dd54af92c1ad7e9083449f7356",
+      "first_read_limit_bytes": 383892
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7521/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 390294,
+      "complete_prefix_sha256": "b30c590b0215061690f7a34516c6cadc8c7fde3d5b577f3b8fa74c57076c292b",
+      "first_read_limit_bytes": 390294
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-6202/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 353853,
+      "complete_prefix_sha256": "9b9a58f62b5aac8f8c66758920642be2a257f4e1f4deba5a666d98240f15a800",
+      "first_read_limit_bytes": 353853
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-2905/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 436835,
+      "complete_prefix_sha256": "a49e2607d2e8b04a816576564521e3288e3b7db172c0ab77d066eb51f4e569aa",
+      "first_read_limit_bytes": 436835
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11265/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 394325,
+      "complete_prefix_sha256": "8defa16f0796c9b5eb5555be426bdd25a96a0c4587cf67c3a3592ee794a9ff08",
+      "first_read_limit_bytes": 394325
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-6721/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 397165,
+      "complete_prefix_sha256": "713e404dba53a146ce256bc543a686f2aa8e0dadd102ffe244798ab90147852a",
+      "first_read_limit_bytes": 397165
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-7393/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 387171,
+      "complete_prefix_sha256": "cd597296168ed68ff76b3c6b023c62e4545674c908e3d62eee1623a45ca6b387",
+      "first_read_limit_bytes": 387171
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-10356/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 406997,
+      "complete_prefix_sha256": "6003f329451c84e96cf6190793ab2914421eac0a7836a59b45b4cacc4bec224c",
+      "first_read_limit_bytes": 406997
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-6461/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 336501,
+      "complete_prefix_sha256": "550c679ed958657c64d3e96ad6c4a5ff1b8d84524b89a5020d465dd555b0e22e",
+      "first_read_limit_bytes": 336501
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-4966/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 444768,
+      "complete_prefix_sha256": "63b7c24ce2f2290c7b1979634afa1f8893d7880f6068a9a5b93e631d606e7667",
+      "first_read_limit_bytes": 444768
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-10914/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 799186,
+      "complete_prefix_sha256": "abf8a4a814b9c3bcb73ae530825c69b4ac5c9cb2f52950c2e447d96d69503190",
+      "first_read_limit_bytes": 799186
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11734/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 435430,
+      "complete_prefix_sha256": "151019de0947d1dbac173f554e03dd3a5618385e9f5c162b403cd20e82d9567e",
+      "first_read_limit_bytes": 435430
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-3993/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 642739,
+      "complete_prefix_sha256": "46c1a61fb09ab7074e11c23c15bf6cc8dbdef72a80349500dbd1e6bb6b57fd2a",
+      "first_read_limit_bytes": 642739
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-2931/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 665273,
+      "complete_prefix_sha256": "2f1e0597a8d199d850d1d3613beeca181ac5d2961525b5b5533ca8eef1bcfb6c",
+      "first_read_limit_bytes": 665273
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-15315/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 582093,
+      "complete_prefix_sha256": "7336e235ad71005579a4d9f638379f15a09ba84f2af51aee362160034985a5d3",
+      "first_read_limit_bytes": 582093
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-3677/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 383392,
+      "complete_prefix_sha256": "4f75e1f84a00ff2f21e246576f46e435a5f63f4785abc26aaf4866d209fa4b65",
+      "first_read_limit_bytes": 383392
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-10051/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 664351,
+      "complete_prefix_sha256": "56b9a823f74f03355511d51dd19e7e4f873a275c1627fce347eb997dbeb2ac8c",
+      "first_read_limit_bytes": 664351
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-5809/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 502527,
+      "complete_prefix_sha256": "28c0bb05b014aa24c2343aafe1a906453511f3e825c3c4986f70f6d5cd2985be",
+      "first_read_limit_bytes": 502527
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-6197/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 480567,
+      "complete_prefix_sha256": "59659e5b905224858310d87a3538953e4aef5af7f7f8a5aee264928978e81c14",
+      "first_read_limit_bytes": 480567
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-2317/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 686389,
+      "complete_prefix_sha256": "645c5be91f3a81cf188dd108779f872197d9220638b07d5d5287e65af3d8a2fe",
+      "first_read_limit_bytes": 686389
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-10081/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 414916,
+      "complete_prefix_sha256": "56d682612eafa95eb9fce3b27412d3168f79811edcca96612560f5a98fff69dc",
+      "first_read_limit_bytes": 414916
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-1724/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 430858,
+      "complete_prefix_sha256": "107baa327f3a904d5440c382751d2cff82d0c0f7fce98bb0dd2a8ef7c9054986",
+      "first_read_limit_bytes": 430858
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-6903/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 706741,
+      "complete_prefix_sha256": "14969c2fc737c583ad229385e4d7bd0ad209c4b2998b19b6f5ca9ae5d6821f03",
+      "first_read_limit_bytes": 706741
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-1142/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 771421,
+      "complete_prefix_sha256": "d5712933146024b7ff781eeb24c7ed51fd41efe394d4992eb44f9d18935f9b5b",
+      "first_read_limit_bytes": 771421
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11477/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 377486,
+      "complete_prefix_sha256": "a1c199e2b58b3a0650d66a637c402fcad7037460a3cd36f5fa45b51771988c67",
+      "first_read_limit_bytes": 377486
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-12754/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 377518,
+      "complete_prefix_sha256": "5afe498f282f5133c20a1ca86307c64ab21b618ccc83ffbeae907f15b58404d9",
+      "first_read_limit_bytes": 377518
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7236/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 394894,
+      "complete_prefix_sha256": "1ded17e8ca84ee0c91ff0611dc7f20bf260cef92440958a45e8fab1f77e214f0",
+      "first_read_limit_bytes": 394894
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-1921/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 407829,
+      "complete_prefix_sha256": "94f0e800b81b8cb01f80d407a7d174e03c79ca39d23af7adced524c9ab8e0493",
+      "first_read_limit_bytes": 407829
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-4075/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 970569,
+      "complete_prefix_sha256": "d10e6ac79f7b1f54f3d8795dd726584f17e7bfe105f328d420f68e425a968116",
+      "first_read_limit_bytes": 970569
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11239/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 394920,
+      "complete_prefix_sha256": "dc047e09126fc5e2809daf485da6d1a5ed71183eb1a4ab6495d7f43866da0785",
+      "first_read_limit_bytes": 394920
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-4356/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 680411,
+      "complete_prefix_sha256": "8368bdb890e4ecf61b4b5e578ad5104fa890522319769fb3f317e170c7f01d0e",
+      "first_read_limit_bytes": 680411
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-16255/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 601317,
+      "complete_prefix_sha256": "3771085721b0e4d60f86ec4922b88a7227babf35b743980cc1d7efd7faee9ccd",
+      "first_read_limit_bytes": 601317
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7324/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 465747,
+      "complete_prefix_sha256": "499c2f6df19b542df7ab8991b7f290070899503d7d5ad2d3596caf7373304a1b",
+      "first_read_limit_bytes": 465747
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-5787/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 395734,
+      "complete_prefix_sha256": "6d0bca39f81f1f756d9c7b9d883c6a1462dda1903d686a2371bd79d5c201c789",
+      "first_read_limit_bytes": 395734
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7432/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 392602,
+      "complete_prefix_sha256": "4a8937f176678c9cd5ece2fa8ca1ce33f83d3eabcaaf5d8836060b5f3e642ff5",
+      "first_read_limit_bytes": 392602
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11451/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 792801,
+      "complete_prefix_sha256": "bc5864a4618d44479884beabc60d2e2bea05e026ea02d745aaad63889e62339a",
+      "first_read_limit_bytes": 792801
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-6599/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 361312,
+      "complete_prefix_sha256": "f6bbc4aa43c7684a536621c1470f051f456c47ec0000b81b0a25c7ac4a806e94",
+      "first_read_limit_bytes": 361312
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11206/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 322098,
+      "complete_prefix_sha256": "ffa36945f60b9030624e57430338f76f7afcc96c76fe77befe87c03cd0ed63ad",
+      "first_read_limit_bytes": 322098
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11292/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 706887,
+      "complete_prefix_sha256": "17b4d2c38008c0feb654ef7958e2dd7593ee7c56620737b28489d90d33315092",
+      "first_read_limit_bytes": 706887
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-12741/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 570830,
+      "complete_prefix_sha256": "c2301660f044ab9f0897bda21335ce3807312337b73322712443f7f5b3f9863a",
+      "first_read_limit_bytes": 570830
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-4687/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 456459,
+      "complete_prefix_sha256": "6c51d08ccc7de377c96e8ee1d08f9b6e222f419641bd88005889fac8aeb6710c",
+      "first_read_limit_bytes": 456459
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11532/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 409199,
+      "complete_prefix_sha256": "dc5761d34df49106e3172bfe2267ea9c42decbfd5b6965039ef31f8f479d2d30",
+      "first_read_limit_bytes": 409199
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11820/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 322931,
+      "complete_prefix_sha256": "77843a0357d5c46f046d29e8e905aa5b9dd169aabe88a755bd3471d77508ccd0",
+      "first_read_limit_bytes": 322931
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-6938/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 398733,
+      "complete_prefix_sha256": "684a97e29e25e0a687555fa9a24f17d0934749d6fa34ed242fb41c257b6c9ff8",
+      "first_read_limit_bytes": 398733
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11149/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 346095,
+      "complete_prefix_sha256": "14d14e0c17b9eba7d259d42fad80ceef939ad6af3010ad40144adf9b8515a18f",
+      "first_read_limit_bytes": 346095
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-4629/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 386737,
+      "complete_prefix_sha256": "0468510519c21a10dc707d3d3a1ea21df1fb901d30c94d0727a54935a4fa1c58",
+      "first_read_limit_bytes": 386737
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-3305/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 350502,
+      "complete_prefix_sha256": "29283b1643bf65da4e447e1e61e4855dd939c6d497be42b24ff78f6976eaf2a6",
+      "first_read_limit_bytes": 350502
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-13023/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 586701,
+      "complete_prefix_sha256": "6bd484a65249501c136807841d25348b3a641a9ea90e4fb792802cf5d54dd29c",
+      "first_read_limit_bytes": 586701
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-10999/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 501662,
+      "complete_prefix_sha256": "848d3e59749278296b5d653866ed22d555e9b4969cf7501fdee59082e262c158",
+      "first_read_limit_bytes": 501662
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11179/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 497673,
+      "complete_prefix_sha256": "1a2a1718b57293ae238a329a4d91456f464a0e9b3308efc19304e4ae4100a4b4",
+      "first_read_limit_bytes": 497673
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7490/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 408728,
+      "complete_prefix_sha256": "45783b90b433964c58d175198e70493adb26b57ec2da680965908c4817fa72e2",
+      "first_read_limit_bytes": 408728
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-4661/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 450727,
+      "complete_prefix_sha256": "ce9112eb71dd61f048e25e6e2476e65e6f46474a67b480d3784b36ae327d092d",
+      "first_read_limit_bytes": 450727
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-15103/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 768257,
+      "complete_prefix_sha256": "878fdb615f73b38300c32abcbd3d0ac01fd6943acabdfe9589fa6afd41bef447",
+      "first_read_limit_bytes": 768257
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-1766/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 544790,
+      "complete_prefix_sha256": "d0c4e6620d702f7f08e60e191a19cc7d845345e8ebed26de05c6b508f16e8d1b",
+      "first_read_limit_bytes": 544790
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11163/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 558434,
+      "complete_prefix_sha256": "52c09f064ba93b0143ce72e6791a7ef4ccd8d7aa19ce0a8d8aaf21ac44dbccdc",
+      "first_read_limit_bytes": 558434
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-4094/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 483048,
+      "complete_prefix_sha256": "bbfdeb9eb793456ffd88edc1104db13d0ed0c0f56133c614d766f15cf8c9030b",
+      "first_read_limit_bytes": 483048
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7982/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 485280,
+      "complete_prefix_sha256": "bb3832873804c8432b05308df1b4fd18e80f2165b872f275f98c6800eb887ea2",
+      "first_read_limit_bytes": 485280
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11433/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 385874,
+      "complete_prefix_sha256": "bfc304f2458be2c66f8d3d2f62e5cc6d37c7fc102daadfe28b55293e0ef62379",
+      "first_read_limit_bytes": 385874
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-7080/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 454460,
+      "complete_prefix_sha256": "cea71fd8220dea7e693b834ae21995f8aa3134e393fa2e7fff4dbb59c200bd12",
+      "first_read_limit_bytes": 454460
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-14631/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 546968,
+      "complete_prefix_sha256": "1eef4b7f8d1fa6c222d51b74117d16fb9aee4430ca730d73b39f0666db152d87",
+      "first_read_limit_bytes": 546968
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11138/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 431152,
+      "complete_prefix_sha256": "3ecbec5f81c26b687d82054dc5c00a4c363bffda8e7009c160df897f72551585",
+      "first_read_limit_bytes": 431152
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-5414/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 504644,
+      "complete_prefix_sha256": "5ce0481dfcf95f184a96357671f4fc31fdd073eb9646b851c6fbf8a2160e286c",
+      "first_read_limit_bytes": 504644
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-16877/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 674006,
+      "complete_prefix_sha256": "e1ab1a32ffb6b833883874448998210d2b0087c0c714163be51e850bfb1c2b1b",
+      "first_read_limit_bytes": 674006
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-13964/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 294146,
+      "complete_prefix_sha256": "4b69447126fba15030c3113df3ff31dfca153d97f8caac0fbc53faac6bdf6d3b",
+      "first_read_limit_bytes": 294146
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11141/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 425112,
+      "complete_prefix_sha256": "30e15c09ae8a7b298cb8eb6b044cc13284b395e0e5536aeb75051259d518b4ad",
+      "first_read_limit_bytes": 425112
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7571/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 385398,
+      "complete_prefix_sha256": "388789f880c0d76f95549a8918f6c32b518d7e2aed795d0171683b29c803d85e",
+      "first_read_limit_bytes": 385398
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-15368/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 757964,
+      "complete_prefix_sha256": "896e867198087f442bc15316719978b58de3f2ae7ba8bd3707d80b53b567118a",
+      "first_read_limit_bytes": 757964
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-7229/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 403485,
+      "complete_prefix_sha256": "557f314c5e6f5290c25420d9c3ac751633bef6f20b75fbae7038ed22b75ac91b",
+      "first_read_limit_bytes": 403485
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11299/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 380272,
+      "complete_prefix_sha256": "2e079d4b8308fb6b2b3d8e4b6cf342c6c92f56e952f3884edb460758a9188d3f",
+      "first_read_limit_bytes": 380272
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11095/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 366206,
+      "complete_prefix_sha256": "bf1873837732cfefe4565842a57935ab948408609866d29b6ce8f11f362afbcf",
+      "first_read_limit_bytes": 366206
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-7233/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 407258,
+      "complete_prefix_sha256": "385c84e6ce39b2405eea8de4d9d567c7d390a904d38ec3e94411364cbca8e91b",
+      "first_read_limit_bytes": 407258
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-4604/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 406260,
+      "complete_prefix_sha256": "98d3d4d55b1d25dbb36b6cca4626f0616d1ebffd6d984400b62c4af3f9bf2387",
+      "first_read_limit_bytes": 406260
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-10880/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 524434,
+      "complete_prefix_sha256": "2dc9a87c61375b3ccaf6708f90d20798d359c0f25d769f5b9f8d6a2862cb380b",
+      "first_read_limit_bytes": 524434
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 395915,
+      "complete_prefix_sha256": "d65a8c9fb3b4ac888d6bb47165057c4baf3a337270d9fc2c375dfd4067376f06",
+      "first_read_limit_bytes": 395915
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-3151/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 621345,
+      "complete_prefix_sha256": "23863f79b05b2a7bbe4750a6345bbea4b8659d17a967682a9b279cad7a579c2f",
+      "first_read_limit_bytes": 621345
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pallets__flask-5014/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 606972,
+      "complete_prefix_sha256": "77dc572273ee5dbc0c53cd426bc614012305c697dcd3745bb0df1b8220f1c199",
+      "first_read_limit_bytes": 606972
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-6992/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 662630,
+      "complete_prefix_sha256": "d94f8f20149717e7719937244a594c5cd199143698b620eb3722039ebb47b948",
+      "first_read_limit_bytes": 662630
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-8898/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 654811,
+      "complete_prefix_sha256": "8b800e31e2ccef43d48fbc8c597cde0ecc39e1ffae63e952069261404361a227",
+      "first_read_limit_bytes": 654811
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11490/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 369860,
+      "complete_prefix_sha256": "f114a1c745ec17e2c2525894a78137d330a07e6382ec2dc4f54b36d676d666f3",
+      "first_read_limit_bytes": 369860
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11119/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 645525,
+      "complete_prefix_sha256": "aec1e7ac72d0962ef417aba1be0735824128140d4ef420f9a4e2be521607d2ce",
+      "first_read_limit_bytes": 645525
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-7277/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 649501,
+      "complete_prefix_sha256": "4e888d106c6df46c055d96375a7e17ff3c0deddd424fa0b6c910101147305931",
+      "first_read_limit_bytes": 649501
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-8399/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 374837,
+      "complete_prefix_sha256": "1ed755079ee2504dc7bd59e9825c56e6b9970fab73890a962203e57302aa5929",
+      "first_read_limit_bytes": 374837
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-14500/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 362493,
+      "complete_prefix_sha256": "1f46b125c0053cf1d650cce10b2403e8dbe51c81d40bb656ceb6d5037e08370f",
+      "first_read_limit_bytes": 362493
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-10973/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 838897,
+      "complete_prefix_sha256": "54cfa829f0e947db55c99122fb1466081346769ab3e6777c441e0809602c27ea",
+      "first_read_limit_bytes": 838897
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7205/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 452830,
+      "complete_prefix_sha256": "cdfb02c7847d24029bc1458ff4bd65e1c2ce071af8d6ed4f76b773bc0bb48bf6",
+      "first_read_limit_bytes": 452830
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-16938/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 118636,
+      "complete_prefix_sha256": "220a3f9a6488574d53815be2c63ac1a4aa75d6eaa33338790af974253b02de3f",
+      "first_read_limit_bytes": 118636
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-5262/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 126661,
+      "complete_prefix_sha256": "5eb0de893ce8d85b02218b64754958e09941bcc4538c73a8f24e2c5e2e75ba0b",
+      "first_read_limit_bytes": 126661
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-5631/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 367351,
+      "complete_prefix_sha256": "856019e1667a0b43398ac1423bda21204faf20d45e75cf8e4c5b77a4a4e19a08",
+      "first_read_limit_bytes": 367351
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-16502/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 118486,
+      "complete_prefix_sha256": "712d8df0fff75ce6cb6470fd6d830bd4ce77e7d5945886ecf90e7cffa21c835d",
+      "first_read_limit_bytes": 118486
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11400/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 498550,
+      "complete_prefix_sha256": "1d3200adc73b716c71478294824af49d566241ebd3d84faedb7f504cf9acf699",
+      "first_read_limit_bytes": 498550
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11066/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 286417,
+      "complete_prefix_sha256": "0f217d119f11a5a2de9e3ed09366c9f22538da462d2b36af0944f1fb56c662ea",
+      "first_read_limit_bytes": 286417
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-6028/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 117629,
+      "complete_prefix_sha256": "3b4f3a5808bfde91d4544605dfef765953da926314143a68147c53f434169187",
+      "first_read_limit_bytes": 117629
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-3095/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 127579,
+      "complete_prefix_sha256": "c6aac32b02defe509e377ae11f3c140b9ccd3e6eead495f7929cc7b3880c6ef0",
+      "first_read_limit_bytes": 127579
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-5840/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 135265,
+      "complete_prefix_sha256": "7f427259cb470aabc8af80c4fb92e6055161c71ccc988df03fb6443cf97bb1de",
+      "first_read_limit_bytes": 135265
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/mwaskom__seaborn-3069/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 109952,
+      "complete_prefix_sha256": "22bcef736d6c798285cfa2fe843402e0c1924f77f4987700b2b5e9b1aedf2137",
+      "first_read_limit_bytes": 109952
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-14349/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 110448,
+      "complete_prefix_sha256": "703861a5956cd1e16cf675dfb49c60ca601161c96ee2cd7216059bfe7efe0fd7",
+      "first_read_limit_bytes": 110448
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 117258,
+      "complete_prefix_sha256": "2dde4ea5eeed43e52c8ba3d9149fbc7b78257a9480eca840e77200094964ca81",
+      "first_read_limit_bytes": 117258
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 178920,
+      "complete_prefix_sha256": "799d47a23868bcd2f4d75a15e0d02987b401e2beb3355ee38ca842c2115c8f4a",
+      "first_read_limit_bytes": 178920
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-16667/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 329857,
+      "complete_prefix_sha256": "a4e5e4fa5b231f8cd45afa7c36a48869dc3cf74290751dc9954fc1dafc7e6146",
+      "first_read_limit_bytes": 329857
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11211/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 118768,
+      "complete_prefix_sha256": "6de3bc6f12b5c48322c06174bf3fbff0124495390d03449a1cfb6bfb5f79e64e",
+      "first_read_limit_bytes": 118768
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11333/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 549693,
+      "complete_prefix_sha256": "4d5133e111c6494d0a02cd137683d51a6255ff3efabbd992553d061a0e91acf0",
+      "first_read_limit_bytes": 549693
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-10554/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 126472,
+      "complete_prefix_sha256": "6e8be55986b157ce6a845bb18216b3e91ef947fbf2602e77e2a0243e71097b1f",
+      "first_read_limit_bytes": 126472
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11099/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 225677,
+      "complete_prefix_sha256": "45d797405bec6bd595a77e0e77aa24edea672b890d9d8bb015303e1f48ed0b3d",
+      "first_read_limit_bytes": 225677
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11087/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 109030,
+      "complete_prefix_sha256": "d20feee577c39a6ca2673e34f8357720d87be4cda5f96c0f0dc514d3a8f757dc",
+      "first_read_limit_bytes": 109030
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-6744/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 339892,
+      "complete_prefix_sha256": "fb33c06a064c11218bbadefdc786dae57ec05b63df08e6ae8fa0bcc994abdfb1",
+      "first_read_limit_bytes": 339892
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11276/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 439622,
+      "complete_prefix_sha256": "991ae32b5790ec253884868d07e05e9f0c76d9e6a5b4f4370be2d6f189262399",
+      "first_read_limit_bytes": 439622
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-6386/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 144278,
+      "complete_prefix_sha256": "42dfc8f375e58a428fe93e8ed13bfc90b9f664483047d0d6825b9fafc7ea2abf",
+      "first_read_limit_bytes": 144278
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-10097/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 411230,
+      "complete_prefix_sha256": "a8aa6eda7628a07abb6dd1735d186bbfaadb1a58225308257bb8ce69f8cb3064",
+      "first_read_limit_bytes": 411230
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-4551/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 118734,
+      "complete_prefix_sha256": "e493bad9a47677905dd94f56cccbeca1bbe70f549754b5489cb76a24111a0554",
+      "first_read_limit_bytes": 118734
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7521/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 126263,
+      "complete_prefix_sha256": "96bad9e0ff9de64831df3c2bc15dd67fd6ab4931bc13a9316e845232c25fb4ff",
+      "first_read_limit_bytes": 126263
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-6202/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 110265,
+      "complete_prefix_sha256": "e9b677e2ef27b27c079cf222c7ead4c46343e9c11d845966db641be47a4509f6",
+      "first_read_limit_bytes": 110265
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-2905/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 171951,
+      "complete_prefix_sha256": "1e5f74d76da474fa0821b2716c8bad1ae659e95e10f7f95d664421b03e1f36c9",
+      "first_read_limit_bytes": 171951
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11265/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 199660,
+      "complete_prefix_sha256": "a3e2233b9d2348aa6cacb430d597cf758f6e095a77bdaae3ad9bef616f1633d2",
+      "first_read_limit_bytes": 199660
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-6721/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 152161,
+      "complete_prefix_sha256": "13802930bebb6552e163381ec55bf4244eeaf10a608caadd3697735d4516b206",
+      "first_read_limit_bytes": 152161
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-7393/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 118095,
+      "complete_prefix_sha256": "a3aaf9b4393fd0a730ec0426e87dbf0666e86380aa0512111c81788f2c023392",
+      "first_read_limit_bytes": 118095
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-10356/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 126762,
+      "complete_prefix_sha256": "20b708e513b028dd12ef7a8c1eed9b78b02e804291299c7aa0bbfdf12d0046dd",
+      "first_read_limit_bytes": 126762
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-6461/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 109667,
+      "complete_prefix_sha256": "6a9c09a33c51562e82e1b98b9943763211672e82bdb44a6f112bf6cf875abdec",
+      "first_read_limit_bytes": 109667
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-4966/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 134225,
+      "complete_prefix_sha256": "e08291be3ce8e34a5baae3be3cf088c12a82200affa89f818128720b4f4e5ff4",
+      "first_read_limit_bytes": 134225
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-10914/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 634729,
+      "complete_prefix_sha256": "4ff8fedc3405fa17a05bc109a63236f6902fb68bb5850f36710e2b9c97ecb1b7",
+      "first_read_limit_bytes": 634729
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11734/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 134690,
+      "complete_prefix_sha256": "ee063394195c2984f487ae00d375b88d6265cd36a3f25f75100155b130ff157c",
+      "first_read_limit_bytes": 134690
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-3993/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 371944,
+      "complete_prefix_sha256": "cab2c1ddd2c0bfa03def38510f5df8cedb9929d26bb02e9d090291f1bf417613",
+      "first_read_limit_bytes": 371944
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-2931/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 400049,
+      "complete_prefix_sha256": "3c28c8416efac05bfe27d4c9762076a054b9db058b6fe45a985782367d376739",
+      "first_read_limit_bytes": 400049
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-15315/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 372271,
+      "complete_prefix_sha256": "968f02d05f477482056c98c0fa5942f2e0594be452aa12401fa1d7535dc8a4ca",
+      "first_read_limit_bytes": 372271
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-3677/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 126600,
+      "complete_prefix_sha256": "768d2bbc6a9ff084ea5dcbbc10327c9a3a9feebbceb79e65c903919122c3ca92",
+      "first_read_limit_bytes": 126600
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-10051/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 418022,
+      "complete_prefix_sha256": "873d009e5fd9d87dde13ec03dd48ce69c08adf800fef9adae4353081edfca4d2",
+      "first_read_limit_bytes": 418022
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-5809/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 216314,
+      "complete_prefix_sha256": "9e8a5a531ee64fb0062fcdd36eb752d05ceb984a30e1e416f2dfce97930b3894",
+      "first_read_limit_bytes": 216314
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-6197/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 169314,
+      "complete_prefix_sha256": "6f72d66e9b8dc43438c9ae00388a00eaa6fc2d444420311b391abdf79607e176",
+      "first_read_limit_bytes": 169314
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-2317/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 414644,
+      "complete_prefix_sha256": "40a7f88e1eac5283fe61de98c2e90adf7238d36ab282942391d22a23d8b87a66",
+      "first_read_limit_bytes": 414644
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-10081/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 126113,
+      "complete_prefix_sha256": "17fefddee38b9259fa726049e69a47df0cc460181f2ae18afb0d046c666ce418",
+      "first_read_limit_bytes": 126113
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-1724/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 153221,
+      "complete_prefix_sha256": "6b5f593cf9be026dd4179ebbc0253e97b57721f4eb3a6f45d1576707ed7c7808",
+      "first_read_limit_bytes": 153221
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-6903/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 471977,
+      "complete_prefix_sha256": "4e0a9ea68493ca9fabe9d02dc8cfa7d09a7718e2759f7b34bdbc92e4d747f14b",
+      "first_read_limit_bytes": 471977
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-1142/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 503428,
+      "complete_prefix_sha256": "86824070625e4217ee5df64bb006f392f16bfd86adf2df6bc8bee1859aa60648",
+      "first_read_limit_bytes": 503428
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11477/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 118175,
+      "complete_prefix_sha256": "ded5a1f6ceefa2290e6ee02b7adc0bd0101a397c5b96889b4e77477d5c3bbf00",
+      "first_read_limit_bytes": 118175
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-12754/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 118383,
+      "complete_prefix_sha256": "ff2cae946a5d393b655b17b4f51f4eeafe313fbe0c008f1988e0ec3a0280eaf4",
+      "first_read_limit_bytes": 118383
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7236/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 127353,
+      "complete_prefix_sha256": "45d4245eac3cd403b5413bdedccbedbcc12c474f90cb8bf0434de7bf028dec85",
+      "first_read_limit_bytes": 127353
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-1921/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 134161,
+      "complete_prefix_sha256": "b46320a3f0f880ff5c6d8a92eb9199e0c16f3a5a6c971c489853f19b5fd0d7ed",
+      "first_read_limit_bytes": 134161
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-4075/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 700110,
+      "complete_prefix_sha256": "61d8c4eb6f84ee215f4977ba155b67ef32b5788c83716f613f808ee80d273416",
+      "first_read_limit_bytes": 700110
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11239/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 118487,
+      "complete_prefix_sha256": "1c87eeecf0af3e62fb191c10ccc42d1a1a49dba2aec65c53d92da31c1d2916ff",
+      "first_read_limit_bytes": 118487
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-4356/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 416201,
+      "complete_prefix_sha256": "aa5d9d554f4ffb09baf136b6576195a8a19ba1dfd667c48cde5a60fc927b7337",
+      "first_read_limit_bytes": 416201
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-16255/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 395916,
+      "complete_prefix_sha256": "a8b6d03fa796cf152b58255ed127bf84a0101ab75047790ea5c51e5c4852d754",
+      "first_read_limit_bytes": 395916
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7324/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 186178,
+      "complete_prefix_sha256": "6a452c4af7ce7991d94455cf604556effb7a84314b3e216600260c57ee856d36",
+      "first_read_limit_bytes": 186178
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-5787/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 119137,
+      "complete_prefix_sha256": "a0300c1a2e1d6fe7395098f3602ebac439ac2f328a472511313091f57993d1fc",
+      "first_read_limit_bytes": 119137
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7432/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 126416,
+      "complete_prefix_sha256": "996c75f73c73c1da3fc9f8724498ff4cfd524c158d7e55d04b2c71c675250552",
+      "first_read_limit_bytes": 126416
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11451/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 504028,
+      "complete_prefix_sha256": "4095449ecf15c975ee3d550fa99aee79017176807758d78ad3f01e46cd497252",
+      "first_read_limit_bytes": 504028
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-6599/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 118583,
+      "complete_prefix_sha256": "207126a0ca008faa9634360f14a02d7c04694b853a6691fe3c4634abb0166f03",
+      "first_read_limit_bytes": 118583
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11206/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 101263,
+      "complete_prefix_sha256": "7a3303464fed81d9f15f1f18bafc4e03c3c0d967c6df59a018306087b473741e",
+      "first_read_limit_bytes": 101263
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11292/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 435488,
+      "complete_prefix_sha256": "a2d418a5caab48de437c589c3940b0dd175b41fcf0ccb15faf0da93385b4971e",
+      "first_read_limit_bytes": 435488
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-12741/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 329389,
+      "complete_prefix_sha256": "4a7cea5f09e786a72940bba01be60ee5f0ddc3ebd2d216c73a3b350f536a31b6",
+      "first_read_limit_bytes": 329389
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-4687/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 143539,
+      "complete_prefix_sha256": "46a2593738cad76fb442b177108f3521dad5e87867f27ca2e72fc59cf5e5440f",
+      "first_read_limit_bytes": 143539
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11532/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 126576,
+      "complete_prefix_sha256": "2f4236b66be6fcabef67feec4f179c44c7149a39ff80adcf289c48752dc467c7",
+      "first_read_limit_bytes": 126576
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11820/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 93133,
+      "complete_prefix_sha256": "0b1e4ce0432f32c90a6149ffef44ec9b524a42fecb64067e87e45024fd9fd8bf",
+      "first_read_limit_bytes": 93133
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-6938/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 142869,
+      "complete_prefix_sha256": "0e2c07aeec715dd1753b01b9fb3bed2b4ff2e828bc65246d8be953df0cb5b125",
+      "first_read_limit_bytes": 142869
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11149/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 101426,
+      "complete_prefix_sha256": "e44da8e388664a2387b1b7a9af95264b137f1821de1d101f1627a4d552f62375",
+      "first_read_limit_bytes": 101426
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-4629/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 209162,
+      "complete_prefix_sha256": "39ab5096d17503497f98837519db7e942beaf11a994ece594893ff8d96253fee",
+      "first_read_limit_bytes": 209162
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-3305/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 109316,
+      "complete_prefix_sha256": "f448091bdb53c95565a890b635d10f834fdf136c05ef512945542c155da0a611",
+      "first_read_limit_bytes": 109316
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-13023/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 319344,
+      "complete_prefix_sha256": "312bb443429f0c59acab4d655d6496c5e958ea76c0521142617005c310a67ba4",
+      "first_read_limit_bytes": 319344
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-10999/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 295014,
+      "complete_prefix_sha256": "f56b2675db8c61208ee019d1342a27b3e0be5c02cd6a494f4555bd730a2d0ddf",
+      "first_read_limit_bytes": 295014
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11179/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 224075,
+      "complete_prefix_sha256": "e5934d9ad4d988017154f7ca8884384ce2c3f5f2cccf7a0f429c57d97b78ed1c",
+      "first_read_limit_bytes": 224075
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7490/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 125848,
+      "complete_prefix_sha256": "ec88b59bafd12399f0c06fe314534915c6a6a1c627b6ddd13ff191d79115ba9d",
+      "first_read_limit_bytes": 125848
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-4661/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 151864,
+      "complete_prefix_sha256": "9bb372f1f539802b6a52615dcf4959264557b99b3639a641738667d4abb33df8",
+      "first_read_limit_bytes": 151864
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-15103/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 520266,
+      "complete_prefix_sha256": "dd0769e5aa58a7cce45fbc090338cbd92ce55d2517e996af96e4a4efaeb6b051",
+      "first_read_limit_bytes": 520266
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-1766/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 313215,
+      "complete_prefix_sha256": "a7a2a3324979dfbfaf2f28a495d13f005117f94db177d45098bb50e2198475ae",
+      "first_read_limit_bytes": 313215
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11163/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 329374,
+      "complete_prefix_sha256": "1a534ceacc2af211495567234c9400aae2c9836bacf0bdf5bb9bac306d28afec",
+      "first_read_limit_bytes": 329374
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-4094/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 231831,
+      "complete_prefix_sha256": "43eca8e54331416d40e4026762372a5362cdb03869ba65bb9ba0b55c522c8f5b",
+      "first_read_limit_bytes": 231831
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7982/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 250835,
+      "complete_prefix_sha256": "81ef23c0457fe5cae4860834957b79c7a67c98e2a6bb6d5664c647d1ce4dae54",
+      "first_read_limit_bytes": 250835
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11433/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 119436,
+      "complete_prefix_sha256": "b57d0ce360468051bcc96a8becade45480520ade42b1f45b1ef00475aab59d8f",
+      "first_read_limit_bytes": 119436
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-7080/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 170606,
+      "complete_prefix_sha256": "fa9f9bc2feeb16f4dc087bbc28a0ffe8a47c4920b9260df8126aab68d1a5cfaf",
+      "first_read_limit_bytes": 170606
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-14631/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 284191,
+      "complete_prefix_sha256": "bd410f41ea13e32543206d0334cd44e7aef7eb7eddc94294487a063d889252a2",
+      "first_read_limit_bytes": 284191
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11138/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 135314,
+      "complete_prefix_sha256": "c59e9cb06bbd978768531c0031936560fb67de8ddfc1754d2a772e1d410fc17d",
+      "first_read_limit_bytes": 135314
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/psf__requests-5414/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 303251,
+      "complete_prefix_sha256": "67a710d3451b12a0f631423043cde53d480162e7f894e0114f5b37bae01cd891",
+      "first_read_limit_bytes": 303251
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-16877/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 412342,
+      "complete_prefix_sha256": "ca1a78edeb255d2c0efc6d7f53e8b967b28239c767f2a454f32ee0a379ac3654",
+      "first_read_limit_bytes": 412342
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-13964/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 92578,
+      "complete_prefix_sha256": "ed7dadbda453e897532f46b3078ef2f35d1efe91f782fe89bb57c1e38f7ec636",
+      "first_read_limit_bytes": 92578
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11141/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 117986,
+      "complete_prefix_sha256": "c8a757cad4b55751944a4144743cb4c8cf1adbc39b05e2e9d80002809f049096",
+      "first_read_limit_bytes": 117986
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7571/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 153725,
+      "complete_prefix_sha256": "992b668ec92087deebd1f13e57e8c8920df4dd971f5437a9bcf3ef7afbd43f15",
+      "first_read_limit_bytes": 153725
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-15368/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 447753,
+      "complete_prefix_sha256": "39d7977182434b4a3c93088bae0fa7a4b7e1c1f3db1985bd07cdcd04ac4e1e64",
+      "first_read_limit_bytes": 447753
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-7229/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 126851,
+      "complete_prefix_sha256": "0928cee4e86ed95527756143748004941eb10ddba126d3851192514ec97bc8f8",
+      "first_read_limit_bytes": 126851
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11299/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 109532,
+      "complete_prefix_sha256": "77e8a3bd9057f56c8185b2ec487c03f76a61f06330ad63365ab602af920c9bba",
+      "first_read_limit_bytes": 109532
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11095/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 101200,
+      "complete_prefix_sha256": "21c6f8d5aa3ea7dc141fba5326e1d2c81edc6beae3535880a4ec84adbdddca2a",
+      "first_read_limit_bytes": 101200
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-7233/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 161687,
+      "complete_prefix_sha256": "f8f87b9a58a175a62500c8aee3913ca5e1d7e4244d2d886d026778146eb28812",
+      "first_read_limit_bytes": 161687
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-4604/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 137166,
+      "complete_prefix_sha256": "1a4ef9e9170d4c3ee765b48bcb33d2c751c40dc230c853a4a42974b484acf5c7",
+      "first_read_limit_bytes": 137166
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-10880/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 202457,
+      "complete_prefix_sha256": "86e45ebad08c6b15b6ee54ea7a76c52e888e5116205203332272f8efd2d20600",
+      "first_read_limit_bytes": 202457
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 117723,
+      "complete_prefix_sha256": "1f16271eaa77d30c02777ad24c72473a5965f72b1df7758310e59640113e70e7",
+      "first_read_limit_bytes": 117723
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-3151/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 355428,
+      "complete_prefix_sha256": "d122b79a42d2275f5090c1719ba0c0211b8d4077b22357da6616e0af55c34f58",
+      "first_read_limit_bytes": 355428
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pallets__flask-5014/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 329689,
+      "complete_prefix_sha256": "32a0483e06bc16ac8aacd6a5a485d2e948fc418229a7398132af137ab1318201",
+      "first_read_limit_bytes": 329689
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pydata__xarray-6992/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 417754,
+      "complete_prefix_sha256": "20966c3043151c09cb29550fb9056f6563e7a4098c3c0ebeab72ef619419feac",
+      "first_read_limit_bytes": 417754
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-8898/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 376706,
+      "complete_prefix_sha256": "7c2dedc267b02a25f2a8a5754f33625963a8ee83381f53669b7565c53231192d",
+      "first_read_limit_bytes": 376706
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11490/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 180988,
+      "complete_prefix_sha256": "a67f1f364015903bd55baf5f57c0aeaadb0da438bd8267c67cbaa662872eb57a",
+      "first_read_limit_bytes": 180988
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-11119/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 393744,
+      "complete_prefix_sha256": "45e4d4ce7d0df7baf0dec68561e3e9af595f144937b9fde5451839f0555df4d3",
+      "first_read_limit_bytes": 393744
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pylint-dev__pylint-7277/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 409366,
+      "complete_prefix_sha256": "912b0ff12f1c689c281fe882b3401bced6b4eb0c36db249304cc7fd8419f7b2e",
+      "first_read_limit_bytes": 409366
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-8399/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 109896,
+      "complete_prefix_sha256": "1e9f96988504159903f914053e1b2a1a3c599996a848a620a9908e8ee39f0871",
+      "first_read_limit_bytes": 109896
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-14500/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 110025,
+      "complete_prefix_sha256": "6213b0fe63c1122ebc26857cb56317350c26472c5b0deb009662900796010bfc",
+      "first_read_limit_bytes": 110025
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/django__django-10973/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 646783,
+      "complete_prefix_sha256": "f8e314c786429fdc4986f5e09f985037f72dada1fe0b02e3a119a9100d8ebc95",
+      "first_read_limit_bytes": 646783
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/client_156/workflows/pytest-dev__pytest-7205/child_stream_content.jsonl": {
+      "complete_prefix_bytes": 160375,
+      "complete_prefix_sha256": "12511777579f2ce3a030947b3ccdb1a714aaa3be1f053428edfae4f1ab6a5886",
+      "first_read_limit_bytes": 160375
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/server/runtime_audit.jsonl": {
+      "complete_prefix_bytes": 180211245,
+      "complete_prefix_sha256": "2250c796dd61fb8d2c602d4cdf66967a0288219f70ba7885f03efddb2b63cbc3",
+      "first_read_limit_bytes": 180211245
+    }
+  },
+  "collection_code_commit": "9d2bf8e65140451bd61f51e428858ddb73bf214a",
+  "audit_started_at_local": "2026-10-12T22:37:10.828403+08:00",
+  "audit_finished_at_local": "2026-10-12T22:37:16.401109+08:00",
+  "helper_sha256": "1bb8064854266d012423ce3bf4eea5b3aa1865a1fcc59308642ee645e7361db3",
+  "prefix_semantics": "Each JSONL is capped at its first-read stat size and last complete line. Repeated reads must match length and SHA256; this is not an atomic cross-file snapshot. Demand handoff remains separate from early prefetch.",
+  "sealed_dispatch_funnel": {
+    "sources": {
+      "join_ticket": {
+        "event_counts": {
+          "observed_events": 108,
+          "completion_unknown": 105,
+          "completion_observed": 3,
+          "positive_full_plan_before_completion": 2,
+          "start_before_completion": 2,
+          "submitted_before_completion": 0,
+          "start_without_submit_before_completion": 2
+        },
+        "events_with_observed_reason_before_completion": {
+          "no_restore_plan": 3,
+          "start_window": 2,
+          "before_start_window": 1
+        },
+        "events_with_observed_no_step_reason_before_completion": {
+          "prefetch_capacity_budget": 2,
+          "no_reusable_input_restore_step": 1
+        }
+      },
+      "tool_wait": {
+        "event_counts": {
+          "observed_events": 2608,
+          "completion_observed": 2608,
+          "positive_full_plan_before_completion": 27,
+          "start_before_completion": 2,
+          "submitted_before_completion": 2,
+          "start_without_submit_before_completion": 0
+        },
+        "events_with_observed_reason_before_completion": {
+          "no_restore_plan": 2281,
+          "before_start_window": 26,
+          "submitted": 2,
+          "start_window": 2
+        },
+        "events_with_observed_no_step_reason_before_completion": {
+          "no_reusable_input_restore_step": 2142,
+          "prefetch_capacity_budget": 151
+        }
+      }
+    },
+    "reclaim_record_count": 0
+  },
+  "detail_file": "v148_v36_first_prefetch_20261012.json.gz",
+  "detail_uncompressed_sha256": "2bc2b004b4259f543a8b7f45ddde184e3d6d12b4b7c0983008abbadbe036976a"
+}

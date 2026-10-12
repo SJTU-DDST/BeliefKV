@@ -2,6 +2,36 @@
 
 Status date: 2026-10-12.
 
+V36's first complete 600-900s window still trails fixed V29 native:
+322277/380722 decode request steps, 15.35% lower at 23.79k/23.24k
+visible-context tokens. Full 48-request decode cohorts are similar;
+47-request intervals followed by prefill remain longer. Instrumented
+exclusive Python wall is 61.904s, not removable JCT; reentry/tool/admission
+self costs are 9.751/9.556/8.596s. The V150 sealed completed-boundary
+JOIN positive-FULL/start/submit funnel is 22/22/2, tool 496/10/10.
+Early started and next-request consumed FULL is one JOIN/12.145MB,
+nine tools/383.304MB. Keep 44.706GB demand-handoff FULL separate
+and 85 unobserved JOIN completion boundaries unknown. V148 is an
+earlier overlapping prefix and must not be added to V150.
+
+V151 follows 192 repeated JOIN starts by no_restore_plan; these are
+decisions, not independent JOIN events. Of 37 successful reclaim
+receipts, 34 miss FULL plus input reserves, 32 without published
+waiting victims. A truncated bounded scan does not prove no cold KV.
+Prepare the next cold-start correction: bound input reserve by the
+observed native chunk/input compute limits instead of reserving 16384
+tokens when chunked prefill is bounded at 4096. Retain decode pages,
+Mamba reserve, actual allocator/identity checks and shared protection.
+A consumed current chunk must not zero the next-batch reservation.
+V36 remains frozen. V149's Enum allocation reduction preserves CPU
+plans, counters and native inspections, with 103 existing checks
+passing; mixed fixture timings do not prove stable GPU savings.
+512 capacity/shared-path checks pass. V152's identical sealed free-list
+comparison finds 67 previously rejected decisions fitting the selected
+FULL plus revised reserve, and 49 with positive partial allowance.
+These repeated budget counterfactuals do not prove live native identity,
+split feasibility, DMA, complete checkpoint readiness or consumption.
+
 V36 predictive-only cold-started 9d2bf8e/838d2ed8 at 22:27:27 CST,
 including same-scan tool P50 reuse and separate restore frontiers.
 At 22:31:42, validation confirms HTTP200, 2256 GPU-service samples,

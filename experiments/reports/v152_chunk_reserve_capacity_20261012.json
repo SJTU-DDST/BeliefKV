@@ -1,0 +1,139 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-12T23:04:24.829080+08:00",
+  "collection_commit": "9d2bf8e65140451bd61f51e428858ddb73bf214a",
+  "scope": "Recorded free-list counterfactual only; no native mutation or DMA",
+  "input_total_budget": 16384,
+  "observed_native_chunk_limit": 4096,
+  "decode_and_mamba_reserves_unchanged": true,
+  "record_counts": {
+    "recorded_reclaim_decisions_with_old_full_target_shortfall": 4197,
+    "same_free_list_still_below_revised_reserve": 4081,
+    "same_free_list_fits_selected_full_and_revised_reserve": 67,
+    "same_free_list_has_positive_partial_full_allowance": 49,
+    "reserve_outside_identified_input_plus_page_bound": 137
+  },
+  "examples": [
+    {
+      "source": "tool_wait",
+      "ts_ms": 1791815790670.2773,
+      "context_id": "deepagents-context:0662aa2f23f0819a",
+      "context_epoch": 18,
+      "old_reserve": 16433,
+      "revised_reserve": 4145,
+      "free_full_after_reclaim": 10419,
+      "selected_full_target": 1307,
+      "mamba_target_satisfied": true
+    },
+    {
+      "source": "tool_wait",
+      "ts_ms": 1791815794310.7817,
+      "context_id": "deepagents-context:6db27a51dcc82db1",
+      "context_epoch": 20,
+      "old_reserve": 16433,
+      "revised_reserve": 4145,
+      "free_full_after_reclaim": 11906,
+      "selected_full_target": 701,
+      "mamba_target_satisfied": true
+    },
+    {
+      "source": "tool_wait",
+      "ts_ms": 1791815795327.5269,
+      "context_id": "deepagents-context:f826a8e4c717bca8",
+      "context_epoch": 14,
+      "old_reserve": 16432,
+      "revised_reserve": 4144,
+      "free_full_after_reclaim": 22091,
+      "selected_full_target": 16747,
+      "mamba_target_satisfied": true
+    },
+    {
+      "source": "tool_wait",
+      "ts_ms": 1791815795423.2534,
+      "context_id": "deepagents-context:f826a8e4c717bca8",
+      "context_epoch": 14,
+      "old_reserve": 16433,
+      "revised_reserve": 4145,
+      "free_full_after_reclaim": 14446,
+      "selected_full_target": 11088,
+      "mamba_target_satisfied": true
+    },
+    {
+      "source": "tool_wait",
+      "ts_ms": 1791815800235.3184,
+      "context_id": "deepagents-context:1d3a9a5ed82b1868",
+      "context_epoch": 20,
+      "old_reserve": 16433,
+      "revised_reserve": 4145,
+      "free_full_after_reclaim": 10646,
+      "selected_full_target": 5479,
+      "mamba_target_satisfied": true
+    },
+    {
+      "source": "tool_wait",
+      "ts_ms": 1791815802258.444,
+      "context_id": "deepagents-context:f6cec6d004e7ae21",
+      "context_epoch": 16,
+      "old_reserve": 16433,
+      "revised_reserve": 4145,
+      "free_full_after_reclaim": 9192,
+      "selected_full_target": 712,
+      "mamba_target_satisfied": true
+    },
+    {
+      "source": "tool_wait",
+      "ts_ms": 1791815812327.2195,
+      "context_id": "deepagents-context:35ded903b9862d52",
+      "context_epoch": 17,
+      "old_reserve": 16432,
+      "revised_reserve": 4144,
+      "free_full_after_reclaim": 7163,
+      "selected_full_target": 1201,
+      "mamba_target_satisfied": true
+    },
+    {
+      "source": "tool_wait",
+      "ts_ms": 1791815816463.5415,
+      "context_id": "deepagents-context:c3dd1d5b7a663bb6",
+      "context_epoch": 18,
+      "old_reserve": 16433,
+      "revised_reserve": 4145,
+      "free_full_after_reclaim": 11289,
+      "selected_full_target": 632,
+      "mamba_target_satisfied": true
+    }
+  ],
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 300118587,
+      "complete_prefix_sha256": "62a027615b0e711008a38e6a4f191700a67c40641cf217d5d9a53fd149e428f7",
+      "first_read_limit_bytes": 300118587
+    }
+  },
+  "upstream_audit_sha256": "2291f91885e06b959c4fab49017f414d99dd20116005a78b81ca27d8d28005ac",
+  "helper_sha256": "7428ba242ff5083af3c56a5d726ea256e38c019839cc5ad992c670f0ae4731bf",
+  "runtime_source_sha256": "e530773ca85659a8fde2acfc0d9b0f45d5652453305df55dd765e0681925dace",
+  "validation": {
+    "existing_and_capacity_contract_checks_passed": 512,
+    "paths": [
+      "tests/test_native_transfer_policy.py",
+      "tests/test_wait_prefetch_partial_extent.py",
+      "tests/test_wait_prefetch_batch.py",
+      "tests/test_tool_predictive_transfers.py",
+      "tests/test_execution_handoff.py",
+      "tests/test_sglang_v0520_runtime.py",
+      "tests/test_causal_graph.py",
+      "tests/test_action_frontier.py",
+      "tests/test_frontier_belief.py"
+    ],
+    "observed_chunk_limit_survives_current_chunk_exhaustion": true,
+    "unchunked_and_dllm_fallback_preserved": true
+  },
+  "limitations": [
+    "Repeated decisions are not independent events or additional unique KV.",
+    "Same recorded free-list capacity is not actual future allocator availability.",
+    "Split identity, live causal timing, shared byte budgets and native allocation still apply.",
+    "Partial FULL allowance is not complete checkpoint readiness or proved reuse.",
+    "V36 did not deploy this correction; busy-window gain remains unverified."
+  ]
+}
