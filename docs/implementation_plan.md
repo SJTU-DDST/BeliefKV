@@ -2,6 +2,26 @@
 
 Status date: 2026-10-13.
 
+V39 predictive cold-started aa3e7c1/cf0243b6 at 01:19:38 CST,
+deploying bounded survival probes, indexed quantiles and fresh
+observation reuse. Deployed tree remains c7c27e0d; keep frozen
+108+48 arrivals, running48, Host200GB 80:20, HBM Mamba/FULL0.9,
+180s tools and fixed V29 native. At 01:26:33, v169 confirms HTTP200,
+GC initialization, 556 actual GPU-service samples in the observed tail,
+physical_disabled=false, unchanged capacities and 28 configuration
+fields, and 4145-token/one-Mamba reserves. Independent input tails,
+source and process identities are preserved. Startup does not prove
+performance gains. Running sources frozen, goal active.
+
+V38 stopped administratively at 01:15:52 CST: 84 completed and
+72 created unfinished, with all second-wave tasks already arrived.
+Preserve those 72 as administrative censoring. At 01:19:21, all
+156 workspaces passed full archive comparison before removal:
+38.843GB allocated source to 4.029GB archive. Remove only its
+72 stopped owned containers; preserve raw evidence, results, manifest
+and frozen plan. Maintenance precedes V39; free space was 161.38GiB.
+See v168 receipts, raw/ARCHIVED.md and the existing archive README.
+
 V38 cold-started 71d4d44/cf0243b6 at 00:05:13 CST on October 13;
 v160 verifies physical actions, actual GPU service, unchanged frozen
 capacities, 4145-token/one-Mamba reserves and deployed tree c7c27e0d.
@@ -27,7 +47,7 @@ JOINs often transfer 3-11s early and can exhaust a 3s lease before
 completion. Expiry is not proof that all bytes were wasted, nor solely
 parent admission delay. Keep both timing measurements separate.
 
-Commit and cold-deploy V39 with unchanged workload and physical patch.
+V39 is cold-deployed with unchanged workload and physical patch.
 Reduce repeated tool survival queries using the earliest possible
 window-entry time of a fixed monotone conditional distribution, capped
 before historical-support fallback. New hint identity forces a query;
@@ -50,9 +70,10 @@ thread CPU is 85.579 to 55.760ms, 34.84% lower, with 15600 checks per arm.
 Preserve both timings and GC callbacks; do not retrospectively assign the
 unobserved outlier to GC or claim a stable end-to-end speedup.
 V165's deeper admission fixtures do not show stable savings.
-Keep V38 source frozen until its administrative cutoff and fully verified
-workspace archive. Then cold-start predictive-only V39, keep fixed V29
-native and verify real consumed FULL and busy-window cost. Goal active.
+V38 collection remains frozen at 71d4d44; aa3e7c1 was cold-deployed
+in predictive-only V39 after the cutoff and fully verified archive.
+Keep fixed V29 native, verify real consumed FULL and busy-window cost.
+Goal active.
 
 V37 stopped administratively at 00:01:59 CST: 49 completed,
 59 created unfinished and 48 unarrived; preserve the latter 107

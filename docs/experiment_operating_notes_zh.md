@@ -4,6 +4,22 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+当前 V39 于 2026-10-13 01:19:38 CST 从 aa3e7c1/cf0243b6
+冷启动；actual tree 保持 c7c27e0d，冻结参数和固定 V29 native
+沿用。01:26:33 核验 HTTP200、GC 初始化、独立尾部中的556个
+GPU服务样本及physical_disabled=false，各池容量与28项冻结
+配置等于V38；FULL/Mamba实际预留为4,145 token/一份。
+v169保存源码/进程身份及输入尾部长度/SHA256，不能把尾部
+样本数当全程计数。不将启动或CPU fixture当性能达标，运行
+源码保持冻结。
+
+V38 在 01:15:52 CST 行政停止，84 completed 保留，72 个
+已到达未完成任务行政删失；第二波已到达，不写死108 workspace。
+156 个 workspace 在 01:19:21 全量比较后归档并清理，
+38.843→4.029 GB，只删除其72个已停容器，原始 trace/计划
+保留。可用161.38 GiB，维护先于V39，恢复路径见v168回执、
+ARCHIVED.md及已有archive README。
+
 V38 于 2026-10-13 00:05:13 CST 从 71d4d44/cf0243b6
 冷启动，实际 tree c7c27e0d；v160 核验真实服务、物理动作、
 冻结容量和 FULL/Mamba 预留 4,145 token/一份。
@@ -35,9 +51,9 @@ collect/freeze 后少 34.84%，两侧检查均为 15,600 次。
 保留变动及 GC 记录，不推定未埋点长调用原因或端到端收益。
 深树准入 fixture 无稳定改善，保留结果与局限。
 
-准备提交后封存行政停止 V38，重新清点第二波和实际 workspace，
-全量归档比较成功后才清理；随后同配置冷启动 V39 predictive。
-不热改正在采集的 Main 或实际 engine。冷部署核对代码/patch、
+aa3e7c1 提交后已封存停止 V38、按第二波实际库存核验归档，
+随后同配置冷启动 V39 predictive。不得热改采集中的 Main 或
+实际 engine。冷部署核对代码/patch、
 各池容量、真实 HTTP/GPU 服务、physical_disabled=false 和
 冻结 GC/参数，再采集完整繁忙窗口及提前 FULL 消费。
 
