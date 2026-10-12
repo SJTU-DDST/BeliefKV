@@ -13,6 +13,13 @@ See v160. Low-pressure startup does not prove actual scan/tail
 reclamation benefit or throughput improvement. Keep running sources
 frozen, fixed V29 native and the goal active.
 
+V161's sealed startup prefix observes 227 tool and 110 JOIN continued
+scan decisions, including repeats. One tool wait reclaim frees 686
+FULL tokens; one post-enqueue tail pass executes without extra release.
+One real tool extent split contains 826 tokens. Mixed demand/predictive
+waiting demotions remain separate. These show path execution, not
+successful tail completion, early consumed FULL or throughput gains.
+
 V37 stopped administratively at 00:01:59 CST: 49 completed,
 59 created unfinished and 48 unarrived; preserve the latter 107
 as administrative censoring. At 00:04:30, all 108 workspaces passed
