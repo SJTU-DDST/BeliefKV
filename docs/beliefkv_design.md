@@ -37,6 +37,21 @@ agent 调度、共用路径减负、predictive H2D 与 `PREPARE_HOST`，
 3. 提高有用 FULL 预取覆盖，验证 handoff 能否替代需求恢复，
    并以实际首次复用、吞吐、JCT 与重算评价收益。
 
+V40完整600–900秒仍比固定V29 native少14.07% decode request
+steps；60.013秒Python独占墙钟是控制诊断，不能扣作JCT。
+v176独立早期前缀确认提前消费FULL为JOIN63.406MB、
+tool560.599MB，保留95个未知JOIN边界。v178的非阻塞GIL
+采样保留867个样本和246次错误，使用qualified归并报告。
+现有共享祖先复用已实现，不再把它当作缺失功能。
+
+下一冷版本优先移除已耗尽候选的handoff重复整队规划。
+当前请求字段与attempt集合决定是否仍有可尝试对象；
+新/变化/rearm身份仍经过原路径，普通prefill仍使用原生完整
+依赖，不能靠部分ACK执行。265/337两批重叠检查通过。
+v179真实inspector的选定CPU fixture中48请求/64层树
+线程成本3.017→0.115ms，实际频率和GPU/JCT收益仍待验证；
+运行中V40未热改，容量/模型/patch保持，目标active。
+
 等待parent的冷页资格按当前恢复事实保护，不能仅因child
 发出收尾通知就保护整个最终报告阶段。V40冷部署保留实际
 同parent恢复ticket和节点驻留租约，继续验证原生引用、Host

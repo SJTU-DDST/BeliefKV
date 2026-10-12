@@ -2,6 +2,30 @@
 
 Status date: 2026-10-13.
 
+V40's complete 600-900s window remains below fixed V29 native:
+327142/380722 decode request steps, 14.07% lower at 23.49k/23.24k
+visible context. Instrumented exclusive Python wall is 60.013s;
+reentry/admission/tool cost 9.003/8.080/7.355s, not removable JCT.
+Full48 matched CUDA graph cohorts are close. V176's independent early
+prefix confirms early next-request FULL consumption: four JOINs/63.406MB
+and eleven tools/560.599MB. Completed-boundary positive-FULL/start/submit
+funnels are JOIN 12/12/6, tool 136/14/13; retain 95 unknown JOIN boundaries.
+V178's qualified nonblocking GIL profile records 867 samples and 246
+sampling errors. Sample shares are not wall time or removable stalls.
+
+Cold-validate exhaustion-aware demand handoff: avoid repeated full queue
+planning when all bounded tagged identities were already attempted.
+Recheck live request fields, preserve the current running batch, and keep
+new/changed/rearmed requests on the original complete restoration path.
+Ordinary native admission still plans against current dependencies;
+partial ACK does not authorize service. All 265/337 checks in two
+overlapping batches pass. V179's selected exhausted-queue CPU fixture
+uses the real inspector and RadixKey; at 48 requests/depth64, thread cost
+falls from 3.017 to 0.115ms with equal handoff actions/bindings.
+Measure real skip frequency, early FULL consumption and busy throughput
+after a verified administrative stop/archive and cold deployment.
+Do not infer GPU gains from the selected CPU case. V40 remains frozen.
+
 Current development run is predictive-only V40, cold-started at
 01:57:38 CST from 9f42c24/cf0243b6 with unchanged engine tree c7c27e0d.
 Deploy report-phase waiting-parent cold FULL candidacy; preserve

@@ -4,6 +4,20 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+V40完整600–900秒仍少14.07% decode request steps，控制
+独占墙钟60.013秒不是可减少JCT；v176早期确认FULL消费
+JOIN63.406MB/tool560.599MB与繁忙窗口分别报告。已知完成
+漏斗使用sealed_dispatch_funnel，不能混用宽松plan_timing
+类别数；95个未知JOIN边界保留。v178仅用qualified报告，
+保留867个GIL样本和246次采样错误，函数须与路径一起归并。
+
+下一冷版本在所有tagged候选均已尝试时省略handoff重复规划；
+必须验证当前身份，保留新请求、rearm parent及普通准入。
+两批265/337检查重叠，不相加。v179选定CPU fixture的成本
+减少不能当真实命中频率或GPU收益，实际需看新counter、
+提前FULL消费和完整窗口吞吐。V40不得热改；提交后封存
+行政删失、全量核验workspace归档，再冷部署同配置下一轮。
+
 当前为V40 predictive，01:57:38 CST从9f42c24/cf0243b6冷启动，
 actual tree仍为c7c27e0d，配置和固定V29 native沿用。部署等待
 parent冷FULL候选修订，运行执行源码冻结。v174在02:04:16核验

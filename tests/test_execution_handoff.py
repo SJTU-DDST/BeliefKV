@@ -156,6 +156,64 @@ def test_selected_aged_handoff_still_reads_its_live_checkpoint(monkeypatch):
     runtime.close()
 
 
+def test_exhausted_handoff_skips_capacity_and_planning_but_admission_stays_live(monkeypatch):
+    runtime, requests, cache = runtime_with_requests(monkeypatch)
+    runtime._execution_handoff_attempted.update(runtime.visible.values())
+    with patch.object(runtime, "plan_native_prefill", wraps=runtime.plan_native_prefill) as plan, \
+        patch.object(runtime, "_current_residency_budget",
+                     wraps=runtime._current_residency_budget) as budget:
+        runtime.dispatch_execution_handoff(requests, running_batch=None)
+        plan.assert_not_called()
+        budget.assert_not_called()
+        cache.inspect_beliefkv_reentry.assert_not_called()
+        assert runtime.counts["execution_handoff_candidates_already_attempted"] == 1
+        assert select(runtime, requests).candidates[0].rid == "warm"
+        assert plan.call_count == 1
+    runtime.close()
+
+
+def test_exhausted_handoff_rechecks_request_binding(monkeypatch):
+    runtime, requests, _ = runtime_with_requests(monkeypatch)
+    runtime._execution_handoff_attempted.update(runtime.visible.values())
+    assert runtime._handoff_candidates_already_attempted(requests)
+    requests[0].session_generation += 1
+    assert not runtime._handoff_candidates_already_attempted(requests)
+    runtime.close()
+
+
+def test_exhausted_handoff_new_candidate_and_rearmed_parent_are_not_skipped(monkeypatch):
+    runtime, requests, cache = runtime_with_requests(monkeypatch)
+    runtime._execution_handoff_attempted.update(runtime.visible.values())
+    cold = requests[0]
+    key = runtime.visible[cold.rid]
+    runtime._execution_handoff_attempted.remove(key)
+    step = PrefetchLoadStep(key, 1, 2, 1, 2)
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.inspect_session_h2d_opportunity",
+        return_value=NS(step=step, fits_current_free_lists=True),
+    ), patch.object(runtime, "issue_prefetch_gpu_step", return_value="load") as issue:
+        runtime.dispatch_execution_handoff(requests, running_batch=None)
+    issue.assert_called_once_with(step, source="execution_handoff")
+    assert runtime._execution_handoff.key == key
+    assert runtime.counts["execution_handoff_candidates_already_attempted"] == 0
+    assert runtime._handoff_candidates_already_attempted(requests)
+    cache.inspect_beliefkv_reentry.assert_any_call(cold)
+    runtime.close()
+
+
+def test_exhausted_handoff_preserves_tagged_planning_bound(monkeypatch):
+    runtime, requests, _ = runtime_with_requests(monkeypatch)
+    cold, _, parent = requests
+    runtime._execution_handoff_attempted.add(runtime.visible[cold.rid])
+    plain = NS(rid="plain", beliefkv_metadata=None)
+    assert runtime._handoff_candidates_already_attempted([plain] * 700)
+    assert not runtime._handoff_candidates_already_attempted([plain] * 700 + [parent])
+    assert runtime._handoff_candidates_already_attempted([cold] * 512 + [parent])
+    cold.beliefkv_metadata = {}
+    assert not runtime._handoff_candidates_already_attempted([cold])
+    runtime.close()
+
+
 def test_capacity_bypass_only_when_native_can_try_another_unaged_request(monkeypatch):
     runtime, (cold, _, _), _ = runtime_with_requests(monkeypatch)
     assert runtime.allow_prefill_capacity_bypass(cold, native_budget_available=True, bypassed=0)

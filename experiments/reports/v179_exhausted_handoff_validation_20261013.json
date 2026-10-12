@@ -1,0 +1,47 @@
+{
+  "schema_version": 1,
+  "validated_at_local": "2026-10-13T02:44:21.911678+08:00",
+  "baseline_commit": "9b6ee88",
+  "running_v40_collection_commit": "9f42c24593c524bf6985abc710409482caf03204",
+  "change": "Skip demand handoff planning when all bounded tagged queue identities were already attempted. Keep native running-batch observation current, ordinary prefill planning live, and rearmed/new/changed identities eligible.",
+  "final_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "0c89c590bc648eddbc547a172332b58872fc0df0ae19d30f0a542dfe7365abf1",
+    "scripts/benchmark_exhausted_handoff_cpu.py": "c8e72c99c946e227edd1281df70aa1159e3f392b324fc61cdada307ea37a7fef",
+    "scripts/benchmark_native_shared_path.py": "cf724248371d28d8cdf25a5f78074a763de07892500432da8225627206701c06",
+    "tests/test_execution_handoff.py": "4cb78aae9e3f5e7317d53af4e3ee2f23e426982703757ea747686101175befb1"
+  },
+  "evidence_sha256": {
+    "v176_v40_early_wait_prefetch_20261013.json.gz": "d6b52c5e97c68879db25e4b883ca54e645407d0c292ebcbe5d856f7e296ff739",
+    "v176_v40_early_wait_prefetch_20261013_summary.json": "68106e9e552c35433dd959d9effc318a7339f98495d795bd46a139fb17f16c1b",
+    "v176_v40_early_capacity_20261013.json": "5be20ed05fcb7f15061f135af7ce88e9d837f09e4d64d19b7adf56796bf4c527",
+    "v177_v40_busy_600_900_20261013.json": "0884b1252b1a18f007e63e789a8fd2480ba18c90de2f18fcb8945d6d31438f00",
+    "v178_v40_live_gil_profile_qualified_20261013.json": "61f093dd514552742a6c67a67d4038ad40b8676a2fb0a7e6769d5fe523d25ef5",
+    "v179_exhausted_handoff_cpu_20261013.json": "b5ee0180c5a9000b063a920c24c3b182a75a5655b6cf3ab2ec52c83ae0e93096"
+  },
+  "pytest_batches": [
+    {
+      "files": [
+        "tests/test_execution_handoff.py",
+        "tests/test_wait_prefetch_batch.py",
+        "tests/test_wait_prefetch_partial_extent.py",
+        "tests/test_native_transfer_policy.py"
+      ],
+      "passed": 265,
+      "exit_code": 0
+    },
+    {
+      "files": [
+        "tests/test_sglang_v0520_runtime.py",
+        "tests/test_terminal_child_capacity.py",
+        "tests/test_sglang_v0520_admission.py",
+        "tests/test_wait_prefetch_batch.py",
+        "tests/test_execution_handoff.py"
+      ],
+      "passed": 337,
+      "exit_code": 0
+    }
+  ],
+  "checks_qualification": "Overlapping test batches must not be added as distinct checks.",
+  "unchanged_canonical_patch_sha256": "cf0243b6331c2be8f24491efd7a4b2306e72610b4cd8cb8ddc586c4e12b18b2b",
+  "qualification": "The CPU fixture selects exhausted queues; real frequency and GPU/JCT benefits remain unproven. No running Main/engine execution source was edited."
+}

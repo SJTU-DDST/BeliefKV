@@ -6296,6 +6296,22 @@ class NativeAdmissionRuntime:
             })
         self._execution_handoff = None
 
+    def _handoff_candidates_already_attempted(
+        self, waiting_queue: Sequence[object],
+    ) -> bool:
+        """Skip planning only when its entire tagged candidate set is exhausted."""
+        tagged = 0
+        for request in waiting_queue:
+            if getattr(request, "beliefkv_metadata", None) is None:
+                continue
+            if tagged == 512:
+                break
+            tagged += 1
+            key = _request_key(request, known_keys=self.visible)
+            if key is None or key not in self._execution_handoff_attempted:
+                return False
+        return True
+
     @timed_runtime("execution_handoff")
     def dispatch_execution_handoff(
         self, waiting_queue: Sequence[object], *, running_batch: object,
@@ -6333,11 +6349,6 @@ class NativeAdmissionRuntime:
             if not waiting_queue:
                 self.counts["execution_handoff_no_waiting_requests"] += 1
                 return
-            self._observe_native_admission_capacity(running_batch=running_batch, adder=None)
-            frontier_slots = min(16, self._current_residency_budget().request_slots)
-            if frontier_slots < 1:
-                self.counts["execution_handoff_no_frontier_slots"] += 1
-                return
             self._execution_handoff_attempted = {
                 key for key in self._execution_handoff_attempted
                 if self.visible.get(key.request_id) == key
@@ -6345,6 +6356,14 @@ class NativeAdmissionRuntime:
             self._execution_handoff_capacity_blocked.intersection_update(
                 self._execution_handoff_attempted,
             )
+            self._observe_native_admission_capacity(running_batch=running_batch, adder=None)
+            if self._handoff_candidates_already_attempted(waiting_queue):
+                self.counts["execution_handoff_candidates_already_attempted"] += 1
+                return
+            frontier_slots = min(16, self._current_residency_budget().request_slots)
+            if frontier_slots < 1:
+                self.counts["execution_handoff_no_frontier_slots"] += 1
+                return
             plan = self.plan_native_prefill(
                 waiting_queue, running_batch=running_batch, adder=None,
             )

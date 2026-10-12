@@ -5,6 +5,24 @@
 完成/剩余工作预测，runtime 根据因果状态和真实缓存容量
 安排传输；吞吐和 JCT 收益仍待验证。
 
+V40完整600–900秒decode request steps为327,142/380,722，
+比固定V29 native少14.07%，已埋点Python独占墙钟60.013秒，
+reentry/admission/tool为9.003/8.080/7.355秒。满48同几何
+CUDA graph接近native，仍需减少同步控制和恢复间隙。见v177。
+v176早期前缀确认提前且下一请求消费FULL为JOIN63.406MB、
+tool560.599MB；95个JOIN边界未知，handoff继续单列需求恢复。
+v178使用qualified报告保留路径、867个GIL样本和246次采样
+错误，不能把样本比例当墙钟或可移除JCT。
+
+下一冷版本在全部候选已尝试时停止重复handoff规划，范围和
+原prefill相同，最多512个tagged身份。必须逐个重验当前请求
+字段；新身份或已从attempt集合移除的parent不能被跳过。
+当前running-batch观察仍更新，普通准入排序和完整依赖检查
+继续执行，不改变ACK、传输页或allocator语义。v179的真实
+inspector/树CPU fixture证明相同handoff动作，48请求/64层
+线程成本3.017→0.115ms；真实频率与端到端收益待冷验证。
+两批265/337项检查重叠，不相加。V40采集代码没有热改。
+
 当前为V40 predictive，01:57:38 CST从9f42c24/cf0243b6冷启动，
 actual tree仍为c7c27e0d，冻结配置和固定V29 native沿用。真实
 服务/容量已在02:04:16核验：HTTP200、GC初始化、尾部565个
