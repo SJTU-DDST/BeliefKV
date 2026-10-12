@@ -2,6 +2,14 @@
 
 Status date: 2026-10-12.
 
+Frozen-source verification now allows JSON/JSON.gz/Markdown output
+under experiments/reports, as well as the existing reporting paths.
+Keep report Python helpers, model artifacts and engine patches inside
+the execution-source comparison and retain frozen-plan artifact hashes.
+Related 54 cases pass. This prevents offline V30 report commits from
+misclassifying V31 as changed execution; serving remains frozen at
+5c1a646 and this is not an online runtime optimization.
+
 V30 was administratively stopped at 12:49:22 CST. Preserve its cutoff
 receipt: 80 completed, one incomplete, and 75 censored unfinished tasks.
 The complete common 0-3600s window shows decode throughput 1118.33 versus

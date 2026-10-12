@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "scope": "Actual V31 startup and frozen configuration verification; not completed performance acceptance",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v31",
+  "collection_code_commit": "5c1a646134e617e7e6bce1b31df4764d1a3c3cf1",
+  "canonical_patch_sha256": "7b4832ef4e998d36aff6c91847194c50f3cc869bf3296d01bca43de212f5a162",
+  "engine_expected_tree": "24a48a503977bf1b6b656e655042a4d56253c32e",
+  "engine_deployed_tree": "24a48a503977bf1b6b656e655042a4d56253c32e",
+  "client_started_at_local": "2026-10-12T12:55:22+08:00",
+  "client_manifest_created_at_utc": "2026-10-12T04:55:27.347256+00:00",
+  "planned_workflows": 156,
+  "arm_order": ["predictive_h2d"],
+  "fixed_native_reference": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29",
+  "actual_health_status": 200,
+  "scheduler_pid": 3619666,
+  "scheduler_sha256": "d69184248ec9e6844cc727df9f2595320eff846239ee9ea5ba263e2beec9fecc",
+  "runtime_record_ts_ms": 1791781062017.6782,
+  "actual_runtime": {
+    "physical_disabled": false,
+    "prefetch_lead_ms": 2000.0,
+    "eos_protocol_window_ms": 250.0,
+    "eos_prefetch_evidence_window_ms": 2000.0,
+    "semantic_work_statistic": "center",
+    "prepare_host": true,
+    "semantic_worker_ready": 1,
+    "semantic_worker_disabled": 0
+  },
+  "capacity_census": {
+    "device_full_bytes": 36843438080,
+    "device_full_tokens": 1798995,
+    "device_mamba_bytes": 33096007680,
+    "device_mamba_slots": 513,
+    "host_full_bytes": 160000020480,
+    "host_full_tokens": 7812501,
+    "host_mamba_bytes": 40050032640,
+    "host_mamba_slots": 622,
+    "host_total_bytes": 200050053120,
+    "pool_layout": "static_separate_full_mamba"
+  },
+  "actual_client_configuration": {
+    "fanout_profile": "native_in_graph_2to4",
+    "arrival_batch_size": 108,
+    "arrival_batch_interval_ms": 3600000,
+    "tool_timeout_seconds": 180,
+    "workflow_wall_clock_seconds": 14400.0,
+    "semantic_guard_enforced": false,
+    "completion_gate_enabled": false
+  },
+  "actual_service_observation": {
+    "server_log_at_local": "2026-10-12T12:57:41+08:00",
+    "running_requests": 48,
+    "queued_requests": 163,
+    "qualification": "Normal live service only; no throughput improvement inferred"
+  },
+  "startup_retry": {
+    "first_attempt_failed_before_model_and_workflow_service": true,
+    "reason": "NUMA Host capacity preflight raced release of the stopped V30 pool",
+    "first_attempt_preserved_under": "startup_attempts/attempt_1",
+    "retry_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v31_startup_retry_20261012.json",
+    "same_frozen_plan_retained": true
+  },
+  "maintenance": {
+    "v30_administrative_stop_at_local": "2026-10-12T12:49:22.089238+08:00",
+    "v30_workspace_archive_started_at_local": "2026-10-12T12:56:26.841967+08:00",
+    "v30_workspace_archive_finished_at_local": "2026-10-12T12:59:24.268830+08:00",
+    "local_development_started_at_local": "2026-10-12T12:41:00+08:00",
+    "qualification": "Qualify archive/development activity in overlapping V31 performance windows"
+  },
+  "frozen_reporting_validation": {
+    "permitted_report_formats": ["experiments/reports/*.json", "experiments/reports/*.json.gz", "experiments/reports/*.md"],
+    "runtime_model_engine_source_checks_retained": true,
+    "related_cases_passed": 54
+  },
+  "goal_status": "active",
+  "coverage_and_performance_result": "not_yet_verified"
+}

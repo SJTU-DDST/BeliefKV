@@ -4,6 +4,13 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+采集中可以同步 experiments/reports 下 JSON、JSON.gz、
+Markdown 离线报告。冻结源检查只豁免这些输出格式；
+report Python、模型产物和引擎补丁仍须匹配，冻结计划
+中的产物 SHA256 继续核对。54 项相关检查通过。
+V31 采集执行仍为 5c1a646，不因报告提交修改运行代码、
+模型或物理配置，不能把核验修订算作服务性能优化。
+
 V130 区分正常 EOS 证据寿命与 protocol-only 窗口：
 仅已确认正常停止、有正文且无工具证据的请求使用前者。
 按既有 restore lead 与语义身份寿命派生，当前 2 s lead
