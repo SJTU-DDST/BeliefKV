@@ -1,6 +1,7 @@
 import json
 from pathlib import Path
 import socket
+import subprocess
 from unittest.mock import Mock
 
 import pytest
@@ -144,3 +145,52 @@ def test_development_live_socket(tmp_path):
         with pytest.raises(ValueError, match="still serving"):
             launcher._remove_stale_control_socket(path)
         assert path.is_socket()
+
+
+def _frozen_checkout(tmp_path):
+    repo = tmp_path / "repo"
+    repo.mkdir()
+    subprocess.run(["git", "init", "-q", str(repo)], check=True)
+    subprocess.run(["git", "config", "user.email", "test@example.org"], cwd=repo, check=True)
+    subprocess.run(["git", "config", "user.name", "test"], cwd=repo, check=True)
+    (repo / "runtime.py").write_text("VERSION = 1\n")
+    subprocess.run(["git", "add", "runtime.py"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-qm", "frozen execution"], cwd=repo, check=True)
+    revision = subprocess.check_output(["git", "rev-parse", "HEAD"], cwd=repo, text=True).strip()
+    previous = tmp_path / "previous"
+    subprocess.run(
+        ["git", "worktree", "add", "-q", "--detach", str(previous), revision],
+        cwd=repo, check=True,
+    )
+    (repo / "runtime.py").write_text("VERSION = 2\n")
+    subprocess.run(["git", "commit", "-qam", "new execution"], cwd=repo, check=True)
+    return repo, previous, revision
+
+
+def test_development_verifies_retained_execution_after_repo_has_advanced(tmp_path):
+    repo, previous, revision = _frozen_checkout(tmp_path)
+    root, verification = launcher.verify_previous_execution(
+        repo, revision, previous_checkout=previous, development_restart=True,
+    )
+    assert root == previous
+    assert verification["execution_source_unchanged"]
+    assert verification["collection_code_commit"] == revision
+    assert verification["execution_root"] == str(previous)
+    assert (repo / "runtime.py").read_text() == "VERSION = 2\n"
+
+
+def test_formal_pair_keeps_current_repo_execution_verification(tmp_path):
+    repo, previous, revision = _frozen_checkout(tmp_path)
+    with pytest.raises(ValueError, match="execution source changed"):
+        launcher.verify_previous_execution(repo, revision)
+    with pytest.raises(ValueError, match="requires --development-restart"):
+        launcher.verify_previous_execution(repo, revision, previous_checkout=previous)
+
+
+def test_development_rejects_modified_previous_execution(tmp_path):
+    repo, previous, revision = _frozen_checkout(tmp_path)
+    (previous / "runtime.py").write_text("VERSION = 3\n")
+    with pytest.raises(ValueError, match="checkout changed"):
+        launcher.verify_previous_execution(
+            repo, revision, previous_checkout=previous, development_restart=True,
+        )

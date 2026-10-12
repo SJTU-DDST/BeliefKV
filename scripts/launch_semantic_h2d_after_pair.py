@@ -93,6 +93,20 @@ def _require_clean(root: Path) -> None:
         raise ValueError(f"checkout changed or contains uncommitted files: {root}")
 
 
+def verify_previous_execution(
+    repo: Path, frozen_revision: str, *, previous_checkout: Path | None = None,
+    development_restart: bool = False,
+) -> tuple[Path, dict]:
+    if previous_checkout is not None and not development_restart:
+        raise ValueError("--previous-checkout requires --development-restart")
+    source = repo if previous_checkout is None else previous_checkout.resolve()
+    if previous_checkout is not None:
+        _require_clean(source)
+    verification = verify_frozen_execution_source(source, frozen_revision)
+    verification["execution_root"] = str(source)
+    return source, verification
+
+
 def _require_idle_port(port: int) -> None:
     try:
         connection = socket.create_connection(("127.0.0.1", port), timeout=1)
@@ -121,6 +135,10 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--repo", type=Path, required=True)
     parser.add_argument("--previous-run", type=Path, required=True)
+    parser.add_argument(
+        "--previous-checkout", type=Path,
+        help="Verify interrupted development against its retained frozen checkout when the deployment repo has advanced.",
+    )
     parser.add_argument("--target-checkout", type=Path, required=True)
     parser.add_argument("--run-root", type=Path, required=True)
     parser.add_argument("--state", type=Path, required=True)
@@ -158,7 +176,10 @@ def main() -> None:
     plan_path = previous / "ab_plan.json"
     original = json.loads(plan_path.read_text())
     revision = git(target, "rev-parse", "HEAD").decode().strip()
-    previous_source = verify_frozen_execution_source(repo, original["code_commit"])
+    previous_root, previous_source = verify_previous_execution(
+        repo, original["code_commit"], previous_checkout=args.previous_checkout,
+        development_restart=args.development_restart,
+    )
     _require_clean(repo)
     _require_clean(target)
     git(repo, "merge-base", "--is-ancestor", original["code_commit"], revision)
@@ -187,6 +208,7 @@ def main() -> None:
         "previous_run": str(previous),
         "previous_code_commit": original["code_commit"],
         "previous_patch_sha256": original["sglang_patch_sha256"],
+        "previous_execution_root": str(previous_root),
         "previous_execution_verification": previous_source,
         "target_checkout": str(target),
         "target_revision": revision,
@@ -210,17 +232,18 @@ def main() -> None:
             raise ValueError("the scheduled target revision changed")
         _require_clean(repo)
         _require_clean(target)
-        state["previous_execution_verification"] = verify_frozen_execution_source(
-            repo, original["code_commit"],
+        _, state["previous_execution_verification"] = verify_previous_execution(
+            repo, original["code_commit"], previous_checkout=args.previous_checkout,
+            development_restart=args.development_restart,
         )
         if run_root.exists():
             raise ValueError("the new experiment directory was created by another process")
         if hashlib.sha256(patch.read_bytes()).hexdigest() != patch_sha:
             raise ValueError("the scheduled canonical patch changed")
         subprocess.run([
-            args.python, str(repo / "scripts/summarize_semantic_h2d_ab.py"),
+            args.python, str(previous_root / "scripts/summarize_semantic_h2d_ab.py"),
             "--run-root", str(previous), "--verify-frozen-plan",
-        ], cwd=repo, check=True)
+        ], cwd=previous_root, check=True)
         _require_idle_port(args.port)
         if args.development_restart:
             state["stale_control_socket_removed"] = _remove_stale_control_socket(
