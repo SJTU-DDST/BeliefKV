@@ -26,7 +26,7 @@ from scripts.benchmark_native_shared_path import baseline_classes, synthetic_run
 from tests.test_sglang_v0520_observer import UnifiedTreeCore, _node, _static_cache
 
 
-def fixture(runtime_class, frontier_class, inspector, *, queue_size, depth, clock):
+def fixture(runtime_class, frontier_class, inspector, *, queue_size, depth, clock, scenario):
     runtime, requests = synthetic_runtime(runtime_class, frontier_class, queue_size, 4)
     runtime.enable_execution_handoff = True
     cache = _static_cache()
@@ -82,6 +82,8 @@ def fixture(runtime_class, frontier_class, inspector, *, queue_size, depth, cloc
     runtime._native_page_size, runtime._native_input_reserve = 1, 4096
     runtime._prefill_cycle_active = True
     runtime._execution_handoff_attempted.update(runtime.visible.values())
+    if scenario != "exhausted":
+        runtime._execution_handoff_attempted.remove(runtime.visible[requests[-1].rid])
     runtime._visible_since = {request.rid: clock[0] for request in requests}
     return runtime, requests, reads
 
@@ -97,9 +99,12 @@ def state(runtime):
     }
 
 
-def measure(classes, inspector, *, queue_size, depth, iterations, clock):
+def measure(classes, inspector, *, queue_size, depth, iterations, clock, scenario):
     variants = {
-        name: fixture(cls, frontier, inspector, queue_size=queue_size, depth=depth, clock=clock)
+        name: fixture(
+            cls, frontier, inspector, queue_size=queue_size, depth=depth,
+            clock=clock, scenario=scenario,
+        )
         for name, (cls, frontier) in classes.items()
     }
     timings = {name: {"wall_us": [], "thread_cpu_us": []} for name in variants}
@@ -114,7 +119,13 @@ def measure(classes, inspector, *, queue_size, depth, iterations, clock):
             for name in names:
                 runtime, requests, _ = variants[name]
                 runtime._prefill_residency_scan = None
-                runtime._visible_since = {request.rid: clock[0] for request in requests}
+                runtime._visible_since = {
+                    request.rid: clock[0] - (
+                        20. + (len(requests) - index) * .01
+                        if scenario == "aged_frontier" and index < len(requests) - 1 else 0.
+                    )
+                    for index, request in enumerate(requests)
+                }
                 wall, cpu = time.perf_counter_ns(), time.thread_time_ns()
                 runtime.dispatch_execution_handoff(requests, running_batch=running)
                 elapsed = {
@@ -135,6 +146,7 @@ def measure(classes, inspector, *, queue_size, depth, iterations, clock):
         }
         return {
             "queue_size": queue_size, "radix_depth": depth,
+            "scenario": scenario,
             "request_input_tokens": 32769,
             "handoff_actions_and_bindings_equal": True,
             "costs": costs,
@@ -156,6 +168,10 @@ def main():
     parser.add_argument("--baseline-commit", required=True)
     parser.add_argument("--engine-root", type=Path, required=True)
     parser.add_argument("--iterations", type=int, default=101)
+    parser.add_argument(
+        "--scenario", choices=("exhausted", "aged_frontier", "young_tail"),
+        default="exhausted",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.iterations < 1:
@@ -175,18 +191,20 @@ def main():
                     {"baseline": (baseline, frontier),
                      "optimized": (runtime_module.NativeAdmissionRuntime, CausalFrontierScheduler)},
                     inspector, queue_size=size, depth=depth, iterations=args.iterations, clock=clock,
+                    scenario=args.scenario,
                 )
-                for size in (1, 48, 156)
+                for size in ((1, 48, 156) if args.scenario == "exhausted" else (48, 156, 512))
                 for depth in (8, 64)
             ]
     finally:
         gc.unfreeze()
     report = {
         "scope": (
-            "Repeated probes of queues whose tagged requests were already attempted. "
+            "Repeated probes of a selected exhausted queue, an already-attempted "
+            "aged FIFO frontier with a new tail, or a young queue retaining full planning. "
             "Same real native read-only inspector, RadixKey and CPU trees; "
             "no allocator mutation, DMA, GPU throughput or JCT measurement. "
-            "This fixture selects the exhausted case and does not estimate its live frequency."
+            "These fixtures do not estimate any scenario's live frequency."
         ),
         "baseline_commit": args.baseline_commit, "baseline_source_sha256": digests,
         "candidate_runtime_sha256": hashlib.sha256(
@@ -194,6 +212,7 @@ def main():
         ).hexdigest(),
         "native_inspector_sources": inspector.source_sha256,
         "iterations": args.iterations,
+        "scenario": args.scenario,
         "gc": {"collected_and_frozen_like_server": True, "pre_collect_counts": before_gc},
         "results": results,
     }

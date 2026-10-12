@@ -8,6 +8,7 @@ from __future__ import annotations
 from collections import Counter, OrderedDict, deque
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field, replace
+from heapq import nsmallest
 from itertools import islice
 import math
 import json
@@ -6296,21 +6297,63 @@ class NativeAdmissionRuntime:
             })
         self._execution_handoff = None
 
-    def _handoff_candidates_already_attempted(
+    def _handoff_candidate_keys(
         self, waiting_queue: Sequence[object],
-    ) -> bool:
-        """Skip planning only when its entire tagged candidate set is exhausted."""
-        tagged = 0
-        for request in waiting_queue:
+    ) -> tuple[tuple[int, PrefillCandidateKey | None], ...]:
+        candidates = []
+        for index, request in enumerate(waiting_queue):
             if getattr(request, "beliefkv_metadata", None) is None:
                 continue
-            if tagged == 512:
+            if len(candidates) == 512:
                 break
-            tagged += 1
-            key = _request_key(request, known_keys=self.visible)
-            if key is None or key not in self._execution_handoff_attempted:
+            candidates.append((index, _request_key(request, known_keys=self.visible)))
+        return tuple(candidates)
+
+    def _handoff_candidates_already_attempted(
+        self, waiting_queue: Sequence[object], *,
+        candidates: tuple[tuple[int, PrefillCandidateKey | None], ...] | None = None,
+    ) -> bool:
+        """Skip planning only when its entire tagged candidate set is exhausted."""
+        if candidates is None:
+            candidates = self._handoff_candidate_keys(waiting_queue)
+        return all(
+            key is not None and key in self._execution_handoff_attempted
+            for _, key in candidates
+        )
+
+    def _aged_handoff_frontier_already_attempted(
+        self, waiting_queue: Sequence[object], *, frontier_slots: int, now_ms: float,
+        candidates: tuple[tuple[int, PrefillCandidateKey | None], ...] | None = None,
+    ) -> bool:
+        """New requests cannot displace an exhausted aged FIFO frontier."""
+        cutoff = now_ms / 1000. - 10.
+        restore_contexts = {
+            lease.key.context_id for lease in self._prefetch_service_leases.values()
+            if lease.demand_ready
+        }
+        aged = []
+        if candidates is None:
+            candidates = self._handoff_candidate_keys(waiting_queue)
+        for index, key in candidates:
+            if key is None or self.visible.get(key.request_id) != key:
                 return False
-        return True
+            attempted = key in self._execution_handoff_attempted
+            if not attempted and (
+                key.context_id in restore_contexts
+                or self.enable_resident_first
+                and key.context_id in self._parent_capacity_handoffs
+                and self._live_parent_capacity_handoff(key) is not None
+            ):
+                return False
+            since = self._visible_since.get(key.request_id, now_ms / 1000.)
+            if since <= cutoff:
+                aged.append((since, index, key))
+        if len(aged) < frontier_slots:
+            return False
+        return all(
+            key in self._execution_handoff_attempted and not self._terminal(key)
+            for _, _, key in nsmallest(frontier_slots, aged, key=lambda item: item[:2])
+        )
 
     @timed_runtime("execution_handoff")
     def dispatch_execution_handoff(
@@ -6357,12 +6400,21 @@ class NativeAdmissionRuntime:
                 self._execution_handoff_attempted,
             )
             self._observe_native_admission_capacity(running_batch=running_batch, adder=None)
-            if self._handoff_candidates_already_attempted(waiting_queue):
+            candidates = self._handoff_candidate_keys(waiting_queue)
+            if self._handoff_candidates_already_attempted(
+                waiting_queue, candidates=candidates,
+            ):
                 self.counts["execution_handoff_candidates_already_attempted"] += 1
                 return
             frontier_slots = min(16, self._current_residency_budget().request_slots)
             if frontier_slots < 1:
                 self.counts["execution_handoff_no_frontier_slots"] += 1
+                return
+            if self._aged_handoff_frontier_already_attempted(
+                waiting_queue, frontier_slots=frontier_slots, now_ms=now_ms,
+                candidates=candidates,
+            ):
+                self.counts["execution_handoff_aged_frontier_already_attempted"] += 1
                 return
             plan = self.plan_native_prefill(
                 waiting_queue, running_batch=running_batch, adder=None,

@@ -2,6 +2,34 @@
 
 Status date: 2026-10-13.
 
+V41's complete 600-900s window remains below fixed V29 native:
+341902/380722 decode request steps, 10.20% lower at 22.47k/23.24k
+visible context. Instrumented exclusive Python wall is 60.585s;
+reentry/admission/tool cost 8.827/8.363/6.665s. Matched full48
+CUDA graph cohorts are close, while 46/47 remain longer. These are
+not isolated kernels or removable JCT. See v184. The whole-queue
+exhaustion skip is still observed only once.
+
+Cold-validate an exhausted aged FIFO handoff frontier despite new tail
+requests. Read bounded tagged identities once in the same call; retain
+the original path for unattempted restore-ready and live parent handoff
+targets, rearmed requests, changed bindings and a wider frontier.
+Ordinary admission and native dependencies stay live; partial ACK is
+not execution readiness. The final 347 focused checks pass. Selected
+real-inspector fixtures reduce thread CPU about 47-49% at 156/512
+requests. Young depth8 queues add about 0.15-0.21ms per eligible probe;
+depth64 has no consistent change. V186 binds sources and qualified
+evidence. The initial unrefined candidate was not deployed. Commit
+before administrative stop/archive and cold restart; no hot editing.
+
+V182 uses exactly V180's sealed prefixes: 9562 rounds with last-second
+forecasts have per-round median absolute-error P50/P90 72.214/517.558ms.
+257 rounds miss a recorded start window; only 13 also record free
+capacity. Another 61 have an early candidate outside the actual window.
+Snapshot categories overlap; per-round maximum planned bytes do not
+establish unique achievable transfers, an oracle bound or heldout accuracy.
+Continue capacity, complete restoration and next-request consumption work.
+
 Current development run is predictive-only V41, cold-started at
 02:52:03 CST on October 13 from 18f8209/cf0243b6. Engine tree remains
 c7c27e0d. It deploys exhausted-candidate handoff planning reduction,

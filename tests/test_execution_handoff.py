@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 import numpy as np
 import pytest
 
+from beliefkv.control.causal_graph import InvocationState
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from beliefkv.runtime.sglang_v0520_runtime import _ExecutionHandoffTicket
@@ -211,6 +212,106 @@ def test_exhausted_handoff_preserves_tagged_planning_bound(monkeypatch):
     assert runtime._handoff_candidates_already_attempted([cold] * 512 + [parent])
     cold.beliefkv_metadata = {}
     assert not runtime._handoff_candidates_already_attempted([cold])
+    runtime.close()
+
+
+def test_aged_handoff_frontier_ignores_new_tail_without_skipping_admission(monkeypatch):
+    runtime, (cold, warm, parent), cache = runtime_with_requests(monkeypatch)
+    now = time.monotonic()
+    runtime._visible_since[cold.rid] = now - 20.
+    runtime._visible_since[warm.rid] = now - 19.
+    runtime._visible_since[parent.rid] = now
+    runtime._execution_handoff_attempted.update(
+        runtime.visible[request.rid] for request in (cold, warm)
+    )
+    running = NS(reqs=[])
+    with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+        2, 1024 ** 3, source="native_next_prefill",
+    )), patch.object(runtime, "plan_native_prefill", wraps=runtime.plan_native_prefill) as plan:
+        runtime.dispatch_execution_handoff([parent, warm, cold], running_batch=running)
+        plan.assert_not_called()
+        cache.inspect_beliefkv_reentry.assert_not_called()
+        assert runtime._native_running_batch is running
+        assert runtime._execution_handoff is None
+        assert runtime.counts["execution_handoff_aged_frontier_already_attempted"] == 1
+        assert select(runtime, [parent, warm, cold]).candidates == (cold, warm, parent)
+        assert plan.call_count == 1
+    runtime.close()
+
+
+@pytest.mark.parametrize("change", (
+    "frontier_wider", "earlier_unattempted", "rearmed", "not_aged", "changed_session",
+    "terminal_frontier",
+))
+def test_aged_handoff_frontier_keeps_unattempted_eligible_requests(monkeypatch, change):
+    runtime, (cold, warm, parent), _ = runtime_with_requests(monkeypatch)
+    now = time.monotonic()
+    runtime._visible_since.update({
+        cold.rid: now - 20., warm.rid: now - 19., parent.rid: now,
+    })
+    runtime._execution_handoff_attempted.update(
+        runtime.visible[request.rid] for request in (cold, warm)
+    )
+    slots = 2
+    if change == "frontier_wider":
+        slots = 3
+    elif change == "earlier_unattempted":
+        runtime._visible_since[parent.rid] = now - 21.
+    elif change == "rearmed":
+        runtime._execution_handoff_attempted.remove(runtime.visible[cold.rid])
+    elif change == "not_aged":
+        runtime._visible_since[warm.rid] = now - 9.9
+    elif change == "changed_session":
+        parent.session_generation += 1
+    else:
+        runtime.graph.invocations[cold.rid].state = InvocationState.DONE
+    assert not runtime._aged_handoff_frontier_already_attempted(
+        [parent, warm, cold], frontier_slots=slots, now_ms=now * 1000.,
+    )
+    runtime.close()
+
+
+@pytest.mark.parametrize("priority", ("restore", "parent_handoff"))
+def test_aged_handoff_frontier_keeps_promotable_tail(monkeypatch, priority):
+    runtime, (cold, warm, parent), _ = runtime_with_requests(monkeypatch)
+    now = time.monotonic()
+    runtime._visible_since.update({
+        cold.rid: now - 20., warm.rid: now - 19., parent.rid: now,
+    })
+    runtime._execution_handoff_attempted.update(
+        runtime.visible[request.rid] for request in (cold, warm)
+    )
+    key = runtime.visible[parent.rid]
+    if priority == "restore":
+        runtime._prefetch_service_leases["restored"] = NS(key=key, demand_ready=True)
+    else:
+        runtime._parent_capacity_handoffs[key.context_id] = NS()
+        monkeypatch.setattr(runtime, "_live_parent_capacity_handoff", lambda _: NS())
+    assert not runtime._aged_handoff_frontier_already_attempted(
+        [parent, warm, cold], frontier_slots=2, now_ms=now * 1000.,
+    )
+    runtime._prefetch_service_leases.clear()
+    runtime._parent_capacity_handoffs.clear()
+    runtime.close()
+
+
+def test_aged_handoff_frontier_preserves_fifo_ties_and_tagged_bound(monkeypatch):
+    runtime, (cold, warm, parent), _ = runtime_with_requests(monkeypatch)
+    now = time.monotonic()
+    runtime._visible_since.update({request.rid: now - 20. for request in (cold, warm, parent)})
+    runtime._execution_handoff_attempted.update(
+        runtime.visible[request.rid] for request in (cold, warm)
+    )
+    plain = NS(rid="plain", beliefkv_metadata=None)
+    assert runtime._aged_handoff_frontier_already_attempted(
+        [plain] * 700 + [cold, warm, parent], frontier_slots=2, now_ms=now * 1000.,
+    )
+    assert not runtime._aged_handoff_frontier_already_attempted(
+        [parent, cold, warm], frontier_slots=2, now_ms=now * 1000.,
+    )
+    assert runtime._aged_handoff_frontier_already_attempted(
+        [cold] * 512 + [parent], frontier_slots=2, now_ms=now * 1000.,
+    )
     runtime.close()
 
 

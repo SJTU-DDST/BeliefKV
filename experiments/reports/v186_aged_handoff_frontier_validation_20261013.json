@@ -1,0 +1,39 @@
+{
+  "schema_version": 1,
+  "validated_at_local": "2026-10-13T03:17:23.887994+08:00",
+  "baseline_commit": "6837119",
+  "running_v41_collection_commit": "18f82095c506569e4eb3fa5aa0e24d3d386dedf1",
+  "change": "Skip whole demand-handoff planning when the next bounded aged FIFO frontier is already attempted, despite new requests behind it. Share only this call's validated candidate identities. Unattempted restore-ready or live parent handoff requests disable the shortcut. Ordinary admission remains live.",
+  "final_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "67f21727c967444b785111a06a18ce72cab15bbc810b03a4dee63dfdc45c57fe",
+    "scripts/benchmark_exhausted_handoff_cpu.py": "eb89574741a33c77e4f4cf6f0ebc01b4df20e1e8ba1159927eeef6a4b0117311",
+    "scripts/benchmark_native_shared_path.py": "5105c132fa8ad4be3074019f9567b4c9800dd12960a2c44d1c2342875aa7f75c",
+    "tests/test_execution_handoff.py": "6d77e7ce4e0a014562c7811e280d406b3c381306f11248ba160bcc51740a2a2e"
+  },
+  "evidence_sha256": {
+    "v182_v40_tool_forecast_windows_20261013.json.gz": "c7b865893de8a70a6df4b51e8892d4fcd856d306888aa787e06ee498a3c1b9b0",
+    "v182_v40_tool_forecast_windows_20261013_summary.json": "9273122472b9041a11e7357941719383ad99aab3f6abff0c62d06137ac5231c4",
+    "v183_aged_handoff_frontier_cpu_refined_20261013.json": "c148c0398a5f85cf12c8cb3a0e894925fd0100c869da8ec79496474921196115",
+    "v184_v41_busy_600_900_20261013.json": "fb95b4a216f5b0c081a4b11b493a5b7a824c3865c70a1de257b69b29a680b42f",
+    "v185_young_handoff_queue_cpu_20261013.json": "05f4aca8d22d472335148bd09227e1caa3fb0364738815d53590e5a6242c1f0e",
+    "v185_exhausted_handoff_queue_cpu_20261013.json": "790841073ec8ae384cb15998f65f098b76fd5390375f0e9e21ceebabff01699a"
+  },
+  "pytest_batches": [
+    {
+      "files": [
+        "tests/test_execution_handoff.py",
+        "tests/test_sglang_v0520_runtime.py",
+        "tests/test_sglang_v0520_admission.py",
+        "tests/test_terminal_child_capacity.py",
+        "tests/test_wait_prefetch_batch.py"
+      ],
+      "passed": 347,
+      "exit_code": 0
+    }
+  ],
+  "checks_qualification": "Earlier 155/346 check batches overlap this final batch; do not add them.",
+  "unchanged_canonical_patch_sha256": "cf0243b6331c2be8f24491efd7a4b2306e72610b4cd8cb8ddc586c4e12b18b2b",
+  "cpu_qualification": "Selected aged-frontier cases reduce thread CPU about 47-49% at 156/512 requests. Young depth8 cases increase about 0.15-0.21ms per eligible probe; depth64 does not show consistent change. Exhausted queues are essentially unchanged; do not treat the unusually slow baseline 156/depth64 case as a proven additional reduction. Initial unrefined candidate had no stable benefit and was never deployed. These are CPU fixtures, not live frequency, GPU throughput or JCT evidence. Ordinary residency scan cadence can differ when wasted handoff planning is skipped.",
+  "qualification": "V41's complete busy window remains 10.20% below fixed V29 native with instrumented exclusive Python wall 60.585s/300s. The previous whole-queue exhaustion skip was observed only once. No running Main or physical engine source was edited; the primary performance goal remains unproven.",
+  "helper_sha256": "6e9692815fb9076ba545e684345a22dd53dba1c601ea2e9ed7dee46d7d87d823"
+}

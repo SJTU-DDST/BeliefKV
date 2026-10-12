@@ -58,6 +58,7 @@ def baseline_classes(revision: str):
         "_prefill_causal_ranks", "on_batch_completed", "dispatch_execution_handoff",
         "_resident_prefill_scan",
         "_handoff_candidates_already_attempted",
+        "_handoff_candidate_keys", "_aged_handoff_frontier_already_attempted",
         "_read_request_reentry", "_request_reentry_anchors",
         "_capture_semantic_text", "_poll_semantic_reports",
         "_executable_waiting_key", "terminal_waiting_request_ids",
