@@ -5759,8 +5759,12 @@ class NativeAdmissionRuntime:
             or len({lease.key for lease in locked}) < budget.request_slots
         )
 
-    def _executable_waiting_key(self, req: object) -> PrefillCandidateKey | None:
-        key = _request_key(req, known_keys=self.visible)
+    def _executable_waiting_key(
+        self, req: object, *, key: PrefillCandidateKey | None = None,
+    ) -> PrefillCandidateKey | None:
+        # Supplied keys come from the same synchronous planning call.
+        if key is None:
+            key = _request_key(req, known_keys=self.visible)
         if (
             key is None or self.visible.get(key.request_id) != key
             or self.context_sessions.get(key.context_id) != key
@@ -5783,8 +5787,11 @@ class NativeAdmissionRuntime:
         return key
 
     @timed_runtime("reentry_inspection")
-    def _read_request_reentry(self, req: object, *, refresh: bool = False) -> dict | None:
-        key = self._executable_waiting_key(req)
+    def _read_request_reentry(
+        self, req: object, *, refresh: bool = False,
+        key: PrefillCandidateKey | None = None,
+    ) -> dict | None:
+        key = self._executable_waiting_key(req, key=key)
         cache = self._native_cache
         if key is None or cache is None:
             return None
@@ -5809,8 +5816,8 @@ class NativeAdmissionRuntime:
         return observation
 
     def _request_reentry_anchors(self, req: object) -> ContextSessionAnchors | None:
-        key = self._executable_waiting_key(req)
-        observation = self._read_request_reentry(req)
+        key = _request_key(req, known_keys=self.visible)
+        observation = self._read_request_reentry(req, key=key)
         if key is None or observation is None:
             return None
         try:
@@ -6517,7 +6524,7 @@ class NativeAdmissionRuntime:
             for index, req in tagged
         }
         if self._prefill_cycle_active:
-            self._prefill_causal_cache = (signature, ready_ranks, ranks)
+            self._prefill_causal_cache = (signature, ready_ranks, ranks, None)
         return ranks
 
     def _resident_prefill_scan(
@@ -6614,12 +6621,38 @@ class NativeAdmissionRuntime:
             self.enable_resident_first and ordered
             and waiting_ranks[ordered[-1][0]][0] != -1
         ):
+            same_group = (
+                waiting_ranks[ordered[0][0]][:2]
+                == waiting_ranks[ordered[-1][0]][:2]
+            )
+            residency_groups = None
+            if not same_group:
+                # Cache causal group sizes; exclude aged members only for this plan.
+                cached = self._prefill_causal_cache if self._prefill_cycle_active else None
+                residency_groups = (
+                    cached[3] if cached is not None and cached[2] is ranks else None
+                )
+                if residency_groups is None:
+                    residency_groups = Counter(rank[:2] for rank in ranks.values())
+                    if cached is not None and cached[2] is ranks:
+                        self._prefill_causal_cache = (*cached[:3], residency_groups)
+                if waiting_ranks[ordered[0][0]][0] == -1:
+                    residency_groups = residency_groups.copy()
+                    for index, _ in ordered:
+                        if waiting_ranks[index][0] != -1:
+                            break
+                        residency_groups[ranks[index][:2]] -= 1
+            competing_group = len(ordered) > 1
             # Handoff and admission share inspection targets, not live decisions.
             for index, req in self._resident_prefill_scan(ordered, keys):
                 # Aging uses arrival order; a selected handoff reads its own
                 # checkpoint when restoration is actually needed.
-                if waiting_ranks[index][0] != -1:
-                    self._read_request_reentry(req)
+                rank = waiting_ranks[index]
+                if rank[0] != -1 and (
+                    competing_group if residency_groups is None
+                    else residency_groups[rank[:2]] > 1
+                ):
+                    self._read_request_reentry(req, key=keys[index])
 
             def residency_rank(pair: tuple[int, object]) -> tuple:
                 rank = waiting_ranks[pair[0]]
@@ -6700,7 +6733,7 @@ class NativeAdmissionRuntime:
                 handoff = self._live_parent_capacity_handoff(key) if key is not None else None
                 if handoff is None:
                     continue
-                observation = self._read_request_reentry(candidate[1])
+                observation = self._read_request_reentry(candidate[1], key=key)
                 inspected += 1
                 if observation is not None and not (
                     observation["missing_full_tokens"] or observation["missing_mamba_slots"]

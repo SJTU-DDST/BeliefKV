@@ -57,6 +57,7 @@ def baseline_classes(revision: str):
         "_causal_rank", "plan_native_prefill", "_local_frontier_features",
         "_prefill_causal_ranks", "on_batch_completed", "dispatch_execution_handoff",
         "_resident_prefill_scan",
+        "_read_request_reentry", "_request_reentry_anchors",
         "_capture_semantic_text", "_poll_semantic_reports",
         "_executable_waiting_key", "terminal_waiting_request_ids",
         "scheduler_step",
@@ -66,7 +67,8 @@ def baseline_classes(revision: str):
     original.body = [item for item in original.body
                      if isinstance(item, ast.FunctionDef) and item.name in methods]
     for method in original.body:
-        method.decorator_list = []
+        if method.name != "_read_request_reentry":
+            method.decorator_list = []
     module = ast.fix_missing_locations(ast.Module(body=[original], type_ignores=[]))
     namespace = dict(vars(runtime_module))
     request_key = next(
@@ -639,7 +641,9 @@ def benchmark_causal_reuse(
     }
 
 
-def benchmark_residency_scan_reuse(*, revision: str, rounds: int, iterations: int) -> dict:
+def benchmark_residency_scan_reuse(
+    *, revision: str, rounds: int, iterations: int, reentry_reuse: bool = False,
+) -> dict:
     from benchmark_native_reentry_cpu import fixture, variant
 
     baseline, frontier, digests = baseline_classes(revision)
@@ -647,14 +651,30 @@ def benchmark_residency_scan_reuse(*, revision: str, rounds: int, iterations: in
     cases = []
     clock = [1000.]
     with patch.object(runtime_module.time, "monotonic", new=lambda: clock[0]):
-        for size, tokens, depth, leaves, aged in (
+        configurations = [
             (4, 32768, 8, 8, False),
             (156, 32768, 8, 8, False),
             (156, 98304, 24, 8, False),
             (156, 32768, 256, 8, False),
             (512, 32768, 8, 1, False),
             (156, 32768, 8, 8, True),
-        ):
+        ]
+        if reentry_reuse:
+            configurations.extend([
+                (1, 32768, 8, 1, False),
+                (1, 32768, 256, 8, False),
+                (48, 32768, 8, 8, False),
+            ])
+        configurations = [
+            (*case, False, False) for case in configurations
+        ]
+        if reentry_reuse:
+            configurations.extend([
+                (4, 32768, 8, 8, False, True, True),
+                (48, 32768, 8, 8, False, True, True),
+                (156, 32768, 8, 8, False, True, True),
+            ])
+        for size, tokens, depth, leaves, aged, mixed, singleton in configurations:
             variants = {
                 "baseline": synthetic_runtime(baseline, frontier, size, rounds),
                 "optimized": synthetic_runtime(
@@ -662,6 +682,7 @@ def benchmark_residency_scan_reuse(*, revision: str, rounds: int, iterations: in
                 ),
             }
             inspections = Counter()
+            reads = {name: Counter() for name in variants}
             samples = {name: {"wall_ms": [], "thread_cpu_ms": []} for name in variants}
             try:
                 for name, (runtime, queue) in variants.items():
@@ -672,16 +693,43 @@ def benchmark_residency_scan_reuse(*, revision: str, rounds: int, iterations: in
                         if node.parent is not None:
                             node.component_data[0].value = None
                             node.component_data[2].value = None
+                    device_cache, _ = fixture(native, {
+                        "tokens": tokens, "depth": depth, "leaves": leaves, "page_size": 1,
+                    })
+                    for node in device_cache.tree_core.node_by_id.__self__.values():
+                        if node.parent is not None:
+                            for component in node.component_data.values():
+                                component.value = component.host_value
+                    positions = {request.rid: index for index, request in enumerate(queue)}
 
-                    def inspect(request, *, cache=cache, name=name):
+                    def inspect(
+                        request, *, cache=cache, device_cache=device_cache,
+                        positions=positions, name=name,
+                    ):
                         inspections[name] += 1
-                        return native.inspect(cache, request)
+                        reads[name][request.rid] += 1
+                        selected_cache = (
+                            device_cache if mixed
+                            and (positions[request.rid] + int(clock[0] * 100)) % 3 == 0
+                            else cache
+                        )
+                        return native.inspect(selected_cache, request)
 
                     cache.inspect_beliefkv_reentry = inspect
                     runtime.enable_resident_first = True
                     runtime.attach_native_cache(cache)
                     for request in queue:
                         request.origin_input_ids = template.origin_input_ids
+                    if singleton:
+                        key = runtime.visible[queue[0].rid]
+                        runtime.graph.invocations[key.invocation_id].pending_messages = 1
+                        runtime.graph.invocations[f"{key.root_workflow_id}-root"].state = (
+                            InvocationState.READY
+                        )
+                        for join in runtime.graph.joins.values():
+                            if join.workflow_id == key.root_workflow_id:
+                                join.satisfied = True
+                        runtime.graph._graph_version += 1
                 for iteration in range(iterations + 5):
                     clock[0] += .06
                     names = list(variants)
@@ -708,6 +756,20 @@ def benchmark_residency_scan_reuse(*, revision: str, rounds: int, iterations: in
                             samples[name]["thread_cpu_ms"].append(cpu_ms)
                     if orders[0] != orders[1]:
                         raise AssertionError("Host-only or aged queue order changed")
+                    if not reentry_reuse:
+                        continue
+                    if aged:
+                        assert not sum(inspections.values())
+                    elif size == 1:
+                        assert inspections["baseline"] == iteration + 1
+                        assert inspections["optimized"] == 0
+                    elif singleton:
+                        assert not reads["optimized"] - reads["baseline"]
+                        assert set(reads["baseline"] - reads["optimized"]) <= {
+                            variants["baseline"][1][0].rid,
+                        }
+                    else:
+                        assert inspections["baseline"] == inspections["optimized"]
                 costs = {
                     name: {metric: distribution(values) for metric, values in data.items()}
                     for name, data in samples.items()
@@ -716,9 +778,14 @@ def benchmark_residency_scan_reuse(*, revision: str, rounds: int, iterations: in
                     "queue_size": size, "retained_rounds": rounds,
                     "tokens": tokens, "depth": depth, "session_leaves": leaves,
                     "aged": aged, "iterations": iterations, "warmup_iterations": 5,
+                    "mixed_live_residency": mixed,
+                    "singleton_causal_group": singleton,
                     "planning_calls_per_cycle": 2, "clock_step_ms": 60,
                     "queue_order_equal": True,
-                    "native_inspections_including_warmup": dict(inspections),
+                    "native_reads_equal_or_only_singleton_skipped": reentry_reuse,
+                    "native_inspections_including_warmup": {
+                        name: inspections[name] for name in variants
+                    },
                     "optimized_scan_reuses": variants["optimized"][0].counts[
                         "admission_residency_scan_reused"
                     ],
@@ -738,11 +805,17 @@ def benchmark_residency_scan_reuse(*, revision: str, rounds: int, iterations: in
             "before each cycle. No native allocation, DMA, GPU or throughput is measured."
         ),
         "baseline_revision": revision, "baseline_source_sha256": digests,
+        "reentry_timing_wrapper_equal": reentry_reuse,
+        "benchmark_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "optimized_runtime_source_sha256": hashlib.sha256(
             runtime_source_path().read_bytes(),
         ).hexdigest(),
         "native_source_sha256": native.source_sha256,
         "sampling_change": (
+            "Resident-first skips a singleton unaged causal group; selected handoff "
+            "still reads its own checkpoint. Identity reads are reused within each "
+            "synchronous plan. Existing 50ms observation expiry is retained."
+        ) if reentry_reuse else (
             "Rotate once for unchanged handoff/admission targets in a scheduler cycle; "
             "mixed-residency queues can differ because the second call no longer samples "
             "another eight requests. Host-only and aged fixture orders are checked."
@@ -761,6 +834,7 @@ def main():
     parser.add_argument("--handoff-frontier", action="store_true")
     parser.add_argument("--causal-reuse", action="store_true")
     parser.add_argument("--residency-scan-reuse", action="store_true")
+    parser.add_argument("--reentry-reuse", action="store_true")
     parser.add_argument("--selection", action="store_true")
     parser.add_argument("--resident-first", action="store_true",
                         help="Use mixed residency observations and check identical native reads.")
@@ -781,9 +855,10 @@ def main():
         report = benchmark_selection(
             revision=args.baseline_revision, iterations=args.iterations,
         )
-    elif args.residency_scan_reuse:
+    elif args.residency_scan_reuse or args.reentry_reuse:
         report = benchmark_residency_scan_reuse(
             revision=args.baseline_revision, rounds=args.rounds, iterations=args.iterations,
+            reentry_reuse=args.reentry_reuse,
         )
     elif args.causal_reuse:
         if args.handoff_frontier or args.parent_handoffs or args.semantic_progress:
@@ -817,7 +892,7 @@ def main():
                 f"{case['costs']['optimized']['wall_ms']['mean_ms']:.6f} ms; "
                 f"allocations={case['identity_allocations_per_selection']}"
             )
-    elif args.residency_scan_reuse:
+    elif args.residency_scan_reuse or args.reentry_reuse:
         for case in report["cases"]:
             print(
                 f"queue={case['queue_size']} tokens={case['tokens']} "

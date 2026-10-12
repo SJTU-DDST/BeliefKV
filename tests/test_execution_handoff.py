@@ -59,9 +59,65 @@ def test_warm_first_preserves_untagged_positions_and_ordinary_aging(monkeypatch)
 
 
 def test_warm_first_does_not_override_causal_parent_message_priority(monkeypatch):
-    runtime, (cold, warm, parent), _ = runtime_with_requests(monkeypatch)
+    runtime, (cold, warm, parent), cache = runtime_with_requests(monkeypatch)
     runtime.graph.invocations["parent"].pending_messages = 1
     assert select(runtime, [cold, warm, parent]).candidates[0] is parent
+    assert [call.args[0] for call in cache.inspect_beliefkv_reentry.call_args_list] == [
+        cold, warm,
+    ]
+    assert runtime._request_reentry_anchors(parent) is not None
+    assert cache.inspect_beliefkv_reentry.call_args.args == (parent,)
+
+
+def test_single_waiting_request_skips_sort_probe_but_handoff_reads_checkpoint(monkeypatch):
+    runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
+    runtime._residency_scan_cursor = 8
+    assert select(runtime, [cold]).candidates == (cold,)
+    assert runtime._residency_scan_cursor == 0
+    cache.inspect_beliefkv_reentry.assert_not_called()
+    assert runtime._request_reentry_anchors(cold) is not None
+    cache.inspect_beliefkv_reentry.assert_called_once_with(cold)
+
+
+def test_reentry_anchor_reads_live_identity_once_and_rejects_changed_binding(monkeypatch):
+    runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
+    from beliefkv.runtime import sglang_v0520_runtime as runtime_module
+
+    with patch.object(runtime_module, "_request_key", wraps=runtime_module._request_key) as read:
+        assert runtime._request_reentry_anchors(cold) is not None
+        assert read.call_count == 1
+        cold.session_generation += 1
+        assert runtime._request_reentry_anchors(cold) is None
+        assert read.call_count == 2
+    cache.inspect_beliefkv_reentry.assert_called_once_with(cold)
+
+
+def test_cached_causal_group_counts_keep_aging_live_without_mutation(monkeypatch):
+    runtime, (cold, warm, parent), cache = runtime_with_requests(monkeypatch)
+    runtime.graph.invocations[parent.rid].pending_messages = 1
+    clock = [time.monotonic()]
+    monkeypatch.setattr(time, "monotonic", lambda: clock[0])
+    runtime.scheduler_step([cold, warm, parent])
+    assert select(runtime, [cold, warm, parent]).candidates == (parent, warm, cold)
+    groups = runtime._prefill_causal_cache[3]
+    before = groups.copy()
+    assert cache.inspect_beliefkv_reentry.call_count == 2
+
+    runtime._visible_since[cold.rid] = clock[0] - 11.
+    clock[0] += .06
+    runtime.scheduler_step([cold, warm, parent])
+    assert select(runtime, [cold, warm, parent]).candidates == (cold, parent, warm)
+    assert runtime._prefill_causal_cache[3] is groups
+    assert groups == before
+    assert cache.inspect_beliefkv_reentry.call_count == 2
+
+    runtime._visible_since[cold.rid] = clock[0]
+    clock[0] += .06
+    runtime.scheduler_step([cold, warm, parent])
+    assert select(runtime, [cold, warm, parent]).candidates == (parent, warm, cold)
+    assert groups == before
+    assert cache.inspect_beliefkv_reentry.call_count == 4
+    runtime.close()
 
 
 def test_aged_arrival_order_needs_no_residency_inspection(monkeypatch):
@@ -950,6 +1006,9 @@ def test_unchanged_scheduler_iterations_keep_ranks_but_refresh_residency_and_agi
         runtime.scheduler_step([cold, warm])
         assert select(runtime, [cold, warm]).candidates == (cold, warm)
         assert rank.call_count == 2
+        # The one younger request cannot change the remaining arrival order.
+        assert cache.inspect_beliefkv_reentry.call_count == 4
+        assert runtime._read_request_reentry(warm)["missing_full_tokens"] == 0
         assert cache.inspect_beliefkv_reentry.call_count == 5
         assert runtime.counts["admission_causal_cache_hits"] == 2
     runtime.close()
