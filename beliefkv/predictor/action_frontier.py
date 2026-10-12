@@ -2,6 +2,8 @@ from __future__ import annotations
 
 from bisect import bisect_left
 from dataclasses import dataclass
+from functools import cached_property
+from itertools import accumulate
 import math
 from typing import Any, Iterable, Mapping, Sequence
 
@@ -277,6 +279,16 @@ class ActionTimingCurve:
         if self.training_support < 0:
             raise ValueError("action timing support must be non-negative")
 
+    @cached_property
+    def _log_tau_ms(self) -> tuple[float, ...]:
+        return tuple(math.log1p(value) for value in self.tau_ms)
+
+    @cached_property
+    def _quantile_probabilities(self) -> tuple[float, ...]:
+        # Validation permits tiny roundoff dips. The first crossing, including
+        # plateaus, must still match the original forward interval search.
+        return tuple(accumulate(self.release_within_probability, max))
+
     def release_within(self, operational_tau_ms: float) -> float:
         tau = max(0.0, float(operational_tau_ms))
         if tau <= self.tau_ms[0]:
@@ -309,16 +321,15 @@ class ActionTimingCurve:
         first = self.release_within_probability[0]
         if first > 0 and probability <= first:
             return self.tau_ms[0] * probability / first
-        for index in range(1, len(self.tau_ms)):
-            right = self.release_within_probability[index]
-            left = self.release_within_probability[index - 1]
-            if probability > right or right <= left:
-                continue
-            fraction = (probability - left) / (right - left)
-            lower = math.log1p(self.tau_ms[index - 1])
-            upper = math.log1p(self.tau_ms[index])
-            return math.expm1(lower + fraction * (upper - lower))
-        return None
+        index = bisect_left(self._quantile_probabilities, probability, lo=1)
+        if index == len(self.tau_ms):
+            return None
+        right = self.release_within_probability[index]
+        left = self.release_within_probability[index - 1]
+        fraction = (probability - left) / (right - left)
+        knots = self._log_tau_ms
+        lower, upper = knots[index - 1], knots[index]
+        return math.expm1(lower + fraction * (upper - lower))
 
     @classmethod
     def from_dict(cls, raw: Mapping[str, Any]) -> "ActionTimingCurve":

@@ -1,0 +1,81 @@
+{
+  "scope": "CPU candidate scans outside transfer windows; not GPU throughput",
+  "baseline_revision": "8cb4357",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "6e1db6ad33c310c11a6f5a721958dae4646366b0d9ea8599efae56a903d2711e",
+    "beliefkv/runtime/sglang_v0520_physical.py": "0dfc1bbd1c3f9010dffddc117b991884063db9bcdb1f4a175d90363c4737672b",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "3e759b28c14559035cf26b852240a131a67a83e85eb0a13a7471998b650c7e3e"
+  },
+  "tool_wait_contexts": 156,
+  "prefetch_lead_ms": 2000.0,
+  "recorded_prefix": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v38/predictive_h2d/opportunities/admission_opportunities.jsonl",
+    "read_prefix_bytes": 29287534,
+    "read_prefix_sha256": "786f7ffe815556095b00d504ff4650e39b1a04dc37060dd3ce6718ba58914606",
+    "forecasts_seen": 4096,
+    "distinct_forecasts_selected": 4096
+  },
+  "eligible_recorded_curve_pool": 602,
+  "recorded_curves_repeated_across_fixture_contexts": 156,
+  "recorded_curve_selection": "Only CDFs whose conditional P50 is unsupported or stays above 2s on this timeline; not sampled workload frequencies. Both arms share the current curve implementation.",
+  "iterations": 5000,
+  "scheduler_tick_ms": 2.0,
+  "timeline_ms": 9998.0,
+  "physical_actions": 0,
+  "costs": {
+    "baseline": {
+      "count": 5000,
+      "mean_ms": 0.0177983128,
+      "p50_ms": 0.002814,
+      "p99_ms": 0.722227,
+      "max_ms": 2.940436
+    },
+    "optimized": {
+      "count": 5000,
+      "mean_ms": 0.0118342726,
+      "p50_ms": 0.002892,
+      "p99_ms": 0.407054,
+      "max_ms": 3.799479
+    }
+  },
+  "total_cpu_ms": {
+    "baseline": 88.99156400000004,
+    "optimized": 59.17136299999996
+  },
+  "legacy_total_cpu_ms_field_is_call_wall": true,
+  "total_thread_cpu_ms": {
+    "baseline": 85.57925099999974,
+    "optimized": 55.759896999999945
+  },
+  "thread_cpu_reduction_fraction": 0.34844139965655796,
+  "clock_fixture": "plain monotonic lambda; no Mock call recording",
+  "gc_frozen_after_fixture_initialization": true,
+  "gc_collections_during_measured_calls": {
+    "baseline": [
+      {
+        "generation": 0,
+        "thread_cpu_ms": 0.070242
+      },
+      {
+        "generation": 0,
+        "thread_cpu_ms": 0.051482
+      }
+    ],
+    "optimized": [
+      {
+        "generation": 0,
+        "thread_cpu_ms": 0.089021
+      }
+    ]
+  },
+  "benchmark_source_sha256": "8f82aa29bbc406ccfd3b7ac08e46399491abc3cccba7b5c59ce662597d108128",
+  "optimized_runtime_source_sha256": "65d8d3fbdca9c7777303600ecbe64d45fb932d545c6c4bab51f7b47f0edfdda1",
+  "candidate_checks": {
+    "baseline": 15600,
+    "optimized": 15600
+  },
+  "optimized_scans": 100,
+  "optimized_deferred": 4900,
+  "optimized_survival_queries_deferred": 15364,
+  "mean_reduction_fraction": 0.33509020023515945
+}

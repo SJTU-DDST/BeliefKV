@@ -345,6 +345,27 @@ def test_action_timing_curve_uses_log_interpolation_and_rejects_non_monotonic() 
         )
 
 
+def test_action_timing_quantile_preserves_plateaus_roundoff_and_supported_tail() -> None:
+    curve = ActionTimingCurve(
+        (10., 20., 20., 40., 80.),
+        (.2, .5, .5 - 5e-13, .5, .9),
+        "pooled", 1.,
+    )
+    assert curve.quantile(.1) == 5.
+    assert curve.quantile(.5) == pytest.approx(20.)
+    assert curve.quantile(math.nextafter(.5, 1.)) >= 40.
+    assert curve.quantile(.7) == pytest.approx(math.sqrt(41. * 81.) - 1.)
+    assert curve.quantile(.9) == pytest.approx(80.)
+    assert curve.quantile(math.nextafter(.9, 1.)) is None
+    assert curve.to_dict() == ActionTimingCurve.from_dict(curve.to_dict()).to_dict()
+
+    single = ActionTimingCurve((10.,), (.5,), "pooled", 1.)
+    assert single.quantile(.5) == 10.
+    assert single.quantile(.6) is None
+    empty_support = ActionTimingCurve((10., 20.), (0., 0.), "pooled", 0.)
+    assert empty_support.quantile(.1) is None
+
+
 def test_pooled_conditional_demand_model_fit_predict_and_round_trip() -> None:
     samples = []
     for context_tokens, target in (

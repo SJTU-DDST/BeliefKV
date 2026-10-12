@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-13T01:15:12.229791+08:00",
+  "scope": "Final source binding; completed focused regression and CPU fixtures, not GPU/JCT proof",
+  "base_revision": "8cb43576df27253acfa7e556cad307d3f7c333c3",
+  "changed_source_sha256": {
+    "beliefkv/predictor/action_frontier.py": "0c47ac5b6d111561d5e13ff9f42978a8a6d0bb9e2f052521bf9a9dfd049bbe38",
+    "beliefkv/predictor/structured_frontier.py": "d8c6891db4330b32f59eb6252fabc147bc5b9ff675442b95f550c660797405f4",
+    "beliefkv/runtime/sglang_v0520_prediction.py": "d5df0cea204ed5d50c61427c551e4b670a1ad39fe431dacdfd288f24e2a79d07",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "65d8d3fbdca9c7777303600ecbe64d45fb932d545c6c4bab51f7b47f0edfdda1",
+    "scripts/audit_join_candidate_windows.py": "4bf74e8e5670850c746fdb8e9819d86e9177511e3207fbd310eef263ac5df590",
+    "scripts/benchmark_native_tool_scan.py": "8f82aa29bbc406ccfd3b7ac08e46399491abc3cccba7b5c59ce662597d108128",
+    "scripts/benchmark_tool_survival_lookup_cpu.py": "bdaca8884ecfb5429ee4aaf6320e0290540d04f01e326f16a16e6c86a7cd696c",
+    "tests/test_action_frontier.py": "7ca187f7093b75712f0640044f33769b739d44bbd4b78a5e0922a1f873906670",
+    "tests/test_tool_predictive_transfers.py": "b1dc0abfbcd0cd6ad8f87dd9b08ea144fb63696969cd807c5723aefb44b4f433"
+  },
+  "focused_regression": {
+    "result": "472 passed in 3.17s",
+    "provenance": "Completed earlier in this continuous task; not replayed after benchmark-only and documentation edits",
+    "command": "python -m pytest -q tests/test_tool_predictive_transfers.py tests/test_sglang_v0520_prediction.py tests/test_sglang_v0520_runtime.py tests/test_wait_prefetch_batch.py tests/test_wait_prefetch_partial_extent.py tests/test_join_transfer_windows.py tests/test_native_reentry_materialization.py tests/test_audit_join_candidate_windows.py tests/test_action_frontier.py tests/test_structured_frontier.py"
+  },
+  "diff_check": "passed",
+  "evidence_sha256": {
+    "v162_v38_early_wait_prefetch_20261013.json.gz": "a3ffa53603924f7df60e887e30bf3157364a18d1780d84ca6e1769c418920853",
+    "v162_v38_early_wait_prefetch_20261013_summary.json": "e5ac4e659524c04e4b534bb92d7a20cd58ee0d7cd333b9a886f38c873f89895c",
+    "v163_v38_early_busy_600_900_20261013.json": "95f605934557edbc53d938f7fc1eb3f34becfb2230170ba97e32a13ebe1ca917",
+    "v164_tool_survival_index_cpu_final_20261013.json": "466e00c2a242f9253eabc0f391a0ddf79eff10071d220f79b0d1209dc30ced90",
+    "v165_fresh_reentry_admission_cpu_20261013.json": "52626eeb918f33049141bd6decb747856ec29fffad173aacdce066c30fc9abad",
+    "v166_v38_sealed_join_bias_20261013.json": "d4c2ca0d80c95d058dee705af74ba378542a4175a124c515c09b28ae25a97f29",
+    "v167_tool_survival_probe_recorded_cpu_final_20261013.json": "08646a61cf651903fccbee20259af909d38141825bde3dfed3918ac7ff7f4b94",
+    "v168_tool_survival_probe_deployment_cpu_20261013.json": "fd198266269348d457f8b32b565fac9fb224d2a32ef8f697ef38eb8ab2233fe0",
+    "v168_tool_survival_probe_frozen_gc_cpu_20261013.json": "47a36d018349c5bceead2b5d982b7142a94bb575fb52d51fe521fced268625fa"
+  },
+  "unchanged_canonical_patch_sha256": "cf0243b6331c2be8f24491efd7a4b2306e72610b4cd8cb8ddc586c4e12b18b2b",
+  "frozen_gc_tool_scan": {
+    "thread_cpu_ms": {
+      "baseline": 85.57925099999974,
+      "optimized": 55.759896999999945
+    },
+    "thread_cpu_reduction_fraction": 0.34844139965655796,
+    "candidate_checks": {
+      "baseline": 15600,
+      "optimized": 15600
+    },
+    "queries_deferred": 15364,
+    "gc_collections": {
+      "baseline": [
+        {
+          "generation": 0,
+          "thread_cpu_ms": 0.070242
+        },
+        {
+          "generation": 0,
+          "thread_cpu_ms": 0.051482
+        }
+      ],
+      "optimized": [
+        {
+          "generation": 0,
+          "thread_cpu_ms": 0.089021
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "Curve pool is selected for out-of-window behavior, not workload frequencies",
+    "Both scan arms share current numerical curve implementation",
+    "Unfrozen single-run timing varied; 4.55% and 34.73% reductions were observed",
+    "Deeper reentry/admission CPU fixtures did not show stable gains",
+    "No uniform JOIN offset deployed because held-out events worsened",
+    "V38 remains frozen; deploy by administrative stop, verified archive and cold V39"
+  ]
+}

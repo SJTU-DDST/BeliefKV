@@ -282,6 +282,99 @@ def test_conditional_quantiles_and_cdf_stay_consistent_after_old_median():
     assert surviving.release_probability_within(remaining, now_ms=1500.) == pytest.approx(.5)
 
 
+def test_deferred_tool_survival_probe_checks_history_switch_before_old_median():
+    runtime, hint = tool_runtime()
+    history = replace(
+        hint, issued_monotonic_ms=1000., expires_monotonic_ms=100000.,
+        release_cdf=((100., .1), (30100., 1.)),
+        residual_duration_mass=((1000., .90), (30000., .01), (45000., .09)),
+        residual_support_detail="same_input_completed",
+    )
+    try:
+        remaining = history.remaining_quantile(.5, now_ms=3000.)
+        assert remaining == 43000.
+        check = history.next_prefetch_check_ms(
+            2000., now_ms=3000., remaining_ms=remaining,
+        )
+        assert check == 31000.
+        assert history.remaining_quantile(.5, now_ms=check) < 2000.
+        unsupported = replace(
+            history,
+            residual_duration_mass=((1000., 1.), (30000., 0.), (45000., 0.)),
+        )
+        assert unsupported.remaining_quantile(.5, now_ms=3000.) is None
+        assert unsupported.next_prefetch_check_ms(
+            2000., now_ms=3000., remaining_ms=None,
+        ) == 31000.
+        assert unsupported.remaining_quantile(.5, now_ms=31000.) < 2000.
+        unordered = replace(
+            history,
+            residual_duration_mass=((45000., .09), (1000., .90), (30000., .01)),
+        )
+        assert unordered.next_prefetch_check_ms(
+            2000., now_ms=3000., remaining_ms=43000.,
+        ) == 3000.
+    finally:
+        runtime.close()
+
+
+def test_tool_survival_probe_preserves_window_entry_and_rechecks_new_hint():
+    runtime, hint = tool_runtime()
+    runtime.prefetch_lead_ms = 500.
+    issued = hint.issued_monotonic_ms
+    history = replace(
+        hint, wait_p50_ms=5000., expires_monotonic_ms=issued + 10000.,
+        release_cdf=((100., .1), (3000., .8), (8000., .99)),
+    )
+    runtime.tool_wait_hints[hint.key.context_id] = history
+    try:
+        with patch.object(runtime, "_prefetch_slot_available", return_value=True), \
+             patch.object(runtime, "_current_residency_budget", return_value=None), \
+             patch.object(runtime, "_wait_prefetch_opportunity", return_value=None) as inspect:
+            for age in range(0, 8001, 50):
+                now_ms = issued + age
+                expected = history.remaining_quantile(.5, now_ms=now_ms)
+                prior = inspect.call_count
+                runtime._tool_prefetch_next_ms = 0.
+                runtime._tool_opportunity_cache.clear()
+                with patch(
+                    "beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                    return_value=now_ms / 1000.,
+                ):
+                    runtime._roll_tool_prefetch()
+                assert (inspect.call_count > prior) == (
+                    expected is not None and expected <= runtime.prefetch_lead_ms
+                )
+            far = replace(
+                hint, issued_monotonic_ms=issued + 8050.,
+                expires_monotonic_ms=issued + 10000., wait_p50_ms=5000.,
+                release_cdf=((100., .01), (10000., .1), (30000., .9)),
+            )
+            runtime.tool_wait_hints[hint.key.context_id] = far
+            runtime._tool_prefetch_next_ms = 0.
+            with patch(
+                "beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                return_value=(issued + 8050.) / 1000.,
+            ):
+                runtime._roll_tool_prefetch()
+            assert runtime._tool_survival_probes[hint.key.context_id][0] is far
+            runtime.tool_wait_hints[hint.key.context_id] = replace(
+                far, wait_p50_ms=100., release_cdf=(),
+            )
+            prior = inspect.call_count
+            runtime._tool_prefetch_next_ms = 0.
+            with patch(
+                "beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                return_value=(issued + 8100.) / 1000.,
+            ):
+                runtime._roll_tool_prefetch()
+            assert inspect.call_count == prior + 1
+            assert runtime.counts["tool_prefetch_survival_deferred"] > 0
+            assert runtime._tool_survival_probes.get(hint.key.context_id) is None
+    finally:
+        runtime.close()
+
+
 def test_history_wait_conditions_on_live_survivors_after_its_median():
     runtime, hint = tool_runtime()
     history = replace(

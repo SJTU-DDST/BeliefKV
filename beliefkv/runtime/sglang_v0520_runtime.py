@@ -468,6 +468,7 @@ class NativeAdmissionRuntime:
         self._tool_prefetch_next_ms = 0.
         self._tool_last_queries: dict[PrefillCandidateKey, tuple[float, float]] = {}
         self._tool_opportunity_cache: dict[PrefillCandidateKey, tuple[float, object]] = {}
+        self._tool_survival_probes: dict[str, tuple[NativeToolWaitHint, float]] = {}
         self._active_tool_census_version: int | None = None
         self._active_tool_census: Counter[str | None] = Counter()
         tool_setting = os.environ.get("BELIEFKV_ENABLE_TOOL_PREFETCH", "0")
@@ -4755,12 +4756,16 @@ class NativeAdmissionRuntime:
         # Native PREPARE cannot reclaim memory; publish once after its lock changes.
         self._publish_parent_pressure_candidates()
 
-    def _live_tool_hint(self, key: PrefillCandidateKey) -> NativeToolWaitHint | None:
+    def _live_tool_hint(
+        self, key: PrefillCandidateKey, *, now_ms: float | None = None,
+    ) -> NativeToolWaitHint | None:
         hint = self.tool_wait_hints.get(key.context_id)
         inv = self.graph.invocations.get(key.invocation_id)
         if (
             hint is not None and hint.key == key
-            and hint.live(key, now_ms=time.monotonic() * 1000)
+            and hint.live(
+                key, now_ms=time.monotonic() * 1000 if now_ms is None else now_ms,
+            )
             and self.context_sessions.get(key.context_id) == key
             and inv is not None and inv.state is InvocationState.WAIT_TOOL
             and inv.updated_ts_ms == hint.invocation_revision_ts_ms
@@ -4887,17 +4892,44 @@ class NativeAdmissionRuntime:
         self._tool_prefetch_next_ms = now_ms + SEMANTIC_FRAME_INTERVAL_MS
         self.counts["tool_prefetch_scans"] += 1
         budget = None
-        for hint, remaining in sorted(
-            (
-                (item, item.remaining_quantile(.5, now_ms=now_ms))
-                for item in self.tool_wait_hints.values()
-            ),
-            key=lambda item: item[1] if item[1] is not None else math.inf,
-        ):
-            if self._live_tool_hint(hint.key) is None:
+        candidates = []
+        outside_window = deferred = 0
+        for hint in self.tool_wait_hints.values():
+            if self._live_tool_hint(hint.key, now_ms=now_ms) is None:
+                self._tool_survival_probes.pop(hint.key.context_id, None)
                 continue
+            use_probe = bool(hint.release_cdf or hint.residual_duration_mass)
+            if use_probe:
+                probe = self._tool_survival_probes.get(hint.key.context_id)
+                if probe is not None and probe[0] is hint and now_ms < probe[1]:
+                    deferred += 1
+                    outside_window += 1
+                    continue
+            remaining = hint.remaining_quantile(.5, now_ms=now_ms)
             if remaining is None or remaining > self.prefetch_lead_ms:
-                self.counts["tool_prefetch_not_in_time_window"] += 1
+                if use_probe:
+                    self._tool_survival_probes[hint.key.context_id] = (
+                        hint, hint.next_prefetch_check_ms(
+                            self.prefetch_lead_ms, now_ms=now_ms,
+                            remaining_ms=remaining,
+                        ),
+                    )
+                outside_window += 1
+                continue
+            if self._tool_survival_probes:
+                self._tool_survival_probes.pop(hint.key.context_id, None)
+            candidates.append((hint, remaining))
+        if outside_window:
+            self.counts["tool_prefetch_not_in_time_window"] += outside_window
+        if deferred:
+            self.counts["tool_prefetch_survival_deferred"] += deferred
+        if len(self._tool_survival_probes) > 512:
+            self._tool_survival_probes = {
+                context: probe for context, probe in self._tool_survival_probes.items()
+                if self.tool_wait_hints.get(context) is probe[0] and now_ms < probe[1]
+            }
+        for hint, remaining in sorted(candidates, key=lambda item: item[1]):
+            if self._live_tool_hint(hint.key) is None:
                 continue
             if budget is None:
                 budget = self._current_residency_budget(include_evictable=True)
@@ -7051,7 +7083,10 @@ class NativeAdmissionRuntime:
                     competing_group if residency_groups is None
                     else residency_groups[rank[:2]] > 1
                 ):
-                    self._read_request_reentry(req, key=keys[index])
+                    key = keys[index]
+                    cached = self._reentry_observations.get(key)
+                    if cached is None or cached[0] <= now_ms:
+                        self._read_request_reentry(req, key=key)
 
             def residency_rank(pair: tuple[int, object]) -> tuple:
                 rank = waiting_ranks[pair[0]]

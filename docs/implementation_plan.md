@@ -2,23 +2,57 @@
 
 Status date: 2026-10-13.
 
-V38 predictive cold-started 71d4d44/cf0243b6 at 00:05:13 CST
-on October 13, deploying advancing cold-leaf scans, one bounded
-post-enqueue safe-input tail capacity pass and context-local lease
-refresh. At 00:09:39, HTTP200, 5549 actual GPU-service samples,
-physical_disabled=false and unchanged configuration/physical
-capacities versus V37 are confirmed. Actual FULL/Mamba reserves are
-4145 tokens/one slot; canonical patch matches deployed tree c7c27e0d.
-See v160. Low-pressure startup does not prove actual scan/tail
-reclamation benefit or throughput improvement. Keep running sources
-frozen, fixed V29 native and the goal active.
+V38 cold-started 71d4d44/cf0243b6 at 00:05:13 CST on October 13;
+v160 verifies physical actions, actual GPU service, unchanged frozen
+capacities, 4145-token/one-Mamba reserves and deployed tree c7c27e0d.
+Its complete 600-900s window still trails fixed V29 native:
+331016/380722 decode request steps, 13.06% lower at about
+22.88k/23.24k visible-context tokens. Mean worker intervals are
+35.372/32.467ms. Instrumented exclusive Python wall is 59.102s;
+tool/reentry/admission self costs are 9.550/8.940/7.785s, not removable
+JCT. Thirty-eight post-enqueue tail passes cost about 14ms exclusively;
+actual tail completion or net performance benefit is unproven. See v163.
 
-V161's sealed startup prefix observes 227 tool and 110 JOIN continued
-scan decisions, including repeats. One tool wait reclaim frees 686
-FULL tokens; one post-enqueue tail pass executes without extra release.
-One real tool extent split contains 826 tokens. Mixed demand/predictive
-waiting demotions remain separate. These show path execution, not
-successful tail completion, early consumed FULL or throughput gains.
+V162's independently sealed prefix confirms pre-completion started,
+next-request consumed FULL: two JOIN events/21.176MB and thirty-five
+tools/2.079GB. Completed-boundary positive-FULL/window/submit funnels
+are JOIN 24/24/10 and tool 359/37/35; keep 83 JOIN boundaries unknown.
+V166 uses exactly those prefixes for 28 natural ALL JOINs, eighteen
+with late-work triggers: final rolling RETURN signed error P50 is
+428ms late, absolute P50 541ms. A -499.5ms offset fit on the first nine
+events worsens the next nine's absolute P50 from 548.8 to 642.6ms;
+500ms hits stay 4/9. Do not deploy a uniform seconds offset.
+Initial transfer and final rolling prediction differ: ten submitted
+JOINs often transfer 3-11s early and can exhaust a 3s lease before
+completion. Expiry is not proof that all bytes were wasted, nor solely
+parent admission delay. Keep both timing measurements separate.
+
+Commit and cold-deploy V39 with unchanged workload and physical patch.
+Reduce repeated tool survival queries using the earliest possible
+window-entry time of a fixed monotone conditional distribution, capped
+before historical-support fallback. New hint identity forces a query;
+unordered/non-finite distributions do not defer. Preserve live identity,
+current survival, capacity and safe-checkpoint checks at actual enqueue.
+Binary timing-curve quantiles preserve first crossings, roundoff dips,
+plateaus and unsupported tails; reuse a scan's live-check clock and the
+existing fresh reentry observation without changing execution readiness.
+Partial ACK never authorizes execution.
+
+472 focused checks pass. V164 CPU fixtures preserve every query output:
+quantile CPU is about 36.1% lower, combined survival lookup 10.4% lower.
+V167's selected 156-context out-of-window 10s fixture defers 98.49% of
+repeated survival queries; thread CPU is 84.122 to 54.908ms.
+Both arms share current numerical queries and selected curves are not
+workload frequencies; these are not GPU throughput or JCT gains.
+V168's final-source unfrozen single run is only 4.55% lower and contains
+a 24ms outlier. With collect/freeze initialization matching the server,
+thread CPU is 85.579 to 55.760ms, 34.84% lower, with 15600 checks per arm.
+Preserve both timings and GC callbacks; do not retrospectively assign the
+unobserved outlier to GC or claim a stable end-to-end speedup.
+V165's deeper admission fixtures do not show stable savings.
+Keep V38 source frozen until its administrative cutoff and fully verified
+workspace archive. Then cold-start predictive-only V39, keep fixed V29
+native and verify real consumed FULL and busy-window cost. Goal active.
 
 V37 stopped administratively at 00:01:59 CST: 49 completed,
 59 created unfinished and 48 unarrived; preserve the latter 107

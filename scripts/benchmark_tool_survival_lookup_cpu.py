@@ -7,6 +7,7 @@ import argparse
 import ast
 import hashlib
 import json
+import math
 from pathlib import Path
 from statistics import median
 import subprocess
@@ -17,6 +18,8 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 import beliefkv.predictor.action_frontier as timing_module
+import beliefkv.predictor.structured_frontier as distribution_module
+import beliefkv.runtime.sglang_v0520_prediction as prediction_module
 from beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey
 from beliefkv.runtime.sglang_v0520_prediction import NativeToolWaitHint
 
@@ -24,23 +27,23 @@ from beliefkv.runtime.sglang_v0520_prediction import NativeToolWaitHint
 SOURCE = "beliefkv/predictor/action_frontier.py"
 
 
-def baseline_curve(revision):
+def baseline_class(revision, source_path, module_namespace, class_name):
     source = subprocess.check_output(
-        ["git", "show", f"{revision}:{SOURCE}"], cwd=ROOT, text=True,
+        ["git", "show", f"{revision}:{source_path}"], cwd=ROOT, text=True,
     )
     owner = next(
         node for node in ast.parse(source).body
-        if isinstance(node, ast.ClassDef) and node.name == "ActionTimingCurve"
+        if isinstance(node, ast.ClassDef) and node.name == class_name
     )
-    owner.name = "BaselineActionTimingCurve"
-    namespace = dict(vars(timing_module))
+    owner.name = f"Baseline{class_name}"
+    namespace = dict(vars(module_namespace))
     module = ast.Module(body=[
         ast.ImportFrom(
             module="__future__", names=[ast.alias(name="annotations")], level=0,
         ),
         owner,
     ], type_ignores=[])
-    exec(compile(ast.fix_missing_locations(module), f"{revision}:{SOURCE}", "exec"), namespace)
+    exec(compile(ast.fix_missing_locations(module), f"{revision}:{source_path}", "exec"), namespace)
     return namespace[owner.name], hashlib.sha256(source.encode()).hexdigest()
 
 
@@ -78,7 +81,7 @@ def recorded_curves(path, *, max_forecasts, max_curves):
     }
 
 
-def cases(rows, curve_class):
+def cases(rows, curve_class, hint_class, distribution_class):
     curves, hints, queries = [], [], []
     for index, row in enumerate(rows):
         points = tuple(tuple(point) for point in row["release_cdf"])
@@ -86,7 +89,7 @@ def cases(rows, curve_class):
             tuple(point[0] for point in points),
             tuple(point[1] for point in points), "pooled", 0.,
         )
-        hint = NativeToolWaitHint(
+        hint = hint_class(
             PrefillCandidateKey(
                 f"fixture-{index}", row["workflow_id"], row["invocation_id"],
                 row["context_id"], row["context_epoch"], 0, "fixture", 1,
@@ -99,11 +102,18 @@ def cases(rows, curve_class):
             residual_support_detail=row.get("residual_support_detail"),
         )
         hint.__dict__["_release_curve"] = curve
+        if hint.residual_duration_mass:
+            hint.__dict__["_residual_distribution"] = distribution_class(
+                tuple(point[0] for point in hint.residual_duration_mass),
+                tuple(point[1] for point in hint.residual_duration_mass), 1.,
+            )
         ages = {
             0., 100., 500., 1000., row["p50_ms"], curve.tau_ms[-1] + 1.,
             *curve.tau_ms,
             *(max(0., value - 1e-6) for value in curve.tau_ms),
             *(value + 1e-6 for value in curve.tau_ms),
+            *(point[0] for point in hint.residual_duration_mass),
+            *(point[0] + 1e-6 for point in hint.residual_duration_mass),
         }
         for age in sorted(ages):
             curves.append((curve, age))
@@ -114,6 +124,13 @@ def cases(rows, curve_class):
 
 def query_curve(items):
     return [curve.release_within(age) for curve, age in items]
+
+
+def query_quantiles(items):
+    return [
+        (curve.quantile(.1), curve.quantile(.5), curve.quantile(.9))
+        for curve, _ in items
+    ]
 
 
 def query_survival(items):
@@ -182,6 +199,14 @@ def verify_duplicate_knots(original):
         for value in (-1., 0., *knots, *(point + 1e-6 for point in knots), 100.):
             assert left.release_within(value) == right.release_within(value)
             count += 1
+        for probability in {
+            .1, .5, .9, *probabilities,
+            *(math.nextafter(point, 0.) for point in probabilities),
+            *(math.nextafter(point, 1.) for point in probabilities),
+        }:
+            if 0 < probability < 1:
+                assert left.quantile(probability) == right.quantile(probability)
+                count += 1
     return count
 
 
@@ -197,12 +222,25 @@ def main():
     args = parser.parse_args()
     if min(args.max_forecasts, args.max_curves, args.samples, args.iterations) <= 0:
         parser.error("counts must be positive")
-    original, source_hash = baseline_curve(args.baseline_revision)
+    original, source_hash = baseline_class(
+        args.baseline_revision, SOURCE, timing_module, "ActionTimingCurve",
+    )
+    original_hint, hint_hash = baseline_class(
+        args.baseline_revision, "beliefkv/runtime/sglang_v0520_prediction.py",
+        prediction_module, "NativeToolWaitHint",
+    )
+    original_distribution, distribution_hash = baseline_class(
+        args.baseline_revision, "beliefkv/predictor/structured_frontier.py",
+        distribution_module, "EmpiricalDistribution",
+    )
     rows, evidence = recorded_curves(
         args.forecast_log, max_forecasts=args.max_forecasts, max_curves=args.max_curves,
     )
-    baseline = cases(rows, original)
-    optimized = cases(rows, timing_module.ActionTimingCurve)
+    baseline = cases(rows, original, original_hint, original_distribution)
+    optimized = cases(
+        rows, timing_module.ActionTimingCurve,
+        NativeToolWaitHint, distribution_module.EmpiricalDistribution,
+    )
     assert baseline[2] == optimized[2]
     assert Path(timing_module.__file__).resolve() == ROOT / SOURCE
     report = {
@@ -214,7 +252,15 @@ def main():
         ),
         "baseline_revision": args.baseline_revision,
         "baseline_source_sha256": source_hash,
+        "baseline_hint_source_sha256": hint_hash,
+        "baseline_distribution_source_sha256": distribution_hash,
         "optimized_source_sha256": hashlib.sha256((ROOT / SOURCE).read_bytes()).hexdigest(),
+        "optimized_hint_source_sha256": hashlib.sha256(
+            Path(prediction_module.__file__).read_bytes()
+        ).hexdigest(),
+        "optimized_distribution_source_sha256": hashlib.sha256(
+            Path(distribution_module.__file__).read_bytes()
+        ).hexdigest(),
         "benchmark_source_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
         "recorded_prefix": evidence,
         "curve_lengths": [len(row["release_cdf"]) for row in rows],
@@ -224,6 +270,10 @@ def main():
         "cases": {
             "cdf_lookup": measure(
                 {"baseline": baseline[0], "optimized": optimized[0]}, query_curve,
+                samples=args.samples, iterations=args.iterations,
+            ),
+            "curve_quantiles": measure(
+                {"baseline": baseline[0], "optimized": optimized[0]}, query_quantiles,
                 samples=args.samples, iterations=args.iterations,
             ),
             "native_survival_queries": measure(

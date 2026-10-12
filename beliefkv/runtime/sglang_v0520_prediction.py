@@ -173,11 +173,72 @@ class NativeToolWaitHint:
         if distribution is not None and self.residual_support_detail in (
             "same_input_completed", "same_failed_input_completed",
             "completed_project_command",
-        ) and sum(value > age_ms for value in distribution.values) < 2:
+        ):
             # The remaining upper point is an error margin, not an observed
             # completion. Use the operational survival curve after an overrun.
+            survivors = 0
+            for value in distribution.values:
+                if value > age_ms:
+                    survivors += 1
+                    if survivors == 2:
+                        return distribution
             return None
         return distribution
+
+    @cached_property
+    def _prefetch_probe_bounds(self) -> tuple[bool, float | None]:
+        distribution = self._residual_distribution
+        if distribution is not None and (
+            any(not math.isfinite(value) for value in distribution.values)
+            or tuple(sorted(distribution.values)) != distribution.values
+            or any(
+                not math.isfinite(mass) or mass < 0
+                for mass in distribution.probability_mass
+            )
+        ):
+            return False, None
+        curve = self._release_curve
+        if curve is not None and (
+            any(not math.isfinite(value) for value in curve.tau_ms)
+            or any(
+                not math.isfinite(value)
+                for value in curve.release_within_probability
+            )
+            or any(
+                left > right for left, right in zip(
+                    curve.release_within_probability,
+                    curve.release_within_probability[1:],
+                )
+            )
+        ):
+            return False, None
+        history_end = (
+            distribution.values[-2]
+            if distribution is not None and len(distribution.values) >= 2
+            and self.residual_support_detail in (
+                "same_input_completed", "same_failed_input_completed",
+                "completed_project_command",
+            )
+            else None
+        )
+        return True, history_end
+
+    def next_prefetch_check_ms(
+        self, horizon_ms: float, *, now_ms: float, remaining_ms: float | None,
+    ) -> float:
+        """Earliest median-window entry, capped by a history-survival switch."""
+        safe, history_end = self._prefetch_probe_bounds
+        if not safe or remaining_ms is not None and not math.isfinite(remaining_ms):
+            return now_ms
+        # For a fixed monotone CDF, the conditional absolute median cannot
+        # move earlier as age increases; residual time drops at most 1ms/ms.
+        deadline = (
+            self.expires_monotonic_ms if remaining_ms is None
+            else now_ms + max(0., remaining_ms - horizon_ms)
+        )
+        if history_end is not None and now_ms < self.issued_monotonic_ms + history_end:
+            deadline = min(deadline, self.issued_monotonic_ms + history_end)
+        return min(deadline, self.expires_monotonic_ms)
 
     def release_probability_within(self, horizon_ms: float, *, now_ms: float) -> float | None:
         age = max(0., now_ms - self.issued_monotonic_ms)

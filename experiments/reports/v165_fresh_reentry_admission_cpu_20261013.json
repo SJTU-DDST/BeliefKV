@@ -1,0 +1,355 @@
+{
+  "scope": "CPU-only two-call admission cycles with the actual native reentry inspector and RadixKey on synthetic Host-only radix fixtures; cache observations expire before each cycle. No native allocation, DMA, GPU or throughput is measured.",
+  "baseline_revision": "8cb4357",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "3e759b28c14559035cf26b852240a131a67a83e85eb0a13a7471998b650c7e3e",
+    "beliefkv/policy/causal_frontier.py": "b2e1567cc5a6f50f33329c9b73f21949a6da6061b4560cbc36beb65e7e54acb2",
+    "beliefkv/runtime/sglang_v0520_admission.py": "092d0f2814402e2a8a8211ba6afa6fad273b2c85323d73cc5bf8f89f29cc5ecd"
+  },
+  "reentry_timing_wrapper_equal": false,
+  "benchmark_source_sha256": "925a770f8dcbed207e47ad44ac242cb10d4a93a469dff2171bdd5023b48c2938",
+  "optimized_runtime_source_sha256": "20ef231fe61fd55b3adcced684a186fb0c7b2086a5c19f41f55a131faca368dc",
+  "native_source_sha256": {
+    "python/sglang/srt/mem_cache/radix_cache.py": "6d7f6cef2edd040e93412f9ee9e56138f88f04b8c2e9a3163ffafeb6ae6cbf10",
+    "python/sglang/srt/mem_cache/unified_radix_cache.py": "607a717acdf633411482f5c455daf7c50fff820ac18921f3e60d59e73f03d89a"
+  },
+  "sampling_change": "Rotate once for unchanged handoff/admission targets in a scheduler cycle; mixed-residency queues can differ because the second call no longer samples another eight requests. Host-only and aged fixture orders are checked.",
+  "cases": [
+    {
+      "queue_size": 4,
+      "retained_rounds": 4,
+      "tokens": 32768,
+      "depth": 8,
+      "session_leaves": 8,
+      "aged": false,
+      "iterations": 100,
+      "warmup_iterations": 5,
+      "mixed_live_residency": false,
+      "singleton_causal_group": false,
+      "planning_calls_per_cycle": 2,
+      "clock_step_ms": 60,
+      "queue_order_equal": true,
+      "native_reads_equal_or_only_singleton_skipped": false,
+      "native_inspections_including_warmup": {
+        "baseline": 420,
+        "optimized": 420
+      },
+      "optimized_scan_reuses": 105,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 100,
+            "mean_ms": 0.36507747,
+            "p50_ms": 0.364691,
+            "p99_ms": 0.392489,
+            "max_ms": 0.392489
+          },
+          "thread_cpu_ms": {
+            "count": 100,
+            "mean_ms": 0.36401015,
+            "p50_ms": 0.363581,
+            "p99_ms": 0.391391,
+            "max_ms": 0.391391
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 100,
+            "mean_ms": 0.36008067,
+            "p50_ms": 0.357153,
+            "p99_ms": 0.611908,
+            "max_ms": 0.611908
+          },
+          "thread_cpu_ms": {
+            "count": 100,
+            "mean_ms": 0.35902929,
+            "p50_ms": 0.356131,
+            "p99_ms": 0.610729,
+            "max_ms": 0.610729
+          }
+        }
+      },
+      "mean_wall_reduction_fraction": 0.013686958003735539
+    },
+    {
+      "queue_size": 156,
+      "retained_rounds": 4,
+      "tokens": 32768,
+      "depth": 8,
+      "session_leaves": 8,
+      "aged": false,
+      "iterations": 100,
+      "warmup_iterations": 5,
+      "mixed_live_residency": false,
+      "singleton_causal_group": false,
+      "planning_calls_per_cycle": 2,
+      "clock_step_ms": 60,
+      "queue_order_equal": true,
+      "native_reads_equal_or_only_singleton_skipped": false,
+      "native_inspections_including_warmup": {
+        "baseline": 1632,
+        "optimized": 1632
+      },
+      "optimized_scan_reuses": 105,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 100,
+            "mean_ms": 2.40992674,
+            "p50_ms": 2.43538,
+            "p99_ms": 2.518952,
+            "max_ms": 2.518952
+          },
+          "thread_cpu_ms": {
+            "count": 100,
+            "mean_ms": 2.40886483,
+            "p50_ms": 2.43458,
+            "p99_ms": 2.517973,
+            "max_ms": 2.517973
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 100,
+            "mean_ms": 2.35822627,
+            "p50_ms": 2.370188,
+            "p99_ms": 2.519677,
+            "max_ms": 2.519677
+          },
+          "thread_cpu_ms": {
+            "count": 100,
+            "mean_ms": 2.35716423,
+            "p50_ms": 2.369275,
+            "p99_ms": 2.51873,
+            "max_ms": 2.51873
+          }
+        }
+      },
+      "mean_wall_reduction_fraction": 0.02145312931794774
+    },
+    {
+      "queue_size": 156,
+      "retained_rounds": 4,
+      "tokens": 98304,
+      "depth": 24,
+      "session_leaves": 8,
+      "aged": false,
+      "iterations": 100,
+      "warmup_iterations": 5,
+      "mixed_live_residency": false,
+      "singleton_causal_group": false,
+      "planning_calls_per_cycle": 2,
+      "clock_step_ms": 60,
+      "queue_order_equal": true,
+      "native_reads_equal_or_only_singleton_skipped": false,
+      "native_inspections_including_warmup": {
+        "baseline": 1632,
+        "optimized": 1632
+      },
+      "optimized_scan_reuses": 105,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 100,
+            "mean_ms": 3.72030161,
+            "p50_ms": 3.76694,
+            "p99_ms": 4.14147,
+            "max_ms": 4.14147
+          },
+          "thread_cpu_ms": {
+            "count": 100,
+            "mean_ms": 3.71923616,
+            "p50_ms": 3.766022,
+            "p99_ms": 4.14051,
+            "max_ms": 4.14051
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 100,
+            "mean_ms": 3.72038374,
+            "p50_ms": 3.770672,
+            "p99_ms": 4.075553,
+            "max_ms": 4.075553
+          },
+          "thread_cpu_ms": {
+            "count": 100,
+            "mean_ms": 3.71905305,
+            "p50_ms": 3.769537,
+            "p99_ms": 4.074774,
+            "max_ms": 4.074774
+          }
+        }
+      },
+      "mean_wall_reduction_fraction": -2.2076167098816768e-05
+    },
+    {
+      "queue_size": 156,
+      "retained_rounds": 4,
+      "tokens": 32768,
+      "depth": 256,
+      "session_leaves": 8,
+      "aged": false,
+      "iterations": 100,
+      "warmup_iterations": 5,
+      "mixed_live_residency": false,
+      "singleton_causal_group": false,
+      "planning_calls_per_cycle": 2,
+      "clock_step_ms": 60,
+      "queue_order_equal": true,
+      "native_reads_equal_or_only_singleton_skipped": false,
+      "native_inspections_including_warmup": {
+        "baseline": 1632,
+        "optimized": 1632
+      },
+      "optimized_scan_reuses": 105,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 100,
+            "mean_ms": 10.26577186,
+            "p50_ms": 10.466241,
+            "p99_ms": 11.043062,
+            "max_ms": 11.043062
+          },
+          "thread_cpu_ms": {
+            "count": 100,
+            "mean_ms": 10.26482888,
+            "p50_ms": 10.46614,
+            "p99_ms": 11.042877,
+            "max_ms": 11.042877
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 100,
+            "mean_ms": 10.29833098,
+            "p50_ms": 10.487666,
+            "p99_ms": 11.710425,
+            "max_ms": 11.710425
+          },
+          "thread_cpu_ms": {
+            "count": 100,
+            "mean_ms": 10.29383241,
+            "p50_ms": 10.487477,
+            "p99_ms": 11.71028,
+            "max_ms": 11.71028
+          }
+        }
+      },
+      "mean_wall_reduction_fraction": -0.0031716192843584956
+    },
+    {
+      "queue_size": 512,
+      "retained_rounds": 4,
+      "tokens": 32768,
+      "depth": 8,
+      "session_leaves": 1,
+      "aged": false,
+      "iterations": 100,
+      "warmup_iterations": 5,
+      "mixed_live_residency": false,
+      "singleton_causal_group": false,
+      "planning_calls_per_cycle": 2,
+      "clock_step_ms": 60,
+      "queue_order_equal": true,
+      "native_reads_equal_or_only_singleton_skipped": false,
+      "native_inspections_including_warmup": {
+        "baseline": 1664,
+        "optimized": 1664
+      },
+      "optimized_scan_reuses": 105,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 100,
+            "mean_ms": 5.25586072,
+            "p50_ms": 5.267234,
+            "p99_ms": 5.941649,
+            "max_ms": 5.941649
+          },
+          "thread_cpu_ms": {
+            "count": 100,
+            "mean_ms": 5.25398129,
+            "p50_ms": 5.265491,
+            "p99_ms": 5.939762,
+            "max_ms": 5.939762
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 100,
+            "mean_ms": 5.21144089,
+            "p50_ms": 5.217991,
+            "p99_ms": 5.851024,
+            "max_ms": 5.851024
+          },
+          "thread_cpu_ms": {
+            "count": 100,
+            "mean_ms": 5.20797366,
+            "p50_ms": 5.216867,
+            "p99_ms": 5.84889,
+            "max_ms": 5.84889
+          }
+        }
+      },
+      "mean_wall_reduction_fraction": 0.008451485373455636
+    },
+    {
+      "queue_size": 156,
+      "retained_rounds": 4,
+      "tokens": 32768,
+      "depth": 8,
+      "session_leaves": 8,
+      "aged": true,
+      "iterations": 100,
+      "warmup_iterations": 5,
+      "mixed_live_residency": false,
+      "singleton_causal_group": false,
+      "planning_calls_per_cycle": 2,
+      "clock_step_ms": 60,
+      "queue_order_equal": true,
+      "native_reads_equal_or_only_singleton_skipped": false,
+      "native_inspections_including_warmup": {
+        "baseline": 0,
+        "optimized": 0
+      },
+      "optimized_scan_reuses": 0,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 100,
+            "mean_ms": 0.71674225,
+            "p50_ms": 0.716231,
+            "p99_ms": 0.737421,
+            "max_ms": 0.737421
+          },
+          "thread_cpu_ms": {
+            "count": 100,
+            "mean_ms": 0.71598011,
+            "p50_ms": 0.715444,
+            "p99_ms": 0.736735,
+            "max_ms": 0.736735
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 100,
+            "mean_ms": 0.71982788,
+            "p50_ms": 0.720367,
+            "p99_ms": 0.802718,
+            "max_ms": 0.802718
+          },
+          "thread_cpu_ms": {
+            "count": 100,
+            "mean_ms": 0.71898652,
+            "p50_ms": 0.719489,
+            "p99_ms": 0.801862,
+            "max_ms": 0.801862
+          }
+        }
+      },
+      "mean_wall_reduction_fraction": -0.004305076197196334
+    }
+  ]
+}

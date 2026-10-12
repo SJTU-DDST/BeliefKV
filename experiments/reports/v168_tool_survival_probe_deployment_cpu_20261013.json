@@ -1,0 +1,62 @@
+{
+  "scope": "CPU candidate scans outside transfer windows; not GPU throughput",
+  "baseline_revision": "8cb4357",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "6e1db6ad33c310c11a6f5a721958dae4646366b0d9ea8599efae56a903d2711e",
+    "beliefkv/runtime/sglang_v0520_physical.py": "0dfc1bbd1c3f9010dffddc117b991884063db9bcdb1f4a175d90363c4737672b",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "3e759b28c14559035cf26b852240a131a67a83e85eb0a13a7471998b650c7e3e"
+  },
+  "tool_wait_contexts": 156,
+  "prefetch_lead_ms": 2000.0,
+  "recorded_prefix": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v38/predictive_h2d/opportunities/admission_opportunities.jsonl",
+    "read_prefix_bytes": 29287534,
+    "read_prefix_sha256": "786f7ffe815556095b00d504ff4650e39b1a04dc37060dd3ce6718ba58914606",
+    "forecasts_seen": 4096,
+    "distinct_forecasts_selected": 4096
+  },
+  "eligible_recorded_curve_pool": 602,
+  "recorded_curves_repeated_across_fixture_contexts": 156,
+  "recorded_curve_selection": "Only CDFs whose conditional P50 is unsupported or stays above 2s on this timeline; not sampled workload frequencies. Both arms share the current curve implementation.",
+  "iterations": 5000,
+  "scheduler_tick_ms": 2.0,
+  "timeline_ms": 9998.0,
+  "physical_actions": 0,
+  "costs": {
+    "baseline": {
+      "count": 5000,
+      "mean_ms": 0.0139246886,
+      "p50_ms": 0.002173,
+      "p99_ms": 0.561507,
+      "max_ms": 2.914773
+    },
+    "optimized": {
+      "count": 5000,
+      "mean_ms": 0.0133134192,
+      "p50_ms": 0.00218,
+      "p99_ms": 0.313506,
+      "max_ms": 24.207241
+    }
+  },
+  "total_cpu_ms": {
+    "baseline": 69.62344299999987,
+    "optimized": 66.56709599999986
+  },
+  "legacy_total_cpu_ms_field_is_call_wall": true,
+  "total_thread_cpu_ms": {
+    "baseline": 66.93179400000004,
+    "optimized": 63.883133999999984
+  },
+  "thread_cpu_reduction_fraction": 0.04554875669401681,
+  "clock_fixture": "plain monotonic lambda; no Mock call recording",
+  "benchmark_source_sha256": "e77fc840e5c33412d862e9d796245cdf0ec3d38b70b53f893bba597d30b70bf5",
+  "optimized_runtime_source_sha256": "65d8d3fbdca9c7777303600ecbe64d45fb932d545c6c4bab51f7b47f0edfdda1",
+  "candidate_checks": {
+    "baseline": 15600,
+    "optimized": 15600
+  },
+  "optimized_scans": 100,
+  "optimized_deferred": 4900,
+  "optimized_survival_queries_deferred": 15364,
+  "mean_reduction_fraction": 0.04389824559523736
+}

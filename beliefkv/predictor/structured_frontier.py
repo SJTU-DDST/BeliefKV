@@ -362,10 +362,11 @@ class EmpiricalDistribution:
 
         if not self.values:
             return 0.0
+        threshold = max(0.0, threshold)
         return sum(
             probability
             for value, probability in zip(self.values, self.probability_mass)
-            if value > max(0.0, threshold)
+            if value > threshold
         )
 
     def to_dict(self) -> dict[str, Any]:

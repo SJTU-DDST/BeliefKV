@@ -7,15 +7,18 @@ import argparse
 from bisect import bisect_right
 from collections import Counter, defaultdict
 import json
+import hashlib
 from pathlib import Path
 from statistics import median
 import sys
+from unittest.mock import patch
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from scripts.summarize_semantic_h2d_ab import records
+from scripts.audit_sealed_wait_prefetch import SealedRecords
 
 
 def _error_summary(values: list[float]) -> dict:
@@ -279,6 +282,10 @@ def main() -> None:
     source.add_argument("--threshold", type=float)
     source.add_argument("--artifact", type=Path)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument(
+        "--sealed-prefix-report", type=Path,
+        help="Reuse the independently sealed prefixes of a prior wait-prefetch summary.",
+    )
     args = parser.parse_args()
     threshold = args.threshold
     if args.artifact is not None:
@@ -286,9 +293,35 @@ def main() -> None:
         threshold = report["calibration"]["semantic_event"]["request_operating_point"]["threshold"]
     if type(threshold) not in (int, float) or not 0 <= threshold <= 1:
         parser.error("phase threshold must be a probability")
-    result = audit(args.arm, threshold)
+    if args.output.exists():
+        parser.error("--output already exists; preserve the previous audit")
+    if args.sealed_prefix_report is None:
+        result = audit(args.arm, threshold)
+    else:
+        prefix_payload = args.sealed_prefix_report.read_bytes()
+        evidence = json.loads(prefix_payload)
+        sealed = SealedRecords()
+        sealed.prefixes = evidence["input_jsonl_prefixes"]
+
+        def observed_records(path):
+            if str(Path(path)) in sealed.prefixes:
+                yield from sealed(path)
+
+        with patch.dict(globals(), records=observed_records):
+            result = audit(args.arm, threshold)
+        result["sealed_prefix_report"] = {
+            "path": str(args.sealed_prefix_report.resolve()),
+            "sha256": hashlib.sha256(prefix_payload).hexdigest(),
+            "collection_code_commit": evidence["collection_code_commit"],
+            "input_jsonl_prefixes": sealed.prefixes,
+            "scope": "Only prior complete prefixes; lengths and SHA256 verified on each read.",
+        }
+    args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(json.dumps(result, indent=2, allow_nan=False) + "\n")
-    print(json.dumps({key: value for key, value in result.items() if key != "rows"}, indent=2))
+    print(json.dumps({
+        key: value for key, value in result.items()
+        if key not in ("rows", "sealed_prefix_report")
+    }, indent=2))
 
 
 if __name__ == "__main__":
