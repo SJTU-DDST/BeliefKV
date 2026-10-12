@@ -107,6 +107,90 @@ def provisional_join_batch_fixture():
     return runtime, key, opportunity, cache, reserved
 
 
+def semantic_join_batch_fixture(*, center_tokens=48., lower_tokens=4., lead_ms=2000.):
+    from beliefkv.runtime.semantic_report_worker import SemanticReportInput, SemanticReportReply
+
+    runtime, key, opportunity, cache, reserved = provisional_join_batch_fixture()
+    runtime._semantic_eos_proofs.clear()
+    runtime._semantic_finished.clear()
+    runtime._semantic_worker.error = ""
+    runtime.semantic_work_statistic = "center"
+    runtime.prefetch_lead_ms = lead_ms
+    stage = runtime._final_stages["join"]
+    stage.generated_tokens, stage.tokens_per_second = 120, 40.
+    runtime._semantic_forecasts["child"] = SemanticReportReply(
+        SemanticReportInput(
+            runtime.visible["child"], time.monotonic() * 1000.,
+            120, 256, "Evidence complete.", True, 500, 1, 2,
+        ), .99, lower_tokens, center_tokens, max(center_tokens, 80.), 5.,
+    )
+    return runtime, key, opportunity, cache, reserved
+
+
+@pytest.mark.parametrize("lead_ms,lower_tokens,expected_nodes", [
+    (2000., 4., 4), (500., 4., 0), (2000., 48., 0),
+])
+def test_join_work_interval_reaches_final_batch_enqueue_with_residency_bound(
+    lead_ms, lower_tokens, expected_nodes,
+):
+    runtime, _, opportunity, cache, _ = semantic_join_batch_fixture(
+        lower_tokens=lower_tokens, lead_ms=lead_ms,
+    )
+    forecast = runtime._semantic_forecasts["child"]
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                   return_value=forecast.observation.observed_ts_ms / 1000.), \
+            patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity):
+            runtime.dispatch_join_prefetch()
+        assert runtime.physical_ledger.pending_count == expected_nodes
+        assert cache.prefetch_gpu_session_nodes.call_count == int(expected_nodes > 0)
+        assert not runtime.graph.joins["join"].satisfied
+        plan = next(row for row in records if row["event"] == "wait_prefetch_plan")
+        assert plan["predicted_remaining_ms"] == 1200.
+        assert plan["prediction_early_ms"] == (48. - lower_tokens) * 25.
+        assert plan["start_window_ms"] == min(
+            lead_ms, 110. + (48. - lower_tokens) * 25.,
+        )
+        if expected_nodes:
+            assert runtime._join_ticket.work_endpoint_tokens == 168.
+            latest = next(row for row in records if row["event"] == "final_stage_latest_start")
+            assert latest["forecast_lower_tokens"] == lower_tokens
+            assert latest["prediction_early_ms"] == 1100.
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("change", ["narrowed_interval", "tool_started", "descheduled"])
+def test_join_work_uncertainty_is_rechecked_after_causal_drain(change):
+    runtime, _, opportunity, cache, _ = semantic_join_batch_fixture()
+    forecast = runtime._semantic_forecasts["child"]
+
+    def drain(**kwargs):
+        if change == "narrowed_interval":
+            runtime._semantic_forecasts["child"] = replace(forecast, lower_tokens=48.)
+        elif change == "tool_started":
+            runtime.on_events((event(
+                8, RuntimeEventKind.TOOL_START, invocation_id="child", context_id="ctx-child",
+                attributes={"tool_run_id": "new"},
+            ),))
+        else:
+            runtime._native_running_batch = NS(reqs=[NS(rid="other")])
+
+    runtime.event_server = NS(drain=drain, close=lambda: None)
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                   return_value=forecast.observation.observed_ts_ms / 1000.), \
+            patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity):
+            runtime.dispatch_join_prefetch()
+        cache.prefetch_gpu_session_nodes.assert_not_called()
+        assert runtime.physical_ledger.pending_count == 0
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
 def test_provisional_join_dispatch_reuses_current_plan_and_rechecks_before_enqueue():
     runtime, key, opportunity, cache, _ = provisional_join_batch_fixture()
     try:

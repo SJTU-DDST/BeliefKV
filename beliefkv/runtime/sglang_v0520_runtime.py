@@ -356,8 +356,8 @@ class NativeAdmissionRuntime:
         self._residency_budget = PrefetchResidencyBudget(4, 1024 ** 3)
         self._visible_since: dict[str, float] = {}
         lead_setting = float(os.environ.get("BELIEFKV_PREFETCH_LEAD_MS", "1000"))
-        if not math.isfinite(lead_setting) or not 100 <= lead_setting <= 1000:
-            raise ValueError("prefetch lead must be between 100 and 1000 ms")
+        if not math.isfinite(lead_setting) or lead_setting < 0:
+            raise ValueError("prefetch lead must be finite and nonnegative")
         self.prefetch_lead_ms = lead_setting
         self.semantic_work_statistic = os.environ.get(
             "BELIEFKV_SEMANTIC_WORK_STATISTIC", "upper",
@@ -2403,6 +2403,7 @@ class NativeAdmissionRuntime:
             window = transfer_start_window(
                 estimate, max_lead_ms=self.prefetch_lead_ms,
                 observation_spacing_ms=SEMANTIC_FRAME_INTERVAL_MS,
+                prediction_early_ms=self._join_work_prediction_early_ms(stage.key),
             )
             if window is None:
                 self.counts["prefetch_service_exceeds_lead_window"] += 1
@@ -2458,6 +2459,9 @@ class NativeAdmissionRuntime:
                     "forecast_center_tokens": (
                         forecast.middle_tokens if forecast is not None else None
                     ),
+                    "forecast_lower_tokens": (
+                        forecast.lower_tokens if forecast is not None else None
+                    ),
                     "forecast_upper_tokens": (
                         forecast.upper_tokens if forecast is not None else None
                     ),
@@ -2477,6 +2481,7 @@ class NativeAdmissionRuntime:
                     "tokens_per_second": stage.tokens_per_second,
                     "h2d_ms": window.service_ms,
                     "enqueue_to_submit_p90_ms": window.enqueue_ms,
+                    "prediction_early_ms": window.prediction_early_ms,
                     "start_window_ms": window.horizon_ms,
                     "prefetch_lead_ms": self.prefetch_lead_ms,
                     "service_sample_count": estimate.sample_count,
@@ -4712,11 +4717,51 @@ class NativeAdmissionRuntime:
             center = hint.remaining_quantile(.5, now_ms=now_ms)
             if lower is not None and center is not None:
                 prediction_early_ms = max(0., center - lower)
+        elif opportunity.step is not None:
+            prediction_early_ms = self._join_work_prediction_early_ms(opportunity.step.key)
         return transfer_start_window(
             estimate, max_lead_ms=self.prefetch_lead_ms,
             observation_spacing_ms=SEMANTIC_FRAME_INTERVAL_MS,
             prediction_early_ms=prediction_early_ms,
         )
+
+    def _join_work_prediction_early_ms(self, key: PrefillCandidateKey) -> float:
+        """Use the live work interval for selection and the final enqueue check."""
+        invocation = self.graph.invocations.get(key.invocation_id)
+        stage = self._final_stages.get(invocation.join_id) if invocation is not None else None
+        if stage is None or stage.key != key or self._semantic_worker is None:
+            return 0.
+        rid = stage.request_id
+        forecast = self._semantic_forecasts.get(rid)
+        now_ms = time.monotonic() * 1000.
+        if (
+            forecast is None or forecast.final_score < self._semantic_score_threshold
+            or not forecast.observation.notice_active
+            or not 0 <= now_ms - forecast.observation.observed_ts_ms <= 1_500.
+            or not self._semantic_key_live(forecast.observation.key, now_ms)
+            or rid in self._semantic_finished
+        ):
+            return 0.
+        progress = self._semantic_progress.get(rid, ())
+        generated = progress[-1][1] if progress else stage.generated_tokens
+        rate = self._semantic_rate(rid) if progress else stage.tokens_per_second
+        if rate is None or rate <= 0:
+            return 0.
+        advanced = max(0., generated - forecast.observation.observed_output_tokens)
+        work = (
+            forecast.upper_tokens if self.semantic_work_statistic == "upper"
+            else forecast.middle_tokens
+        )
+        if work <= advanced:
+            if self.semantic_work_statistic != "center" or forecast.upper_tokens <= advanced:
+                return 0.
+            work = forecast.upper_tokens
+        ticket = self._join_ticket
+        if ticket is not None and ticket.stage_bound and ticket.key == key:
+            endpoint = ticket.work_endpoint_tokens
+            if endpoint is not None:
+                work = endpoint - forecast.observation.observed_output_tokens
+        return max(0., work - max(advanced, forecast.lower_tokens)) * 1000. / rate
 
     @timed_runtime("tool_prefetch")
     def dispatch_tool_prefetch(self) -> None:

@@ -55,6 +55,18 @@ def test_complete_pair_requires_both_arms_and_finished_postprocessing(tmp_path):
         launcher.validate_completed_pair(tmp_path, configuration)
 
 
+def test_next_pair_lead_override_preserves_previous_plan_and_every_other_setting():
+    configuration = plan()
+    snapshot = json.dumps(configuration, sort_keys=True)
+    arguments = {"python": "/python", "port": 18454}
+    original = launcher.fresh_pair_environment(configuration, Path("/fresh-run"), **arguments)
+    revised = launcher.fresh_pair_environment(
+        configuration, Path("/fresh-run"), **arguments, prefetch_lead_ms=2000,
+    )
+    assert revised == {**original, "PREFETCH_LEAD_MS": "2000"}
+    assert json.dumps(configuration, sort_keys=True) == snapshot
+
+
 def test_partial_arrival_table_does_not_deploy_new_code(tmp_path):
     configuration = completed_pair(tmp_path)
     (tmp_path / "native/client_156/summary.json").write_text(

@@ -32,9 +32,12 @@ from scripts.summarize_semantic_h2d_ab import verify_frozen_execution_source
 
 def fresh_pair_environment(
     plan: dict, run_root: Path, *, python: str, port: int,
+    prefetch_lead_ms: int | None = None,
 ) -> dict[str, str]:
     environment = resume_environment(plan, run_root, python=python, port=port)
     environment.update(RESUME_PENDING="0", ARM_ORDER="predictive_h2d native")
+    if prefetch_lead_ms is not None:
+        environment["PREFETCH_LEAD_MS"] = str(prefetch_lead_ms)
     return environment
 
 
@@ -119,6 +122,10 @@ def main() -> None:
     )
     parser.add_argument("--port", type=int, default=18454)
     parser.add_argument(
+        "--prefetch-lead-ms", type=int,
+        help="Explicitly override the next pair's residency lead while preserving the previous plan.",
+    )
+    parser.add_argument(
         "--python",
         default="/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
     )
@@ -142,6 +149,7 @@ def main() -> None:
     identities = {pid: process_identity(pid) for pid in args.wait_pid}
     environment = fresh_pair_environment(
         original, run_root, python=args.python, port=args.port,
+        prefetch_lead_ms=args.prefetch_lead_ms,
     )
     state = {
         "status": (
