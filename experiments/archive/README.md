@@ -6,6 +6,31 @@ tracked inventory.
 
 ## 2026-10-13 verified workspace compression
 
+Archive: `experiments/archive/20261013/v40_development_workspaces.tar.zst`
+
+SHA256: `6d5c4add7795686d8adf679d57d3fc1b9b43bbc7aeedfd1a89b1288abd088162`
+
+All 108 V40 workspaces passed full GNU tar comparison before removal
+at 02:51:17 CST: 20,943,118,336 allocated source bytes and
+2,117,199,034 archive bytes. The collector stopped at 02:46:16 CST
+with 62 completed workflows, 46 created unfinished and 48 unarrived.
+Preserve the latter 94 as administrative censoring. Only this run's
+46 stopped owned containers were removed. Raw traces, outcomes,
+manifest and frozen plan remain. The initial cleanup was blocked by
+the read-only final audit still referencing raw; no workspace was removed.
+After that audit exited, full comparison was repeated before cleanup.
+Maintenance precedes the V41 cold start at 02:52:03 CST; available
+space after cleanup was 163,970,043,904 bytes.
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261013/v40_development_workspaces.tar.zst \
+  --directory experiments/raw
+```
+
+Receipts: `experiments/reports/v180_v40_development_stop_20261013.json`
+and `experiments/reports/v180_v40_workspace_archive_20261013.json`.
+
 Archive: `experiments/archive/20261013/v39_development_workspaces.tar.zst`
 
 SHA256: `07625acf7057dddc23f1174a8ecb44d0f8131dbbe657b01f06c63533ff286582`

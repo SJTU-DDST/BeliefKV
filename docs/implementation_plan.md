@@ -2,6 +2,34 @@
 
 Status date: 2026-10-13.
 
+Current development run is predictive-only V41, cold-started at
+02:52:03 CST on October 13 from 18f8209/cf0243b6. Engine tree remains
+c7c27e0d. It deploys exhausted-candidate handoff planning reduction,
+with all 27 frozen fields and physical capacities unchanged and fixed
+V29 native reused. At 02:56:20, v181 verifies HTTP200, GC initialization,
+469 actual GPU-service samples in independent tails, physical actions
+enabled, and one observed exhaustion skip. The observed reserve is
+4145 FULL tokens/one Mamba slot; Mamba follows next-batch request slots.
+Freeze V41 execution sources. Startup is not evidence of performance gain.
+
+V40 stopped administratively at 02:46:16: 62 completed, 46 created
+unfinished and 48 unarrived. Preserve the latter 94 as censoring.
+All 108 workspaces passed full archive comparison before removal at
+02:51:17, reducing 20.943GB allocated source to 2.117GB archive.
+Remove only 46 stopped owned containers and preserve raw/plan/results.
+The initial cleanup stopped because a read-only audit still referenced
+raw; no workspace was removed. Repeat full comparison after audit exit.
+Maintenance precedes V41. See v180 and the existing archive README.
+
+V180's stopped-run sealed_dispatch_funnel has JOIN positive-FULL/start/
+submit counts 80/79/41 over 91 known boundaries; keep 31 unknown.
+Tool counts are 1394/170/165 over 10343 known boundaries; keep seven
+unknown. Pre-completion started and next-request consumed FULL is
+34 JOINs/500.408MB and 150 tools/10.422GB. Last-ACK to first-service
+P90 remains 9.042s/15.321s. Residual native FULL Host-hit is
+1.669GB/1.238TB, not an oracle upper bound or proof of pre-boundary
+opportunities. Keep demand handoff separate; do not add V176's prefix.
+
 V40's complete 600-900s window remains below fixed V29 native:
 327142/380722 decode request steps, 14.07% lower at 23.49k/23.24k
 visible context. Instrumented exclusive Python wall is 60.013s;
@@ -13,7 +41,7 @@ funnels are JOIN 12/12/6, tool 136/14/13; retain 95 unknown JOIN boundaries.
 V178's qualified nonblocking GIL profile records 867 samples and 246
 sampling errors. Sample shares are not wall time or removable stalls.
 
-Cold-validate exhaustion-aware demand handoff: avoid repeated full queue
+V41 cold-validates exhaustion-aware demand handoff: avoid repeated full queue
 planning when all bounded tagged identities were already attempted.
 Recheck live request fields, preserve the current running batch, and keep
 new/changed/rearmed requests on the original complete restoration path.
@@ -23,10 +51,10 @@ overlapping batches pass. V179's selected exhausted-queue CPU fixture
 uses the real inspector and RadixKey; at 48 requests/depth64, thread cost
 falls from 3.017 to 0.115ms with equal handoff actions/bindings.
 Measure real skip frequency, early FULL consumption and busy throughput
-after a verified administrative stop/archive and cold deployment.
-Do not infer GPU gains from the selected CPU case. V40 remains frozen.
+in the verified cold deployment. Do not infer GPU gains from the
+selected CPU case. V41 remains frozen and the goal remains active.
 
-Current development run is predictive-only V40, cold-started at
+Previous development run V40 cold-started at
 01:57:38 CST from 9f42c24/cf0243b6 with unchanged engine tree c7c27e0d.
 Deploy report-phase waiting-parent cold FULL candidacy; preserve
 108+48 arrivals, running48, Host200GB 80:20, HBM Mamba/FULL0.9,

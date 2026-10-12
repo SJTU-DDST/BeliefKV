@@ -1,0 +1,3444 @@
+{
+  "schema_version": 1,
+  "scope": "User-authorized predictive development restart",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40",
+  "administrative_cutoff_at_local": "2026-10-13T02:46:16.243033+08:00",
+  "plan_sha256": "e8ab9d08f8417640ae9ac5c307901428737df6fee57a987559b5bf5cd3090ebb",
+  "plan_code_commit": "9f42c24593c524bf6985abc710409482caf03204",
+  "plan_patch_sha256": "cf0243b6331c2be8f24491efd7a4b2306e72610b4cd8cb8ddc586c4e12b18b2b",
+  "execution_verification": {
+    "collection_code_commit": "9f42c24593c524bf6985abc710409482caf03204",
+    "verification_code_commit": "9b6ee88d46cab13c07b088947751f4ce93623988",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": [
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/archive/README.md",
+      "experiments/reports/v173_v39_development_stop_20261013.json",
+      "experiments/reports/v173_v39_workspace_archive_20261013.json",
+      "experiments/reports/v174_v40_deployment_validation_20261013.json",
+      "experiments/reports/v175_v40_initial_wait_capacity_20261013.json"
+    ]
+  },
+  "manifest_sha256": "b88b5bb1fae36b1243e01560d5342e571539a01570245e61bd7e3e4da647a52d",
+  "planned_workflow_count": 156,
+  "outcome_counts_observed_during_snapshot": {
+    "completed": 62
+  },
+  "terminal_results_observed_during_snapshot": [
+    {
+      "workflow": "pydata__xarray-7393",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-7393/result.json",
+      "sha256": "cb24fdbf19098dc07bb2f7aae4aeaa2881d9aca789d6c00ab2b415fd03f5d85e"
+    },
+    {
+      "workflow": "pylint-dev__pylint-8898",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-8898/result.json",
+      "sha256": "28b989b01d77e126e03acebc0ccde59e4fd4e3c0d13a4e6477758f291c6ac7a3"
+    },
+    {
+      "workflow": "django__django-11400",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11400/result.json",
+      "sha256": "9b4aa3a4208c0f4aef95631db6fce2a577823e2f16ad85e1120f6573019ba6a7"
+    },
+    {
+      "workflow": "django__django-14631",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-14631/result.json",
+      "sha256": "31e4a875c8edadb4f36258e5ec08841e1099bb35a1548ef1facc4b7d22a7b889"
+    },
+    {
+      "workflow": "pallets__flask-5014",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pallets__flask-5014/result.json",
+      "sha256": "c09055de48722511b3752526eb3fdde2886043d4cd776cf4f928c86b9d68aed3"
+    },
+    {
+      "workflow": "psf__requests-2317",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/psf__requests-2317/result.json",
+      "sha256": "e4e7ba6efb429798f8a53f1e57ef80a9e2b8032f080342330d0a7bb43a344944"
+    },
+    {
+      "workflow": "psf__requests-6028",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/psf__requests-6028/result.json",
+      "sha256": "fcde6243ce4849392962f19d2ac57bcab532f6a2e7ce2acadd7af657ccd02adf"
+    },
+    {
+      "workflow": "pydata__xarray-3993",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-3993/result.json",
+      "sha256": "c438da28e81d759847c1a45880a195b640251eeafed58152aaa91591b9508def"
+    },
+    {
+      "workflow": "pydata__xarray-6744",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6744/result.json",
+      "sha256": "1f0f4cd53f6568abbffbed76fe0d4449ba43786ab0bfb9bc41bff76274a6823a"
+    },
+    {
+      "workflow": "pytest-dev__pytest-10051",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-10051/result.json",
+      "sha256": "d3fe146b45ded70bbb8aae1b30a88c052e1023ef1c677038d2e0d6e9ba642ba9"
+    },
+    {
+      "workflow": "pytest-dev__pytest-5262",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-5262/result.json",
+      "sha256": "140757909bb9504277f4f9f06c361b71da029629fbb0e23a0ced3b128ad4cf38"
+    },
+    {
+      "workflow": "pytest-dev__pytest-7324",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-7324/result.json",
+      "sha256": "8c26e1950a718a96e051b13a268c5943a6e2f28339342ad157f7dfb5c15af7de"
+    },
+    {
+      "workflow": "pytest-dev__pytest-7571",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-7571/result.json",
+      "sha256": "5f0c745392ade1b59663ba3336e7bbe9d3ca1ea92fe1204a51f8032656c51138"
+    },
+    {
+      "workflow": "pylint-dev__pylint-6903",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-6903/result.json",
+      "sha256": "c6659b0302e66357c14cd5e3991d9c1ba195493e51e82fb195a29031f1e601d7"
+    },
+    {
+      "workflow": "pytest-dev__pytest-5631",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-5631/result.json",
+      "sha256": "53af3aa6b29fdaa8d7f55c9ad6fd790aedfe10ae5025a5d9caa38c66217ca64b"
+    },
+    {
+      "workflow": "pydata__xarray-4356",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-4356/result.json",
+      "sha256": "4a8f8914783f3d188f1f110399b39c75d5cf8297eb5a6a158078e93771690f92"
+    },
+    {
+      "workflow": "pydata__xarray-3305",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-3305/result.json",
+      "sha256": "3abafc15e2d8d8992c889b992f701bb9b5a52718cccd8c8997960c68ec8d2c7f"
+    },
+    {
+      "workflow": "psf__requests-2931",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/psf__requests-2931/result.json",
+      "sha256": "286f0067af45dba512b331ee94cd82ccdc6d298896e71e93e1c6c223c2e72d6d"
+    },
+    {
+      "workflow": "pytest-dev__pytest-7205",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-7205/result.json",
+      "sha256": "23201e9b0c4f087b4515982444be14cc1e389274b2256f611e3a6b6a56a21904"
+    },
+    {
+      "workflow": "django__django-15368",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-15368/result.json",
+      "sha256": "144a34f18669fc6df47b1dbd3af3d25f0abf587048d4b3932603556996ae8f0f"
+    },
+    {
+      "workflow": "django__django-16877",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-16877/result.json",
+      "sha256": "97ad182623d2e69df1fa48e6dd0a4fb230b288ad7a1e29920724307393958fcd"
+    },
+    {
+      "workflow": "psf__requests-1724",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/psf__requests-1724/result.json",
+      "sha256": "0386979c683a229b3bbc90426fe1c9c2ec1d32885a1b6acc5cb458b31b76a4e9"
+    },
+    {
+      "workflow": "django__django-11141",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11141/result.json",
+      "sha256": "ffb5c81f957f3c84362ab719c57460991dc8fcb7b149859cb8a2bff560e83a9c"
+    },
+    {
+      "workflow": "pylint-dev__pylint-7277",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-7277/result.json",
+      "sha256": "9fd941d99b5c2a8c4f5db31ae0a503fb3034a508fda9d16c9a2264a426af9edc"
+    },
+    {
+      "workflow": "django__django-14500",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-14500/result.json",
+      "sha256": "8f7b91e6ee70f6bdee2fb99fdf7b2eea72e83fb47858a9952804363d60918c25"
+    },
+    {
+      "workflow": "pydata__xarray-3151",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-3151/result.json",
+      "sha256": "79fbf47e09fdbf2019cd4c11fec1736916944678465f2d5be70de2da5a7bb5ed"
+    },
+    {
+      "workflow": "django__django-13023",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-13023/result.json",
+      "sha256": "6f74099edebac3312459ee325eccd3451c2db130e910f0c6d5543f2e8ad45617"
+    },
+    {
+      "workflow": "django__django-12741",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-12741/result.json",
+      "sha256": "9affdf5b078bcfd5935921fcbb05851eebd080380f2741bb4f11d7ffd5c77042"
+    },
+    {
+      "workflow": "django__django-15315",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-15315/result.json",
+      "sha256": "bf34716ea4bda10d908d24a25dec73a9422fd7afbf33c970f4394a9b7e5a4bff"
+    },
+    {
+      "workflow": "django__django-16255",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-16255/result.json",
+      "sha256": "ade22ea0c2eb7db95d72b3a6486073f2bff1761548349c2747069156019bf3ab"
+    },
+    {
+      "workflow": "django__django-15103",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-15103/result.json",
+      "sha256": "60a98978a0c5287e5b0ebbb231d5813630ba443ccebf98843fe44266a95c71bc"
+    },
+    {
+      "workflow": "django__django-16667",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-16667/result.json",
+      "sha256": "1b178a2f554267ea5283003231167b5220517054c9c28d84fc38f3f03009e92f"
+    },
+    {
+      "workflow": "django__django-16502",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-16502/result.json",
+      "sha256": "3ebc14bc3a834f9e38a22d57ffa6c2f9a79fb1c0e808c7d0a3bd3cd8c451124d"
+    },
+    {
+      "workflow": "psf__requests-1142",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/psf__requests-1142/result.json",
+      "sha256": "3529886f7e7da105f124d02b80cbe523f50f70518f2212eb2bf8853efbf1f311"
+    },
+    {
+      "workflow": "pytest-dev__pytest-10081",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-10081/result.json",
+      "sha256": "c457baa57df211737ea0d8aef91ed671da9fb6ddaedca41c9ce2955ea6b9b4ff"
+    },
+    {
+      "workflow": "django__django-10914",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10914/result.json",
+      "sha256": "37c30ce46821f8e6811f739d9d73a78d9cc984ca6925875b3ec08085002b12c4"
+    },
+    {
+      "workflow": "psf__requests-5414",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/psf__requests-5414/result.json",
+      "sha256": "01ffe13d8eeeb083c7b7ff35600eb774bb8c027e9e9423585a6f39b9f4ec0957"
+    },
+    {
+      "workflow": "pydata__xarray-3677",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-3677/result.json",
+      "sha256": "ca87fa0dd3a1064f971e556bfb3a8e435224b2b6d509fce4799bce1aa3dc9883"
+    },
+    {
+      "workflow": "django__django-10973",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10973/result.json",
+      "sha256": "c9c5cd1b094a4f77cd8d0bdc409d45bfac27d1f039c83bac018cab8c96f4d13d"
+    },
+    {
+      "workflow": "pydata__xarray-4075",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-4075/result.json",
+      "sha256": "c5fcbb79a06c1e0061b2efda2a223441bfa8a4b0fa4f6447afb40a2ea43a861f"
+    },
+    {
+      "workflow": "pytest-dev__pytest-5809",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-5809/result.json",
+      "sha256": "660691a37c04b05e63f4aa124dbc119d55d130284a9ff12e2e12002c48db6211"
+    },
+    {
+      "workflow": "django__django-11066",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11066/result.json",
+      "sha256": "1b9c11ea3edfb197b68e4f9434fb41bea64a6217a3e84f7237a7e40160bf746c"
+    },
+    {
+      "workflow": "pydata__xarray-4629",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-4629/result.json",
+      "sha256": "afdaaad19751b3791180379e835a0f85daa245a22c8cf0db447346d3303f410a"
+    },
+    {
+      "workflow": "pytest-dev__pytest-7432",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-7432/result.json",
+      "sha256": "aa364a7ce3ec57893637edcb62c81f81ebf8e516783e6b366b6fee267f30aa83"
+    },
+    {
+      "workflow": "django__django-11087",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11087/result.json",
+      "sha256": "d7f1a79f45145959101412e715c074f5cd569e8939bf8ba655641cf6ef0f3648"
+    },
+    {
+      "workflow": "pytest-dev__pytest-7490",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-7490/result.json",
+      "sha256": "fa4dd829105e66f7b78059c40d3f5657b5285d8b9d70919ecc8af1c37201a991"
+    },
+    {
+      "workflow": "django__django-11095",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11095/result.json",
+      "sha256": "d6886f564b60ec4f829bd46167b720dc5702223ec8f826e92f93814393322cff"
+    },
+    {
+      "workflow": "pydata__xarray-6992",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6992/result.json",
+      "sha256": "7c34cbac308761d143c4a899b8eed4663d14d7ddf05b5713c4000548018717a7"
+    },
+    {
+      "workflow": "pytest-dev__pytest-7982",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-7982/result.json",
+      "sha256": "3438180683a0cd3ce0eec9156f29d605bd97433640c1f1f793f6a0baf13fca49"
+    },
+    {
+      "workflow": "django__django-11099",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11099/result.json",
+      "sha256": "f73f0db9975e48047d206b74393b50765d221737817ea556d13999d2f153159d"
+    },
+    {
+      "workflow": "django__django-11119",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11119/result.json",
+      "sha256": "a044f243edd6243191ddbfdf38f53f0fbe7ebe518210953440f3642a34381166"
+    },
+    {
+      "workflow": "django__django-11163",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11163/result.json",
+      "sha256": "c59a3e240daaeaf64e7dfbef5b9c8e4138370513adbde91333f3d5384dff308a"
+    },
+    {
+      "workflow": "django__django-11179",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11179/result.json",
+      "sha256": "780b851e57c5fdd4042386f87f153caec577c1cbc286ae0e1167150a14b72530"
+    },
+    {
+      "workflow": "django__django-11206",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11206/result.json",
+      "sha256": "b169b9886f9a586ca2864df3fadc1292fca7c5dc5657a5cf27c3b621a9fae046"
+    },
+    {
+      "workflow": "django__django-11239",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11239/result.json",
+      "sha256": "9166783a73cb24ca443fb36629cb47199d6c079cb7e38f0698d2d01976024c93"
+    },
+    {
+      "workflow": "django__django-11265",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11265/result.json",
+      "sha256": "3b3ad90fa09d3c6e57981601f94b2887018629d1823b403a5d0121d6e9f4aac3"
+    },
+    {
+      "workflow": "django__django-11276",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11276/result.json",
+      "sha256": "24031b50c228ecbb270cf7c54c0e05a2baa4605916a1fe3cfa6a5e3c84a70c81"
+    },
+    {
+      "workflow": "django__django-11292",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11292/result.json",
+      "sha256": "94bf2f1ac2b865c67a9d926df88c9b5372ff84c6e917d3e7b7872a3bdcb482e5"
+    },
+    {
+      "workflow": "django__django-11333",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11333/result.json",
+      "sha256": "61b768e2f4c4b4e94b10c4e3da44682c1922878bd3454cf44cf7ebc59dfea6d9"
+    },
+    {
+      "workflow": "django__django-11451",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11451/result.json",
+      "sha256": "e1e0f498639ceea64a0a77fb0592a7b3db357c718ac64005ad06580c7059654e"
+    },
+    {
+      "workflow": "django__django-11477",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11477/result.json",
+      "sha256": "4ffa2ae2f8a5eb9affb92c5a9fc67a13f333a901618c5aef35791e368c5626ed"
+    },
+    {
+      "workflow": "django__django-11532",
+      "outcome": "completed",
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11532/result.json",
+      "sha256": "6c3b921c5b953825d02d01abd48564fa102d75633691af88719435cad00a23fa"
+    }
+  ],
+  "administratively_censored_created_workflows": [
+    "pydata__xarray-7229",
+    "pydata__xarray-7233",
+    "pylint-dev__pylint-4551",
+    "pylint-dev__pylint-4661",
+    "pylint-dev__pylint-6386",
+    "pylint-dev__pylint-7080",
+    "django__django-10554",
+    "psf__requests-1766",
+    "psf__requests-1921",
+    "pydata__xarray-6461",
+    "pydata__xarray-6599",
+    "pydata__xarray-6721",
+    "pydata__xarray-6938",
+    "pytest-dev__pytest-5787",
+    "pytest-dev__pytest-5840",
+    "pytest-dev__pytest-6202",
+    "pytest-dev__pytest-7236",
+    "pylint-dev__pylint-4970",
+    "pylint-dev__pylint-6528",
+    "pydata__xarray-4966",
+    "mwaskom__seaborn-3069",
+    "pytest-dev__pytest-7521",
+    "pytest-dev__pytest-8399",
+    "django__django-14349",
+    "pydata__xarray-2905",
+    "django__django-16938",
+    "django__django-11734",
+    "django__django-10097",
+    "django__django-12754",
+    "django__django-11820",
+    "django__django-13964",
+    "django__django-10880",
+    "mwaskom__seaborn-3187",
+    "pydata__xarray-3095",
+    "pylint-dev__pylint-4604",
+    "pytest-dev__pytest-10356",
+    "django__django-10999",
+    "pydata__xarray-4094",
+    "pytest-dev__pytest-6197",
+    "pydata__xarray-4687",
+    "django__django-11138",
+    "django__django-11149",
+    "django__django-11211",
+    "django__django-11299",
+    "django__django-11433",
+    "django__django-11490"
+  ],
+  "administratively_censored_unstarted_or_unarrived_workflows": [
+    "django__django-11133",
+    "django__django-11551",
+    "django__django-11555",
+    "django__django-11603",
+    "django__django-11728",
+    "django__django-11740",
+    "django__django-11749",
+    "django__django-11790",
+    "django__django-11815",
+    "django__django-11848",
+    "django__django-11880",
+    "django__django-11885",
+    "django__django-11951",
+    "django__django-11964",
+    "django__django-11999",
+    "django__django-12039",
+    "django__django-12050",
+    "django__django-12125",
+    "django__django-12143",
+    "django__django-12155",
+    "django__django-12193",
+    "django__django-12209",
+    "django__django-12262",
+    "django__django-12273",
+    "django__django-12276",
+    "django__django-12304",
+    "django__django-12308",
+    "django__django-12325",
+    "django__django-12406",
+    "django__django-12419",
+    "django__django-12663",
+    "django__django-12708",
+    "django__django-12713",
+    "django__django-12774",
+    "django__django-12858",
+    "django__django-12965",
+    "django__django-13012",
+    "django__django-13028",
+    "django__django-13033",
+    "django__django-13089",
+    "django__django-13109",
+    "django__django-13112",
+    "django__django-13121",
+    "django__django-13128",
+    "django__django-13158",
+    "django__django-13195",
+    "django__django-13212",
+    "django__django-13279"
+  ],
+  "administratively_censored_count": 94,
+  "old_processes": {
+    "4043063": {
+      "pid": 4043063,
+      "state": "S",
+      "ppid": 1,
+      "pgid": 4043063,
+      "sid": 4043063,
+      "start_ticks": "599811937"
+    },
+    "4043295": {
+      "pid": 4043295,
+      "state": "R",
+      "ppid": 4043277,
+      "pgid": 4043295,
+      "sid": 4043295,
+      "start_ticks": "599812215"
+    },
+    "4045254": {
+      "pid": 4045254,
+      "state": "S",
+      "ppid": 4043277,
+      "pgid": 4045254,
+      "sid": 4045254,
+      "start_ticks": "599828160"
+    }
+  },
+  "old_scheduler_identity": {
+    "pid": 4043667,
+    "state": "R",
+    "ppid": 4043295,
+    "pgid": 4043295,
+    "sid": 4043295,
+    "start_ticks": "599813512"
+  },
+  "old_process_commands": {
+    "coordinator": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python /home/longhao/experiment/BeliefKV/scripts/launch_semantic_h2d_after_pair.py --repo /home/longhao/experiment/BeliefKV --previous-run /home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v39 --target-checkout /home/longhao/experiment/.worktrees/beliefkv-v172-report-cold-20261013 --run-root /home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40 --state /home/longhao/experiment/BeliefKV/experiments/reports/v40_launch_after_v39_20261013.json --development-restart --port 18454 --arm-order predictive_h2d --wait-pid 3539886 --wait-pid 3540139 --wait-pid 3540627 --wait-pid 3542223 ",
+    "server": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python -m sglang.launch_server --model-path /srv/ai/models/Qwen/Qwen3.5-35B-A3B --served-model-name Qwen3.5-35B-A3B --host 127.0.0.1 --port 18454 --dtype bfloat16 --kv-cache-dtype bfloat16 --tensor-parallel-size 1 --context-length 131072 --mem-fraction-static 0.94 --chunked-prefill-size 4096 --max-running-requests 48 --reasoning-parser qwen3 --tool-call-parser qwen3_coder --enable-metrics --enable-hierarchical-cache --hicache-size 200 --hicache-write-policy write_back --hicache-io-backend kernel --enable-session-radix-cache --mamba-full-memory-ratio 0.9 --enable-beliefkv-admission --beliefkv-event-socket-path /tmp/bkv-regime-18454.sock --skip-server-warmup ",
+    "client": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python /home/longhao/experiment/BeliefKV/scripts/run_deepagents_swebench.py --child-final-report-shadow --mode autonomous --base-url http://127.0.0.1:18454/v1 --model Qwen3.5-35B-A3B --workload-manifest /home/longhao/experiment/BeliefKV/configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json --max-workflows 156 --concurrency 156 --subagent-fanout-profile native_in_graph_2to4 --workflow-arrival-batch-size 108 --workflow-arrival-batch-interval-ms 3600000 --native-radix-sessions --control-socket /tmp/bkv-regime-18454.sock --server-audit /home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/server/runtime_audit.jsonl --server-events /home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/server/runtime_events.sglang.jsonl --server-log /home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/server.log --pool-tokens 1798995 --model-context-tokens 131072 --max-completion-tokens 8192 --sampling-seed 21 --recursion-limit 2048 --sandbox-command-timeout 180 --activation-wall-clock-seconds 14400.0 --stream-completion-shadow --child-stream-content-shadow --child-finish-chunk-shadow --stream-http-timing-shadow --native-reactive-guard-profile --disable-completion-gate --gate native --output /home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156 "
+  },
+  "owned_containers_at_cutoff": [
+    {
+      "id": "15751a649a73b4669c6e3ee4be4a500688b025fe9eb5579678d257e9c41939ca",
+      "name": "/beliefkv-django__django-11138-1ece2914",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11138/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11138/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "745b11f9bea07269ba74680a261767d17f1e23c79f4fe5bddb1809ebdecfba61",
+      "name": "/beliefkv-django__django-16938-c793bc1f",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-16938/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-16938/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "ed9090ec827dc67bd40d93e87aee39613d0da0e116f26709e6c0b6b34bff2fa1",
+      "name": "/beliefkv-django__django-11149-fa2d8c52",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11149/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11149/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "128f7fa475a50a1b6378330ac88b5f4607f4a60c7e13d42aade301da39dd348f",
+      "name": "/beliefkv-django__django-11490-96178a46",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11490/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11490/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "97db0b0f32790ab9a5b7b9b28c5c79e3fed9d3f3aac0ff48a7c62e1a34cb6ecd",
+      "name": "/beliefkv-django__django-11734-6d584b83",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11734/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11734/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "c3e2b1ff0c61e386b53f7b47eb7a30b57d13c49a80ed4888777dc1c6b93edf7e",
+      "name": "/beliefkv-django__django-13964-b842ce4e",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-13964/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-13964/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "2d9a5e764cf77495ac7b2e80b7152eca6bc11a9b3f27589de7256699681d0531",
+      "name": "/beliefkv-django__django-10999-67bb00ee",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10999/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10999/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "d447bd8f290ff0e4192fd4f636d10ae4c288444e4da9a4527a3763cd2d0d0ba9",
+      "name": "/beliefkv-django__django-11433-b6f7809b",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11433/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11433/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "74636b382a47337c8c62074f8d6f9d68179ea423b26c54943e35a846da73cfa6",
+      "name": "/beliefkv-django__django-12754-1e5a3d9e",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-12754/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-12754/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "636a4ba00322c32c9aab094c886e4ddea071a38ee9a1a6ceb1ec5918e51976e8",
+      "name": "/beliefkv-django__django-10554-2dcd45a2",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10554/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10554/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "60a35df3605173684adda47d9f19b0a8598761f31232319461d2ee4e1dbe09ca",
+      "name": "/beliefkv-django__django-10880-e0474695",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10880/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10880/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "15422cffc46ddec77060c2481663222e8b0ec6c95860a4e47f8240109711acce",
+      "name": "/beliefkv-django__django-14349-f0ae6299",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-14349/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-14349/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "f2c6a9acfbb61e5b81a01cd18acd6f4c6810942aadcf23328b80d96fcb9c60a5",
+      "name": "/beliefkv-django__django-11820-79efd880",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11820/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11820/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "1aabecf2fc772f60974b015d4bd3905f0a293f13901dcc6d108db8c7d391cfa1",
+      "name": "/beliefkv-django__django-11211-6135609f",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11211/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11211/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "8e1778a47cd2b203603affd3202f377cf47cf956e40d10dc5617ec95873fa8d2",
+      "name": "/beliefkv-django__django-10097-60a5a5fb",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10097/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10097/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "0b9fe657f903b75c82efb1ee2df677aca8fc1b57974ed1af9f7d0681335f8e14",
+      "name": "/beliefkv-django__django-11299-dcdbaa2e",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11299/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11299/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "c8d94a4ace09366d2965925f5db2764ac8a3a07170b3fba366ce30870b5e1ff1",
+      "name": "/beliefkv-pylint-dev__pylint-7080-6f6a0f03",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-7080/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-7080/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "49ab3025ea67c301c9262aeb4e18f8b9edae46b10a023a18f85422488ac4538d",
+      "name": "/beliefkv-pylint-dev__pylint-4604-677b4ddd",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4604/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4604/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "4fdb425edfd0ea36755db117c4f2b4ce22cac1f3897b20866a5833165a7efcb5",
+      "name": "/beliefkv-pylint-dev__pylint-6528-c82e8191",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "19041758afda533fb6eacb5394fc3f9aa8ba6bdbdab8dea3c1e61dfd70bef028",
+      "name": "/beliefkv-pytest-dev__pytest-6197-de2e5c14",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-6197/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-6197/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "add0bf4db9b80d268262be81db2d7e43cb718caf77d4cbdfe558bf9f28d46e21",
+      "name": "/beliefkv-mwaskom__seaborn-3187-8b1f079b",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "913a8d6bc5e09b53249dc5feeae88a36fef3bbc536b38c39b49e522560125a88",
+      "name": "/beliefkv-pydata__xarray-4687-867e19ac",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-4687/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-4687/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "f568b9c3d8399d35a5168192f3d72dc1271b99ffd50f86183bbf4c88d8d2407a",
+      "name": "/beliefkv-pytest-dev__pytest-10356-09a74b86",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-10356/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-10356/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "3e3f9fdffe9b618957fd470f735be1d71e5a73905efaed40dcc2209e06eef444",
+      "name": "/beliefkv-pydata__xarray-4094-b0cc8022",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-4094/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-4094/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "97a64a12f6450268fc64ec3912da21b7204549d2090bca15365d5120ca00c856",
+      "name": "/beliefkv-pydata__xarray-2905-a509f1d5",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-2905/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-2905/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "9cc9077d46688892d38d4ad2aed1357850a6e7503374f542d119d9a58251008c",
+      "name": "/beliefkv-pydata__xarray-3095-0e4e71e9",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-3095/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-3095/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "75a1fca9250c3f0cd3860dd36d71e826389f1bce50d5216124543857671a189c",
+      "name": "/beliefkv-pylint-dev__pylint-6386-1bf3152b",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-6386/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-6386/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "ef0fb0a531854f09c0c048d28e9a28ede6d45170a0a1eaad856e3c9775059f99",
+      "name": "/beliefkv-pydata__xarray-6599-c33de4a0",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6599/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6599/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "5ae855f0ae00634f8600ae8be8a365e7899b4bd629db3323a14b2ee6357dbe6c",
+      "name": "/beliefkv-pytest-dev__pytest-8399-7b42c0e8",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-8399/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-8399/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "0241d929cbe23326fd15673b98a69b689d745a462e594ad2cd617bbb81127de5",
+      "name": "/beliefkv-pydata__xarray-6461-1c5bdadc",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6461/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6461/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "94a713d864cc497c3085c92d6696fb56db33706dabe31e9ad16de1e3e467d210",
+      "name": "/beliefkv-pydata__xarray-6938-588355af",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6938/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6938/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "ce7c7cdadb7c557414d8815eba2166cf0dce32a8a41b5249147b4991ecd48aa1",
+      "name": "/beliefkv-mwaskom__seaborn-3069-3038c23b",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/mwaskom__seaborn-3069/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/mwaskom__seaborn-3069/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "9035cd741b77c290a54a5620c924ba3ea646b50a7f0ac411fdf3b0f8cac0e1b0",
+      "name": "/beliefkv-pylint-dev__pylint-4970-75817a73",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "0cea8cd84a860e5abd56a44734b0bda652d6e3fe8bf5163f5445f29c8992a5aa",
+      "name": "/beliefkv-pydata__xarray-4966-9c9cce73",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-4966/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-4966/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "40188ceb8825e502de55b5289f7f0a9cb5c4135f896094a9baacd38014dfaaf2",
+      "name": "/beliefkv-pylint-dev__pylint-4551-7b5d5367",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4551/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4551/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "fa9360759c51f7576c4d2341dccbd3d0c428d12054545c0e0989b575088b7c00",
+      "name": "/beliefkv-pylint-dev__pylint-4661-5ecb97b0",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4661/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4661/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "348caafccb182f43f417e9f92f2fb3f577512736c13bff0d7280ea214479aaf2",
+      "name": "/beliefkv-pytest-dev__pytest-7521-f7ce5b8c",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-7521/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-7521/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "3f4bfc1d30fac7f6f979399947bc44827f9ccbca4d2de07ef37bdfa537a2ce43",
+      "name": "/beliefkv-pytest-dev__pytest-7236-1984caf7",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-7236/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-7236/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "dc03d0e0c1cf488b8bb118ebde4ac81793cb507ef12a24b1c1357a6418f038ff",
+      "name": "/beliefkv-pydata__xarray-6721-3f1ce52b",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6721/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6721/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "9cf963756fb91a749b13dd475ad3d38acb93ae90f9d969bc97a5668ddefd1ba2",
+      "name": "/beliefkv-pydata__xarray-7233-d5e855ea",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-7233/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-7233/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "88f471b6c31980ac53c9b55a60debc3d19c2194f49162cd471c3f6f653cd072f",
+      "name": "/beliefkv-pydata__xarray-7229-2cf8634c",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-7229/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-7229/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "f5608ec0aaa0288152b37edb63b014216e2e87f16615ea3cf42c9606622a5ba0",
+      "name": "/beliefkv-pytest-dev__pytest-6202-b824797b",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-6202/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-6202/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "8c0a621c0d37c54165dc4724ae4abc3a609c96597794ecc6dd5afe5722af4979",
+      "name": "/beliefkv-pytest-dev__pytest-5787-72a66c68",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-5787/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-5787/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "608c54f0ebf741190ae754aa06b66fb2bc6c4d80503b24a9970ad83e1b1db348",
+      "name": "/beliefkv-pytest-dev__pytest-5840-9a0a5908",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-5840/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-5840/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "5024b0676e5a35250a51bfc4a05ee1ad449fbf2adc06818abc4a3d6ccb28bbc4",
+      "name": "/beliefkv-psf__requests-1921-664e16eb",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/psf__requests-1921/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/psf__requests-1921/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    },
+    {
+      "id": "12c640a0adb18c95a7bf62a5c98309bd2a4fcf5f1e60a2eeab985ba60732f33b",
+      "name": "/beliefkv-psf__requests-1766-531be8d1",
+      "mounts": [
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/psf__requests-1766/workspace",
+          "Destination": "/workspace",
+          "Mode": "",
+          "RW": true,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/psf__requests-1766/workspace/.git",
+          "Destination": "/workspace/.git",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        },
+        {
+          "Type": "bind",
+          "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+          "Destination": "/beliefkv-support",
+          "Mode": "",
+          "RW": false,
+          "Propagation": "rprivate"
+        }
+      ]
+    }
+  ],
+  "input_size_inventory_before_stop": [
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/server/eviction_attribution.jsonl",
+      "bytes_observed": 36606839
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/server/host_pool_telemetry.jsonl",
+      "bytes_observed": 11156551
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/server/physical_action_ack.jsonl",
+      "bytes_observed": 12355793
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/server/physical_action_use.jsonl",
+      "bytes_observed": 32295636
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/server/runtime_audit.jsonl",
+      "bytes_observed": 1329146516
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/server/runtime_events.sglang.jsonl",
+      "bytes_observed": 57804370
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/server/transfer_telemetry.jsonl",
+      "bytes_observed": 38392806
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/opportunities/admission_opportunities.jsonl",
+      "bytes_observed": 617701329
+    }
+  ],
+  "actions": [
+    {
+      "at_local": "2026-10-13T02:46:17.156217+08:00",
+      "pid": 4043063,
+      "name": "coordinator",
+      "result": "SIGTERM_sent"
+    },
+    {
+      "at_local": "2026-10-13T02:46:17.159662+08:00",
+      "pid": 4045254,
+      "name": "client",
+      "result": "SIGTERM_sent"
+    },
+    {
+      "at_local": "2026-10-13T02:46:17.164420+08:00",
+      "pid": 4043295,
+      "name": "server",
+      "result": "SIGTERM_sent"
+    }
+  ],
+  "reason": "Cold-validate exhaustion-aware demand handoff with unchanged native dependencies and wait prefetch",
+  "new_code_commit": "18f82095c506569e4eb3fa5aa0e24d3d386dedf1",
+  "maintenance_script_sha256": "e8b89b69430bcba464838305ef2a03317a4e97fd7abf7243a26bef0f260a4912",
+  "preserved": [
+    "raw traces",
+    "terminal outcomes",
+    "frozen plan",
+    "manifest",
+    "verified workspace archive"
+  ],
+  "qualification": "Pre-signal non-atomic inventory. Unfinished tasks are administrative censoring; shutdown outcomes remain separate.",
+  "maintenance_template_sha256": "29b91b98e87a684b05c29df110ce6b038694bc93c65c1dfea016e0792124c489",
+  "rendered_maintenance_sha256": "6c89c238956d933bff99ed6be984f63fe12bcc07e3f88eba61e946cd138ab3ac",
+  "container_cleanup": {
+    "at_local": "2026-10-13T02:47:08.524920+08:00",
+    "rechecked_owned_containers": [
+      {
+        "id": "15751a649a73b4669c6e3ee4be4a500688b025fe9eb5579678d257e9c41939ca",
+        "name": "/beliefkv-django__django-11138-1ece2914",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11138/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11138/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "745b11f9bea07269ba74680a261767d17f1e23c79f4fe5bddb1809ebdecfba61",
+        "name": "/beliefkv-django__django-16938-c793bc1f",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-16938/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-16938/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "ed9090ec827dc67bd40d93e87aee39613d0da0e116f26709e6c0b6b34bff2fa1",
+        "name": "/beliefkv-django__django-11149-fa2d8c52",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11149/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11149/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "128f7fa475a50a1b6378330ac88b5f4607f4a60c7e13d42aade301da39dd348f",
+        "name": "/beliefkv-django__django-11490-96178a46",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11490/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11490/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "97db0b0f32790ab9a5b7b9b28c5c79e3fed9d3f3aac0ff48a7c62e1a34cb6ecd",
+        "name": "/beliefkv-django__django-11734-6d584b83",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11734/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11734/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "c3e2b1ff0c61e386b53f7b47eb7a30b57d13c49a80ed4888777dc1c6b93edf7e",
+        "name": "/beliefkv-django__django-13964-b842ce4e",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-13964/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-13964/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "2d9a5e764cf77495ac7b2e80b7152eca6bc11a9b3f27589de7256699681d0531",
+        "name": "/beliefkv-django__django-10999-67bb00ee",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10999/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10999/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "d447bd8f290ff0e4192fd4f636d10ae4c288444e4da9a4527a3763cd2d0d0ba9",
+        "name": "/beliefkv-django__django-11433-b6f7809b",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11433/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11433/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "74636b382a47337c8c62074f8d6f9d68179ea423b26c54943e35a846da73cfa6",
+        "name": "/beliefkv-django__django-12754-1e5a3d9e",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-12754/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-12754/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "636a4ba00322c32c9aab094c886e4ddea071a38ee9a1a6ceb1ec5918e51976e8",
+        "name": "/beliefkv-django__django-10554-2dcd45a2",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10554/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10554/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "60a35df3605173684adda47d9f19b0a8598761f31232319461d2ee4e1dbe09ca",
+        "name": "/beliefkv-django__django-10880-e0474695",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10880/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10880/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "15422cffc46ddec77060c2481663222e8b0ec6c95860a4e47f8240109711acce",
+        "name": "/beliefkv-django__django-14349-f0ae6299",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-14349/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-14349/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "f2c6a9acfbb61e5b81a01cd18acd6f4c6810942aadcf23328b80d96fcb9c60a5",
+        "name": "/beliefkv-django__django-11820-79efd880",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11820/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11820/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "1aabecf2fc772f60974b015d4bd3905f0a293f13901dcc6d108db8c7d391cfa1",
+        "name": "/beliefkv-django__django-11211-6135609f",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11211/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11211/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "8e1778a47cd2b203603affd3202f377cf47cf956e40d10dc5617ec95873fa8d2",
+        "name": "/beliefkv-django__django-10097-60a5a5fb",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10097/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-10097/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "0b9fe657f903b75c82efb1ee2df677aca8fc1b57974ed1af9f7d0681335f8e14",
+        "name": "/beliefkv-django__django-11299-dcdbaa2e",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11299/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/django__django-11299/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "c8d94a4ace09366d2965925f5db2764ac8a3a07170b3fba366ce30870b5e1ff1",
+        "name": "/beliefkv-pylint-dev__pylint-7080-6f6a0f03",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-7080/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-7080/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "49ab3025ea67c301c9262aeb4e18f8b9edae46b10a023a18f85422488ac4538d",
+        "name": "/beliefkv-pylint-dev__pylint-4604-677b4ddd",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4604/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4604/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "4fdb425edfd0ea36755db117c4f2b4ce22cac1f3897b20866a5833165a7efcb5",
+        "name": "/beliefkv-pylint-dev__pylint-6528-c82e8191",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "19041758afda533fb6eacb5394fc3f9aa8ba6bdbdab8dea3c1e61dfd70bef028",
+        "name": "/beliefkv-pytest-dev__pytest-6197-de2e5c14",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-6197/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-6197/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "add0bf4db9b80d268262be81db2d7e43cb718caf77d4cbdfe558bf9f28d46e21",
+        "name": "/beliefkv-mwaskom__seaborn-3187-8b1f079b",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "913a8d6bc5e09b53249dc5feeae88a36fef3bbc536b38c39b49e522560125a88",
+        "name": "/beliefkv-pydata__xarray-4687-867e19ac",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-4687/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-4687/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "f568b9c3d8399d35a5168192f3d72dc1271b99ffd50f86183bbf4c88d8d2407a",
+        "name": "/beliefkv-pytest-dev__pytest-10356-09a74b86",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-10356/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-10356/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "3e3f9fdffe9b618957fd470f735be1d71e5a73905efaed40dcc2209e06eef444",
+        "name": "/beliefkv-pydata__xarray-4094-b0cc8022",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-4094/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-4094/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "97a64a12f6450268fc64ec3912da21b7204549d2090bca15365d5120ca00c856",
+        "name": "/beliefkv-pydata__xarray-2905-a509f1d5",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-2905/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-2905/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "9cc9077d46688892d38d4ad2aed1357850a6e7503374f542d119d9a58251008c",
+        "name": "/beliefkv-pydata__xarray-3095-0e4e71e9",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-3095/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-3095/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "75a1fca9250c3f0cd3860dd36d71e826389f1bce50d5216124543857671a189c",
+        "name": "/beliefkv-pylint-dev__pylint-6386-1bf3152b",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-6386/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-6386/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "ef0fb0a531854f09c0c048d28e9a28ede6d45170a0a1eaad856e3c9775059f99",
+        "name": "/beliefkv-pydata__xarray-6599-c33de4a0",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6599/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6599/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "5ae855f0ae00634f8600ae8be8a365e7899b4bd629db3323a14b2ee6357dbe6c",
+        "name": "/beliefkv-pytest-dev__pytest-8399-7b42c0e8",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-8399/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-8399/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "0241d929cbe23326fd15673b98a69b689d745a462e594ad2cd617bbb81127de5",
+        "name": "/beliefkv-pydata__xarray-6461-1c5bdadc",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6461/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6461/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "94a713d864cc497c3085c92d6696fb56db33706dabe31e9ad16de1e3e467d210",
+        "name": "/beliefkv-pydata__xarray-6938-588355af",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6938/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6938/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "ce7c7cdadb7c557414d8815eba2166cf0dce32a8a41b5249147b4991ecd48aa1",
+        "name": "/beliefkv-mwaskom__seaborn-3069-3038c23b",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/mwaskom__seaborn-3069/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/mwaskom__seaborn-3069/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "9035cd741b77c290a54a5620c924ba3ea646b50a7f0ac411fdf3b0f8cac0e1b0",
+        "name": "/beliefkv-pylint-dev__pylint-4970-75817a73",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "0cea8cd84a860e5abd56a44734b0bda652d6e3fe8bf5163f5445f29c8992a5aa",
+        "name": "/beliefkv-pydata__xarray-4966-9c9cce73",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-4966/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-4966/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "40188ceb8825e502de55b5289f7f0a9cb5c4135f896094a9baacd38014dfaaf2",
+        "name": "/beliefkv-pylint-dev__pylint-4551-7b5d5367",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4551/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4551/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "fa9360759c51f7576c4d2341dccbd3d0c428d12054545c0e0989b575088b7c00",
+        "name": "/beliefkv-pylint-dev__pylint-4661-5ecb97b0",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4661/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pylint-dev__pylint-4661/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "348caafccb182f43f417e9f92f2fb3f577512736c13bff0d7280ea214479aaf2",
+        "name": "/beliefkv-pytest-dev__pytest-7521-f7ce5b8c",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-7521/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-7521/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "3f4bfc1d30fac7f6f979399947bc44827f9ccbca4d2de07ef37bdfa537a2ce43",
+        "name": "/beliefkv-pytest-dev__pytest-7236-1984caf7",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-7236/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-7236/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "dc03d0e0c1cf488b8bb118ebde4ac81793cb507ef12a24b1c1357a6418f038ff",
+        "name": "/beliefkv-pydata__xarray-6721-3f1ce52b",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6721/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-6721/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "9cf963756fb91a749b13dd475ad3d38acb93ae90f9d969bc97a5668ddefd1ba2",
+        "name": "/beliefkv-pydata__xarray-7233-d5e855ea",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-7233/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-7233/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "88f471b6c31980ac53c9b55a60debc3d19c2194f49162cd471c3f6f653cd072f",
+        "name": "/beliefkv-pydata__xarray-7229-2cf8634c",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-7229/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pydata__xarray-7229/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "f5608ec0aaa0288152b37edb63b014216e2e87f16615ea3cf42c9606622a5ba0",
+        "name": "/beliefkv-pytest-dev__pytest-6202-b824797b",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-6202/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-6202/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "8c0a621c0d37c54165dc4724ae4abc3a609c96597794ecc6dd5afe5722af4979",
+        "name": "/beliefkv-pytest-dev__pytest-5787-72a66c68",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-5787/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-5787/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "608c54f0ebf741190ae754aa06b66fb2bc6c4d80503b24a9970ad83e1b1db348",
+        "name": "/beliefkv-pytest-dev__pytest-5840-9a0a5908",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-5840/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/pytest-dev__pytest-5840/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "5024b0676e5a35250a51bfc4a05ee1ad449fbf2adc06818abc4a3d6ccb28bbc4",
+        "name": "/beliefkv-psf__requests-1921-664e16eb",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/psf__requests-1921/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/psf__requests-1921/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      },
+      {
+        "id": "12c640a0adb18c95a7bf62a5c98309bd2a4fcf5f1e60a2eeab985ba60732f33b",
+        "name": "/beliefkv-psf__requests-1766-531be8d1",
+        "mounts": [
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/psf__requests-1766/workspace",
+            "Destination": "/workspace",
+            "Mode": "",
+            "RW": true,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v40/predictive_h2d/client_156/workflows/psf__requests-1766/workspace/.git",
+            "Destination": "/workspace/.git",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          },
+          {
+            "Type": "bind",
+            "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+            "Destination": "/beliefkv-support",
+            "Mode": "",
+            "RW": false,
+            "Propagation": "rprivate"
+          }
+        ]
+      }
+    ],
+    "returncode": 0,
+    "removed_ids": [
+      "15751a649a73b4669c6e3ee4be4a500688b025fe9eb5579678d257e9c41939ca",
+      "745b11f9bea07269ba74680a261767d17f1e23c79f4fe5bddb1809ebdecfba61",
+      "ed9090ec827dc67bd40d93e87aee39613d0da0e116f26709e6c0b6b34bff2fa1",
+      "128f7fa475a50a1b6378330ac88b5f4607f4a60c7e13d42aade301da39dd348f",
+      "97db0b0f32790ab9a5b7b9b28c5c79e3fed9d3f3aac0ff48a7c62e1a34cb6ecd",
+      "c3e2b1ff0c61e386b53f7b47eb7a30b57d13c49a80ed4888777dc1c6b93edf7e",
+      "2d9a5e764cf77495ac7b2e80b7152eca6bc11a9b3f27589de7256699681d0531",
+      "d447bd8f290ff0e4192fd4f636d10ae4c288444e4da9a4527a3763cd2d0d0ba9",
+      "74636b382a47337c8c62074f8d6f9d68179ea423b26c54943e35a846da73cfa6",
+      "636a4ba00322c32c9aab094c886e4ddea071a38ee9a1a6ceb1ec5918e51976e8",
+      "60a35df3605173684adda47d9f19b0a8598761f31232319461d2ee4e1dbe09ca",
+      "15422cffc46ddec77060c2481663222e8b0ec6c95860a4e47f8240109711acce",
+      "f2c6a9acfbb61e5b81a01cd18acd6f4c6810942aadcf23328b80d96fcb9c60a5",
+      "1aabecf2fc772f60974b015d4bd3905f0a293f13901dcc6d108db8c7d391cfa1",
+      "8e1778a47cd2b203603affd3202f377cf47cf956e40d10dc5617ec95873fa8d2",
+      "0b9fe657f903b75c82efb1ee2df677aca8fc1b57974ed1af9f7d0681335f8e14",
+      "c8d94a4ace09366d2965925f5db2764ac8a3a07170b3fba366ce30870b5e1ff1",
+      "49ab3025ea67c301c9262aeb4e18f8b9edae46b10a023a18f85422488ac4538d",
+      "4fdb425edfd0ea36755db117c4f2b4ce22cac1f3897b20866a5833165a7efcb5",
+      "19041758afda533fb6eacb5394fc3f9aa8ba6bdbdab8dea3c1e61dfd70bef028",
+      "add0bf4db9b80d268262be81db2d7e43cb718caf77d4cbdfe558bf9f28d46e21",
+      "913a8d6bc5e09b53249dc5feeae88a36fef3bbc536b38c39b49e522560125a88",
+      "f568b9c3d8399d35a5168192f3d72dc1271b99ffd50f86183bbf4c88d8d2407a",
+      "3e3f9fdffe9b618957fd470f735be1d71e5a73905efaed40dcc2209e06eef444",
+      "97a64a12f6450268fc64ec3912da21b7204549d2090bca15365d5120ca00c856",
+      "9cc9077d46688892d38d4ad2aed1357850a6e7503374f542d119d9a58251008c",
+      "75a1fca9250c3f0cd3860dd36d71e826389f1bce50d5216124543857671a189c",
+      "ef0fb0a531854f09c0c048d28e9a28ede6d45170a0a1eaad856e3c9775059f99",
+      "5ae855f0ae00634f8600ae8be8a365e7899b4bd629db3323a14b2ee6357dbe6c",
+      "0241d929cbe23326fd15673b98a69b689d745a462e594ad2cd617bbb81127de5",
+      "94a713d864cc497c3085c92d6696fb56db33706dabe31e9ad16de1e3e467d210",
+      "ce7c7cdadb7c557414d8815eba2166cf0dce32a8a41b5249147b4991ecd48aa1",
+      "9035cd741b77c290a54a5620c924ba3ea646b50a7f0ac411fdf3b0f8cac0e1b0",
+      "0cea8cd84a860e5abd56a44734b0bda652d6e3fe8bf5163f5445f29c8992a5aa",
+      "40188ceb8825e502de55b5289f7f0a9cb5c4135f896094a9baacd38014dfaaf2",
+      "fa9360759c51f7576c4d2341dccbd3d0c428d12054545c0e0989b575088b7c00",
+      "348caafccb182f43f417e9f92f2fb3f577512736c13bff0d7280ea214479aaf2",
+      "3f4bfc1d30fac7f6f979399947bc44827f9ccbca4d2de07ef37bdfa537a2ce43",
+      "dc03d0e0c1cf488b8bb118ebde4ac81793cb507ef12a24b1c1357a6418f038ff",
+      "9cf963756fb91a749b13dd475ad3d38acb93ae90f9d969bc97a5668ddefd1ba2",
+      "88f471b6c31980ac53c9b55a60debc3d19c2194f49162cd471c3f6f653cd072f",
+      "f5608ec0aaa0288152b37edb63b014216e2e87f16615ea3cf42c9606622a5ba0",
+      "8c0a621c0d37c54165dc4724ae4abc3a609c96597794ecc6dd5afe5722af4979",
+      "608c54f0ebf741190ae754aa06b66fb2bc6c4d80503b24a9970ad83e1b1db348",
+      "5024b0676e5a35250a51bfc4a05ee1ad449fbf2adc06818abc4a3d6ccb28bbc4",
+      "12c640a0adb18c95a7bf62a5c98309bd2a4fcf5f1e60a2eeab985ba60732f33b"
+    ],
+    "stderr": "",
+    "workspace_files_preserved": true
+  },
+  "container_cleanup_remaining": [],
+  "old_processes_after_cleanup": {
+    "4043063": null,
+    "4043295": null,
+    "4045254": null
+  }
+}

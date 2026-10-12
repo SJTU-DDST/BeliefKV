@@ -2,6 +2,32 @@
 
 更新日期：2026-10-13。
 
+当前开发轮为V41 predictive：2026-10-13 02:52:03 CST从
+18f8209/cf0243b6冷启动，实际engine tree仍为c7c27e0d。
+部署已耗尽候选的handoff重复规划减负；固定复用V29 native，
+108+48 roots、running48、Host200GB 80:20、HBM Mamba/FULL0.9
+及工具180秒等27项冻结配置和各池容量均保持。v181在02:56:20
+核验HTTP200、GC初始化、独立尾部469个真实GPU服务样本和
+physical_disabled=false，记录新skip counter一次。实际预留为
+FULL4,145 token/Mamba一份；Mamba随下一批请求名额动态变化。
+启动核验不证明吞吐收益，V41执行源码冻结，目标仍active。
+
+V40于02:46:16行政停止：62 completed、46个已创建未完成、
+48个未到达，后两类94个任务单列行政删失。108个workspace
+于02:51:17完成全量tar比较后清理，20.943→2.117GB，只删除
+该轮46个已停容器，raw/结果/计划保留。首次清理因只读审计
+进程仍引用raw而停止，未删workspace；审计退出后再次全量
+比较才清理。维护早于V41，回执和恢复路径见v180及archive README。
+
+v180停止后的最终审计使用sealed_dispatch_funnel：
+JOIN已知完成91个、未知31个，完成前正FULL/启动/提交为
+80/79/41；tool已知10,343个、未知7个，漏斗为1,394/170/165。
+完成前启动且下一请求确认消费FULL为JOIN34个/500.408MB、
+tool150个/10.422GB。按事件最后ACK计算，JOIN/tool到首次
+服务P90仍为9.042/15.321秒。下一请求原生残余FULL Host-hit为
+1.669GB/1.238TB，不等于全部可提前机会或oracle收益上限。
+handoff继续单列需求恢复，不与早期v176重叠前缀相加。
+
 V40完整600–900秒窗口仍未达标：predictive/固定V29 native
 decode request steps为327,142/380,722，少14.07%；可见上下文
 23.49k/23.24k token。已埋点Python独占墙钟60.013秒，
@@ -18,7 +44,7 @@ v178以20秒非阻塞GIL采样定位同步成本，867个记录样本并保留
 依据。样本份额不是总CPU、墙钟、GPU stall或可减少JCT。
 现有同路径祖先复用已经存在，不据此添加无证据的缓存。
 
-下一冷版本削减已耗尽候选的handoff重复规划：在同一请求
+V41已冷部署削减已耗尽候选的handoff重复规划：在同一请求
 已经尝试后，不再每50ms重做整队排序、前缀检查和容量观察。
 仍按当前请求字段确认所有最多512个tagged候选均已尝试；
 新请求、身份变化及容量释放后rearm的parent继续完整规划，
@@ -27,9 +53,10 @@ v178以20秒非阻塞GIL采样定位同步成本，867个记录样本并保留
 v179真实inspector的CPU fixture中，48请求/64层树的重复
 检查线程成本3.017→0.115ms，两侧handoff动作与绑定一致；
 该fixture选择已耗尽队列，实际命中频率及GPU收益尚待冷验证。
-V40执行代码保持冻结，规范patch和物理容量未改，目标active。
+规范patch和物理容量未改，真实skip频率、提前消费和完整
+繁忙窗口收益仍待观察，目标active。
 
-当前开发轮为V40 predictive：2026-10-13 01:57:38 CST从
+上一开发轮V40 predictive于2026-10-13 01:57:38 CST从
 9f42c24/cf0243b6冷启动，部署收尾阶段等待parent的冷FULL
 候选修订，actual tree仍为c7c27e0d。沿用108+48 roots、
 running48、Host200GB 80:20、HBM Mamba/FULL0.9、工具180秒
