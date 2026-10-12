@@ -17,11 +17,28 @@ EOS→RETURN 超过 250 ms，34 个启动未提交事件中
 5 个在旧窗口过期后、JOIN 完成前记录进度不可用。
 容量原因可重叠，不当作全部损失或可恢复动作数。
 318 项相关检查通过，仍须在新 V31 检查真实提交和复用。
-准备 V31 后再停止 V30；用进程 start ticks/PGID 核对
-身份，保留已写终态和行政截止时间，将未完成/未到达任务
-单列删失。V30 原始轨迹保留，清理容器只匹配本轮
-/workspace bind mount。V31 单跑 predictive 并固定引用
-V29 native，不修改仍在执行的 V30 源，也不伪造完整对照。
+V30 已在 12:49:22 CST 核对 start ticks/PGID 后停止，
+快照记录 80 completed、1 incomplete、75 行政删失。
+保留全部原始轨迹；仅删除 /workspace bind mount
+属于 V30 的 75 个容器。156 个 workspace 经 tar compare
+核对后归档，38.682→4.175 GB。归档维护区间
+12:56:26–12:59:24 CST 和自 12:41 CST 的本地开发
+在重叠 V31 性能窗口中明确记录。
+
+进程退出不保证旧 pinned Host 内存已立即归还 NUMA。
+V31 第一尝试预检仅估得 45.83 GiB，所需 194.26 GiB；
+随后同配置预检恢复为 235.08 GiB。不要因此减少 Host
+预算或跳过预检，等待容量恢复再按同一冻结计划重试。
+第一尝试没有模型服务/客户端/运行时 JSONL，已移入
+startup_attempts/attempt_1，保留原失败登记和独立重试回执。
+
+V31 从 5c1a646/7b4832ef 单跑 predictive，固定 V29 native。
+客户端 12:55:22 CST 启动、健康检查 200、running=48；
+actual runtime 的 EOS 窗口为 2,000 ms、physical_disabled=false。
+保留 108+48、Host 200 GB 80:20、HBM 状态/FULL 0.9、
+工具 180 s、workflow 14,400 s。这是启动验证，不能伪造
+完整对照或宣称提前复用及性能达标。收集期仅同步文档，
+执行源/模型/容量冻结，证据报告先提交独立 followup。
 
 采集中审计可用 `scripts/audit_sealed_wait_prefetch.py`，
 为每个 JSONL 固定首次读取长度、只取完整行，重复读取

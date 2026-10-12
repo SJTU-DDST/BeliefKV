@@ -6,6 +6,31 @@ tracked inventory.
 
 ## 2026-10-12 verified workspace compression
 
+Archive: `experiments/archive/20261012/v30_development_workspaces.tar.zst`
+
+SHA256: `1d8f8c24d6e7ed7d614bf22a1725ff54d53065b0e602b804b527eb91563656d5`
+
+All 156 V30 workspaces are preserved in this 4,174,974,847-byte archive.
+Source allocation was 38,681,817,088 bytes. GNU tar compared every archived
+file before deleting the uncompressed copies. Raw traces, written outcomes,
+frozen plan and manifest remain with an `ARCHIVED.md` restore pointer.
+V30 was administratively stopped at 12:49:22 CST; the cutoff snapshot
+observes 80 completed, 1 incomplete and 75 censored workflows. Only the
+75 containers with `/workspace` binds under this stopped run were removed.
+Restore from the repository root:
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261012/v30_development_workspaces.tar.zst \
+  --directory experiments/raw
+```
+
+Receipt: `experiments/reports/v130_v30_workspace_archive_20261012.json`.
+One compression thread, nice 19 and idle I/O were used. Maintenance at
+12:56:26-12:59:24 CST overlaps early V31 service and must be qualified
+in performance comparisons. Available space at verification was
+52,752,445,440 bytes, including concurrent V31 writes.
+
 Archive: `experiments/archive/20261012/v16b_stopped_workspaces.tar.zst`
 
 SHA256: `dc6a77c1172261af4a6e2a8dbb1167b2767cb95946607d01111dad95f7dd7223`

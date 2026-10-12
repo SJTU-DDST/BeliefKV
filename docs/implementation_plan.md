@@ -32,13 +32,29 @@ Non-EOS forecasts retain service/progress checks. Related 318 cases
 pass, including delayed 300/750/1999ms batch enqueue and rejection
 for expiry, tools and changed identity. Retain v130_v30_sealed_join_eos.
 
-Prepare a clean immutable V31 with this change and V129's FULL-only
-reclaimer, then administratively stop V30 for a fresh predictive-only
-development run. Preserve its written outcomes, frozen plan, traces
-and cutoff; unfinished or unarrived workflows are censored, not model
-errors. Keep the V29 native reference and existing workload/settings.
-Do not alter V30's executing source before its processes exit, or
-treat CPU validation as GPU coverage/throughput/JCT improvement.
+V31 now cold-starts from 5c1a646/7b4832ef with both fixes, predictive
+only against fixed V29 native. The client starts at 12:55:22 CST;
+health returns 200 and actual runtime records confirm a 2,000ms EOS
+evidence window, physical_disabled=false and normal 48-request service.
+Keep 108+48 arrivals, Host 200GB 80:20, HBM state/FULL 0.9, tool180s
+and workflow14400s. Full coverage/throughput/JCT remain unverified.
+
+V30 was administratively stopped at 12:49:22 CST after identity checks.
+The independent-file cutoff snapshot observes 80 completed, 1 incomplete
+and 75 censored workflows; preserve its written outcomes, frozen plan
+and raw traces. Remove only the 75 containers whose /workspace binds
+belong to V30. Archive all 156 stopped workspaces after GNU tar comparison:
+38,681,817,088 allocated source bytes become 4,174,974,847 archive bytes.
+Maintenance 12:56:26-12:59:24 CST overlaps early V31 service; qualify it
+and local development beginning 12:41 CST in overlapping comparisons.
+
+The first V31 attempt exits at NUMA preflight before model/workflow
+service: old Host-pool capacity is not yet reclaimed after process exit.
+Retain startup_attempts/attempt_1 and the original failed launch receipt.
+Retry the same frozen plan only after the existing 200GB Host preflight
+passes, without shrinking capacity or skipping the check. Retain the
+separate retry state and deployment verification. CPU checks and normal
+startup are not GPU coverage/throughput/JCT acceptance; the goal stays active.
 
 V129 seals independently capped V30 JSONL prefixes read at
 12:11:56-12:12:14 CST. Among 48 JOINs with observed completion,
