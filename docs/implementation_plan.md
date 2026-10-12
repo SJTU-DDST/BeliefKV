@@ -2,6 +2,39 @@
 
 Status date: 2026-10-12.
 
+V125 commits 23ad8a5: separate strictly pre-completion physical plan
+snapshots from post-boundary native demand. Signed timestamps refer to the
+complete JOIN/all-tool END, not model error; exactly-at-boundary observations
+are reactive. Reuse completed lifecycle identities and stream the opportunity
+log once without adding scheduler telemetry or rescanning transfers/GPU logs.
+Related 68 audit cases pass. Keep v125_v29_wait_plan_timing event evidence.
+
+Complete V29 contains 164/197 JOIN events with pre-completion positive FULL
+plans (3.506GB summed maximum snapshots), but only 25 early reuse events
+(0.675GB). Tool waits have 1,416/20,269 positive pre-completion plans
+(113.891GB maximum snapshots); only 95 events have an explicitly fitting
+snapshot (2.542GB), and 17 yield early verified reuse (0.654GB).
+Of the positive tool group, 1,239 record before_start_window before completion;
+reasons overlap. These snapshots are not transferable volume, a speedup
+upper bound, or proof that all plans could finish before the boundary.
+
+There are 16,553 tool episodes with only zero pre-completion plans and
+316.676GB subsequent native FULL Host hits, plus 60 episodes with positive
+plans only at/after completion. Do not treat later evictions or demand
+restoration as available early Host-only checkpoints. Keep 107.091GB
+handoff FULL separate. Validate queued V121 timing and V120-V124 CPU
+changes before layering more policy changes onto unmeasured opportunities.
+
+Continue both reducing control cost and improving causal event exploitation:
+JOIN progress/terminal sibling capacity, long-tool parking, actual missing
+pages, timely restoration and admission/first consumption. Completion/work
+prediction stays in the model; runtime decides transfer feasibility. V30
+retains the queued runtime changes and includes V125 offline attribution;
+collecting V29 remains frozen. Native is incomplete; its first 300-600s
+window's +6.93% predictive decode is not the full throughput/JCT result or
+an early-prefetch attribution. Local analysis begins 10:27 CST; qualify
+overlapping windows. The successful-workflow performance goal stays active.
+
 V124 commits bc33cb8: lazily reuse waiting-context candidates by graph and
 native-session binding revisions for JOIN PREPARE, tool refresh and unhinted
 tool scans. Keep context ordering for parents and session insertion order for
