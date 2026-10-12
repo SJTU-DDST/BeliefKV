@@ -1,0 +1,38 @@
+{
+  "schema_version": 1,
+  "validated_at_local": "2026-10-13T05:27:31.621600+08:00",
+  "qualified_code_commit": "079c16301bf989ed279177efbc166e7873e6e471",
+  "final_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "999c3151b9928a4879af587edc87c9bd139faceab86d43a0fbc3b6911ae767a2",
+    "beliefkv/runtime/sglang_v0520_observer.py": "2147ab88594a871617a83e0a123980f94842178a1f09f8023077352c70fdd1db"
+  },
+  "unchanged_canonical_patch_sha256": "3698ce2f8eca9be50cebfecbf25a698f93b872227683ac9fe4671e2dc74480c1",
+  "engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "3698ce2f8eca9be50cebfecbf25a698f93b872227683ac9fe4671e2dc74480c1",
+    "expected_tree": "6d6af094ea8e0fb6c0e3bc06fb12dd006ec41e14",
+    "actual_tree": "6d6af094ea8e0fb6c0e3bc06fb12dd006ec41e14",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "benchmark": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v202_h2d_estimate_tensor_closure_cpu_20261013.json",
+  "benchmark_sha256": "f333e75e786d09a2f576c95bb9e25d37f35f00ebfa6b023ba4ee313da7376ebd",
+  "focused_checks": {
+    "result": "588 passed in 3.27s",
+    "execution_session_id": 12517,
+    "command": "python -m pytest -q tests/test_h2d_service_estimate_cache.py tests/test_native_transfer_service.py tests/test_sglang_v0520_observer.py tests/test_sglang_v0520_physical.py tests/test_wait_prefetch_batch.py tests/test_wait_prefetch_partial_extent.py tests/test_execution_handoff.py tests/test_sglang_v0520_runtime.py tests/test_tool_predictive_transfers.py",
+    "scope": "Exact support/statistics, receipt invalidation including full history rotation, live tensor resize and bounds, physical plans and pipeline admission."
+  },
+  "semantics": [
+    "No forecast, workload, pool, cold-reclaim or service-priority constants change in this candidate.",
+    "H2D sample statistics alone are cached with exact size/shape; each valid completed receipt invalidates them.",
+    "Residency, physical identity, capacity, survival/work and enqueue timing remain live.",
+    "CPU fixture equality/savings do not establish observed reuse frequency, GPU or JCT improvement. Retain the reported slowdowns.",
+    "Running V43 execution source and canonical engine were not hot edited."
+  ],
+  "helper_sha256": "d48bbcb0985bcc52f7fc3e0e11570215951d44efdb9fa0a3c0201c03b6781ebe"
+}
