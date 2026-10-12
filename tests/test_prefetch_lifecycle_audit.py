@@ -7,7 +7,86 @@ from scripts.audit_prefetch_lifecycle import (
     prepare_host_lifetime_summary, prepare_restore_attribution,
     prepare_selection_summary, source_summary, terminal_capacity_summary, wait_event_attribution,
     terminal_invocation_scopes, terminal_join_capacity_windows, wait_plan_gap_summary,
+    wait_plan_timing_attribution,
 )
+
+
+def test_wait_plan_timing_separates_early_snapshots_from_later_demand():
+    base = {
+        "source": "tool_wait", "workflow_id": "wf", "invocation_id": "child",
+        "context_id": "c", "context_epoch": 0, "join_id": None,
+        "completion_ts_ms": 100., "remaining_native_full_host_hit_bytes": 200,
+        "early_started_and_reused_full_bytes": 0,
+    }
+    rows = [
+        {**base, "context_epoch": epoch} for epoch in range(5)
+    ] + [{
+        **base, "context_epoch": 5, "completion_ts_ms": None,
+        "remaining_native_full_host_hit_bytes": None,
+    }]
+    observations = [
+        {**base, "event": "wait_prefetch_plan", "ts_ms": when,
+         "context_epoch": epoch, "planned_full_tokens": tokens,
+         "fits_current_free_lists": fits, "reason": "start_window"}
+        for epoch, when, tokens, fits in (
+            (0, 90., 4, True), (0, 95., 2, True), (0, 101., 20, True),
+            (1, 80., 0, None), (1, 110., 10, True),
+            (2, 100., 10, True), (3, 120., 0, None), (4, 90., None, None),
+            (5, 90., 10, True),
+        )
+    ] + [{
+        **base, "context_epoch": 1, "ts_ms": 70., "event": "prefetch_native_issued",
+        "planned_full_tokens": 40,
+    }]
+    report = wait_plan_timing_attribution(rows, reversed(observations), full_unit=10)
+    actual = report["rows"]
+    assert actual[0]["first_plan_relative_to_completion_ms"] == -10.
+    assert actual[0]["max_pre_completion_planned_full_bytes"] == 40
+    assert actual[0]["max_pre_completion_fitting_full_bytes"] == 40
+    assert actual[0]["pre_completion_plan_observations"] == 2
+    assert [row["plan_timing_category"] for row in actual] == [
+        "positive_full_plan_before_completion",
+        "only_zero_full_plan_before_completion",
+        "positive_full_plan_only_at_or_after_completion",
+        "no_plan_observation_before_completion",
+        "full_size_unknown_before_completion",
+        "completion_boundary_unknown",
+    ]
+    assert actual[1]["first_positive_full_plan_relative_to_completion_ms"] == 10.
+    assert actual[2]["first_positive_full_plan_relative_to_completion_ms"] == 0.
+    assert actual[5]["max_pre_completion_planned_full_bytes"] is None
+    categories = report["summary"]["by_source"]["tool_wait"]["plan_timing_categories"]
+    assert sum(value["independent_events"] for value in categories.values()) == 6
+    assert categories["only_zero_full_plan_before_completion"][
+        "remaining_native_full_host_hit_bytes_known"
+    ] == 200
+
+
+def test_wait_plan_timing_keeps_missing_bytes_unknown_and_join_epochs_together():
+    row = {
+        "source": "join_ticket", "workflow_id": "wf", "invocation_id": "root",
+        "context_id": "parent", "context_epoch": 0, "join_id": "join",
+        "completion_ts_ms": 100., "remaining_native_full_host_hit_bytes": None,
+        "early_started_and_reused_full_bytes": 20,
+    }
+    observations = [
+        {**row, "source": "join_wait", "event": "session_h2d_opportunity",
+         "ts_ms": 90., "required_full_tokens": 4, "fits_current_free_lists": True},
+        {**row, "event": "wait_prefetch_plan", "context_epoch": 1,
+         "ts_ms": 105., "planned_full_tokens": 100, "planned_pool_bytes": {"kv": 1000}},
+    ]
+    report = wait_plan_timing_attribution([row], observations, full_unit=None)
+    [actual] = report["rows"]
+    assert actual["max_pre_completion_planned_full_tokens"] == 4
+    assert actual["max_pre_completion_planned_full_bytes"] is None
+    assert actual["max_pre_completion_fitting_full_bytes"] is None
+    assert actual["positive_full_plan_at_or_after_completion"] is True
+    category = report["summary"]["by_source"]["join_ticket"]["plan_timing_categories"][
+        "positive_full_plan_before_completion"
+    ]
+    assert category["independent_events"] == 1
+    assert category["remaining_native_full_evidence_unknown_events"] == 1
+    assert category["early_started_and_reused_full_bytes"] == 20
 
 
 def test_wait_plan_gaps_preserve_unknown_demand_and_overlapping_reasons():
@@ -458,6 +537,9 @@ def test_wait_events_deduplicate_node_commands_and_keep_native_residual_demand_s
     [row] = result["rows"]
     assert row["max_observed_planned_full_tokens"] == 8
     assert row["max_observed_planned_full_bytes"] == 80
+    assert row["first_observation_relative_to_completion_ms"] == -10.
+    assert row["first_plan_relative_to_completion_ms"] == -10.
+    assert row["max_pre_completion_planned_full_bytes"] == 80
     assert row["node_command_count"] == 3
     assert row["early_started_and_reused_full_command_ids"] == ["early-1", "early-2"]
     assert row["early_started_and_reused_full_bytes"] == 50

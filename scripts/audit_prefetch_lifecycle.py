@@ -6,7 +6,7 @@ from __future__ import annotations
 import argparse
 from bisect import bisect_left, bisect_right
 from collections import Counter, defaultdict
-from collections.abc import Sequence
+from collections.abc import Iterable, Sequence
 import json
 import math
 from pathlib import Path
@@ -874,6 +874,145 @@ def wait_plan_gap_summary(rows: list[dict]) -> dict:
     }
 
 
+def wait_plan_timing_attribution(
+    rows: list[dict], observations: Iterable[dict], *, full_unit: int | None,
+) -> dict:
+    """Separate pre-boundary plan snapshots from later physical demand."""
+    grouped = {
+        wait_event_identity(row): {
+            **{name: row.get(name) for name in (
+                "source", "workflow_id", "invocation_id", "context_id",
+                "context_epoch", "join_id", "completion_ts_ms",
+                "remaining_native_full_host_hit_bytes",
+                "early_started_and_reused_full_bytes",
+            )},
+            "first_plan_relative_to_completion_ms": None,
+            "first_positive_full_plan_relative_to_completion_ms": None,
+            "pre_completion_plan_observations": 0,
+            "pre_completion_plan_reasons": Counter(),
+            "pre_completion_blocked_details": Counter(),
+            "max_pre_completion_planned_full_tokens": None,
+            "max_pre_completion_planned_full_bytes": None,
+            "max_pre_completion_fitting_full_bytes": None,
+            "positive_full_plan_at_or_after_completion": False,
+        }
+        for row in rows
+    }
+    for observation in observations:
+        if observation.get("event") not in (
+            "wait_prefetch_plan", "session_h2d_opportunity",
+        ):
+            continue
+        group = grouped.get(wait_event_identity(observation))
+        if group is None or (completion := group["completion_ts_ms"]) is None:
+            continue
+        relative = observation["ts_ms"] - completion
+        previous = group["first_plan_relative_to_completion_ms"]
+        group["first_plan_relative_to_completion_ms"] = (
+            relative if previous is None else min(relative, previous)
+        )
+        tokens = observation.get("planned_full_tokens", observation.get("required_full_tokens"))
+        if type(tokens) is int and tokens > 0:
+            previous = group["first_positive_full_plan_relative_to_completion_ms"]
+            group["first_positive_full_plan_relative_to_completion_ms"] = (
+                relative if previous is None else min(relative, previous)
+            )
+            if relative >= 0:
+                group["positive_full_plan_at_or_after_completion"] = True
+        if relative >= 0:
+            continue
+        group["pre_completion_plan_observations"] += 1
+        group["pre_completion_plan_reasons"][observation.get("reason", "unknown")] += 1
+        if observation.get("blocked_detail"):
+            group["pre_completion_blocked_details"][observation["blocked_detail"]] += 1
+        if type(tokens) is int:
+            group["max_pre_completion_planned_full_tokens"] = max(
+                group["max_pre_completion_planned_full_tokens"] or 0, tokens,
+            )
+        amount = (observation.get("planned_pool_bytes") or {}).get("kv")
+        if amount is None and type(tokens) is int and type(full_unit) is int:
+            amount = tokens * full_unit
+        if type(amount) is int:
+            group["max_pre_completion_planned_full_bytes"] = max(
+                group["max_pre_completion_planned_full_bytes"] or 0, amount,
+            )
+            if observation.get("fits_current_free_lists") is True:
+                group["max_pre_completion_fitting_full_bytes"] = max(
+                    group["max_pre_completion_fitting_full_bytes"] or 0, amount,
+                )
+    result = list(grouped.values())
+    for row in result:
+        tokens = row["max_pre_completion_planned_full_tokens"]
+        row["plan_timing_category"] = (
+            "completion_boundary_unknown" if row["completion_ts_ms"] is None
+            else "positive_full_plan_before_completion" if tokens is not None and tokens > 0
+            else "only_zero_full_plan_before_completion" if tokens == 0
+            else "full_size_unknown_before_completion" if row["pre_completion_plan_observations"]
+            else "positive_full_plan_only_at_or_after_completion"
+            if row["positive_full_plan_at_or_after_completion"]
+            else "no_plan_observation_before_completion"
+        )
+        for field in ("pre_completion_plan_reasons", "pre_completion_blocked_details"):
+            row[field] = dict(row[field])
+    return {
+        "summary": {
+            "by_source": {
+                source: {
+                    "observed_wait_events": len(selected := [
+                        row for row in result if row["source"] == source
+                    ]),
+                    "first_plan_relative_to_completion_ms": distribution(
+                        row["first_plan_relative_to_completion_ms"] for row in selected
+                    ),
+                    "first_positive_full_plan_relative_to_completion_ms": distribution(
+                        row["first_positive_full_plan_relative_to_completion_ms"] for row in selected
+                    ),
+                    "plan_timing_categories": {
+                        category: {
+                            "independent_events": len(subset := [
+                                row for row in selected if row["plan_timing_category"] == category
+                            ]),
+                            "max_snapshot_pre_completion_full_bytes_known": sum(
+                                row["max_pre_completion_planned_full_bytes"] or 0 for row in subset
+                            ),
+                            "max_snapshot_pre_completion_fitting_full_bytes_known": sum(
+                                row["max_pre_completion_fitting_full_bytes"] or 0 for row in subset
+                            ),
+                            "remaining_native_full_host_hit_bytes_known": sum(
+                                row["remaining_native_full_host_hit_bytes"] or 0 for row in subset
+                            ),
+                            "remaining_native_full_evidence_unknown_events": sum(
+                                row["remaining_native_full_host_hit_bytes"] is None for row in subset
+                            ),
+                            "events_with_early_reused_full": sum(
+                                (row["early_started_and_reused_full_bytes"] or 0) > 0
+                                for row in subset
+                            ),
+                            "early_started_and_reused_full_bytes": sum(
+                                row["early_started_and_reused_full_bytes"] or 0 for row in subset
+                            ),
+                        }
+                        for category in sorted({row["plan_timing_category"] for row in selected})
+                    },
+                }
+                for source in ("join_ticket", "tool_wait")
+            },
+        },
+        "rows": result,
+        "semantics": (
+            "Signed plan timestamps relative to the observed complete JOIN/all-tool END; "
+            "negative values precede completion. Exactly-at-boundary plans are reactive. "
+            "Only recorded plan snapshots count; issued commands do not prove a plan "
+            "was available earlier. Unknown completion or size remains unknown. "
+            "Maximum snapshot bytes are not cumulative DMA or a counterfactual opportunity "
+            "volume. Fits-current-free-lists describes an observed plan, not a reservation, "
+            "timing feasibility or eventual benefit. No plan observation before completion "
+            "does not prove no opportunity. Next-request native Host hits can become "
+            "available after completion and are not an early-prefetch denominator."
+        ),
+    }
+
+
 def wait_event_attribution(
     arm: Path, observations: list[dict], issues: dict, actions: list[dict],
     clock_offset: float | None,
@@ -1151,6 +1290,10 @@ def wait_event_attribution(
                 max(0., group["first_observation_ts_ms"] - completion)
                 if completion is not None else None
             ),
+            "first_observation_relative_to_completion_ms": (
+                group["first_observation_ts_ms"] - completion
+                if completion is not None else None
+            ),
             "max_observed_planned_full_bytes": (
                 group["max_observed_planned_full_bytes"]
                 if group["max_observed_planned_full_bytes"] is not None
@@ -1210,10 +1353,18 @@ def wait_event_attribution(
             if acks and service is not None else None,
             "sampled_batch_restore_dependency_wait_ms": dependency_waits.get(rid, []),
         })
+    timing = wait_plan_timing_attribution(rows, observations, full_unit=full_unit)
+    for row, plan in zip(rows, timing["rows"], strict=True):
+        row.update({
+            name: value for name, value in plan.items()
+            if name.startswith(("first_plan_", "first_positive_", "pre_completion_", "max_pre_"))
+            or name in ("plan_timing_category", "positive_full_plan_at_or_after_completion")
+        })
     return {
         "summary": {
             "observed_wait_events": len(rows),
             "records_without_wait_event_identity": missing_identity,
+            "plan_timing": timing["summary"],
             "by_source": {
                 source: {
                     "observed_events": len(selected := [
@@ -1691,8 +1842,26 @@ def main() -> None:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--summary-only", action="store_true",
                         help="Keep summary and evidence scope without duplicating detailed rows.")
+    parser.add_argument(
+        "--wait-plan-timing-from", type=Path,
+        help="Reuse a completed lifecycle report and stream only its plan timing evidence.",
+    )
     args = parser.parse_args()
-    report = audit(args.arm.resolve())
+    if args.wait_plan_timing_from is not None:
+        previous = json.loads(args.wait_plan_timing_from.read_text())
+        if Path(previous["arm"]).resolve() != args.arm.resolve():
+            parser.error("the completed lifecycle report belongs to a different arm")
+        status_path = args.arm / "server/native_telemetry_status.json"
+        status = json.loads(status_path.read_text()) if status_path.exists() else {}
+        report = wait_plan_timing_attribution(
+            previous["wait_event_attribution"]["rows"],
+            records(args.arm / "opportunities/admission_opportunities.jsonl"),
+            full_unit=(status.get("host_pool_evidence") or {}).get("full", {}).get("bytes_per_unit"),
+        )
+        report["arm"] = str(args.arm.resolve())
+        report["source_lifecycle"] = str(args.wait_plan_timing_from.resolve())
+    else:
+        report = audit(args.arm.resolve())
     if args.summary_only:
         report = {
             key: value for key, value in report.items()
