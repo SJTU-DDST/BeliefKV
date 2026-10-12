@@ -2,6 +2,34 @@
 
 Status date: 2026-10-12.
 
+V131 seals V31 inputs at 13:12:21-13:12:33 CST. Of 29 observed
+complete JOINs, 26 have pre-boundary positive FULL plans, 24 start
+and 3 submit; 2,511 complete tool waits have 383/5/5. Capacity-budget
+truncation appears in 23/782 episodes, and busy admission in 20 JOINs.
+Reasons overlap; preserve 80 unknown JOIN boundaries and pending reuse.
+Verified early FULL reuse is 1 JOIN/8.991MB and 4 tools/347.853MB.
+Do not compare collecting-prefix totals directly with complete V27/V29.
+
+Followup 4f4567f permits one cache-restore context while a full decode
+batch occupies all request rows: restore does not allocate a request row.
+Retain physical pool, byte, input/decode-growth reserves and native
+execution admission. JOIN/tool regressions fail before the change and
+submit after it without allocating a request row; insufficient capacity
+and non-full batches with no rows remain rejected. Related 380 cases
+pass. Keep V31 frozen at 5c1a646; deploy at a subsequent cold restart,
+and do not infer V29's loss fraction from this reproduced dependency.
+
+The sealed capacity snapshots contain 354 zero-slot native budgets out
+of 808 native-budget snapshots, not independent rejections or a live
+allocator census. The complete V31 300-600s development window has
+310,198 versus 344,185 decode request steps, mean worker intervals
+39.418/36.991ms and 47.533s of instrumented Python exclusive wall time.
+Reuse the fixed native summary and its provenance without rescanning
+raw logs. Local analysis overlaps; this is not causal speedup, isolated
+kernel time or removable JCT. Continue reducing admission/prepare/
+handoff/prefix-check costs and validating useful early opportunity
+conversion. Preserve v131 evidence and update the existing documents.
+
 Frozen-source verification now allows JSON/JSON.gz/Markdown output
 under experiments/reports, as well as the existing reporting paths.
 Keep report Python helpers, model artifacts and engine patches inside
