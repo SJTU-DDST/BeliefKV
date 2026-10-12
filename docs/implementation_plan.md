@@ -48,6 +48,21 @@ same frozen parameters and cached V29 native. Measure real
 probe/partial submission, independent early consumed FULL and
 busy-window service performance. The performance goal stays active.
 
+Record partial restoration as separate stages: native tree split, submitted
+burst, ACK, native dependency readiness and first-service consumption.
+The v139 fields report captured Host-backed FULL left outside the burst,
+Host-only Mamba and unbacked nodes. The captured closure can include output
+beyond the next reusable input, so its remainder is not automatically that
+request's missing prefix. Legacy Mamba missing counts only states whose
+FULL is resident; zero does not mean all required states are ready.
+Use the already captured nodes, with no additional native tree scan.
+Bounded reclaim precedes each burst; replan after ACK or let native demand
+recovery finish the tail. Continuous cold reclamation during in-flight DMA
+is not implemented. H2D occupies space and its ACK cannot guarantee tail
+capacity. The 90 focused checks establish telemetry and path contracts,
+not reduced delay. V34 must assess tail readiness, residence cost, real
+consumption and busy-window throughput against the fixed native.
+
 The future baseline reproduction plan is recorded in section 6.4 of
 [the related-work comparison](related_work_comparison_2026-07-21_zh.md).
 Use common-model/native-executor policy comparisons as the main table,

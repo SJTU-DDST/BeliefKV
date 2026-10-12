@@ -1,0 +1,44 @@
+{
+  "schema_version": 1,
+  "base_commit": "93d3c35",
+  "implementation": {
+    "plan_fields": [
+      "host_backed_full_missing_device_tokens",
+      "host_backed_mamba_missing_device_nodes",
+      "host_only_mamba_nodes_in_observed_closure",
+      "mamba_missing_device_nodes_scope",
+      "unbacked_full_nodes",
+      "unbacked_mamba_leaves",
+      "unplanned_host_backed_full_tokens",
+      "restore_batch_scope"
+    ],
+    "split_event": "wait_prefetch_full_extent_split",
+    "split_identity": "Original suffix and new fragment, session generation and context epoch.",
+    "native_tree_scans_added": 0,
+    "scheduling_behavior_changed": false
+  },
+  "checks": [
+    {
+      "command": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python -m pytest -q --tb=short tests/test_wait_prefetch_batch.py tests/test_wait_prefetch_partial_extent.py",
+      "passed": 90,
+      "duration_s": 0.55,
+      "coverage": [
+        "Partial burst leaves observed FULL outside its plan.",
+        "Native split retains original Mamba checkpoint and exposes fragment identity.",
+        "A zero legacy Mamba missing count does not conceal observed Host-only states.",
+        "Changed missing FULL is recorded inside the deduplication interval.",
+        "Unobservable remainder stays unknown.",
+        "FULL/Mamba reserves, timed reclaim and causal enqueue remain enforced."
+      ]
+    }
+  ],
+  "limitations": [
+    "Observed closure remainder can include output beyond the next reusable input checkpoint.",
+    "A burst covering observed Host-backed FULL is not complete native dependency readiness.",
+    "Native tree split, submitted burst and ACK are not admission or reuse evidence.",
+    "The current path reclaims before bursts and replans after ACK; continuous reclamation during in-flight DMA is not implemented.",
+    "H2D occupies device capacity; completion does not itself guarantee room for the tail.",
+    "No GPU performance improvement is established by these checks."
+  ],
+  "next_validation": "Cold-start V34 predictive only against unchanged V29 native; measure tail restoration, bounded residence, next-request FULL consumption and busy-window service performance."
+}

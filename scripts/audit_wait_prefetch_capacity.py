@@ -32,6 +32,7 @@ def audit(path):
     events = defaultdict(lambda: defaultdict(set))
     examples = defaultdict(list)
     reclaimed, demoted = defaultdict(Counter), defaultdict(Counter)
+    split = defaultdict(Counter)
     last_reclaim = {}
     range_ms = [None, None]
     for row in sealed(path):
@@ -40,6 +41,10 @@ def audit(path):
             range_ms[0] = ts if range_ms[0] is None else min(range_ms[0], ts)
             range_ms[1] = ts if range_ms[1] is None else max(range_ms[1], ts)
         kind, source = row["event"], row.get("source", "unknown")
+        if kind == "wait_prefetch_full_extent_split":
+            split[source]["records"] += 1
+            split[source]["fragment_full_tokens"] += row["fragment_full_tokens"]
+            continue
         if kind in ("wait_prefetch_capacity_reclaimed", "parent_pressure_demoted"):
             target = reclaimed if kind == "wait_prefetch_capacity_reclaimed" else demoted
             target[source]["records"] += 1
@@ -59,6 +64,10 @@ def audit(path):
             categories.append("planned_backed_cold_capacity_probe")
         if row.get("partial_full_tokens", 0):
             categories.append("planned_partial_extent")
+        if row.get("restore_batch_scope") == "partial_observed_host_backed_full":
+            categories.append("planned_burst_with_observed_full_remainder")
+            if row.get("reason") in ("submitted", "submitted_partial"):
+                categories.append("submitted_burst_with_observed_full_remainder")
         if row.get("no_step_reason") == "prefetch_capacity_budget":
             categories.append("capacity_rejected")
             detail = row.get("blocked_detail")
@@ -121,6 +130,7 @@ def audit(path):
         },
         "actual_reclaim_records": {source: dict(value) for source, value in reclaimed.items()},
         "actual_waiting_agent_demotions": {source: dict(value) for source, value in demoted.items()},
+        "actual_full_extent_splits": {source: dict(value) for source, value in split.items()},
         "observed_timestamp_range_ms": range_ms,
         "input_jsonl_prefixes": sealed.prefixes,
         "interpretation": [
@@ -135,6 +145,11 @@ def audit(path):
             "prove that no safe migratable KV existed when the action was rejected.",
             "Actual waiting-agent demotions also occur for demand admission; keep them "
             "separate from predictive wait-prefetch reclaim.",
+            "A native extent split changes the tree only; it is not DMA, complete "
+            "checkpoint readiness, admission, or next-request reuse.",
+            "Observed FULL remainders describe the captured closure, which may include "
+            "output beyond the next reusable input checkpoint. A burst covering all "
+            "observed Host-backed FULL still does not prove required state is resident.",
         ],
     }
 
@@ -165,6 +180,7 @@ def main():
         },
         "actual_reclaim_records": report["actual_reclaim_records"],
         "actual_waiting_agent_demotions": report["actual_waiting_agent_demotions"],
+        "actual_full_extent_splits": report["actual_full_extent_splits"],
     }, indent=2))
 
 

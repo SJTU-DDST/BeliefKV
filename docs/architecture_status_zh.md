@@ -45,6 +45,20 @@ token；后者不是首节点大小。Mamba 与字节额度未阻塞这些记录
 tree 0b3deb75 一致。等待冷启动 V34 验证，性能目标仍 active。
 回执为 v137_partial_full_and_cold_capacity_validation。
 
+部分恢复验收进一步区分树拆分、批次提交、ACK、原生依赖就绪与
+首次服务消费。新增计划字段记录观测 closure 中尚未驻留的
+Host-backed FULL、本批未覆盖的部分、Host-only Mamba 和未备份
+节点；split 事件关联原 suffix 与新 fragment 身份。FULL 余量
+可能包含下一输入无法复用的输出，不能直接当下一请求需求量。
+旧 Mamba missing 只统计 FULL 已驻留、可独立恢复的状态，零值
+不代表状态齐全；新 Host-only 计数来自已捕获节点，不额外扫描树。
+现有路径在有界回收后恢复可装入前缀，ACK 后重新规划；需求到达
+时仍由原生依赖约束补齐与服务。H2D 本身增加占用，首批 ACK
+不能保证出现尾部容量；传输在途持续回收的流水线尚未实现。
+90 项相关检查通过，v139 验证只证明记录与路径契约，不证明
+减少等待。V34 须观察尾部补齐、驻留成本、实际 FULL 消费和
+繁忙窗口吞吐；不能把部分 ACK 记为完整 checkpoint 就绪。
+
 后续 baseline 对照方案已写入
 [相关工作总表第 6.4 节](related_work_comparison_2026-07-21_zh.md#64-当前-baseline-复现与-beliefkv-对照方案2026-10-12)：
 以统一模型/原生物理底座的策略对照为主，作者原实现另表；

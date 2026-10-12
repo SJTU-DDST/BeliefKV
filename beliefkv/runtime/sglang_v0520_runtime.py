@@ -3782,6 +3782,28 @@ class NativeAdmissionRuntime:
         steps = getattr(opportunity, "steps", ()) or ((step,) if step else ())
         full = getattr(opportunity, "required_full_tokens", None)
         mamba = getattr(opportunity, "required_mamba_slots", None)
+        missing_full = getattr(opportunity, "host_backed_full_missing_device_tokens", None)
+        missing_mamba = getattr(opportunity, "host_backed_mamba_missing_device_nodes", None)
+        unbacked_full = getattr(opportunity, "unbacked_full_nodes", None)
+        unbacked_mamba = getattr(opportunity, "unbacked_mamba_leaves", None)
+        observed_candidate = getattr(opportunity, "candidate", None)
+        host_only_mamba = (
+            sum(node.mamba_host_present and not node.mamba_device_present
+                for node in observed_candidate.nodes)
+            if observed_candidate is not None else None
+        )
+        unplanned_full = (
+            max(0, missing_full - full)
+            if type(missing_full) is int and type(full) is int else None
+        )
+        # A burst covering observed FULL still does not prove state readiness,
+        # completed DMA, or that the next request reuses this checkpoint.
+        restore_scope = (
+            "unobservable" if unplanned_full is None
+            else "no_full_payload" if full == 0
+            else "partial_observed_host_backed_full" if unplanned_full > 0
+            else "all_observed_host_backed_full"
+        )
         entries = getattr(
             getattr(getattr(self._native_cache, "cache_controller", None), "mem_pool_host", None),
             "entry_map", {},
@@ -3797,6 +3819,8 @@ class NativeAdmissionRuntime:
             tuple((item.node_id, item.creation_time, item.include_mamba) for item in steps),
             getattr(opportunity, "partial_full_tokens", 0),
             getattr(opportunity, "capacity_reclaim_probe", False),
+            missing_full, missing_mamba, unbacked_full, unbacked_mamba,
+            host_only_mamba,
         )
         now = time.monotonic()
         previous = self._wait_prefetch_records.get(identity)
@@ -3819,6 +3843,14 @@ class NativeAdmissionRuntime:
                 getattr(opportunity, "anchors", None), "reusable_input_tokens", None,
             ),
             "planned_full_tokens": full, "planned_mamba_slots": mamba,
+            "host_backed_full_missing_device_tokens": missing_full,
+            "host_backed_mamba_missing_device_nodes": missing_mamba,
+            "host_only_mamba_nodes_in_observed_closure": host_only_mamba,
+            "mamba_missing_device_nodes_scope": "FULL-resident, separately loadable state",
+            "unbacked_full_nodes": unbacked_full,
+            "unbacked_mamba_leaves": unbacked_mamba,
+            "unplanned_host_backed_full_tokens": unplanned_full,
+            "restore_batch_scope": restore_scope,
             "deferred_mamba_slots": getattr(opportunity, "deferred_mamba_slots", 0),
             "planned_pool_bytes": planned_bytes,
             "capacity_budget": getattr(opportunity, "capacity_budget", None),
@@ -3970,6 +4002,27 @@ class NativeAdmissionRuntime:
                 self.counts["wait_prefetch_full_extent_split_tokens"] += (
                     refreshed.partial_full_tokens
                 )
+                if self._opportunity_writer is not None:
+                    self._opportunity_writer.record({
+                        "event": "wait_prefetch_full_extent_split",
+                        "ts_ms": time.time() * 1000., "source": source,
+                        "workflow_id": key.root_workflow_id,
+                        "invocation_id": key.invocation_id,
+                        "context_id": key.context_id, "context_epoch": key.context_epoch,
+                        "request_id": key.request_id,
+                        "session_id": key.session_id,
+                        "session_generation": key.session_generation,
+                        "leaf_node_id": partial.leaf_node_id,
+                        "leaf_creation_time": partial.leaf_creation_time,
+                        "suffix_node_id": partial.node_id,
+                        "suffix_creation_time": partial.creation_time,
+                        "fragment_node_id": fragment[0],
+                        "fragment_creation_time": fragment[1],
+                        "fragment_full_tokens": refreshed.partial_full_tokens,
+                        "host_backed_full_missing_device_tokens":
+                            refreshed.host_backed_full_missing_device_tokens,
+                        "scope": "native tree split only; no DMA or execution readiness",
+                    })
                 refreshed = self._wait_prefetch_opportunity(
                     key, fit_current_capacity=True,
                 )

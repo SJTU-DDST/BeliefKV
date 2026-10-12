@@ -561,6 +561,50 @@ def test_wait_plan_records_changed_capture_failure_inside_sampling_interval():
         runtime.close()
 
 
+def test_wait_plan_reports_remaining_full_and_state_without_implying_ready():
+    runtime, key, opportunity, _, _ = batch_fixture("join_ticket")
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    partial = replace(
+        opportunity, required_full_tokens=4, required_mamba_slots=0,
+        host_backed_full_missing_device_tokens=16,
+        host_backed_mamba_missing_device_nodes=1, unbacked_full_nodes=0,
+        unbacked_mamba_leaves=0, steps=opportunity.steps[:1],
+    )
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=10.):
+            runtime._record_wait_prefetch_plan(
+                "join_ticket", key, partial, reason="submitted",
+            )
+            runtime._record_wait_prefetch_plan(
+                "join_ticket", key, partial, reason="submitted",
+            )
+            runtime._record_wait_prefetch_plan(
+                "join_ticket", key,
+                replace(partial, host_backed_full_missing_device_tokens=12),
+                reason="submitted",
+            )
+            runtime._record_wait_prefetch_plan(
+                "join_ticket", key,
+                replace(partial, host_backed_full_missing_device_tokens=4),
+                reason="submitted",
+            )
+            runtime._record_wait_prefetch_plan(
+                "join_ticket", key,
+                replace(partial, host_backed_full_missing_device_tokens=None),
+                reason="submitted",
+            )
+        assert [row["unplanned_host_backed_full_tokens"] for row in records] == [12, 8, 0, None]
+        assert [row["restore_batch_scope"] for row in records] == [
+            "partial_observed_host_backed_full", "partial_observed_host_backed_full",
+            "all_observed_host_backed_full", "unobservable",
+        ]
+        assert all(row["host_backed_mamba_missing_device_nodes"] == 1 for row in records)
+        assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
+
+
 def test_wait_batch_rechecks_causal_state_after_draining_events():
     runtime, key, opportunity, cache, _ = batch_fixture("join_ticket")
     runtime.event_server = NS(drain=Mock(side_effect=lambda **kwargs: runtime.on_events((

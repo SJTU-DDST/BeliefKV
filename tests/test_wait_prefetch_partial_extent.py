@@ -125,6 +125,17 @@ def test_partial_first_extent_reaches_native_enqueue_without_consuming_reserve(
             )
             assert submitted["planned_pool_bytes"] == {"kv": expected_tokens * 10, "mamba": 0}
             assert submitted["partial_full_tokens"] == 0
+            assert submitted["host_backed_full_missing_device_tokens"] == 16
+            assert submitted["unplanned_host_backed_full_tokens"] == 16 - expected_tokens
+            assert submitted["host_backed_mamba_missing_device_nodes"] == 0
+            assert submitted["host_only_mamba_nodes_in_observed_closure"] == 1
+            assert submitted["restore_batch_scope"] == "partial_observed_host_backed_full"
+            split_record = next(
+                row for row in records if row["event"] == "wait_prefetch_full_extent_split"
+            )
+            assert split_record["suffix_node_id"] == 1
+            assert split_record["fragment_node_id"] == 5
+            assert split_record["fragment_full_tokens"] == expected_tokens
             assert runtime.counts["wait_prefetch_full_extent_split_tokens"] == expected_tokens
             command = next(iter(runtime._prefetch_steps))
             runtime.on_native_transfer_commit(NS(
