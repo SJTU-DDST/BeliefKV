@@ -2,6 +2,37 @@
 
 Status date: 2026-10-12.
 
+Prioritize the newest predictive collection rather than continuing to
+diagnose V29 as though it were current. V132 seals V31 at
+13:39:02-13:39:32 CST: completed JOIN positive-plan/start/submit
+events are 70/67/18 out of 75, and tool events are 1239/34/34 out
+of 6110. Confirmed independent early FULL reuse is JOIN 15/0.682 GB
+and tool 30/1.538 GB. Keep 41 JOIN and three tool completion
+boundaries unknown. JOIN/tool ACK-to-first-service P90 remains
+11.033/13.397s; demand handoff remains separate.
+
+The complete V31 600-1200/1200-1800/1800-2400s decode windows
+remain 20.42%/7.04%/10.52% below the fixed native, with weighted
+batches near 47 on both sides. Instrumented exclusive Python wall
+in 600-2400s is 285.854s: reentry inspection 50.273s, join_prepare
+24.219s, admission_plan 22.437s, tool_prefetch 22.349s and
+handoff_enqueue 21.301s. These are not removable JCT or isolated
+policy costs; retain development overlap and different live demand.
+The independent outcome snapshot has 55 completed, 53 created
+unfinished and 48 unarrived workflows, with no observed error or
+incomplete result. Pending tasks are not failures.
+
+Deploy the already-validated 4f4567f rowless cache-restoration fix
+at the next predictive-only cold development restart; preserve
+V31 traces, frozen configuration and administrative censoring.
+Its 380 relevant checks are complete. Cache restoration may
+overlap a full decode batch without allocating a request row;
+actual execution admission and physical pool reserves stay native.
+Continue measuring real early FULL consumption and busy-window
+performance before declaring this performance goal complete.
+Latest evidence is v132_v31_latest_prefetch/busy/development.
+Reuse the cached fixed native summary without rescanning its raw.
+
 V131 seals V31 inputs at 13:12:21-13:12:33 CST. Of 29 observed
 complete JOINs, 26 have pre-boundary positive FULL plans, 24 start
 and 3 submit; 2,511 complete tool waits have 383/5/5. Capacity-budget
