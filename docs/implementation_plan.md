@@ -2,15 +2,33 @@
 
 Status date: 2026-10-12.
 
-V34 predictive-only cold-started 0b45f4b at 19:56:16 CST, retaining
-the fixed V29 native reference. Deployment validation at 20:01:26
-observes HTTP 200, 4032 real GPU service samples, physical_disabled=false
-and the new FULL remainder/Host-only Mamba telemetry. Actual physical
-pool capacities and frozen workload, model, output8192 and tool180s
-configuration match V33. Canonical patch 3e23c770 matches tree 0b3deb75.
-No native split has been observed at this startup snapshot. Freeze the
-running execution source. v140_v34_deployment_validation confirms
-deployment only, not complete restoration, early reuse or performance gain.
+V34 failed at 20:15:59 CST on October 12: the opportunity writer rejected
+a NumPy boolean, and the scheduler propagated its background error.
+This is not GPU OOM. Six workflows completed; 102 created and 48 unarrived
+tasks are runtime-failure censored, not administrative stops or agent
+failures. Frozen source remains 0b45f4b/3e23c770; preserve the earlier
+deployment receipt and all raw evidence. See v142_v34_runtime_failure.
+
+The writer now converts NumPy bool/integer/floating scalars through JSON's
+default callback, retaining strict nonfinite and array rejection.
+119 related checks pass. A real hybrid radix/allocator regression reproduces
+protected resident ancestors blocking subsequent Host-only tail splits.
+Allow those unchanged resident ancestors while retaining target/descendant
+locks, Host-only ancestor locks, identity and in-flight checks.
+130 native checks pass; patch 838d2ed8 matches tree d8abddb5.
+See v142_failure_and_partial_tail_validation. Partial FULL alone still
+cannot execute; continuous reclamation during in-flight DMA remains absent.
+
+The complete pre-fault 600-900s window has 336482/380722 predictive/native
+decode request steps with similar 23.25k-token contexts. Instrumented
+exclusive Python wall is 55.894s/300s, not removable JCT. Completed-boundary
+JOIN positive-FULL/start/submit is 32/27/2; tool is 566/3/3.
+Confirmed early FULL is JOIN one event/7.66MB and tool two/82.08MB;
+83 unknown JOIN boundaries remain unknown. The six native split declines
+are not proven to share one predicate. See v141 fault-prefix audits.
+Archive the failed workspaces before a same-configuration V35 predictive-only
+cold start using fixed V29 native. Continue with lower planning/inspection
+costs and better tool opportunity conversion; the performance goal is active.
 
 V33 stopped at 18:40:59 CST for the next capacity correction:
 106 completed, one xarray-6721 invalid historical tool-argument
@@ -53,7 +71,7 @@ fixed free pool. Existing FULL-only incremental PREPARE remains;
 evaluate more proactive asynchronous backup separately with
 action-local diagnostics, transfer contention and return churn.
 624 runtime and 123 engine checks pass; canonical patch 3e23c770
-matches tree 0b3deb75. V34 predictive is running with the
+matches tree 0b3deb75. V34 predictive failed on its background writer; rerun with the
 same frozen parameters and cached V29 native. Measure real
 probe/partial submission, independent early consumed FULL and
 busy-window service performance. The performance goal stays active.

@@ -2,15 +2,34 @@
 
 更新日期：2026-10-12。
 
-V34 已于 2026-10-12 19:56:16 CST 从 0b45f4b 冷启动，只跑
-predictive，继续使用固定 V29 native。20:01:26 的部署核验确认
-健康 200、4,032 个实际 GPU 服务样本、physical_disabled=false；
-新 FULL 余量/Host-only Mamba 字段已出现在真实日志中，尚未
-观测到实际节点 split。Host/HBM 各池容量、108+48 到达、模型
-产物、工具 180 秒、输出 8192 等冻结参数逐项等于 V33。
-规范 patch 3e23c770 与实际 tree 0b3deb75 一致，回执为
-v140_v34_deployment_validation。运行源保持冻结；启动核验
-不证明完整恢复、提前 FULL 复用或吞吐收益，性能目标仍 active。
+V34 于 2026-10-12 20:15:59 CST 因 opportunity writer 拒绝
+NumPy 布尔值退出：np.True_ is not JSON serializable，不是 GPU
+OOM。冻结源仍为 0b45f4b/3e23c770；20:01 的成功部署核验
+保留，但不能继续将本轮标记为运行中。结果库存为 6 completed，
+102 个已创建及 48 个未到达任务因运行时故障删失；没有完整
+workload 摘要，不能把未完成任务当 agent 自发失败。
+v142_v34_runtime_failure 保存故障、源身份及逐任务结果。
+
+修订 writer 将 NumPy bool/integer/floating 标量交给原生 JSON
+类型，保留正常值快速路径、非有限数拒绝和数组拒绝；119 项
+相关检查通过。真实 radix/allocator 又复现首段恢复后的祖先
+驻留锁挡住 Host-only 尾段拆分。现在仅放行未修改的驻留祖先锁，
+目标/下游锁、Host-only 祖先锁、全路径身份与在途检查继续保留；
+130 项原生检查通过。新规范 patch 838d2ed8 与实际 tree d8abddb5
+一致，验证为 v142_failure_and_partial_tail_validation。部分 FULL
+仍须补齐原 Mamba checkpoint 后才能执行，尚无在途持续回收。
+
+故障前完整 600–900 秒窗口为 336,482/380,722 个 decode request
+steps，visible context 均约 23.25k token，predictive 仍慢；
+已埋点 Python 独占墙钟为 55.894 秒/300 秒，reentry 9.488 秒、
+admission 8.200 秒、handoff 4.510 秒，不是可扣除 JCT。
+已知完成 JOIN 正 FULL/启动/提交为 32/27/2，工具为 566/3/3；
+提前确认 FULL 为 JOIN 1 个/7.66 MB、tool 2 个/82.08 MB。
+83 个未知 JOIN 完成边界单列。六次 split decline 不能全部
+归因于同一原生条件。证据为 v141_v34_fault_prefix_prefetch/busy。
+先归档故障 workspace，再同配置单跑 V35 predictive，继续
+使用固定 V29 native；优先降低检查/规划成本和工具机会漏失，
+主吞吐/JCT 目标仍 active。
 
 最新容量审计与修订：V33 在 18:40:59 CST 主动停止，停止前
 106 completed、1 error，49 个已创建未完成任务单列行政截断。
@@ -52,7 +71,7 @@ token；后者不是首节点大小。Mamba 与字节额度未阻塞这些记录
 冷 agent。未备份对象仍通过既有增量 FULL-only PREPARE，
 更主动的异步 PREPARE 时机需依据新诊断单独验证。
 624 runtime 与 123 引擎检查通过，patch 3e23c770 与实际
-tree 0b3deb75 一致。已部署至 V34，等待实际容量与性能验证。
+tree 0b3deb75 一致。V34 已因 writer 故障退出，容量修订待 V35 继续验证。
 回执为 v137_partial_full_and_cold_capacity_validation。
 
 部分恢复验收进一步区分树拆分、批次提交、ACK、原生依赖就绪与

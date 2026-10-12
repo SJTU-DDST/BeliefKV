@@ -1,0 +1,53 @@
+{
+  "schema_version": 1,
+  "scope": "V34 runtime-failure repair and protected-prefix partial restoration",
+  "native_patch": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "838d2ed84d878ffe4193d07482f3f69512d143c106d5c967ba3a83311ee6c995",
+    "expected_tree": "d8abddb5a706b040e2728589efd1a3374a59387f",
+    "actual_tree": "d8abddb5a706b040e2728589efd1a3374a59387f",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "serialization_fix": {
+    "type_conversion": "NumPy bool/integer/floating scalar to the corresponding native type",
+    "strict_nonfinite_rejection": true,
+    "arrays_still_rejected": true,
+    "recursive_telemetry_normalization": false,
+    "first_failed_record_or_field_identified": false
+  },
+  "partial_tail_fix": {
+    "reproduced_old_failure": "second split returned None after first fragment restored and locked",
+    "unchanged_resident_ancestor_lock_allowed": true,
+    "target_and_descendant_locks_still_rejected": true,
+    "host_only_ancestor_locks_still_rejected": true,
+    "identity_and_inflight_path_checks_preserved": true,
+    "partial_full_is_not_executable_checkpoint": true,
+    "in_flight_dma_reclamation_implemented": false,
+    "v34_six_declines_not_attributed_to_one_native_predicate": true
+  },
+  "checks": [
+    {
+      "files": [
+        "tests/test_record_json.py",
+        "tests/test_writer_timing.py",
+        "tests/test_v0520_native_telemetry.py"
+      ],
+      "result": "119 passed",
+      "duration_seconds": 7.18
+    },
+    {
+      "files": [
+        "test/srt/test_beliefkv_terminal_capacity.py",
+        "test/srt/test_beliefkv_execution_handoff.py"
+      ],
+      "result": "130 passed",
+      "duration_seconds": 8.71
+    }
+  ],
+  "performance_gain_proven": false
+}

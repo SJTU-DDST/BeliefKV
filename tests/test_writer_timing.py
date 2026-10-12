@@ -2,6 +2,7 @@ import json
 from unittest.mock import patch
 
 import pytest
+import numpy as np
 
 from beliefkv.runtime.v0520_opportunity_telemetry import NativeOpportunityTelemetry
 from beliefkv.runtime.writer_timing import SampledWriterTiming
@@ -72,3 +73,19 @@ def test_invalid_json_evidence_stays_an_error_with_sampled_processing(tmp_path):
     assert status["background_writer_timing"]["categories"]["invalid"]["sampled_cpu_ms"] >= 0
     with pytest.raises(RuntimeError, match="unavailable"):
         writer.record({"event": "later"})
+
+
+def test_opportunity_writer_drains_numpy_capacity_flags_and_later_records(tmp_path):
+    writer = NativeOpportunityTelemetry(tmp_path)
+    writer.record({
+        "event": "wait_prefetch_plan",
+        "fits_current_free_lists": np.int64(8) >= 4,
+        "capacity_reclaim": {"full_target_satisfied": np.bool_(False)},
+    })
+    writer.record({"event": "semantic_child_forecast", "score": np.float32(.5)})
+    writer.close()
+    first, second = [json.loads(line) for line in writer.path.read_text().splitlines()]
+    assert first["fits_current_free_lists"] is True
+    assert first["capacity_reclaim"]["full_target_satisfied"] is False
+    assert second["score"] == .5
+    assert json.loads(writer.status_path.read_text())["complete"] is True

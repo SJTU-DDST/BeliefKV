@@ -5,12 +5,26 @@
 完成/剩余工作预测，runtime 根据因果状态和真实缓存容量
 安排传输；吞吐和 JCT 收益仍待验证。
 
-最新 V34 于 19:56:16 CST 冷启动 0b45f4b/3e23c770，只跑
-predictive、使用固定 V29 native。20:01:26 的核验确认
-健康 200、4,032 个真实 GPU 服务样本和物理动作启用；
-实际各池容量及冻结参数等于 V33，新恢复余量字段已落盘，
-尚无实际 split。运行源码保持冻结，启动不证明性能改善；
-部署证据为 v140_v34_deployment_validation。
+V34 在 20:15:59 CST 因 opportunity writer 无法编码 NumPy bool
+退出，冻结源为 0b45f4b/3e23c770。六个 completed、102 个已创建
+及 48 个未到达任务故障删失；不是 GPU OOM 或 agent 自发失败。
+writer 修订仅转换 NumPy 标量，保留严格非有限/数组拒绝，
+119 项检查通过。V34 的早期部署证据保留，运行状态改为失败。
+
+真实原生树复现部分 FULL 首段驻留锁阻止尾段再次分段。修订仅
+放行未修改的驻留祖先锁；目标/下游与 Host-only 祖先锁、身份、
+在途状态继续检查。130 项原生回归通过，新 patch 838d2ed8/
+tree d8abddb5，v142 保存故障和验证。部分 FULL 不生成 Mamba
+checkpoint，也不授权服务；仍在每批前回收、ACK 后重规划，
+没有 DMA 在途持续回收。V34 六条 split decline 的具体条件
+尚不明确，不能仅据这个回归替它们归因。
+
+600–900 秒 complete window 的 predictive/native decode steps 为
+336,482/380,722，上下文均约 23.25k；控制独占墙钟 55.894 秒，
+不是可扣除 JCT。已知 JOIN 正 FULL/启动/提交为 32/27/2，
+tool 566/3/3，完成边界未知者保持未知。v141 故障前审计仍显示
+服务路径和触发覆盖问题。先归档故障 workspace，再保持全部
+冻结参数启动 V35 predictive，继续固定 V29 native，目标未达成。
 
 最新 V33 在 18:40:59 CST 行政停止，106 completed、1 个
 非法历史工具参数 error、49 个任务行政截断。下一版本

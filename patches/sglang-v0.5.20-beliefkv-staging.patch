@@ -2075,7 +2075,7 @@ index 6815679..8132f2c 100644
      def evict_device_end(self, component_type: ComponentType) -> None:
          """Finish the component's device-eviction walk."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..0dcd66a 100644
+index d417d7d..cca84ed 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -6,7 +6,7 @@ import threading
@@ -2953,7 +2953,7 @@ index d417d7d..0dcd66a 100644
              )
              if host_indices is None:
                  return 0
-@@ -1554,6 +2309,402 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1554,6 +2309,406 @@ class UnifiedRadixCache(BasePrefixCache):
              written = len(host_indices)
          return written
  
@@ -3114,13 +3114,17 @@ index d417d7d..0dcd66a 100644
 +                live_node = self.tree_core.node_by_id(current.id)
 +            except (KeyError, RuntimeError, ValueError):
 +                return None
++            # A protected resident prefix is unchanged by splitting its tail.
 +            if (
 +                live_node is not current
 +                or current.id in self.ongoing_write_through
 +                or current.id in self.ongoing_load_back
 +                or current.write_through_pending_id is not None
 +                or current.load_back_pending_id is not None
-+                or any(cd.lock_ref or cd.host_lock_ref for cd in current.component_data)
++                or (
++                    (not found or current.component_data[BASE_COMPONENT_TYPE].value is None)
++                    and any(cd.lock_ref or cd.host_lock_ref for cd in current.component_data)
++                )
 +            ):
 +                return None
 +            found = found or current is node
@@ -3356,7 +3360,7 @@ index d417d7d..0dcd66a 100644
      @staticmethod
      def _backup_publish_node_ids(
          node_id: NodeId, comp_xfers: dict[ComponentType, list[PoolTransfer]]
-@@ -1574,18 +2725,77 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1574,18 +2729,77 @@ class UnifiedRadixCache(BasePrefixCache):
              CacheTransferPhase.BACKUP_HOST, kv_xfer, comp_xfers
          )
  
@@ -3436,7 +3440,7 @@ index d417d7d..0dcd66a 100644
          )
  
      def _track_write_through_node(
-@@ -1627,10 +2837,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1627,10 +2841,10 @@ class UnifiedRadixCache(BasePrefixCache):
              updated_node_ids,
          )
  
@@ -3449,7 +3453,7 @@ index d417d7d..0dcd66a 100644
  
          lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
              ack_id
-@@ -1643,15 +2853,25 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1643,15 +2857,25 @@ class UnifiedRadixCache(BasePrefixCache):
              # suffix; the prefix fragment must be persisted as well.
              for node_id in publish_node_ids:
                  self.write_backup_storage(node_id)
@@ -3476,7 +3480,7 @@ index d417d7d..0dcd66a 100644
              return False
  
          host_anchor_params = self.inc_host_lock_ref(node_id).to_dec_params()
-@@ -1675,6 +2895,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1675,6 +2899,10 @@ class UnifiedRadixCache(BasePrefixCache):
                  result=result,
                  ancestor_lock_params=ancestor_lock_params,
                  host_anchor_params=host_anchor_params,
@@ -3487,7 +3491,7 @@ index d417d7d..0dcd66a 100644
              )
              return success
          finally:
-@@ -1690,9 +2914,34 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1690,9 +2918,34 @@ class UnifiedRadixCache(BasePrefixCache):
          result: IncLockRefResult,
          ancestor_lock_params: DecLockRefParams,
          host_anchor_params: DecLockRefParams,
@@ -3523,7 +3527,7 @@ index d417d7d..0dcd66a 100644
          kv_tokens = len(kv_xfer.host_indices)
          sidecar_xfers = self._build_sidecar_transfers(
              CacheTransferPhase.LOAD_BACK, kv_xfer, comp_xfers
-@@ -1703,7 +2952,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1703,7 +2956,8 @@ class UnifiedRadixCache(BasePrefixCache):
          # when the Full-KV load is skipped by thresholding. max(1, ...): an
          # entirely empty spec (e.g. foreign-pin rejection) must never report
          # success, even at load_back_threshold <= 0.
@@ -3533,7 +3537,7 @@ index d417d7d..0dcd66a 100644
              mem_quota is not None and kv_tokens + result.delta > mem_quota
          ):
              self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -1714,6 +2964,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1714,6 +2968,10 @@ class UnifiedRadixCache(BasePrefixCache):
              self.token_to_kv_pool_allocator, "c128_attn_allocator", None
          )
          if c128_allocator is not None:
@@ -3544,7 +3548,7 @@ index d417d7d..0dcd66a 100644
              c128_num_pages = _c128_transfer_num_pages(
                  comp_xfers.get(ComponentType.C128, ()),
                  c128_allocator.page_size,
-@@ -1727,6 +2981,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1727,6 +2985,10 @@ class UnifiedRadixCache(BasePrefixCache):
  
          avail = self._component_available_size(ComponentType.FULL)
          if avail < kv_tokens:
@@ -3555,7 +3559,7 @@ index d417d7d..0dcd66a 100644
              needed = kv_tokens - avail
              self.evict_for_alloc(EvictParams(num_tokens=needed))
              if self._component_available_size(ComponentType.FULL) < kv_tokens:
-@@ -1741,6 +2999,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1741,6 +3003,9 @@ class UnifiedRadixCache(BasePrefixCache):
              host_indices=kv_xfer.host_indices,
              node_id=node_id,
              extra_pools=aux_xfers or None,
@@ -3565,7 +3569,7 @@ index d417d7d..0dcd66a 100644
          )
  
          self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -3130,10 +4391,24 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3130,10 +4395,24 @@ class UnifiedRadixCache(BasePrefixCache):
              while self.ongoing_write_through:
                  for ack in cc.ack_write_queue:
                      ack.finish_event.synchronize()
@@ -3591,7 +3595,7 @@ index d417d7d..0dcd66a 100644
                  cc.ack_write_queue.clear()
                  assert len(self.ongoing_write_through) == 0
              return
-@@ -3154,11 +4429,122 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3154,11 +4433,122 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_write_queue.pop(0)
              ack.finish_event.synchronize()
@@ -3715,7 +3719,7 @@ index d417d7d..0dcd66a 100644
      def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
          """Record D->H backup volume and duration for a completed write ack."""
          if self.metrics_collector is None:
-@@ -3200,6 +4586,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3200,6 +4590,8 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_load_queue.pop(0)
              ack.finish_event.synchronize()
@@ -3724,7 +3728,7 @@ index d417d7d..0dcd66a 100644
              for ack_id in ack.node_ids:
                  if (
                      self.buffer_pipeline is not None
-@@ -3211,6 +4599,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3211,6 +4603,8 @@ class UnifiedRadixCache(BasePrefixCache):
                  self.dec_host_lock_ref(node, host_lock_params)
                  # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
                  self.tree_core.finish_load_back(node)
@@ -3733,7 +3737,7 @@ index d417d7d..0dcd66a 100644
  
              if self.metrics_collector is not None:
                  for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
-@@ -3225,6 +4615,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3225,6 +4619,13 @@ class UnifiedRadixCache(BasePrefixCache):
                      self.metrics_collector.observe_load_back_duration(
                          duration_ms / 1000.0
                      )
@@ -3747,7 +3751,7 @@ index d417d7d..0dcd66a 100644
              finish_count -= 1
  
      # ---- HiCache: Scheduler Entry Points ----
-@@ -3341,9 +4738,31 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3341,9 +4742,31 @@ class UnifiedRadixCache(BasePrefixCache):
          if self.linker is not None:
              return self.linker.start_layer_wise_loading()
          if self.cache_controller is not None:
@@ -7984,10 +7988,10 @@ index 0000000..700e2eb
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_terminal_capacity.py b/test/srt/test_beliefkv_terminal_capacity.py
 new file mode 100644
-index 0000000..52e8c74
+index 0000000..98e99e9
 --- /dev/null
 +++ b/test/srt/test_beliefkv_terminal_capacity.py
-@@ -0,0 +1,802 @@
+@@ -0,0 +1,889 @@
 +"""Terminal child reclamation with the real CPU radix tree and allocator."""
 +
 +from array import array
@@ -8449,6 +8453,93 @@ index 0000000..52e8c74
 +    assert cache.split_beliefkv_prefetch_full_prefix(**kwargs) is None
 +    assert leaf.parent is parent and len(leaf.key) == 8
 +    assert full.host_value is host_indices
++    assert allocator.available_size() == before
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++def test_partial_restore_can_split_its_tail_while_resident_prefix_is_protected(hybrid_cache):
++    cache, allocator, request_pool, leaf, generation, tokens = host_only_session_extent(
++        hybrid_cache,
++    )
++    host_indices = leaf.component_data[ComponentType.FULL].host_value.clone()
++    state = leaf.component_data[ComponentType.MAMBA].value
++    first = cache.split_beliefkv_prefetch_full_prefix(
++        session_id="waiting-parent", session_generation=generation,
++        leaf_node_id=leaf.id, leaf_creation_time=float(leaf.creation_time),
++        node_id=leaf.id, node_creation_time=float(leaf.creation_time), prefix_tokens=2,
++    )
++    assert first is not None
++    prefix = cache.tree_core.node_by_id(first[0])
++    cache.tree_core._unevict_node_on_insert(prefix, allocator.alloc(2))
++    values = prefix.component_data[ComponentType.FULL].value
++    lock = cache.tree_core.inc_lock_ref(prefix.id).to_dec_params()
++    refs = prefix.component_data[ComponentType.FULL].lock_ref
++    before = allocator.available_size()
++    mamba_before = request_pool.mamba_allocator.available_size()
++    try:
++        second = cache.split_beliefkv_prefetch_full_prefix(
++            session_id="waiting-parent", session_generation=generation,
++            leaf_node_id=leaf.id, leaf_creation_time=float(leaf.creation_time),
++            node_id=leaf.id, node_creation_time=float(leaf.creation_time), prefix_tokens=2,
++        )
++        assert second is not None
++        middle = cache.tree_core.node_by_id(second[0])
++        assert leaf.parent is middle and middle.parent is prefix
++        assert prefix.component_data[ComponentType.FULL].value is values
++        assert prefix.component_data[ComponentType.FULL].lock_ref == refs
++        assert allocator.available_size() == before
++        assert request_pool.mamba_allocator.available_size() == mamba_before
++        assert torch.equal(torch.cat((
++            prefix.component_data[ComponentType.FULL].host_value,
++            middle.component_data[ComponentType.FULL].host_value,
++            leaf.component_data[ComponentType.FULL].host_value,
++        )), host_indices)
++        assert match_length(cache, tokens) == 0
++        cache.tree_core._unevict_node_on_insert(middle, allocator.alloc(2))
++        assert match_length(cache, tokens) == 0
++        cache.tree_core._unevict_node_on_insert(leaf, allocator.alloc(4))
++        assert match_length(cache, tokens) == 8
++        assert leaf.component_data[ComponentType.MAMBA].value is state
++        cache._execute_and_commit_kv_backup.assert_not_called()
++    finally:
++        cache.tree_core.dec_lock_ref(prefix.id, lock)
++
++
++@pytest.mark.parametrize("blocked", (
++    "host_only_ancestor_device_lock", "host_only_ancestor_host_lock",
++    "descendant_device_lock", "descendant_host_lock", "ancestor_d2h", "ancestor_h2d",
++))
++def test_partial_tail_split_keeps_native_path_safety_checks(hybrid_cache, blocked):
++    cache, allocator, _, leaf, generation, _ = host_only_session_extent(hybrid_cache)
++    first = cache.split_beliefkv_prefetch_full_prefix(
++        session_id="waiting-parent", session_generation=generation,
++        leaf_node_id=leaf.id, leaf_creation_time=float(leaf.creation_time),
++        node_id=leaf.id, node_creation_time=float(leaf.creation_time), prefix_tokens=4,
++    )
++    assert first is not None
++    prefix = cache.tree_core.node_by_id(first[0])
++    target = prefix if blocked.startswith("descendant") else leaf
++    if blocked.endswith("device_lock"):
++        (leaf if target is prefix else prefix).component_data[ComponentType.FULL].lock_ref = 1
++    elif blocked.endswith("host_lock"):
++        (leaf if target is prefix else prefix).component_data[ComponentType.FULL].host_lock_ref = 1
++    else:
++        cache.tree_core._unevict_node_on_insert(prefix, allocator.alloc(4))
++        if blocked.endswith("d2h"):
++            prefix.write_through_pending_id = prefix.id
++        else:
++            prefix.load_back_pending_id = prefix.id
++    before = allocator.available_size()
++    host_prefix = prefix.component_data[ComponentType.FULL].host_value
++    host_tail = leaf.component_data[ComponentType.FULL].host_value
++    assert cache.split_beliefkv_prefetch_full_prefix(
++        session_id="waiting-parent", session_generation=generation,
++        leaf_node_id=leaf.id, leaf_creation_time=float(leaf.creation_time),
++        node_id=target.id, node_creation_time=float(target.creation_time), prefix_tokens=2,
++    ) is None
++    assert leaf.parent is prefix
++    assert prefix.component_data[ComponentType.FULL].host_value is host_prefix
++    assert leaf.component_data[ComponentType.FULL].host_value is host_tail
 +    assert allocator.available_size() == before
 +    cache._execute_and_commit_kv_backup.assert_not_called()
 +

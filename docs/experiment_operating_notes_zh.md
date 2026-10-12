@@ -4,13 +4,27 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
-V34 已于 19:56:16 CST 冷启动 0b45f4b/3e23c770，单跑
-predictive，固定 V29 native。20:01:26 核验健康 200、
-4,032 个真实 GPU 服务样本和物理动作启用；各池实际容量、
-到达表、模型、8192 输出与 180 秒工具上限逐项等于 V33。
-新 FULL 余量与 Host-only Mamba 字段已记录，尚未观测
-实际 split。不要在运行中修改源码或把启动当收益验证；
-见 v140_v34_deployment_validation，性能目标继续 active。
+V34 已于 20:15:59 CST 因 NumPy bool 日志编码失败退出，不能
+继续标为运行中，也不能归为 GPU OOM。六个 completed 保留；
+102 个已创建及 48 个未到达任务按运行时故障删失，不算 agent
+自发失败或人工停止。冻结源 0b45f4b/3e23c770、早期部署回执、
+原始 trace 与结果保留，见 v142_v34_runtime_failure。
+
+容量比较可能返回 NumPy 标量；writer 必须按原生 bool/int/float
+编码，继续拒绝数组和非有限值。第一条失败记录/字段未被保留，
+不能将它认定为某一字段。119 项相关检查通过。部分恢复首段
+加锁后，未修改的驻留祖先锁不能阻止尾段再次分段；目标、下游、
+Host-only 祖先锁和在途/身份条件保留。130 项真实原生检查通过，
+新 patch 838d2ed8，验证见 v142_failure_and_partial_tail_validation。
+部分 ACK 仍不代表可执行，尚未实现 DMA 在途持续回收。
+
+故障前完整 600–900 秒窗口仍低于固定 native；55.894 秒 Python
+独占墙钟不是可移除 JCT。JOIN 正 FULL/启动/提交为 32/27/2，
+工具 566/3/3，未知完成边界保持未知。六次 split decline 的
+具体原生原因未逐条记录，不能全部认定为祖先锁。先清理仅属
+V34 的停止容器、逐文件核验 workspace 归档，再单跑 V35；
+继续固定 workload、模型、8192、180 秒工具、14400 秒 workflow
+以及 V29 native 参照，不增加 guard 或输出预算。
 
 最新 V33 在 18:40:59 CST 行政停止：106 completed、1 个
 非法历史 tool arguments error、49 个已创建未完成任务删失。
