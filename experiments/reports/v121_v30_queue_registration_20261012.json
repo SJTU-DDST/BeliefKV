@@ -1,0 +1,93 @@
+{
+  "schema_version": 1,
+  "registered_at_local": "2026-10-12T07:59:42.557281+08:00",
+  "status": "waiting_for_previous_pair",
+  "coordinator_pid": 27723,
+  "coordinator_identity": [
+    "S",
+    27547,
+    "593344505"
+  ],
+  "previous_process_identities_verified": {
+    "2492201": [
+      "S",
+      1,
+      "592763842"
+    ],
+    "2573233": [
+      "R",
+      2573215,
+      "592794548"
+    ],
+    "2573647": [
+      "R",
+      2573233,
+      "592796017"
+    ],
+    "2575352": [
+      "S",
+      2573215,
+      "592811005"
+    ]
+  },
+  "previous_execution_verification": {
+    "collection_code_commit": "92e47d79ef1186dde954bc489fc38600ef5022ae",
+    "verification_code_commit": "57eae6cdc05db47decd976aa6d68a180db57e89c",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": [
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md",
+      "experiments/archive/README.md"
+    ]
+  },
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v121-tool-window-20261012",
+  "target_revision": "6476794862a2b6871067a28bddda234a5e7ab168",
+  "target_patch_sha256": "1c3c7fc4eefc5a9ed12e18f5c99490f03cd4b79f9f58079ce08fae3d944cfc9e",
+  "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v30",
+  "state": "/home/longhao/experiment/BeliefKV/experiments/reports/v30_launch_after_v29_20261012.json",
+  "log": "/home/longhao/experiment/BeliefKV/experiments/reports/v30_launch_after_v29_20261012.log",
+  "environment": {
+    "PYTHON": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "RUN_ROOT": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v30",
+    "ROOT_COUNT": "156",
+    "ARRIVAL_BATCH_SIZE": "108",
+    "ARRIVAL_BATCH_INTERVAL_MS": "3600000",
+    "ARM_ORDER": "predictive_h2d native",
+    "RESUME_PENDING": "0",
+    "HOST_SPLIT": "80:20",
+    "PORT": "18454",
+    "SAMPLING_SEED": "21",
+    "REPETITION_ID": "0",
+    "ACTIVATION_WALL_CLOCK_SECONDS": "14400.0",
+    "SEMANTIC_REPORT_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/child_semantic_work_live_v7_quantiles/semantic_event_calibrated.json",
+    "PREPARE_HOST": "1",
+    "H2D_SEED_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/native_h2d_ack_seed_20261004.json",
+    "TOOL_TIMING_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/qwen35_native_event_horizons_20260928_calibrated.json",
+    "TRANSFER_SERVICE_SEED": "/home/longhao/experiment/BeliefKV/experiments/models/native_transfer_service_seed_v4.json",
+    "ENABLE_TOOL_TIMING": "1",
+    "PREFETCH_LEAD_MS": "500",
+    "SEMANTIC_WORK_STATISTIC": "center",
+    "EOS_PROTOCOL_WINDOW_MS": "250",
+    "FANOUT_PROFILE": "native_in_graph_2to4",
+    "CHILD_FINAL_REPORT_SHADOW": "1",
+    "WORKLOAD_MANIFEST": "/home/longhao/experiment/BeliefKV/configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json"
+  },
+  "implementation_commit": "19a83b1",
+  "includes_same_dispatch_join_plan_reuse": true,
+  "conditions": [
+    "Previous predictive and same-version native finish with postprocessing.",
+    "Current V29 execution source and frozen configuration remain unchanged.",
+    "V30 deploys only after identity-verified previous processes exit.",
+    "V30 runs predictive first, followed by same-version cold native."
+  ],
+  "performance_goal_met": false
+}
