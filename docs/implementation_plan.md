@@ -42,8 +42,19 @@ predictive only against the unchanged fixed native. Its 17:19:38
 deployment receipt confirms HTTP 200, 7899 real GPU service samples,
 physical_disabled=false and physical pool capacities equal to V32.
 Keep output8192 and the current harness continuation behavior.
-Evidence: v134_v33_deployment_validation. Startup validation does
-not establish early FULL consumption or throughput/JCT improvement.
+Evidence: v134_v33_deployment_validation. The 17:36 sealed prefix
+observes 43 complete JOINs with positive-plan/window/submit counts
+40/36/5 and 4595 complete tool waits with 777/8/8. Independent
+early FULL reuse is seven tools/0.478GB; no JOIN FULL reuse is
+confirmed yet. Unknown completion boundaries stay unknown.
+The complete 600-1200s window remains 13.10% below cached native,
+1076.217 versus 1238.463 decode tokens/s, with batches near 47.
+Instrumented exclusive Python wall is 116.330s, including reentry
+22.608s; these are not removable JCT. The 17:53 outcome snapshot
+has 34 completed, 74 created unfinished and 48 unarrived, with no
+observed error/incomplete. Retain different realized demand and
+local analysis/profiling overlap. Evidence: v135_v33_early
+prefetch/busy/development; the performance goal remains unmet.
 
 Deploy newly exposed cold FULL ancestor reclamation: after each
 actual leaf demotion, revalidate the ancestor's native identity,
@@ -55,6 +66,26 @@ reason/budget records using existing observations. Real allocator
 and related engine checks pass 102 cases; runtime checks pass 470.
 Canonical patch 06d491ae exactly matches tree 27f9d9ae.
 These checks do not complete the service-throughput/JCT goal.
+
+Followup fixes the native FULL reclaim candidate scan: inspect up
+to max_nodes nonexcluded leaves, default 64, to select at most eight
+settled backed unreferenced candidates. Ineligible leaves no longer
+consume that candidate limit. Revalidate live state before actual
+reclaim; allocator capacity and target-prefix exclusions remain
+authoritative. The real allocator fixture previously misses the
+ninth usable victim. Related 108 engine and 470 runtime checks pass.
+Patch 943d7165 matches tree bcaae4ea; deploy at a subsequent cold
+restart, with V33 source frozen. Evidence:
+v135_cold_native_candidate_scan_validation. No measured GPU
+benefit or workload-wide missed fraction is inferred from the fixture.
+
+The V32 tool timing audit finds event-weighted last-second absolute
+error P50/P90 113.904/643.405ms among 1680 positive-FULL-plan
+rounds. These are tool, not child RETURN, metrics on fixed trace
+observations. Of 377 events with a missed recorded start window,
+only three have a simultaneous fitting free-list observation.
+Keep overlapping timing/capacity categories and sampled coverage;
+do not equate per-round maximum plan bytes to achievable benefit.
 
 While V33 collects, focus on measured reentry/admission costs,
 tool positive plans that never reach their start window and

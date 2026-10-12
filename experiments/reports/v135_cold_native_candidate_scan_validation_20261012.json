@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "scope": "Real CPU allocator regression and patch validation; no observed GPU performance gain is inferred.",
+  "reproduced_failure": {
+    "test": "test_cold_reclaim_scans_past_ineligible_nodes_within_transaction_bound",
+    "before_fix": "3 failed, 3 passed, 45 deselected",
+    "prefix": "Eight native device leaves are unbacked, session-referenced or pending; the ninth is a settled, backed, unreferenced FULL victim.",
+    "required_additional_full_tokens": 2,
+    "old_freed_full_tokens": 0
+  },
+  "implementation": {
+    "method": "UnifiedRadixCache.reclaim_beliefkv_handoff_capacity",
+    "native_full_candidate_scan_nonexcluded_bound": "max_nodes, default 64",
+    "native_full_eligible_candidate_limit": 8,
+    "actual_reclaim_attempt_bound": "max_nodes, default 64",
+    "eligible_screening": "Host-backed; every component has zero session and device-lock references; no pending load/write or ongoing write-through.",
+    "final_live_identity_reference_and_transfer_rechecks": true,
+    "actual_allocator_capacity_remains_authoritative": true,
+    "full_only_reclaim_preserves_live_independent_mamba": true,
+    "new_synchronous_backup_or_drain": false,
+    "native_common_execution_path_changed": false
+  },
+  "checks": [
+    {
+      "files": [
+        "third_party/sglang-v0.5.20/test/srt/test_beliefkv_terminal_capacity.py",
+        "third_party/sglang-v0.5.20/test/srt/test_beliefkv_execution_handoff.py"
+      ],
+      "result": "108 passed",
+      "duration_seconds": 10.08
+    },
+    {
+      "files": [
+        "tests/test_wait_prefetch_batch.py",
+        "tests/test_native_transfer_policy.py",
+        "tests/test_execution_handoff.py",
+        "tests/test_sglang_v0520_physical.py",
+        "tests/test_sglang_v0520_runtime.py"
+      ],
+      "result": "470 passed",
+      "duration_seconds": 1.33
+    }
+  ],
+  "canonical_patch": {
+    "sha256": "943d71653b615dfd078d6ecf8d0aadacf8299b294570a00da6270136fed39e73",
+    "expected_tree": "bcaae4ea0c3f52ea33af3d5761bab518454a906e",
+    "actual_tree": "bcaae4ea0c3f52ea33af3d5761bab518454a906e",
+    "matches_worktree": true
+  },
+  "running_experiment": {
+    "run": "V33",
+    "code_commit": "e0fe3f288490ae9af6c22735f8f2c3b648d61086",
+    "sglang_patch_sha256": "06d491ae9d326ed220d273d88ae6d1c68144aff01f99e80514bb47b423c91edc",
+    "contains_this_followup_fix": false,
+    "max_completion_tokens": 8192,
+    "harness_continuation_changed": false
+  },
+  "next_validation": "At a subsequent cold predictive restart, measure actual capacity-probe conversion, independent early FULL consumption and busy-window service throughput against the unchanged fixed native; do not infer the real missed fraction from this fixture."
+}

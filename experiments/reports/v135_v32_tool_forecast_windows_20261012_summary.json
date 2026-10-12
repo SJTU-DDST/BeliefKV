@@ -1,0 +1,207 @@
+{
+  "scope": "Fixed-trace diagnostic at forecast acceptance and recorded FULL-plan times. Uses the runtime's surviving residual mass/CDF/quantile logic and proven whole-tool-round completion as evaluation labels only. Single-call rounds are reported separately from sequential/parallel multi-call rounds. Plan samples are selected by the recorded runtime, not continuous coverage. A timely candidate means both leads are inside the upper start window; the service categories separately compare actual lead with recorded H2D P90. This estimate excludes planning/enqueue time and is not actual transfer completion or proof of feasible restoration. Missing service estimates remain unknown, not zero. Categories overlap across snapshots of one round. Per-round maximum FULL bytes may share pages and do not establish achievable unique bytes, actual transfers, residence, admission, hidden stalls, heldout accuracy or speedup.",
+  "counts": {
+    "tool_wait_forecast_records": 78093,
+    "wait_prefetch_plan_records": 39921,
+    "plans_without_positive_full_bytes": 34010,
+    "wait_prefetch_plan_at_or_after_completion": 2512,
+    "tool_wait_forecast_at_or_after_completion": 2547,
+    "forecasts_without_surviving_timing_support": 480,
+    "records_without_round_label": 3338,
+    "positive_full_plans_without_timing": 39
+  },
+  "scheduler_wall_minus_monotonic_ms": 1785829736899.4333,
+  "forecast_timing": {
+    "independent_tool_rounds": 23878,
+    "rounds_with_pre_completion_forecasts": 21620,
+    "rounds_with_last_second_forecasts": 21531,
+    "tool_weighted_last_second_signed_error_ms": {
+      "count": 21531,
+      "p50": 19.817148208618164,
+      "p90": 542.6108605644312,
+      "min": -854.622292609284,
+      "max": 96689.2423005861
+    },
+    "tool_weighted_last_second_absolute_error_ms": {
+      "count": 21531,
+      "p50": 66.7431609226191,
+      "p90": 550.878791809082,
+      "min": 0.0003376007080078125,
+      "max": 96689.2423005861
+    },
+    "first_500ms_window_lead_ms": {
+      "count": 17466,
+      "p50": 218.0738525390625,
+      "p90": 624.76318359375,
+      "min": 0.00390625,
+      "max": 180793.69775390625
+    },
+    "first_500ms_window_in_actual_0_to_500ms": 14916,
+    "first_500ms_window_more_than_500ms_early": 2550
+  },
+  "single_tool_round_forecast_timing": {
+    "independent_tool_rounds": 23506,
+    "rounds_with_pre_completion_forecasts": 21263,
+    "rounds_with_last_second_forecasts": 21193,
+    "tool_weighted_last_second_signed_error_ms": {
+      "count": 21193,
+      "p50": 19.494181632995605,
+      "p90": 537.7629190447431,
+      "min": -771.5486211776733,
+      "max": 96689.2423005861
+    },
+    "tool_weighted_last_second_absolute_error_ms": {
+      "count": 21193,
+      "p50": 64.61034202575684,
+      "p90": 546.8295642634355,
+      "min": 0.0003376007080078125,
+      "max": 96689.2423005861
+    },
+    "first_500ms_window_lead_ms": {
+      "count": 17234,
+      "p50": 217.6632080078125,
+      "p90": 612.7457519531253,
+      "min": 0.00390625,
+      "max": 180793.69775390625
+    },
+    "first_500ms_window_in_actual_0_to_500ms": 14768,
+    "first_500ms_window_more_than_500ms_early": 2466
+  },
+  "multi_tool_round_forecast_timing": {
+    "independent_tool_rounds": 372,
+    "rounds_with_pre_completion_forecasts": 357,
+    "rounds_with_last_second_forecasts": 338,
+    "tool_weighted_last_second_signed_error_ms": {
+      "count": 338,
+      "p50": 134.75474530788512,
+      "p90": 807.3457827619118,
+      "min": -854.622292609284,
+      "max": 6938.251170669406
+    },
+    "tool_weighted_last_second_absolute_error_ms": {
+      "count": 338,
+      "p50": 309.4540742341077,
+      "p90": 814.5501498863997,
+      "min": 0.04010343551635742,
+      "max": 6938.251170669406
+    },
+    "first_500ms_window_lead_ms": {
+      "count": 232,
+      "p50": 269.8092041015625,
+      "p90": 3356.987402343751,
+      "min": 1.193115234375,
+      "max": 40267.394287109375
+    },
+    "first_500ms_window_in_actual_0_to_500ms": 148,
+    "first_500ms_window_more_than_500ms_early": 84
+  },
+  "positive_full_plan_window_categories": {
+    "timely_candidate": {
+      "snapshots": 29,
+      "independent_tool_rounds": 29,
+      "sum_per_round_max_observed_full_bytes": 1350676480
+    },
+    "timely_candidate_with_observed_free_capacity": {
+      "snapshots": 24,
+      "independent_tool_rounds": 24,
+      "sum_per_round_max_observed_full_bytes": 799703040
+    },
+    "predicted_too_early": {
+      "snapshots": 55,
+      "independent_tool_rounds": 25,
+      "sum_per_round_max_observed_full_bytes": 3167109120
+    },
+    "predicted_too_early_with_observed_free_capacity": {
+      "snapshots": 15,
+      "independent_tool_rounds": 13,
+      "sum_per_round_max_observed_full_bytes": 669982720
+    },
+    "missed_recorded_window": {
+      "snapshots": 442,
+      "independent_tool_rounds": 377,
+      "sum_per_round_max_observed_full_bytes": 43604541440
+    },
+    "missed_recorded_window_with_observed_free_capacity": {
+      "snapshots": 3,
+      "independent_tool_rounds": 3,
+      "sum_per_round_max_observed_full_bytes": 216453120
+    },
+    "not_yet_due": {
+      "snapshots": 2834,
+      "independent_tool_rounds": 1452,
+      "sum_per_round_max_observed_full_bytes": 147481968640
+    },
+    "not_yet_due_with_observed_free_capacity": {
+      "snapshots": 14,
+      "independent_tool_rounds": 11,
+      "sum_per_round_max_observed_full_bytes": 246702080
+    }
+  },
+  "timely_full_plan_service_categories": {
+    "actual_lead_at_least_recorded_h2d_p90": {
+      "snapshots": 25,
+      "independent_tool_rounds": 25,
+      "sum_per_round_max_observed_full_bytes": 1317498880
+    },
+    "actual_lead_at_least_recorded_h2d_p90_with_observed_free_capacity": {
+      "snapshots": 20,
+      "independent_tool_rounds": 20,
+      "sum_per_round_max_observed_full_bytes": 766525440
+    },
+    "actual_lead_below_recorded_h2d_p90": {
+      "snapshots": 4,
+      "independent_tool_rounds": 4,
+      "sum_per_round_max_observed_full_bytes": 33177600
+    },
+    "actual_lead_below_recorded_h2d_p90_with_observed_free_capacity": {
+      "snapshots": 4,
+      "independent_tool_rounds": 4,
+      "sum_per_round_max_observed_full_bytes": 33177600
+    },
+    "recorded_h2d_p90_unavailable": {
+      "snapshots": 0,
+      "independent_tool_rounds": 0,
+      "sum_per_round_max_observed_full_bytes": 0
+    },
+    "recorded_h2d_p90_unavailable_with_observed_free_capacity": {
+      "snapshots": 0,
+      "independent_tool_rounds": 0,
+      "sum_per_round_max_observed_full_bytes": 0
+    }
+  },
+  "positive_plan_episode_diagnostics": {
+    "independent_tool_rounds": 1680,
+    "overlapping_categories": {
+      "positive_plan_with_last_second_forecast": 1680,
+      "positive_plan_with_missed_recorded_window": 377,
+      "positive_plan_with_timely_candidate": 29,
+      "positive_plan_with_predicted_too_early": 25
+    },
+    "last_forecast_supports_all_tool_rounds": {
+      "release_cdf": 8356,
+      "completed_project_command": 4806,
+      "same_input_completed": 6735,
+      "same_failed_input_completed": 1723
+    }
+  },
+  "audit_started_at_local": "2026-10-12T17:28:35.499635+08:00",
+  "audit_finished_at_local": "2026-10-12T17:28:55.469526+08:00",
+  "collection_code_commit": "8495c890282be7c07c0d4cd17a30e8153ae516a8",
+  "input_sources": {
+    "lifecycle": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v133_v32_complete_prefetch_20261012.json.gz",
+    "lifecycle_compressed_sha256": "40d922192a056dc7897e6832d184b302171db87f3fb0aea8a305e66867de6fd6",
+    "opportunities": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v32/predictive_h2d/opportunities/admission_opportunities.jsonl",
+    "opportunity_prefix": {
+      "complete_prefix_bytes": 1388352725,
+      "complete_prefix_sha256": "30c299014aa6c7c86b9db46d8f21f678520c96f5a6a59f7cb777f077d1b42ba1",
+      "first_read_limit_bytes": 1388352725
+    },
+    "helper_sha256": "ec3daac8cfa3111e8f0f76cbc778abd9dccd0e0631ac2da5c9088a17e2077890",
+    "audit_script_sha256": "97c564d94421777315f4303f6da3b93353d6045dd89df6370d02c3de5f25f8f0"
+  },
+  "detail": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v135_v32_tool_forecast_windows_20261012.json.gz",
+    "compressed_sha256": "a8dcaf7384925da142e90d686c920270a5592e3bf4c7a62ca0d561f09da4d60a",
+    "uncompressed_sha256": "eb665bef79d45f8d518571e4eaee99ce6131131cf1534e9a58f6dc8a024241f4"
+  }
+}
