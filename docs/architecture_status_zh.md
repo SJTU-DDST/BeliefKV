@@ -8,6 +8,9 @@ V35 已于 2026-10-12 22:21:14 CST 行政停止，停止前库存为
 e673af5/838d2ed8，原始证据保留。准备同配置 V36 predictive
 冷启动，继续固定 V29 native；性能目标仍 active。
 v146_v35_development_stop 保存逐任务及进程身份回执。
+V35 的 108 个 workspace 已于 22:25:23 CST 全量比较后归档，
+20.934→2.332 GB，清理其 69 个已停容器，可用空间约 178.23 GiB。
+维护先于 V36；raw/ARCHIVED.md 及 v146_workspace_archive 保留恢复路径。
 
 V35 完整 600–900 秒窗口的 decode request steps 为
 319,567/380,722（predictive/native），相对少 16.06%，可见上下文

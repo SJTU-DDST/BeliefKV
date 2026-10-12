@@ -9,6 +9,10 @@ agent failures. Frozen source is e673af5/838d2ed8; preserve all raw
 evidence. Prepare the same-configuration V36 predictive cold start
 using fixed V29 native; the performance objective remains active.
 See v146_v35_development_stop for outcomes and process identities.
+All 108 workspaces passed full tar comparison before removal at 22:25:23
+CST, 20.934GB to 2.332GB; only its 69 stopped owned containers were removed.
+Available space is 178.23GiB. Maintenance precedes V36; restore pointers
+remain in raw/ARCHIVED.md, the archive README and v146_workspace_archive.
 
 The complete V35 600-900s window contains 319567/380722 predictive/native
 decode request steps, 16.06% lower with similar visible contexts.
