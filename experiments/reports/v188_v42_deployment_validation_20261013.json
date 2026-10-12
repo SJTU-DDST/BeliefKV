@@ -1,0 +1,182 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-13T03:32:26.960926+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v42",
+  "code_commit": "028bb6be6c7b69ac6864bd0b2e9446ba0490bd3b",
+  "sglang_patch_sha256": "cf0243b6331c2be8f24491efd7a4b2306e72610b4cd8cb8ddc586c4e12b18b2b",
+  "frozen_plan_sha256": "9b5be475c38aaa0f718943050ee2dde9d7728f5422555455b890e9eeb0cf93b6",
+  "execution_verification": {
+    "collection_code_commit": "028bb6be6c7b69ac6864bd0b2e9446ba0490bd3b",
+    "verification_code_commit": "028bb6be6c7b69ac6864bd0b2e9446ba0490bd3b",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "validated_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "67f21727c967444b785111a06a18ce72cab15bbc810b03a4dee63dfdc45c57fe",
+    "scripts/benchmark_exhausted_handoff_cpu.py": "eb89574741a33c77e4f4cf6f0ebc01b4df20e1e8ba1159927eeef6a4b0117311",
+    "scripts/benchmark_native_shared_path.py": "5105c132fa8ad4be3074019f9567b4c9800dd12960a2c44d1c2342875aa7f75c",
+    "tests/test_execution_handoff.py": "6d77e7ce4e0a014562c7811e280d406b3c381306f11248ba160bcc51740a2a2e"
+  },
+  "engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "cf0243b6331c2be8f24491efd7a4b2306e72610b4cd8cb8ddc586c4e12b18b2b",
+    "expected_tree": "c7c27e0db82a18a41d305b6c98176869ba14aa62",
+    "actual_tree": "c7c27e0db82a18a41d305b6c98176869ba14aa62",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "unchanged_configuration_fields": [
+    "workload_sha256",
+    "root_count",
+    "arrival_schedule",
+    "server_running",
+    "context_tokens",
+    "max_completion_tokens",
+    "host_gb",
+    "host_split",
+    "mamba_full_memory_ratio",
+    "mem_fraction_static",
+    "native_write_policy",
+    "fanout_profile",
+    "sampling_seed",
+    "temperature",
+    "sandbox_command_timeout_s",
+    "activation_wall_clock_seconds",
+    "child_final_report_shadow",
+    "prefetch_lead_ms",
+    "eos_protocol_window_ms",
+    "eos_prefetch_evidence_window_ms",
+    "native_reference_run",
+    "semantic_artifact_sha256",
+    "tool_timing_sha256",
+    "transfer_service_seed_sha256",
+    "native_reactive_guard_profile",
+    "completion_gate_enabled",
+    "semantic_work_statistic"
+  ],
+  "actual_capacity": {
+    "device_full_bytes": 36843438080,
+    "device_full_tokens": 1798995,
+    "device_mamba_bytes": 33096007680,
+    "device_mamba_slots": 513,
+    "device_total_bytes": 69939445760,
+    "host_full_bytes": 160000020480,
+    "host_full_tokens": 7812501,
+    "host_mamba_bytes": 40050032640,
+    "host_mamba_slots": 622,
+    "host_total_bytes": 200050053120,
+    "pool_layout": "static_separate_full_mamba"
+  },
+  "gc_freeze_receipt_sha256": "dd7b9a8cae9a8ab8b106d529308ba6ee6c9077ea3240c1a045ba3117c8664892",
+  "physical_disabled": false,
+  "runtime_snapshot_ts_ms": 1791833545127.1562,
+  "observed_runtime_residency_budget": {
+    "request_slots": 1,
+    "byte_limit": 57075568640,
+    "reserve_full_tokens": 4145,
+    "reserve_mamba_slots": 1,
+    "source": "native_next_prefill",
+    "evictable_full_tokens": 182418,
+    "evictable_mamba_slots": 326
+  },
+  "residency_budget_semantics": "Native Mamba reserve equals the imminent request-slot count; it is dynamic, not a frozen one-slot configuration field. FULL retains input/decode reserve.",
+  "observed_gpu_service_samples_in_tail": 520,
+  "runtime_counts": {
+    "semantic_worker_ready": 1,
+    "semantic_worker_disabled": 0,
+    "semantic_worker_dropped": 0,
+    "join_wait_expired": 0,
+    "physical_expired": 0,
+    "tool_prefetch_scans": 1132,
+    "prepare_no_service_demand": 1759,
+    "execution_handoff_no_waiting_requests": 1479,
+    "tool_prefetch_scan_deferred": 248285,
+    "admission_causal_cache_hits": 225,
+    "native_admitted": 333,
+    "admission_residency_scan_reused": 167,
+    "semantic_native_tool_marker_invalidated": 303,
+    "semantic_text_received": 588,
+    "semantic_text_after_tool_ignored": 381,
+    "semantic_tool_chunk_invalidated": 193,
+    "tool_wait_submitted": 471,
+    "tool_wait_context_stale": 159,
+    "tool_wait_result_stale": 34,
+    "tool_unchanged_wait_prediction_skipped": 465,
+    "tool_wait_accepted": 436,
+    "tool_hint_physical_inspection_deferred": 436,
+    "tool_prefetch_no_restore_target": 1611,
+    "tool_wait_parallel_group_pending": 37,
+    "tool_prefetch_not_in_time_window": 302,
+    "tool_prefetch_survival_deferred": 266,
+    "semantic_no_transfer_target_skipped": 23,
+    "resident_first_ordered": 329,
+    "execution_handoff_no_frontier_slots": 3,
+    "native_OTHER": 1,
+    "prepare_mamba_pressure_only": 104,
+    "child_report_notice_observed": 1,
+    "join_intent_stale": 1
+  },
+  "health_http_status": 200,
+  "live_process_identities": {
+    "coordinator": {
+      "pid": 1144718,
+      "state": "S",
+      "ppid": 1,
+      "pgid": 1144718,
+      "start_ticks": "600353579"
+    },
+    "scheduler": {
+      "pid": 1145362,
+      "state": "R",
+      "ppid": 1144950,
+      "pgid": 1144950,
+      "start_ticks": "600355090"
+    },
+    "client": {
+      "pid": 1146874,
+      "state": "S",
+      "ppid": 1144932,
+      "pgid": 1146874,
+      "start_ticks": "600370546"
+    },
+    "engine_parent": {
+      "pid": 1144950,
+      "state": "R",
+      "ppid": 1144932,
+      "pgid": 1144950,
+      "start_ticks": "600353785"
+    }
+  },
+  "audit_input_tail": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v42/predictive_h2d/server/runtime_audit.jsonl",
+    "start_offset": 15133553,
+    "complete_bytes_read": 8371109,
+    "sha256": "e45a5a3c3a10a1e034c702da7a6e2ffdc277a4134ecc62e52cd48a7b871c22ec",
+    "scope": "Complete lines in one bounded observed tail, not an atomic cross-file snapshot"
+  },
+  "runtime_state_input_tail": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v42/predictive_h2d/opportunities/admission_opportunities.jsonl",
+    "start_offset": 0,
+    "complete_bytes_read": 4089175,
+    "sha256": "b595005fccffce5c75d034c19965ccbe73b9d8fb5a353fc2f4adf73eef6410e8",
+    "scope": "Complete lines in one bounded observed tail, not an atomic cross-file snapshot"
+  },
+  "deployment_script_sha256": "23953fe920f051b16e06b9032c16a735763d0046d88d2c74bcc0b0c63127d572",
+  "validator_template_sha256": "2f61cc60a18d91022d4155d8b93a47da52546e034e3b5c567388a37b8e5f6f59",
+  "rendered_validator_sha256": "5a6b61f062bdf4bf3642e864bb00fad3db5594b401088bb9cada7649e4c0e792",
+  "scope": "Frozen validated source, unchanged configuration/capacity and real physical/GPU service. Startup is not proof of consumed FULL or throughput/JCT improvement."
+}

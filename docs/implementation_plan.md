@@ -10,7 +10,7 @@ CUDA graph cohorts are close, while 46/47 remain longer. These are
 not isolated kernels or removable JCT. See v184. The whole-queue
 exhaustion skip is still observed only once.
 
-Cold-validate an exhausted aged FIFO handoff frontier despite new tail
+V42 cold-validates an exhausted aged FIFO handoff frontier despite new tail
 requests. Read bounded tagged identities once in the same call; retain
 the original path for unattempted restore-ready and live parent handoff
 targets, rearmed requests, changed bindings and a wider frontier.
@@ -19,8 +19,8 @@ not execution readiness. The final 347 focused checks pass. Selected
 real-inspector fixtures reduce thread CPU about 47-49% at 156/512
 requests. Young depth8 queues add about 0.15-0.21ms per eligible probe;
 depth64 has no consistent change. V186 binds sources and qualified
-evidence. The initial unrefined candidate was not deployed. Commit
-before administrative stop/archive and cold restart; no hot editing.
+evidence. The initial unrefined candidate was not deployed. The validated
+code was committed before stop/archive and cold restart; no hot editing.
 
 V182 uses exactly V180's sealed prefixes: 9562 rounds with last-second
 forecasts have per-round median absolute-error P50/P90 72.214/517.558ms.
@@ -30,15 +30,37 @@ Snapshot categories overlap; per-round maximum planned bytes do not
 establish unique achievable transfers, an oracle bound or heldout accuracy.
 Continue capacity, complete restoration and next-request consumption work.
 
-Current development run is predictive-only V41, cold-started at
-02:52:03 CST on October 13 from 18f8209/cf0243b6. Engine tree remains
-c7c27e0d. It deploys exhausted-candidate handoff planning reduction,
-with all 27 frozen fields and physical capacities unchanged and fixed
-V29 native reused. At 02:56:20, v181 verifies HTTP200, GC initialization,
-469 actual GPU-service samples in independent tails, physical actions
-enabled, and one observed exhaustion skip. The observed reserve is
-4145 FULL tokens/one Mamba slot; Mamba follows next-batch request slots.
-Freeze V41 execution sources. Startup is not evidence of performance gain.
+Current development run is predictive-only V42, cold-started at
+03:27:54 CST on October 13 from 028bb6b/cf0243b6. Engine tree remains
+c7c27e0d. It deploys the already-attempted aged FIFO handoff frontier
+shortcut with fixed configuration and V29 native reused. At 03:32:26,
+v188 verifies HTTP200, frozen GC initialization, 520 real GPU-service
+samples in the independent tail, enabled physical actions, matching
+source/engine, all 27 frozen fields and actual capacities. The observed
+reserve is 4145 FULL tokens/one Mamba slot, following imminent request
+slots. The 03:34:07 early snapshot has no new frontier skip yet;
+v189 records 387 aged-frontier skips and 395 selected handoffs at
+03:36:50. These have different denominators and do not establish
+a hit rate or a GPU performance gain.
+Partial ACK is not execution readiness. Measure the
+execution_handoff_aged_frontier_already_attempted counter, synchronous
+control cost, early FULL consumption and a complete busy window.
+Freeze V42 execution sources. The performance goal remains active.
+
+V41 stopped administratively at 03:24:35: 21 completed, 87 created
+unfinished and 48 unarrived. Preserve the latter 135 as censoring.
+All 108 workspaces passed full archive comparison before removal at
+03:27:39: 20.861GB allocated source to 2.296GB archive. Remove only
+87 stopped owned containers; retain raw, results and frozen plan.
+The final audit exited before archive cleanup, which precedes V42.
+See v187 and the existing archive README for verification and restore.
+The strict stopped-run funnel has JOIN positive-FULL/start/submit
+47/47/18 over 49 known boundaries, with 63 unknown; tool 1021/151/144
+over 5481 known boundaries, with three unknown. Pre-completion started
+and next-request consumed FULL is eight JOINs/82.801MB and
+134 tools/8.932GB. Last-ACK to first-service P90 is 6.153s/2.698s.
+Residual native FULL Host-hit is 0.832GB/0.884TB, not an oracle bound
+or proof of pre-boundary feasibility. Keep demand handoff separate.
 
 V40 stopped administratively at 02:46:16: 62 completed, 46 created
 unfinished and 48 unarrived. Preserve the latter 94 as censoring.
