@@ -2,7 +2,49 @@
 
 Status date: 2026-10-12.
 
-The latest collecting arm is now V32. V31 was administratively
+V32 completed collection and postprocessing at 16:14:15 CST on
+October 12: 153 completed and three incomplete workflows. Each
+incomplete root ends with finish_reason=length, with no child
+cancellation or expired workflow deadline. Keep the user's
+8192-token output budget and current harness behavior unchanged.
+
+Complete V32 JOIN positive-FULL/start/submit counts are 151/146/47
+out of 186 completed waits; tool counts are 1680/37/36 out of
+23878. Independent early FULL reuse is JOIN 46/0.810GB and tool
+32/1.184GB; 147.387GB of demand handoff FULL remains separate.
+Capacity reasons occur in 124/2853 completed episodes and overlap
+other reasons. ACK-to-first-service P90 remains 13.322/18.202s.
+
+The 600-1200/1200-1800/1800-2400s decode windows differ from the
+cached fixed native by -9.24%/+1.43%/-5.77%, with batches near
+47. In 600-2400s, instrumented exclusive Python wall is 322.214s;
+reentry inspection contributes 87.615s, admission 32.719s and
+tool prefetch 29.605s. Whole-run completion/JCT improvements
+do not establish causal benefits. Preserve different realized
+demand, local analysis and archive maintenance overlap.
+Evidence: v133_v32_complete_prefetch/busy and
+v134_v32_complete_development.
+
+Cold-start V33 predictive only against the unchanged fixed native.
+Deploy newly exposed cold FULL ancestor reclamation: after each
+actual leaf demotion, revalidate the ancestor's native identity,
+device-leaf membership, causal wait, sharing, pending transfers
+and target-prefix exclusion. Stop at actual pool targets or a
+64-node transaction bound. Retain live independent Mamba state;
+do not synchronously drain a backup. Add deduplicated capacity
+reason/budget records using existing observations. Real allocator
+and related engine checks pass 102 cases; runtime checks pass 470.
+Canonical patch 06d491ae exactly matches tree 27f9d9ae.
+These checks do not complete the service-throughput/JCT goal.
+
+While V33 collects, focus on measured reentry/admission costs,
+tool positive plans that never reach their start window and
+ACK-to-first-service delay. Preserve workload, pools, model,
+lead, output budget and tool180s parameters for attribution.
+V31's 108 stopped workspaces were losslessly compressed after
+tar comparison; raw evidence and restore pointers remain.
+
+Historical collection records follow. V31 was administratively
 stopped at 13:50:40.618 CST with 63 observed completed workflows,
 45 created unfinished and 48 unarrived tasks censored separately.
 No spontaneous error/incomplete result was observed before signals.
@@ -11,7 +53,7 @@ raw evidence, frozen plans and all workspace files remain intact.
 After old Host memory release, the unchanged 200 GB NUMA preflight
 passed with 222.75 GiB estimated available capacity.
 
-V32 cold-started 8495c89 at 13:52:45 CST, containing the
+The completed V32 cold-started 8495c89 at 13:52:45 CST, containing the
 4f4567f full-batch rowless restoration fix; its client began at
 13:55:27 CST. The 13:57:38 validation observes healthy HTTP 200,
 4209 real GPU service samples and physical_disabled=false.

@@ -4,7 +4,30 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
-当前运行是 V32 predictive，8495c89/7b4832ef 冻结执行，
+V32 已于 16:14:15 CST 完整结束：153 completed、3 incomplete。
+三例 root 最后响应均为 length，deadline 未过期且无 child
+取消；保留用户指定的 8192-token 输出上限和既有 harness。
+更新上限或续接行为会改变执行需求，届时须同步 native；
+当前只记录截断原因，不调整冻结参数。
+
+下一轮 V33 只跑 predictive，继续使用固定 native 摘要。
+冷 FULL 回收可沿新暴露的祖先继续，但每节点必须重新核验
+创建 identity、原生可驱逐叶、因果等待、引用、在途传输和
+目标完整前缀排除；最多检查 64 个节点，以真实 allocator
+free-list 判断满足需求。不能预记释放容量、驱逐活跃共享页
+或增加同步备份等待。记录零计划的具体池/字节原因和原始
+请求量，保持日志去重。102+470 项相关实现检查通过，
+新 patch 06d491ae；吞吐收益仍须真实采集验证。
+
+V32 完整 0–3600 秒 decode 吞吐仍落后 native 4.24%；
+600–2400 秒 Python 独占墙钟为 322.214 秒，不能作为
+可从 JCT 扣除的成本。提前确认 FULL 为 JOIN 0.810 GB、
+tool 1.184 GB，与需求 handoff 分列；完整等待漏斗与
+机会采样的分母不得混用。完整证据为
+v133_v32_complete_prefetch/busy、v134_v32_complete_development。
+V31 归档维护 14:10:09–14:11:20 CST 与 V32 有重叠。
+
+以下为历史启动记录。V32 predictive 采用 8495c89/7b4832ef，
 包含 4f4567f 的缓存恢复额度修复。客户端 13:55:27 CST
 启动，13:57:38 观测到 GPU 服务且 physical_disabled=false。
 实际物理容量与 V31 一致，其他冻结参数不变。V31

@@ -2,7 +2,49 @@
 
 更新日期：2026-10-12。
 
-最新采集已切换到 V32。V31 在 13:50:40.618 CST 主动
+最新完整结果是 V32：2026-10-12 16:14:15 CST 完成采集和
+后处理，153 completed、3 incomplete，无 workflow deadline
+过期或 child 取消。三个 incomplete 为 django-11206/11299/11885，
+均因 root 最后响应 finish_reason=length；最后文本仍在推演问题。
+根据用户最新约定保留 8192-token 单次输出上限，不增加 guard，
+也不改 harness 续接行为，以免改变当前固定 native 参照。
+
+V32 完整独立等待漏斗：186 JOIN 中，151 个有完成前正 FULL
+计划，146 个进入窗口，47 个提交；23,878 工具等待对应
+1,680/37/36。提前启动且由下一请求确认复用的 FULL 为
+JOIN 46 个/0.810 GB、工具 32 个/1.184 GB，需求 handoff
+147.387 GB FULL 单列。容量原因出现在 124/2,853 个已完成
+JOIN/tool 事件中，原因可重叠，不能当作独立可恢复机会总量。
+ACK 到首次服务 P90 仍为 JOIN 13.322 秒、tool 18.202 秒。
+
+600–1200、1200–1800、1800–2400 秒实际 decode 吞吐为
+1,124.067/1,091.562/1,128.845 token/s，相对固定 native 为
+-9.24%/+1.43%/-5.77%；两侧加权 batch 均接近 47。
+0–3600 秒为 1,109.429/1,158.579 token/s，仍落后 4.24%。
+600–2400 秒已埋点 Python 独占墙钟 322.214 秒，其中
+reentry 检查 87.615 秒、准入 32.719 秒、工具预取 29.605 秒。
+全程 completed/hour 和成功 JCT 均值的改善不能证明因果收益；
+保留不同执行轨迹、本地分析及 14:10–14:11 归档的重叠。
+完整证据为 v133_v32_complete_prefetch/busy、
+v134_v32_complete_development，继续优先检查最新 predictive。
+
+下一轮 V33 部署已复现的冷 FULL 祖先回收修复：旧路径释放
+叶节点后不继续回收新暴露的冷祖先，真实 allocator 案例仅释放
+2 token 而需要 6 token。现在沿新暴露的原生 device leaf 继续，
+每节点重新核验 identity、因果等待、Host 副本、引用与传输状态，
+排除完整目标前缀，真实 free-list 满足需求即停止，事务最多
+检查 64 个节点。保留独立的 live Mamba，不增加同步 D2H。
+同时记录原始请求量、FULL/Mamba 预留、实际额度及具体零计划
+原因，复用已有读取并保留记录去重，不改变模型决策边界。
+102 项引擎检查和 470 项相关 runtime 检查通过，canonical patch
+06d491ae 与实际树完全一致。此为实现验证，性能目标仍 active。
+
+V31 的 108 个 workspace 已无损压缩，tar 逐文件比较通过后
+移除未压缩副本；raw、结果、冻结计划和恢复指针保留。
+归档 2.135 GB，相对原 20.954 GB 分配约回收 17.53 GiB。
+详见 archive/README.md 和 v133_v31_workspace_archive。
+
+以下为历史采集与停止记录。V31 在 13:50:40.618 CST 主动
 停止，截止前观测到 63 completed，45 个已创建未结束和
 48 个未到达任务单列行政截断；未观测自发 error/incomplete。
 进程 start ticks/PGID 核对后退出，45 个仅所属 V31 的
@@ -10,11 +52,11 @@
 旧 Host 内存释放后 NUMA 预检恢复到 222.75 GiB 估计可用，
 未缩池或绕过预检。
 
-V32 于 13:52:45 CST 冷启动 8495c89，客户端于
+已结束的 V32 于 13:52:45 CST 冷启动 8495c89，客户端于
 13:55:27 CST 开始，部署 4f4567f 的满批无空请求行恢复
 修复。13:57:38 的验证确认健康检查 200、4,209 个实际
 GPU 服务样本、physical_disabled=false，实际 FULL/Mamba
-设备和 Host 容量与 V31 相同。引擎 patch 仍为 7b4832ef；
+设备和 Host 容量与 V31 相同。当轮引擎 patch 为 7b4832ef；
 108+48、running=48、200 GB Host 80:20、HBM 比例 0.9、
 工具 180 秒、workflow 14,400 秒、2 秒 lead 保持，单跑
 predictive 并复用固定 native。下一步检查机会到提交、

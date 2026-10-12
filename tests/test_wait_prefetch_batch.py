@@ -444,6 +444,42 @@ def test_wait_plan_crops_by_total_capacity_and_bytes_while_preserving_prefill_re
     assert inspect.call_args.kwargs["max_steps"] == runtime.physical_ledger.max_pending
 
 
+@pytest.mark.parametrize(
+    "free_full,byte_limit,blocked",
+    [(3, 1024, "prefetch_full_capacity_budget"),
+     (100, 39, "prefetch_byte_capacity_budget")],
+)
+def test_zero_wait_plan_records_requested_payload_and_actual_capacity_reason(
+    free_full, byte_limit, blocked,
+):
+    runtime, key, opportunity, _, _ = batch_fixture("join_ticket")
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    constrained = replace(
+        opportunity, headroom=replace(
+            opportunity.headroom, device_full_free_tokens=free_full,
+        ), fits_current_free_lists=False,
+    )
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=constrained), \
+            patch.object(runtime, "_current_residency_budget",
+                         return_value=PrefetchResidencyBudget(1, byte_limit)):
+            plan = runtime._wait_prefetch_opportunity(key)
+        runtime._record_wait_prefetch_plan("join_ticket", key, plan, reason="no_restore_plan")
+        runtime._record_wait_prefetch_plan("join_ticket", key, plan, reason="no_restore_plan")
+        assert len(records) == 1
+        record = records[0]
+        assert record["planned_full_tokens"] == 0
+        assert record["no_step_reason"] == "prefetch_capacity_budget"
+        assert record["blocked_detail"] == blocked
+        assert record["capacity_budget"]["requested_full_tokens"] == 16
+        assert record["capacity_budget"]["requested_mamba_slots"] == 1
+        assert record["capacity_budget"]["full_limit_tokens"] == free_full
+        assert record["capacity_budget"]["remaining_byte_limit"] == byte_limit
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("source", ["join_ticket", "tool_wait"])
 @pytest.mark.parametrize(
     "node_count,pending_limit,byte_limit,expected_count",

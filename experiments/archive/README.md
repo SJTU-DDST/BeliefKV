@@ -6,6 +6,27 @@ tracked inventory.
 
 ## 2026-10-12 verified workspace compression
 
+Archive: `experiments/archive/20261012/v31_development_workspaces.tar.zst`
+
+SHA256: `5a6ed74a07ad5415a2d02bcd954508009ad9eaa5bbf6dc10de4b1a835575d3da`
+
+All 108 V31 workspaces are preserved in this 2,135,196,774-byte archive.
+Source allocation was 20,954,169,344 bytes. GNU tar compared every archived
+file before source removal. V31 was administratively stopped at
+13:50:40.618 CST; raw traces, recorded outcomes, manifest and frozen plan
+remain, with an `ARCHIVED.md` restore pointer. Restore from the repository root:
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261012/v31_development_workspaces.tar.zst \
+  --directory experiments/raw
+```
+
+Receipt: `experiments/reports/v133_v31_workspace_archive_20261012.json`.
+One compression thread, nice 19 and idle I/O were used. Maintenance at
+14:10:09-14:11:20 CST overlaps V32 service and must be qualified in
+performance comparisons. Net reclaimed allocation is about 17.53 GiB.
+
 Archive: `experiments/archive/20261012/v30_development_workspaces.tar.zst`
 
 SHA256: `1d8f8c24d6e7ed7d614bf22a1725ff54d53065b0e602b804b527eb91563656d5`

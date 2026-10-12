@@ -3626,6 +3626,7 @@ class NativeAdmissionRuntime:
         ))
         nodes = {node.node_id: node for node in candidate.nodes}
         selected, full, mamba, deferred_mamba = [], 0, 0, 0
+        blocked = None
         leaf = (opportunity.step.leaf_node_id, opportunity.step.leaf_creation_time)
         for step in opportunity.steps:
             node = nodes[step.node_id]
@@ -3637,34 +3638,56 @@ class NativeAdmissionRuntime:
                 and not node.mamba_device_present
             )
             next_full, next_mamba = full + missing_full, mamba + missing_mamba
-            if (
-                (step.leaf_node_id, step.leaf_creation_time) != leaf
-                or next_full > full_limit
-                or next_full * full_unit + mamba * mamba_unit > byte_limit
-            ):
+            if (step.leaf_node_id, step.leaf_creation_time) != leaf:
+                blocked = "prefetch_checkpoint_identity_changed"
+                break
+            if next_full > full_limit:
+                blocked = "prefetch_full_capacity_budget"
+                break
+            if next_full * full_unit + mamba * mamba_unit > byte_limit:
+                blocked = "prefetch_byte_capacity_budget"
                 break
             if (
                 next_mamba > mamba_limit
                 or next_full * full_unit + next_mamba * mamba_unit > byte_limit
             ):
                 if not batched or not missing_full or not missing_mamba:
+                    blocked = (
+                        "prefetch_mamba_capacity_budget" if next_mamba > mamba_limit
+                        else "prefetch_byte_capacity_budget"
+                    )
                     break
                 step = replace(step, include_mamba=False)
                 next_mamba = mamba
                 deferred_mamba += missing_mamba
             selected.append(step)
             full, mamba = next_full, next_mamba
+        capacity_budget = {
+            "source": budget.source,
+            "device_full_free_tokens": headroom.device_full_free_tokens,
+            "device_mamba_free_slots": headroom.device_mamba_free_slots,
+            "evictable_full_tokens": 0 if fit_current_capacity else budget.evictable_full_tokens,
+            "evictable_mamba_slots": 0 if fit_current_capacity else budget.evictable_mamba_slots,
+            "reserve_full_tokens": budget.reserve_full_tokens,
+            "reserve_mamba_slots": budget.reserve_mamba_slots,
+            "full_limit_tokens": full_limit, "mamba_limit_slots": mamba_limit,
+            "remaining_byte_limit": byte_limit,
+            "requested_full_tokens": opportunity.required_full_tokens,
+            "requested_mamba_slots": opportunity.required_mamba_slots,
+        } if self._opportunity_writer is not None else None
         if not selected:
             self.counts["wait_prefetch_capacity_budget"] += 1
             return replace(
                 opportunity, step=None, steps=(), required_full_tokens=0,
                 required_mamba_slots=0, fits_current_free_lists=None,
                 no_step_reason="prefetch_capacity_budget", deferred_mamba_slots=0,
+                blocked_detail=blocked, capacity_budget=capacity_budget,
             )
         return replace(
             opportunity, step=selected[0], steps=tuple(selected),
             required_full_tokens=full, required_mamba_slots=mamba,
             deferred_mamba_slots=deferred_mamba,
+            capacity_budget=capacity_budget,
             fits_current_free_lists=(
                 full <= max(0, headroom.device_full_free_tokens - budget.reserve_full_tokens)
                 and mamba <= max(
@@ -3732,6 +3755,7 @@ class NativeAdmissionRuntime:
             "planned_full_tokens": full, "planned_mamba_slots": mamba,
             "deferred_mamba_slots": getattr(opportunity, "deferred_mamba_slots", 0),
             "planned_pool_bytes": planned_bytes,
+            "capacity_budget": getattr(opportunity, "capacity_budget", None),
             "planned_nodes": [
                 {"node_id": item.node_id, "creation_time": item.creation_time,
                  "include_mamba": item.include_mamba} for item in steps
