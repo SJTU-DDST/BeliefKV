@@ -2,14 +2,41 @@
 
 Status date: 2026-10-13.
 
+V43 cold-started at 04:28:33 CST on October 13 from 50df863/3698ce2f,
+with engine tree 6d6af094 and the qualified prefix-cost change below.
+Keep the frozen workload/capacities and fixed V29 native. At 04:34:14,
+V197 verifies HTTP200, 575 real GPU-service samples in the independent
+tail, enabled physical actions/predictors, matching source/engine, all
+27 frozen fields and pool capacities. Observed reserve is 4145 FULL
+tokens/one Mamba slot, with Mamba following imminent request slots.
+Freeze running sources. A complete busy-window gain remains unproven;
+the performance goal remains active.
+
+V42 stopped administratively at 04:24:59: 69 completed, 39 created
+unfinished and 48 unarrived; retain the latter 87 as censoring.
+All 108 workspaces passed full archive comparison before cleanup at
+04:28:01: 20.957GB allocated source to 2.137GB archive. Only 39 owned
+stopped containers were removed. The process check initially caught the
+read-only audit; no workspace was removed until it exited and tar
+comparison completed. Preserve raw/plan; maintenance precedes V43.
+V196 sealed positive-FULL/start/submit is JOIN 86/83/46 and tool
+1451/178/176, preserving 28/6 unknown boundaries. Early started,
+next-request consumed FULL is 37 JOINs/767.529MB and 153 tools/10.163GB.
+V198 decomposes the same events: over 47 JOIN ACK/service events,
+ACK-to-completion P90 is 10.065s, native arrival-to-service P90 457.752ms.
+The early-FULL cohorts have arrival-to-service P90 436.449/858.707ms
+for JOIN/tool. Quantiles are not additive; a long ACK interval is not
+all admission waiting. Early residency still costs capacity. No native
+relative GPU/JCT gain is established. Keep demand handoff separate.
+
 V195 qualifies isolated-engine prefix-cost reduction: compute live RadixKey
 length directly, avoid a compatibility helper for matching namespaces, and
 read live Host FULL tensor shape. No cross-call token/residency cache.
 257 native checks, 61 subtests and 45 reporting checks pass. All 27 real
 CPU int64-index fixtures preserve outputs; matching cases reduce thread
 CPU about 4.3-19.7%, some mismatches about 0.2%. V194/V195 bind evidence.
-Patch 3698ce2f/tree 6d6af094 awaits cold deployment. V42 execution stays
-frozen. CPU reduction does not prove GPU/JCT gains; partial ACK still
+Patch 3698ce2f/tree 6d6af094 is now cold-deployed in V43. V42 execution
+was frozen. CPU reduction does not prove GPU/JCT gains; partial ACK still
 does not authorize execution and full data dependencies remain live.
 
 V192 records a 30s nonblocking GIL profile with 1033 stack samples and
@@ -56,7 +83,7 @@ Snapshot categories overlap; per-round maximum planned bytes do not
 establish unique achievable transfers, an oracle bound or heldout accuracy.
 Continue capacity, complete restoration and next-request consumption work.
 
-Current development run is predictive-only V42, cold-started at
+Previous development run was predictive-only V42, cold-started at
 03:27:54 CST on October 13 from 028bb6b/cf0243b6. Engine tree remains
 c7c27e0d. It deploys the already-attempted aged FIFO handoff frontier
 shortcut with fixed configuration and V29 native reused. At 03:32:26,
