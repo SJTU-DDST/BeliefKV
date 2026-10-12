@@ -10,7 +10,49 @@ and fixed V29 native for development; freeze running sources. V217 at
 tail, enabled predictors/physical actions, matching sources/engine, all
 27 frozen fields and pool capacities. Observed reserve is 4144 FULL
 tokens and one Mamba slot following the imminent batch. A complete
-busy-window performance outcome remains unverified.
+busy-window comparison is now sealed in V219 and remains below native.
+V45 running sources stay frozen; the changes below are validated in
+Followup but await a later cold deployment.
+
+V219 seals V45 600-900s: 337096/380722 decode request steps,
+11.459% below fixed native; 7.962% above V44 is observed, not causal.
+Visible context is 22.722k/23.240k; worker decode interval
+34.812/32.467ms. Coarse matched single-request prefill remains about
+2.65-3.32x native. Instrumented exclusive Python wall is 54.565s:
+tool/reentry/admission 9.073/5.664/5.048s; handoff self/inclusive
+5.241/16.193s. Intervals include controls/overlap, not isolated kernels
+or removable JCT. Reuse V199 native summary; retain local analysis
+overlap and do not reread native raw for repeated development comparisons.
+
+V222 independent sealed prefix: known JOIN/tool boundaries 33/3924,
+unknown 76/3. Dispatch pre-completion positive-FULL/start/submit is
+28/27/9 and 611/54/51. Proven early next-request FULL consumption is
+five JOIN events/54.354MB and 47 tool events/3.572GB. Demand handoff
+confirmed FULL 46.501GB stays separate; all node commands/ACK reuse
+are not early event coverage. Seven JOIN and eleven tool commands
+lose FULL protection before completion; later queueing cannot explain
+earlier expiration. JOIN arrival-to-service P90 327.615ms uses a
+different denominator from nine ACK events' last-ACK-to-service
+P90 4.021s. Never add overlapping prefixes or different reason groups.
+
+V220 capacity prefix: 1385 tool and 24 JOIN events record zero
+post-reserve FULL budget. Of nineteen in-flight tail-reclaim checks,
+only one releases 1806 FULL tokens. Preserve partial-overlap support
+without granting execution readiness; splitting cannot create capacity.
+Inspect settled waiting copies separately from unbacked/shared/locked
+native pages, and qualify actual reclaim-to-submit changes.
+
+Qualified pending changes: static closure goes directly through the
+existing static geometry validator, with fresh residency/ownership
+checks every call. PREPARE registers settled safe-input copies even
+while other extents need backup, reusing the fresh action-local closure.
+Publication/native reclaim still validate identity, refs, transfers and
+protected restores. All 702 related checks pass. V221's 30 CPU cases
+match output; four-level static observations reduce thread CPU about
+12%. V223's nine probes preserve PREPARE selection and native reads;
+partial-copy registration adds about 4.2-23.5us at depths16/64.
+Retain this cost and do not claim real reclaim frequency or GPU gains.
+Commit promptly and keep Main execution unchanged while V45 runs.
 
 V44 stopped administratively at 06:24:32: 34 completed, 74 created
 unfinished and 48 unarrived; the latter 122 remain censored. All 108
