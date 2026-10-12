@@ -2,6 +2,37 @@
 
 Status date: 2026-10-12.
 
+V124 commits bc33cb8: lazily reuse waiting-context candidates by graph and
+native-session binding revisions for JOIN PREPARE, tool refresh and unhinted
+tool scans. Keep context ordering for parents and session insertion order for
+tool refresh. Register/requeue/abort/terminal cleanup and graph discard
+invalidate membership; physical headroom, closure and enqueue remain live.
+Do not extend physical observation lifetime or change the transfer policy.
+
+Related 407 cases pass. Eight complete-path CPU fixtures preserve PREPARE
+actions, tool refresh rotation and pressure-node publication. Combined
+maintenance/PREPARE thread CPU falls 6.56%/4.86% for 156 workflows with
+unbacked/backed inputs and 1.96% when the graph changes every step. The latter
+maintenance subphase increases 9.51%, or 3.97us; the 24-workflow combined
+saving is only 0.23%. Reject eager construction of both classes, retaining
+its first-attempt evidence. Keep v124_wait_candidates_cpu and first_attempt.
+Actual checkpoint planning/headroom helpers run, but model submission and
+native enqueue are stubbed; no allocator/DMA/GPU/JCT improvement is proven.
+
+Complete V29 attribution separates 18,775 tool events with only zero FULL
+plan observations and 351.592GB subsequent native FULL Host hits from 1,494
+positive-plan events and 377.437GB residual hits. Check observation timing,
+available checkpoints and subsequent residency before treating those bytes
+as anticipatory opportunity. The 1,292 before_start_window episodes overlap
+other reasons; validate queued V121 timing in real service. Early verified
+FULL remains 675.144MB JOIN plus 654.356MB tool; 107.091GB handoff FULL is
+demand restoration. Both control reduction and useful early coverage remain
+required for the active successful-workflow throughput/JCT objective.
+
+Local development starts 09:53:25 CST; qualify overlapping V29 native
+windows. Include V124 with V120-V123 in the next immutable cold candidate,
+predictive first then same-version native. Leave collecting V29 unchanged.
+
 V123 commits 941156c: classify exact and compatible transfer support in one
 scan, skipping known foreign pool shapes before size-distance calculation.
 Preserve unknown and legacy-tuple support, minimum support, encounter order
