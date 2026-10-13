@@ -1024,6 +1024,7 @@ class NativeReactiveTelemetry:
         if not (mode.is_extend() or mode.is_decode()):
             return
         self.prefill_turnover_probe.on_launch(batch)
+        launch_probe = self.prefill_turnover_probe.begin_phase(batch, "launch_telemetry")
         self._poll_restore_wait()
         controller = getattr(self._cache, "cache_controller", None)
         counter = getattr(controller, "layer_done_counter", None)
@@ -1198,6 +1199,7 @@ class NativeReactiveTelemetry:
             }
             if self._cache is not None:
                 self.record_host_pool_usage(self._cache)
+        self.prefill_turnover_probe.end_phase(launch_probe)
 
     def _drop_targeted_pair(self, rid: str) -> None:
         self._targeted_pair_cursor.pop(rid, None)
@@ -1754,6 +1756,17 @@ class NativeReactiveTelemetry:
             len(prefix_indices) if prefix_indices is not None else None
         )
         input_tokens = req.origin_input_ids
+        if isinstance(input_tokens, (list, tuple)):
+            prefix_limit = max((
+                len(tokens)
+                for command_id in matches
+                for tokens, _, _ in self._pending_prefetch_use[command_id][3].values()
+            ), default=0)
+            try:
+                # Materialize only the ACK prefixes needed by the C comparison.
+                input_tokens = array("q", input_tokens[:prefix_limit])
+            except (TypeError, ValueError, OverflowError):
+                pass
         verified_input_prefix = array("q")
         for command_id in matches:
             action, nodes, ack_ts, prefixes = self._pending_prefetch_use.pop(command_id)

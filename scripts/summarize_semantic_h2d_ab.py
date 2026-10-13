@@ -27,6 +27,8 @@ NON_EXECUTION_SOURCE_PATHS = (
     "experiments/reports/*.md",
     "scripts/summarize_semantic_h2d_ab.py",
     "scripts/launch_semantic_h2d_after_pair.py",
+    "scripts/analyze_prefill_turnover.py",
+    "scripts/seal_reservation_cutoff.py",
 )
 
 

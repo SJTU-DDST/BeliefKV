@@ -839,8 +839,9 @@ def test_prefetch_prefix_evidence_reuse_handles_shorter_and_divergent_targets(tm
 
 @pytest.mark.parametrize("tokens", (2047, 2048, 32768))
 @pytest.mark.parametrize("mismatch", (None, 0, 1, 1023, -1))
+@pytest.mark.parametrize("input_format", ("array", "list", "tuple"))
 def test_prefetch_long_array_evidence_preserves_exact_token_boundary(
-    tmp_path, tokens, mismatch,
+    tmp_path, tokens, mismatch, input_format,
 ):
     audit = NativeReactiveTelemetry(tmp_path / "prefixes")
     original = array("q", ((1 << 60) + index for index in range(tokens)))
@@ -849,6 +850,10 @@ def test_prefetch_long_array_evidence_preserves_exact_token_boundary(
     if mismatch is not None:
         mismatch %= tokens
         inputs[mismatch] ^= 1 << 40
+    if input_format == "list":
+        inputs = list(inputs)
+    elif input_format == "tuple":
+        inputs = tuple(inputs)
     action = SimpleNamespace(
         command_id="restore", context_id="ctx", context_epoch=2,
         node_ids=(1,), pool_bytes=(),
@@ -868,6 +873,95 @@ def test_prefetch_long_array_evidence_preserves_exact_token_boundary(
     )
     assert prefix["complete_input_prefix"] is (mismatch is None)
     assert prefix["same_cache_namespace"] is True
+
+
+@pytest.mark.parametrize("changed", (2.5, 1 << 80))
+def test_prefetch_list_conversion_failure_preserves_original_numeric_boundary(tmp_path, changed):
+    audit = NativeReactiveTelemetry(tmp_path / "prefixes")
+    action = SimpleNamespace(
+        command_id="restore", context_id="ctx", context_epoch=2,
+        node_ids=(1,), pool_bytes=(),
+    )
+    audit._pending_prefetch_use["restore"] = (
+        action, (), 100., {1: (array("q", range(4)), None, None)},
+    )
+    audit._record_prefetch_first_service(SimpleNamespace(
+        rid="next", origin_input_ids=[0, 1, changed, 3],
+        prefix_indices=[], last_node=0, cached_tokens_device=0,
+    ), {"context_id": "ctx", "context_epoch": 3})
+    audit.close()
+    [record] = _read(tmp_path / "prefixes/physical_action_use.jsonl")
+    [prefix] = record["target_prefixes"]
+    assert prefix["common_input_prefix_tokens"] == 2
+    assert prefix["complete_input_prefix"] is False
+
+
+def test_prefetch_diagnostic_does_not_convert_new_input_beyond_ack_prefix(tmp_path):
+    audit = NativeReactiveTelemetry(tmp_path / "prefixes")
+    action = SimpleNamespace(
+        command_id="restore", context_id="ctx", context_epoch=2,
+        node_ids=(1,), pool_bytes=(),
+    )
+    audit._pending_prefetch_use["restore"] = (
+        action, (), 100., {1: (array("q", range(2048)), None, None)},
+    )
+    class Input(list):
+        def __getitem__(self, item):
+            if isinstance(item, slice):
+                assert item.stop <= 2048
+            return super().__getitem__(item)
+    inputs = Input([*range(2048), 1 << 80])
+    audit._record_prefetch_first_service(SimpleNamespace(
+        rid="next", origin_input_ids=inputs, prefix_indices=[],
+        last_node=0, cached_tokens_device=0,
+    ), {"context_id": "ctx", "context_epoch": 3})
+    audit.close()
+    [record] = _read(tmp_path / "prefixes/physical_action_use.jsonl")
+    [prefix] = record["target_prefixes"]
+    assert prefix["common_input_prefix_tokens"] == 2048
+    assert prefix["complete_input_prefix"] is True
+    assert inputs[-1] == 1 << 80
+
+
+def test_sampled_launch_telemetry_is_nested_inside_forward_submission(tmp_path, monkeypatch):
+    from beliefkv.runtime import prefill_turnover_probe as probe_module
+    clock = [0, 0]
+    monkeypatch.setattr(probe_module, "_clock", lambda: tuple(clock))
+    audit = NativeReactiveTelemetry(tmp_path / "launch")
+    records = []
+    probe = audit.prefill_turnover_probe
+    probe.every = 1
+    probe.emit = lambda _stream, record: records.append(record)
+    audit._identity = lambda _req: {
+        "workflow_id": "w", "invocation_id": "i", "context_id": "ctx", "context_epoch": 0,
+    }
+    def first_service(*_args):
+        clock[0] += 8_000_000
+        clock[1] += 3_000_000
+        return []
+    audit._record_prefetch_first_service = first_service
+    req = SimpleNamespace(
+        rid="r", origin_input_ids=list(range(6)), output_ids=[],
+        sampling_params=SimpleNamespace(max_new_tokens=32),
+    )
+    batch = SimpleNamespace(
+        forward_mode=_Mode("prefill"), forward_iter=0, launch_ts=0.,
+        reqs=[req], prefix_lens=[4], extend_lens=[2], extend_num_tokens=2,
+    )
+    probe.on_selected(batch, probe.begin_selection(), loop="normal")
+    forward = probe.begin_forward(batch, None, None)
+    batch.forward_iter = 1
+    audit.on_launch(batch)
+    probe.end_forward(forward)
+    probe.on_processed(
+        probe.begin_phase(batch, "result_processing"),
+        SimpleNamespace(can_run_cuda_graph=True),
+    )
+    audit.close()
+    [record] = records
+    assert record["phases"]["run_batch"]["wall_ms"] == 8
+    assert record["phases"]["launch_telemetry"]["wall_ms"] == 8
+    assert record["phases"]["launch_telemetry"]["thread_cpu_ms"] == 3
 
 
 @pytest.mark.parametrize("typecode", ("q", "i", "d"))

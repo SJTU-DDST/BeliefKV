@@ -1,0 +1,61 @@
+{
+  "qualified_at_local": "2026-10-14T00:24:04.475571+08:00",
+  "status": "qualified_for_cold_observation",
+  "base_revision": "91e31bd2ea37c3119966c3d4ac21a01186d7f900",
+  "source_sha256": {
+    "beliefkv/runtime/prefill_turnover_probe.py": "15201e06bae952c303405b647ac9ca069070fd86b3853e642c687ae172fadf54",
+    "beliefkv/runtime/v0520_native_telemetry.py": "60d65ccd5d1450555e6dec2ef6fdcbea9e10563da06c2d75fa9cdb45fc586bd8",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "b7dcfcae0697de87e378607e9a2e037b9c396948dd3c3b6447b8de930e44d0e1",
+    "scripts/benchmark_prefill_turnover_probe.py": "ca820778c724f1e87e7e5560213a1893bc4d34956a2bb7cb999cc289bddcd448",
+    "scripts/seal_prefill_turnover_qualification.py": "ec0630fd77d53e02f86ed1605299dee348162fd6422ee47cb30172ece69463a0",
+    "scripts/analyze_prefill_turnover.py": "4becc5d75d7be52a85848241cc8792c1153cd5fa85833766b3f486dcd1f06a7d",
+    "scripts/seal_reservation_cutoff.py": "f0d341a2fcf1007e0c13aca7e31595cfbb8d339d5ea89febdeac3ebeaef8d9a7",
+    "tests/test_prefill_turnover_probe.py": "f1ae46016e063991149ba6548565640a07cfca1ad00247a453de4bd2f2095155",
+    "tests/test_v0520_native_telemetry.py": "969e3eb73a6d6075418fe95d6a5663e55d66d4a096e726c65825bfe4ce6056d7",
+    "tests/test_restore_wait_probe.py": "1dd1e766baf6c508377fe5a305628337cf3df37b976df93d4c4d34d54edfdbe7",
+    "tests/test_analyze_prefill_turnover.py": "0d7663ed67738868c5aa177e7a82fd1ca5948d3aab3ffa24471e8ff04301615b"
+  },
+  "engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "a8f4ea97da2f1fc8d969d538359a62aa9db23750051f9838956f03bc48174c68",
+    "expected_tree": "f7e0a89564622d530ddcf3b40de9f810974619aa",
+    "actual_tree": "f7e0a89564622d530ddcf3b40de9f810974619aa",
+    "matches_worktree": true,
+    "covered_untracked_paths": []
+  },
+  "candidate_engine": "/home/longhao/experiment/.worktrees/sglang-v320-prefill-turnover-20261013",
+  "engine_hook_tests_sha256": "7fce593e066d76a1ace7364dc417eb8a51cd8080f2d6cb6c1db61d940516aa00",
+  "checks": {
+    "tests": 196,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v325_prefill_first_service_tests_final_20261014.xml",
+    "sha256": "6ce67b620f81360505d57ee5880642581117cc08825434fbd719870d7d4adf31"
+  },
+  "benchmark": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v322_prefill_turnover_cpu_overhead_20261013.json",
+    "sha256": "a61b482a7c23e4f4780aa3eb9a218af1e82840b6560bc73616a890f2ce99cfe5",
+    "incremental_cpu_ns_per_iteration": {
+      "1": 4188.747971428571,
+      "5": 2580.1834714285724,
+      "16": 2244.7927142857134
+    }
+  },
+  "constraints": [
+    "Existing workload, budgets, prefill batching and delay settings remain frozen.",
+    "Sample one in 16 prefills with a bounded backlog; retain no request/tensor ownership.",
+    "Both native and predictive telemetry use the same loop instrumentation.",
+    "CUDA event queries are nonblocking; unsupported, pending and shutdown evidence stays unknown.",
+    "Normal-loop GPU samples use the actual current stream; overlap uses the forward stream.",
+    "GPU spans include dependency waits and CPU dispatch gaps, not exclusive kernels.",
+    "CPU fixtures prove dispatch counts and incremental observation cost, not real GPU overhead.",
+    "Prior probe microbenchmarks exclude the new nested launch-telemetry span and first-service prefix conversion.",
+    "List/tuple prefix conversion preserves exact numeric fallback; performance remains unmeasured.",
+    "launch_telemetry is part of run_batch; never add both as exclusive CPU cost.",
+    "Real GPU events, their perturbation, native counterparts and full JCT gains remain unverified.",
+    "V54 has a recorded administrative reservation cutoff; preserve its unfinished outcome.",
+    "Cold deployment is allowed only after 06:00 Asia/Shanghai and GPU availability checks."
+  ],
+  "helper_sha256": "ec0630fd77d53e02f86ed1605299dee348162fd6422ee47cb30172ece69463a0"
+}
