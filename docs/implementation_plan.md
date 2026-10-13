@@ -2,6 +2,23 @@
 
 Status date: 2026-10-14.
 
+V364 links the existing18 native-queue-dominated tails (7 JOIN,11 tools)
+to protection and exact next-request admission observations. All140 early
+FULL commands begin with3s protection and release for service_window_expired
+before the completion boundary. No native locks remain observed at arrival;
+no matching restore-ready priority-admission receipt is present. Unlocking
+does not prove eviction, and missing admission receipts do not prove missing
+planning or priority attempts.15 waits have in-queue samples with positive
+Host-backed FULL gaps; three tool waits are unsampled. Those sparse hints
+do not verify input or establish readiness throughout the queue interval;
+legacy reload pool presence is not exact page/component evidence.
+Do not treat these18 selected waits as a population estimate or extend all
+leases. Extending only post-arrival protection cannot fix protection already
+lost before completion. Prioritize effective restoration timing, then jointly
+verify complete input restoration, bounded residence and admission consumption.
+Keep V55 execution unchanged and cold-start only after06:00 with resources.
+Real throughput/JCT and same-version final acceptance remain outstanding.
+
 Commit3a47942 maintains the existing global WAIT_TOOL/family census from
 RCCG deltas instead of rescanning all retained invocations after every version
 change. Include changed-context members and completed children's return targets:
