@@ -1,0 +1,4367 @@
+{
+  "schema_version": 1,
+  "sealed_at_local": "2026-10-14T00:21:59.797223+08:00",
+  "scope": "administratively censored development collection; not a full-run result",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54",
+  "code_commit": "45f7afb0fc3b8b2921a388560101e00eac291df7",
+  "patch_sha256": "6938bd10ff393dc89c9aeb5ed14da2385d5d95e00529113e12eced93cca5fff0",
+  "execution_verification": {
+    "collection_code_commit": "45f7afb0fc3b8b2921a388560101e00eac291df7",
+    "verification_code_commit": "79554babde53fbcec3df6d7243a0ef2bc3f4f445",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": [
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/reports/v314_v54_busy_600_900_20261013.json",
+      "experiments/reports/v314_v54_deployment_validation_20261013.json",
+      "experiments/reports/v314_v54_live_wait_prefetch_20261013.json.gz",
+      "experiments/reports/v314_v54_live_wait_prefetch_20261013_summary.json",
+      "experiments/reports/v314_v54_matched_prefill_600_900_20261013.json",
+      "experiments/reports/v314_v54_prefill_dependency_wait_20261013.json",
+      "experiments/reports/v314_v54_short_prefill_600_900_20261013.json",
+      "experiments/reports/v317_v54_busy_1800_2100_20261013.json",
+      "experiments/reports/v317_v54_deployment_validation_20261013.json",
+      "experiments/reports/v317_v54_matched_prefill_1800_2100_20261013.json",
+      "experiments/reports/v317_v54_prefill_dependency_wait_20261013.json",
+      "experiments/reports/v317_v54_short_prefill_1800_2100_20261013.json",
+      "experiments/reports/v319_v54_busy_3000_3300_20261013.json",
+      "experiments/reports/v319_v54_gil_profile_20261013.json",
+      "experiments/reports/v319_v54_gil_profile_20261013.raw.gz",
+      "experiments/reports/v319_v54_matched_prefill_3000_3300_20261013.json",
+      "experiments/reports/v319_v54_short_prefill_3000_3300_20261013.json",
+      "experiments/reports/v321_v54_busy_3600_3900_20261013.json",
+      "experiments/reports/v321_v54_matched_prefill_3600_3900_20261013.json",
+      "experiments/reports/v321_v54_prefill_dependency_wait_20261013.json",
+      "experiments/reports/v321_v54_short_prefill_3600_3900_20261013.json"
+    ]
+  },
+  "sources": {
+    "cutoff": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/server_reservation_cutoff.json",
+      "bytes": 15008,
+      "sha256": "d7d51b84966a8fcbfdfd75183b0833ac4ffbd7f1dcfee1734bd32dfa6d9da0ce"
+    },
+    "plan": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/ab_plan.json",
+      "bytes": 24552,
+      "sha256": "6f73657919add38326873272181a4b6194fda64d0f1d856534d79f30164896c3"
+    },
+    "results": [
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-7229/result.json",
+        "bytes": 6622,
+        "sha256": "acbdc49779efcac3c73c4d1bbbe9ce18f85d83430d7ab1e9abaa5d769a1b334e"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-7233/result.json",
+        "bytes": 6224,
+        "sha256": "1163132c3bc06d9ec0ad7af50f2db08cea921a38ba27322645d39d9cbc6da3bc"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-7393/result.json",
+        "bytes": 6021,
+        "sha256": "f2698a603be492418f057ee3126524e73997bf95e32f45514dd20562fee94c2d"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-4551/result.json",
+        "bytes": 6484,
+        "sha256": "a8ef7e8863a70bda7bcf96b4f9b5ab944d6cb406ba708d84e206f0ce4ad5afe2"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-4661/result.json",
+        "bytes": 5952,
+        "sha256": "18b27dd4f73ce3ce6699e9796054a2ec20bb3862df837e88857fea2067654385"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-6386/result.json",
+        "bytes": 6173,
+        "sha256": "5e500ba71a83a8f942cc93eeabd0ad3472c134c778c9fa008333a143a64391b0"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-7080/result.json",
+        "bytes": 6282,
+        "sha256": "90ae1c77c644980ad1b6a1b4d9cc20a37701d0c1dbd768923d517966cdfbe15e"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-8898/result.json",
+        "bytes": 6007,
+        "sha256": "431996ab6c183201a6f8b2852ee67a4dadfeb91e78afa3c2181201e8f2023129"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-10554/result.json",
+        "bytes": 6721,
+        "sha256": "baca8381db91a3e0355851d0e0c167b4c37e3ce7ebefa8da5715438b999f6452"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11400/result.json",
+        "bytes": 5349,
+        "sha256": "15d54599f0c14fff5a0063ba0813eea93a32e1f7d53624ddd21465644a5ecca1"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-14631/result.json",
+        "bytes": 6147,
+        "sha256": "04d66b1a74be780c941508d36b7ec53accedded05eabf5bc037886479d692380"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pallets__flask-5014/result.json",
+        "bytes": 5768,
+        "sha256": "148dbbc8cee25b9d9a4ed190ef95581fab8d19db2f49e6934a70f138c697bde6"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/psf__requests-1766/result.json",
+        "bytes": 5596,
+        "sha256": "81593147d16df85bb6566b0879dd8905e573df0684b6da5684204b19cf5c41ad"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/psf__requests-1921/result.json",
+        "bytes": 6599,
+        "sha256": "a4b728d7a13837a29fe67725db8909705a78218c53aa6a4d1cf76306af375e27"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/psf__requests-2317/result.json",
+        "bytes": 6171,
+        "sha256": "a76d1d0280e1df9322c4882c2533fd74e684bd5a1ff612c88f4d3b8acc6a5f62"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/psf__requests-6028/result.json",
+        "bytes": 6635,
+        "sha256": "6460858cb061c3b757a832904745a091ae72c6728abb3f768a47306f30dabd81"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-3993/result.json",
+        "bytes": 5785,
+        "sha256": "86940870f8f1db2aaa9c4d35341b7ad1bd4c745a79c9c89c2c749e7a50680179"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-6461/result.json",
+        "bytes": 6117,
+        "sha256": "d0114ecaa1d3247af3bf54041498c186ca440f67d9565f287f708e8a5b9e2a64"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-6599/result.json",
+        "bytes": 6902,
+        "sha256": "47e64dddbcee6f78d063130947a3ed8a1c4040b0ac379bd9235fe3fe8ced15fc"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-6721/result.json",
+        "bytes": 6456,
+        "sha256": "6377ff33708f7838204703c45a23913ea02993f99916ce6220402b1cefaf4bdc"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-6744/result.json",
+        "bytes": 6865,
+        "sha256": "89d9359f6d2fbc34e27a12f4107c2f2f83e74f4530206db2a89d7f464608adc5"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-6938/result.json",
+        "bytes": 5830,
+        "sha256": "08fa229f3fd2b7637394f7ec605b012264ad55b7b19ac0fc57673f053916f359"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-10051/result.json",
+        "bytes": 6291,
+        "sha256": "f8b7a3862ff222f0497a53a2ad6b175dd69a2bcf9320630fd714234ede173ae7"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-5262/result.json",
+        "bytes": 6082,
+        "sha256": "3cd895c27a318facd01a2a579b8cdeb2316baa70d3f7cf07d2cb410b566e9992"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-5787/result.json",
+        "bytes": 6815,
+        "sha256": "59ed390acff04dbfdb3a200f45c0af1c640c59eb05e442a8224ef02564ccf235"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-5840/result.json",
+        "bytes": 6409,
+        "sha256": "501e67b94b3b079b2d7551cbdb996aaf6a81e23abc9877be5755288db7389af2"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-6202/result.json",
+        "bytes": 6550,
+        "sha256": "17902214ad6bab83d69ac23733e2b92d9bcdfb8102a99f433ab99cf918542806"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-7236/result.json",
+        "bytes": 6474,
+        "sha256": "1829586517ed1f4655d53dac68e9ebe8bedac162073e7ac8c431b4aa4f630bba"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-7324/result.json",
+        "bytes": 6039,
+        "sha256": "7ce72536c4dbffe92859f698566af7ad5ffe655ef37f8af252d71782143ecc7c"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-7571/result.json",
+        "bytes": 6088,
+        "sha256": "c278704c2261410f6edf834581de0b683022a1a7da48e3f798beab568643077d"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/result.json",
+        "bytes": 6251,
+        "sha256": "d840b03b1f3e2cb39ea07df2aa5102e80f85d28b23b2e0f6b2ec2f2cc2054663"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/result.json",
+        "bytes": 5643,
+        "sha256": "5c408b6fc916fb1d08a35e860c42be57a0dc35f8af7c4fd9e97f13754c8e469e"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-6903/result.json",
+        "bytes": 6312,
+        "sha256": "ec7c79b02189740a52a0876d2d77d1e9e1c1558ee81a3a9f2c68a45a0ab03c2d"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-5631/result.json",
+        "bytes": 6504,
+        "sha256": "04cf4be4e43a6ceb9a175901c3547c108c4ea0e57ec1542c5d64536dcbe0a460"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-4356/result.json",
+        "bytes": 6329,
+        "sha256": "c79442d45bffcbb94b1bffbb57e62c16ec7c23ed780bb08a7de623344ce2f424"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-3305/result.json",
+        "bytes": 4849,
+        "sha256": "949b1185f71e614eb66eb67049760b31f467384870fa5a493ce37377ace8862c"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-4966/result.json",
+        "bytes": 6179,
+        "sha256": "f9f23aeb05d02bc1f6ea66219774d8a06f663c892aa69696b2797daec28bebb0"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/psf__requests-2931/result.json",
+        "bytes": 6444,
+        "sha256": "217afc067b5ee555650cace2e54cdd348736891d76ded28cd70803c4d9267d08"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-7205/result.json",
+        "bytes": 6026,
+        "sha256": "00e8fb1b5e39462ca0701820ce977cae8e23b65a97069308ef26471473a62c92"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-15368/result.json",
+        "bytes": 6201,
+        "sha256": "dae21c572118fc057e9ff4af356770f068b5957721e83149ab68033187dfd101"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-16877/result.json",
+        "bytes": 5771,
+        "sha256": "3abc9aef6a4eb0abc8e943e76be68a0025a0ea93ba7ae3911fd2b017aa041548"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/psf__requests-1724/result.json",
+        "bytes": 6593,
+        "sha256": "7881c764bd49703b2af93a748149f808b9bb7a9e7ee3bde3ba5697b876e8fbab"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11141/result.json",
+        "bytes": 6240,
+        "sha256": "1841f795fddb2022b475050a3136582fbcef4afac5dd43aaf060b7ecc1005e38"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/mwaskom__seaborn-3069/result.json",
+        "bytes": 6366,
+        "sha256": "fc202c83fb56cdfba1798facb0b48bdf5a5084c64797561602d557533415bb64"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-7277/result.json",
+        "bytes": 6175,
+        "sha256": "697629111c2c4d667cb92b40b7440d3fa6fcdd4c95d85d6098cc54a3e593340b"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-14500/result.json",
+        "bytes": 6757,
+        "sha256": "49d2469a2f08903f8e62a5f235cbf9a57c47b96e177ff5cb165ec16b0d3b9d78"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-7521/result.json",
+        "bytes": 6210,
+        "sha256": "5e2bd62742d1e3c269a2c0879827dc5bb7595eaec03d3d55d22154b8393d7cd9"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-8399/result.json",
+        "bytes": 6225,
+        "sha256": "1f36fa074e1926f8014dbbe3347435166858f3edad893e697a75e9e345302b3a"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-3151/result.json",
+        "bytes": 6848,
+        "sha256": "793a7debf7f24f8c769323d59408cd5eb1704cdc4a0b4fd785e586f1d4080c58"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-13023/result.json",
+        "bytes": 5708,
+        "sha256": "0dfa3cc61d6d3bf025ab5d9a181b72ee7ba76a3f0ac7f52b35efcd974dbb245a"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12741/result.json",
+        "bytes": 6212,
+        "sha256": "da5fa71384596ac0356794e93fbbf840b6e0a8eb38a536ad44ba77e8cdab3726"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-14349/result.json",
+        "bytes": 6312,
+        "sha256": "85af6d9020c91d3f842a2546ff4aa77d4247712c801eae9b185a0fcd4a32252a"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-2905/result.json",
+        "bytes": 6068,
+        "sha256": "3606a4010dd48b52c3eee07ac04b520e3399482c5834293e17382f315691a993"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-15315/result.json",
+        "bytes": 5769,
+        "sha256": "7a4ad6915590e02f724ddbf8248c501920550961dae8dcaf34ba78879cac8a35"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-16938/result.json",
+        "bytes": 6534,
+        "sha256": "6ae0e740534a88206f44af5491e5239c915bd6181585e158c45f5030f45a8dbd"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-16255/result.json",
+        "bytes": 6346,
+        "sha256": "f2165c7553c8ece4c162565b9399f7d7d2d4ea5a46aad3887fcd138e87460f7b"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11734/result.json",
+        "bytes": 6098,
+        "sha256": "d7dcbc2f5989bdc9dec5093eb30ff6e4063c073a2646184237ff950bb203456e"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-10097/result.json",
+        "bytes": 6587,
+        "sha256": "f9aa032b669724735e8063c30605dd3d8f3b0d4cef3bc9a19abaab9f0d5ba609"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12754/result.json",
+        "bytes": 6464,
+        "sha256": "bc48048f38e900933bdac51c9fd0f66d84cfebaef42fba3afce2a50b24fb5f04"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-15103/result.json",
+        "bytes": 6210,
+        "sha256": "e4348d14c6a4d8a679af91aa4a85c01a47d5dadef7f0c524430ccf49f9561251"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11820/result.json",
+        "bytes": 5937,
+        "sha256": "9c45ca3502cd446bbb84214af458b5c27d991edc5c0dc189e1fecafcc5f7594a"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-13964/result.json",
+        "bytes": 6807,
+        "sha256": "4eabc1be88ca735f64822e3a9f6ab707411ad5afecf2c40474d46159fe273416"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-16667/result.json",
+        "bytes": 5886,
+        "sha256": "07bab25ea3826114420016fb3d8daa71eb4fc3d00db4e19f2b79c5b338453229"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-16502/result.json",
+        "bytes": 6294,
+        "sha256": "b4c5a2ca5768795ab70c146d986303c4fc18511edf758c2ef6557b8e0881a479"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-10880/result.json",
+        "bytes": 6555,
+        "sha256": "96f15920a5e14661ef89337d976ca657ba070a85dd45ac5106bd447c81fd3f7e"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/result.json",
+        "bytes": 6657,
+        "sha256": "9af46f67c16e6409af96ca40901572b3b47f94096a74503ffc0814f731ff850b"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/psf__requests-1142/result.json",
+        "bytes": 6533,
+        "sha256": "ca69ff9b2d75ab1cff1722fc212fcc8422b13f5ccd6b9f1812973751e26d4888"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-3095/result.json",
+        "bytes": 6769,
+        "sha256": "8f53379ef2825f6dfbbde6836c49cdfb5ce9ecc193f134ce711531175c859628"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-4604/result.json",
+        "bytes": 6670,
+        "sha256": "2a4b283fb20da1e6497eaedf9febce6c8332c6b117d188927e68a97911f94a3b"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-10081/result.json",
+        "bytes": 6574,
+        "sha256": "660398289914fd2f8b3c8d9984be86452f6799f790e284b8ec2855734c647db3"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-10914/result.json",
+        "bytes": 5001,
+        "sha256": "fb428e2b2bc327bdb6550083ee6b1a880c9f2f26f1b76ad73aee78b78c30ec41"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/psf__requests-5414/result.json",
+        "bytes": 6273,
+        "sha256": "19097aa822900055ec32bb79193aa6692d853e97b0c8e6d847f4c06c44c20c94"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-3677/result.json",
+        "bytes": 6152,
+        "sha256": "2cac4f67ff196dd6e2fcb6551631837b62135f26fa68f163dffe1022d6a4817f"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-10356/result.json",
+        "bytes": 6916,
+        "sha256": "83c1c90f3eaf4a2c36810d7e918e5f2bda759fdb82b226407320c682161bfcd0"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-10973/result.json",
+        "bytes": 6516,
+        "sha256": "0f1a1fee027e9a04454f691ccb7b427225d44fd28b64a45bdbafc16018727963"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-4075/result.json",
+        "bytes": 6179,
+        "sha256": "3feb2d6a26629ca1e4cb4ac4e12fe26092f42f8921f69dba0725f6a6392b02ee"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-5809/result.json",
+        "bytes": 5748,
+        "sha256": "34f154484ef18b3573b730d90f5972a86eb353a993c33178070bd3f26593eedb"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-10999/result.json",
+        "bytes": 5136,
+        "sha256": "30583ddf36e878ee19d44800e61eeea36709be06eaa7616ed7c42c5cbecb82e7"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-4094/result.json",
+        "bytes": 6992,
+        "sha256": "21605939b09c9f4e4cf75979f6d67c8253cf27234c7c29a96f7954038f716412"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-6197/result.json",
+        "bytes": 5196,
+        "sha256": "7eb5e723f63611b7a8f946cc32275cb667fbb2821320589fb841a3c61a4185d4"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11066/result.json",
+        "bytes": 6918,
+        "sha256": "8f7bf45092a44e34167c3ad8d387bfce6989417b04ad02f1df3883ea657c3289"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-4629/result.json",
+        "bytes": 5938,
+        "sha256": "c196d3c98f7db93b334d2e3071c5bf70a684fc531754cb708c1ac8ca7ff49f5a"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-7432/result.json",
+        "bytes": 6134,
+        "sha256": "2aa61338040437b8f9fdbde6b04642228107c8b81628ab3f1c5100060de8bab8"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11087/result.json",
+        "bytes": 6519,
+        "sha256": "ba0a27ef76159f27ebe126ab6720a2c3c63b06357154844e06978278d38db895"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-4687/result.json",
+        "bytes": 6752,
+        "sha256": "44b0e8a657b8e63a513051dd209d8299cea1a426ad33dd35285859e73a38ed4e"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-7490/result.json",
+        "bytes": 6434,
+        "sha256": "e2a36b963878d9c2a502517f5293d2ed8fafc041f90bc9e5ebfc94c7f5379d95"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11095/result.json",
+        "bytes": 6651,
+        "sha256": "4e09b59514983cebe7df0e2ba0726f166928d1e5364785651518f9fd49c99ae8"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-6992/result.json",
+        "bytes": 6394,
+        "sha256": "5b86cba2d4d921a1df5f7f9fa9474257d8e8d10a3d371ce3303000210e3727ca"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-7982/result.json",
+        "bytes": 6420,
+        "sha256": "99ba4ebe9fa57a7b010fa80b32099680953e821625407f4e4fbade68acccee6f"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11099/result.json",
+        "bytes": 5559,
+        "sha256": "69fbfad285cbacdb71d103922b6659c2a10ff9e3bbd7b5f867517014f9801c91"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11119/result.json",
+        "bytes": 6017,
+        "sha256": "63fca18e42ce70a4f3d8757a60116f5744e1dcd702d67997b72cca5cf34c4cae"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11138/result.json",
+        "bytes": 6568,
+        "sha256": "d6931fe1a2c3b2c4e2fcea85b5f4c3e0d2bc0a1f05029353409f72d7743de336"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11149/result.json",
+        "bytes": 6928,
+        "sha256": "a4df18532cc90c12b8269f4a4de802183a47996cc244dbfae520e077ae800ffd"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11163/result.json",
+        "bytes": 5991,
+        "sha256": "98115679d3c18df9739d7178c124f397c40af4eca33bdd39f84cdab54e19ba56"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11179/result.json",
+        "bytes": 5931,
+        "sha256": "108e15ae31d880b7ca34fff0a04a5be1e529cd12149a5245cadc55fa3b0cf964"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11206/result.json",
+        "bytes": 6046,
+        "sha256": "2324f173083bd0d88b1c57bdf201a20ec948aea72b95907c06d93d978a90ad12"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11239/result.json",
+        "bytes": 6569,
+        "sha256": "e3c2848f1566ea3a8fffa058962a20ec4261b1416305bd1ecf69cb8694f614cb"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11265/result.json",
+        "bytes": 5310,
+        "sha256": "766f05864746c7657603b9b9d0f2dda86c51954cb895b853023474daf1e7c145"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11276/result.json",
+        "bytes": 7366,
+        "sha256": "9d93ee29fa5f3baaa7b87c92eca4804ad5c47ab234585be054cc3e4989e00778"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11292/result.json",
+        "bytes": 5751,
+        "sha256": "a1aeefcdacbf8bc68f55473c39d6c3c77115003b0263736c042e25efb0f57b97"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11299/result.json",
+        "bytes": 6384,
+        "sha256": "4eaf51317c269023a2707af12c90105d8e41ddabaf16d133f9e33c25e5570968"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11333/result.json",
+        "bytes": 6406,
+        "sha256": "47b1baf1b450a1808a6dc5e7a3d6a3981fa37e38158ef2f19c6aea1691df6f96"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11433/result.json",
+        "bytes": 6331,
+        "sha256": "ca31744f4c069567aada2d43fbd10863b0151381efc06a15d1cf1280bd5494cd"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11451/result.json",
+        "bytes": 6491,
+        "sha256": "63f69d7977eecfccb9f1b95ab5e4c68c9752276e4fb0312dd7dfd25746d8e6ac"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11477/result.json",
+        "bytes": 7274,
+        "sha256": "02599604c05edf25879a808b67f6fb247e058aa1eaa658131593a5fb1fa0a098"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11490/result.json",
+        "bytes": 6908,
+        "sha256": "e3747070f6e5947de2a36ba6fd462baf81c319a1fe4795220247337fa335f648"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11532/result.json",
+        "bytes": 5781,
+        "sha256": "2c7c7cc8b298d5b44da03f2470f81ad4ce744b19f088ee6d9afa090857c36015"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11133/result.json",
+        "bytes": 6587,
+        "sha256": "05f280adb248e016d8713a2af5f0009bcc448c6ba3c0a8d1509221b566ba6092"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11551/result.json",
+        "bytes": 6476,
+        "sha256": "74908af806a2ba747c4c6e9060784f622571c4d7fa7284730772e7dd4761fabc"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11555/result.json",
+        "bytes": 7037,
+        "sha256": "42ab1b68e327db593baf26ab7ce96173d1c01eebfb5ed27ec6487f9ca8565ac9"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11603/result.json",
+        "bytes": 6231,
+        "sha256": "ac2b21f0111034cace72853d4881f72e6d775e195dc55da3311fd72bdff59ed4"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11728/result.json",
+        "bytes": 6480,
+        "sha256": "31e2374925712a91fad13690cf76495baa321de02f5bbf7e1a2abb51d2ba08df"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11740/result.json",
+        "bytes": 6602,
+        "sha256": "5b4e6c30f49257b1e94a0f31efc060ae363a077ee35f903f5a0469d21099ff6e"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11749/result.json",
+        "bytes": 6841,
+        "sha256": "52048faa127ba2105e2a83c46737eb10b20d65ee1c04302f154b67d1987f266b"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11790/result.json",
+        "bytes": 5826,
+        "sha256": "82b1cb23588b71dfb0aec6ea1d9421cbab9214bb180b69353974556084ad96d4"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11815/result.json",
+        "bytes": 6691,
+        "sha256": "d8c16bfacd827a82bb1aad8c4d2fc2fe4d8d3ee971ea0cca4c2e3cccfa079f3b"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11848/result.json",
+        "bytes": 5875,
+        "sha256": "8a95049a1d3e488c0543e4c9fd1b0588b6260b7e699de5408b6b09c24671f462"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11880/result.json",
+        "bytes": 5924,
+        "sha256": "91cfa232bbcd0786fbba29837b14c2f79165dc1d116180bef0413d3c4e44b912"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11885/result.json",
+        "bytes": 6747,
+        "sha256": "13238f93c8747888a9b6e4ffb7c4f7a29cdee5a6ccb464b46acff3fe903fe55e"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11951/result.json",
+        "bytes": 5841,
+        "sha256": "fc28baca9a2aed115bca290d74a3953866b1800a112cea01b90bf8430ec3e85e"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11964/result.json",
+        "bytes": 6668,
+        "sha256": "a3192a88d30a5ee0c6bbf394662ef332351a4a9c51b582dce03f8f3d4db5becd"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11999/result.json",
+        "bytes": 6476,
+        "sha256": "2eef0a4bad474442dd6ac1999058c280c533a015be31d3028f7bec161b278c76"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12039/result.json",
+        "bytes": 6417,
+        "sha256": "2da6c236829eaa34cc7028c4a698f9e4c4fde4a59d721ed41dcc64096b9161b6"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12050/result.json",
+        "bytes": 6204,
+        "sha256": "455f06b287a94be857f2987f94def6359780d539f9ba0fbe89700c1058fd523e"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12125/result.json",
+        "bytes": 6592,
+        "sha256": "c86b31156af01ccdfcf8c1b115b777aed7a8756700324e0dcef1cfc27770a60f"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12143/result.json",
+        "bytes": 6214,
+        "sha256": "9bb3947e9fc3837e5110e9467a333bc5e11790ee91eb888cc9c548da41f51988"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12155/result.json",
+        "bytes": 6500,
+        "sha256": "365bc971e6ede291ae9e4f7cf6823be73c78c53a95231b35f0bfb62482d7b61f"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12193/result.json",
+        "bytes": 6785,
+        "sha256": "8969cf34ac0db91b7096d28795a8313c7ff4691789ea76f3602f0270b031c133"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12209/result.json",
+        "bytes": 7075,
+        "sha256": "ea4532639422f04c87aadbb1a03c9c7f3656264a0d6924ce24ca74002253f964"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12262/result.json",
+        "bytes": 7139,
+        "sha256": "0ed2e1ca681220a146f82183f725854ab1ecb49db3a8bbbc0a86fafbb2d1d739"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12273/result.json",
+        "bytes": 6412,
+        "sha256": "bd5ab87702d1392a7f629ac4eee7f31e7803eb65a3007fc3ff78d3a38b479dcc"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12276/result.json",
+        "bytes": 6004,
+        "sha256": "3e1b4875e876e4f606cd7d37683d61f10ab7353f2bb741b44508bc810060a96a"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12304/result.json",
+        "bytes": 5639,
+        "sha256": "e6691e969abfb3bbea1c2da230e8d8fa61029f5ca1e43aacc51ffb7cf4474ac9"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12308/result.json",
+        "bytes": 6214,
+        "sha256": "be47a969269d358b7e52bb329dde275d04bb11c414638140d5af84f2c36212d5"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12325/result.json",
+        "bytes": 6944,
+        "sha256": "51c75441873372efec063ac445c78160e91a471946d3e8a4cff030f401b3d115"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12406/result.json",
+        "bytes": 6756,
+        "sha256": "6fb8493cd143855a8425c44f3c89fcd93761ce63518ec6fc5e4088a9434673b8"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12419/result.json",
+        "bytes": 5949,
+        "sha256": "33c98b02d4ce3b4c7830459e0488a4d666e87ed4f5ea4b0a276d99245b989f64"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12663/result.json",
+        "bytes": 6290,
+        "sha256": "e036892c22b533326985f86720f2cc350bfa8c25deafc5602abf6e09b720a4be"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12708/result.json",
+        "bytes": 6247,
+        "sha256": "9c7d1356cd64779b9f08774e7e3160416ac67e59ce55802c097f6357f978cbbc"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12713/result.json",
+        "bytes": 6558,
+        "sha256": "d980d7a8499933f864a528c5b17d5524a1b24f2fbf3983b115129f304cd7b66b"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12774/result.json",
+        "bytes": 6475,
+        "sha256": "e38241ef47d35c9e6ed948f45e72112ccbd890cc052ff1af72fc9a3fb61e2be5"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12858/result.json",
+        "bytes": 7264,
+        "sha256": "a31f57023207680b6d859617d7cee6909b978e4e23aef2127f984d2bfd8c7e9a"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12965/result.json",
+        "bytes": 6160,
+        "sha256": "56ca5e8f1ea99fefa63f963bc607bf991c9639aed5704e7bc5724ec26425f46e"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-13012/result.json",
+        "bytes": 6631,
+        "sha256": "66ba6680ca33e22e4a4a12a9f20914fbc02048bc3273a17edfa120ad7415aff5"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-13028/result.json",
+        "bytes": 7160,
+        "sha256": "127503f89981fd5cbda72ced3ce94685a52063aaefd1a63a3439e8ec8a554e93"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-13033/result.json",
+        "bytes": 6369,
+        "sha256": "957ab7f6392f774bb8210adeb22e464a79fc9fc4a86c3473d10edd19cc9e42da"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-13089/result.json",
+        "bytes": 6658,
+        "sha256": "a693ee8c72782541cef41a3b8ab9498e5e1e877f2a7224207c2147d1842223fc"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-13109/result.json",
+        "bytes": 6686,
+        "sha256": "813f1db12b60a061eaf80a216f4a8fa4243344cc186454205835ad818353d65e"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-13112/result.json",
+        "bytes": 5475,
+        "sha256": "f16931ebf01ccd8bf1748ce3c9190c2aa5cf031d08c3e5d6483f78d475e17175"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-13121/result.json",
+        "bytes": 6036,
+        "sha256": "4a3c84b741164b61882d44975699a4b4b6eddd639ee9d6c9771169d4b4864f11"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-13128/result.json",
+        "bytes": 6718,
+        "sha256": "fe2f4f7966397bfd2008d7ac71a332a43c3d4bbc8d12e2c33068af1b6cc66c41"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-13158/result.json",
+        "bytes": 6084,
+        "sha256": "cdc1baeadd7e837f69f8f0ed429468cd8714ecd1eb46b80e1346510575ae0e57"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-13195/result.json",
+        "bytes": 6099,
+        "sha256": "0538f834cf0c8f97afc219c6585e3f867df9656d2e5299fb00261d85234cf58d"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-13212/result.json",
+        "bytes": 6544,
+        "sha256": "4b6c4cc794a82402eea21dee361a79a8971250c1a115784e0b4beb88e1c79981"
+      },
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-13279/result.json",
+        "bytes": 6131,
+        "sha256": "d3d3cce3eac4c31f65caff5705202c36103cf9bcf090208bf9791c92a8b88ba0"
+      }
+    ],
+    "native_plan": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29/ab_plan.json",
+      "bytes": 24456,
+      "sha256": "7080f016a1b469e5b9119f1616a7d52dced2e182dc33a599ab30eb3181de608b"
+    },
+    "native_summary": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29/native/client_156/summary.json",
+      "bytes": 979671,
+      "sha256": "6fbb7c9f0e1cfb9a4cb3d9fef26c8db84f7a87c2f3704969ee2aee659a25dd0e"
+    },
+    "unfinished_sandbox_audits": [
+      {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11211/sandbox_audit.jsonl",
+        "bytes": 254234,
+        "sha256": "a641275320272fa60b8a3c68cb92bd1bdd00662cbaaf9338b4856697aa8d475f"
+      }
+    ]
+  },
+  "actual_cutoff": {
+    "reason": "server_reserved_for_others_00_to_06_Asia_Shanghai",
+    "stop_started_at": "2026-10-13T23:59:01.870697+08:00",
+    "observation_cutoff_monotonic_ms": 6077404971.289329,
+    "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54",
+    "identities": [
+      {
+        "pid": 1627165,
+        "state": "S",
+        "ppid": 3755697,
+        "start_ticks": "607737555",
+        "argv": [
+          "docker",
+          "exec",
+          "--workdir",
+          "/workspace",
+          "--user",
+          "2603:2603",
+          "--env",
+          "HOME=/tmp",
+          "--env",
+          "PATH=/opt/miniconda3/envs/testbed/bin:/opt/miniconda3/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+          "--env",
+          "CONDA_PREFIX=/opt/miniconda3/envs/testbed",
+          "--env",
+          "CONDA_DEFAULT_ENV=testbed",
+          "--env",
+          "PYTHONPATH=/beliefkv-support:/workspace/src:/workspace",
+          "--env",
+          "PYTHONNOUSERSITE=1",
+          "--env",
+          "PIP_DISABLE_PIP_VERSION_CHECK=1",
+          "--env",
+          "PIP_NO_INDEX=1",
+          "--env",
+          "GIT_OPTIONAL_LOCKS=0",
+          "--env",
+          "DJANGO_TEST_PROCESSES=2",
+          "beliefkv-django__django-11211-030b5af2",
+          "/bin/sh",
+          "-c",
+          "timeout --signal=KILL 180s /bin/bash -o pipefail -c 'cd /workspace && timeout 60 python tests/runtests.py --verbosity=2 2>&1 | grep -E \"^(Ran|OK|FAIL)\" | head -5'"
+        ]
+      },
+      {
+        "pid": 1627585,
+        "state": "S",
+        "ppid": 3753563,
+        "start_ticks": "607740317",
+        "argv": [
+          "sleep",
+          "2"
+        ]
+      },
+      {
+        "pid": 3750069,
+        "state": "S",
+        "ppid": 1,
+        "start_ticks": "606816709",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-v310-v54-residency-hint-20261013/scripts/launch_semantic_h2d_after_pair.py",
+          "--repo",
+          "/home/longhao/experiment/BeliefKV",
+          "--previous-run",
+          "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v53",
+          "--target-checkout",
+          "/home/longhao/experiment/.worktrees/beliefkv-v310-v54-residency-hint-20261013",
+          "--run-root",
+          "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54",
+          "--state",
+          "/home/longhao/experiment/BeliefKV/experiments/reports/v54_launch_after_v53_20261013.json",
+          "--wait-pid",
+          "1963583",
+          "--wait-pid",
+          "1963847",
+          "--wait-pid",
+          "1964200",
+          "--port",
+          "18459",
+          "--arm-order",
+          "predictive_h2d",
+          "--execution-handoff",
+          "0",
+          "--native-reference-run",
+          "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29"
+        ]
+      },
+      {
+        "pid": 3753547,
+        "state": "S",
+        "ppid": 3750069,
+        "start_ticks": "606867863",
+        "argv": [
+          "bash",
+          "/home/longhao/experiment/BeliefKV/scripts/run_qwen35_semantic_h2d_ab.sh"
+        ]
+      },
+      {
+        "pid": 3753563,
+        "state": "S",
+        "ppid": 3753547,
+        "start_ticks": "606867930",
+        "argv": [
+          "bash",
+          "/home/longhao/experiment/BeliefKV/scripts/run_qwen35_native_regime_probe.sh"
+        ]
+      },
+      {
+        "pid": 3753581,
+        "state": "S",
+        "ppid": 3753563,
+        "start_ticks": "606867943",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "-m",
+          "sglang.launch_server",
+          "--model-path",
+          "/srv/ai/models/Qwen/Qwen3.5-35B-A3B",
+          "--served-model-name",
+          "Qwen3.5-35B-A3B",
+          "--host",
+          "127.0.0.1",
+          "--port",
+          "18459",
+          "--dtype",
+          "bfloat16",
+          "--kv-cache-dtype",
+          "bfloat16",
+          "--tensor-parallel-size",
+          "1",
+          "--context-length",
+          "131072",
+          "--mem-fraction-static",
+          "0.94",
+          "--chunked-prefill-size",
+          "4096",
+          "--max-running-requests",
+          "48",
+          "--reasoning-parser",
+          "qwen3",
+          "--tool-call-parser",
+          "qwen3_coder",
+          "--enable-metrics",
+          "--enable-hierarchical-cache",
+          "--hicache-size",
+          "200",
+          "--hicache-write-policy",
+          "write_back",
+          "--hicache-io-backend",
+          "kernel",
+          "--enable-session-radix-cache",
+          "--mamba-full-memory-ratio",
+          "0.9",
+          "--enable-beliefkv-admission",
+          "--beliefkv-event-socket-path",
+          "/tmp/bkv-regime-18459.sock",
+          "--skip-server-warmup"
+        ]
+      },
+      {
+        "pid": 3753937,
+        "state": "S",
+        "ppid": 3753581,
+        "start_ticks": "606869218",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "-c",
+          "from multiprocessing.resource_tracker import main;main(22)"
+        ]
+      },
+      {
+        "pid": 3753938,
+        "state": "R",
+        "ppid": 3753581,
+        "start_ticks": "606869218",
+        "argv": [
+          "sglang::scheduler"
+        ]
+      },
+      {
+        "pid": 3753939,
+        "state": "S",
+        "ppid": 3753581,
+        "start_ticks": "606869218",
+        "argv": [
+          "sglang::detokenizer"
+        ]
+      },
+      {
+        "pid": 3755401,
+        "state": "S",
+        "ppid": 3753938,
+        "start_ticks": "606885124",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "-c",
+          "from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=23, pipe_handle=114)",
+          "--multiprocessing-fork"
+        ]
+      },
+      {
+        "pid": 3755465,
+        "state": "S",
+        "ppid": 3753938,
+        "start_ticks": "606885161",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "-c",
+          "from multiprocessing.spawn import spawn_main; spawn_main(tracker_fd=23, pipe_handle=120)",
+          "--multiprocessing-fork"
+        ]
+      },
+      {
+        "pid": 3755697,
+        "state": "S",
+        "ppid": 3753563,
+        "start_ticks": "606885798",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/BeliefKV/scripts/run_deepagents_swebench.py",
+          "--child-final-report-shadow",
+          "--mode",
+          "autonomous",
+          "--base-url",
+          "http://127.0.0.1:18459/v1",
+          "--model",
+          "Qwen3.5-35B-A3B",
+          "--workload-manifest",
+          "/home/longhao/experiment/BeliefKV/configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json",
+          "--max-workflows",
+          "156",
+          "--concurrency",
+          "156",
+          "--subagent-fanout-profile",
+          "native_in_graph_2to4",
+          "--workflow-arrival-batch-size",
+          "108",
+          "--workflow-arrival-batch-interval-ms",
+          "3600000",
+          "--native-radix-sessions",
+          "--control-socket",
+          "/tmp/bkv-regime-18459.sock",
+          "--server-audit",
+          "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/server/runtime_audit.jsonl",
+          "--server-events",
+          "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/server/runtime_events.sglang.jsonl",
+          "--server-log",
+          "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/server.log",
+          "--pool-tokens",
+          "1798995",
+          "--model-context-tokens",
+          "131072",
+          "--max-completion-tokens",
+          "8192",
+          "--sampling-seed",
+          "21",
+          "--recursion-limit",
+          "2048",
+          "--sandbox-command-timeout",
+          "180",
+          "--activation-wall-clock-seconds",
+          "14400.0",
+          "--stream-completion-shadow",
+          "--child-stream-content-shadow",
+          "--child-finish-chunk-shadow",
+          "--stream-http-timing-shadow",
+          "--native-reactive-guard-profile",
+          "--disable-completion-gate",
+          "--gate",
+          "native",
+          "--output",
+          "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156"
+        ]
+      },
+      {
+        "pid": 3755878,
+        "state": "S",
+        "ppid": 3755697,
+        "start_ticks": "606886175",
+        "argv": [
+          "nvidia-smi",
+          "-i",
+          "0",
+          "--query-gpu=timestamp,memory.used,memory.free,utilization.gpu,utilization.memory,power.draw",
+          "--format=csv,noheader,nounits",
+          "--loop-ms=200"
+        ]
+      }
+    ],
+    "collection_at_cutoff": {
+      "code_commit": "45f7afb0fc3b8b2921a388560101e00eac291df7",
+      "sglang_patch_sha256": "6938bd10ff393dc89c9aeb5ed14da2385d5d95e00529113e12eced93cca5fff0",
+      "arms": {
+        "predictive_h2d": {
+          "outcomes": {
+            "completed": 155
+          },
+          "recorded_result_count": 155,
+          "unreadable_results": [],
+          "no_terminal_result": [
+            "django__django-11211"
+          ],
+          "arrived_workflows": [
+            "django__django-10097",
+            "django__django-10554",
+            "django__django-10880",
+            "django__django-10914",
+            "django__django-10973",
+            "django__django-10999",
+            "django__django-11066",
+            "django__django-11087",
+            "django__django-11095",
+            "django__django-11099",
+            "django__django-11119",
+            "django__django-11133",
+            "django__django-11138",
+            "django__django-11141",
+            "django__django-11149",
+            "django__django-11163",
+            "django__django-11179",
+            "django__django-11206",
+            "django__django-11211",
+            "django__django-11239",
+            "django__django-11265",
+            "django__django-11276",
+            "django__django-11292",
+            "django__django-11299",
+            "django__django-11333",
+            "django__django-11400",
+            "django__django-11433",
+            "django__django-11451",
+            "django__django-11477",
+            "django__django-11490",
+            "django__django-11532",
+            "django__django-11551",
+            "django__django-11555",
+            "django__django-11603",
+            "django__django-11728",
+            "django__django-11734",
+            "django__django-11740",
+            "django__django-11749",
+            "django__django-11790",
+            "django__django-11815",
+            "django__django-11820",
+            "django__django-11848",
+            "django__django-11880",
+            "django__django-11885",
+            "django__django-11951",
+            "django__django-11964",
+            "django__django-11999",
+            "django__django-12039",
+            "django__django-12050",
+            "django__django-12125",
+            "django__django-12143",
+            "django__django-12155",
+            "django__django-12193",
+            "django__django-12209",
+            "django__django-12262",
+            "django__django-12273",
+            "django__django-12276",
+            "django__django-12304",
+            "django__django-12308",
+            "django__django-12325",
+            "django__django-12406",
+            "django__django-12419",
+            "django__django-12663",
+            "django__django-12708",
+            "django__django-12713",
+            "django__django-12741",
+            "django__django-12754",
+            "django__django-12774",
+            "django__django-12858",
+            "django__django-12965",
+            "django__django-13012",
+            "django__django-13023",
+            "django__django-13028",
+            "django__django-13033",
+            "django__django-13089",
+            "django__django-13109",
+            "django__django-13112",
+            "django__django-13121",
+            "django__django-13128",
+            "django__django-13158",
+            "django__django-13195",
+            "django__django-13212",
+            "django__django-13279",
+            "django__django-13964",
+            "django__django-14349",
+            "django__django-14500",
+            "django__django-14631",
+            "django__django-15103",
+            "django__django-15315",
+            "django__django-15368",
+            "django__django-16255",
+            "django__django-16502",
+            "django__django-16667",
+            "django__django-16877",
+            "django__django-16938",
+            "mwaskom__seaborn-3069",
+            "mwaskom__seaborn-3187",
+            "pallets__flask-5014",
+            "psf__requests-1142",
+            "psf__requests-1724",
+            "psf__requests-1766",
+            "psf__requests-1921",
+            "psf__requests-2317",
+            "psf__requests-2931",
+            "psf__requests-5414",
+            "psf__requests-6028",
+            "pydata__xarray-2905",
+            "pydata__xarray-3095",
+            "pydata__xarray-3151",
+            "pydata__xarray-3305",
+            "pydata__xarray-3677",
+            "pydata__xarray-3993",
+            "pydata__xarray-4075",
+            "pydata__xarray-4094",
+            "pydata__xarray-4356",
+            "pydata__xarray-4629",
+            "pydata__xarray-4687",
+            "pydata__xarray-4966",
+            "pydata__xarray-6461",
+            "pydata__xarray-6599",
+            "pydata__xarray-6721",
+            "pydata__xarray-6744",
+            "pydata__xarray-6938",
+            "pydata__xarray-6992",
+            "pydata__xarray-7229",
+            "pydata__xarray-7233",
+            "pydata__xarray-7393",
+            "pylint-dev__pylint-4551",
+            "pylint-dev__pylint-4604",
+            "pylint-dev__pylint-4661",
+            "pylint-dev__pylint-4970",
+            "pylint-dev__pylint-6386",
+            "pylint-dev__pylint-6528",
+            "pylint-dev__pylint-6903",
+            "pylint-dev__pylint-7080",
+            "pylint-dev__pylint-7277",
+            "pylint-dev__pylint-8898",
+            "pytest-dev__pytest-10051",
+            "pytest-dev__pytest-10081",
+            "pytest-dev__pytest-10356",
+            "pytest-dev__pytest-5262",
+            "pytest-dev__pytest-5631",
+            "pytest-dev__pytest-5787",
+            "pytest-dev__pytest-5809",
+            "pytest-dev__pytest-5840",
+            "pytest-dev__pytest-6197",
+            "pytest-dev__pytest-6202",
+            "pytest-dev__pytest-7205",
+            "pytest-dev__pytest-7236",
+            "pytest-dev__pytest-7324",
+            "pytest-dev__pytest-7432",
+            "pytest-dev__pytest-7490",
+            "pytest-dev__pytest-7521",
+            "pytest-dev__pytest-7571",
+            "pytest-dev__pytest-7982",
+            "pytest-dev__pytest-8399"
+          ]
+        }
+      },
+      "scope": "administrative observation; missing outcomes are not natural failures"
+    },
+    "administratively_interrupted": true,
+    "errors": [],
+    "owned_container_ids": [
+      "6ba27582c7c135e99b6e57f0b3c930521bba2adecefc0a0bd6a0f23c21ae937d"
+    ],
+    "remaining_processes": [],
+    "remaining_owned_containers": [],
+    "resource_release_observed_at": "2026-10-13T23:59:09.228563+08:00"
+  },
+  "planned_workflows": 156,
+  "archived_outcomes": {
+    "completed": 155
+  },
+  "administratively_censored_instances": [
+    "django__django-11211"
+  ],
+  "paired_completed_diagnostic": {
+    "shared_instances": 155,
+    "shared_outcome_pairs": {
+      "completed/completed": 155
+    },
+    "paired_completed_workflows": 155,
+    "paired_completed_with_explicit_jct_eligibility": 155,
+    "unpaired_completed_instances": {
+      "left": [],
+      "right": [
+        "django__django-11211"
+      ]
+    },
+    "duration_seconds": {
+      "left": {
+        "mean": 2682.1287790053675,
+        "p50": 2428.8317693751305,
+        "p95": 5862.137928399164
+      },
+      "right": {
+        "mean": 3028.015961455536,
+        "p50": 2529.189684120938,
+        "p95": 7342.44463925827
+      }
+    },
+    "mean_delta_seconds": -345.8871824501683,
+    "p50_delta_seconds": -132.42835259623826,
+    "p95_delta_seconds": 2221.606008837369,
+    "left_shorter_workflows": 92,
+    "right_shorter_workflows": 63,
+    "tied_workflows": 0,
+    "rows": [
+      {
+        "instance_id": "django__django-10097",
+        "left_seconds": 2660.3190741399303,
+        "right_seconds": 2767.890972968191,
+        "delta_seconds": -107.5718988282606,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 216,
+        "left_tool_call_count": 214,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 117,
+        "right_tool_call_count": 116,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-10554",
+        "left_seconds": 6602.478697807528,
+        "right_seconds": 7285.076709265821,
+        "delta_seconds": -682.5980114582926,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 721,
+        "left_tool_call_count": 817,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 654,
+        "right_tool_call_count": 652,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-10880",
+        "left_seconds": 5149.5114784045145,
+        "right_seconds": 1741.9847734235227,
+        "delta_seconds": 3407.526704980992,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 865,
+        "left_tool_call_count": 873,
+        "left_delegation_round_count": 3,
+        "right_llm_request_count": 126,
+        "right_tool_call_count": 122,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-10914",
+        "left_seconds": 1400.7400727113709,
+        "right_seconds": 1534.4331639762968,
+        "delta_seconds": -133.6930912649259,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 77,
+        "left_tool_call_count": 89,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 88,
+        "right_tool_call_count": 90,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-10973",
+        "left_seconds": 1520.3236779393628,
+        "right_seconds": 905.2532800836489,
+        "delta_seconds": 615.070397855714,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 94,
+        "left_tool_call_count": 89,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 47,
+        "right_tool_call_count": 48,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-10999",
+        "left_seconds": 1945.2646960243583,
+        "right_seconds": 1158.873130501248,
+        "delta_seconds": 786.3915655231103,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 80,
+        "left_tool_call_count": 80,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 58,
+        "right_tool_call_count": 58,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11066",
+        "left_seconds": 3662.6396022178233,
+        "right_seconds": 3464.7609180314466,
+        "delta_seconds": 197.87868418637663,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 272,
+        "left_tool_call_count": 283,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 399,
+        "right_tool_call_count": 401,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "django__django-11087",
+        "left_seconds": 5465.864076460712,
+        "right_seconds": 3009.681411650032,
+        "delta_seconds": 2456.18266481068,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 451,
+        "left_tool_call_count": 451,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 211,
+        "right_tool_call_count": 212,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11095",
+        "left_seconds": 1892.384599131532,
+        "right_seconds": 1737.455382777378,
+        "delta_seconds": 154.92921635415405,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 148,
+        "left_tool_call_count": 162,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 109,
+        "right_tool_call_count": 104,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11099",
+        "left_seconds": 860.3184750536457,
+        "right_seconds": 632.2769381534308,
+        "delta_seconds": 228.04153690021485,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 36,
+        "left_tool_call_count": 33,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 36,
+        "right_tool_call_count": 34,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11119",
+        "left_seconds": 1434.2583797890693,
+        "right_seconds": 2014.1257441369817,
+        "delta_seconds": -579.8673643479124,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 83,
+        "left_tool_call_count": 80,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 106,
+        "right_tool_call_count": 102,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "django__django-11133",
+        "left_seconds": 1201.1750534810126,
+        "right_seconds": 1579.691254671663,
+        "delta_seconds": -378.51620119065046,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 136,
+        "left_tool_call_count": 130,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 153,
+        "right_tool_call_count": 151,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11138",
+        "left_seconds": 3274.9595051873475,
+        "right_seconds": 3333.0009813802317,
+        "delta_seconds": -58.04147619288415,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 347,
+        "left_tool_call_count": 336,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 281,
+        "right_tool_call_count": 282,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11141",
+        "left_seconds": 3464.5268669929355,
+        "right_seconds": 4581.3573585236445,
+        "delta_seconds": -1116.830491530709,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 377,
+        "left_tool_call_count": 385,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 480,
+        "right_tool_call_count": 490,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11149",
+        "left_seconds": 3723.2015420738608,
+        "right_seconds": 5434.05342777539,
+        "delta_seconds": -1710.8518857015297,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 335,
+        "left_tool_call_count": 330,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 754,
+        "right_tool_call_count": 724,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11163",
+        "left_seconds": 1619.8429241320118,
+        "right_seconds": 482.9939673310146,
+        "delta_seconds": 1136.8489568009973,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 109,
+        "left_tool_call_count": 105,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 29,
+        "right_tool_call_count": 25,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11179",
+        "left_seconds": 2613.782483706251,
+        "right_seconds": 1573.7033075615764,
+        "delta_seconds": 1040.0791761446744,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 208,
+        "left_tool_call_count": 205,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 136,
+        "right_tool_call_count": 134,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11206",
+        "left_seconds": 1129.006955110468,
+        "right_seconds": 3651.8932382082567,
+        "delta_seconds": -2522.8862830977887,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 61,
+        "left_tool_call_count": 58,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 110,
+        "right_tool_call_count": 106,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11239",
+        "left_seconds": 1202.868933416903,
+        "right_seconds": 1238.8345583463088,
+        "delta_seconds": -35.96562492940575,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 85,
+        "left_tool_call_count": 82,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 80,
+        "right_tool_call_count": 96,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11265",
+        "left_seconds": 6630.937425731681,
+        "right_seconds": 2244.1008230745792,
+        "delta_seconds": 4386.836602657102,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 847,
+        "left_tool_call_count": 823,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 142,
+        "right_tool_call_count": 130,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11276",
+        "left_seconds": 2644.4939173981547,
+        "right_seconds": 819.6087768962607,
+        "delta_seconds": 1824.885140501894,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 175,
+        "left_tool_call_count": 197,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 45,
+        "right_tool_call_count": 41,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11292",
+        "left_seconds": 1159.243113049306,
+        "right_seconds": 2955.09958743304,
+        "delta_seconds": -1795.8564743837342,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 57,
+        "left_tool_call_count": 56,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 215,
+        "right_tool_call_count": 219,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11299",
+        "left_seconds": 4606.156403438188,
+        "right_seconds": 4771.529906237498,
+        "delta_seconds": -165.3735027993098,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 717,
+        "left_tool_call_count": 707,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 699,
+        "right_tool_call_count": 697,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "django__django-11333",
+        "left_seconds": 1708.0760209560394,
+        "right_seconds": 2167.2793726474047,
+        "delta_seconds": -459.20335169136524,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 106,
+        "left_tool_call_count": 110,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 150,
+        "right_tool_call_count": 151,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11400",
+        "left_seconds": 3380.356469238177,
+        "right_seconds": 5061.125851511955,
+        "delta_seconds": -1680.7693822737783,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 347,
+        "left_tool_call_count": 335,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 376,
+        "right_tool_call_count": 366,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11433",
+        "left_seconds": 1721.3248384865,
+        "right_seconds": 5012.672201097012,
+        "delta_seconds": -3291.3473626105115,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 134,
+        "left_tool_call_count": 133,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 439,
+        "right_tool_call_count": 449,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "django__django-11451",
+        "left_seconds": 1254.9195987461135,
+        "right_seconds": 1387.3479513423517,
+        "delta_seconds": -132.42835259623826,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 61,
+        "left_tool_call_count": 60,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 71,
+        "right_tool_call_count": 69,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11477",
+        "left_seconds": 4793.923298496753,
+        "right_seconds": 5559.075872765854,
+        "delta_seconds": -765.152574269101,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 398,
+        "left_tool_call_count": 408,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 597,
+        "right_tool_call_count": 595,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11490",
+        "left_seconds": 5853.5331178717315,
+        "right_seconds": 5910.08052065596,
+        "delta_seconds": -56.547402784228325,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 1013,
+        "left_tool_call_count": 1007,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 651,
+        "right_tool_call_count": 637,
+        "right_delegation_round_count": 3
+      },
+      {
+        "instance_id": "django__django-11532",
+        "left_seconds": 1803.8588107554242,
+        "right_seconds": 6009.192725081928,
+        "delta_seconds": -4205.333914326504,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 133,
+        "left_tool_call_count": 139,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 676,
+        "right_tool_call_count": 679,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11551",
+        "left_seconds": 1517.0581386415288,
+        "right_seconds": 2614.5548076098785,
+        "delta_seconds": -1097.4966689683497,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 160,
+        "left_tool_call_count": 157,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 345,
+        "right_tool_call_count": 338,
+        "right_delegation_round_count": 3
+      },
+      {
+        "instance_id": "django__django-11555",
+        "left_seconds": 2246.0776139199734,
+        "right_seconds": 3692.5979879880324,
+        "delta_seconds": -1446.520374068059,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 399,
+        "left_tool_call_count": 395,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 357,
+        "right_tool_call_count": 354,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11603",
+        "left_seconds": 1224.221489328891,
+        "right_seconds": 1527.865852445364,
+        "delta_seconds": -303.64436311647296,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 123,
+        "left_tool_call_count": 122,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 138,
+        "right_tool_call_count": 142,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11728",
+        "left_seconds": 1333.7890453319997,
+        "right_seconds": 1106.565995148383,
+        "delta_seconds": 227.22305018361658,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 110,
+        "left_tool_call_count": 109,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 67,
+        "right_tool_call_count": 70,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11734",
+        "left_seconds": 3222.4888257458806,
+        "right_seconds": 7715.828456090763,
+        "delta_seconds": -4493.339630344883,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 417,
+        "left_tool_call_count": 415,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 907,
+        "right_tool_call_count": 893,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11740",
+        "left_seconds": 4094.3253540210426,
+        "right_seconds": 2408.7993480097502,
+        "delta_seconds": 1685.5260060112923,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 1109,
+        "left_tool_call_count": 1087,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 411,
+        "right_tool_call_count": 403,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11749",
+        "left_seconds": 1329.0805177446455,
+        "right_seconds": 4389.577951979823,
+        "delta_seconds": -3060.497434235178,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 118,
+        "left_tool_call_count": 116,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 563,
+        "right_tool_call_count": 554,
+        "right_delegation_round_count": 3
+      },
+      {
+        "instance_id": "django__django-11790",
+        "left_seconds": 1418.697826275602,
+        "right_seconds": 1343.9970782846212,
+        "delta_seconds": 74.70074799098074,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 132,
+        "left_tool_call_count": 128,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 105,
+        "right_tool_call_count": 102,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11815",
+        "left_seconds": 2428.8317693751305,
+        "right_seconds": 1621.2264426583424,
+        "delta_seconds": 807.6053267167881,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 240,
+        "left_tool_call_count": 235,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 160,
+        "right_tool_call_count": 154,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11820",
+        "left_seconds": 2619.9667500099167,
+        "right_seconds": 3016.6039010873064,
+        "delta_seconds": -396.6371510773897,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 178,
+        "left_tool_call_count": 175,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 309,
+        "right_tool_call_count": 307,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11848",
+        "left_seconds": 2372.1458092359826,
+        "right_seconds": 1264.61767804157,
+        "delta_seconds": 1107.5281311944127,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 137,
+        "left_tool_call_count": 132,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 61,
+        "right_tool_call_count": 58,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11880",
+        "left_seconds": 749.6674169506878,
+        "right_seconds": 1561.2832941580564,
+        "delta_seconds": -811.6158772073686,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 75,
+        "left_tool_call_count": 67,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 166,
+        "right_tool_call_count": 164,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-11885",
+        "left_seconds": 3280.8455989956856,
+        "right_seconds": 5363.853611945175,
+        "delta_seconds": -2083.008012949489,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 351,
+        "left_tool_call_count": 361,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 860,
+        "right_tool_call_count": 858,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "django__django-11951",
+        "left_seconds": 878.2676573656499,
+        "right_seconds": 1842.4252206739038,
+        "delta_seconds": -964.1575633082539,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 88,
+        "left_tool_call_count": 88,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 182,
+        "right_tool_call_count": 174,
+        "right_delegation_round_count": 3
+      },
+      {
+        "instance_id": "django__django-11964",
+        "left_seconds": 1855.1148627279326,
+        "right_seconds": 2635.448731135577,
+        "delta_seconds": -780.3338684076443,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 208,
+        "left_tool_call_count": 205,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 475,
+        "right_tool_call_count": 466,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "django__django-11999",
+        "left_seconds": 2074.165233648382,
+        "right_seconds": 1337.3876086678356,
+        "delta_seconds": 736.7776249805465,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 307,
+        "left_tool_call_count": 301,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 161,
+        "right_tool_call_count": 156,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12039",
+        "left_seconds": 1932.8165405821055,
+        "right_seconds": 2520.965021627955,
+        "delta_seconds": -588.1484810458496,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 270,
+        "left_tool_call_count": 260,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 260,
+        "right_tool_call_count": 264,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12050",
+        "left_seconds": 1557.018833517097,
+        "right_seconds": 2304.377244660631,
+        "delta_seconds": -747.3584111435339,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 191,
+        "left_tool_call_count": 200,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 483,
+        "right_tool_call_count": 501,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12125",
+        "left_seconds": 1665.6503506889567,
+        "right_seconds": 5071.135485725477,
+        "delta_seconds": -3405.4851350365207,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 277,
+        "left_tool_call_count": 269,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 683,
+        "right_tool_call_count": 680,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12143",
+        "left_seconds": 1139.026314211078,
+        "right_seconds": 748.1923851389438,
+        "delta_seconds": 390.8339290721342,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 151,
+        "left_tool_call_count": 172,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 51,
+        "right_tool_call_count": 79,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12155",
+        "left_seconds": 1996.4140076162294,
+        "right_seconds": 1138.0722704268992,
+        "delta_seconds": 858.3417371893302,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 292,
+        "left_tool_call_count": 288,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 68,
+        "right_tool_call_count": 68,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12193",
+        "left_seconds": 3084.9113285392523,
+        "right_seconds": 2648.4968171920627,
+        "delta_seconds": 436.41451134718955,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 312,
+        "left_tool_call_count": 310,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 333,
+        "right_tool_call_count": 334,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12209",
+        "left_seconds": 3457.3465486792848,
+        "right_seconds": 4493.951660295948,
+        "delta_seconds": -1036.6051116166636,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 815,
+        "left_tool_call_count": 803,
+        "left_delegation_round_count": 3,
+        "right_llm_request_count": 1194,
+        "right_tool_call_count": 1196,
+        "right_delegation_round_count": 3
+      },
+      {
+        "instance_id": "django__django-12262",
+        "left_seconds": 1561.64370495826,
+        "right_seconds": 1986.031133919023,
+        "delta_seconds": -424.3874289607629,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 135,
+        "left_tool_call_count": 133,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 143,
+        "right_tool_call_count": 141,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12273",
+        "left_seconds": 1557.5444539980963,
+        "right_seconds": 1697.5786420218647,
+        "delta_seconds": -140.03418802376837,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 213,
+        "left_tool_call_count": 201,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 176,
+        "right_tool_call_count": 170,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12276",
+        "left_seconds": 696.1637147702277,
+        "right_seconds": 830.2887266362086,
+        "delta_seconds": -134.12501186598092,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 60,
+        "left_tool_call_count": 63,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 82,
+        "right_tool_call_count": 78,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "django__django-12304",
+        "left_seconds": 2005.960719998926,
+        "right_seconds": 1917.071007094346,
+        "delta_seconds": 88.88971290457994,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 318,
+        "left_tool_call_count": 314,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 237,
+        "right_tool_call_count": 232,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12308",
+        "left_seconds": 1505.6641890853643,
+        "right_seconds": 1295.9891940020025,
+        "delta_seconds": 209.67499508336186,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 167,
+        "left_tool_call_count": 162,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 107,
+        "right_tool_call_count": 120,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12325",
+        "left_seconds": 3606.2594812279567,
+        "right_seconds": 3932.720954792574,
+        "delta_seconds": -326.46147356461734,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 644,
+        "left_tool_call_count": 630,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 645,
+        "right_tool_call_count": 630,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12406",
+        "left_seconds": 2756.0954284686595,
+        "right_seconds": 3469.008035884239,
+        "delta_seconds": -712.9126074155793,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 358,
+        "left_tool_call_count": 354,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 392,
+        "right_tool_call_count": 406,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12419",
+        "left_seconds": 915.9099985351786,
+        "right_seconds": 1019.1240779655054,
+        "delta_seconds": -103.21407943032682,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 84,
+        "left_tool_call_count": 81,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 64,
+        "right_tool_call_count": 64,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12663",
+        "left_seconds": 2296.3127592615783,
+        "right_seconds": 1991.8725291779265,
+        "delta_seconds": 304.44023008365184,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 314,
+        "left_tool_call_count": 322,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 243,
+        "right_tool_call_count": 243,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12708",
+        "left_seconds": 2017.0718455854803,
+        "right_seconds": 2034.6178701054305,
+        "delta_seconds": -17.54602451995015,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 379,
+        "left_tool_call_count": 375,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 220,
+        "right_tool_call_count": 212,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12713",
+        "left_seconds": 2130.9452343285084,
+        "right_seconds": 1144.2472347738221,
+        "delta_seconds": 986.6979995546862,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 278,
+        "left_tool_call_count": 272,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 86,
+        "right_tool_call_count": 85,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "django__django-12741",
+        "left_seconds": 1001.8545156940818,
+        "right_seconds": 1198.728948210366,
+        "delta_seconds": -196.8744325162843,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 55,
+        "left_tool_call_count": 83,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 55,
+        "right_tool_call_count": 64,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12754",
+        "left_seconds": 3632.3230834528804,
+        "right_seconds": 5452.525868201628,
+        "delta_seconds": -1820.202784748748,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 506,
+        "left_tool_call_count": 622,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 647,
+        "right_tool_call_count": 617,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12774",
+        "left_seconds": 1233.535592216067,
+        "right_seconds": 1455.625633626245,
+        "delta_seconds": -222.09004141017795,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 132,
+        "left_tool_call_count": 130,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 140,
+        "right_tool_call_count": 135,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12858",
+        "left_seconds": 4116.904282428324,
+        "right_seconds": 4647.034172604792,
+        "delta_seconds": -530.1298901764676,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 1424,
+        "left_tool_call_count": 1321,
+        "left_delegation_round_count": 3,
+        "right_llm_request_count": 1032,
+        "right_tool_call_count": 856,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-12965",
+        "left_seconds": 1493.6195141831413,
+        "right_seconds": 2100.077236747369,
+        "delta_seconds": -606.4577225642279,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 167,
+        "left_tool_call_count": 163,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 259,
+        "right_tool_call_count": 255,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-13012",
+        "left_seconds": 1846.1604933617637,
+        "right_seconds": 2574.1891613043845,
+        "delta_seconds": -728.0286679426208,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 226,
+        "left_tool_call_count": 231,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 430,
+        "right_tool_call_count": 425,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-13023",
+        "left_seconds": 1283.0448351865634,
+        "right_seconds": 1068.0999392475933,
+        "delta_seconds": 214.94489593897015,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 84,
+        "left_tool_call_count": 84,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 68,
+        "right_tool_call_count": 69,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-13028",
+        "left_seconds": 2643.838789892383,
+        "right_seconds": 3284.393596104346,
+        "delta_seconds": -640.5548062119633,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 507,
+        "left_tool_call_count": 482,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 344,
+        "right_tool_call_count": 338,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-13033",
+        "left_seconds": 2076.0772016989067,
+        "right_seconds": 3092.6676819305867,
+        "delta_seconds": -1016.59048023168,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 364,
+        "left_tool_call_count": 363,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 410,
+        "right_tool_call_count": 403,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-13089",
+        "left_seconds": 1864.4244432700798,
+        "right_seconds": 1391.456572744064,
+        "delta_seconds": 472.96787052601576,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 179,
+        "left_tool_call_count": 172,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 91,
+        "right_tool_call_count": 82,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "django__django-13109",
+        "left_seconds": 1458.6659361394122,
+        "right_seconds": 2950.380855151452,
+        "delta_seconds": -1491.71491901204,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 191,
+        "left_tool_call_count": 192,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 468,
+        "right_tool_call_count": 491,
+        "right_delegation_round_count": 3
+      },
+      {
+        "instance_id": "django__django-13112",
+        "left_seconds": 3227.461215925403,
+        "right_seconds": 5483.585329810157,
+        "delta_seconds": -2256.1241138847545,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 596,
+        "left_tool_call_count": 588,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 954,
+        "right_tool_call_count": 934,
+        "right_delegation_round_count": 3
+      },
+      {
+        "instance_id": "django__django-13121",
+        "left_seconds": 2622.974520667456,
+        "right_seconds": 2401.6533728772774,
+        "delta_seconds": 221.32114779017866,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 489,
+        "left_tool_call_count": 520,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 288,
+        "right_tool_call_count": 287,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-13128",
+        "left_seconds": 3687.651666219346,
+        "right_seconds": 5351.612682281062,
+        "delta_seconds": -1663.9610160617158,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 738,
+        "left_tool_call_count": 727,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 536,
+        "right_tool_call_count": 536,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-13158",
+        "left_seconds": 1918.9214654462412,
+        "right_seconds": 1799.0753451827914,
+        "delta_seconds": 119.84612026344985,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 223,
+        "left_tool_call_count": 221,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 187,
+        "right_tool_call_count": 184,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-13195",
+        "left_seconds": 984.0562642980367,
+        "right_seconds": 1195.3093852447346,
+        "delta_seconds": -211.2531209466979,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 75,
+        "left_tool_call_count": 72,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 87,
+        "right_tool_call_count": 84,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-13212",
+        "left_seconds": 1115.516395336017,
+        "right_seconds": 1382.084002849646,
+        "delta_seconds": -266.5676075136289,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 93,
+        "left_tool_call_count": 98,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 109,
+        "right_tool_call_count": 106,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-13279",
+        "left_seconds": 2219.4545713504776,
+        "right_seconds": 3107.8552170116454,
+        "delta_seconds": -888.4006456611678,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 235,
+        "left_tool_call_count": 245,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 273,
+        "right_tool_call_count": 292,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-13964",
+        "left_seconds": 2304.1490330006927,
+        "right_seconds": 2434.294232436456,
+        "delta_seconds": -130.14519943576306,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 170,
+        "left_tool_call_count": 165,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 190,
+        "right_tool_call_count": 190,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-14349",
+        "left_seconds": 3240.1173363290727,
+        "right_seconds": 2165.1450598957017,
+        "delta_seconds": 1074.972276433371,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 180,
+        "left_tool_call_count": 180,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 113,
+        "right_tool_call_count": 109,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-14500",
+        "left_seconds": 3512.2961459858343,
+        "right_seconds": 7292.505491621792,
+        "delta_seconds": -3780.209345635958,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 363,
+        "left_tool_call_count": 364,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 678,
+        "right_tool_call_count": 679,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-14631",
+        "left_seconds": 2999.1868601394817,
+        "right_seconds": 2016.2521705878899,
+        "delta_seconds": 982.9346895515919,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 333,
+        "left_tool_call_count": 335,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 125,
+        "right_tool_call_count": 126,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-15103",
+        "left_seconds": 1324.4644853286445,
+        "right_seconds": 859.3051200835034,
+        "delta_seconds": 465.1593652451411,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 80,
+        "left_tool_call_count": 86,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 55,
+        "right_tool_call_count": 53,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-15315",
+        "left_seconds": 2697.275003192015,
+        "right_seconds": 1636.2577915154397,
+        "delta_seconds": 1061.0172116765752,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 179,
+        "left_tool_call_count": 168,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 126,
+        "right_tool_call_count": 122,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-15368",
+        "left_seconds": 2366.7550375191495,
+        "right_seconds": 8428.578291334212,
+        "delta_seconds": -6061.823253815062,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 166,
+        "left_tool_call_count": 161,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 1248,
+        "right_tool_call_count": 1211,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-16255",
+        "left_seconds": 2564.75153385289,
+        "right_seconds": 1013.0354244606569,
+        "delta_seconds": 1551.7161093922332,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 206,
+        "left_tool_call_count": 213,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 55,
+        "right_tool_call_count": 58,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "django__django-16502",
+        "left_seconds": 4891.170056721196,
+        "right_seconds": 2966.3257298497483,
+        "delta_seconds": 1924.8443268714473,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 540,
+        "left_tool_call_count": 539,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 244,
+        "right_tool_call_count": 249,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-16667",
+        "left_seconds": 1541.8720106789842,
+        "right_seconds": 2282.6195438196883,
+        "delta_seconds": -740.747533140704,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 68,
+        "left_tool_call_count": 62,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 139,
+        "right_tool_call_count": 145,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-16877",
+        "left_seconds": 2737.2527295434847,
+        "right_seconds": 769.0280888127163,
+        "delta_seconds": 1968.2246407307684,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 179,
+        "left_tool_call_count": 188,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 47,
+        "right_tool_call_count": 52,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "django__django-16938",
+        "left_seconds": 2692.116539651528,
+        "right_seconds": 9126.19252103474,
+        "delta_seconds": -6434.075981383212,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 306,
+        "left_tool_call_count": 303,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 1484,
+        "right_tool_call_count": 1443,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "mwaskom__seaborn-3069",
+        "left_seconds": 4500.764970955439,
+        "right_seconds": 8626.587546210736,
+        "delta_seconds": -4125.822575255297,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 303,
+        "left_tool_call_count": 294,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 571,
+        "right_tool_call_count": 572,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "mwaskom__seaborn-3187",
+        "left_seconds": 7503.746606617235,
+        "right_seconds": 5575.080626941286,
+        "delta_seconds": 1928.6659796759486,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 606,
+        "left_tool_call_count": 605,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 403,
+        "right_tool_call_count": 399,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pallets__flask-5014",
+        "left_seconds": 799.425511829555,
+        "right_seconds": 993.9541510893032,
+        "delta_seconds": -194.52863925974816,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 62,
+        "left_tool_call_count": 57,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 72,
+        "right_tool_call_count": 68,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "psf__requests-1142",
+        "left_seconds": 1392.8404169436544,
+        "right_seconds": 3997.170850784518,
+        "delta_seconds": -2604.3304338408634,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 104,
+        "left_tool_call_count": 97,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 114,
+        "right_tool_call_count": 110,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "psf__requests-1724",
+        "left_seconds": 2043.0957733727992,
+        "right_seconds": 2544.38957678061,
+        "delta_seconds": -501.2938034078106,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 110,
+        "left_tool_call_count": 115,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 157,
+        "right_tool_call_count": 162,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "psf__requests-1766",
+        "left_seconds": 908.5910343304276,
+        "right_seconds": 851.6182460458949,
+        "delta_seconds": 56.972788284532726,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 57,
+        "left_tool_call_count": 53,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 60,
+        "right_tool_call_count": 54,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "psf__requests-1921",
+        "left_seconds": 2525.871038437821,
+        "right_seconds": 2504.4425247665495,
+        "delta_seconds": 21.428513671271503,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 243,
+        "left_tool_call_count": 243,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 226,
+        "right_tool_call_count": 224,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "psf__requests-2317",
+        "left_seconds": 1427.9393396489322,
+        "right_seconds": 1145.6713272901252,
+        "delta_seconds": 282.268012358807,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 94,
+        "left_tool_call_count": 98,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 67,
+        "right_tool_call_count": 66,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "psf__requests-2931",
+        "left_seconds": 1599.2911417409778,
+        "right_seconds": 3038.5572708053514,
+        "delta_seconds": -1439.2661290643737,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 91,
+        "left_tool_call_count": 88,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 232,
+        "right_tool_call_count": 232,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "psf__requests-5414",
+        "left_seconds": 3125.36906399671,
+        "right_seconds": 2851.2990221371874,
+        "delta_seconds": 274.07004185952246,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 327,
+        "left_tool_call_count": 323,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 280,
+        "right_tool_call_count": 284,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "psf__requests-6028",
+        "left_seconds": 2704.3263615071774,
+        "right_seconds": 7592.399781785905,
+        "delta_seconds": -4888.073420278728,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 192,
+        "left_tool_call_count": 190,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 490,
+        "right_tool_call_count": 495,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-2905",
+        "left_seconds": 4853.504199768417,
+        "right_seconds": 5760.158194617368,
+        "delta_seconds": -906.6539948489517,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 847,
+        "left_tool_call_count": 842,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 650,
+        "right_tool_call_count": 643,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-3095",
+        "left_seconds": 2956.418841619976,
+        "right_seconds": 4550.641073332168,
+        "delta_seconds": -1594.2222317121923,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 323,
+        "left_tool_call_count": 319,
+        "left_delegation_round_count": 3,
+        "right_llm_request_count": 236,
+        "right_tool_call_count": 241,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-3151",
+        "left_seconds": 2465.430101345293,
+        "right_seconds": 2549.817092927173,
+        "delta_seconds": -84.38699158187956,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 222,
+        "left_tool_call_count": 169,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 158,
+        "right_tool_call_count": 155,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "pydata__xarray-3305",
+        "left_seconds": 1334.6194362733513,
+        "right_seconds": 1368.2476822258905,
+        "delta_seconds": -33.628245952539146,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 77,
+        "left_tool_call_count": 78,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 80,
+        "right_tool_call_count": 78,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-3677",
+        "left_seconds": 1492.6334795979783,
+        "right_seconds": 1227.2250358620659,
+        "delta_seconds": 265.40844373591244,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 91,
+        "left_tool_call_count": 88,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 82,
+        "right_tool_call_count": 79,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-3993",
+        "left_seconds": 1231.1178318113089,
+        "right_seconds": 2211.040784003213,
+        "delta_seconds": -979.9229521919042,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 76,
+        "left_tool_call_count": 74,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 134,
+        "right_tool_call_count": 130,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-4075",
+        "left_seconds": 2370.708144594915,
+        "right_seconds": 2476.1156012238935,
+        "delta_seconds": -105.40745662897825,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 150,
+        "left_tool_call_count": 146,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 144,
+        "right_tool_call_count": 140,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-4094",
+        "left_seconds": 6185.798879129812,
+        "right_seconds": 2316.40158271417,
+        "delta_seconds": 3869.397296415642,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 700,
+        "left_tool_call_count": 694,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 128,
+        "right_tool_call_count": 131,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-4356",
+        "left_seconds": 3409.8803564189,
+        "right_seconds": 3103.0299670360982,
+        "delta_seconds": 306.85038938280195,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 194,
+        "left_tool_call_count": 189,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 158,
+        "right_tool_call_count": 156,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-4629",
+        "left_seconds": 2921.096474572085,
+        "right_seconds": 766.6927579250187,
+        "delta_seconds": 2154.403716647066,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 310,
+        "left_tool_call_count": 303,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 40,
+        "right_tool_call_count": 36,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-4687",
+        "left_seconds": 5695.689578521997,
+        "right_seconds": 5294.204761909321,
+        "delta_seconds": 401.4848166126758,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 500,
+        "left_tool_call_count": 487,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 398,
+        "right_tool_call_count": 393,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-4966",
+        "left_seconds": 5063.950559440069,
+        "right_seconds": 2897.9572919467464,
+        "delta_seconds": 2165.9932674933225,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 363,
+        "left_tool_call_count": 360,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 175,
+        "right_tool_call_count": 173,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-6461",
+        "left_seconds": 2909.853635444306,
+        "right_seconds": 5066.453616592102,
+        "delta_seconds": -2156.599981147796,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 276,
+        "left_tool_call_count": 270,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 413,
+        "right_tool_call_count": 420,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-6599",
+        "left_seconds": 7581.565816481598,
+        "right_seconds": 4920.87642358616,
+        "delta_seconds": 2660.689392895438,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 673,
+        "left_tool_call_count": 667,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 200,
+        "right_tool_call_count": 196,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-6721",
+        "left_seconds": 2892.239834795706,
+        "right_seconds": 3623.645061244257,
+        "delta_seconds": -731.4052264485508,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 227,
+        "left_tool_call_count": 247,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 356,
+        "right_tool_call_count": 355,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "pydata__xarray-6744",
+        "left_seconds": 5882.215819629841,
+        "right_seconds": 2115.917323468253,
+        "delta_seconds": 3766.2984961615875,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 328,
+        "left_tool_call_count": 324,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 104,
+        "right_tool_call_count": 100,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-6938",
+        "left_seconds": 2476.502152928151,
+        "right_seconds": 3408.6542855622247,
+        "delta_seconds": -932.1521326340735,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 145,
+        "left_tool_call_count": 141,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 246,
+        "right_tool_call_count": 242,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-6992",
+        "left_seconds": 3244.719411659986,
+        "right_seconds": 1877.2470897510648,
+        "delta_seconds": 1367.472321908921,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 249,
+        "left_tool_call_count": 240,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 110,
+        "right_tool_call_count": 105,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-7229",
+        "left_seconds": 7231.442222582176,
+        "right_seconds": 6553.35654096026,
+        "delta_seconds": 678.0856816219166,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 831,
+        "left_tool_call_count": 824,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 513,
+        "right_tool_call_count": 506,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-7233",
+        "left_seconds": 2571.5372157767415,
+        "right_seconds": 2078.000357680954,
+        "delta_seconds": 493.53685809578747,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 223,
+        "left_tool_call_count": 219,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 190,
+        "right_tool_call_count": 188,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pydata__xarray-7393",
+        "left_seconds": 3204.6077584056184,
+        "right_seconds": 4559.049926739186,
+        "delta_seconds": -1354.4421683335677,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 420,
+        "left_tool_call_count": 415,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 430,
+        "right_tool_call_count": 424,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pylint-dev__pylint-4551",
+        "left_seconds": 3856.2592679299414,
+        "right_seconds": 6277.466945161112,
+        "delta_seconds": -2421.2076772311702,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 288,
+        "left_tool_call_count": 286,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 595,
+        "right_tool_call_count": 589,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pylint-dev__pylint-4604",
+        "left_seconds": 2477.9539005830884,
+        "right_seconds": 2533.363851985894,
+        "delta_seconds": -55.409951402805746,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 210,
+        "left_tool_call_count": 202,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 211,
+        "right_tool_call_count": 206,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pylint-dev__pylint-4661",
+        "left_seconds": 2014.8704520966858,
+        "right_seconds": 2905.545090155676,
+        "delta_seconds": -890.6746380589902,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 110,
+        "left_tool_call_count": 109,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 241,
+        "right_tool_call_count": 251,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pylint-dev__pylint-4970",
+        "left_seconds": 3125.196994570084,
+        "right_seconds": 3998.7621022816747,
+        "delta_seconds": -873.5651077115908,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 247,
+        "left_tool_call_count": 235,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 321,
+        "right_tool_call_count": 314,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "pylint-dev__pylint-6386",
+        "left_seconds": 1848.433607665822,
+        "right_seconds": 1099.7737130541354,
+        "delta_seconds": 748.6598946116865,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 168,
+        "left_tool_call_count": 168,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 62,
+        "right_tool_call_count": 58,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pylint-dev__pylint-6528",
+        "left_seconds": 5058.260329246521,
+        "right_seconds": 2706.8912572730333,
+        "delta_seconds": 2351.3690719734877,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 368,
+        "left_tool_call_count": 358,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 221,
+        "right_tool_call_count": 230,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pylint-dev__pylint-6903",
+        "left_seconds": 2415.7516435980797,
+        "right_seconds": 2030.4749610004947,
+        "delta_seconds": 385.276682597585,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 154,
+        "left_tool_call_count": 148,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 102,
+        "right_tool_call_count": 100,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pylint-dev__pylint-7080",
+        "left_seconds": 3170.674168615602,
+        "right_seconds": 2682.2143382281065,
+        "delta_seconds": 488.45983038749546,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 225,
+        "left_tool_call_count": 223,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 230,
+        "right_tool_call_count": 228,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pylint-dev__pylint-7277",
+        "left_seconds": 2451.1409815736115,
+        "right_seconds": 1231.9526362838224,
+        "delta_seconds": 1219.1883452897891,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 261,
+        "left_tool_call_count": 254,
+        "left_delegation_round_count": 2,
+        "right_llm_request_count": 61,
+        "right_tool_call_count": 58,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pylint-dev__pylint-8898",
+        "left_seconds": 1764.3102315971628,
+        "right_seconds": 2528.7044915398583,
+        "delta_seconds": -764.3942599426955,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 102,
+        "left_tool_call_count": 101,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 153,
+        "right_tool_call_count": 151,
+        "right_delegation_round_count": 3
+      },
+      {
+        "instance_id": "pytest-dev__pytest-10051",
+        "left_seconds": 2940.0937728183344,
+        "right_seconds": 2001.2731174835935,
+        "delta_seconds": 938.8206553347409,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 121,
+        "left_tool_call_count": 113,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 133,
+        "right_tool_call_count": 131,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-10081",
+        "left_seconds": 2779.6793125979602,
+        "right_seconds": 5555.935722543858,
+        "delta_seconds": -2776.2564099458978,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 237,
+        "left_tool_call_count": 233,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 547,
+        "right_tool_call_count": 543,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-10356",
+        "left_seconds": 3463.890231478028,
+        "right_seconds": 3561.8582151737064,
+        "delta_seconds": -97.96798369567841,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 454,
+        "left_tool_call_count": 447,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 491,
+        "right_tool_call_count": 488,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-5262",
+        "left_seconds": 1416.198343463242,
+        "right_seconds": 1279.1042183917016,
+        "delta_seconds": 137.09412507154047,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 75,
+        "left_tool_call_count": 70,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 84,
+        "right_tool_call_count": 80,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-5631",
+        "left_seconds": 2440.408660588786,
+        "right_seconds": 5085.54274660442,
+        "delta_seconds": -2645.1340860156342,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 164,
+        "left_tool_call_count": 159,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 305,
+        "right_tool_call_count": 301,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-5787",
+        "left_seconds": 6758.105598279275,
+        "right_seconds": 3558.7234279941767,
+        "delta_seconds": 3199.3821702850983,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 817,
+        "left_tool_call_count": 819,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 305,
+        "right_tool_call_count": 308,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-5809",
+        "left_seconds": 946.2528206035495,
+        "right_seconds": 570.0805612830445,
+        "delta_seconds": 376.17225932050496,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 57,
+        "left_tool_call_count": 54,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 37,
+        "right_tool_call_count": 35,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-5840",
+        "left_seconds": 3852.5966238342226,
+        "right_seconds": 3623.5394630013034,
+        "delta_seconds": 229.05716083291918,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 535,
+        "left_tool_call_count": 534,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 462,
+        "right_tool_call_count": 470,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-6197",
+        "left_seconds": 5533.00497410167,
+        "right_seconds": 7923.279296623543,
+        "delta_seconds": -2390.274322521873,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 619,
+        "left_tool_call_count": 618,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 1173,
+        "right_tool_call_count": 1132,
+        "right_delegation_round_count": 2
+      },
+      {
+        "instance_id": "pytest-dev__pytest-6202",
+        "left_seconds": 5225.656137209386,
+        "right_seconds": 7458.969317076728,
+        "delta_seconds": -2233.313179867342,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 802,
+        "left_tool_call_count": 792,
+        "left_delegation_round_count": 3,
+        "right_llm_request_count": 918,
+        "right_tool_call_count": 898,
+        "right_delegation_round_count": 3
+      },
+      {
+        "instance_id": "pytest-dev__pytest-7205",
+        "left_seconds": 868.081005230546,
+        "right_seconds": 1629.475238332525,
+        "delta_seconds": -761.3942331019789,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 83,
+        "left_tool_call_count": 81,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 135,
+        "right_tool_call_count": 141,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-7236",
+        "left_seconds": 2127.041514005512,
+        "right_seconds": 2792.0787622965872,
+        "delta_seconds": -665.0372482910752,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 179,
+        "left_tool_call_count": 180,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 257,
+        "right_tool_call_count": 253,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-7324",
+        "left_seconds": 2740.1747951060534,
+        "right_seconds": 9145.765605358407,
+        "delta_seconds": -6405.590810252354,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 161,
+        "left_tool_call_count": 160,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 682,
+        "right_tool_call_count": 680,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-7432",
+        "left_seconds": 1194.0085309920833,
+        "right_seconds": 1217.0882263965905,
+        "delta_seconds": -23.07969540450722,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 82,
+        "left_tool_call_count": 78,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 73,
+        "right_tool_call_count": 69,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-7490",
+        "left_seconds": 2404.9959067096934,
+        "right_seconds": 3057.1304899305105,
+        "delta_seconds": -652.1345832208171,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 235,
+        "left_tool_call_count": 232,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 319,
+        "right_tool_call_count": 315,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-7521",
+        "left_seconds": 2503.6629253095016,
+        "right_seconds": 3450.5754414489493,
+        "delta_seconds": -946.9125161394477,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 229,
+        "left_tool_call_count": 219,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 617,
+        "right_tool_call_count": 619,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-7571",
+        "left_seconds": 1172.1455652704462,
+        "right_seconds": 1252.0000271992758,
+        "delta_seconds": -79.85446192882955,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 91,
+        "left_tool_call_count": 86,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 75,
+        "right_tool_call_count": 71,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-7982",
+        "left_seconds": 3192.6706466786563,
+        "right_seconds": 2529.189684120938,
+        "delta_seconds": 663.4809625577182,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 256,
+        "left_tool_call_count": 268,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 173,
+        "right_tool_call_count": 169,
+        "right_delegation_round_count": 1
+      },
+      {
+        "instance_id": "pytest-dev__pytest-8399",
+        "left_seconds": 3275.967763870023,
+        "right_seconds": 2573.0888699814677,
+        "delta_seconds": 702.8788938885555,
+        "left_jct_eligible": true,
+        "right_jct_eligible": true,
+        "left_llm_request_count": 561,
+        "left_tool_call_count": 554,
+        "left_delegation_round_count": 1,
+        "right_llm_request_count": 189,
+        "right_tool_call_count": 185,
+        "right_delegation_round_count": 1
+      }
+    ],
+    "semantics": "The same instances completed in both arms; negative deltas favor left. Unpaired completions and shared outcome differences remain explicit. Eligibility flags are reported without silently changing this outcome-based cohort. Request, tool and delegation counts describe realized demand; matching tasks does not match execution traces or establish causal speedup."
+  },
+  "unfinished_completed_tool_commands": {
+    "django__django-11211": {
+      "d55c2583ad4c73158ad498a93442c4feb0e88c6289af75f429172d21a1e4a541": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.8406905103474855,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "6cf37788c290e68eb6e5b4edb91c3cfe39817bd4adcd2b32ca86ba30b3b6eed1": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.3920123018324375,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "75f6f321007e7dee54f4264e52e8b464357803a0c529f371e77ae2188e6a0009": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.8469854723662138,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "e1f3b4fd229af9c4d47a91c320b7bd3d0b6467de41ad000d0af7ac22716068b2": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.35339048132300377,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "0945f680272c1be9293970623c714e6b19e8a2a35003ff1754104c89dc1d1715": {
+        "completed_call_count": 4,
+        "completed_duration_seconds": 2.863510675728321,
+        "exit_codes": {
+          "0": 4
+        },
+        "empty_output_count": 0
+      },
+      "10d84fb84fbc2d0a19143c9d9c1650ea299d20de8808866ed08c30507834d613": {
+        "completed_call_count": 7,
+        "completed_duration_seconds": 5.011865930631757,
+        "exit_codes": {
+          "1": 3,
+          "0": 4
+        },
+        "empty_output_count": 0
+      },
+      "add89fc8df22ede4612b7c98aa0a8f72c17b829b82c4c9f5a8c63d0108c160e2": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.6862168265506625,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "e9516ad2684778e8814e0b1af0b9a6463110a2748a0e4445efcd221aa124df55": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.07562228571623564,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "113bfe018b13a80c65fe384e2f7d81c04fdcc310ab39ff76bb5dfa656debb776": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.7087205648422241,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "3fdb1772744c027be0b45e4c381675093255c8707f2c4e97672bc9e3597fd3af": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.30390161368995905,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "659faa8cf80d97ba35f4e20d8ddf75d13e381fb418b63815a6f579df186c0bcb": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.29166792146861553,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "868909d5cb3757de6bc7062e17f3da163ecace24edb5ec24dfe55a47cc7932b2": {
+        "completed_call_count": 63,
+        "completed_duration_seconds": 18.981995680369437,
+        "exit_codes": {
+          "0": 63
+        },
+        "empty_output_count": 0
+      },
+      "88f1f18ece53f946da26da42f051c4029389ca5eee425e2511e8f8ffa783205a": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.6966844145208597,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "d2b4d56d1a8b1fea483468ec7fe3c3e65fa5fe3a2ff89dda1214376054df3749": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.4594905963167548,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "11ab37b74a54c27e6a8258d222c3a9283a0295a457da0515e0600ded8650b85c": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.06941347569227219,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 1
+      },
+      "f40f1f23575024aa5a7d8889ff3b7a06dd4642c204d766a566232e0c5a674fb6": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.573583671823144,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "2d8772f9bac9a2144d21a98f6946c989311e2523ccaad92595751b538fb981f9": {
+        "completed_call_count": 2,
+        "completed_duration_seconds": 0.9129875116050243,
+        "exit_codes": {
+          "1": 2
+        },
+        "empty_output_count": 0
+      },
+      "0ef8506be02c4ecd0bae48a246510b2d0b8ff2bc667578a6585115d57b96aa1e": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.2576303267851472,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 1
+      },
+      "ccf548cef3dd343aa9007cb01f339b17cc287a20a5472666b5b2787bf9a20321": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.08293329644948244,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 1
+      },
+      "55dda95ed39ea57f83bb025af6c6b4ecf65d495f422a8236e244c481375d2798": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.5765580181032419,
+        "exit_codes": {
+          "120": 1
+        },
+        "empty_output_count": 0
+      },
+      "00c732765b34c9993f838e4227c7f8c2b01d5c9df1127078116c1c58c3438a42": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.4519639303907752,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "04001cf564bd33a00723bce7f1f1a48fdd2460a77d9224348dd9681b4d8968d8": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.4719253983348608,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "ad1fd4e2eea174a30db9f1567e6f21dacdfd56107c93b5bef7204cf310f2f897": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 1.1953240651637316,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "50bb1369cc9a758a02d3656735bf118e30c6259519adb910f2d746c798adcb0e": {
+        "completed_call_count": 8,
+        "completed_duration_seconds": 5.747368854470551,
+        "exit_codes": {
+          "1": 4,
+          "0": 4
+        },
+        "empty_output_count": 0
+      },
+      "6863e62fced8cf59523c01f9403e22f2ed2c44dba00249190f49d86b693cf916": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.3462727516889572,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "50666f663705f3f7c1ce7cc2ecbcea45b6d25f80827b6ff192cf628ceff3facb": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.7016599494963884,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "46cda352f502448b864239ca75637b9f2f580cf6e552f11260faf49e17934f8a": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.357715823687613,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "cadfbb31a92d40ec185fe47f45312ac118802d85f9aa30cc27cb1e007aa27c59": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.3037758218124509,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "b2940bc5cbc5310637787f6051104bb43044f5efbede6299319e79b180cd84e3": {
+        "completed_call_count": 3,
+        "completed_duration_seconds": 1.8631627950817347,
+        "exit_codes": {
+          "1": 3
+        },
+        "empty_output_count": 0
+      },
+      "a292679ecba90cd1427d87f85726a362b0bd4d65d2c912be65d84df6f071df5f": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.695352740585804,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "a4d3bc3dd2191efaa193bb80a05875e16640589a0a22f6e4dd6e945b9cb6e855": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.4632415696978569,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "5f19f79364586b02794482b5bfae292fec076159537d8c3839d2b406aef1380a": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.6913050906732678,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "0fcc5913eb26acfd4120fabda9bdff8a0c2b2c4110a2f2982c209f5c5a263082": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.51085742469877,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "5408021f62233500fd4f9222da57883468f95f4d36c369b278f1ec8117ed263e": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.3435882739722729,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "1dd7fe109353bad023f96ddb0f2f9fa238a93ba34cdaf0df79e3c83341e7b7b7": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.6956465793773532,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "d2f96598f14b6a954c8bc7a3c91a7d57a5ceffc6362993e93edea062ede0f0da": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.9292112747207284,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "7cb53862db77a03f51041bf81807db471daf86e116e86cae1387746f2a45aa0e": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.6906249113380909,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "bff6914023b9b835a54454d0c4f9d10c6107ca05f44117aa4f12387a561d2102": {
+        "completed_call_count": 2,
+        "completed_duration_seconds": 0.7028261395171285,
+        "exit_codes": {
+          "1": 2
+        },
+        "empty_output_count": 0
+      },
+      "f68072d757c3594f7361e4bb5ac7d2e53b08707217b22c6a2364ebfae3f45e64": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.5077466070652008,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "f07e9a5916dc7dc8ce7827bd3281349785c060712e95b7d7c17f3ea300b1ec5b": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.5206084745004773,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "d09a5af52e2df0085579c403da2e81587fb935c4251bbf89361b9a2d844ac835": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.34836282953619957,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "f5dbb0f03eb418bef76cfa2c61366adbc4c19875a72344889d33f082575fdf74": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.68314388114959,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "817a825f663d8a65f6b1ab308db8f332fb861e4959123a610bc6f26fee209e11": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.35796474292874336,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "c4278652b64595c8edfe03c289559d83ae5f63da2d3cd990bcee3d4fe0531ee6": {
+        "completed_call_count": 2,
+        "completed_duration_seconds": 114.53627221193165,
+        "exit_codes": {
+          "0": 2
+        },
+        "empty_output_count": 1
+      },
+      "3421f101042c8c763225a4bdbd2d2ea0f3eade6c8bb46f902d851ae47c4fd67a": {
+        "completed_call_count": 3,
+        "completed_duration_seconds": 2.5385132655501366,
+        "exit_codes": {
+          "1": 2,
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "8f6ad7a74eecb3d2957e09d84ea8304eabf975c0c62cc6ca79d08fdbbcdb68d7": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.7051653144881129,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "a18d3feeaf61d62ae70893853d1d670f527d1f67cd5e21226d18c6956ae1a4af": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.6917283330112696,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "bc058a2b915410912505efe61a8e46169c9104c80b40aa677ee6a96a35571d92": {
+        "completed_call_count": 2,
+        "completed_duration_seconds": 0.7553733726963401,
+        "exit_codes": {
+          "1": 2
+        },
+        "empty_output_count": 0
+      },
+      "70d8b25e6ab443153c916ff3eba083226fb00d2dc7db095ae7615682a44884b5": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.7028881879523396,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "a52162e91ae7b88502c6d21cbf789a85ab4d2cf687018d09b9c81656b23bc84d": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.6708243684843183,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "b7cde681c97a4f34ad8c00c1b179d101f14d863714605e34d52785e0415d766a": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.3788310857489705,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "1001529c046a740a2ca36e4f9099a213408484fa6f0c33748a85ada087f1d570": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.7040727566927671,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "87ea048b144af64a7973a0302809887540286f17378c23ce933f6fff73a5a673": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.6938112489879131,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "67ca9e55a4755c2da7432f509fb63ee47bb1c82d8729e816f899237324baa9c8": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.5377890225499868,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "425367c33ab02f6d7bb4d9ef6688cdec631a6dc1b94b7d736206d6074dd26bca": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.7351348167285323,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "b67665f62155f1ad254a3ffc5c02681efcaf622cf60e39ee63f35807129a9354": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.4613321479409933,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "60195f03ee3dd644145d9faed05855190970810410e5c08be4eb20b56efd3c18": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.45830336306244135,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "6c8a60220abfa5aacb0b0a95befab4990feb1605334465f73c5eaf7f7240b5b1": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.4670509919524193,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "2efb596d9bdc2946858480095d27238838a9133fd756a18c12d63771434e9f2b": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 180.09724568761885,
+        "exit_codes": {
+          "137": 1
+        },
+        "empty_output_count": 0
+      },
+      "a8af15bf0a91af3f143c47933372d19f0f103eab701e58ab23d6a7439b6cdc4f": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 175.90473860502243,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "eb4d5d9b1971c60939daf7ab43085d4f050c7dff6d55ff8c9680baf22f2b8216": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 180.07421930879354,
+        "exit_codes": {
+          "137": 1
+        },
+        "empty_output_count": 0
+      },
+      "dbe3792fe8901cd724f7901698059078aeb715f1c32f4f781d76192338b10a90": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 179.7053058790043,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "504b9588f6c421da4fadbf49bfbad96f8bb699946de10b8847fd9db619122a1f": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 180.07952894829214,
+        "exit_codes": {
+          "137": 1
+        },
+        "empty_output_count": 0
+      },
+      "863e403d9150f1f9108fd2be1d6ff6660963f2a5dfb317b7f176c839613922ca": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 179.83011405542493,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "4a5d4427ae5aa61ee86f91026d69063c1df15f3cf9dc13c62bdaddd01f0b52d5": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.465657165274024,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "f36e23ee89cf0822273cec326a9aa75349c22e72a8e5083f701c7a6f01d20df1": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.35528003703802824,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "c5bb1916f55c080d181cc62f93111d444004d062dd48a5979a2d4b4a234f1f10": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.47841619700193405,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "c7c266de0455a02169505d3c9cc6902c8524f51047b3c83c411dde432ff1045c": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 180.07887857221067,
+        "exit_codes": {
+          "137": 1
+        },
+        "empty_output_count": 0
+      },
+      "77717224580e5ff60d670889fb9dbd348b8630c8188c2b49906bb98002e40046": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 347.8402768597007,
+        "exit_codes": {
+          "137": 1
+        },
+        "empty_output_count": 0
+      },
+      "51bbc4bdd14b6fb3aaedda3483fd528a9920684b13a6d93c354a3fd4817cd2e2": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 165.82340428978205,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "397444f9c5b701a110b697244c2923ed353c40c4a9af1b2e8489ee76dc4fab02": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 60.12599883321673,
+        "exit_codes": {
+          "124": 1
+        },
+        "empty_output_count": 0
+      },
+      "6331f1be4582803ad53f821a54ac127b93f4b91ea69257bb98587921156653f4": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 45.79115024860948,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "8ada0d757d63f5c1d11667b9c21ec7e0d52920ea3dfb4fef249965d4b4a3fc0a": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 60.116154961287975,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 1
+      },
+      "a6a8c6e481355f592c5a0fa15a753e94a801a3ad9f7a0901b60300a27a22286f": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 47.52313565462828,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "c55085bcbf7af26da808dfc354cb1623bff9f7d35b68b2cc746fc1d264557c86": {
+        "completed_call_count": 15,
+        "completed_duration_seconds": 901.9201477905735,
+        "exit_codes": {
+          "1": 15
+        },
+        "empty_output_count": 15
+      },
+      "5f2251f5708067dcb79e0bc5fd2b3f70359f8998af1511367dbbbf6fc8a92024": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 57.6570396842435,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "07e5aaaa6dd8fe814b077224dae89803c89446771155c454652536c33b0d0cb1": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 60.144753558561206,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 1
+      },
+      "4da857d5b8a1b2f9acb368af91909432ab6b97230d209c5cc51b9f0ba876e089": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 58.04538366757333,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "a41af220f6f72ea9e552caa888891602d688851d63cd3b44f04ce20d4353be40": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 7.8711631167680025,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "1a0261090ad569d8679008e8f4d71b9f2ed5e0eac8f228b3ddceecbba968c82d": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 58.47644789144397,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "456799f7cdd97a1868e15785c03adc78ab96d55df91e80945471563e7c107614": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 1.1615340672433376,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "e0898f259108a7f0e84c913f9b9e37fbcb7aa938be5743e9bd5814d2777ef0b8": {
+        "completed_call_count": 2,
+        "completed_duration_seconds": 1.4555617198348045,
+        "exit_codes": {
+          "0": 2
+        },
+        "empty_output_count": 0
+      },
+      "01770cecde236d37889f0d5a6500c9b7f0d95a198c8b1db429c71cae9409fb1b": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 180.0930338157341,
+        "exit_codes": {
+          "137": 1
+        },
+        "empty_output_count": 0
+      },
+      "8ab4893b2bfa7bdbada0014104ad66da0531e50ecfa2f0d253f1d11fc6c58ac2": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.4387057963758707,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "b53664cafa629ea8ec83c1ada13489bc4a92e1501f291aeee40a662a8094523d": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.34174800012260675,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "67786aea5565a12351291463870c863310bd5418e53fe97faf7cc9d86bf67d14": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.33549932669848204,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "4fe458166d66618e999a934de8910ac45866ef2b28d15a2e8b6faeb5b41fc595": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.8110496448352933,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "0876090aae823f619a933a2d95f9a3eac05e08140b126d645ac39d829a0e1304": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.4820532975718379,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "742df3808cf270eb6c719a29b5de68f6b9e1be1f4ae502cb7638e952eaeba30e": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.7753783296793699,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "f4ea5bfbf3016cdbd06dadfee43e57c3b303e4ebb0fb1e03f5e3c86ad962774a": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.6889886865392327,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "1da61c632e8509e0a4d6196b5a5d3c397cbe1b67dfd144dec2282edeec4c6f47": {
+        "completed_call_count": 3,
+        "completed_duration_seconds": 222.48393118102103,
+        "exit_codes": {
+          "0": 2,
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "ba3108b52e2874a26aef53a6883bd3eaba34f63d91ab6bc9db12efddcc908c20": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 180.0759714031592,
+        "exit_codes": {
+          "137": 1
+        },
+        "empty_output_count": 0
+      },
+      "814dd06fdf790c372782ebaf8f6e30d6fe51ad8ef2a50a2e6aed64ef63467d6b": {
+        "completed_call_count": 19,
+        "completed_duration_seconds": 2282.6405328009278,
+        "exit_codes": {
+          "1": 19
+        },
+        "empty_output_count": 19
+      },
+      "81da474753bc4d9c0b67d7ed534fdaba85c59acfbe6fd88b73dfcc8472396188": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 119.45205143187195,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "32c9d0100df96659bb9fd20acb382790d6fa8d53c68245d134ee1bffeb56654c": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 120.52883043698967,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "35d152fb5ec6f072ef572d8c85588bf379d5bb99d202ee640f69964f573921d0": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 120.22610404435545,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "8b303b3325bde654b5932178ad14da9d04a146d88805d8b82f1e2e6af1579b22": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 0.45686373207718134,
+        "exit_codes": {
+          "1": 1
+        },
+        "empty_output_count": 0
+      },
+      "db137b6df864d92fb4b8d605957006522780de67f8136ca219cd27195cd27a73": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 113.83593232091516,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "474140ba80f8cd374465dce7e2c5e64a3d545dff8f775b3ab125d357f4592a89": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 60.13617314584553,
+        "exit_codes": {
+          "0": 1
+        },
+        "empty_output_count": 0
+      },
+      "5369ce739901df109311e1495e43d923417c8a62ac6a0aa7489b59b530835880": {
+        "completed_call_count": 1,
+        "completed_duration_seconds": 60.13054358121008,
+        "exit_codes": {
+          "124": 1
+        },
+        "empty_output_count": 0
+      }
+    }
+  },
+  "native_reference_code": "92e47d79ef1186dde954bc489fc38600ef5022ae",
+  "native_reference_patch": "1c3c7fc4eefc5a9ed12e18f5c99490f03cd4b79f9f58079ce08fae3d944cfc9e",
+  "same_version": false,
+  "limitations": [
+    "The actual cutoff records incomplete workflows separately; no terminal summary is fabricated.",
+    "Completed-subset JCT excludes administrative censoring and is not an all-arrival mean.",
+    "The historical native has different execution source and realized agent trajectories.",
+    "Completed tool-command durations exclude any in-flight command interrupted by shutdown.",
+    "Repeated command hashes identify exact submitted commands, not proof of unnecessary work.",
+    "Independent source-file hashes are not an atomic snapshot of the whole system.",
+    "No full-run throughput, quality-controlled benefit or causal acceleration is established."
+  ],
+  "analyzer_sha256": "f0d341a2fcf1007e0c13aca7e31595cfbb8d339d5ea89febdeac3ebeaef8d9a7"
+}
