@@ -2,17 +2,34 @@
 
 Status date: 2026-10-13.
 
-Current development run is V45, cold-started at 06:29:48 CST on October 13
-from 6a37156/3698ce2f, actual engine tree 6d6af094. It deploys the
-qualified tool-scan lease reduction below. Keep frozen configuration
-and fixed V29 native for development; freeze running sources. V217 at
-06:34:44 verifies HTTP200, 570 real GPU-service samples in an independent
+Current development run is V46, cold-started at 07:50:54 CST on October 13
+from 18dbcd6/3698ce2f, actual engine tree 6d6af094. It deploys static
+closure reduction, settled Host-copy registration and the JOIN backup fix.
+Keep frozen configuration and fixed V29 native for development; freeze
+running sources. V228 at 07:55:54 verifies HTTP200, 571 real GPU-service samples
+in an independent
 tail, enabled predictors/physical actions, matching sources/engine, all
 27 frozen fields and pool capacities. Observed reserve is 4144 FULL
 tokens and one Mamba slot following the imminent batch. A complete
-busy-window comparison is now sealed in V219 and remains below native.
-V45 running sources stay frozen; the changes below are validated in
-Followup but await a later cold deployment.
+busy-window comparison of V45 is sealed in V219 and remains below native.
+V46 consumption and performance are pending; qualify further changes
+in isolated Followup without hot edits. The performance goal stays active.
+
+V45 stopped administratively at 07:43:41.038655 CST: 87 completed and
+69 created unfinished, all 156 arrivals present. Keep the unfinished
+administratively censored. All 156 workspaces passed full tar comparison
+before cleanup at 07:49:31; 38.815GB source became a 4.057GB archive.
+Only 69 owned stopped containers were removed; raw/results/plan remain.
+V227/V229 prove pre-cutoff early next-request FULL consumption for
+48 JOINs/1.342GB and 139 tools/8.774GB. Demand handoff's 134.226GB
+confirmed FULL stays separate. Known pre-cutoff completions are 126/14846;
+exclude two post-cutoff tool completions and five first services from
+terminal training labels. Early confirmed bytes are unchanged.
+Sampled fitting positive FULL events are 114/210, with 66/71 lacking early
+confirmed consumption; snapshots do not establish trigger-time capacity.
+JOIN arrival-to-service P90 328.469ms and 62 ACK events' P90 8.738s
+have different denominators. All 336 later same-node/pool D2H records
+have preceding Host eviction; do not infer redundant intact-copy backup.
 
 V224 refines actual single-request prefill geometry. For work below512
 tokens, 970/1039 batches average218.72/227.09 tokens; scheduler/worker
@@ -26,9 +43,10 @@ Commit7bc7fbe allows cold WAIT_JOIN FULL backup during the report stage
 unless this parent's actual restore ticket is live. Noncontinuing joins,
 reentry,session changes and native mutation checks remain restrictive;
 Mamba PREPARE remains disabled and partial restoration never grants execution.
-All467 related checks pass. Cold-deploy with c8fa8c7's two qualified changes,
-then measure real reclaim,early consumption and busy throughput before
-claiming improvement. V45 has not been hot-edited. V226 retains769 GIL
+All467 related checks pass. V46 cold-deploys with c8fa8c7's two qualified
+changes; V225/V228 bind qualified and running source hashes.
+Measure real reclaim,early consumption and busy throughput before
+claiming improvement. V45 was not hot-edited. V226 retains769 GIL
 stacks and196 errors across second-wave arrival; shares are not wall costs.
 
 V219 seals V45 600-900s: 337096/380722 decode request steps,
@@ -59,7 +77,7 @@ without granting execution readiness; splitting cannot create capacity.
 Inspect settled waiting copies separately from unbacked/shared/locked
 native pages, and qualify actual reclaim-to-submit changes.
 
-Qualified pending changes: static closure goes directly through the
+Qualified changes now cold-deployed in V46: static closure goes directly through the
 existing static geometry validator, with fresh residency/ownership
 checks every call. PREPARE registers settled safe-input copies even
 while other extents need backup, reusing the fresh action-local closure.
@@ -69,7 +87,7 @@ match output; four-level static observations reduce thread CPU about
 12%. V223's nine probes preserve PREPARE selection and native reads;
 partial-copy registration adds about 4.2-23.5us at depths16/64.
 Retain this cost and do not claim real reclaim frequency or GPU gains.
-Commit promptly and keep Main execution unchanged while V45 runs.
+Commit evidence promptly and keep Main execution unchanged while V46 runs.
 
 V44 stopped administratively at 06:24:32: 34 completed, 74 created
 unfinished and 48 unarrived; the latter 122 remain censored. All 108

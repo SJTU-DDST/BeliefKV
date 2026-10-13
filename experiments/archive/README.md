@@ -6,6 +6,32 @@ tracked inventory.
 
 ## 2026-10-13 verified workspace compression
 
+Archive: `experiments/archive/20261013/v45_development_workspaces.tar.zst`
+
+SHA256: `48b5637421ae845ba6917df26ef455b666819952520e70b5b922f7c587b181cb`
+
+All 156 V45 workspaces passed full GNU tar comparison before removal
+at 07:49:31 CST: 38,815,416,320 allocated source bytes and
+4,057,170,357 archive bytes. Collection stopped at
+07:43:41.038655 CST with 87 completed and 69 created unfinished
+workflows, all 156 arrivals present. Preserve the latter 69 as
+administrative censoring. Only this run's 69 stopped owned containers
+were removed. Raw traces, results, manifest and frozen plan remain.
+Maintenance precedes V46's 07:50:54 CST cold start. V229 excludes
+two post-cutoff tool completions and five first services from terminal
+training labels; sealed early confirmed FULL reuse is unchanged.
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261013/v45_development_workspaces.tar.zst \
+  --directory experiments/raw
+```
+
+Receipts: `experiments/reports/v227_v45_development_stop_20261013.json`
+and `experiments/reports/v227_v45_workspace_archive_20261013.json`.
+Final event audit: `experiments/reports/v227_v45_final_wait_prefetch_20261013.json.gz`
+and `experiments/reports/v229_v45_cutoff_qualification_20261013.json`.
+
 Archive: `experiments/archive/20261013/v44_development_workspaces.tar.zst`
 
 SHA256: `498d9111194fa5433c240e9ad372164bde613e3406c5a5b73272aee0978df59d`

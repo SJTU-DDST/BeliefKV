@@ -1,0 +1,45 @@
+{
+  "schema_version": 1,
+  "recorded_at_local": "2026-10-13T07:46:51.390336+08:00",
+  "qualification_source_commit": "18dbcd600eccff7cdef6aed353c5adeecc0e955d",
+  "runtime_change_commits": [
+    "7bc7fbee1f4738001ac22dfe2dfe9399b2081735",
+    "c8fa8c75d82bb81a4f082b5b07d2b4066c4d7345"
+  ],
+  "qualified_paths_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "a27e0ff44ab27f88d5920f35157f9cfea457900d156354142df7746b792f1ce1",
+    "tests/test_native_transfer_policy.py": "fc3a88785eccb28c6c496789c183b3c7346af0a1453ba3299e59ebe10a3a4878",
+    "beliefkv/runtime/sglang_v0520_observer.py": "28fbfbb05a71f782cd8b9601eef88c255375eff51dca627a1e4c39fd616a5ca4",
+    "tests/test_sglang_v0520_observer.py": "1e525a163667b58cd97fdb65ff7e62dd037fe58dfc6a0d84a82d7e4d180670f7",
+    "tests/test_sglang_v0520_runtime.py": "47e5efb6ea48d584047f4e292ad0917be081f51a275cc2b6a5b0dac68f733c15",
+    "scripts/benchmark_closure_geometry_cpu.py": "1c8c3aea16205a2a7dd6d0eecf2bcd81944768815199ee845bfd54971ddfec5b",
+    "scripts/benchmark_partial_prepare_candidates_cpu.py": "562c388108d41e3d9474c6c40ba52046774fbaa1f1a3d9fb9fe955927a35a5c2"
+  },
+  "unchanged_canonical_patch_sha256": "3698ce2f8eca9be50cebfecbf25a698f93b872227683ac9fe4671e2dc74480c1",
+  "completed_checks": {
+    "command": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python -m pytest -q tests/test_native_transfer_policy.py tests/test_sglang_v0520_runtime.py tests/test_tool_predictive_transfers.py tests/test_sglang_v0520_physical.py",
+    "observed_result": "467 passed in 1.37s",
+    "exit_code": 0,
+    "provenance": "completed exec session71883, recorded here without rerunning it",
+    "new_regression_cases": [
+      "Report notice permits missing FULL backup without a live ticket.",
+      "An expired restore ticket does not suppress backup.",
+      "A live ticket prevents closure capture and backup.",
+      "A noncontinuing JOIN remains rejected.",
+      "Parent reentry remains rejected.",
+      "Changed session ownership remains rejected."
+    ]
+  },
+  "earlier_cpu_qualification_reports": [
+    "experiments/reports/v221_closure_geometry_cpu_20261013.json",
+    "experiments/reports/v223_partial_prepare_candidates_cpu_20261013.json"
+  ],
+  "semantics": [
+    "This records completed focused checks and verifies source identity; it is not a new timing benchmark.",
+    "The earlier702 checks overlap the467 checks and must not be added.",
+    "No live DMA, extra reclaim capacity, useful prefetch coverage or GPU speedup is established.",
+    "Only safe-input FULL backup changes; Mamba backup and complete native execution dependencies remain unchanged."
+  ],
+  "helper_sha256": "c52d5d36e02e107168b13e4ad297ac6cd4a00622b0e48323231f19e98ca19891",
+  "helper_utf8_source": "\"\"\"Bind previously completed focused checks to the exact pending source.\"\"\"\n\nfrom datetime import datetime\nimport hashlib\nimport json\nfrom pathlib import Path\nimport subprocess\n\nROOT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nMAIN = Path(\"/home/longhao/experiment/BeliefKV\")\nOUTPUT = ROOT / \"experiments/reports/v225_join_backup_source_qualification_20261013.json\"\nif OUTPUT.exists():\n    raise ValueError(\"preserve qualification\")\n\n\ndef git(*args):\n    return subprocess.check_output([\"git\", *args], cwd=ROOT, text=True).strip()\n\n\nif git(\"status\", \"--porcelain\", \"--untracked-files=no\"):\n    raise ValueError(\"tracked source is dirty\")\npaths_by_revision = {\n    \"7bc7fbe\": (\n        \"beliefkv/runtime/sglang_v0520_runtime.py\",\n        \"tests/test_native_transfer_policy.py\",\n    ),\n    \"c8fa8c7\": (\n        \"beliefkv/runtime/sglang_v0520_observer.py\",\n        \"tests/test_sglang_v0520_observer.py\",\n        \"tests/test_sglang_v0520_runtime.py\",\n        \"scripts/benchmark_closure_geometry_cpu.py\",\n        \"scripts/benchmark_partial_prepare_candidates_cpu.py\",\n    ),\n}\nhashes = {}\nfor revision, paths in paths_by_revision.items():\n    for relative in paths:\n        expected = subprocess.check_output(\n            [\"git\", \"show\", f\"{revision}:{relative}\"], cwd=ROOT,\n        )\n        actual = (ROOT / relative).read_bytes()\n        if actual != expected:\n            raise ValueError(f\"source changed after checks: {relative}\")\n        hashes[relative] = hashlib.sha256(actual).hexdigest()\npatch = \"patches/sglang-v0.5.20-beliefkv-staging.patch\"\npatch_sha = hashlib.sha256((ROOT / patch).read_bytes()).hexdigest()\nif patch_sha != hashlib.sha256((MAIN / patch).read_bytes()).hexdigest():\n    raise ValueError(\"pending engine patch changed\")\npayload = {\n    \"schema_version\": 1,\n    \"recorded_at_local\": datetime.now().astimezone().isoformat(),\n    \"qualification_source_commit\": git(\"rev-parse\", \"HEAD\"),\n    \"runtime_change_commits\": [git(\"rev-parse\", revision) for revision in paths_by_revision],\n    \"qualified_paths_sha256\": hashes,\n    \"unchanged_canonical_patch_sha256\": patch_sha,\n    \"completed_checks\": {\n        \"command\": (\n            \"/home/longhao/miniconda3/envs/beliefkv-next/bin/python -m pytest -q \"\n            \"tests/test_native_transfer_policy.py tests/test_sglang_v0520_runtime.py \"\n            \"tests/test_tool_predictive_transfers.py tests/test_sglang_v0520_physical.py\"\n        ),\n        \"observed_result\": \"467 passed in 1.37s\",\n        \"exit_code\": 0,\n        \"provenance\": \"completed exec session71883, recorded here without rerunning it\",\n        \"new_regression_cases\": [\n            \"Report notice permits missing FULL backup without a live ticket.\",\n            \"An expired restore ticket does not suppress backup.\",\n            \"A live ticket prevents closure capture and backup.\",\n            \"A noncontinuing JOIN remains rejected.\",\n            \"Parent reentry remains rejected.\",\n            \"Changed session ownership remains rejected.\",\n        ],\n    },\n    \"earlier_cpu_qualification_reports\": [\n        \"experiments/reports/v221_closure_geometry_cpu_20261013.json\",\n        \"experiments/reports/v223_partial_prepare_candidates_cpu_20261013.json\",\n    ],\n    \"semantics\": [\n        \"This records completed focused checks and verifies source identity; it is not a new timing benchmark.\",\n        \"The earlier702 checks overlap the467 checks and must not be added.\",\n        \"No live DMA, extra reclaim capacity, useful prefetch coverage or GPU speedup is established.\",\n        \"Only safe-input FULL backup changes; Mamba backup and complete native execution dependencies remain unchanged.\",\n    ],\n    \"helper_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n    \"helper_utf8_source\": Path(__file__).read_text(),\n}\nOUTPUT.write_text(json.dumps(payload, indent=2, allow_nan=False) + \"\\n\")\nprint(json.dumps({\n    \"qualification_source_commit\": payload[\"qualification_source_commit\"],\n    \"qualified_paths\": list(hashes),\n    \"completed_checks\": payload[\"completed_checks\"][\"observed_result\"],\n    \"patch_sha256\": patch_sha,\n}, indent=2))\n"
+}
