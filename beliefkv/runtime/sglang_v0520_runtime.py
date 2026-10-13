@@ -8015,9 +8015,10 @@ class NativeAdmissionRuntime:
                 key = visible_key
                 if key is not None:
                     self._semantic_keys[key.request_id] = key
-                    history = self._semantic_progress.setdefault(
-                        key.request_id, deque(maxlen=128),
-                    )
+                    history = self._semantic_progress.get(key.request_id)
+                    if history is None:
+                        history = deque(maxlen=128)
+                        self._semantic_progress[key.request_id] = history
                     tokens = len(getattr(req, "output_ids", ()) or ())
                     start = self._decoded_scan_positions.get(key.request_id, 0)
                     outputs = getattr(req, "output_ids", ()) or ()
