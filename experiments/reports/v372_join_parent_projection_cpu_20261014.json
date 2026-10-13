@@ -1,0 +1,564 @@
+{
+  "status": "same_input_cpu_fixture_not_gpu_or_jct_evidence",
+  "observed_at_local": "2026-10-14T05:34:01.765880+08:00",
+  "baseline_revision": "bd9a17ac9c5fd97056651991a360f342e5633035",
+  "candidate_base_revision": "bd9a17ac9c5fd97056651991a360f342e5633035",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "7820de3e7555a6e73f6929dfca430fd5cba6c5c6519823e7b63661a04c601d41",
+    "beliefkv/runtime/sglang_v0520_physical.py": "f53b15523badf3f31123f14300b3fda60a503d3c0cf1cfbf71df19713e112ec5",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "203e118ae2fe5980b0f664c7346bf189a6aba2c74ba503372f01cb7900f3524c"
+  },
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "1b84dc20056d59e323eca6eb2b528edd1114eea964f7a60074e3b5517d88a635",
+    "beliefkv/control/causal_graph.py": "2b5070822d2dba1cc994b94e40245430de18edd12b2fd1dceed76e9a88d3f657",
+    "scripts/benchmark_join_parent_projection.py": "aefb89477d82346ae7879771615924790049aff509a3196592573ab933dcbe4d",
+    "scripts/benchmark_native_prepare_path.py": "3ccb01eb8778c1fa11f5a6cdd67c03c300998085b0846a44eec76323c7e2e6a3",
+    "scripts/benchmark_native_shared_path.py": "5105c132fa8ad4be3074019f9567b4c9800dd12960a2c44d1c2342875aa7f75c",
+    "tests/test_native_wait_candidates.py": "5cca9b29ebcc232f3863add674839acc5d96a95feae7d823ab1512a97c32494a",
+    "tests/test_sglang_v0520_observer.py": "689615c9a418a5537c794b2a4c7c8111da1ea39211117bde9d0ccce8e47ea3d7"
+  },
+  "cases": [
+    {
+      "workflows": 108,
+      "depth": 16,
+      "backed": true,
+      "reset_projection_before_each_phase": false,
+      "native_leaf_and_lru_indices_present": true,
+      "force_existing_probe_timers_due": true,
+      "iterations": 200,
+      "projection_selection_publication_and_records_equal": true,
+      "native_reads_equal": true,
+      "native_reads": {
+        "baseline": {
+          "node_lookup": 6200,
+          "session_snapshot": 1600
+        },
+        "candidate": {
+          "node_lookup": 6200,
+          "session_snapshot": 1600
+        }
+      },
+      "costs": {
+        "baseline": {
+          "projection_wall_ms": {
+            "count": 200,
+            "mean_ms": 0.2424076,
+            "p50_ms": 0.244234,
+            "p99_ms": 0.261407,
+            "max_ms": 0.26352499999999995
+          },
+          "projection_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 0.240988135,
+            "p50_ms": 0.242976,
+            "p99_ms": 0.260297,
+            "max_ms": 0.262381
+          },
+          "prepare_wall_ms": {
+            "count": 200,
+            "mean_ms": 2.38831486,
+            "p50_ms": 2.3874400000000002,
+            "p99_ms": 2.47747,
+            "max_ms": 2.483535
+          },
+          "prepare_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 2.386647635,
+            "p50_ms": 2.386054,
+            "p99_ms": 2.474449,
+            "max_ms": 2.4761990000000003
+          }
+        },
+        "candidate": {
+          "projection_wall_ms": {
+            "count": 200,
+            "mean_ms": 0.03877027,
+            "p50_ms": 0.038618,
+            "p99_ms": 0.043722000000000004,
+            "max_ms": 0.04597
+          },
+          "projection_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 0.037620235,
+            "p50_ms": 0.037503999999999996,
+            "p99_ms": 0.042298,
+            "max_ms": 0.044762
+          },
+          "prepare_wall_ms": {
+            "count": 200,
+            "mean_ms": 2.296328025,
+            "p50_ms": 2.2931109999999997,
+            "p99_ms": 2.406929,
+            "max_ms": 2.419058
+          },
+          "prepare_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 2.295119675,
+            "p50_ms": 2.292059,
+            "p99_ms": 2.405723,
+            "max_ms": 2.417939
+          }
+        }
+      },
+      "mean_reduction_fraction": {
+        "projection_wall_ms": 0.8400616564827175,
+        "projection_thread_cpu_ms": 0.8438917542558683,
+        "prepare_wall_ms": 0.03851537188023846,
+        "prepare_thread_cpu_ms": 0.03835000971980518
+      }
+    },
+    {
+      "workflows": 108,
+      "depth": 16,
+      "backed": true,
+      "reset_projection_before_each_phase": true,
+      "native_leaf_and_lru_indices_present": true,
+      "force_existing_probe_timers_due": true,
+      "iterations": 200,
+      "projection_selection_publication_and_records_equal": true,
+      "native_reads_equal": true,
+      "native_reads": {
+        "baseline": {
+          "node_lookup": 6200,
+          "session_snapshot": 1600
+        },
+        "candidate": {
+          "node_lookup": 6200,
+          "session_snapshot": 1600
+        }
+      },
+      "costs": {
+        "baseline": {
+          "projection_wall_ms": {
+            "count": 200,
+            "mean_ms": 0.25801429,
+            "p50_ms": 0.258178,
+            "p99_ms": 0.2784,
+            "max_ms": 0.7716069999999999
+          },
+          "projection_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 0.256539385,
+            "p50_ms": 0.256487,
+            "p99_ms": 0.27742500000000003,
+            "max_ms": 0.76962
+          },
+          "prepare_wall_ms": {
+            "count": 200,
+            "mean_ms": 2.470070725,
+            "p50_ms": 2.4501999999999997,
+            "p99_ms": 2.760948,
+            "max_ms": 5.799831
+          },
+          "prepare_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 2.467947505,
+            "p50_ms": 2.448698,
+            "p99_ms": 2.75936,
+            "max_ms": 5.798291
+          }
+        },
+        "candidate": {
+          "projection_wall_ms": {
+            "count": 200,
+            "mean_ms": 0.295202945,
+            "p50_ms": 0.299111,
+            "p99_ms": 0.318457,
+            "max_ms": 0.324053
+          },
+          "projection_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 0.293804775,
+            "p50_ms": 0.297676,
+            "p99_ms": 0.317257,
+            "max_ms": 0.322304
+          },
+          "prepare_wall_ms": {
+            "count": 200,
+            "mean_ms": 2.462647795,
+            "p50_ms": 2.459898,
+            "p99_ms": 2.544429,
+            "max_ms": 2.736303
+          },
+          "prepare_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 2.461414415,
+            "p50_ms": 2.458863,
+            "p99_ms": 2.543453,
+            "max_ms": 2.734811
+          }
+        }
+      },
+      "mean_reduction_fraction": {
+        "projection_wall_ms": -0.14413409040251235,
+        "projection_thread_cpu_ms": -0.14526186690593335,
+        "prepare_wall_ms": 0.003005148769576138,
+        "prepare_thread_cpu_ms": 0.002647175430905313
+      }
+    },
+    {
+      "workflows": 108,
+      "depth": 64,
+      "backed": true,
+      "reset_projection_before_each_phase": false,
+      "native_leaf_and_lru_indices_present": true,
+      "force_existing_probe_timers_due": true,
+      "iterations": 200,
+      "projection_selection_publication_and_records_equal": true,
+      "native_reads_equal": true,
+      "native_reads": {
+        "baseline": {
+          "node_lookup": 6400,
+          "session_snapshot": 1600
+        },
+        "candidate": {
+          "node_lookup": 6400,
+          "session_snapshot": 1600
+        }
+      },
+      "costs": {
+        "baseline": {
+          "projection_wall_ms": {
+            "count": 200,
+            "mean_ms": 0.244244305,
+            "p50_ms": 0.230097,
+            "p99_ms": 0.289557,
+            "max_ms": 0.9890059999999999
+          },
+          "projection_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 0.24214604,
+            "p50_ms": 0.228363,
+            "p99_ms": 0.287332,
+            "max_ms": 0.987254
+          },
+          "prepare_wall_ms": {
+            "count": 200,
+            "mean_ms": 5.23664955,
+            "p50_ms": 4.83556,
+            "p99_ms": 6.371894,
+            "max_ms": 6.672362
+          },
+          "prepare_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 5.234133985,
+            "p50_ms": 4.832479,
+            "p99_ms": 6.36428,
+            "max_ms": 6.671089
+          }
+        },
+        "candidate": {
+          "projection_wall_ms": {
+            "count": 200,
+            "mean_ms": 0.03933861,
+            "p50_ms": 0.037193,
+            "p99_ms": 0.051463,
+            "max_ms": 0.052218
+          },
+          "projection_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 0.037639705,
+            "p50_ms": 0.035536,
+            "p99_ms": 0.049706,
+            "max_ms": 0.050353999999999996
+          },
+          "prepare_wall_ms": {
+            "count": 200,
+            "mean_ms": 5.08455765,
+            "p50_ms": 4.682548,
+            "p99_ms": 6.233097,
+            "max_ms": 6.610773
+          },
+          "prepare_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 5.082808615,
+            "p50_ms": 4.678932,
+            "p99_ms": 6.231674,
+            "max_ms": 6.6095690000000005
+          }
+        }
+      },
+      "mean_reduction_fraction": {
+        "projection_wall_ms": 0.8389374524003743,
+        "projection_thread_cpu_ms": 0.8445578337766746,
+        "prepare_wall_ms": 0.029043742291290142,
+        "prepare_thread_cpu_ms": 0.02891125264153882
+      }
+    },
+    {
+      "workflows": 108,
+      "depth": 64,
+      "backed": true,
+      "reset_projection_before_each_phase": true,
+      "native_leaf_and_lru_indices_present": true,
+      "force_existing_probe_timers_due": true,
+      "iterations": 200,
+      "projection_selection_publication_and_records_equal": true,
+      "native_reads_equal": true,
+      "native_reads": {
+        "baseline": {
+          "node_lookup": 6400,
+          "session_snapshot": 1600
+        },
+        "candidate": {
+          "node_lookup": 6400,
+          "session_snapshot": 1600
+        }
+      },
+      "costs": {
+        "baseline": {
+          "projection_wall_ms": {
+            "count": 200,
+            "mean_ms": 0.233671835,
+            "p50_ms": 0.232357,
+            "p99_ms": 0.263759,
+            "max_ms": 0.734844
+          },
+          "projection_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 0.23182716,
+            "p50_ms": 0.230618,
+            "p99_ms": 0.261796,
+            "max_ms": 0.733471
+          },
+          "prepare_wall_ms": {
+            "count": 200,
+            "mean_ms": 4.764505225,
+            "p50_ms": 4.753753,
+            "p99_ms": 5.009316,
+            "max_ms": 5.39042
+          },
+          "prepare_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 4.76265085,
+            "p50_ms": 4.752654000000001,
+            "p99_ms": 5.0084859999999995,
+            "max_ms": 5.389586
+          }
+        },
+        "candidate": {
+          "projection_wall_ms": {
+            "count": 200,
+            "mean_ms": 0.265885725,
+            "p50_ms": 0.265061,
+            "p99_ms": 0.296643,
+            "max_ms": 0.629966
+          },
+          "projection_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 0.264052,
+            "p50_ms": 0.263125,
+            "p99_ms": 0.29412299999999997,
+            "max_ms": 0.628455
+          },
+          "prepare_wall_ms": {
+            "count": 200,
+            "mean_ms": 4.86242314,
+            "p50_ms": 4.8516390000000005,
+            "p99_ms": 5.001218,
+            "max_ms": 6.5962700000000005
+          },
+          "prepare_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 4.86125975,
+            "p50_ms": 4.8505780000000005,
+            "p99_ms": 5.0001430000000004,
+            "max_ms": 6.59519
+          }
+        }
+      },
+      "mean_reduction_fraction": {
+        "projection_wall_ms": -0.13785953279307295,
+        "projection_thread_cpu_ms": -0.13900373019278667,
+        "prepare_wall_ms": -0.02055153901106288,
+        "prepare_thread_cpu_ms": -0.020704625030407264
+      }
+    },
+    {
+      "workflows": 108,
+      "depth": 16,
+      "backed": false,
+      "reset_projection_before_each_phase": false,
+      "native_leaf_and_lru_indices_present": true,
+      "force_existing_probe_timers_due": true,
+      "iterations": 200,
+      "projection_selection_publication_and_records_equal": true,
+      "native_reads_equal": true,
+      "native_reads": {
+        "baseline": {
+          "node_lookup": 6400,
+          "session_snapshot": 1600
+        },
+        "candidate": {
+          "node_lookup": 6400,
+          "session_snapshot": 1600
+        }
+      },
+      "costs": {
+        "baseline": {
+          "projection_wall_ms": {
+            "count": 200,
+            "mean_ms": 0.20543433,
+            "p50_ms": 0.206161,
+            "p99_ms": 0.23535599999999998,
+            "max_ms": 0.23752600000000001
+          },
+          "projection_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 0.20441034,
+            "p50_ms": 0.20519800000000002,
+            "p99_ms": 0.234624,
+            "max_ms": 0.236497
+          },
+          "prepare_wall_ms": {
+            "count": 200,
+            "mean_ms": 1.985321545,
+            "p50_ms": 1.977259,
+            "p99_ms": 2.284878,
+            "max_ms": 2.307135
+          },
+          "prepare_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 1.98416455,
+            "p50_ms": 1.976167,
+            "p99_ms": 2.283798,
+            "max_ms": 2.305771
+          }
+        },
+        "candidate": {
+          "projection_wall_ms": {
+            "count": 200,
+            "mean_ms": 0.03084972,
+            "p50_ms": 0.031139,
+            "p99_ms": 0.034329,
+            "max_ms": 0.035584000000000005
+          },
+          "projection_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 0.02997786,
+            "p50_ms": 0.030364000000000002,
+            "p99_ms": 0.032484,
+            "max_ms": 0.033484
+          },
+          "prepare_wall_ms": {
+            "count": 200,
+            "mean_ms": 1.90339066,
+            "p50_ms": 1.901896,
+            "p99_ms": 2.006497,
+            "max_ms": 2.055911
+          },
+          "prepare_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 1.90217372,
+            "p50_ms": 1.900512,
+            "p99_ms": 2.005493,
+            "max_ms": 2.054899
+          }
+        }
+      },
+      "mean_reduction_fraction": {
+        "projection_wall_ms": 0.84983171994671,
+        "projection_thread_cpu_ms": 0.8533446987075115,
+        "prepare_wall_ms": 0.041268320089680954,
+        "prepare_thread_cpu_ms": 0.041322595951026386
+      }
+    },
+    {
+      "workflows": 108,
+      "depth": 16,
+      "backed": false,
+      "reset_projection_before_each_phase": true,
+      "native_leaf_and_lru_indices_present": true,
+      "force_existing_probe_timers_due": true,
+      "iterations": 200,
+      "projection_selection_publication_and_records_equal": true,
+      "native_reads_equal": true,
+      "native_reads": {
+        "baseline": {
+          "node_lookup": 6400,
+          "session_snapshot": 1600
+        },
+        "candidate": {
+          "node_lookup": 6400,
+          "session_snapshot": 1600
+        }
+      },
+      "costs": {
+        "baseline": {
+          "projection_wall_ms": {
+            "count": 200,
+            "mean_ms": 0.203980395,
+            "p50_ms": 0.208174,
+            "p99_ms": 0.236903,
+            "max_ms": 0.237763
+          },
+          "projection_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 0.20290565,
+            "p50_ms": 0.207323,
+            "p99_ms": 0.236087,
+            "max_ms": 0.236291
+          },
+          "prepare_wall_ms": {
+            "count": 200,
+            "mean_ms": 2.160690745,
+            "p50_ms": 1.989936,
+            "p99_ms": 2.2978270000000003,
+            "max_ms": 35.247339
+          },
+          "prepare_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 2.15961897,
+            "p50_ms": 1.9888869999999998,
+            "p99_ms": 2.296772,
+            "max_ms": 35.246489000000004
+          }
+        },
+        "candidate": {
+          "projection_wall_ms": {
+            "count": 200,
+            "mean_ms": 0.238379065,
+            "p50_ms": 0.241024,
+            "p99_ms": 0.270832,
+            "max_ms": 0.357631
+          },
+          "projection_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 0.236752475,
+            "p50_ms": 0.239901,
+            "p99_ms": 0.265909,
+            "max_ms": 0.269823
+          },
+          "prepare_wall_ms": {
+            "count": 200,
+            "mean_ms": 2.019549485,
+            "p50_ms": 2.017281,
+            "p99_ms": 2.1360569999999997,
+            "max_ms": 2.140154
+          },
+          "prepare_thread_cpu_ms": {
+            "count": 200,
+            "mean_ms": 2.01838302,
+            "p50_ms": 2.016328,
+            "p99_ms": 2.134914,
+            "max_ms": 2.13932
+          }
+        }
+      },
+      "mean_reduction_fraction": {
+        "projection_wall_ms": -0.16863713789749246,
+        "projection_thread_cpu_ms": -0.16681065805708228,
+        "prepare_wall_ms": 0.06532228655424721,
+        "prepare_thread_cpu_ms": 0.06539855037483766
+      }
+    }
+  ],
+  "scope": [
+    "Complete PREPARE CPU method with native-shaped leaf and Mamba LRU indices; enqueue remains stubbed.",
+    "Alternate variant order; verify JOIN projection, all pressure publications, actions and observation records.",
+    "Reset cases discard projection between phases to expose rebuilding cost; no event workload is replayed.",
+    "Existing cadence/probe timers are forced due only in these fixtures; runtime timers remain unchanged.",
+    "Native physical observations and output identities remain equal; no stale physical snapshot cache is added.",
+    "Real graph-change frequency, tree geometry, CUDA cost, queue consumption and throughput/JCT are unknown."
+  ]
+}

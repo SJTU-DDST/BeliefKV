@@ -2,6 +2,22 @@
 
 Status date: 2026-10-14.
 
+6bd0dd3 reuses JOIN parent identity projections for unchanged RCCG and
+context/session revisions. Return, completion, epoch, rebind and abort
+invalidate those revisions; causal failure explicitly discards the cache.
+All physical ancestry/input/pending/capacity/transfer checks remain live.
+V374 verifies six same-input CPU cases with identical projection, complete
+pressure publications, actions, observation records and native read counts.
+Repeated projection reduces thread CPU83.6%–84.8%; complete PREPARE
+reduces3.27%–4.78%. Reset projections regress17.8%–21.7%; two backed
+complete cases regress1.68%/2.02%, while the unbacked case improves6.12%.
+Retain these regressions: real cache reuse and system benefit remain unknown.
+804 checks plus two subtests pass; V375 binds27 sources to the unchanged
+qualified engine. Include this cold candidate in V55 after06:00 resources
+permit; new prefill delay/batching options and workload/budgets stay frozen.
+The first complete600–900s window must measure actual turnover, controls
+and consumption; same-version JCT/throughput final acceptance is still pending.
+
 V368/V370 losslessly archive297 legacy workspaces and V27/V32 server logs;
 all files pass GNU tar comparison before raw cleanup. Available disk recovers
 to77.30GiB at completion. V29 native and latest V49-V54 remain directly
