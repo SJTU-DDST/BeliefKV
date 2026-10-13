@@ -1,0 +1,87 @@
+{
+  "observed_at_local": "2026-10-14T03:49:53.572887+08:00",
+  "status": "same_input_allocation_audit_not_gpu_or_jct_evidence",
+  "baseline_revision": "2c488a9606d91437445c46850787b516dd768adb",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "06ac8895fee38339cae0761af8ecf7bbc273b66b23396404833b966e127291cf",
+    "beliefkv/policy/causal_frontier.py": "b2e1567cc5a6f50f33329c9b73f21949a6da6061b4560cbc36beb65e7e54acb2",
+    "beliefkv/runtime/sglang_v0520_admission.py": "092d0f2814402e2a8a8211ba6afa6fad273b2c85323d73cc5bf8f89f29cc5ecd"
+  },
+  "runtime_sha256": "6ce86bea0aa8cbdb4c7f58acae99e9ca5068093168cf618ab9ea9b98e96fd963",
+  "helper_sha256": "ffea92238691d654b49e22c5b39a28eb5a59de999bf80de8804cfff9dce5b6f9",
+  "cases": [
+    {
+      "batch_size": 1,
+      "initial_history": "missing",
+      "completed_batches": 20,
+      "deque_allocations": {
+        "baseline": 20,
+        "optimized": 1
+      },
+      "runtime_states_equal": true,
+      "existing_empty_and_nonempty_histories_preserved": true
+    },
+    {
+      "batch_size": 1,
+      "initial_history": "empty",
+      "completed_batches": 20,
+      "deque_allocations": {
+        "baseline": 20,
+        "optimized": 0
+      },
+      "runtime_states_equal": true,
+      "existing_empty_and_nonempty_histories_preserved": true
+    },
+    {
+      "batch_size": 1,
+      "initial_history": "existing",
+      "completed_batches": 20,
+      "deque_allocations": {
+        "baseline": 20,
+        "optimized": 0
+      },
+      "runtime_states_equal": true,
+      "existing_empty_and_nonempty_histories_preserved": true
+    },
+    {
+      "batch_size": 48,
+      "initial_history": "missing",
+      "completed_batches": 20,
+      "deque_allocations": {
+        "baseline": 960,
+        "optimized": 48
+      },
+      "runtime_states_equal": true,
+      "existing_empty_and_nonempty_histories_preserved": true
+    },
+    {
+      "batch_size": 48,
+      "initial_history": "empty",
+      "completed_batches": 20,
+      "deque_allocations": {
+        "baseline": 960,
+        "optimized": 0
+      },
+      "runtime_states_equal": true,
+      "existing_empty_and_nonempty_histories_preserved": true
+    },
+    {
+      "batch_size": 48,
+      "initial_history": "existing",
+      "completed_batches": 20,
+      "deque_allocations": {
+        "baseline": 960,
+        "optimized": 0
+      },
+      "runtime_states_equal": true,
+      "existing_empty_and_nonempty_histories_preserved": true
+    }
+  ],
+  "scope": [
+    "Counter instrumentation is outside the timed V347 benchmark.",
+    "Count only deque constructions in the exact completed-batch callback.",
+    "Compare causal/runtime state and token progress; real observation timestamps differ.",
+    "Both empty and nonempty existing history objects must be preserved.",
+    "No allocator, DMA, GPU, marker/EOS replay or end-to-end gain is measured here."
+  ]
+}
