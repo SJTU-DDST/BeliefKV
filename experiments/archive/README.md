@@ -6,6 +6,34 @@ tracked inventory.
 
 ## 2026-10-13 verified workspace compression
 
+Archive: `experiments/archive/20261013/v48_development_workspaces.tar.zst`
+
+SHA256: `0916ed0521585bf1b5f382b1c7394bed8a02e1d45f7dc86e61d1d6dadab0299e`
+
+All 156 V48 workspaces passed full GNU tar comparison, then another complete
+comparison after the read-only audit exited, before source cleanup:
+38,691,364,864 allocated source bytes and 4,418,070,967 archive bytes.
+The administrative cutoff was 11:18:44.461620 CST: 84 completed and
+72 created unfinished, all 156 arrivals present. Preserve the latter 72
+as administrative censoring. Only 72 owned stopped containers were removed.
+Raw traces, outcomes, manifest and frozen plan remain. V263 excludes five
+post-cutoff tool completions and seven first services from terminal training.
+Early confirmed next-request FULL reuse is 41 JOINs/1.060GB and
+164 tools/9.994GB; demand handoff remains separate. Maintenance preceded
+V49's 11:31:21 CST cold startup. Available disk after source cleanup was
+161,666,727,936 bytes.
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261013/v48_development_workspaces.tar.zst \
+  --directory experiments/raw
+```
+
+Receipts: `experiments/reports/v261_v48_development_stop_20261013.json`
+and `experiments/reports/v261_v48_workspace_archive_20261013.json`.
+Final audit: `experiments/reports/v261_v48_final_wait_prefetch_20261013.json.gz`
+and `experiments/reports/v263_v48_cutoff_qualification_20261013.json`.
+
 Archive: `experiments/archive/20261013/v47_development_workspaces.tar.zst`
 
 SHA256: `f00ab41a446d46e4ad5a89565f04ef9ee41bd98fa45ad070a953b12e70dcdf04`

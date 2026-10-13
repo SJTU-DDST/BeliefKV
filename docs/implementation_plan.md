@@ -2,17 +2,44 @@
 
 Status date: 2026-10-13.
 
-Next cold development run V49 will test native demand recovery as one factor:
+Retain V29 as a positive complete JCT observation. Both same-version arms
+completed all 156 workflows: mean JCT 3039.851 -> 2648.654s (-12.869%),
+P50 2531.277 -> 2191.880s (-13.408%), P95 7334.121 -> 6490.692s
+(-11.500%); 87 paired tasks improved and 69 regressed. Paired-delta median
+is -79.823s, distinct from the difference between arm medians. Full-run
+completed-request output token/s fell 3.836%, with 5.970% less generated
+work. V264 rechecks all tasks and source hashes. Do not conflate lower
+decode throughput with absence of JCT benefit. Verify repeatable complete
+JCT, task quality, tail/fairness and resource cost; separate anticipation
+from admission/recovery contributions. Stopped completed-only cohorts
+cannot establish complete JCT improvement.
+
+V49 cold startup began at 11:31:21 CST from 69beb35, testing native demand
+recovery as one factor:
 `EXECUTION_HANDOFF=0` delegates submitted requests to native prefill's complete
 FULL/Mamba dependencies, while JOIN/tool anticipation, PREPARE, residency
 protection and admission priority remain enabled. V260 initializes the real
 plan and checks resume propagation; 80 previous plan fields remain unchanged
 outside the recovery policy and source revision. Runtime/engine sources match.
 Freeze the explicit flag and verify the actual runtime before measuring benefit.
-Capture V48's administrative cutoff, archive and compare its workspaces, then
-cold-deploy V49. Assess busy throughput, control cost, native H2D/recompute,
+V48 maintenance is complete. Assess busy throughput, control cost, native H2D/recompute,
 early confirmed FULL consumption and restore-to-service waiting. Goal remains
-unmet; removing demand handoff is a diagnostic policy change, not a proven gain.
+unmet; disabling demand handoff is a diagnostic policy change, not a proven gain.
+V262 independently validates deployment at 11:36:56: HTTP200, 591 real
+GPU service samples, actual handoff=false, retained prediction/PREPARE/
+residency-priority flags, unchanged 80 plan fields, 27 configuration fields
+and capacities. Recorded semantic/native telemetry drops and writer failures
+are zero. The sampled next batch reserves 4145 FULL tokens and one Mamba
+slot; startup does not establish throughput or JCT gain.
+
+V48 stopped at 11:18:44.461620: 84 completed, 72 created unfinished, all
+156 arrivals present. Keep the unfinished administratively censored.
+V261/V263 qualify early next-request FULL reuse as 41 JOINs/1.060GB
+and 164 tools/9.994GB; exclude five post-cutoff tool completions and seven
+first services from terminal training, with 34 JOIN boundaries unknown.
+All 156 workspaces passed full tar comparison and another comparison
+after the audit exited: 38.691GB source became 4.418GB archive. Only
+72 owned stopped containers were removed; raw/results/plan remain.
 
 V258 checks V257's exact 399660508-byte audit prefix: 101 unique probe/batch
 pairs, with two ambiguous overlap candidates retained as unknown. Among 61
@@ -23,7 +50,7 @@ establish whole-run fence overhead. V259 retains a later nonblocking GIL
 profile with 1783 samples and all 447 errors; ranking/reentry remains visible.
 Sampling is not CPU accounting, kernel attribution or removable JCT.
 
-Current development run is V48, cold-started at 10:14:57 CST on October 13
+Previous development run V48 cold-started at 10:14:57 CST on October 13
 from b8616d1. Canonical patch 3698ce2f and actual engine tree 6d6af094
 remain unchanged. Retain 108+48 arrivals, running 48, Host 200GB/80:20,
 HBM Mamba/FULL 0.9, tool 180s, output 8192 and maximum lead 2000ms.

@@ -1,0 +1,85 @@
+{
+  "schema_version": 1,
+  "rechecked_at_local": "2026-10-13T11:31:11.934333+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29",
+  "inputs": {
+    "comparison.json": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29/comparison.json",
+      "bytes": 65058,
+      "sha256": "09e8e17f5187f14535695c07a3335b1d4b164fd7854e685a4aa39e8e689ccdc0"
+    },
+    "native_policy_comparison.json": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29/native_policy_comparison.json",
+      "bytes": 233337,
+      "sha256": "eb8f3452228c506c6f04a999be122f27d903b968780a75748bae76fb4972c0e9"
+    },
+    "workflow_trajectory_comparison.json": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29/workflow_trajectory_comparison.json",
+      "bytes": 133284,
+      "sha256": "60c80c9a48a327bcba4117ee8424677160dbdf0b650f493a7610af64a6309cc7"
+    }
+  },
+  "arm_revisions": {
+    "predictive_h2d": {
+      "code_commit": "92e47d79ef1186dde954bc489fc38600ef5022ae",
+      "sglang_patch_sha256": "1c3c7fc4eefc5a9ed12e18f5c99490f03cd4b79f9f58079ce08fae3d944cfc9e"
+    },
+    "native": {
+      "code_commit": "92e47d79ef1186dde954bc489fc38600ef5022ae",
+      "sglang_patch_sha256": "1c3c7fc4eefc5a9ed12e18f5c99490f03cd4b79f9f58079ce08fae3d944cfc9e"
+    }
+  },
+  "same_code_revision": true,
+  "same_engine_patch": true,
+  "same_task_set": true,
+  "same_physical_pool_capacity": true,
+  "completed_workflows_each_arm": 156,
+  "metrics": {
+    "jct_mean_seconds": {
+      "native": 3039.851218901718,
+      "predictive": 2648.6535414584305,
+      "relative_change_percent": -12.868974475159511
+    },
+    "jct_p50_seconds": {
+      "native": 2531.276768053416,
+      "predictive": 2191.8802304593846,
+      "relative_change_percent": -13.408116484039468
+    },
+    "jct_p95_seconds": {
+      "native": 7334.121447985526,
+      "predictive": 6490.692210261477,
+      "relative_change_percent": -11.500071872353779
+    },
+    "collection_duration_seconds": {
+      "native": 9195.414936001413,
+      "predictive": 8991.395384473726,
+      "relative_change_percent": -2.2187095737128737
+    },
+    "output_tokens": {
+      "native": 9450468,
+      "predictive": 8886298,
+      "relative_change_percent": -5.96975726493122
+    },
+    "input_tokens": {
+      "native": 1038427376,
+      "predictive": 1010733930,
+      "relative_change_percent": -2.666864013800807
+    },
+    "output_tokens_per_second": {
+      "native": 1027.7369825911844,
+      "predictive": 988.3113376756618,
+      "relative_change_percent": -3.83616096173951
+    }
+  },
+  "paired_workflows_predictive_shorter": 87,
+  "paired_workflows_predictive_longer": 69,
+  "paired_jct_delta_median_seconds": -79.8227229542099,
+  "paired_jct_delta_mean_seconds": -391.19767744328755,
+  "all_tasks_retained": true,
+  "observed_request_sequence_different_count": 156,
+  "completion_correctness": "not_independently_graded; do not call this correct-task throughput",
+  "isolated_policy_effect_verified": false,
+  "semantics": "V29 observes shorter aggregate mean/P50/P95 workflow JCT despite lower full-run completed-request output token/s. Paired-delta median is not the difference between arm JCT medians. Full-run token/s is not busy decode capacity. Different realized work and local development load limit causal attribution; the JCT observation remains a positive result. No task was removed for trace divergence or slowdown. This does not establish stable gain in later administratively stopped runs, graded task correctness, or the separate contribution of early prefetch and admission scheduling.",
+  "helper_sha256": "ae7fc1b5a39be15018d1ef77a9dca707b391ce4ffadc5af89b57ebda9e657d9e",
+  "helper_utf8_source": "\"\"\"Recheck complete V29 JCT without filtering divergent or slower tasks.\"\"\"\n\nfrom datetime import datetime\nimport hashlib\nimport json\nfrom pathlib import Path\nimport statistics\n\n\nROOT = Path(\"/home/longhao/experiment/BeliefKV\")\nFOLLOWUP = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nRUN = ROOT / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29\"\nOUTPUT = FOLLOWUP / \"experiments/reports/v264_v29_complete_jct_recheck_20261013.json\"\nif OUTPUT.exists():\n    raise ValueError(\"preserve existing V29 recheck\")\nsources = {}\n\n\ndef load(name):\n    path = RUN / name\n    payload = path.read_bytes()\n    sources[name] = {\n        \"path\": str(path), \"bytes\": len(payload),\n        \"sha256\": hashlib.sha256(payload).hexdigest(),\n    }\n    return json.loads(payload)\n\n\ncomparison = load(\"comparison.json\")\npolicy = load(\"native_policy_comparison.json\")\ntrajectory = load(\"workflow_trajectory_comparison.json\")\npaired = policy[\"paired_completed_jct\"][\"predictive_h2d_vs_native\"]\nrows = paired[\"rows\"]\nif (\n    comparison[\"status\"] != \"complete\"\n    or comparison[\"same_code_revision\"] is not True\n    or comparison[\"same_engine_patch\"] is not True\n    or policy[\"same_task_set\"] is not True\n    or policy[\"same_physical_pool_capacity\"] is not True\n    or len(rows) != 156\n):\n    raise ValueError(\"V29 is not the expected complete same-version pair\")\nfor name in (\"predictive_h2d\", \"native\"):\n    if comparison[\"arms\"][name][\"outcomes\"] != {\"completed\": 156}:\n        raise ValueError(f\"unexpected completion cohort: {name}\")\ndeltas = [row[\"left_seconds\"] - row[\"right_seconds\"] for row in rows]\nif abs(statistics.mean(deltas) - paired[\"mean_delta_seconds\"]) > 1e-6:\n    raise ValueError(\"paired JCT mean disagrees\")\nif (\n    sum(delta < 0 for delta in deltas) != paired[\"left_shorter_workflows\"]\n    or sum(delta > 0 for delta in deltas) != paired[\"right_shorter_workflows\"]\n):\n    raise ValueError(\"paired task counts disagree\")\nmetrics = {}\nfor key in (\n    \"jct_mean_seconds\", \"jct_p50_seconds\", \"jct_p95_seconds\",\n    \"collection_duration_seconds\", \"output_tokens\", \"input_tokens\",\n    \"output_tokens_per_second\",\n):\n    predictive = policy[\"runs\"][\"predictive_h2d\"][key]\n    native = policy[\"runs\"][\"native\"][key]\n    metrics[key] = {\n        \"native\": native, \"predictive\": predictive,\n        \"relative_change_percent\": (predictive / native - 1.) * 100.,\n    }\nreport = {\n    \"schema_version\": 1,\n    \"rechecked_at_local\": datetime.now().astimezone().isoformat(),\n    \"run_root\": str(RUN),\n    \"inputs\": sources,\n    \"arm_revisions\": comparison[\"arm_revisions\"],\n    \"same_code_revision\": comparison[\"same_code_revision\"],\n    \"same_engine_patch\": comparison[\"same_engine_patch\"],\n    \"same_task_set\": policy[\"same_task_set\"],\n    \"same_physical_pool_capacity\": policy[\"same_physical_pool_capacity\"],\n    \"completed_workflows_each_arm\": 156,\n    \"metrics\": metrics,\n    \"paired_workflows_predictive_shorter\": sum(delta < 0 for delta in deltas),\n    \"paired_workflows_predictive_longer\": sum(delta > 0 for delta in deltas),\n    \"paired_jct_delta_median_seconds\": statistics.median(deltas),\n    \"paired_jct_delta_mean_seconds\": statistics.mean(deltas),\n    \"all_tasks_retained\": True,\n    \"observed_request_sequence_different_count\": trajectory[\"observed_request_sequence_different_count\"],\n    \"completion_correctness\": comparison[\"arms\"][\"predictive_h2d\"][\"completion_correctness\"],\n    \"isolated_policy_effect_verified\": comparison[\"isolated_policy_effect_verified\"],\n    \"semantics\": (\n        \"V29 observes shorter aggregate mean/P50/P95 workflow JCT despite lower \"\n        \"full-run completed-request output token/s. Paired-delta median is not the \"\n        \"difference between arm JCT medians. Full-run token/s is not busy decode \"\n        \"capacity. Different realized work and local development load limit causal \"\n        \"attribution; the JCT observation remains a positive result. No task was \"\n        \"removed for trace divergence or slowdown. This does not establish stable \"\n        \"gain in later administratively stopped runs, graded task correctness, \"\n        \"or the separate contribution of early prefetch and admission scheduling.\"\n    ),\n    \"helper_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n    \"helper_utf8_source\": Path(__file__).read_text(),\n}\nOUTPUT.write_text(json.dumps(report, indent=2, allow_nan=False) + \"\\n\")\nprint(json.dumps({\n    key: report[key] for key in (\n        \"metrics\", \"paired_workflows_predictive_shorter\",\n        \"paired_workflows_predictive_longer\", \"paired_jct_delta_median_seconds\",\n    )\n}, indent=2))\n"
+}
