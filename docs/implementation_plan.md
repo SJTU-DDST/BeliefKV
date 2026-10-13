@@ -2,6 +2,31 @@
 
 Status date: 2026-10-14.
 
+V339 separates the latest V54 tail by independent waits. Among 84 early FULL
+JOINs, latest ACK to completion P50 is 2.448s; among 189 tools it is 0.235s.
+For tool tails above the existing 10s maximum lease, 18 are dominated by
+pre-completion waiting (2.330GB, no next-request-confirmed reuse), 11 by
+native queue waiting (0.870GB, 0.0478GB confirmed), and two by client
+postprocessing. Preserve these distinct causes; do not apply a global ETA shift.
+
+V340's direct context/epoch lookup misses legacy callback fields and must not
+be interpreted as zero active tools. V341 verifies exact invocation/run IDs,
+sealed prefixes and the same monotonic-to-wall bridge as V334: 18 single-tool
+episodes, 17 operational curves, one project prior, no same-input history.
+One predicts 0.626s remaining after 8.98s while 156.27s actually remain.
+Callback wall time includes backend waiting; actual execution starts remain
+unobserved. A 347.85s callback alone does not prove the fixed 180s execution
+limit failed. Keep budgets and workload unchanged.
+
+Commit 0481982 fixes intermediate metadata in multi-event tool refreshes.
+Two cases previously submitted unknown fields and deduplicated away the final
+surviving command. Submit once per context after metadata updates; preserve
+the singleton path, predictor math and physical checks. 534 checks and two
+subchecks pass; V342 binds 14 sources and unchanged f7e0a895/a8f4ea97.
+Real batch frequency and incremental CPU cost are not established, and this
+fix is not proven to explain the selected long-tool errors. Include it in
+the qualified V55 cold candidate, then verify phases and actual consumption.
+
 V334 seals the latest V54 full prefixes; V335 qualifies the actual reservation
 cutoff at 23:59:01.870697 CST. There are 185 known JOINs and 23994 known tool
 waits with pre-cutoff first service, plus one unknown completion per source.

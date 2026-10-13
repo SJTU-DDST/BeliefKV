@@ -1,0 +1,2759 @@
+{
+  "observed_at_local": "2026-10-14T02:45:58.337417+08:00",
+  "sealed_report_sha256": "7f4ae2960aa5fa4c6b787667fb32bb36e1227128ce06b6b326001f5a85918d3d",
+  "tail_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v339_v54_prefetch_tail_attribution_20261014.json",
+  "tail_report_sha256": "db3c0d4c5f72c0613bbc8a1fcf23a874f87bfc5dad3a936ffc209dcea14e1863",
+  "source_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11211/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 4722130,
+      "complete_prefix_sha256": "4716fedde9b568f5d620cc513f91274a9528c887e7da0bcb3aaa2c0cdecb65e4",
+      "first_read_limit_bytes": 4722130
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11451/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1029760,
+      "complete_prefix_sha256": "e56b1c94cf138c29c10920c6352d8b8bc25614e5a66a57e0cdf691236b7ba10a",
+      "first_read_limit_bytes": 1029760
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12741/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1103127,
+      "complete_prefix_sha256": "0ede9430851b4fcfb0b4ab16c605be2a042e205e0f736c36df2362143c160eab",
+      "first_read_limit_bytes": 1103127
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-15315/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1608292,
+      "complete_prefix_sha256": "4d1dde47bf9fbfad6e50fd0125dce87681bdeefe09f04c90f7e2ca36026c502e",
+      "first_read_limit_bytes": 1608292
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 3587919,
+      "complete_prefix_sha256": "f25babb7f3bcc147ab36c385151a43cd1e182035cf04de82cfb57383db8d1064",
+      "first_read_limit_bytes": 3587919
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-6903/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 2758802,
+      "complete_prefix_sha256": "aceb691965fa68b80712f2214ca0fa1dadaf784e4adf02ad91d6aa2bf52658c8",
+      "first_read_limit_bytes": 2758802
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 1407203063,
+      "complete_prefix_sha256": "135612bc86373bc643e9a90d861bfcd8132be8b5fb9381d474fa87a226a1fc37",
+      "first_read_limit_bytes": 1407203063
+    }
+  },
+  "counts": {
+    "episodes": 18,
+    "active_tools_at_first_submit:0": 18
+  },
+  "rows": [
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:7fc528798410e279",
+      "context_epoch": 29,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a13585-b669-7ad3-94e7-3518668bec23",
+      "completion_ts_ms": 1791899317842.5908,
+      "first_service_ts_ms": 1791899332285.9014,
+      "early_full_commands": 23,
+      "early_full_bytes": 180367360,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 156211.93676757812,
+      "completion_to_client_submit_ms": 25.174072265625,
+      "client_submit_to_native_arrival_ms": 142.062744140625,
+      "native_arrival_to_first_service_ms": 14276.07373046875,
+      "latest_early_ack_to_first_service_ms": 170655.24731445312,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 23
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-aaefde10c9f648879671a87a724440a6",
+        "beliefkv-prefetch-c4ac03eef8ae46818ce27b6ca048eaf8",
+        "beliefkv-prefetch-6ed0a482c0944e63914de0c1767d74c7",
+        "beliefkv-prefetch-2ad1f1b9b01e4f4197d42969cce38fd9",
+        "beliefkv-prefetch-6066c74946414ebe83d31bd2f666399c",
+        "beliefkv-prefetch-3458a1de4090492082b8414840afde57",
+        "beliefkv-prefetch-156807812801426c9b76e48da45a60a0",
+        "beliefkv-prefetch-528c3ff7605b45f5b2c6b987b7f9a325",
+        "beliefkv-prefetch-4daa183ac8c64d819e4b25fcb54dc61c",
+        "beliefkv-prefetch-29894ab71f48462aa3bef7021ef333d7",
+        "beliefkv-prefetch-180c16b857bb42529dd3e6b843efb7d1",
+        "beliefkv-prefetch-cfc25bd7b0554446bbb51d760b98d3d3",
+        "beliefkv-prefetch-1e5b26609b574eedb104e7be55f4e9e1",
+        "beliefkv-prefetch-d49d50dd3a504edea03fd1680d25becb",
+        "beliefkv-prefetch-7dca542074a14b2690fcedaef4e9ea9e",
+        "beliefkv-prefetch-cf6faf9c26e84d5c9f99563878283051",
+        "beliefkv-prefetch-a023694de844434d8b5a7f3cb9f7b720",
+        "beliefkv-prefetch-813f1668ccc94dec832754fbc452c109",
+        "beliefkv-prefetch-6ca6a17b249542be8d7bf857c3de3a2e",
+        "beliefkv-prefetch-87d0b8f5b7074bb88b3b3368634e54f2",
+        "beliefkv-prefetch-80c135ff7e814324bc11e87b1ce48a87",
+        "beliefkv-prefetch-c3a5020b855e4a7abdb906ae10d97649",
+        "beliefkv-prefetch-645641b8f54141a2ac6bc8b69da27ddc"
+      ],
+      "first_submit_ts_ms": 1791899161572.7021,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899161535.0574,
+        "observed_monotonic_ms": 6069424628.734965,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 29,
+        "invocation_revision_ts_ms": 6069415693.136607,
+        "p10_ms": 6888.623434,
+        "p50_ms": 23170.475006,
+        "p90_ms": 46340.950012,
+        "release_cdf": [
+          [
+            1.0,
+            0.0004254776272004668
+          ],
+          [
+            2.0,
+            0.0008172832479558191
+          ],
+          [
+            4.0,
+            0.0018161117221423754
+          ],
+          [
+            8.0,
+            0.004400708427754994
+          ],
+          [
+            16.0,
+            0.010988501708349316
+          ],
+          [
+            32.0,
+            0.027089969322842578
+          ],
+          [
+            64.0,
+            0.06377841780293445
+          ],
+          [
+            128.0,
+            0.1387255968046212
+          ],
+          [
+            256.0,
+            0.268411461822467
+          ],
+          [
+            512.0,
+            0.446532804992679
+          ],
+          [
+            1024.0,
+            0.6330269182432522
+          ],
+          [
+            2048.0,
+            0.7839739580233103
+          ],
+          [
+            4096.0,
+            0.8839070231910598
+          ],
+          [
+            8192.0,
+            0.9412605859158988
+          ],
+          [
+            16384.0,
+            0.9710249018540094
+          ],
+          [
+            32768.0,
+            0.9855698174932803
+          ],
+          [
+            65536.0,
+            0.9925660314187731
+          ],
+          [
+            131072.0,
+            0.9959939598065639
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 622.1631393092349,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899161562.7192,
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 29,
+        "wait_revision_ts_ms": 6069415693.136607,
+        "remaining_p50_ms": 626.2949871179376,
+        "start_window_ms": 730.9370461228762,
+        "h2d_ms": 83.56469499791265,
+        "enqueue_to_submit_p90_ms": 1.5570647083222866,
+        "prediction_early_ms": 545.8152864166412
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:7fc528798410e279",
+      "context_epoch": 30,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a13588-5873-78a3-aa74-d08a3944122c",
+      "completion_ts_ms": 1791899490392.9614,
+      "first_service_ts_ms": 1791899504033.0117,
+      "early_full_commands": 7,
+      "early_full_bytes": 54497280,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 113672.0791015625,
+      "completion_to_client_submit_ms": 29.094970703125,
+      "client_submit_to_native_arrival_ms": 241.588623046875,
+      "native_arrival_to_first_service_ms": 13369.36669921875,
+      "latest_early_ack_to_first_service_ms": 127312.12939453125,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 7
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-2ad5e147bebc4ddcaf254b5ad5009825",
+        "beliefkv-prefetch-019cd4f559204338876f8aaf25e4d428",
+        "beliefkv-prefetch-3e8e56c8755f4d8596dda04de035ac3d",
+        "beliefkv-prefetch-9687103e5d4d4e2498278199ba9ea60c",
+        "beliefkv-prefetch-478a003802a34a3ea1a51e534dcfcd78",
+        "beliefkv-prefetch-dd19e6fe74e9456089ec06fb14e91bbf",
+        "beliefkv-prefetch-0b0dfaac333c4bbb9bcbaa5cf623dd12"
+      ],
+      "first_submit_ts_ms": 1791899376661.1824,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899376654.3196,
+        "observed_monotonic_ms": 6069639747.292092,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 30,
+        "invocation_revision_ts_ms": 6069598746.803817,
+        "p10_ms": 5792.618751,
+        "p50_ms": 5792.618751,
+        "p90_ms": 13777.246868,
+        "release_cdf": [
+          [
+            1.0,
+            0.00027979666679868063
+          ],
+          [
+            2.0,
+            0.0005294270579827629
+          ],
+          [
+            4.0,
+            0.0011545391310347633
+          ],
+          [
+            8.0,
+            0.0027389774556800125
+          ],
+          [
+            16.0,
+            0.006693044900475869
+          ],
+          [
+            32.0,
+            0.016189300511531824
+          ],
+          [
+            64.0,
+            0.037692174015184356
+          ],
+          [
+            128.0,
+            0.08246566539622428
+          ],
+          [
+            256.0,
+            0.16514924061611969
+          ],
+          [
+            512.0,
+            0.29427169415273136
+          ],
+          [
+            1024.0,
+            0.4572865612991817
+          ],
+          [
+            2048.0,
+            0.6209801730467603
+          ],
+          [
+            4096.0,
+            0.7553968690644337
+          ],
+          [
+            8192.0,
+            0.8509562576092645
+          ],
+          [
+            16384.0,
+            0.9130290374037495
+          ],
+          [
+            32768.0,
+            0.9508853484498474
+          ],
+          [
+            65536.0,
+            0.9726672029906264
+          ],
+          [
+            131072.0,
+            0.9846137105173876
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1226.2707732874514,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899376658.634,
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 30,
+        "wait_revision_ts_ms": 6069598746.803817,
+        "remaining_p50_ms": 1228.150805302296,
+        "start_window_ms": 1247.1704863048776,
+        "h2d_ms": 61.12422067672015,
+        "enqueue_to_submit_p90_ms": 0.0,
+        "prediction_early_ms": 1086.0462656281575
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:184e3a0b6112ffa9",
+      "context_epoch": 31,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a13588-58a7-7591-bc33-22ded74079bd",
+      "completion_ts_ms": 1791899490467.42,
+      "first_service_ts_ms": 1791899504298.7104,
+      "early_full_commands": 21,
+      "early_full_bytes": 135147520,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 150762.87060546875,
+      "completion_to_client_submit_ms": 5.4296875,
+      "client_submit_to_native_arrival_ms": 281.294677734375,
+      "native_arrival_to_first_service_ms": 13544.566162109375,
+      "latest_early_ack_to_first_service_ms": 164594.1611328125,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 21
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-d2c1273707274e6e8b218fbd35e38aca",
+        "beliefkv-prefetch-b6c58e9e92a64d0292ad31793f06c775",
+        "beliefkv-prefetch-c5c0319d1ed246738c59b933cefbd7c4",
+        "beliefkv-prefetch-480828ca89614a689eb0ea313a45e7d3",
+        "beliefkv-prefetch-587fd63b370a4ea28a66af0d04484990",
+        "beliefkv-prefetch-99c4961fa03645c4bc3ddf545dca053f",
+        "beliefkv-prefetch-421c5fbda578489885887ab07b662d7e",
+        "beliefkv-prefetch-3873d6a939fc4ee3be583266069cd560",
+        "beliefkv-prefetch-b0b9a60559524a9d80fa1a771f3f646e",
+        "beliefkv-prefetch-7eca44a32ecd4a54be06a003e2f45783",
+        "beliefkv-prefetch-0801c96aa94d47beb98de83fcc2bb649",
+        "beliefkv-prefetch-f2b781b9d37e40429160397fe78dc082",
+        "beliefkv-prefetch-2d01e496c5974ef4b47018b1d21366e0",
+        "beliefkv-prefetch-3ac88648ed42479b8c2871c4c0263d0b",
+        "beliefkv-prefetch-48772e661bd04e48b2663b2bacd3c976",
+        "beliefkv-prefetch-5b50ee5128e2436f9a7f1e676d974240",
+        "beliefkv-prefetch-d834b35232914d648bb17eef6da5bb38",
+        "beliefkv-prefetch-3c0aa311b24649eb9dcaedcc765437ca",
+        "beliefkv-prefetch-b3a9904ef21043d987480d5282f192b0",
+        "beliefkv-prefetch-b6e11f7afd11424eb0244f91033b6bcd",
+        "beliefkv-prefetch-113ba8be53b74020be4d73d4db10e586"
+      ],
+      "first_submit_ts_ms": 1791899339663.7505,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899339591.044,
+        "observed_monotonic_ms": 6069602640.250035,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+        "context_id": "deepagents-context:184e3a0b6112ffa9",
+        "context_epoch": 31,
+        "invocation_revision_ts_ms": 6069598769.346648,
+        "p10_ms": 11585.237503,
+        "p50_ms": 27554.493735,
+        "p90_ms": 55108.98747,
+        "release_cdf": [
+          [
+            1.0,
+            0.00018861955745011477
+          ],
+          [
+            2.0,
+            0.0003654521584167253
+          ],
+          [
+            4.0,
+            0.00082125590985469
+          ],
+          [
+            8.0,
+            0.0020178609138346605
+          ],
+          [
+            16.0,
+            0.005127342892391586
+          ],
+          [
+            32.0,
+            0.012946827814594228
+          ],
+          [
+            64.0,
+            0.031625424873301174
+          ],
+          [
+            128.0,
+            0.07310098853690061
+          ],
+          [
+            256.0,
+            0.15587873388008408
+          ],
+          [
+            512.0,
+            0.2967488355379239
+          ],
+          [
+            1024.0,
+            0.48775820516125645
+          ],
+          [
+            2048.0,
+            0.6823674456318225
+          ],
+          [
+            4096.0,
+            0.8293504450783834
+          ],
+          [
+            8192.0,
+            0.9158662845757022
+          ],
+          [
+            16384.0,
+            0.9594637890673506
+          ],
+          [
+            32768.0,
+            0.9801040515019548
+          ],
+          [
+            65536.0,
+            0.9898580537763358
+          ],
+          [
+            131072.0,
+            0.9945925038293982
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1068.3269807485437,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899339657.281,
+        "context_id": "deepagents-context:184e3a0b6112ffa9",
+        "context_epoch": 31,
+        "wait_revision_ts_ms": 6069598769.346648,
+        "remaining_p50_ms": 1089.6260040571012,
+        "start_window_ms": 1132.7937607324757,
+        "h2d_ms": 86.4170235581696,
+        "enqueue_to_submit_p90_ms": 1.8097725696861744,
+        "prediction_early_ms": 944.56696460462
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-12741:874cc5a30550",
+      "context_id": "deepagents:autonomous:django__django-12741:874cc5a30550:context:root",
+      "context_epoch": 31,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a13588-7de9-7241-b46b-00bb6ebe83ff",
+      "completion_ts_ms": 1791899499978.8765,
+      "first_service_ts_ms": 1791899514447.4302,
+      "early_full_commands": 30,
+      "early_full_bytes": 163512320,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 26750.25,
+      "completion_to_client_submit_ms": 32.727783203125,
+      "client_submit_to_native_arrival_ms": 294.43505859375,
+      "native_arrival_to_first_service_ms": 14141.390869140625,
+      "latest_early_ack_to_first_service_ms": 41218.8037109375,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 30
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-0346f79b16ab49cf8b57115024922417",
+        "beliefkv-prefetch-18f92e419ac44c30a00718edcaab57ed",
+        "beliefkv-prefetch-43843815f133443284337d6376503aca",
+        "beliefkv-prefetch-e8e228c019e44773bcd913930fadc379",
+        "beliefkv-prefetch-661958607c82479ba6bbb16c0657f434",
+        "beliefkv-prefetch-ad11377063c64a6eb43e9cd6da4f62dd",
+        "beliefkv-prefetch-67b5d20c32e644499ac8a9e3278ecd34",
+        "beliefkv-prefetch-039376e193d34d21aa2d01f762c4587c",
+        "beliefkv-prefetch-b5552eaf0d2e4958b954b2b84f4e6f68",
+        "beliefkv-prefetch-b338475b8f96497c898f7463dfcb9436",
+        "beliefkv-prefetch-9102eecb55004b0dab167a3c65372171",
+        "beliefkv-prefetch-82c86e28c7b34e218b24df4b91f10161",
+        "beliefkv-prefetch-6ace181b43a140d1a7223c9e87534ab2",
+        "beliefkv-prefetch-0e79d22f4348415595b8efd314937b19",
+        "beliefkv-prefetch-7c1c35d3ee7a4bc68998f37d4893c38d",
+        "beliefkv-prefetch-75dddb40247a48cebddc3b4b756fec51",
+        "beliefkv-prefetch-9762623e0b8c489f90707e36e0daede1",
+        "beliefkv-prefetch-52686382658c4c83a4547684c4fc81d4",
+        "beliefkv-prefetch-f51bbecb54ff43789b5b9b2afd236e59",
+        "beliefkv-prefetch-b48c3ad0ec6542f9beb7a3f8d1ddb694",
+        "beliefkv-prefetch-dc6528eee91f406ea0b4928bdb6ff0a0",
+        "beliefkv-prefetch-0f064586d0c14742beecd289598aed7c",
+        "beliefkv-prefetch-fbecaa987d144c788f6b327e4d0eeb9e",
+        "beliefkv-prefetch-08ee770e7aed4893b8688aeb7809f9b3",
+        "beliefkv-prefetch-f1a59c41324044bba029f03d7d08132a",
+        "beliefkv-prefetch-6adf3758e07345afa5d924d4d5997e3d",
+        "beliefkv-prefetch-ea76d3abcac94045be641a8ca182e911",
+        "beliefkv-prefetch-40b9eadb0a324e118872e663804de6f7",
+        "beliefkv-prefetch-d46799aa170e4bc8bf63a378eb55922f",
+        "beliefkv-prefetch-6e107482cc92473bab225f3792c75ed0"
+      ],
+      "first_submit_ts_ms": 1791899473153.6372,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899472821.7773,
+        "observed_monotonic_ms": 6069735911.983215,
+        "workflow_id": "deepagents:autonomous:django__django-12741:874cc5a30550",
+        "invocation_id": "deepagents:autonomous:django__django-12741:874cc5a30550:root",
+        "context_id": "deepagents:autonomous:django__django-12741:874cc5a30550:context:root",
+        "context_epoch": 31,
+        "invocation_revision_ts_ms": 6069735692.775687,
+        "p10_ms": 152.218511,
+        "p50_ms": 512.0,
+        "p90_ms": 4096.0,
+        "release_cdf": [
+          [
+            1.0,
+            9.804611075176793e-05
+          ],
+          [
+            2.0,
+            0.00019612589432140587
+          ],
+          [
+            4.0,
+            0.0004599856372024503
+          ],
+          [
+            8.0,
+            0.0011939031415200453
+          ],
+          [
+            16.0,
+            0.0032563172896408928
+          ],
+          [
+            32.0,
+            0.009040861652375358
+          ],
+          [
+            64.0,
+            0.025143145604437322
+          ],
+          [
+            128.0,
+            0.06874667204282495
+          ],
+          [
+            256.0,
+            0.1755093265426285
+          ],
+          [
+            512.0,
+            0.3780334038407361
+          ],
+          [
+            1024.0,
+            0.6272392938061992
+          ],
+          [
+            2048.0,
+            0.8167314402846113
+          ],
+          [
+            4096.0,
+            0.9182720897366184
+          ],
+          [
+            8192.0,
+            0.9642201308673664
+          ],
+          [
+            16384.0,
+            0.9840045779106055
+          ],
+          [
+            32768.0,
+            0.9925774382474684
+          ],
+          [
+            65536.0,
+            0.9964014601832131
+          ],
+          [
+            131072.0,
+            0.9981726112141587
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 710.4279624884175,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899473143.3525,
+        "context_id": "deepagents:autonomous:django__django-12741:874cc5a30550:context:root",
+        "context_epoch": 31,
+        "wait_revision_ts_ms": 6069735692.775687,
+        "remaining_p50_ms": 687.6247856175129,
+        "start_window_ms": 770.5153032137483,
+        "h2d_ms": 77.41294084690651,
+        "enqueue_to_submit_p90_ms": 2.3950464092195034,
+        "prediction_early_ms": 590.7073159576223
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:7fc528798410e279",
+      "context_epoch": 31,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a1358b-1668-7e23-a990-a0cf366ac0ff",
+      "completion_ts_ms": 1791899670012.3684,
+      "first_service_ts_ms": 1791899683314.3135,
+      "early_full_commands": 22,
+      "early_full_bytes": 177684480,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 158963.98120117188,
+      "completion_to_client_submit_ms": 111.196044921875,
+      "client_submit_to_native_arrival_ms": 245.819580078125,
+      "native_arrival_to_first_service_ms": 12944.929443359375,
+      "latest_early_ack_to_first_service_ms": 172265.92626953125,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 22
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-23ba90096f2e4c2093bc2eb018c5e84f",
+        "beliefkv-prefetch-7c124c6820704556a46711bf4c8b435d",
+        "beliefkv-prefetch-1585cff06cbc46e5921dbaae1a10b2a2",
+        "beliefkv-prefetch-ba5df645d764478888d0e72351698b70",
+        "beliefkv-prefetch-c585142f7dc4475597df563b95dba07d",
+        "beliefkv-prefetch-cd57229ce77b4bf2a1f345e846334fec",
+        "beliefkv-prefetch-5497a8aa489e4b339bc3c992ea3d4b14",
+        "beliefkv-prefetch-acdf4344cb8f41a6ae729c292fd67b27",
+        "beliefkv-prefetch-1e2bbdee4cfa4d8095a50d19a8026a05",
+        "beliefkv-prefetch-fa2d6b94fa694f08b40f6cce0610ecd7",
+        "beliefkv-prefetch-c57e4cc7c663434bb4c3d89c9f539081",
+        "beliefkv-prefetch-35b3551b4ead4efe84f45f671f105103",
+        "beliefkv-prefetch-ac553948967f4afaa8118f3e913a800c",
+        "beliefkv-prefetch-10f848e94df54a4fb49b1465f694b3ec",
+        "beliefkv-prefetch-5ca9736bc72e457cbabd6f1726e2b7eb",
+        "beliefkv-prefetch-c7da2ed825614ccab031345837eda42a",
+        "beliefkv-prefetch-149640b2177d40dcb99db4e02f1d7371",
+        "beliefkv-prefetch-67460145cf50451d9a2a5ccc43325785",
+        "beliefkv-prefetch-a59eccfba0844041b3102e0a4af7cf92",
+        "beliefkv-prefetch-7a63e29161bd48a3ad657da3e4c6112b",
+        "beliefkv-prefetch-c05868b28bb54d10beec2a9e8c9c5ba5",
+        "beliefkv-prefetch-f611d6e722384420b6a643c7fe6add96"
+      ],
+      "first_submit_ts_ms": 1791899510989.3801,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899510909.5515,
+        "observed_monotonic_ms": 6069773988.038689,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 31,
+        "invocation_revision_ts_ms": 6069772570.551036,
+        "p10_ms": 877.6271457672119,
+        "p50_ms": 877.6271457672119,
+        "p90_ms": 877.6271457672119,
+        "release_cdf": [
+          [
+            1.0,
+            0.0002632319679440093
+          ],
+          [
+            2.0,
+            0.0005152657192756615
+          ],
+          [
+            4.0,
+            0.0011731445417055872
+          ],
+          [
+            8.0,
+            0.0029269122103378156
+          ],
+          [
+            16.0,
+            0.007563967717961471
+          ],
+          [
+            32.0,
+            0.019440033377785826
+          ],
+          [
+            64.0,
+            0.04828005648584799
+          ],
+          [
+            128.0,
+            0.11275935457490037
+          ],
+          [
+            256.0,
+            0.23860905811479158
+          ],
+          [
+            512.0,
+            0.4347410175344362
+          ],
+          [
+            1024.0,
+            0.6545311418711172
+          ],
+          [
+            2048.0,
+            0.8234330106167036
+          ],
+          [
+            4096.0,
+            0.9184830937375706
+          ],
+          [
+            8192.0,
+            0.9632781531544159
+          ],
+          [
+            16384.0,
+            0.9831265490049611
+          ],
+          [
+            32768.0,
+            0.9919429384695423
+          ],
+          [
+            65536.0,
+            0.9959755587059331
+          ],
+          [
+            131072.0,
+            0.9978927027396887
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [
+          [
+            877.6271457672119,
+            1.0
+          ]
+        ],
+        "residual_support_detail": "completed_project_command",
+        "conditional_p50_ms": 620.0311267103745,
+        "timing_policy": "survival_conditioned_completed_history"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899510983.1826,
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 31,
+        "wait_revision_ts_ms": 6069772570.551036,
+        "remaining_p50_ms": 624.3091242279227,
+        "start_window_ms": 700.8176182249422,
+        "h2d_ms": 63.29629337415099,
+        "enqueue_to_submit_p90_ms": 0.0,
+        "prediction_early_ms": 537.5213248507912
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:184e3a0b6112ffa9",
+      "context_epoch": 33,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a1358b-169b-77e2-a176-74aee4fc2643",
+      "completion_ts_ms": 1791899670165.3604,
+      "first_service_ts_ms": 1791899683709.675,
+      "early_full_commands": 47,
+      "early_full_bytes": 270725120,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 96824.19653320312,
+      "completion_to_client_submit_ms": 8.114990234375,
+      "client_submit_to_native_arrival_ms": 353.49169921875,
+      "native_arrival_to_first_service_ms": 13182.7080078125,
+      "latest_early_ack_to_first_service_ms": 110368.51123046875,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 47
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-a8c0ddc6e43b45f08d4b749131fe048e",
+        "beliefkv-prefetch-94353b6b9a60489cba46d08eb464688c",
+        "beliefkv-prefetch-ae0eb84dfcf1495195aa11c3efa12cf7",
+        "beliefkv-prefetch-28808a2c40b64bf5b6561a36264c0cd5",
+        "beliefkv-prefetch-633b2f1017f942069970369d21719350",
+        "beliefkv-prefetch-44ac9f00d4a94b1d84f8aebef9506153",
+        "beliefkv-prefetch-ed48516de77e4327aa889f1281e35011",
+        "beliefkv-prefetch-25951c3c9c224da4a1a860cb5ba3ba8e",
+        "beliefkv-prefetch-10e1e6266fe24f91bed3135a4da06633",
+        "beliefkv-prefetch-145eb066279e4b8482ada073eb788a36",
+        "beliefkv-prefetch-3fa96c38709b43d6ab71d6794eb81197",
+        "beliefkv-prefetch-ce00f9da5bec4426b8893c02850b9156",
+        "beliefkv-prefetch-2ece220b2ef74640b39c6c0b6ce783e8",
+        "beliefkv-prefetch-483ef518a66f4123861271c29f707c18",
+        "beliefkv-prefetch-ab9ed8c1810347bbbc26496513f81651",
+        "beliefkv-prefetch-5a330cf8be6d4eeabf4b2891df1a4438",
+        "beliefkv-prefetch-d01de7d0d6d541b6870a008d0db510f9",
+        "beliefkv-prefetch-44d801e4efe8498ca672b4b65e037371",
+        "beliefkv-prefetch-3f7c27112ec549fa8b232d41f3da9418",
+        "beliefkv-prefetch-92545b737cb34435810136c7dcaeb8d2",
+        "beliefkv-prefetch-e3ea2d2924974eadb1077ada6c258f6f",
+        "beliefkv-prefetch-9882fda99cd9464bbc254d65b79f914c",
+        "beliefkv-prefetch-74f32dd733f443e7a74c244fe495c462",
+        "beliefkv-prefetch-0e18484521304b53b282ac5c2f0098d0",
+        "beliefkv-prefetch-be853ff9719f4563a0d39225263653a2",
+        "beliefkv-prefetch-3d04f1fd565c491580fdff77adad467b",
+        "beliefkv-prefetch-167b7e735c344554b5e1a5ba8f8f0ac9",
+        "beliefkv-prefetch-75b4e791184d40f08ed3b0f9cd520701",
+        "beliefkv-prefetch-b0b67828e71146778b9763ff68244ecd",
+        "beliefkv-prefetch-da226fe1b44645da92103e31e4f1fae6",
+        "beliefkv-prefetch-429cfd16df59418ebba9678b648435fa",
+        "beliefkv-prefetch-a3c5e1d4f9fb45719bca08e25ed35e20",
+        "beliefkv-prefetch-08a5da62d19b43909f5a717320922391",
+        "beliefkv-prefetch-8cf7ff8975e249379441166a62f11155",
+        "beliefkv-prefetch-9b7f98e2fe86409387a9c21f2c3979dc",
+        "beliefkv-prefetch-1e27e4a6ac96440993165cb88e525e83",
+        "beliefkv-prefetch-e324e18880854fe193016cec13080a17",
+        "beliefkv-prefetch-bf6f06ac1992450483d197e690aae348",
+        "beliefkv-prefetch-575baa5c457640d7a16cc3903981766b",
+        "beliefkv-prefetch-80e4f1fe9e334c509aa0e3e236606d45",
+        "beliefkv-prefetch-3b5826c33f6e401889c3c77cc4d00d56",
+        "beliefkv-prefetch-8ba5ec51751646ffadb4b0fe8ca7953f",
+        "beliefkv-prefetch-87cf4b6197e04c29a20fb85b1e71ec6d",
+        "beliefkv-prefetch-d4b83359fd00453cb2a791286fd7a45e",
+        "beliefkv-prefetch-b154fb2456af4d91aab18e1bebe23fb1",
+        "beliefkv-prefetch-83169ca16f9249d5ae52e99f39b5259a",
+        "beliefkv-prefetch-a74cda2e31714f8d9c00a41c33d77014"
+      ],
+      "first_submit_ts_ms": 1791899573286.1277,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899573150.5876,
+        "observed_monotonic_ms": 6069836223.823013,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+        "context_id": "deepagents-context:184e3a0b6112ffa9",
+        "context_epoch": 33,
+        "invocation_revision_ts_ms": 6069788958.258312,
+        "p10_ms": 8192.0,
+        "p50_ms": 8192.0,
+        "p90_ms": 8192.0,
+        "release_cdf": [
+          [
+            1.0,
+            0.00033914031699027353
+          ],
+          [
+            2.0,
+            0.0006407766208121535
+          ],
+          [
+            4.0,
+            0.0013946944240675328
+          ],
+          [
+            8.0,
+            0.0033008510949421145
+          ],
+          [
+            16.0,
+            0.008041665303842484
+          ],
+          [
+            32.0,
+            0.0193693101101386
+          ],
+          [
+            64.0,
+            0.04479856812598005
+          ],
+          [
+            128.0,
+            0.09693783252055521
+          ],
+          [
+            256.0,
+            0.19068857046983412
+          ],
+          [
+            512.0,
+            0.3311660337240814
+          ],
+          [
+            1024.0,
+            0.49921876305737867
+          ],
+          [
+            2048.0,
+            0.6586008893049596
+          ],
+          [
+            4096.0,
+            0.7831741014707284
+          ],
+          [
+            8192.0,
+            0.868679069518677
+          ],
+          [
+            16384.0,
+            0.9231684092037499
+          ],
+          [
+            32768.0,
+            0.9562816280514271
+          ],
+          [
+            65536.0,
+            0.9754854774060236
+          ],
+          [
+            131072.0,
+            0.9861336247668586
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1038.316591371328,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899573269.3516,
+        "context_id": "deepagents-context:184e3a0b6112ffa9",
+        "context_epoch": 33,
+        "wait_revision_ts_ms": 6069788958.258312,
+        "remaining_p50_ms": 1170.8223235452692,
+        "start_window_ms": 1204.4889008510797,
+        "h2d_ms": 56.44352975936015,
+        "enqueue_to_submit_p90_ms": 1.7687566578388214,
+        "prediction_early_ms": 1046.2766144338807
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:7fc528798410e279",
+      "context_epoch": 32,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a1358d-b53e-78b3-98e1-ee68fcfc9ad1",
+      "completion_ts_ms": 1791899841838.8467,
+      "first_service_ts_ms": 1791899853494.67,
+      "early_full_commands": 51,
+      "early_full_bytes": 420270080,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 138600.45263671875,
+      "completion_to_client_submit_ms": 19.55517578125,
+      "client_submit_to_native_arrival_ms": 140.569091796875,
+      "native_arrival_to_first_service_ms": 11495.698974609375,
+      "latest_early_ack_to_first_service_ms": 150256.27587890625,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 51
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-cd124c9187bf4eeb83f15271517f2a72",
+        "beliefkv-prefetch-34d07833d1f446ed895a3a5c66068607",
+        "beliefkv-prefetch-3d71c1abf0f243e286f01b68ff723ecf",
+        "beliefkv-prefetch-ebd07b9f50b946c29e941a511dd89f67",
+        "beliefkv-prefetch-1a136e43c2ce486292c2d135c6edd5fe",
+        "beliefkv-prefetch-59a7c9893f42439dab76f1a54b2ccf90",
+        "beliefkv-prefetch-b9159b3f04c54dffa9666cff28cde772",
+        "beliefkv-prefetch-bdf47ef0aafe4cfa88b974cb319e1c2c",
+        "beliefkv-prefetch-a3b2a9ea4bcc4af7a498b4620cd40d6d",
+        "beliefkv-prefetch-2fc3f4561d46495e9a4d3341e9a0be26",
+        "beliefkv-prefetch-30470c45209445dbba12d777e6f84489",
+        "beliefkv-prefetch-e0f1f17d7a65483a855de23d43b79d32",
+        "beliefkv-prefetch-b7ec2de5acef421fac3fc0e80bbfe937",
+        "beliefkv-prefetch-626f416d9c96468b8e9edbb45ccdd218",
+        "beliefkv-prefetch-51a60364bec5431382e4266db09f75ab",
+        "beliefkv-prefetch-f05784fb1cb647c28e048a2121d5d91f",
+        "beliefkv-prefetch-6b5b8156da9449f286c03c1e2ed363a3",
+        "beliefkv-prefetch-b94a8cb4d11140a6bfdd0f6392785c26",
+        "beliefkv-prefetch-d0d5be1ad31e4b55974a979831a051ae",
+        "beliefkv-prefetch-35d91b283a8140fd8baee7cb9a8f4d31",
+        "beliefkv-prefetch-0fb37908c4c04ca3a1090ad076df04bd",
+        "beliefkv-prefetch-4939734aedb24b3d8d771b1dc0a2f933",
+        "beliefkv-prefetch-4c5708f6673b4c17a57480b7fbbec530",
+        "beliefkv-prefetch-92eaea21f41e4189b79eb2448c5eebb9",
+        "beliefkv-prefetch-0b3f8e10651348239fc70bc8bbd31873",
+        "beliefkv-prefetch-f26245106b4a4ca2af0a7c543cf47ae9",
+        "beliefkv-prefetch-aa84bec2d10545eab0978de43c383b39",
+        "beliefkv-prefetch-3ce5fe7aad084cb58e9cf5b01db10f92",
+        "beliefkv-prefetch-af46c8daeddd444db1811cf6cba0d625",
+        "beliefkv-prefetch-81fdf88b6cfd4e10a68e3660f29e352b",
+        "beliefkv-prefetch-3f3da0e21567434fb9e510af589b19f1",
+        "beliefkv-prefetch-c9ada7f3eb344f41be90a537c8fbc719",
+        "beliefkv-prefetch-a582ea9af6304a8aa6b2402a70b7959f",
+        "beliefkv-prefetch-1e3150c05d1b4c3e934a6a91ce52a9ef",
+        "beliefkv-prefetch-ba9fcbe014ac493f9e610d53332e3829",
+        "beliefkv-prefetch-73b37bad53f44180a901929e8d587934",
+        "beliefkv-prefetch-a7e1626115184a8fadb8f4ff7d52cdf4",
+        "beliefkv-prefetch-85d1fa8e357a480488bf499e6ad821b1",
+        "beliefkv-prefetch-151bd794403a44929edb0e78d0881eac",
+        "beliefkv-prefetch-ebac11b48d6d4807acca264668a6537b",
+        "beliefkv-prefetch-2d610de7a1a243af870a2c36041af214",
+        "beliefkv-prefetch-c9459e520131477ea50dd458e39dcf33",
+        "beliefkv-prefetch-af5082d2ea3d47b4b21340a9fa0aea1d",
+        "beliefkv-prefetch-e7af35cfe2be4d45a06e813f736e4f49",
+        "beliefkv-prefetch-5e24096d8cf34e669865c227a9f1954c",
+        "beliefkv-prefetch-ad4dcd5165f04b86b226175e0bc2f126",
+        "beliefkv-prefetch-49b3cfc7d79747528507aa12cd470cbb",
+        "beliefkv-prefetch-a3e342f098344be69e4f319fb60250e6",
+        "beliefkv-prefetch-33e49f53251e4c51b6e4724e41f1fab4",
+        "beliefkv-prefetch-0491ec4978cf49e79b8b5c7a5db3e9c2",
+        "beliefkv-prefetch-75fac52a72ce432da0d20d8802abeac9"
+      ],
+      "first_submit_ts_ms": 1791899703064.8276,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899702991.6355,
+        "observed_monotonic_ms": 6069966069.919603,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 32,
+        "invocation_revision_ts_ms": 6069950386.81842,
+        "p10_ms": 724.077344,
+        "p50_ms": 16384.0,
+        "p90_ms": 38967.938744,
+        "release_cdf": [
+          [
+            1.0,
+            0.0002367507084363688
+          ],
+          [
+            2.0,
+            0.0004522968770722325
+          ],
+          [
+            4.0,
+            0.0009983984692427585
+          ],
+          [
+            8.0,
+            0.0024022549193200337
+          ],
+          [
+            16.0,
+            0.0059625301205710945
+          ],
+          [
+            32.0,
+            0.014668242794455286
+          ],
+          [
+            64.0,
+            0.034785456081359634
+          ],
+          [
+            128.0,
+            0.07766756412422043
+          ],
+          [
+            256.0,
+            0.15903537655635638
+          ],
+          [
+            512.0,
+            0.2899082618233066
+          ],
+          [
+            1024.0,
+            0.4597022547264093
+          ],
+          [
+            2048.0,
+            0.6332231293101361
+          ],
+          [
+            4096.0,
+            0.7755445682939676
+          ],
+          [
+            8192.0,
+            0.8735648202456257
+          ],
+          [
+            16384.0,
+            0.932666147210482
+          ],
+          [
+            32768.0,
+            0.9649134932608173
+          ],
+          [
+            65536.0,
+            0.9814875994115325
+          ],
+          [
+            131072.0,
+            0.9898836113271948
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1205.0971307062812,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899703055.5378,
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 32,
+        "wait_revision_ts_ms": 6069950386.81842,
+        "remaining_p50_ms": 1251.4178416962227,
+        "start_window_ms": 1254.7378492879739,
+        "h2d_ms": 49.887366020713245,
+        "enqueue_to_submit_p90_ms": 0.0,
+        "prediction_early_ms": 1104.8504832672606
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+      "context_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:context:root",
+      "context_epoch": 14,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a1358d-3bd8-7ff1-9845-bd229c8af9e9",
+      "completion_ts_ms": 1791899810771.1409,
+      "first_service_ts_ms": 1791899825520.0564,
+      "early_full_commands": 22,
+      "early_full_bytes": 234987520,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 89245.25805664062,
+      "completion_to_client_submit_ms": 6.041259765625,
+      "client_submit_to_native_arrival_ms": 251.905517578125,
+      "native_arrival_to_first_service_ms": 14490.96875,
+      "latest_early_ack_to_first_service_ms": 103994.17358398438,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 22
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-9bcfdbb915e24ed8b273019197aaf189",
+        "beliefkv-prefetch-5c09dc2c0bba4ea1944ed17197d1be2c",
+        "beliefkv-prefetch-6e0f04ddc34c4d4fbdcd566d2dec9ba0",
+        "beliefkv-prefetch-1c3c5561866b448cb1a08c49240bc47d",
+        "beliefkv-prefetch-bf5418dd9ae84850a7bb440159a222e5",
+        "beliefkv-prefetch-e0eac018caed4ecdb14e82d93e031e5f",
+        "beliefkv-prefetch-f08cd16a0021437c9d7dcb3d5f011f76",
+        "beliefkv-prefetch-e0ec46ea64a64d10b0c4c541e65d3fb2",
+        "beliefkv-prefetch-83d3e48b2fed45dd8b94da4528b4a280",
+        "beliefkv-prefetch-8119212cbfee4ca4ac0ea819c558c26a",
+        "beliefkv-prefetch-83cfa653829d40c584669a1b06a86605",
+        "beliefkv-prefetch-db172be92f2f4d819e2f23f21f75ca9e",
+        "beliefkv-prefetch-0395e2b3cb0f468e8f5845082e644307",
+        "beliefkv-prefetch-10e905fe8dcc4f08988af819736719c5",
+        "beliefkv-prefetch-1796a88abaec4f37b3ab9beba9ef2d34",
+        "beliefkv-prefetch-681de46aef0a40dfa94cc974da420fb9",
+        "beliefkv-prefetch-02be977443264672886d849312bdf7a4",
+        "beliefkv-prefetch-08af1322ceb14f3ca29416462c298197",
+        "beliefkv-prefetch-4db8ced86f30490cad3cc27a824ef83c",
+        "beliefkv-prefetch-3416c69747e245159474d076354b4784",
+        "beliefkv-prefetch-75285cde804e441fad8f5cbc50015072",
+        "beliefkv-prefetch-5c33de56092e419fac790f273c0c9fac"
+      ],
+      "first_submit_ts_ms": 1791899721395.1052,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899721382.527,
+        "observed_monotonic_ms": 6069984454.304556,
+        "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+        "invocation_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:root",
+        "context_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:context:root",
+        "context_epoch": 14,
+        "invocation_revision_ts_ms": 6069953779.196687,
+        "p10_ms": 2048.0,
+        "p50_ms": 32768.0,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.0002232208720205264
+          ],
+          [
+            2.0,
+            0.00042361625771759626
+          ],
+          [
+            4.0,
+            0.0009272747982991312
+          ],
+          [
+            8.0,
+            0.0022097508982675397
+          ],
+          [
+            16.0,
+            0.005428554073783969
+          ],
+          [
+            32.0,
+            0.013217110344829742
+          ],
+          [
+            64.0,
+            0.031046962259970015
+          ],
+          [
+            128.0,
+            0.06882641167082179
+          ],
+          [
+            256.0,
+            0.1406099998479225
+          ],
+          [
+            512.0,
+            0.2576877316526907
+          ],
+          [
+            1024.0,
+            0.4142302743274628
+          ],
+          [
+            2048.0,
+            0.5815849473794019
+          ],
+          [
+            4096.0,
+            0.7268006773935068
+          ],
+          [
+            8192.0,
+            0.83398538419079
+          ],
+          [
+            16384.0,
+            0.9045836253513327
+          ],
+          [
+            32768.0,
+            0.9471846598680036
+          ],
+          [
+            65536.0,
+            0.9710793678186613
+          ],
+          [
+            131072.0,
+            0.983872717019907
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1468.8375372938135,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899721385.9097,
+        "context_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:context:root",
+        "context_epoch": 14,
+        "wait_revision_ts_ms": 6069953779.196687,
+        "remaining_p50_ms": 1469.3471724030483,
+        "start_window_ms": 1470.5869357392933,
+        "h2d_ms": 61.28171292062402,
+        "enqueue_to_submit_p90_ms": 1.9621518440544605,
+        "prediction_early_ms": 1307.3430709746149
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:7fc528798410e279",
+      "context_epoch": 36,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a13591-3612-7662-9027-26ed1b2b5aa9",
+      "completion_ts_ms": 1791900071432.5146,
+      "first_service_ts_ms": 1791900081947.366,
+      "early_full_commands": 7,
+      "early_full_bytes": 43868160,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 162392.7724609375,
+      "completion_to_client_submit_ms": 11.627197265625,
+      "client_submit_to_native_arrival_ms": 207.62841796875,
+      "native_arrival_to_first_service_ms": 10295.595703125,
+      "latest_early_ack_to_first_service_ms": 172907.62377929688,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 7
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-8616c5ca4ace4ece9854b17d5d676bb6",
+        "beliefkv-prefetch-1d520de84aef4a8c9de2b6ac909115e7",
+        "beliefkv-prefetch-e0ebf3db924d4a7a81e89b1845c887f6",
+        "beliefkv-prefetch-ff7cf19ec460417c8f1c82768062da8c",
+        "beliefkv-prefetch-241c922e5387476c93b34befb7452f82",
+        "beliefkv-prefetch-9834ac30309a459d91c9e8444f3b668a",
+        "beliefkv-prefetch-40b3a235c63d466a850d7750a2eef806"
+      ],
+      "first_submit_ts_ms": 1791899908998.016,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899908986.2961,
+        "observed_monotonic_ms": 6070171993.219346,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 36,
+        "invocation_revision_ts_ms": 6070169352.123211,
+        "p10_ms": 256.0,
+        "p50_ms": 861.077929,
+        "p90_ms": 19483.969372,
+        "release_cdf": [
+          [
+            1.0,
+            0.00023691226117495627
+          ],
+          [
+            2.0,
+            0.00046078597940357345
+          ],
+          [
+            4.0,
+            0.0010405218933747715
+          ],
+          [
+            8.0,
+            0.002570821648389194
+          ],
+          [
+            16.0,
+            0.006570477629033602
+          ],
+          [
+            32.0,
+            0.01668015702274735
+          ],
+          [
+            64.0,
+            0.04088608618724747
+          ],
+          [
+            128.0,
+            0.0943582209508463
+          ],
+          [
+            256.0,
+            0.1987573828015167
+          ],
+          [
+            512.0,
+            0.3672474256717596
+          ],
+          [
+            1024.0,
+            0.5747332080727443
+          ],
+          [
+            2048.0,
+            0.7594861017316789
+          ],
+          [
+            4096.0,
+            0.8803873129476386
+          ],
+          [
+            8192.0,
+            0.943824719502443
+          ],
+          [
+            16384.0,
+            0.9736152773317286
+          ],
+          [
+            32768.0,
+            0.9872248148568947
+          ],
+          [
+            65536.0,
+            0.9935458754749548
+          ],
+          [
+            131072.0,
+            0.9965840415921627
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 803.4119617366134,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899908992.9739,
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 36,
+        "wait_revision_ts_ms": 6070169352.123211,
+        "remaining_p50_ms": 804.2463980312701,
+        "start_window_ms": 889.1879218247813,
+        "h2d_ms": 89.5891091786325,
+        "enqueue_to_submit_p90_ms": 3.2757408916950226,
+        "prediction_early_ms": 696.3230717544537
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:184e3a0b6112ffa9",
+      "context_epoch": 42,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a13591-3880-7872-b3a5-5ce2b3a50c8f",
+      "completion_ts_ms": 1791900072059.2046,
+      "first_service_ts_ms": 1791900082977.2976,
+      "early_full_commands": 19,
+      "early_full_bytes": 95088640,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 153979.55200195312,
+      "completion_to_client_submit_ms": 7.58154296875,
+      "client_submit_to_native_arrival_ms": 304.113525390625,
+      "native_arrival_to_first_service_ms": 10606.39794921875,
+      "latest_early_ack_to_first_service_ms": 164897.64501953125,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 19
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-5064be2180434e078276d220651610de",
+        "beliefkv-prefetch-ba84b98495064094834eb98393d74720",
+        "beliefkv-prefetch-1f5f5a9770d445ebbbd5e4754828387e",
+        "beliefkv-prefetch-dadad32c50bf4e9bac1b5ca0204e41d5",
+        "beliefkv-prefetch-ec44a82b6a79486e97c947a6fa15c723",
+        "beliefkv-prefetch-2008f349e6494151bf081d3c473cd72a",
+        "beliefkv-prefetch-56fdfd5c9a554c7e97defd7847d6e2c1",
+        "beliefkv-prefetch-02746c4983664365a1e5a716b21e259f",
+        "beliefkv-prefetch-47a4d1578b9d47f39427e3ed8dc94edf",
+        "beliefkv-prefetch-d2f5a23c6a1f4bea9a6684908731e199",
+        "beliefkv-prefetch-d08a844259f6444aae5ee61f5482c6a1",
+        "beliefkv-prefetch-927e8a477bd6420a81c59e9d15ca6add",
+        "beliefkv-prefetch-d3be6d03fc8449c8ada46a43793181fc",
+        "beliefkv-prefetch-9f58ef614f724bfdbd801f020057f166",
+        "beliefkv-prefetch-dafec84325ff420a8a269ed8e2b424ef",
+        "beliefkv-prefetch-9585920148774c5ab70a8d9775fcab37",
+        "beliefkv-prefetch-c855808560b34c54aa7cd5c978b1dfda",
+        "beliefkv-prefetch-5b805f15d7e7421b9fde8fb81d792643",
+        "beliefkv-prefetch-b5d2b8730c8449e0ae9f4ddb5daefd2b"
+      ],
+      "first_submit_ts_ms": 1791899918022.2778,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899918011.7395,
+        "observed_monotonic_ms": 6070181046.596513,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+        "context_id": "deepagents-context:184e3a0b6112ffa9",
+        "context_epoch": 42,
+        "invocation_revision_ts_ms": 6070175971.919545,
+        "p10_ms": 4870.992343,
+        "p50_ms": 19483.969372,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.0003092058583183776
+          ],
+          [
+            2.0,
+            0.0005973866107893078
+          ],
+          [
+            4.0,
+            0.0013374201015499086
+          ],
+          [
+            8.0,
+            0.0032702719430845735
+          ],
+          [
+            16.0,
+            0.008255889301927059
+          ],
+          [
+            32.0,
+            0.020642391950298697
+          ],
+          [
+            64.0,
+            0.04957874265715562
+          ],
+          [
+            128.0,
+            0.11113849291183694
+          ],
+          [
+            256.0,
+            0.2247079176890392
+          ],
+          [
+            512.0,
+            0.3950135486302502
+          ],
+          [
+            1024.0,
+            0.5909301382687678
+          ],
+          [
+            2048.0,
+            0.7608213775904809
+          ],
+          [
+            4096.0,
+            0.8754266542116139
+          ],
+          [
+            8192.0,
+            0.9392914140442458
+          ],
+          [
+            16384.0,
+            0.9708618877832417
+          ],
+          [
+            32768.0,
+            0.9857104404146765
+          ],
+          [
+            65536.0,
+            0.992707826139604
+          ],
+          [
+            131072.0,
+            0.9961020699975863
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 748.0614756928346,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899918015.9844,
+        "context_id": "deepagents-context:184e3a0b6112ffa9",
+        "context_epoch": 42,
+        "wait_revision_ts_ms": 6070175971.919545,
+        "remaining_p50_ms": 751.7915474956038,
+        "start_window_ms": 859.54683293937,
+        "h2d_ms": 98.86705735698342,
+        "enqueue_to_submit_p90_ms": 2.953610848635435,
+        "prediction_early_ms": 657.7261647337511
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+      "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+      "context_epoch": 36,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a13594-e19c-7fc0-945d-6ba0b0684221",
+      "completion_ts_ms": 1791900311958.9336,
+      "first_service_ts_ms": 1791900322961.4663,
+      "early_full_commands": 30,
+      "early_full_bytes": 105861120,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 161793.84399414062,
+      "completion_to_client_submit_ms": 7.364501953125,
+      "client_submit_to_native_arrival_ms": 97.970458984375,
+      "native_arrival_to_first_service_ms": 10897.19775390625,
+      "latest_early_ack_to_first_service_ms": 172796.37670898438,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 30
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-14c92018ee6f43e8bfcb7b4c8f962d15",
+        "beliefkv-prefetch-45acfd6676f6439c94ae04f3e331bc05",
+        "beliefkv-prefetch-67497b33c1444bc8b31497242c3ccf5c",
+        "beliefkv-prefetch-978fa7f571ba4c658b063a6d299e78e0",
+        "beliefkv-prefetch-b1397129fb884c8082a161a7b899d0d4",
+        "beliefkv-prefetch-75aea418198744e29cf72eb5afe48e46",
+        "beliefkv-prefetch-7652e392f2c648e2a6fb761693aaba0e",
+        "beliefkv-prefetch-3fbda954bd554cd8b7e636ba6c867b04",
+        "beliefkv-prefetch-fe8bc5afc9be4a5c9be897f64096a0f2",
+        "beliefkv-prefetch-871c396a1c894875a89a185842b0aacf",
+        "beliefkv-prefetch-4116c7f6022947f4acbfc953274e6ff6",
+        "beliefkv-prefetch-aae2d124339d4756a1680f48616f362f",
+        "beliefkv-prefetch-55d3b5e9be6441b085629319b8726554",
+        "beliefkv-prefetch-845f139603d641f68a7eba81696b8983",
+        "beliefkv-prefetch-d7a12c1ac19c44b4839559f61e8ca9c3",
+        "beliefkv-prefetch-a41ab14539284a629dcb934dbc509846",
+        "beliefkv-prefetch-953e384cdb79436bbae0184b79a65cb8",
+        "beliefkv-prefetch-ba1ca433f38a49af85606528da9f1c98",
+        "beliefkv-prefetch-4d6de15b18c346eb865eb05f89ea8843",
+        "beliefkv-prefetch-4d87e8b5db7e4095839db3bde9382acc",
+        "beliefkv-prefetch-e7be1d2d3bf84cc8899c9d84f2f0efa4",
+        "beliefkv-prefetch-cb83932904ad46dea1e12c743ac3472f",
+        "beliefkv-prefetch-4e4fbea2dd1945aaaf70c523291cae90",
+        "beliefkv-prefetch-5cb9bd53293f4ce7a5f33095c23ac848",
+        "beliefkv-prefetch-d64055a3624e498b94df19d626770f02",
+        "beliefkv-prefetch-eb3cd95e842f413c851c07f3a00e2e11",
+        "beliefkv-prefetch-770acbe683de4f72adf7276dd502e0fb",
+        "beliefkv-prefetch-8a108405be2d41fdb7b3e15a1121c36e",
+        "beliefkv-prefetch-dd42408729a14c4e84f32afcc252c135",
+        "beliefkv-prefetch-4b16dc5371bf4285910833646f63a94c"
+      ],
+      "first_submit_ts_ms": 1791900150147.0737,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791900149925.7856,
+        "observed_monotonic_ms": 6070413007.70849,
+        "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+        "invocation_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:root",
+        "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+        "context_epoch": 36,
+        "invocation_revision_ts_ms": 6070394981.300452,
+        "p10_ms": 9741.984686,
+        "p50_ms": 13777.246868,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.00022072242754457387
+          ],
+          [
+            2.0,
+            0.00042109739055945804
+          ],
+          [
+            4.0,
+            0.0009279367168556309
+          ],
+          [
+            8.0,
+            0.0022284216380988107
+          ],
+          [
+            16.0,
+            0.005520295403738862
+          ],
+          [
+            32.0,
+            0.01355746792642709
+          ],
+          [
+            64.0,
+            0.032122612617665226
+          ],
+          [
+            128.0,
+            0.07178318745111979
+          ],
+          [
+            256.0,
+            0.14757624189086996
+          ],
+          [
+            512.0,
+            0.2712906162935332
+          ],
+          [
+            1024.0,
+            0.4355827932808924
+          ],
+          [
+            2048.0,
+            0.6084918850084929
+          ],
+          [
+            4096.0,
+            0.7548058869812952
+          ],
+          [
+            8192.0,
+            0.8587296621832343
+          ],
+          [
+            16384.0,
+            0.9233143197756654
+          ],
+          [
+            32768.0,
+            0.9595174990543613
+          ],
+          [
+            65536.0,
+            0.9784853211477109
+          ],
+          [
+            131072.0,
+            0.9881962717134508
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1326.5947321447438,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791900150136.2607,
+        "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+        "context_epoch": 36,
+        "wait_revision_ts_ms": 6070394981.300452,
+        "remaining_p50_ms": 1510.0492913016576,
+        "start_window_ms": 1511.176640444759,
+        "h2d_ms": 58.566037453560035,
+        "enqueue_to_submit_p90_ms": 1.7204107716679573,
+        "prediction_early_ms": 1350.890192219531
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+      "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+      "context_epoch": 37,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a13597-d691-7120-b5a9-041edffcc13d",
+      "completion_ts_ms": 1791900505737.2844,
+      "first_service_ts_ms": 1791900516175.5547,
+      "early_full_commands": 15,
+      "early_full_bytes": 48762880,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 163833.73974609375,
+      "completion_to_client_submit_ms": 10.297607421875,
+      "client_submit_to_native_arrival_ms": 224.69482421875,
+      "native_arrival_to_first_service_ms": 10203.27783203125,
+      "latest_early_ack_to_first_service_ms": 174272.01000976562,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 15
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-f0c3150dc9e6442abc31edd2fa1b9d38",
+        "beliefkv-prefetch-08db277d1f6048ecbf20e1ad6f97ec38",
+        "beliefkv-prefetch-b52dd4267ce24250bd2479642feabc72",
+        "beliefkv-prefetch-75177ccd254b4363b882d9b8f46a4800",
+        "beliefkv-prefetch-33d466a9e7b94b06973a65451bd34489",
+        "beliefkv-prefetch-5b18b8efc68f447a8d088ca58fcb0c39",
+        "beliefkv-prefetch-f76651985ed1467aaa87b35f5f6e16c3",
+        "beliefkv-prefetch-f3a7ae099d4e42e7911a190d8080428b",
+        "beliefkv-prefetch-a71527861be64ad98dff686f93dd6e3f",
+        "beliefkv-prefetch-96c4b859207d414cab20d9327317b162",
+        "beliefkv-prefetch-bad568bd1731434687b38ac9edafefc7",
+        "beliefkv-prefetch-d9b567138a6a4e63bb967c9a989b8c7b",
+        "beliefkv-prefetch-8c590d6e78714b40998132f5a4d7e241",
+        "beliefkv-prefetch-a40137b91e5f4e43bfb5bfe7c373e017",
+        "beliefkv-prefetch-4077e270eae541c881553496e1edfd00"
+      ],
+      "first_submit_ts_ms": 1791900341828.8218,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791900341820.1929,
+        "observed_monotonic_ms": 6070604895.433367,
+        "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+        "invocation_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:root",
+        "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+        "context_epoch": 37,
+        "invocation_revision_ts_ms": 6070588762.986773,
+        "p10_ms": 256.0,
+        "p50_ms": 16384.0,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.0002888183472324317
+          ],
+          [
+            2.0,
+            0.00055158727552685
+          ],
+          [
+            4.0,
+            0.0012169930583500017
+          ],
+          [
+            8.0,
+            0.0029261144979254717
+          ],
+          [
+            16.0,
+            0.007253882961553993
+          ],
+          [
+            32.0,
+            0.017802863288977816
+          ],
+          [
+            64.0,
+            0.042015065265487705
+          ],
+          [
+            128.0,
+            0.09290380571523084
+          ],
+          [
+            256.0,
+            0.1868984385435513
+          ],
+          [
+            512.0,
+            0.33147682550385177
+          ],
+          [
+            1024.0,
+            0.5079164457599504
+          ],
+          [
+            2048.0,
+            0.6764947848390519
+          ],
+          [
+            4096.0,
+            0.8068039600812098
+          ],
+          [
+            8192.0,
+            0.8928096090528078
+          ],
+          [
+            16384.0,
+            0.9433684771809786
+          ],
+          [
+            32768.0,
+            0.9706041932839261
+          ],
+          [
+            65536.0,
+            0.9845194614963408
+          ],
+          [
+            131072.0,
+            0.9915479817435313
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 995.4178121125935,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791900341823.524,
+        "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+        "context_epoch": 37,
+        "wait_revision_ts_ms": 6070588762.986773,
+        "remaining_p50_ms": 995.7851578698991,
+        "start_window_ms": 1045.2687085894086,
+        "h2d_ms": 69.42467065528035,
+        "enqueue_to_submit_p90_ms": 1.4308537356555462,
+        "prediction_early_ms": 874.4131841984728
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6903:7fb6fff00c5e",
+      "context_id": "deepagents-context:1b8929b15a78008c",
+      "context_epoch": 75,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a13595-d03d-7c71-86ce-be011577c15c",
+      "completion_ts_ms": 1791900373045.6143,
+      "first_service_ts_ms": 1791900377200.0845,
+      "early_full_commands": 13,
+      "early_full_bytes": 50073600,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 7243.200927734375,
+      "completion_to_client_submit_ms": 8.6826171875,
+      "client_submit_to_native_arrival_ms": 178.745361328125,
+      "native_arrival_to_first_service_ms": 3967.042236328125,
+      "latest_early_ack_to_first_service_ms": 11397.671142578125,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 13
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-eeea31c7837d46659d8796b89983f676",
+        "beliefkv-prefetch-b69aa1bb9fcd4ae49cb1fbed9353b50c",
+        "beliefkv-prefetch-f700887b295c4a7c8120b8dc6556ec64",
+        "beliefkv-prefetch-4ff90b6eb9e348b3882bf1b077ec2f1e",
+        "beliefkv-prefetch-b53bb22eadd1455da8787ba5d9d7f2a5",
+        "beliefkv-prefetch-191a47c920d44a25af06e301c591ff91",
+        "beliefkv-prefetch-040c14b5290f4e9eae06dc57be07cc82",
+        "beliefkv-prefetch-e676097a2aef4ad29ed3986b650208ec",
+        "beliefkv-prefetch-8e6a8dbd0ece42be81ecfc418853102e",
+        "beliefkv-prefetch-b82bacfc6f3944aa9b43b93df7cf5cce",
+        "beliefkv-prefetch-90ac6b041a8b4c0db994062198f927c2",
+        "beliefkv-prefetch-9c59757979e446b0bff2f39f142ee0f3",
+        "beliefkv-prefetch-13db86debc4e480a90c1a47b24fe8972"
+      ],
+      "first_submit_ts_ms": 1791900365715.0513,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791900365511.2944,
+        "observed_monotonic_ms": 6070628584.728018,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6903:7fb6fff00c5e",
+        "invocation_id": "deepagents-invocation:1b8929b15a78008c",
+        "context_id": "deepagents-context:1b8929b15a78008c",
+        "context_epoch": 75,
+        "invocation_revision_ts_ms": 6070627621.164375,
+        "p10_ms": 64.0,
+        "p50_ms": 256.0,
+        "p90_ms": 2896.309376,
+        "release_cdf": [
+          [
+            1.0,
+            0.00013955642060486646
+          ],
+          [
+            2.0,
+            0.0002743279600237229
+          ],
+          [
+            4.0,
+            0.0006281236493623852
+          ],
+          [
+            8.0,
+            0.0015787617530474826
+          ],
+          [
+            16.0,
+            0.004121679830502199
+          ],
+          [
+            32.0,
+            0.010759584499130522
+          ],
+          [
+            64.0,
+            0.027445480149657916
+          ],
+          [
+            128.0,
+            0.0672551761074705
+          ],
+          [
+            256.0,
+            0.15451546452554266
+          ],
+          [
+            512.0,
+            0.3169939128119762
+          ],
+          [
+            1024.0,
+            0.5419196525738658
+          ],
+          [
+            2048.0,
+            0.7491777015417759
+          ],
+          [
+            4096.0,
+            0.8798287798955847
+          ],
+          [
+            8192.0,
+            0.944991963706373
+          ],
+          [
+            16384.0,
+            0.9746029887621039
+          ],
+          [
+            32768.0,
+            0.9878841559330218
+          ],
+          [
+            65536.0,
+            0.9939710118729859
+          ],
+          [
+            131072.0,
+            0.9968593526929208
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 885.6000741911249,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791900365710.7258,
+        "context_id": "deepagents-context:1b8929b15a78008c",
+        "context_epoch": 75,
+        "wait_revision_ts_ms": 6070627621.164375,
+        "remaining_p50_ms": 896.4973125382626,
+        "start_window_ms": 944.3512307411189,
+        "h2d_ms": 65.7243754790461,
+        "enqueue_to_submit_p90_ms": 1.614585518836975,
+        "prediction_early_ms": 777.0122697432358
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+      "context_id": "deepagents-context:6f98bf861c2a987f",
+      "context_epoch": 190,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a135b9-46ae-7d83-866b-b92d8059fa2d",
+      "completion_ts_ms": 1791902697090.1716,
+      "first_service_ts_ms": 1791902707542.5952,
+      "early_full_commands": 2,
+      "early_full_bytes": 2703360,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 132638.1962890625,
+      "completion_to_client_submit_ms": 45.387451171875,
+      "client_submit_to_native_arrival_ms": 275.00537109375,
+      "native_arrival_to_first_service_ms": 10132.03076171875,
+      "latest_early_ack_to_first_service_ms": 143090.61987304688,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 2
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-ee2bedc996594768adcdd120b10114f6",
+        "beliefkv-prefetch-6642d7fb07ff4cdc8570f7359b339d54"
+      ],
+      "first_submit_ts_ms": 1791902564351.3533,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791902564345.973,
+        "observed_monotonic_ms": 6072827440.558654,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "invocation_id": "deepagents-invocation:6f98bf861c2a987f",
+        "context_id": "deepagents-context:6f98bf861c2a987f",
+        "context_epoch": 190,
+        "invocation_revision_ts_ms": 6072780105.355288,
+        "p10_ms": 623487.019911,
+        "p50_ms": 623487.019911,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.00027942362748020706
+          ],
+          [
+            2.0,
+            0.0005279673754052717
+          ],
+          [
+            4.0,
+            0.0011492887988170618
+          ],
+          [
+            8.0,
+            0.0027209008730121956
+          ],
+          [
+            16.0,
+            0.006634159451403761
+          ],
+          [
+            32.0,
+            0.01601078340184729
+          ],
+          [
+            64.0,
+            0.037197108009144886
+          ],
+          [
+            128.0,
+            0.08123983335022852
+          ],
+          [
+            256.0,
+            0.16253744990864005
+          ],
+          [
+            512.0,
+            0.2896935208445818
+          ],
+          [
+            1024.0,
+            0.4508791897976178
+          ],
+          [
+            2048.0,
+            0.6137311578408741
+          ],
+          [
+            4096.0,
+            0.7484102076040643
+          ],
+          [
+            8192.0,
+            0.8448970856080777
+          ],
+          [
+            16384.0,
+            0.90820132257097
+          ],
+          [
+            32768.0,
+            0.9473908382059029
+          ],
+          [
+            65536.0,
+            0.970375914842086
+          ],
+          [
+            131072.0,
+            0.9832041220978973
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1261.678372829376,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791902564349.497,
+        "context_id": "deepagents-context:6f98bf861c2a987f",
+        "context_epoch": 190,
+        "wait_revision_ts_ms": 6072780105.355288,
+        "remaining_p50_ms": 1261.5140027999446,
+        "start_window_ms": 1291.423010964736,
+        "h2d_ms": 72.578483261168,
+        "enqueue_to_submit_p90_ms": 1.3556280173361301,
+        "prediction_early_ms": 1117.488899686232
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+      "context_id": "deepagents-context:4edc59b238de24f8",
+      "context_epoch": 151,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a135b9-4850-7e92-8a54-a64a5b43c468",
+      "completion_ts_ms": 1791902697541.0686,
+      "first_service_ts_ms": 1791902707809.2324,
+      "early_full_commands": 9,
+      "early_full_bytes": 146534400,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 114900.14428710938,
+      "completion_to_client_submit_ms": 11.966552734375,
+      "client_submit_to_native_arrival_ms": 67.626220703125,
+      "native_arrival_to_first_service_ms": 10188.571044921875,
+      "latest_early_ack_to_first_service_ms": 125168.30810546875,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 9
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-ebbe1fafe509412987611eafe0d5e648",
+        "beliefkv-prefetch-ede85b838e224242ad097409d07e7736",
+        "beliefkv-prefetch-4882b5beeb8348ed965b8e60fabc47f2",
+        "beliefkv-prefetch-06101b692e4b43d284e428832871afb7",
+        "beliefkv-prefetch-9bf82016ffea423aae21f60ae75f2546",
+        "beliefkv-prefetch-5e9427b797204a65ba7f4bf252ac21da",
+        "beliefkv-prefetch-281eed2ac63744ed823c24192d8886fb",
+        "beliefkv-prefetch-152b34b3846042e497cbc89ce04b3724",
+        "beliefkv-prefetch-a4c792f47bad4e69a8497c316aff0584"
+      ],
+      "first_submit_ts_ms": 1791902582583.5122,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791902582575.3337,
+        "observed_monotonic_ms": 6072845605.947649,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+        "context_id": "deepagents-context:4edc59b238de24f8",
+        "context_epoch": 151,
+        "invocation_revision_ts_ms": 6072780809.829089,
+        "p10_ms": 524288.0,
+        "p50_ms": 524288.0,
+        "p90_ms": 524288.0,
+        "release_cdf": [
+          [
+            1.0,
+            0.00027764030190493264
+          ],
+          [
+            2.0,
+            0.0005229655917621211
+          ],
+          [
+            4.0,
+            0.001133943586272688
+          ],
+          [
+            8.0,
+            0.002672516587998627
+          ],
+          [
+            16.0,
+            0.006484852063702119
+          ],
+          [
+            32.0,
+            0.01557433161932993
+          ],
+          [
+            64.0,
+            0.03601803717073719
+          ],
+          [
+            128.0,
+            0.07837664900370755
+          ],
+          [
+            256.0,
+            0.15652266606454102
+          ],
+          [
+            512.0,
+            0.2792489561519917
+          ],
+          [
+            1024.0,
+            0.4363496905921417
+          ],
+          [
+            2048.0,
+            0.5973770185442463
+          ],
+          [
+            4096.0,
+            0.7327230044208276
+          ],
+          [
+            8192.0,
+            0.831283466954813
+          ],
+          [
+            16384.0,
+            0.8971861316295286
+          ],
+          [
+            32768.0,
+            0.9391462043646996
+          ],
+          [
+            65536.0,
+            0.9647484330861626
+          ],
+          [
+            131072.0,
+            0.9796348098503547
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1402.5069854123149,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791902582579.3691,
+        "context_id": "deepagents-context:4edc59b238de24f8",
+        "context_epoch": 151,
+        "wait_revision_ts_ms": 6072780809.829089,
+        "remaining_p50_ms": 1408.1835294275984,
+        "start_window_ms": 1436.295020735418,
+        "h2d_ms": 73.40278071809968,
+        "enqueue_to_submit_p90_ms": 1.5054503455758095,
+        "prediction_early_ms": 1261.3867896717425
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+      "context_id": "deepagents-context:4edc59b238de24f8",
+      "context_epoch": 153,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a135bc-79e0-7d03-a958-c5fe9cb84905",
+      "completion_ts_ms": 1791902906837.2075,
+      "first_service_ts_ms": 1791902917726.908,
+      "early_full_commands": 3,
+      "early_full_bytes": 22978560,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 168525.08642578125,
+      "completion_to_client_submit_ms": 11.592529296875,
+      "client_submit_to_native_arrival_ms": 117.283203125,
+      "native_arrival_to_first_service_ms": 10760.82470703125,
+      "latest_early_ack_to_first_service_ms": 179414.78686523438,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 3
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-2965011d55844abc9951bcfed4da78aa",
+        "beliefkv-prefetch-b6d2512341e1471890b3d28c879cc58b",
+        "beliefkv-prefetch-af2e9cbe332f4c86a6a90fa8667df501"
+      ],
+      "first_submit_ts_ms": 1791902738266.6409,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791902738261.7544,
+        "observed_monotonic_ms": 6073001297.178136,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+        "context_id": "deepagents-context:4edc59b238de24f8",
+        "context_epoch": 153,
+        "invocation_revision_ts_ms": 6072989854.850063,
+        "p10_ms": 152.218511,
+        "p50_ms": 11585.237503,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.0002709562716496563
+          ],
+          [
+            2.0,
+            0.0005192585728123366
+          ],
+          [
+            4.0,
+            0.0011506796349691891
+          ],
+          [
+            8.0,
+            0.002780819137342818
+          ],
+          [
+            16.0,
+            0.006932994676456373
+          ],
+          [
+            32.0,
+            0.017122307663721626
+          ],
+          [
+            64.0,
+            0.04069389467594892
+          ],
+          [
+            128.0,
+            0.09071158473494317
+          ],
+          [
+            256.0,
+            0.1841772376611144
+          ],
+          [
+            512.0,
+            0.3298325943254662
+          ],
+          [
+            1024.0,
+            0.509700268741765
+          ],
+          [
+            2048.0,
+            0.6825463636718803
+          ],
+          [
+            4096.0,
+            0.8153032474772033
+          ],
+          [
+            8192.0,
+            0.9008531250464069
+          ],
+          [
+            16384.0,
+            0.9491865022389783
+          ],
+          [
+            32768.0,
+            0.9741561019566422
+          ],
+          [
+            65536.0,
+            0.9865406455803059
+          ],
+          [
+            131072.0,
+            0.9926999147246496
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1006.2831631352024,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791902738264.9307,
+        "context_id": "deepagents-context:4edc59b238de24f8",
+        "context_epoch": 153,
+        "wait_revision_ts_ms": 6072989854.850063,
+        "remaining_p50_ms": 1010.4269373719719,
+        "start_window_ms": 1065.7879656581,
+        "h2d_ms": 71.68957032263279,
+        "enqueue_to_submit_p90_ms": 1.069048885256052,
+        "prediction_early_ms": 893.0293464502112
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+      "context_id": "deepagents-context:6f98bf861c2a987f",
+      "context_epoch": 193,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a135bf-3965-7d63-9071-fca9d72a8b84",
+      "completion_ts_ms": 1791903086912.2805,
+      "first_service_ts_ms": 1791903097190.9104,
+      "early_full_commands": 6,
+      "early_full_bytes": 10567680,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 336611.2307128906,
+      "completion_to_client_submit_ms": 38.828125,
+      "client_submit_to_native_arrival_ms": 116.864501953125,
+      "native_arrival_to_first_service_ms": 10122.937255859375,
+      "latest_early_ack_to_first_service_ms": 346889.8605957031,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 6
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-42fbbb92538c46bf91cbc3a4e370e7f2",
+        "beliefkv-prefetch-604b2c5b98ad493c8e381ba517e54e70",
+        "beliefkv-prefetch-48299e7f422e4d928ae6eb10172d6a21",
+        "beliefkv-prefetch-d4a8e29af7fd47e794c3f274a6065978",
+        "beliefkv-prefetch-e6bbe15b67c54c1eac103003bd9f3bbc",
+        "beliefkv-prefetch-8edf1234a6f344e98114db0b1bfe8270"
+      ],
+      "first_submit_ts_ms": 1791902750261.1348,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791902750249.0046,
+        "observed_monotonic_ms": 6073013195.722204,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "invocation_id": "deepagents-invocation:6f98bf861c2a987f",
+        "context_id": "deepagents-context:6f98bf861c2a987f",
+        "context_epoch": 193,
+        "invocation_revision_ts_ms": 6073002166.541933,
+        "p10_ms": 512.0,
+        "p50_ms": 11585.237503,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.00023267295681003565
+          ],
+          [
+            2.0,
+            0.00044607215221159597
+          ],
+          [
+            4.0,
+            0.0009890453530614816
+          ],
+          [
+            8.0,
+            0.0023920362217038577
+          ],
+          [
+            16.0,
+            0.0059706939884353735
+          ],
+          [
+            32.0,
+            0.014776050678319106
+          ],
+          [
+            64.0,
+            0.03525698249976563
+          ],
+          [
+            128.0,
+            0.07920025271459916
+          ],
+          [
+            256.0,
+            0.16305840330544036
+          ],
+          [
+            512.0,
+            0.29837177044382635
+          ],
+          [
+            1024.0,
+            0.4736241473573355
+          ],
+          [
+            2048.0,
+            0.6510165143666147
+          ],
+          [
+            4096.0,
+            0.7934744185171181
+          ],
+          [
+            8192.0,
+            0.8880773119803591
+          ],
+          [
+            16384.0,
+            0.9423864037969519
+          ],
+          [
+            32768.0,
+            0.9706403104232512
+          ],
+          [
+            65536.0,
+            0.9846960709833025
+          ],
+          [
+            131072.0,
+            0.9916969959133526
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1230.1501440169448,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791902750256.6006,
+        "context_id": "deepagents-context:6f98bf861c2a987f",
+        "context_epoch": 193,
+        "wait_revision_ts_ms": 6073002166.541933,
+        "remaining_p50_ms": 1234.0303557641253,
+        "start_window_ms": 1277.4301456181033,
+        "h2d_ms": 80.75534226372838,
+        "enqueue_to_submit_p90_ms": 0.8174460381269455,
+        "prediction_early_ms": 1095.857357316248
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+      "context_id": "deepagents-context:4edc59b238de24f8",
+      "context_epoch": 154,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a135bf-39b7-7442-ae09-678fa45249b7",
+      "completion_ts_ms": 1791903087020.0327,
+      "first_service_ts_ms": 1791903097688.3254,
+      "early_full_commands": 12,
+      "early_full_bytes": 166195200,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 156123.935546875,
+      "completion_to_client_submit_ms": 12.3193359375,
+      "client_submit_to_native_arrival_ms": 133.488525390625,
+      "native_arrival_to_first_service_ms": 10522.48486328125,
+      "latest_early_ack_to_first_service_ms": 166792.22827148438,
+      "tail_dominant_phase": "before_completion",
+      "lease_release_reasons_by_command": {
+        "service_window_expired": 12
+      },
+      "early_command_ids": [
+        "beliefkv-prefetch-95d5379b24a04bf496d5d7cfd78cfb68",
+        "beliefkv-prefetch-a390f9ddfa6f4df29fdc2b9b2443e373",
+        "beliefkv-prefetch-5e4369309aca4f78b931bce90180de57",
+        "beliefkv-prefetch-cde886c320e24362bff13fc79a3df846",
+        "beliefkv-prefetch-91db55b1d76b41cf88664d8a3e03c5d7",
+        "beliefkv-prefetch-74b8263b97994847b5dd589fe64e2c17",
+        "beliefkv-prefetch-ac12c43e1fb347e18e2ed7669b354f1a",
+        "beliefkv-prefetch-14dd9a9e80c44f328946905443c3b56b",
+        "beliefkv-prefetch-7759bf98337b49c08af8ff78bde3ba32",
+        "beliefkv-prefetch-b8ce563a54f24aeb9f2311ecaa1d4135",
+        "beliefkv-prefetch-d8534639f408413f80f3c4262d0eb77b",
+        "beliefkv-prefetch-99dd1e756b28483b946d45546e281b48"
+      ],
+      "first_submit_ts_ms": 1791902930837.1892,
+      "active_tools_at_first_submit": [],
+      "tool_end_records": [],
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791902930829.773,
+        "observed_monotonic_ms": 6073193916.95132,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+        "context_id": "deepagents-context:4edc59b238de24f8",
+        "context_epoch": 154,
+        "invocation_revision_ts_ms": 6073184295.764001,
+        "p10_ms": 2048.0,
+        "p50_ms": 13777.246868,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.0003254383097140566
+          ],
+          [
+            2.0,
+            0.0006247173047962562
+          ],
+          [
+            4.0,
+            0.0013872336268643463
+          ],
+          [
+            8.0,
+            0.003359882774390123
+          ],
+          [
+            16.0,
+            0.008392724127325692
+          ],
+          [
+            32.0,
+            0.020744030173789226
+          ],
+          [
+            64.0,
+            0.04920650695553481
+          ],
+          [
+            128.0,
+            0.10886526214920313
+          ],
+          [
+            256.0,
+            0.2173494195077828
+          ],
+          [
+            512.0,
+            0.37851349670819734
+          ],
+          [
+            1024.0,
+            0.5646983821885424
+          ],
+          [
+            2048.0,
+            0.7308048095130575
+          ],
+          [
+            4096.0,
+            0.8498093240919381
+          ],
+          [
+            8192.0,
+            0.9220619911545612
+          ],
+          [
+            16384.0,
+            0.960971822949434
+          ],
+          [
+            32768.0,
+            0.9804092034402122
+          ],
+          [
+            65536.0,
+            0.9898669280084584
+          ],
+          [
+            131072.0,
+            0.994526718868062
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 802.1433606662943,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791902930833.1138,
+        "context_id": "deepagents-context:4edc59b238de24f8",
+        "context_epoch": 154,
+        "wait_revision_ts_ms": 6073184295.764001,
+        "remaining_p50_ms": 801.9810773095801,
+        "start_window_ms": 980.2160807292985,
+        "h2d_ms": 84.07786929588056,
+        "enqueue_to_submit_p90_ms": 104.52037891373041,
+        "prediction_early_ms": 691.6178325196875
+      }
+    }
+  ],
+  "helper_sha256": "8a1a2efe78af604ec78dc4d816f08e085cea9f6e56a01af540d23eb48a14d423",
+  "scope": [
+    "Only the 18 long, pre-completion-dominated episodes selected by V339.",
+    "Forecasts, start windows and active-tool inputs were known before the first actual submit.",
+    "Completed outcomes are diagnostic labels and must not become online inputs.",
+    "Unknown/unsealed or ambiguous inputs cause an error; no ordinal identity fallback.",
+    "This selected cohort does not estimate global accuracy or prove a scheduling benefit."
+  ]
+}
