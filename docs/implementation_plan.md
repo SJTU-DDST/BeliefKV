@@ -2,6 +2,14 @@
 
 Status date: 2026-10-14.
 
+The06:18 retry also stopped before service/arrival: estimated NUMA1 capacity
+fell192.36→192.13GiB during startup, below the192.26GiB requirement
+with6GiB extra reserve. V382 preserves this second startup-only failure.
+7c4cd73 sets the current extra startup reserve to5GiB, accommodating this
+observed0.23GiB process fluctuation while retaining actual200GB/80:20/
+NUMA1 and all27 core sources. V383 binds28 sources; live preflight passes
+but actual pinned allocation, service and performance remain unverified.
+
 V55 triggered at06:00:01 and verified deploymentfe05cac/a8f4ea97/
 f7e0a895, then exited before service or workflow arrival: NUMA1 estimated
 192.36GiB while the200GB Host plus8GiB reserve required194.26GiB.
