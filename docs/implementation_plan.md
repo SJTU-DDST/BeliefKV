@@ -33,6 +33,22 @@ was not measured, so neither GIL attribution nor the full excess GDN cost is
 established. Keep V53 running while qualifying a substantive dispatch/turnover
 fix; no throughput or full-JCT acceptance has passed.
 
+V307 seals V53's complete 1800-2100s window: 357336/347017 decode
+request steps (+2.97%), with different visible contexts (23212/23808 tokens)
+and extend work (2.230/1.985M tokens). Exclusive instrumented control wall
+is 29.833s. Short requests all replay graphs; raw launch-to-processed completion
+is 60.276/56.797ms and matched short worker cohorts remain 1.17-1.51x.
+Do not turn this favorable interval into a whole-run or causal success.
+V308 is a development-only D2H service-statistics cache, keyed by bytes/shape.
+Every completed H2D or D2H sample invalidates both estimates because either
+direction can evict evidence from the shared rolling history. Unsupported
+results are invalidated too; tool residuals, Host capacity and physical checks
+stay live. 147 checks and nine identical-output CPU cases pass. Repeated
+static cases reduce rank CPU by 44-51%; frequent receipts largely remove the
+benefit and one no-hit case is 3.3% slower. Actual repetition and critical-path
+savings are unmeasured. Keep V53 running; stage this modest reduction for a
+later cold deployment, without enabling any new batching/delay strategy.
+
 ## Current Goal Revision
 
 With fixed tasks, arrivals, model and physical capacities, reduce mean

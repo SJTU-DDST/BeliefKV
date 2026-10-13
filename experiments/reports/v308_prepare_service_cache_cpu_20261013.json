@@ -1,0 +1,520 @@
+{
+  "scope": "CPU PREPARE-rank fixture using the frozen service seed; live guards and new receipts retained. No native DMA, workload repetition rate, critical-path saving or end-to-end speedup is inferred.",
+  "baseline_revision": "e35c53e",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "7820de3e7555a6e73f6929dfca430fd5cba6c5c6519823e7b63661a04c601d41",
+    "beliefkv/runtime/sglang_v0520_physical.py": "f0627bb4592a88ab6c4937c6f5e0f85419d1236566cc2c3e94ffdcc1f869e23b",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "18ef36d362c1de34039476365629ce9601873646271e36d032b5296bcc52ef8c"
+  },
+  "candidate_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "6a2ddadbe1aa059b31af5ed30d8b95562c80c208b60341ee65e5984a972cf6d4",
+    "scripts/benchmark_prepare_service_cache.py": "cc340069b34812c75fc867bcc1351c7f47a80688c148ef0e85bca825413286ea",
+    "tests/test_sglang_v0520_runtime.py": "a43d9b86e7183776fffbbdc62b8f2462541b886e25cadb0ed04d38d74b7a5d58"
+  },
+  "seed_artifact": "/home/longhao/experiment/BeliefKV/experiments/models/native_transfer_service_seed_v4.json",
+  "seed_sha256": "da149a32fe8b4ff8ea88387cac5be2c1e9929a0721778768b92b3d11a54a49f5",
+  "service_history_samples": 156,
+  "started_ts_ms": 1791892425713.1448,
+  "finished_ts_ms": 1791892428020.838,
+  "cases": [
+    {
+      "distinct_size_count": 1,
+      "receipt_every_calls": 0,
+      "iterations": 501,
+      "ranks_equal": true,
+      "live_guards": [
+        "tool residual window",
+        "Host capacity",
+        "settled Host copy"
+      ],
+      "outcomes": {
+        "guard_0:eligible": 128,
+        "guard_1:rejected": 128,
+        "guard_2:rejected": 128,
+        "guard_3:rejected": 127
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.042773279441117765,
+            "p50_ms": 0.005737,
+            "p99_ms": 0.095725,
+            "max_ms": 0.33829
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.04380071457085828,
+            "p50_ms": 0.010465,
+            "p99_ms": 0.096869,
+            "max_ms": 0.339327
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.02051988622754491,
+            "p50_ms": 0.005222,
+            "p99_ms": 0.042422,
+            "max_ms": 0.050074
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.021505233532934133,
+            "p50_ms": 0.00634,
+            "p99_ms": 0.043481,
+            "max_ms": 0.051056
+          }
+        }
+      },
+      "thread_cpu_reduction": 0.5090209430683099,
+      "optimized_estimates": {
+        "d2h_service_estimate_computed": 1,
+        "d2h_service_estimate_reused": 255
+      }
+    },
+    {
+      "distinct_size_count": 1,
+      "receipt_every_calls": 8,
+      "iterations": 501,
+      "ranks_equal": true,
+      "live_guards": [
+        "tool residual window",
+        "Host capacity",
+        "settled Host copy"
+      ],
+      "outcomes": {
+        "guard_0:eligible": 128,
+        "guard_1:rejected": 128,
+        "guard_2:rejected": 128,
+        "guard_3:rejected": 127
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.05345892614770459,
+            "p50_ms": 0.0136,
+            "p99_ms": 0.172755,
+            "max_ms": 0.32891
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.05466743313373253,
+            "p50_ms": 0.015507,
+            "p99_ms": 0.17454,
+            "max_ms": 0.329973
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.030861864271457085,
+            "p50_ms": 0.008397,
+            "p99_ms": 0.148009,
+            "max_ms": 0.158392
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.03199837924151697,
+            "p50_ms": 0.010739,
+            "p99_ms": 0.149707,
+            "max_ms": 0.160049
+          }
+        }
+      },
+      "thread_cpu_reduction": 0.41467200109360225,
+      "optimized_estimates": {
+        "d2h_service_estimate_computed": 64,
+        "d2h_service_estimate_reused": 192
+      }
+    },
+    {
+      "distinct_size_count": 1,
+      "receipt_every_calls": 1,
+      "iterations": 501,
+      "ranks_equal": true,
+      "live_guards": [
+        "tool residual window",
+        "Host capacity",
+        "settled Host copy"
+      ],
+      "outcomes": {
+        "guard_0:eligible": 128,
+        "guard_1:rejected": 128,
+        "guard_2:rejected": 128,
+        "guard_3:rejected": 127
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.05686953293413174,
+            "p50_ms": 0.010983,
+            "p99_ms": 0.173353,
+            "max_ms": 0.185649
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.058029706586826345,
+            "p50_ms": 0.013257,
+            "p99_ms": 0.174675,
+            "max_ms": 0.187355
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.05600674451097804,
+            "p50_ms": 0.007765,
+            "p99_ms": 0.162517,
+            "max_ms": 0.174345
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.057157347305389225,
+            "p50_ms": 0.009789,
+            "p99_ms": 0.164087,
+            "max_ms": 0.175928
+          }
+        }
+      },
+      "thread_cpu_reduction": 0.01503297763761502,
+      "optimized_estimates": {
+        "d2h_service_estimate_computed": 256
+      }
+    },
+    {
+      "distinct_size_count": 8,
+      "receipt_every_calls": 0,
+      "iterations": 501,
+      "ranks_equal": true,
+      "live_guards": [
+        "tool residual window",
+        "Host capacity",
+        "settled Host copy"
+      ],
+      "outcomes": {
+        "guard_0:eligible": 128,
+        "guard_1:rejected": 128,
+        "guard_2:rejected": 128,
+        "guard_3:rejected": 127
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.040518674650698604,
+            "p50_ms": 0.008305,
+            "p99_ms": 0.090227,
+            "max_ms": 0.09453
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.04152885828343313,
+            "p50_ms": 0.009215,
+            "p99_ms": 0.091637,
+            "max_ms": 0.095682
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.020521451097804393,
+            "p50_ms": 0.005109,
+            "p99_ms": 0.042201,
+            "max_ms": 0.045287
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.021497051896207583,
+            "p50_ms": 0.00621,
+            "p99_ms": 0.043177,
+            "max_ms": 0.046459
+          }
+        }
+      },
+      "thread_cpu_reduction": 0.4823587070588147,
+      "optimized_estimates": {
+        "d2h_service_estimate_computed": 4,
+        "d2h_service_estimate_reused": 252
+      }
+    },
+    {
+      "distinct_size_count": 8,
+      "receipt_every_calls": 8,
+      "iterations": 501,
+      "ranks_equal": true,
+      "live_guards": [
+        "tool residual window",
+        "Host capacity",
+        "settled Host copy"
+      ],
+      "outcomes": {
+        "guard_0:eligible": 128,
+        "guard_1:rejected": 128,
+        "guard_2:rejected": 128,
+        "guard_3:rejected": 127
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.04363073852295409,
+            "p50_ms": 0.007422,
+            "p99_ms": 0.096114,
+            "max_ms": 0.127247
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.044624343313373255,
+            "p50_ms": 0.008332,
+            "p99_ms": 0.097408,
+            "max_ms": 0.114734
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.045116900199600796,
+            "p50_ms": 0.008688,
+            "p99_ms": 0.174485,
+            "max_ms": 0.35465
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.046118976047904194,
+            "p50_ms": 0.009498,
+            "p99_ms": 0.175587,
+            "max_ms": 0.355756
+          }
+        }
+      },
+      "thread_cpu_reduction": -0.03349366340328919,
+      "optimized_estimates": {
+        "d2h_service_estimate_computed": 256
+      }
+    },
+    {
+      "distinct_size_count": 8,
+      "receipt_every_calls": 1,
+      "iterations": 501,
+      "ranks_equal": true,
+      "live_guards": [
+        "tool residual window",
+        "Host capacity",
+        "settled Host copy"
+      ],
+      "outcomes": {
+        "guard_0:eligible": 128,
+        "guard_1:rejected": 128,
+        "guard_2:rejected": 128,
+        "guard_3:rejected": 127
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.04985017764471058,
+            "p50_ms": 0.005568,
+            "p99_ms": 0.112184,
+            "max_ms": 0.199754
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.05087889221556886,
+            "p50_ms": 0.0066,
+            "p99_ms": 0.113228,
+            "max_ms": 0.201371
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.04959299600798403,
+            "p50_ms": 0.018014,
+            "p99_ms": 0.10591,
+            "max_ms": 0.139631
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.05061915169660679,
+            "p50_ms": 0.018996,
+            "p99_ms": 0.107034,
+            "max_ms": 0.141459
+          }
+        }
+      },
+      "thread_cpu_reduction": 0.00510507418010564,
+      "optimized_estimates": {
+        "d2h_service_estimate_computed": 256
+      }
+    },
+    {
+      "distinct_size_count": 32,
+      "receipt_every_calls": 0,
+      "iterations": 501,
+      "ranks_equal": true,
+      "live_guards": [
+        "tool residual window",
+        "Host capacity",
+        "settled Host copy"
+      ],
+      "outcomes": {
+        "guard_0:eligible": 128,
+        "guard_1:rejected": 128,
+        "guard_2:rejected": 128,
+        "guard_3:rejected": 127
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.03821416367265469,
+            "p50_ms": 0.005362,
+            "p99_ms": 0.085971,
+            "max_ms": 0.08933
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.0392157624750499,
+            "p50_ms": 0.006468,
+            "p99_ms": 0.086979,
+            "max_ms": 0.090298
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.021048690618762474,
+            "p50_ms": 0.008303,
+            "p99_ms": 0.071639,
+            "max_ms": 0.082899
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.02197730738522954,
+            "p50_ms": 0.009202,
+            "p99_ms": 0.071709,
+            "max_ms": 0.084135
+          }
+        }
+      },
+      "thread_cpu_reduction": 0.43957975063695165,
+      "optimized_estimates": {
+        "d2h_service_estimate_computed": 16,
+        "d2h_service_estimate_reused": 240
+      }
+    },
+    {
+      "distinct_size_count": 32,
+      "receipt_every_calls": 8,
+      "iterations": 501,
+      "ranks_equal": true,
+      "live_guards": [
+        "tool residual window",
+        "Host capacity",
+        "settled Host copy"
+      ],
+      "outcomes": {
+        "guard_0:eligible": 128,
+        "guard_1:rejected": 128,
+        "guard_2:rejected": 128,
+        "guard_3:rejected": 127
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.04133020758483034,
+            "p50_ms": 0.008488,
+            "p99_ms": 0.091722,
+            "max_ms": 0.101028
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.04235336926147704,
+            "p50_ms": 0.00947,
+            "p99_ms": 0.092866,
+            "max_ms": 0.102102
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.04073119960079841,
+            "p50_ms": 0.005367,
+            "p99_ms": 0.091121,
+            "max_ms": 0.095272
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.0417397125748503,
+            "p50_ms": 0.008673,
+            "p99_ms": 0.092248,
+            "max_ms": 0.096339
+          }
+        }
+      },
+      "thread_cpu_reduction": 0.014488969763850723,
+      "optimized_estimates": {
+        "d2h_service_estimate_computed": 256
+      }
+    },
+    {
+      "distinct_size_count": 32,
+      "receipt_every_calls": 1,
+      "iterations": 501,
+      "ranks_equal": true,
+      "live_guards": [
+        "tool residual window",
+        "Host capacity",
+        "settled Host copy"
+      ],
+      "outcomes": {
+        "guard_0:eligible": 128,
+        "guard_1:rejected": 128,
+        "guard_2:rejected": 128,
+        "guard_3:rejected": 127
+      },
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.04636585229540918,
+            "p50_ms": 0.008021,
+            "p99_ms": 0.109209,
+            "max_ms": 0.113261
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.04739833133732535,
+            "p50_ms": 0.009001,
+            "p99_ms": 0.110311,
+            "max_ms": 0.114327
+          }
+        },
+        "optimized": {
+          "wall_ms": {
+            "count": 501,
+            "mean_ms": 0.04597524750499002,
+            "p50_ms": 0.00906,
+            "p99_ms": 0.103077,
+            "max_ms": 0.105412
+          },
+          "thread_cpu_ms": {
+            "count": 501,
+            "mean_ms": 0.046994459081836325,
+            "p50_ms": 0.010061,
+            "p99_ms": 0.104113,
+            "max_ms": 0.10644
+          }
+        }
+      },
+      "thread_cpu_reduction": 0.008520811684587404,
+      "optimized_estimates": {
+        "d2h_service_estimate_computed": 256
+      }
+    }
+  ]
+}

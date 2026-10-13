@@ -1,0 +1,34 @@
+{
+  "status": "qualified_development_candidate_for_next_cold_deployment",
+  "baseline_revision": "e35c53e",
+  "running_v53_revision": "02c171a39094b9e4098aef71750fde39f8daa21c",
+  "running_source_changed": false,
+  "engine_patch_changed": false,
+  "new_prefill_strategies_enabled": false,
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "6a2ddadbe1aa059b31af5ed30d8b95562c80c208b60341ee65e5984a972cf6d4",
+    "scripts/benchmark_prepare_service_cache.py": "cc340069b34812c75fc867bcc1351c7f47a80688c148ef0e85bca825413286ea",
+    "tests/test_sglang_v0520_runtime.py": "a43d9b86e7183776fffbbdc62b8f2462541b886e25cadb0ed04d38d74b7a5d58"
+  },
+  "tests": {
+    "command": "python -m pytest -q tests/test_sglang_v0520_runtime.py tests/test_native_transfer_service.py",
+    "passed": 147,
+    "failures": 0,
+    "errors": 0,
+    "artifact": "experiments/reports/v308_d2h_service_cache_tests_20261013.xml",
+    "sha256": "07eda5b582557e132cb8193d91b2cf809b0673d9bf2ae7052c8dfab04c5953b4"
+  },
+  "cpu_benchmark": "experiments/reports/v308_prepare_service_cache_cpu_20261013.json",
+  "latest_complete_window": "experiments/reports/v307_v53_busy_1800_2100_20261013.json",
+  "latest_short_prefill_analysis": "experiments/reports/v307_v53_short_prefill_1800_2100_20261013.json",
+  "constraints": [
+    "Cache timing statistics by exact byte count and pool shape, including unsupported estimates.",
+    "Every new completed sample invalidates both directions because the shared bounded history can evict opposite-direction evidence.",
+    "Tool residual windows, Host capacity and physical copy checks remain live; no action permission is cached.",
+    "All nine CPU cases preserve PREPARE ranking outputs, including changing windows, capacity, copies and service samples.",
+    "Static repeated cases reduce rank CPU by 44-51%; frequent sample updates largely remove the benefit and one no-hit case is 3.3% slower.",
+    "Actual repetition frequency, critical-path savings and end-to-end improvement are not measured.",
+    "Keep V53 running with frozen source. This modest local candidate alone does not justify an early restart.",
+    "Existing native admission remains in place. New prefill batching, delay and mixed-chunk strategies remain deferred."
+  ]
+}
