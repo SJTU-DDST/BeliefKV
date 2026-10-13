@@ -1,0 +1,109 @@
+{
+  "created_at": "2026-10-13T13:51:55.940081+08:00",
+  "scope": "Bounded CPU admission/identity reproduction; not measured GPU or JCT improvement.",
+  "baseline_commit": "030b7dfe385a681f31b0e6b1b6e2ce36b49f2e73",
+  "runtime_source_sha256": "fc96358b755eac67db7cd4fbed8648feb5268b6ff553aa8cd98ea4c2c4865f34",
+  "baseline_runtime_source_sha256": "7b066e2a2a2bbb11ff91d7eac81c28870a904ffcba54604d9dada83c72b947e9",
+  "qualification_helper_path": "scripts/qualify_final_report_admission.py",
+  "qualification_helper_sha256": "bf19113b5053ed5d454ec6e17583d62a770956579ebfc30bcf9645ed2e75692a",
+  "test_source_sha256": "30d7ef745cbbdd53810e1addecfff0538def6cb86654730dec04bac14198bd33",
+  "junit_sha256": "220030058f08ed52a72a9af20767b98ac0c2a1a5ea1305a3c0c242d7b6996e52",
+  "test_suites": [
+    {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "1",
+      "tests": "187",
+      "time": "0.883",
+      "timestamp": "2026-10-13T13:43:23.609403+08:00",
+      "hostname": "ddst-12"
+    }
+  ],
+  "cases": {
+    "coalesced_notice_and_submit": {
+      "baseline": {
+        "bound_live_final_stage": false,
+        "bound_request_id": null,
+        "physical_actions_pending": 0
+      },
+      "current": {
+        "bound_live_final_stage": true,
+        "bound_request_id": "child",
+        "physical_actions_pending": 0
+      }
+    },
+    "shorter_notice": {
+      "baseline": {
+        "first_selected": "child",
+        "priority_promoted": "child",
+        "semantic_selection_count": 0,
+        "physical_actions_pending": 0
+      },
+      "current": {
+        "first_selected": "child2",
+        "priority_promoted": "child2",
+        "semantic_selection_count": 0,
+        "physical_actions_pending": 0
+      }
+    },
+    "best_already_first": {
+      "baseline": {
+        "first_selected": "child",
+        "priority_promoted": "child",
+        "semantic_selection_count": 0,
+        "physical_actions_pending": 0
+      },
+      "current": {
+        "first_selected": "child2",
+        "priority_promoted": null,
+        "semantic_selection_count": 0,
+        "physical_actions_pending": 0
+      }
+    },
+    "unknown_work": {
+      "baseline": {
+        "first_selected": "child",
+        "priority_promoted": "child",
+        "semantic_selection_count": 0,
+        "physical_actions_pending": 0
+      },
+      "current": {
+        "first_selected": "child2",
+        "priority_promoted": null,
+        "semantic_selection_count": 0,
+        "physical_actions_pending": 0
+      }
+    },
+    "live_semantic_work": {
+      "baseline": {
+        "first_selected": "child",
+        "priority_promoted": "child",
+        "semantic_selection_count": 0,
+        "physical_actions_pending": 0
+      },
+      "current": {
+        "first_selected": "child2",
+        "priority_promoted": "child2",
+        "semantic_selection_count": 1,
+        "physical_actions_pending": 0
+      }
+    },
+    "aged_ordinary": {
+      "baseline": {
+        "first_selected": "other",
+        "priority_promoted": null,
+        "semantic_selection_count": 0,
+        "physical_actions_pending": 0
+      },
+      "current": {
+        "first_selected": "other",
+        "priority_promoted": null,
+        "semantic_selection_count": 0,
+        "physical_actions_pending": 0
+      }
+    }
+  },
+  "safety_scope": "Soft admission within the existing four-normal-admission quotas and aging; notice binding remains specific to the exact last-child/request/epoch; coalesced later tool/RETURN cases are covered by the recorded regression suite. No capacity reservation, transfer authorization, incomplete-prefix execution or new agent guard.",
+  "deployment": "Followup candidate only. Main V49 and queued V50 checkout are unchanged. Production prevalence of lost coalesced notices is not known from old counters; new per-second cumulative counters enable cold-run validation."
+}

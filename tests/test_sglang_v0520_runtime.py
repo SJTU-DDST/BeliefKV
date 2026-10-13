@@ -3055,6 +3055,190 @@ def test_final_stage_promotes_only_bound_join_child_with_admission_budget():
     assert "join" not in runtime._final_stages
 
 
+def two_final_children(*, sessions=False):
+    runtime = final_stage_runtime()
+    second_parent = req("parent2")
+    second_parent.session_id, second_parent.session_generation = "s2", 1
+    runtime.register_visible_request(second_parent)
+    runtime.on_events((
+        event(7, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+              context_id="ctx-child", context_epoch=1,
+              attributes={"request_id": "child"}),
+        event(8, RuntimeEventKind.INVOCATION_CREATE, invocation_id="parent2",
+              context_id="ctx-parent2", agent_definition_id="root", agent_instance_id="parent2"),
+        event(9, RuntimeEventKind.INVOCATION_CREATE, invocation_id="child2",
+              context_id="ctx-child2", agent_definition_id="child", agent_instance_id="child2"),
+        event(10, RuntimeEventKind.JOIN_CREATE, join_id="join2",
+              member_invocation_ids=("child2",)),
+        event(11, RuntimeEventKind.JOIN_WAIT, invocation_id="parent2", join_id="join2"),
+    ))
+    runtime.on_events((
+        event(12, RuntimeEventKind.STRUCTURED_ACTION, invocation_id="child2",
+              context_id="ctx-child2", context_epoch=0, join_id="join2",
+              attributes={"beliefkv_child_completion_intent": True,
+                          "child_completion_signal_kind": "stage",
+                          "estimated_final_report_tokens": 64}),
+    ))
+    runtime.on_events((
+        event(13, RuntimeEventKind.LLM_SUBMIT, invocation_id="child2",
+              context_id="ctx-child2", context_epoch=1,
+              attributes={"request_id": "child2"}),
+    ))
+    first, second, ordinary = req("child"), req("child2"), req("other")
+    first.beliefkv_metadata["context_epoch"] = 1
+    second.beliefkv_metadata["context_epoch"] = 1
+    if sessions:
+        for request in (first, second):
+            request.session_id, request.session_generation = f"s-{request.rid}", 1
+    for request in (first, second, ordinary):
+        runtime.register_visible_request(request)
+    runtime._final_stages["join"].expected_tokens = 512
+    return runtime, first, second, ordinary
+
+
+def final_work_reply(runtime, request, *, middle=20., upper=40., age_ms=0.):
+    key = runtime.visible[request.rid]
+    observation = SemanticReportInput(
+        key, time.monotonic() * 1000. - age_ms, 0, 40, "Final report.",
+        True, 512, 2, 3,
+    )
+    return SemanticReportReply(observation, 1., 1., middle, upper, .1)
+
+
+def test_final_priority_chooses_shorter_report_independently_of_stage_registration():
+    runtime, first, second, ordinary = two_final_children()
+    result = select(runtime, [ordinary, first, second])
+    assert result.candidates[0] is second
+    assert runtime._final_priority_promoted == second.rid
+    assert runtime.counts["final_priority_selected_notice_budget"] == 1
+    assert runtime._join_ticket is None
+    assert runtime.physical_ledger.pending_count == 0
+    runtime.close()
+
+
+def test_final_priority_keeps_best_report_already_at_queue_head():
+    runtime, first, second, ordinary = two_final_children(sessions=True)
+    assert select(runtime, [second, first, ordinary]).candidates[0] is second
+    assert runtime._final_priority_promoted is None
+    assert runtime.counts["final_priority_best_already_first"] == 1
+    runtime.close()
+
+
+def test_final_priority_unknown_work_keeps_existing_queue_order():
+    runtime, first, second, ordinary = two_final_children(sessions=True)
+    first.output_ids = list(range(512))
+    second.output_ids = list(range(64))
+    assert select(runtime, [second, first, ordinary]).candidates[0] is second
+    assert runtime._final_priority_promoted is None
+    assert runtime.counts["final_priority_selected_unknown"] == 1
+    runtime.close()
+
+
+@pytest.mark.parametrize("following", ("none", "tool", "return"))
+def test_coalesced_notice_and_submit_restore_only_live_last_child_stage(following):
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    runtime._child_report_notices.clear()
+    rows = [
+        event(7, RuntimeEventKind.STRUCTURED_ACTION, invocation_id="child",
+              context_id="ctx-child", context_epoch=0, join_id="join",
+              attributes={"beliefkv_child_completion_intent": True,
+                          "child_completion_signal_kind": "stage",
+                          "estimated_final_report_tokens": 256}),
+        event(8, RuntimeEventKind.LLM_SUBMIT, invocation_id="child",
+              context_id="ctx-child", context_epoch=1,
+              attributes={"request_id": "child"}),
+    ]
+    if following != "none":
+        rows.append(event(
+            9, RuntimeEventKind.TOOL_START if following == "tool" else RuntimeEventKind.RETURN,
+            invocation_id="child", context_id="ctx-child", context_epoch=1,
+            attributes={"tool_family": "file"} if following == "tool" else {},
+        ))
+    runtime.on_events(tuple(rows))
+    if following == "none":
+        stage = runtime._final_stages["join"]
+        assert stage.request_id == "child"
+        assert stage.child_epoch == 1
+        assert runtime._live_final_stage(stage)
+        assert runtime.counts["final_stage_resumed_after_report_submit"] == 1
+        assert runtime.counts["final_stage_resumed_after_sibling_return"] == 0
+        child, ordinary = req("child"), req("other")
+        child.beliefkv_metadata["context_epoch"] = 1
+        runtime.register_visible_request(child)
+        runtime.register_visible_request(ordinary)
+        assert select(runtime, [ordinary, child]).candidates[0] is child
+    else:
+        assert not runtime._final_stages
+        assert runtime.counts["final_stage_resumed_after_report_submit"] == 0
+    if following == "return":
+        assert runtime._join_ticket.phase == "confirmed"
+        assert runtime._join_ticket.issued_nodes == 0
+    else:
+        assert runtime._join_ticket is None
+    assert runtime.physical_ledger.pending_count == 0
+    runtime.close()
+
+
+def test_final_priority_uses_live_semantic_work_without_requiring_host_target():
+    runtime, first, second, ordinary = two_final_children()
+    runtime._semantic_forecasts[first.rid] = final_work_reply(runtime, first)
+    assert select(runtime, [ordinary, second, first]).candidates[0] is first
+    assert runtime.counts["final_priority_selected_semantic_work"] == 1
+    assert runtime._native_cache is None
+    assert runtime.physical_ledger.pending_count == 0
+    runtime.close()
+
+
+@pytest.mark.parametrize("invalid", ("stale", "future", "epoch", "phase", "unannounced"))
+def test_final_priority_does_not_rank_from_invalid_semantic_work(invalid):
+    runtime, first, second, ordinary = two_final_children()
+    reply = final_work_reply(runtime, first)
+    if invalid == "stale":
+        reply = final_work_reply(runtime, first, age_ms=1501.)
+    elif invalid == "future":
+        reply = final_work_reply(runtime, first, age_ms=-100.)
+    elif invalid == "epoch":
+        reply = replace(reply, observation=replace(
+            reply.observation, key=replace(reply.observation.key, context_epoch=0),
+        ))
+    elif invalid == "phase":
+        reply = replace(reply, final_score=0.)
+    else:
+        reply = replace(reply, observation=replace(reply.observation, notice_active=False))
+    runtime._semantic_forecasts[first.rid] = reply
+    assert select(runtime, [ordinary, first, second]).candidates[0] is second
+    assert runtime.counts["final_priority_selected_notice_budget"] == 1
+    runtime.close()
+
+
+@pytest.mark.parametrize("upper,expected_first", ((200., True), (120., False)))
+def test_final_priority_does_not_treat_overtaken_endpoint_as_one_token(upper, expected_first):
+    runtime, first, second, ordinary = two_final_children()
+    first.output_ids = list(range(150))
+    runtime._semantic_forecasts[first.rid] = final_work_reply(
+        runtime, first, middle=80., upper=upper,
+    )
+    assert select(runtime, [ordinary, first, second]).candidates[0] is (
+        first if expected_first else second
+    )
+    runtime.close()
+
+
+@pytest.mark.parametrize("restriction", ("ordinary_age", "final_quota", "restore_quota"))
+def test_final_work_ranking_preserves_aging_and_both_priority_quotas(restriction):
+    runtime, first, second, ordinary = two_final_children()
+    if restriction == "ordinary_age":
+        runtime._visible_since[ordinary.rid] = time.monotonic() - 11.
+    elif restriction == "final_quota":
+        runtime._final_priority_normal_admissions = 0
+    else:
+        runtime._prefetch_priority_normal_admissions = 0
+    assert select(runtime, [ordinary, first, second]).candidates[0] is ordinary
+    assert runtime._final_priority_promoted is None
+    runtime.close()
+
+
 def test_final_stage_rebinds_one_epoch_late_notice_only_to_live_child_request():
     stage_records = []
     runtime = final_stage_runtime(stage_records=stage_records)

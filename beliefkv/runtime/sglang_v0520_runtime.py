@@ -1027,14 +1027,25 @@ class NativeAdmissionRuntime:
                     self.shadow_candidate = None
                 if event.kind in (RuntimeEventKind.TOOL_START, RuntimeEventKind.TOOL_END) and context_id is not None:
                     self._submit_tool_wait(context_id)
+            report_notices_in_batch: set[str] = set()
             for event in events:
                 if event.kind is RuntimeEventKind.STRUCTURED_ACTION:
-                    self._observe_child_report_notice(event)
+                    if self._observe_child_report_notice(event):
+                        report_notices_in_batch.add(event.invocation_id)
                     self._observe_child_completion_intent(event)
                 elif event.kind is RuntimeEventKind.LLM_SUBMIT:
                     self._clear_semantic_invocation(event.invocation_id)
                     self._bind_child_report_notice(event)
                     self._bind_final_request(event)
+                    notice = self._child_report_notices.get(event.invocation_id)
+                    if (
+                        event.invocation_id in report_notices_in_batch
+                        and notice is not None
+                        and notice.request_id == event.attributes.get("request_id")
+                    ):
+                        self._resume_remaining_child_report_stage(
+                            notice.join_id, resumed_after_sibling_return=False,
+                        )
                     self._observe_prefetch_client_submit(event)
                 elif event.kind is RuntimeEventKind.TOOL_START:
                     self._child_report_notices.pop(event.invocation_id, None)
@@ -1619,6 +1630,7 @@ class NativeAdmissionRuntime:
                 "tool_prefetch": self.enable_tool_prefetch,
                 "prefetch_lead_ms": self.prefetch_lead_ms,
                 "semantic_work_statistic": self.semantic_work_statistic,
+                "final_admission_policy": "remaining_report_work",
                 "eos_protocol_window_ms": self.eos_protocol_window_ms,
                 "eos_prefetch_evidence_window_ms": self.eos_prefetch_evidence_window_ms,
                 "terminal_cache_diagnostics": self._terminal_cache_diagnostics,
@@ -2007,12 +2019,12 @@ class NativeAdmissionRuntime:
         self.counts[f"{kind}_unhinted_scanned"] += len(selected)
         return True
 
-    def _observe_child_report_notice(self, event: RuntimeEvent) -> None:
+    def _observe_child_report_notice(self, event: RuntimeEvent) -> bool:
         if (
             event.attributes.get(CHILD_COMPLETION_INTENT) is not True
             or event.attributes.get("child_completion_signal_kind") != "stage"
         ):
-            return
+            return False
         child = self.graph.invocations.get(event.invocation_id)
         context = self.graph.contexts.get(event.context_id)
         join = self.graph.joins.get(event.join_id)
@@ -2028,7 +2040,7 @@ class NativeAdmissionRuntime:
             and event.invocation_id in join.member_invocation_ids - join.completed_member_ids
             and type(estimated) is int and 1 <= estimated <= 4096
         ):
-            return
+            return False
         # The validated graph batch may already include the next submit. Bind
         # announcement history in event order, independently of H2D eligibility.
         self._child_report_notices[event.invocation_id] = _ChildReportNotice(
@@ -2037,6 +2049,7 @@ class NativeAdmissionRuntime:
             request_id=event.attributes.get("completion_stage_bound_request_id"),
         )
         self.counts["child_report_notice_observed"] += 1
+        return True
 
     def _bind_child_report_notice(self, event: RuntimeEvent) -> None:
         if event.attributes.get("runtime_internal"):
@@ -2095,7 +2108,9 @@ class NativeAdmissionRuntime:
                 "resumed_after_sibling_return": resumed_after_sibling_return,
             })
 
-    def _resume_remaining_child_report_stage(self, join_id: str) -> None:
+    def _resume_remaining_child_report_stage(
+        self, join_id: str, *, resumed_after_sibling_return: bool = True,
+    ) -> None:
         if self.enable_confirmed_join_canary or join_id in self._noncontinuing_joins:
             return
         join = self.graph.joins.get(join_id)
@@ -2125,8 +2140,11 @@ class NativeAdmissionRuntime:
         ):
             return
         self._activate_child_report_stage(
-            key, child_id, notice, resumed_after_sibling_return=True,
+            key, child_id, notice,
+            resumed_after_sibling_return=resumed_after_sibling_return,
         )
+        if not resumed_after_sibling_return:
+            self.counts["final_stage_resumed_after_report_submit"] += 1
 
     def _observe_child_completion_intent(self, event: RuntimeEvent) -> None:
         if self.enable_confirmed_join_canary:
@@ -7263,6 +7281,38 @@ class NativeAdmissionRuntime:
             self._prefill_residency_scan = (signature, scan)
         return scan
 
+    def _final_admission_work(
+        self, stage: _ChildFinalStage, key: PrefillCandidateKey,
+        request: object, *, now_ms: float,
+    ) -> tuple[float | None, str]:
+        generated = max(stage.generated_tokens, len(getattr(request, "output_ids", ()) or ()))
+        progress = self._semantic_progress.get(key.request_id, ())
+        if progress and progress[-1][0] <= now_ms:
+            generated = max(generated, progress[-1][1])
+        forecast = self._semantic_forecasts.get(key.request_id)
+        if (
+            forecast is not None
+            and forecast.observation.key == key
+            and forecast.observation.notice_active
+            and forecast.final_score >= self._semantic_score_threshold
+            and 0 <= now_ms - forecast.observation.observed_ts_ms <= 1_500.
+            and forecast.observation.observed_output_tokens <= generated
+        ):
+            advanced = generated - forecast.observation.observed_output_tokens
+            endpoint = (
+                forecast.upper_tokens if self.semantic_work_statistic == "upper"
+                else forecast.middle_tokens
+            )
+            if endpoint <= advanced and self.semantic_work_statistic == "center":
+                endpoint = forecast.upper_tokens
+            if math.isfinite(endpoint) and endpoint > advanced:
+                return endpoint - advanced, "semantic_work"
+        # An exhausted endpoint is unknown, not evidence of one remaining token.
+        remaining = stage.expected_tokens - generated
+        if remaining > 0:
+            return float(remaining), "notice_budget"
+        return None, "unknown"
+
     @timed_runtime("admission_plan")
     def plan_native_prefill(
         self, native_order: Sequence[object], *, running_batch: object, adder: object
@@ -7503,26 +7553,49 @@ class NativeAdmissionRuntime:
                 getattr(ordered[0][1], "rid", ""), time.monotonic(),
             ) < 10.
         ):
+            final_candidates = []
+            queued = {
+                getattr(pair[1], "rid", None): (position, pair)
+                for position, pair in enumerate(ordered)
+            }
             for stage in self._final_stages.values():
                 if (
                     stage.semantic_only or not self._live_final_stage(stage)
                     or stage.request_id is None
                 ):
                     continue
-                candidate = next((
-                    pair for pair in ordered
-                    if getattr(pair[1], "rid", None) == stage.request_id
-                    and self.visible.get(stage.request_id) == keys[pair[0]]
-                ), None)
-                if candidate is None or ordered[0] == candidate:
+                queued_candidate = queued.get(stage.request_id)
+                if queued_candidate is None:
                     continue
-                native_rank = ordered.index(candidate)
-                ordered.remove(candidate)
-                ordered.insert(0, candidate)
-                self._final_priority_promoted = stage.request_id
-                self._final_priority_native_rank = native_rank
-                self.counts["final_priority_ordered"] += 1
-                break
+                native_rank, candidate = queued_candidate
+                key = keys[candidate[0]]
+                if (
+                    key is None or self.visible.get(stage.request_id) != key
+                    or key.invocation_id != stage.child_id
+                    or key.context_epoch != stage.child_epoch
+                ):
+                    continue
+                remaining, source = self._final_admission_work(
+                    stage, key, candidate[1], now_ms=now_ms,
+                )
+                final_candidates.append((
+                    remaining is None, remaining or 0.,
+                    native_rank, candidate, source,
+                ))
+            if final_candidates:
+                self.counts["final_priority_candidates_inspected"] += len(final_candidates)
+                chosen = min(final_candidates, key=lambda item: item[:3])
+                candidate = chosen[3]
+                self.counts[f"final_priority_selected_{chosen[4]}"] += 1
+                native_rank = chosen[2]
+                if native_rank == 0:
+                    self.counts["final_priority_best_already_first"] += 1
+                else:
+                    ordered.remove(candidate)
+                    ordered.insert(0, candidate)
+                    self._final_priority_promoted = candidate[1].rid
+                    self._final_priority_native_rank = native_rank
+                    self.counts["final_priority_ordered"] += 1
         return compile_native_prefill_plan(
             [
                 key for index, _ in ordered

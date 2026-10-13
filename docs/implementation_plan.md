@@ -29,12 +29,13 @@ validation. No new completion guards or canary stage.
 2. Prioritize workflow critical-path queueing next. Existing causal ranks
    already recognize the sole remaining JOIN child; resident-first, final
    priority and restored-parent consumption also exist. Current ordering is
-   primarily class/depth and bounded promotions. The tool-timing-only config
-   bypasses legacy local-demand predictions, so its dormant output-length
-   tie-break is not evidence of semantic remaining-work scheduling. Integrate
-   available final-stage/progress and restore-cost evidence within bounded
-   admission, rather than giving every root or long investigating child
-   unconditional priority. Preserve native batch filling and request aging.
+   primarily class/depth and bounded promotions. V271 now uses live semantic
+   remaining work or a positive report budget to select among explicitly bound
+   last-child reports; it also repairs a fresh notice and next-submit arriving
+   in one batch. This is not general output-length scheduling: the tool-timing-only
+   config still bypasses legacy local-demand predictions. Cold-validate actual
+   coverage, then integrate restore cost and investigate non-final critical-child
+   queueing. Preserve native batch filling, request aging and bounded quotas.
 3. Coordinate each waiting agent's memory lifecycle. Rank short-wait HBM
    retention versus incremental FULL backup and reclaim using remaining tool
    time, complete round-trip cost and actual pressure. Supply freed capacity
@@ -54,6 +55,26 @@ validation. No new completion guards or canary stage.
    workflow scheduling/reclaim, added PREPARE and added JOIN/tool anticipation
    as controlled factors in final repeated live experiments. Do not subtract
    transfer-stream time from JCT or credit shared engine fixes only to prediction.
+
+V271 is a followup-only admission candidate, not a live performance result.
+Notice recovery is limited to the exact fresh same-batch notice/request and
+the currently valid sole unfinished JOIN child. Later tool/RETURN events do
+not create a live final stage. Candidate work uses a matching recent forecast
+minus observed output; exhausted centers use a supported upper endpoint,
+then a positive notice budget, otherwise unknown. Best-at-head and unknown
+ties preserve current queue order. Restore-consumption priority and the
+existing four-normal-admission quotas/aging remain. No new physical planning
+or scheduler-side model inference is added.
+
+186 checks pass and one skips. The six-case baseline reproduction uses real
+runtime/graph/queue fixtures and keeps physical action count zero; original
+030b7df reproduces the binding and ordering defects. The tracked
+`scripts/qualify_final_report_admission.py` binds source/test/JUnit hashes in
+`experiments/reports/v271_final_admission_qualification_20261013.json`.
+Cumulative candidate/binding counters establish production frequency in a
+later cold run; they are not unique events or admitted-request counts.
+Keep Main V49 and queued V50/82b42d5 unchanged. Broader critical-child
+queueing and coordinated tool retention/offload remain unfinished.
 
 V270 reconstructs both complete V29 traces. Mean JCT improves 391.198s:
 root JOIN wait 268.933s, root LLM 108.731s, root tools 18.935s, offset by
