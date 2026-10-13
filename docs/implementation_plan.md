@@ -2,6 +2,19 @@
 
 Status date: 2026-10-14.
 
+V55 triggered at06:00:01 and verified deploymentfe05cac/a8f4ea97/
+f7e0a895, then exited before service or workflow arrival: NUMA1 estimated
+192.36GiB while the200GB Host plus8GiB reserve required194.26GiB.
+V379 preserves the startup-only failure; do not manufacture156 errors or
+censored workflows.2e5f58d reduces only the extra startup reserve8→6GiB;
+actual200GB,80:20 and NUMA1 stay fixed. Live preflight now passes;
+actual local pinned allocation remains to be observed after cold restart.
+V380 binds28 sources, retaining all27 prior core hashes/checks; no new
+targeted test for this guard configuration. Reservation management validates
+actual launcher termination and receipts, and repeats the same Host preflight
+before spawning. Wait for unavailable resources without creating failed runs;
+then verify real pool census, healthy service and actual complete windows.
+
 V377 links all31 fully released early-tool waits through exact invocation/
 tool_run_id and sealed clocks. Each has one active call at first H2D submit;
 13 roots/18 children all lack a completed same-input prior.22 are test-suite
