@@ -318,7 +318,7 @@ def inspect_session_residency_hint(cache: object, request: object) -> dict | Non
         namespace = (
             getattr(request, "extra_key", None), getattr(request, "cache_salt", None),
         )
-        states = {}
+        states = {} if len(leaves) > 1 else None
         best_prefix = device_prefix = best_device = best_missing = 0
         best_mamba = None
         for leaf_id, created in leaves:
@@ -338,7 +338,7 @@ def inspect_session_residency_hint(cache: object, request: object) -> dict | Non
                 if current is None or current.id in seen or lookup(current.id) is not current:
                     return None
                 seen.add(current.id)
-                prior = states.get(current.id)
+                prior = states.get(current.id) if states is not None else None
                 if prior is not None:
                     if prior is False:
                         chain.clear()
@@ -359,7 +359,8 @@ def inspect_session_residency_hint(cache: object, request: object) -> dict | Non
                     return None
                 prefix += len(key)
                 if prefix > limit:
-                    states[node.id] = False
+                    if states is not None:
+                        states[node.id] = False
                     break
                 full, state = node.component_data[0], node.component_data[2]
                 full_device = full_device and full.value is not None
@@ -383,10 +384,11 @@ def inspect_session_residency_hint(cache: object, request: object) -> dict | Non
                         best_device = device_prefix
                         best_missing = missing
                         best_mamba = int(state.value is None)
-                states[node.id] = (
-                    prefix, missing, device_prefix, full_device,
-                    full_available, pending, pending_load,
-                )
+                if states is not None:
+                    states[node.id] = (
+                        prefix, missing, device_prefix, full_device,
+                        full_available, pending, pending_load,
+                    )
         if best_prefix <= 0:
             return None
         return {
