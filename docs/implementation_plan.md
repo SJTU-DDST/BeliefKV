@@ -54,8 +54,10 @@ hashes, preserving incomplete workflows and unknown evidence.
    V275 now uses the full latest V49 trace: paired last-child queue improves
    76.518s/workflow but after-first-service time grows 98.051s and JOIN wait
    grows 21.708s. Investigate generated work and interleaved service/turnover
-   together; the latter interval is not isolated scheduler CPU. Keep V50's
-   frozen code running to measure the new admission and shared-path fixes.
+   together; the latter interval is not isolated scheduler CPU. V276 confirms
+   V50 still has 316670/380722 decode steps and 39.753s instrumented exclusive
+   Python wall in 600–900s. Preserve its cutoff and cold-deploy V51 after the
+   qualified capacity and restored-consumption fixes; never hot-edit live code.
 3. Coordinate each waiting agent's memory lifecycle. Rank short-wait HBM
    retention versus incremental FULL backup and reclaim using remaining tool
    time, complete round-trip cost and actual pressure. Supply freed capacity
@@ -75,6 +77,25 @@ hashes, preserving incomplete workflows and unknown evidence.
    workflow scheduling/reclaim, added PREPARE and added JOIN/tool anticipation
    as controlled factors in final repeated live experiments. Do not subtract
    transfer-stream time from JCT or credit shared engine fixes only to prediction.
+
+Commit 6597555 fixes native allocation groups hiding unreserved static free
+lists and complete restored checkpoints always waiting for four ordinary
+admissions behind an aged head. Pending FULL frees and reserved Mamba slots
+remain excluded. Only a fresh complete checkpoint and valid next-prefill
+frontier use the dynamic 1–3-admission quota; at least one ordinary turn
+remains. Partial/unknown dependencies and unavailable capacity keep the old
+quota. Same-call headroom reuse does not span mutations. 456 checks, four
+production allocator CPU cases and seven prior/current queue cases pass.
+V277/V279 bind behavior evidence, not GPU or JCT improvement.
+
+V50 now confirms 17690 satisfied-capacity early returns in 27418 FULL Host
+eviction calls. Short prefill still has roughly 2.29–2.61 times native worker
+intervals, so diagnosis must continue. Existing low-frequency layer-wait
+sampling adds CPU enqueue/span and GPU observed-layer span without more CUDA
+events or synchronization; spans include dispatch gaps, not isolated kernels.
+110 relevant checks pass. Cold V51 keeps the workload, limits and handoff0.
+V50 unfinished tasks retain administrative censoring after the development
+restart; stopped-run completed-only JCT cannot establish improvement.
 
 V271 is deployed in the frozen V50 code; performance remains unproven.
 Notice recovery is limited to the exact fresh same-batch notice/request and
