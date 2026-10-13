@@ -1,0 +1,624 @@
+{
+  "observed_at_local": "2026-10-13T23:15:11.596383+08:00",
+  "iterations": 10000,
+  "repetitions": 7,
+  "sampling_interval": 16,
+  "cases": [
+    {
+      "prefill_every": 1,
+      "costs": {
+        "baseline": {
+          "cpu_ns_per_iteration": {
+            "mean": 8058.580785714286,
+            "p50": 8285.2576
+          },
+          "wall_ns_per_iteration": {
+            "mean": 8058.442342857143,
+            "p50": 8285.1142
+          }
+        },
+        "candidate": {
+          "cpu_ns_per_iteration": {
+            "mean": 12247.328757142857,
+            "p50": 13266.0711
+          },
+          "wall_ns_per_iteration": {
+            "mean": 12247.1969,
+            "p50": 13265.8096
+          }
+        }
+      },
+      "samples": {
+        "baseline": [
+          {
+            "cpu_ns_per_iteration": 8715.8772,
+            "wall_ns_per_iteration": 8715.7369,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 11706.0409,
+            "wall_ns_per_iteration": 11705.824,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 8363.678,
+            "wall_ns_per_iteration": 8363.5532,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 8285.2576,
+            "wall_ns_per_iteration": 8285.1142,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 6494.7772,
+            "wall_ns_per_iteration": 6494.6733,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 6437.6148,
+            "wall_ns_per_iteration": 6437.4928,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 6406.8198,
+            "wall_ns_per_iteration": 6406.702,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_ns_per_iteration": 13266.0711,
+            "wall_ns_per_iteration": 13265.8096,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 625
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 13421.8195,
+            "wall_ns_per_iteration": 13421.575,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 625
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 13405.3983,
+            "wall_ns_per_iteration": 13405.1571,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 625
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 13698.616,
+            "wall_ns_per_iteration": 13699.0696,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 625
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 10973.779,
+            "wall_ns_per_iteration": 10973.5512,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 625
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 10640.349,
+            "wall_ns_per_iteration": 10640.1442,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 625
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 10325.2684,
+            "wall_ns_per_iteration": 10325.0716,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 625
+            }
+          }
+        ]
+      },
+      "dispatch_counts_equal": true,
+      "incremental_cpu_ns_per_iteration": 4188.747971428571
+    },
+    {
+      "prefill_every": 5,
+      "costs": {
+        "baseline": {
+          "cpu_ns_per_iteration": {
+            "mean": 6095.285385714285,
+            "p50": 6057.5888
+          },
+          "wall_ns_per_iteration": {
+            "mean": 6096.8092,
+            "p50": 6057.4848
+          }
+        },
+        "candidate": {
+          "cpu_ns_per_iteration": {
+            "mean": 8675.468857142858,
+            "p50": 8645.8552
+          },
+          "wall_ns_per_iteration": {
+            "mean": 8676.506028571428,
+            "p50": 8647.1928
+          }
+        }
+      },
+      "samples": {
+        "baseline": [
+          {
+            "cpu_ns_per_iteration": 6020.8945,
+            "wall_ns_per_iteration": 6032.1694,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 6053.8402,
+            "wall_ns_per_iteration": 6053.7311,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 5967.6873,
+            "wall_ns_per_iteration": 5967.6287,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 6057.5888,
+            "wall_ns_per_iteration": 6057.4848,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 6061.2713,
+            "wall_ns_per_iteration": 6061.1732,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 6382.2417,
+            "wall_ns_per_iteration": 6382.1222,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 6123.4739,
+            "wall_ns_per_iteration": 6123.355,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_ns_per_iteration": 8703.6149,
+            "wall_ns_per_iteration": 8703.4471,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 125
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 8645.8552,
+            "wall_ns_per_iteration": 8647.1928,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 125
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 8958.1074,
+            "wall_ns_per_iteration": 8957.9371,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 125
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 8576.9073,
+            "wall_ns_per_iteration": 8580.0578,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 125
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 8599.3622,
+            "wall_ns_per_iteration": 8599.2004,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 125
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 8592.0153,
+            "wall_ns_per_iteration": 8591.8505,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 125
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 8652.4197,
+            "wall_ns_per_iteration": 8655.8565,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 125
+            }
+          }
+        ]
+      },
+      "dispatch_counts_equal": true,
+      "incremental_cpu_ns_per_iteration": 2580.1834714285724
+    },
+    {
+      "prefill_every": 16,
+      "costs": {
+        "baseline": {
+          "cpu_ns_per_iteration": {
+            "mean": 5988.516614285714,
+            "p50": 5945.5312
+          },
+          "wall_ns_per_iteration": {
+            "mean": 5988.796357142857,
+            "p50": 5945.4272
+          }
+        },
+        "candidate": {
+          "cpu_ns_per_iteration": {
+            "mean": 8233.309328571428,
+            "p50": 8219.3199
+          },
+          "wall_ns_per_iteration": {
+            "mean": 8233.305571428571,
+            "p50": 8219.5352
+          }
+        }
+      },
+      "samples": {
+        "baseline": [
+          {
+            "cpu_ns_per_iteration": 5939.4445,
+            "wall_ns_per_iteration": 5939.3491,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 6299.6065,
+            "wall_ns_per_iteration": 6299.5191,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 5946.004,
+            "wall_ns_per_iteration": 5945.9036,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 5998.1974,
+            "wall_ns_per_iteration": 6000.7635,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 5945.5312,
+            "wall_ns_per_iteration": 5945.4272,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 5936.3643,
+            "wall_ns_per_iteration": 5936.2491,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          },
+          {
+            "cpu_ns_per_iteration": 5854.4684,
+            "wall_ns_per_iteration": 5854.3629,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {}
+          }
+        ],
+        "candidate": [
+          {
+            "cpu_ns_per_iteration": 8251.7184,
+            "wall_ns_per_iteration": 8251.5722,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 40
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 8136.646,
+            "wall_ns_per_iteration": 8136.4864,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 40
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 8312.5164,
+            "wall_ns_per_iteration": 8312.3528,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 40
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 8283.9065,
+            "wall_ns_per_iteration": 8283.7568,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 40
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 8219.3199,
+            "wall_ns_per_iteration": 8219.5352,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 40
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 8216.4397,
+            "wall_ns_per_iteration": 8216.2782,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 40
+            }
+          },
+          {
+            "cpu_ns_per_iteration": 8212.6184,
+            "wall_ns_per_iteration": 8213.1574,
+            "dispatch_counts": {
+              "forward": 10000,
+              "war": 10000,
+              "physical": 10001,
+              "result": 10000
+            },
+            "sample_counts": {
+              "prefill_turnover_sample": 40
+            }
+          }
+        ]
+      },
+      "dispatch_counts_equal": true,
+      "incremental_cpu_ns_per_iteration": 2244.7927142857134
+    }
+  ],
+  "engine_sources": {
+    "baseline": {
+      "engine": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20",
+      "scheduler_sha256": "06b0e1dec9376f3182961e4a9434be8d54805a2b17da8e99d34ab70dacaee08a"
+    },
+    "candidate": {
+      "engine": "/home/longhao/experiment/.worktrees/sglang-v320-prefill-turnover-20261013",
+      "scheduler_sha256": "ecc941a42280a33dff4fb914e43f02dd0e8d889cd3f0ab33d8cac403d38aa61f"
+    }
+  },
+  "probe_sha256": "15201e06bae952c303405b647ac9ca069070fd86b3853e642c687ae172fadf54",
+  "benchmark_sha256": "ca820778c724f1e87e7e5560213a1893bc4d34956a2bb7cb999cc289bddcd448",
+  "scope": "Actual overlap-loop AST with stubbed forward/selection/physical work. Measures incremental CPU observation cost and preserves dispatch counts; no CUDA events, GPU overhead, native-relative throughput or JCT proof."
+}

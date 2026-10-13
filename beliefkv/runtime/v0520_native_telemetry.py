@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
 from beliefkv.runtime.restore_wait_probe import RestoreWaitProbe
+from beliefkv.runtime.prefill_turnover_probe import PrefillTurnoverProbe
 from beliefkv.runtime.writer_timing import SampledWriterTiming
 from beliefkv.runtime.record_json import encode_record
 
@@ -132,6 +133,7 @@ class NativeReactiveTelemetry:
         self._last_host_snapshot_ms = float("-inf")
         self._cache: object | None = None
         self._restore_wait_probe = RestoreWaitProbe()
+        self.prefill_turnover_probe = PrefillTurnoverProbe(self._emit)
         self._restore_wait_device: object | None = None
         self._error: str | None = None
         self._closed = False
@@ -1021,6 +1023,7 @@ class NativeReactiveTelemetry:
         mode = batch.forward_mode
         if not (mode.is_extend() or mode.is_decode()):
             return
+        self.prefill_turnover_probe.on_launch(batch)
         self._poll_restore_wait()
         controller = getattr(self._cache, "cache_controller", None)
         counter = getattr(controller, "layer_done_counter", None)
@@ -1470,6 +1473,7 @@ class NativeReactiveTelemetry:
         self._emit("audit", {
             "event": "gpu_service_sample",
             "ts_ms": complete_wall,
+            "forward_iter": batch.forward_iter,
             "sample_id": descriptor["sample_id"],
             "phase": descriptor["phase"],
             "batch_size": descriptor["batch_size"],
@@ -1507,6 +1511,7 @@ class NativeReactiveTelemetry:
             self.record_host_pool_usage(self._cache)
 
     def _poll_restore_wait(self) -> None:
+        self.prefill_turnover_probe.poll()
         for record in self._restore_wait_probe.poll():
             self._emit("audit", record)
 
@@ -2124,6 +2129,7 @@ class NativeReactiveTelemetry:
         status["writer_queue_depth"] = self._queue.qsize()
         status["background_writer_timing"] = self._writer_timing.snapshot()
         status["gpu_restore_wait_probe"] = self._restore_wait_probe.snapshot()
+        status["prefill_turnover_probe"] = self.prefill_turnover_probe.snapshot()
         temporary = path.with_suffix(".json.tmp")
         temporary.write_text(
             json.dumps(status, indent=2, sort_keys=True) + "\n", encoding="utf-8"
@@ -2134,6 +2140,7 @@ class NativeReactiveTelemetry:
         if self._closed:
             return
         self._poll_restore_wait()
+        self.prefill_turnover_probe.close()
         counter = getattr(getattr(self._cache, "cache_controller", None), "layer_done_counter", None)
         if counter is not None:
             counter.beliefkv_wait_probe = None

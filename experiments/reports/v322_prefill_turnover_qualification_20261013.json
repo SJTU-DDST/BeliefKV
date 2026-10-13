@@ -1,0 +1,54 @@
+{
+  "qualified_at_local": "2026-10-13T23:22:01.727780+08:00",
+  "status": "qualified_for_cold_observation",
+  "base_revision": "b58343032d7f7f705f6b0d647dda391b90a60655",
+  "source_sha256": {
+    "beliefkv/runtime/prefill_turnover_probe.py": "15201e06bae952c303405b647ac9ca069070fd86b3853e642c687ae172fadf54",
+    "beliefkv/runtime/v0520_native_telemetry.py": "4c13ace7179098195197124dff3d318bcfb1420a1ea0838320d2ac3bd2decc5e",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "b7dcfcae0697de87e378607e9a2e037b9c396948dd3c3b6447b8de930e44d0e1",
+    "scripts/benchmark_prefill_turnover_probe.py": "ca820778c724f1e87e7e5560213a1893bc4d34956a2bb7cb999cc289bddcd448",
+    "scripts/seal_prefill_turnover_qualification.py": "2bf2274ce9ae830bcf254dbf055735cf84baa0900d1493b69b1a3ec21ae01163",
+    "tests/test_prefill_turnover_probe.py": "f1ae46016e063991149ba6548565640a07cfca1ad00247a453de4bd2f2095155",
+    "tests/test_v0520_native_telemetry.py": "80f251a003405aa6be00ef3b7f4f261143392051a2b76ff1bd4bdc4f7bc4e21c",
+    "tests/test_restore_wait_probe.py": "1dd1e766baf6c508377fe5a305628337cf3df37b976df93d4c4d34d54edfdbe7"
+  },
+  "engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "a8f4ea97da2f1fc8d969d538359a62aa9db23750051f9838956f03bc48174c68",
+    "expected_tree": "f7e0a89564622d530ddcf3b40de9f810974619aa",
+    "actual_tree": "f7e0a89564622d530ddcf3b40de9f810974619aa",
+    "matches_worktree": true,
+    "covered_untracked_paths": []
+  },
+  "candidate_engine": "/home/longhao/experiment/.worktrees/sglang-v320-prefill-turnover-20261013",
+  "engine_hook_tests_sha256": "7fce593e066d76a1ace7364dc417eb8a51cd8080f2d6cb6c1db61d940516aa00",
+  "checks": {
+    "tests": 146,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v322_prefill_turnover_tests_20261013.xml",
+    "sha256": "bb9b9021fedd378746d084540f838c7d4b7a5f6e25ed89a239509e71cafad5ac"
+  },
+  "benchmark": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v322_prefill_turnover_cpu_overhead_20261013.json",
+    "sha256": "a61b482a7c23e4f4780aa3eb9a218af1e82840b6560bc73616a890f2ce99cfe5",
+    "incremental_cpu_ns_per_iteration": {
+      "1": 4188.747971428571,
+      "5": 2580.1834714285724,
+      "16": 2244.7927142857134
+    }
+  },
+  "constraints": [
+    "Existing workload, budgets, prefill batching and delay settings remain frozen.",
+    "Sample one in 16 prefills with a bounded backlog; retain no request/tensor ownership.",
+    "Both native and predictive telemetry use the same loop instrumentation.",
+    "CUDA event queries are nonblocking; unsupported, pending and shutdown evidence stays unknown.",
+    "Normal-loop GPU samples use the actual current stream; overlap uses the forward stream.",
+    "GPU spans include dependency waits and CPU dispatch gaps, not exclusive kernels.",
+    "CPU fixtures prove dispatch counts and incremental observation cost, not real GPU overhead.",
+    "Real GPU events, their perturbation, native counterparts and full JCT gains remain unverified.",
+    "Do not hot-edit V54; deploy only after its collection and postprocessing exit."
+  ],
+  "helper_sha256": "2bf2274ce9ae830bcf254dbf055735cf84baa0900d1493b69b1a3ec21ae01163"
+}
