@@ -56,3 +56,12 @@ def test_resume_retains_historical_native_reference_across_development_iteration
     environment = resume_environment(configuration, Path("/next"), python="/python", port=18454)
     assert environment["ARM_ORDER"] == "predictive_h2d"
     assert environment["NATIVE_REFERENCE_RUN"] == "/native-reference"
+
+
+def test_resume_preserves_explicit_numa_policy_and_legacy_binding():
+    configuration = plan()
+    environment = resume_environment(configuration, Path("/run"), python="/python", port=18454)
+    assert environment["HOST_NUMA_MEMORY_POLICY"] == "bind"
+    configuration["host_numa_memory_policy"] = "preferred"
+    environment = resume_environment(configuration, Path("/run"), python="/python", port=18454)
+    assert environment["HOST_NUMA_MEMORY_POLICY"] == "preferred"

@@ -19,15 +19,17 @@ def _node(
     tmp_path: Path, *, total_kb: int, free_kb: int,
     inactive_file_kb: int = 0, active_file_kb: int = 0,
     reclaimable_kb: int = 0,
+    node_id: int = 1,
 ) -> Path:
-    node = tmp_path / "node1"
+    node = tmp_path / f"node{node_id}"
     node.mkdir()
     (node / "meminfo").write_text(
-        f"Node 1 MemTotal: {total_kb} kB\nNode 1 MemFree: {free_kb} kB\n"
-        f"Node 1 Inactive(file): {inactive_file_kb} kB\n"
-        f"Node 1 Active(file): {active_file_kb} kB\n"
-        f"Node 1 FilePages: {inactive_file_kb + active_file_kb} kB\n"
-        f"Node 1 SReclaimable: {reclaimable_kb} kB\n"
+        f"Node {node_id} MemTotal: {total_kb} kB\n"
+        f"Node {node_id} MemFree: {free_kb} kB\n"
+        f"Node {node_id} Inactive(file): {inactive_file_kb} kB\n"
+        f"Node {node_id} Active(file): {active_file_kb} kB\n"
+        f"Node {node_id} FilePages: {inactive_file_kb + active_file_kb} kB\n"
+        f"Node {node_id} SReclaimable: {reclaimable_kb} kB\n"
     )
     return tmp_path
 
@@ -101,6 +103,36 @@ def test_missing_node_fails_closed(tmp_path: Path) -> None:
         check_host_pool(1, 200, node_root=tmp_path)
 
 
+def test_preferred_can_use_fallback_capacity_without_weakening_bind(tmp_path: Path) -> None:
+    root = _node(
+        tmp_path, total_kb=250 * GIB // 1024, free_kb=190 * GIB // 1024,
+    )
+    _node(
+        tmp_path, node_id=0, total_kb=250 * GIB // 1024, free_kb=20 * GIB // 1024,
+    )
+    with pytest.raises(ValueError, match="memory policy bind"):
+        check_host_pool(1, 200, node_root=root)
+    budget, available = check_host_pool(1, 200, node_root=root, memory_policy="preferred")
+    assert budget == 200 * GB
+    assert available == 210 * GIB
+
+
+def test_preferred_still_rejects_insufficient_aggregate_capacity(tmp_path: Path) -> None:
+    root = _node(
+        tmp_path, total_kb=250 * GIB // 1024, free_kb=180 * GIB // 1024,
+    )
+    _node(
+        tmp_path, node_id=0, total_kb=250 * GIB // 1024, free_kb=10 * GIB // 1024,
+    )
+    with pytest.raises(ValueError, match="memory policy preferred"):
+        check_host_pool(1, 200, node_root=root, memory_policy="preferred")
+
+
+def test_unknown_numa_policy_is_rejected(tmp_path: Path) -> None:
+    with pytest.raises(ValueError, match="bind or preferred"):
+        check_host_pool(1, 200, node_root=tmp_path, memory_policy="interleave")
+
+
 def _stub(tmp_path: Path) -> dict[str, str]:
     model = tmp_path / "model"
     model.mkdir()
@@ -155,6 +187,7 @@ def _stub(tmp_path: Path) -> dict[str, str]:
         "STAGE_LOG": str(tmp_path / "final-stage"),
         "HICACHE_SIZE_GB": "200",
         "HOST_NUMA_NODE": "1",
+        "HOST_NUMA_MEMORY_POLICY": "bind",
         "SGLANG_SOURCE_CHECKOUT": "",
     }
 
@@ -187,6 +220,23 @@ def test_launch_accepts_selective_write_through(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     args = (tmp_path / "numactl-args").read_text().splitlines()
     assert args[args.index("--hicache-write-policy") + 1] == "write_through_selective"
+
+
+def test_launch_preferred_retains_cpu_binding_and_matches_preflight(tmp_path: Path) -> None:
+    env = {**_stub(tmp_path), "HOST_NUMA_MEMORY_POLICY": "preferred"}
+    result = subprocess.run(["bash", str(LAUNCH)], env=env, capture_output=True, text=True)
+    assert result.returncode == 0, result.stderr
+    args = (tmp_path / "numactl-args").read_text().splitlines()
+    assert args[:2] == ["--cpunodebind=1", "--preferred=1"]
+    preflight = (tmp_path / "preflight-args").read_text().splitlines()
+    assert preflight[preflight.index("--memory-policy") + 1] == "preferred"
+
+
+def test_launch_rejects_unknown_memory_policy_before_allocating(tmp_path: Path) -> None:
+    env = {**_stub(tmp_path), "HOST_NUMA_MEMORY_POLICY": "interleave"}
+    result = subprocess.run(["bash", str(LAUNCH)], env=env, capture_output=True, text=True)
+    assert result.returncode == 2
+    assert not (tmp_path / "numactl-args").exists()
 
 
 def test_launch_stops_when_numa_preflight_fails(tmp_path: Path) -> None:

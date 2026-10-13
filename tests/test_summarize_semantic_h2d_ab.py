@@ -222,6 +222,7 @@ def test_mamba_reuse_requires_matching_forward_proof_and_is_not_double_counted(t
 
 
 def test_initialize_records_explicit_long_budget_and_manifest_selection(tmp_path, monkeypatch):
+    monkeypatch.setenv("HOST_NUMA_MEMORY_POLICY", "preferred")
     artifact = tmp_path / "model.json"
     artifact.write_text("{}")
     manifest = tmp_path / "workload.json"
@@ -239,6 +240,7 @@ def test_initialize_records_explicit_long_budget_and_manifest_selection(tmp_path
     main()
     plan = json.loads((tmp_path / "ab_plan.json").read_text())
     assert plan["activation_wall_clock_seconds"] == 21600
+    assert plan["host_numa_memory_policy"] == "preferred"
     assert plan["workload_instance_ids_in_manifest_order"] == ["z", "a"]
     assert plan["workflow_arrival_batch_size"] == 0
     assert plan["order"] == ["predictive_h2d"]

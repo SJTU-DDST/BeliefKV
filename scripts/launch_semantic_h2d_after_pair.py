@@ -35,11 +35,15 @@ def fresh_pair_environment(
     plan: dict, run_root: Path, *, python: str, port: int,
     prefetch_lead_ms: int | None = None,
     execution_handoff: bool | None = None,
+    host_numa_memory_policy: str | None = None,
     arm_order: str = "predictive_h2d",
     native_reference_run: Path | None = None,
 ) -> dict[str, str]:
     environment = resume_environment(plan, run_root, python=python, port=port)
     environment.update(RESUME_PENDING="0", ARM_ORDER=arm_order)
+    environment["HOST_NUMA_MEMORY_POLICY"] = (
+        host_numa_memory_policy or plan.get("host_numa_memory_policy", "preferred")
+    )
     environment.pop("NATIVE_REFERENCE_RUN", None)
     if native_reference_run is not None:
         environment["NATIVE_REFERENCE_RUN"] = str(native_reference_run)
@@ -187,6 +191,10 @@ def main() -> None:
         help="Use 0 to let native prefill restore submitted demand; JOIN/tool anticipation remains enabled.",
     )
     parser.add_argument(
+        "--host-numa-memory-policy", choices=("bind", "preferred"),
+        help="Freeze the next cold run's NUMA policy; preferred permits fallback.",
+    )
+    parser.add_argument(
         "--python",
         default="/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
     )
@@ -223,6 +231,7 @@ def main() -> None:
         execution_handoff=(
             bool(args.execution_handoff) if args.execution_handoff is not None else None
         ),
+        host_numa_memory_policy=args.host_numa_memory_policy,
         arm_order=args.arm_order, native_reference_run=native_reference,
     )
     state = {

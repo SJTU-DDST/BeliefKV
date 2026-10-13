@@ -7,6 +7,7 @@ ROOT_COUNT="${ROOT_COUNT:-108}"
 ARRIVAL_BATCH_SIZE="${ARRIVAL_BATCH_SIZE:-0}"
 ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
 HOST_SPLIT="${HOST_SPLIT:-80:20}"
+HOST_NUMA_MEMORY_POLICY="${HOST_NUMA_MEMORY_POLICY:-preferred}"
 PORT="${PORT:-18454}"
 RUN_ROOT="${RUN_ROOT:-$ROOT/experiments/raw/qwen35_joint_wait_h2d_ab_${ROOT_COUNT}root_2to4_v8c}"
 ARM_ORDER="${ARM_ORDER:-predictive_h2d}"
@@ -45,7 +46,7 @@ if [[ $# -ne 0 || ! -f "$ARTIFACT" ]] \
   exit 2
 fi
 mkdir -p "$RUN_ROOT"
-export FANOUT_PROFILE
+export FANOUT_PROFILE HOST_NUMA_MEMORY_POLICY
 if [[ "$RESUME_PENDING" == "0" ]]; then
 "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
   --run-root "$RUN_ROOT" --initialize --root-count "$ROOT_COUNT" \

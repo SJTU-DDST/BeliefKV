@@ -51,7 +51,8 @@ def test_resident_first_is_common_but_execution_handoff_is_predictive_only() -> 
     script = SCRIPT.read_text()
     assert 'BELIEFKV_ENABLE_RESIDENT_FIRST=1' in script
     assert 'BELIEFKV_ENABLE_EXECUTION_HANDOFF=0' in script
-    assert 'BELIEFKV_ENABLE_EXECUTION_HANDOFF=1' in script
+    assert 'EXECUTION_HANDOFF="${EXECUTION_HANDOFF:-1}"' in script
+    assert 'BELIEFKV_ENABLE_EXECUTION_HANDOFF="$EXECUTION_HANDOFF"' in script
     pair = SCRIPT.with_name("run_qwen35_semantic_h2d_ab.sh").read_text()
     assert 'HOST_SPLIT="${HOST_SPLIT:-80:20}"' in pair
     assert 'HOST_SPLIT="$HOST_SPLIT" HICACHE_SIZE_GB=200' in pair

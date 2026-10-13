@@ -27,6 +27,7 @@ def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) ->
         "ARRIVAL_BATCH_INTERVAL_MS": plan["workflow_arrival_batch_interval_ms"],
         "ARM_ORDER": " ".join(plan["order"]), "RESUME_PENDING": 1,
         "HOST_SPLIT": plan["host_split"], "PORT": port,
+        "HOST_NUMA_MEMORY_POLICY": plan.get("host_numa_memory_policy", "bind"),
         "SAMPLING_SEED": plan["sampling_seed"], "REPETITION_ID": plan["repetition_id"],
         "ACTIVATION_WALL_CLOCK_SECONDS": plan["activation_wall_clock_seconds"],
         "SEMANTIC_REPORT_ARTIFACT": plan["semantic_artifact"],

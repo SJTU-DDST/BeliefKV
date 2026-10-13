@@ -615,6 +615,7 @@ def main() -> None:
             "sampling_seed": args.sampling_seed, "temperature": 0., "host_numa_node": 1,
             "mem_fraction_static": .94,
             "host_gb": 200, "host_split": args.host_split,
+            "host_numa_memory_policy": os.environ.get("HOST_NUMA_MEMORY_POLICY", "preferred"),
             "host_split_semantics": (
                 "matches_actual_device_pool_bytes" if args.host_split == "auto"
                 else "explicit_full_mamba_percentages"

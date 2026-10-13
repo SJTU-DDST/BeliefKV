@@ -31,6 +31,7 @@ def test_historical_reference_records_configuration_differences_without_claiming
     }
     assert "root_count" in metadata["matched_configuration_fields"]
     assert "workload_sha256" in metadata["unrecorded_configuration_fields"]
+    assert "host_numa_memory_policy" in metadata["unrecorded_configuration_fields"]
 
 
 def test_native_reference_reuses_completed_metrics_only_with_matching_bins(tmp_path):

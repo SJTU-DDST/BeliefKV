@@ -125,6 +125,7 @@ def native_reference_metadata(current_run: Path, reference_run: Path) -> dict:
         "mamba_full_memory_ratio", "mem_fraction_static", "native_write_policy",
         "fanout_profile", "sampling_seed", "temperature", "sandbox_command_timeout_s",
         "activation_wall_clock_seconds", "child_final_report_shadow",
+        "host_numa_node", "host_numa_memory_policy",
     )
     recorded = [field for field in fields if field in current and field in reference]
     return {

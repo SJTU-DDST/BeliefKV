@@ -20,6 +20,7 @@ if [[ "${BELIEFKV_FULL_MAMBA_HOST_SPLIT}" == auto ]]; then
   unset BELIEFKV_FULL_MAMBA_HOST_SPLIT
 fi
 HOST_NUMA_NODE="${HOST_NUMA_NODE:-1}"
+HOST_NUMA_MEMORY_POLICY="${HOST_NUMA_MEMORY_POLICY:-bind}"
 HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_back}"
 ENABLE_SESSION_RADIX_CACHE="${ENABLE_SESSION_RADIX_CACHE:-0}"
 CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
@@ -123,11 +124,16 @@ for arg in "$@"; do
   esac
 done
 if (( HICACHE_SIZE_GB > 0 )); then
+  if [[ "$HOST_NUMA_MEMORY_POLICY" != bind && "$HOST_NUMA_MEMORY_POLICY" != preferred ]]; then
+    printf 'HOST_NUMA_MEMORY_POLICY must be bind or preferred\n' >&2
+    exit 2
+  fi
   if ! command -v numactl >/dev/null; then
     printf 'numactl is required for NUMA-local HiCache\n' >&2
     exit 2
   fi
   "${PYTHON}" "${BELIEFKV_ROOT}/scripts/preflight_qwen35_host_pool.py" \
+    --memory-policy "$HOST_NUMA_MEMORY_POLICY" \
     --node "${HOST_NUMA_NODE}" --size-gb "${HICACHE_SIZE_GB}"
 fi
 CUDA_HOME="${CUDA_HOME:-$(dirname "$(dirname "${PYTHON}")")/lib/python3.11/site-packages/nvidia/cu13}"
@@ -223,7 +229,11 @@ if [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" ]]; then
   server_args+=(--enable-session-radix-cache)
 fi
 if (( HICACHE_SIZE_GB > 0 )); then
-  exec numactl --cpunodebind="${HOST_NUMA_NODE}" --membind="${HOST_NUMA_NODE}" \
+  memory_args=("--membind=${HOST_NUMA_NODE}")
+  if [[ "$HOST_NUMA_MEMORY_POLICY" == preferred ]]; then
+    memory_args=("--preferred=${HOST_NUMA_NODE}")
+  fi
+  exec numactl --cpunodebind="${HOST_NUMA_NODE}" "${memory_args[@]}" \
     "${PYTHON}" -m sglang.launch_server "${server_args[@]}" "$@"
 fi
 exec "${PYTHON}" -m sglang.launch_server "${server_args[@]}" "$@"

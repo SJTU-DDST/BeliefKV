@@ -44,9 +44,22 @@ def test_new_pair_uses_same_workload_and_artifacts_with_fresh_predictive_first()
     assert environment["TOOL_TIMING_ARTIFACT"] == "/models/tool.json"
     assert environment["TRANSFER_SERVICE_SEED"] == "/models/service.json"
     assert environment["HOST_SPLIT"] == "80:20"
+    assert environment["HOST_NUMA_MEMORY_POLICY"] == "preferred"
     assert environment["PREFETCH_LEAD_MS"] == "500"
     assert environment["CHILD_FINAL_REPORT_SHADOW"] == "1"
     assert json.dumps(configuration, sort_keys=True) == snapshot
+
+
+def test_fresh_pair_preserves_explicit_numa_policy_unless_overridden():
+    configuration = {**plan(), "host_numa_memory_policy": "bind"}
+    arguments = {"python": "/python", "port": 18454}
+    original = launcher.fresh_pair_environment(configuration, Path("/fresh-run"), **arguments)
+    revised = launcher.fresh_pair_environment(
+        configuration, Path("/fresh-run"), **arguments, host_numa_memory_policy="preferred",
+    )
+    assert original["HOST_NUMA_MEMORY_POLICY"] == "bind"
+    assert revised == {**original, "HOST_NUMA_MEMORY_POLICY": "preferred"}
+    assert configuration["host_numa_memory_policy"] == "bind"
 
 
 def test_complete_pair_requires_both_arms_and_finished_postprocessing(tmp_path):
