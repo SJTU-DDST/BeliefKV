@@ -1,0 +1,235 @@
+{
+  "schema_version": 1,
+  "started_at_local": "2026-10-13T17:49:25.945566+08:00",
+  "observed_at_local": "2026-10-13T17:49:27.724198+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v52",
+  "code_commit": "3892fe1ee1ec902329a6d53fff3621935d5926bf",
+  "sglang_patch_sha256": "6938bd10ff393dc89c9aeb5ed14da2385d5d95e00529113e12eced93cca5fff0",
+  "launch_started_at_utc": "2026-10-13T09:43:50.933047+00:00",
+  "launch_state_sha256": "93b7ba26919b56198d88c9c25a37620974b8fed3744ae0b128ee67069db49f29",
+  "frozen_plan_sha256": "4f0bf7130c389a9a676cdef3aa9c7e843e8513b755be719e47cefc6a7d7a51f7",
+  "previous_plan_sha256": "66c8310a841c524113dcbc9a19f78eb424bedb604b1b30c464fd96c6fa897f4b",
+  "previous_deployment_receipt_sha256": "59a34e761287484ea862f5a38d279970346c5e14fb5d175d248c53e09cb539ee",
+  "execution_verification": {
+    "collection_code_commit": "3892fe1ee1ec902329a6d53fff3621935d5926bf",
+    "verification_code_commit": "3892fe1ee1ec902329a6d53fff3621935d5926bf",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "frozen_checkout_verification": {
+    "collection_code_commit": "3892fe1ee1ec902329a6d53fff3621935d5926bf",
+    "verification_code_commit": "3892fe1ee1ec902329a6d53fff3621935d5926bf",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "validated_source_sha256": {
+    "patches/sglang-v0.5.20-beliefkv-staging.patch": "6938bd10ff393dc89c9aeb5ed14da2385d5d95e00529113e12eced93cca5fff0",
+    "beliefkv/runtime/v0520_native_telemetry.py": "1dd32bfd7efd8f12a4dcc243e4061c66dc4aac0757763ad76af4c227ac7e89a6",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "3ce0fddc4bcb5852b06dde0048d903deeb165e737ede5caf8bc47c8c72e8b222",
+    "beliefkv/runtime/sglang_v0520_observer.py": "7820de3e7555a6e73f6929dfca430fd5cba6c5c6519823e7b63661a04c601d41",
+    "beliefkv/runtime/restore_wait_probe.py": "00fa8df97010c8fa80e3942e2024a29c235636f1b2760e57dd64bafe07766d0a"
+  },
+  "engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "6938bd10ff393dc89c9aeb5ed14da2385d5d95e00529113e12eced93cca5fff0",
+    "expected_tree": "8ee56450869c4a067c581ceda9cb4d46839763d5",
+    "actual_tree": "8ee56450869c4a067c581ceda9cb4d46839763d5",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "qualification_receipt_sha256": {
+    "host_reclaim": "0455e136c48f5e832fc515849c9793462b29778147fa2d19a2ecb0c01390fe51",
+    "capacity": "a1c86c4a53bec8c6d5fb5a905d7e422079a3808545e4365806f57ce384532080",
+    "consumption": "876c6155c21e1522222c9582153e6133c0f65bdec1c802288113e7ba2d8f705e",
+    "post_forward": "cd3f832c6a816e1b68d3191881e0abd18803b3c51aea30c4a72bfc0cf53fbc82"
+  },
+  "observed_plan_differences": [
+    "code_commit",
+    "sglang_patch_sha256"
+  ],
+  "unchanged_plan_field_count": 82,
+  "actual_capacity": {
+    "device_full_bytes": 36843438080,
+    "device_full_tokens": 1798995,
+    "device_mamba_bytes": 33096007680,
+    "device_mamba_slots": 513,
+    "device_total_bytes": 69939445760,
+    "host_full_bytes": 160000020480,
+    "host_full_tokens": 7812501,
+    "host_mamba_bytes": 40050032640,
+    "host_mamba_slots": 622,
+    "host_total_bytes": 200050053120,
+    "pool_layout": "static_separate_full_mamba"
+  },
+  "capacity_receipt_sha256": "2032ad759b929ca210f9694f0c7eb7bc477b26500e0c01d74f6c6f3065b1c0d6",
+  "gc_freeze_receipt_sha256": "dd7b9a8cae9a8ab8b106d529308ba6ee6c9077ea3240c1a045ba3117c8664892",
+  "physical_disabled": false,
+  "observed_execution_handoff": false,
+  "retained_policy_flags": {
+    "final_stage_prefetch": true,
+    "final_stage_priority": true,
+    "prepare_host": true,
+    "resident_first": true,
+    "tool_prefetch": true
+  },
+  "runtime_state_ts_ms": 1791884965989.1345,
+  "runtime_counts": {
+    "semantic_worker_ready": 1,
+    "semantic_worker_disabled": 0,
+    "semantic_worker_dropped": 0,
+    "join_wait_expired": 0,
+    "physical_expired": 0,
+    "physical_planning_after_forward": 262387,
+    "tool_prefetch_scans": 2690,
+    "prepare_no_service_demand": 1712,
+    "tool_prefetch_scan_deferred": 259697,
+    "admission_residency_scan_targets": 8914,
+    "native_admitted": 1413,
+    "native_OTHER": 1,
+    "admission_causal_cache_hits": 1,
+    "semantic_native_tool_marker_invalidated": 1384,
+    "semantic_text_received": 5843,
+    "semantic_text_after_tool_ignored": 2578,
+    "semantic_tool_chunk_invalidated": 1253,
+    "tool_wait_submitted": 4497,
+    "tool_wait_accepted": 3604,
+    "tool_hint_physical_inspection_deferred": 3604,
+    "tool_prefetch_no_restore_target": 13381,
+    "tool_unchanged_wait_prediction_skipped": 2311,
+    "tool_wait_context_stale": 1248,
+    "tool_prefetch_not_in_time_window": 16626,
+    "tool_prefetch_survival_deferred": 15541,
+    "tool_wait_parallel_group_pending": 231,
+    "tool_wait_result_stale": 211,
+    "resident_first_ordered": 851,
+    "semantic_no_transfer_target_skipped": 12495,
+    "child_report_notice_observed": 10,
+    "join_intent_stale": 15,
+    "admission_residency_scan_slot_bounded": 952,
+    "tool_prefetch_admission_budget_busy": 4412,
+    "prepare_mamba_pressure_only": 1584,
+    "terminal_child_reclaim_calls": 6,
+    "terminal_child_discarded_nodes": 42,
+    "terminal_child_freed_full_tokens": 14280,
+    "terminal_child_freed_mamba_slots": 12,
+    "terminal_cache_watch_anchors_gone": 5,
+    "tool_wait_expired": 19,
+    "final_stage_accepted": 1,
+    "final_request_bound": 1,
+    "semantic_h2d_child_waiting_for_service": 10,
+    "final_priority_candidates_inspected": 1,
+    "final_priority_selected_notice_budget": 1,
+    "final_priority_best_already_first": 1,
+    "semantic_latest_start_no_live_forecast": 116
+  },
+  "latest_runtime_residency_budget": {
+    "request_slots": 0,
+    "byte_limit": 52808826880,
+    "reserve_full_tokens": 4143,
+    "reserve_mamba_slots": 0,
+    "source": "native_next_prefill",
+    "evictable_full_tokens": 687682,
+    "evictable_mamba_slots": 320
+  },
+  "latest_runtime_headroom": {
+    "observable": true,
+    "device_full_free_tokens": 885793,
+    "device_mamba_free_slots": 1,
+    "host_full_free_tokens": 7812501,
+    "host_mamba_free_slots": 622,
+    "physical_actions_supported": false,
+    "reason": null,
+    "full_frees_deferred": false,
+    "mamba_batch_reserved": false
+  },
+  "recent_budget_sources": {
+    "native_next_prefill": 30
+  },
+  "recent_grouped_headroom_observations": [],
+  "observed_host_eviction_scans": {
+    "calls": 0,
+    "already_satisfied": 0,
+    "heap_builds": 0,
+    "heap_candidates": 0
+  },
+  "observed_gpu_service_samples_in_tail": 564,
+  "observed_layer_span_samples_in_tail": 0,
+  "health_http_status": 200,
+  "live_process_identities": {
+    "scheduler": {
+      "pid": 540060,
+      "state": "R",
+      "ppid": 539690,
+      "pgid": 539690,
+      "start_ticks": "605490745"
+    },
+    "engine_parent": {
+      "pid": 539690,
+      "state": "R",
+      "ppid": 539672,
+      "pgid": 539690,
+      "start_ticks": "605489479"
+    }
+  },
+  "native_ready_sha256": "9bf1d0cdc31e08d037859ddfb7492c110ddb40b52b7d5e811ff01f1d3766076e",
+  "native_telemetry_status_sha256": "895131bbf4afe11aceeafff9c3782d357fe4d00d3d98fd8243bd8178901ed085",
+  "observed_native_telemetry_status": {
+    "snapshot_ts_ms": 1791884965990.172,
+    "writer_error": null,
+    "dropped_records": 0,
+    "failed_records": 0
+  },
+  "audit_input_tail": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v52/predictive_h2d/server/runtime_audit.jsonl",
+    "start_offset": 54995852,
+    "complete_bytes_read": 8377261,
+    "sha256": "8a5c3e731dae2e4e1aefd0e7d5e7a76dfa7f583924429f7832030c3409fe8eff"
+  },
+  "runtime_state_input_tail": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v52/predictive_h2d/opportunities/admission_opportunities.jsonl",
+    "start_offset": 12508146,
+    "complete_bytes_read": 8388107,
+    "sha256": "5b1da3488bf66a8fa586e59dbd133539cf0e885ef37fe8945743acce753fd95b"
+  },
+  "host_pool_input_tail": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v52/predictive_h2d/server/host_pool_telemetry.jsonl",
+    "start_offset": 0,
+    "complete_bytes_read": 58708,
+    "sha256": "f69cb8fac91942490579fadbbc080b4cbc8d7d31eba3f1b57b66f9fda13db0f6"
+  },
+  "deployment_helper_sha256": "0cddb2680a9972e64d8651a0eff34ca1ebf2474efd97aff328fddf1b4eeed902",
+  "deployment_helper_utf8_source": "\"\"\"Verify V52's cold post-forward migration deployment.\"\"\"\n\nimport hashlib\nfrom pathlib import Path\nfrom types import ModuleType\n\n\nTEMPLATE = Path(\"/tmp/beliefkv_v286_v51_deployment.py\")\nsource = TEMPLATE.read_text()\nreplacements = (\n    (\"V51\", \"V52\"),\n    (\"beliefkv-v283-v51-headroom-consumption-20261013\", \"beliefkv-v292-v52-post-launch-20261013\"),\n    ('RUN = ROOT / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v51\"',\n     'RUN = ROOT / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v52\"'),\n    ('PREVIOUS = ROOT / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v50\"',\n     'PREVIOUS = ROOT / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v51\"'),\n    (\"v286_v51_deployment_validation_20261013.json\", \"v295_v52_deployment_validation_20261013.json\"),\n    (\"0990b73e639bdf7b23e05e24734c168e2d78d2d6\", \"3892fe1ee1ec902329a6d53fff3621935d5926bf\"),\n    (\"v51_launch_after_v50_20261013.json\", \"v52_launch_after_v51_20261013.json\"),\n    (\n        'old_receipt, old_sha = load(ROOT / \"experiments/reports/v274_v50_deployment_validation_20261013.json\")',\n        'old_receipt, old_sha = load(FOLLOWUP / \"experiments/reports/v286_v51_deployment_validation_20261013.json\")\\n'\n        'post_qualification, post_sha = load(FOLLOWUP / \"experiments/reports/v292_post_launch_qualification_20261013.json\")',\n    ),\n    ('differences == [\"code_commit\"]', 'differences == [\"code_commit\", \"sglang_patch_sha256\"]'),\n    ('\"patches/sglang-v0.5.20-beliefkv-staging.patch\": host_qualification[\"engine\"][\"sha256\"]',\n     '\"patches/sglang-v0.5.20-beliefkv-staging.patch\": post_qualification[\"engine\"][\"sha256\"]'),\n    ('\"beliefkv/runtime/sglang_v0520_runtime.py\": consume_qualification[\"current_runtime_sha256\"]',\n     '\"beliefkv/runtime/sglang_v0520_runtime.py\": post_qualification[\"qualified_paths_sha256\"][\"beliefkv/runtime/sglang_v0520_runtime.py\"]'),\n    ('== host_qualification[\"engine\"][\"sha256\"], \"canonical patch differs\"',\n     '== post_qualification[\"engine\"][\"sha256\"], \"canonical patch differs\"'),\n    ('== host_qualification[\"engine\"][\"actual_tree\"], \"engine tree differs\"',\n     '== post_qualification[\"engine\"][\"actual_tree\"], \"engine tree differs\"'),\n    ('row.get(\"prefetch_residency_headroom\", {}).get(\"observable\")',\n     '(row.get(\"prefetch_residency_headroom\") or {}).get(\"observable\")'),\n    ('require(grouped, \"no recent native grouped-allocation headroom observed\")',\n     'require(state[\"counts\"].get(\"physical_planning_after_forward\", 0) > 0,\\n'\n     '        \"actual post-forward migration planning absent\")\\n'\n     'require(state[\"shared_path_timing\"][\"phases\"][\"post_launch_physical\"][\"count\"] > 0,\\n'\n     '        \"post-forward phase timing absent\")'),\n    ('require(probes and all(all(type(row.get(key)) in (int, float) for key in (',\n     'require(all(all(type(row.get(key)) in (int, float) for key in ('),\n    (\"18456\", \"18457\"),\n    ('\"consumption\": consume_sha}', '\"consumption\": consume_sha, \"post_forward\": post_sha}'),\n    (\"beliefkv_v286_launch_v51.py\", \"beliefkv_v295_launch_v52.py\"),\n    ('\"deployment_helper_utf8_source\": Path(__file__).read_text(),',\n     '\"deployment_helper_utf8_source\": Path(__file__).read_text(),\\n'\n     '    \"template_sha256\": TEMPLATE_SHA, \"rendered_helper_sha256\": RENDERED_SHA,\\n'\n     '    \"rendered_helper_utf8_source\": RENDERED_SOURCE,'),\n    ('\"recent_budget_sources\", \"runtime_counts\",', '\"recent_budget_sources\",'),\n)\nfor before, after in replacements:\n    if before not in source:\n        raise ValueError(f\"missing deployment binding: {before}\")\n    source = source.replace(before, after)\nmodule = ModuleType(\"v295_v52_deployment\")\nmodule.__file__ = str(Path(__file__).resolve())\nmodule.TEMPLATE_SHA = hashlib.sha256(TEMPLATE.read_bytes()).hexdigest()\nmodule.RENDERED_SHA = hashlib.sha256(source.encode()).hexdigest()\nmodule.RENDERED_SOURCE = source\nexec(compile(source, str(TEMPLATE), \"exec\"), vars(module))\n",
+  "template_sha256": "033257e79edc870cf55692ebc48d2ec4e3436d557e12a5ec053b256c8799b65a",
+  "rendered_helper_sha256": "a5542c50802672d5f1b1996eeb4899b56b9e8dbdcbe18c27787ae00013c45d6f",
+  "rendered_helper_utf8_source": "\"\"\"Verify V52's cold deployment and fresh runtime evidence.\"\"\"\n\nfrom collections import Counter\nfrom datetime import datetime\nimport hashlib\nimport json\nfrom pathlib import Path\nimport subprocess\nimport sys\nfrom urllib.request import urlopen\n\n\nROOT = Path(\"/home/longhao/experiment/BeliefKV\")\nFOLLOWUP = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nCHECKOUT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v292-v52-post-launch-20261013\")\nRUN = ROOT / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v52\"\nPREVIOUS = ROOT / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v51\"\nOUTPUT = FOLLOWUP / \"experiments/reports/v295_v52_deployment_validation_20261013.json\"\nREVISION = \"3892fe1ee1ec902329a6d53fff3621935d5926bf\"\nsys.path.insert(0, str(ROOT))\n\nfrom beliefkv.experiments.source_provenance import git_source_state\nfrom scripts.summarize_semantic_h2d_ab import verify_frozen_execution_source\n\n\ndef sha(payload):\n    return hashlib.sha256(payload).hexdigest()\n\n\ndef load(path):\n    raw = path.read_bytes()\n    return json.loads(raw), sha(raw)\n\n\ndef require(condition, message):\n    if not condition:\n        raise ValueError(message)\n\n\ndef tail(path, limit=8 * 1024 * 1024):\n    with path.open(\"rb\") as stream:\n        stream.seek(0, 2)\n        end = stream.tell()\n        stream.seek(max(0, end - limit))\n        if stream.tell():\n            stream.readline()\n        begin = stream.tell()\n        raw = stream.read(end - begin)\n    if raw and not raw.endswith(b\"\\n\"):\n        raw = raw[:raw.rfind(b\"\\n\") + 1]\n    return [json.loads(line) for line in raw.splitlines() if line.strip()], {\n        \"path\": str(path), \"start_offset\": begin,\n        \"complete_bytes_read\": len(raw), \"sha256\": sha(raw),\n    }\n\n\ndef identity(pid):\n    raw = Path(f\"/proc/{pid}/stat\").read_text()\n    fields = raw.rsplit(\")\", 1)[1].split()\n    return {\n        \"pid\": pid, \"state\": fields[0], \"ppid\": int(fields[1]),\n        \"pgid\": int(fields[2]), \"start_ticks\": fields[19],\n    }\n\n\nrequire(not OUTPUT.exists(), \"preserve V52 deployment evidence\")\nstarted = datetime.now().astimezone().isoformat()\nplan, plan_sha = load(RUN / \"ab_plan.json\")\nprevious, previous_sha = load(PREVIOUS / \"ab_plan.json\")\nlaunch, launch_sha = load(ROOT / \"experiments/reports/v52_launch_after_v51_20261013.json\")\nhost_qualification, host_sha = load(FOLLOWUP / \"experiments/reports/v268_host_reclaim_qualification_20261013.json\")\ncapacity_qualification, capacity_sha = load(FOLLOWUP / \"experiments/reports/v277_static_headroom_qualification_20261013.json\")\nconsume_qualification, consume_sha = load(FOLLOWUP / \"experiments/reports/v279_restored_consumption_qualification_20261013.json\")\nold_receipt, old_sha = load(FOLLOWUP / \"experiments/reports/v286_v51_deployment_validation_20261013.json\")\npost_qualification, post_sha = load(FOLLOWUP / \"experiments/reports/v292_post_launch_qualification_20261013.json\")\nrevision = subprocess.check_output([\"git\", \"rev-parse\", \"HEAD\"], cwd=CHECKOUT, text=True).strip()\nrequire(revision == plan[\"code_commit\"] == launch[\"target_revision\"] == REVISION, \"frozen revision differs\")\nrequire(launch[\"status\"] == \"running_new_predictive\", \"V52 is not recorded running\")\ndifferences = sorted(key for key in plan.keys() | previous.keys() if plan.get(key) != previous.get(key))\nrequire(differences == [\"code_commit\", \"sglang_patch_sha256\"], f\"configuration changed: {differences}\")\nexecution = verify_frozen_execution_source(ROOT, REVISION)\nfrozen = verify_frozen_execution_source(CHECKOUT, REVISION)\nqualified = {\n    \"patches/sglang-v0.5.20-beliefkv-staging.patch\": post_qualification[\"engine\"][\"sha256\"],\n    \"beliefkv/runtime/v0520_native_telemetry.py\": host_qualification[\"qualified_paths_sha256\"][\"beliefkv/runtime/v0520_native_telemetry.py\"],\n    \"beliefkv/runtime/sglang_v0520_runtime.py\": post_qualification[\"qualified_paths_sha256\"][\"beliefkv/runtime/sglang_v0520_runtime.py\"],\n    \"beliefkv/runtime/sglang_v0520_observer.py\": capacity_qualification[\"source_sha256\"][\"beliefkv/runtime/sglang_v0520_observer.py\"],\n    \"beliefkv/runtime/restore_wait_probe.py\": \"00fa8df97010c8fa80e3942e2024a29c235636f1b2760e57dd64bafe07766d0a\",\n}\nfor relative, expected in qualified.items():\n    require(sha((ROOT / relative).read_bytes()) == sha((CHECKOUT / relative).read_bytes()) == expected,\n            f\"qualified source differs: {relative}\")\nengine = git_source_state(\n    ROOT / \"third_party/sglang-v0.5.20\",\n    canonical_patch=ROOT / \"patches/sglang-v0.5.20-beliefkv-staging.patch\",\n)[\"canonical_patch\"]\nrequire(engine[\"sha256\"] == plan[\"sglang_patch_sha256\"] == post_qualification[\"engine\"][\"sha256\"], \"canonical patch differs\")\nrequire(engine[\"actual_tree\"] == engine[\"expected_tree\"] == post_qualification[\"engine\"][\"actual_tree\"], \"engine tree differs\")\nserver = RUN / \"predictive_h2d/server\"\ncapacity, capacity_receipt_sha = load(server / \"native_capacity_census.json\")\nrequire(capacity[\"capacity\"] == old_receipt[\"actual_capacity\"], \"physical capacities changed\")\nfreeze = (server / \"gc_freeze_initialization.txt\").read_bytes()\nrequire(b\"Garbage collection frozen.\" in freeze, \"GC freeze missing\")\naudit, audit_input = tail(server / \"runtime_audit.jsonl\")\nopportunities, state_input = tail(RUN / \"predictive_h2d/opportunities/admission_opportunities.jsonl\")\nhosts, host_input = tail(server / \"host_pool_telemetry.jsonl\")\nstates = [row for row in opportunities if row.get(\"event\") == \"admission_runtime_state\"]\nsamples = [row for row in audit if row.get(\"event\") == \"gpu_service_sample\"]\nprobes = [row for row in audit if row.get(\"event\") == \"gpu_restore_dependency_wait\"]\nhosts = [row for row in hosts if row.get(\"event\") == \"host_pool_usage\"]\nrequire(states and samples and hosts, \"runtime/GPU evidence absent\")\nstate = states[-1]\nflags = (\"final_stage_prefetch\", \"final_stage_priority\", \"prepare_host\", \"resident_first\", \"tool_prefetch\")\nrequire(all(state.get(flag) is True for flag in flags), \"predictive policy disabled\")\nrequire(state[\"physical_disabled\"] is False and state[\"execution_handoff\"] is False, \"physical/demand policy differs\")\nrequire(state[\"counts\"].get(\"native_admitted\", 0) > 0 and state[\"counts\"].get(\"semantic_worker_dropped\") == 0, \"no admission or semantic drops\")\nrequire(state.get(\"semantic_worker_configured\") and state.get(\"tool_predictor_configured\")\n        and not state.get(\"semantic_worker_error\") and not state.get(\"tool_predictor_disabled\"), \"predictor failed\")\nrecent = [row for row in states if 0 <= state[\"ts_ms\"] - row[\"ts_ms\"] <= 30_000]\ngrouped = [row for row in recent if (row.get(\"prefetch_residency_headroom\") or {}).get(\"observable\") and (\n    row[\"prefetch_residency_headroom\"].get(\"full_frees_deferred\")\n    or row[\"prefetch_residency_headroom\"].get(\"mamba_batch_reserved\")\n)]\nrequire(state[\"counts\"].get(\"physical_planning_after_forward\", 0) > 0,\n        \"actual post-forward migration planning absent\")\nrequire(state[\"shared_path_timing\"][\"phases\"][\"post_launch_physical\"][\"count\"] > 0,\n        \"post-forward phase timing absent\")\nrequire(all(all(type(row.get(key)) in (int, float) for key in (\n    \"gpu_observed_layer_span_ms\", \"cpu_observed_layer_span_ms\", \"cpu_layer_wait_enqueue_ms\",\n)) for row in probes), \"new sampled span fields missing\")\nscans = hosts[-1][\"full_host_eviction_scans\"]\nrequire(scans[\"calls\"] == scans[\"already_satisfied\"] + scans[\"heap_builds\"], \"Host counters do not reconcile\")\ntelemetry, telemetry_sha = load(server / \"native_telemetry_status.json\")\nrequire(telemetry.get(\"writer_error\") is None and telemetry[\"dropped_records\"] == telemetry[\"failed_records\"] == 0, \"telemetry failure/drop\")\nready, ready_sha = load(server / \"native_telemetry_ready.json\")\nscheduler = identity(ready[\"scheduler_pid\"])\nparent = identity(scheduler[\"ppid\"])\nrequire(b\"--port\\x0018457\" in Path(f\"/proc/{parent['pid']}/cmdline\").read_bytes(), \"engine port differs\")\nwith urlopen(\"http://127.0.0.1:18457/health\", timeout=5) as response:\n    health = response.status\nrequire(health == 200, \"server unhealthy\")\nfinished = datetime.now().astimezone()\nrequire(0 <= finished.timestamp() * 1000 - state[\"ts_ms\"] < 30_000, \"runtime state stale\")\npayload = {\n    \"schema_version\": 1, \"started_at_local\": started, \"observed_at_local\": finished.isoformat(),\n    \"run_root\": str(RUN), \"code_commit\": REVISION, \"sglang_patch_sha256\": plan[\"sglang_patch_sha256\"],\n    \"launch_started_at_utc\": launch[\"started_at_utc\"], \"launch_state_sha256\": launch_sha,\n    \"frozen_plan_sha256\": plan_sha, \"previous_plan_sha256\": previous_sha,\n    \"previous_deployment_receipt_sha256\": old_sha,\n    \"execution_verification\": execution, \"frozen_checkout_verification\": frozen,\n    \"validated_source_sha256\": qualified, \"engine\": engine,\n    \"qualification_receipt_sha256\": {\"host_reclaim\": host_sha, \"capacity\": capacity_sha, \"consumption\": consume_sha, \"post_forward\": post_sha},\n    \"observed_plan_differences\": differences, \"unchanged_plan_field_count\": len(plan.keys() | previous.keys()) - len(differences),\n    \"actual_capacity\": capacity[\"capacity\"], \"capacity_receipt_sha256\": capacity_receipt_sha,\n    \"gc_freeze_receipt_sha256\": sha(freeze), \"physical_disabled\": state[\"physical_disabled\"],\n    \"observed_execution_handoff\": state[\"execution_handoff\"], \"retained_policy_flags\": {key: state[key] for key in flags},\n    \"runtime_state_ts_ms\": state[\"ts_ms\"], \"runtime_counts\": state[\"counts\"],\n    \"latest_runtime_residency_budget\": state[\"prefetch_residency_budget\"],\n    \"latest_runtime_headroom\": state[\"prefetch_residency_headroom\"],\n    \"recent_budget_sources\": dict(Counter(row[\"prefetch_residency_budget\"][\"source\"] for row in recent)),\n    \"recent_grouped_headroom_observations\": [\n        {\"ts_ms\": row[\"ts_ms\"], \"headroom\": row[\"prefetch_residency_headroom\"]}\n        for row in grouped\n    ],\n    \"observed_host_eviction_scans\": scans, \"observed_gpu_service_samples_in_tail\": len(samples),\n    \"observed_layer_span_samples_in_tail\": len(probes), \"health_http_status\": health,\n    \"live_process_identities\": {\"scheduler\": scheduler, \"engine_parent\": parent},\n    \"native_ready_sha256\": ready_sha, \"native_telemetry_status_sha256\": telemetry_sha,\n    \"observed_native_telemetry_status\": {key: telemetry.get(key) for key in (\n        \"snapshot_ts_ms\", \"writer_error\", \"dropped_records\", \"failed_records\",\n    )},\n    \"audit_input_tail\": audit_input, \"runtime_state_input_tail\": state_input, \"host_pool_input_tail\": host_input,\n    \"deployment_helper_sha256\": sha(Path(__file__).read_bytes()), \"deployment_helper_utf8_source\": Path(__file__).read_text(),\n    \"template_sha256\": TEMPLATE_SHA, \"rendered_helper_sha256\": RENDERED_SHA,\n    \"rendered_helper_utf8_source\": RENDERED_SOURCE,\n    \"launch_helper_sha256\": sha(Path(\"/tmp/beliefkv_v295_launch_v52.py\").read_bytes()),\n    \"launch_helper_utf8_source\": Path(\"/tmp/beliefkv_v295_launch_v52.py\").read_text(),\n    \"scope\": \"Bounded sequential tails; real cold deployment and capacity/priority behavior only. Sampled spans include kernels and CPU dispatch gaps; no full-forward, causal throughput or JCT gain claim.\",\n}\nOUTPUT.write_text(json.dumps(payload, indent=2, allow_nan=False) + \"\\n\")\nprint(json.dumps({key: payload[key] for key in (\n    \"observed_at_local\", \"code_commit\", \"observed_plan_differences\", \"unchanged_plan_field_count\",\n    \"health_http_status\", \"observed_gpu_service_samples_in_tail\", \"observed_layer_span_samples_in_tail\",\n    \"recent_budget_sources\",\n)}, indent=2))\n",
+  "launch_helper_sha256": "4f511afb6e6af91f98638efd52e992a81fd0fdaf458c11a9380c84b7ecb3c328",
+  "launch_helper_utf8_source": "\"\"\"Cold-deploy qualified waiting migration planning after V51.\"\"\"\n\nimport hashlib\nimport json\nfrom pathlib import Path\nimport subprocess\n\n\nROOT = Path(\"/home/longhao/experiment/BeliefKV\")\nFOLLOWUP = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nCHECKOUT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v292-v52-post-launch-20261013\")\nPREVIOUS_CHECKOUT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v283-v51-headroom-consumption-20261013\")\nPYTHON = \"/home/longhao/miniconda3/envs/beliefkv-next/bin/python\"\nPREVIOUS = ROOT / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v51\"\nRUN = ROOT / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v52\"\nSTATE = ROOT / \"experiments/reports/v52_launch_after_v51_20261013.json\"\nLOG = STATE.with_suffix(\".log\")\n\n\narchive = json.loads(\n    (FOLLOWUP / \"experiments/reports/v294_v51_workspace_archive_20261013.json\").read_bytes()\n)\nif archive[\"status\"] != \"verified_and_cleaned\" or archive[\"source_run\"] != str(PREVIOUS):\n    raise ValueError(\"V51 archive maintenance incomplete\")\nif any(path.exists() for path in (RUN, STATE, LOG)):\n    raise ValueError(\"preserve existing V52 launch\")\nexpected = subprocess.check_output([\"git\", \"rev-parse\", \"3892fe1\"], cwd=CHECKOUT, text=True).strip()\nrevision = subprocess.check_output([\"git\", \"rev-parse\", \"HEAD\"], cwd=CHECKOUT, text=True).strip()\nif revision != expected:\n    raise ValueError(\"target does not match qualified commit\")\nqualification = json.loads(\n    (CHECKOUT / \"experiments/reports/v292_post_launch_qualification_20261013.json\").read_bytes()\n)\nif qualification[\"passed\"] != 468:\n    raise ValueError(\"candidate qualification incomplete\")\nfor relative, digest in qualification[\"qualified_paths_sha256\"].items():\n    if hashlib.sha256((CHECKOUT / relative).read_bytes()).hexdigest() != digest:\n        raise ValueError(f\"qualified source changed: {relative}\")\nargs = [\n    PYTHON, str(CHECKOUT / \"scripts/launch_semantic_h2d_after_pair.py\"),\n    \"--repo\", str(ROOT), \"--previous-run\", str(PREVIOUS),\n    \"--previous-checkout\", str(PREVIOUS_CHECKOUT), \"--target-checkout\", str(CHECKOUT),\n    \"--run-root\", str(RUN), \"--state\", str(STATE),\n    \"--development-restart\", \"--port\", \"18457\",\n    \"--arm-order\", \"predictive_h2d\", \"--execution-handoff\", \"0\",\n]\nfor pid in (3783285, 3783525, 3783899, 3785578):\n    stat = Path(f\"/proc/{pid}/stat\")\n    if stat.exists() and stat.read_text().rsplit(\")\", 1)[1].split()[0] != \"Z\":\n        raise ValueError(f\"previous process live or PID reused: {pid}\")\n    args.extend((\"--wait-pid\", str(pid)))\nwith LOG.open(\"xb\") as stream:\n    process = subprocess.Popen(\n        args, cwd=ROOT, stdout=stream, stderr=subprocess.STDOUT, start_new_session=True,\n    )\nprint(f\"coordinator_pid={process.pid}\\nstate={STATE}\\nlog={LOG}\")\n",
+  "scope": "Bounded sequential tails; real cold deployment and capacity/priority behavior only. Sampled spans include kernels and CPU dispatch gaps; no full-forward, causal throughput or JCT gain claim."
+}

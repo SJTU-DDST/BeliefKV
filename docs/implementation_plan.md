@@ -26,9 +26,23 @@ replaces V50's older single-change freeze with the latest committed code.
 Trace-analysis priority, added on October 13: analyze the latest finished
 development run first. V49 is the current complete trace; V50 was stopped at
 16:22:48 CST, retaining 133 completed and 23 unfinished workflows.
-V51 cold-started from 0990b73 at 16:40:12 CST. Its complete 600–900s window
+V51 cold-started from 0990b73 at 16:40:12 CST. V52's complete 600–900s window
 is the latest busy-window evidence; V292's post-forward migration candidate
-has passed qualification and will be cold-validated in V52.
+has passed qualification and cold-started in V52 at 17:43:50 CST from 3892fe1.
+V51's 17:35:21 cutoff retains 63 completed, 45 arrived unfinished and 48
+not-yet-arrived workflows. V295 verifies unchanged capacity and 82 plan fields,
+real GPU service and the deployed route. Its dispatch counter includes idle
+iterations and is not a forward count. V297 automatically waits for full
+600–900s coverage, then generates busy-window and sampled-dependency reports;
+interrupted or insufficient coverage cannot supply a completed-window result.
+V297 completed at 18:08:18: V52 has 335062/380722 decode steps (-11.99%)
+and 41.287s instrumented exclusive control wall; matched short-prefill worker
+cohorts are 1.70–1.94x native. Among 60 short samples, worker P50 is10.947ms
+while observed GPU/CPU layer-span P50 remains41.990/41.783ms. Moving the
+planning boundary did not establish a throughput or complete-forward gain.
+Continue reducing actual control work and locating eager GDN dispatch cost.
+Both live-resolved backends match: FlashInferGDN prefill, TritonGDN decode
+and breakable prefill graphs. Keep V52 frozen while preparing further candidates.
 Inspect the newest live run with explicitly bounded snapshots when diagnosing
 an active failure, and label those as partial rather than final outcomes.
 Use the fixed V29 native as a qualified comparison reference. Reopen older
@@ -59,6 +73,12 @@ hashes, preserving incomplete workflows and unknown evidence.
    planning cost alone does not establish throughput/JCT improvement.
    V51's bounded 192-step profiler ran at 17:03:20–17:03:30 after this window;
    profiler and export overhead remain diagnostic perturbations, not gain evidence.
+   V293 confirms the capacity/consumption candidates were live: 255/348 Host
+   early exits and 110 complete-checkpoint quota admissions. V296 seals
+   pre-cutoff early-consumed FULL at JOIN28/1.040GB and tool150/12.826GB,
+   retaining 26 unknown JOIN boundaries and excluding eight late tool
+   completions and five late first services. The 108 workspaces are compared
+   and archived (20.934 to 2.651GB); raw traces and administrative censoring remain.
 2. Prioritize workflow critical-path queueing next. Existing causal ranks
    already recognize the sole remaining JOIN child; resident-first, final
    priority and restored-parent consumption also exist. Current ordering is

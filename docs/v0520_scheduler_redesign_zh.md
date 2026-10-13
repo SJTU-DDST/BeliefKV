@@ -9,7 +9,16 @@ V292候选优先解决短prefill前后的串行迁移规划。单卡原生支持
 overlap且执行handoff关闭时，forward及WAR barrier提交后再调用
 JOIN/tool规划和PREPARE；空闲时也执行一次，nonoverlap与不支持
 的adapter保持原顺序。未改变GPU页/状态依赖、引用或分配原语，
-83项引擎和385项runtime检查通过；V51保持冻结，候选冷测V52。
+83项引擎和385项runtime检查通过；V51以冻结源码在17:35:21
+截止，V52于17:43:50从3892fe1冷启动。v295确认实际树/patch、
+82项不变字段和物理容量及真实GPU服务，尚无性能收益结论。
+
+迁移后置路径计数包含idle迭代，不是GPU forward数。V297在
+完整600–900秒窗口后自动分解实际服务/恢复等待；不足或停止
+不伪装完成结果。V293已实测Host短路255/348次，以及110次
+完整恢复份额准入。V296封存JOIN/tool提前消费FULL为
+1.040/12.826GB，未知及停止后完成保留删失。V51 workspace
+无损归档，raw和63 completed、45已到达未完成、48尚未到达保留。
 
 V287证明短prefill两侧都用了breakable graph，而GDN attention
 仍在图外执行。V51忙时短请求约1.98–2.23倍，54组样本GPU
@@ -18,6 +27,13 @@ V287证明短prefill两侧都用了breakable graph，而GDN attention
 也会移动该边界。V289/V291的192步profiler在600–900秒窗口
 之后采集，揭示图外发射路径但会放大时间。后续必须以实际GPU
 服务和提前消费FULL共同判断重排是否有收益，而非只看worker。
+
+V297的V52完整忙时窗口仍有11.99% decode steps差距和41.287秒
+控制独占墙钟。短prefill worker约1.70–1.94倍，GPU/CPU观测
+层跨度却仍约42ms；新顺序改善区间标签不等于实际forward变快。
+两侧实际FlashInferGDN prefill/TritonGDN decode和breakable
+后端一致。继续减少候选维护/规划本身并定位图外发射开销，
+V52保持冻结，目标active；不把本版列为吞吐已达标。
 
 本阶段不止降低调度CPU开销，还要降低workflow关键路径上的
 累计准入等待。v270对V29全部156对任务重建非重叠时间分解：
