@@ -4589,13 +4589,30 @@ class NativeAdmissionRuntime:
                     # Only index a scan that outlasts two native pool prefixes.
                     # Live checks and the original order remain authoritative.
                     visited = set(islice(self._parent_pressure_candidates, position))
-                    full_ids = {
-                        node.id for node in device_leaves
-                        if (
-                            node.id in self._parent_pressure_candidates
-                            and node.id not in visited and node.id not in excluded
-                        )
-                    } if full_left else set()
+                    if (
+                        full_left
+                        and len(device_leaves) > 8 * len(self._parent_pressure_candidates)
+                    ):
+                        # Candidate lookups cost more than leaf membership checks;
+                        # use them only for a substantially smaller waiting index.
+                        full_ids = set()
+                        remaining = self._parent_pressure_candidates.keys() - visited - excluded
+                        for candidate_id in remaining:
+                            try:
+                                candidate = tree.node_by_id(candidate_id)
+                            except (AttributeError, KeyError, RuntimeError, ValueError):
+                                continue
+                            if candidate.id == candidate_id and candidate in device_leaves:
+                                full_ids.add(candidate_id)
+                        self.counts["prepare_publication_candidate_index"] += 1
+                    else:
+                        full_ids = {
+                            node.id for node in device_leaves
+                            if (
+                                node.id in self._parent_pressure_candidates
+                                and node.id not in visited and node.id not in excluded
+                            )
+                        } if full_left else set()
                     mamba_ids = (
                         self._parent_pressure_candidates.keys() & mamba_lru.keys()
                     ) - visited - excluded if mamba_left else set()

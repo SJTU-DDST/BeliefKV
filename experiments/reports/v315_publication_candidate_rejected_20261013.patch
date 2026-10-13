@@ -1,0 +1,104 @@
+diff --git a/beliefkv/runtime/sglang_v0520_runtime.py b/beliefkv/runtime/sglang_v0520_runtime.py
+index 56bf872..d91a3a9 100644
+--- a/beliefkv/runtime/sglang_v0520_runtime.py
++++ b/beliefkv/runtime/sglang_v0520_runtime.py
+@@ -4589,13 +4589,27 @@ class NativeAdmissionRuntime:
+                     # Only index a scan that outlasts two native pool prefixes.
+                     # Live checks and the original order remain authoritative.
+                     visited = set(islice(self._parent_pressure_candidates, position))
+-                    full_ids = {
+-                        node.id for node in device_leaves
+-                        if (
+-                            node.id in self._parent_pressure_candidates
+-                            and node.id not in visited and node.id not in excluded
+-                        )
+-                    } if full_left else set()
++                    if full_left and len(device_leaves) > len(self._parent_pressure_candidates):
++                        # Avoid scanning unrelated leaves when waiting contexts
++                        # form the smaller index. Enqueue still validates each node.
++                        full_ids = set()
++                        remaining = self._parent_pressure_candidates.keys() - visited - excluded
++                        for candidate_id in remaining:
++                            try:
++                                candidate = tree.node_by_id(candidate_id)
++                            except (AttributeError, KeyError, RuntimeError, ValueError):
++                                continue
++                            if candidate.id == candidate_id and candidate in device_leaves:
++                                full_ids.add(candidate_id)
++                        self.counts["prepare_publication_candidate_index"] += 1
++                    else:
++                        full_ids = {
++                            node.id for node in device_leaves
++                            if (
++                                node.id in self._parent_pressure_candidates
++                                and node.id not in visited and node.id not in excluded
++                            )
++                        } if full_left else set()
+                     mamba_ids = (
+                         self._parent_pressure_candidates.keys() & mamba_lru.keys()
+                     ) - visited - excluded if mamba_left else set()
+diff --git a/tests/test_native_transfer_policy.py b/tests/test_native_transfer_policy.py
+index 84ff8e7..1fafb63 100644
+--- a/tests/test_native_transfer_policy.py
++++ b/tests/test_native_transfer_policy.py
+@@ -1701,6 +1701,60 @@ def test_pressure_publication_does_not_scan_an_already_filled_pool(sparse_pool):
+         runtime.close()
+ 
+ 
++@pytest.mark.parametrize("blocked", ("none", "pending", "replaced", "missing", "excluded"))
++def test_pressure_publication_indexes_candidates_when_device_leaves_are_larger(blocked):
++    class Node(NS):
++        __hash__ = object.__hash__
++
++    class DeviceLeaves(set):
++        def __iter__(self):
++            raise AssertionError("unrelated device leaves must not be scanned")
++
++    runtime, _ = tool_runtime()
++    nodes = {
++        number: Node(
++            id=number, creation_time=number, backuped=True,
++            write_through_pending_id=None, load_back_pending_id=None,
++            component_data=[
++                NS(value=[1], host_value=[1], lock_ref=0, session_ref=1),
++                NS(value=None, host_value=None, lock_ref=0, session_ref=0),
++                NS(
++                    value=[1] if number == 64 else None,
++                    host_value=[1] if number == 64 else None,
++                    lock_ref=0, session_ref=1,
++                ),
++            ],
++        )
++        for number in range(1, 65)
++    }
++    leaves = DeviceLeaves({nodes[64], *(Node(id=n) for n in range(65, 4161))})
++    cache = NS(
++        tree_core=NS(
++            node_by_id=nodes.__getitem__, evictable_device_leaves=leaves,
++            lru_lists={2: NS(cache={64: nodes[64]})},
++        ),
++        ongoing_write_through={},
++    )
++    runtime._native_cache = cache
++    runtime._parent_pressure_candidates = {number: (None, number) for number in nodes}
++    if blocked == "pending":
++        nodes[64].load_back_pending_id = 9
++    elif blocked == "replaced":
++        nodes[64].creation_time = 65
++    elif blocked == "missing":
++        del nodes[64]
++    excluded = (64,) if blocked == "excluded" else ()
++    try:
++        runtime._publish_parent_pressure_candidates(exclude_node_ids=excluded)
++        assert runtime.counts["prepare_publication_candidate_index"] == 1
++        assert cache.beliefkv_join_pressure_candidates == tuple((n, n) for n in range(1, 9))
++        expected = ((64, 64),) if blocked == "none" else ()
++        assert cache.beliefkv_join_pressure_candidates_by_component == {0: expected, 2: expected}
++        assert tuple(runtime._parent_pressure_candidates) == tuple(range(1, 65))
++    finally:
++        runtime.close()
++
++
+ @pytest.mark.parametrize("blocked", ("none", "locked", "shared", "swa_unbacked", "pending"))
+ def test_full_only_pressure_candidate_can_save_missing_mamba_at_actual_eviction(blocked):
+     class Node(NS):
