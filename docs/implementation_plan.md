@@ -12,6 +12,26 @@ enabled predictors/physical actions, matching source/engine, 27 frozen
 fields and pool capacities. The sampled next batch reserves 4144 FULL
 tokens and three Mamba slots. Startup does not establish performance benefit.
 
+V257 seals V48's complete 600-900s window: 323764/380722 decode request
+steps, 14.961% below fixed native and essentially unchanged from V47's
+323881. Exclusive instrumented Python wall remains 55.537s/300.767s:
+tool/reentry/handoff/admission 8.377/5.696/5.287/5.437s. Coarse matched
+full-48 consecutive decode is close to native; short single-request
+prefill remains about 2.89-3.70x. These intervals include controls/overlap,
+not isolated kernels or removable JCT. Next consolidate redundant tool
+scans, reentry/physical planning and turnover work while retaining causal
+checks; separately verify early reuse and demand restoration. Goal unmet.
+
+V256 independently seals prefixes at 10:34:26-10:34:39: early confirmed
+next-request FULL reuse is six JOINs/43.540MB and 45 tools/3.643GB.
+Demand handoff's 43.894GB stays separate. Pre-completion positive-FULL/
+start/submit is 25/25/11 and 430/50/49. Twelve JOIN events record unavailable
+service progress; reasons overlap and do not prove endpoint exhaustion.
+The final observed state records three reclaimed-plan reuses, five same-tool
+overruns, 390 residual extensions and 233 unsupported-tail checks, not
+independent tasks or proven avoided transfers. Keep 82 pending JOIN
+boundaries unknown; do not add overlapping prefixes or infer throughput gain.
+
 Commit e7b0d7a reuses the complete selected plan only after successful
 cold reclaim and fresh pool/reserve/protection-budget checks. Final
 enqueue still drains causal events and recaptures the whole target.
