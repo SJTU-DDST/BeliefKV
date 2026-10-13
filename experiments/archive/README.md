@@ -4,6 +4,48 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-10-14 legacy workspace and trace recovery
+
+The remaining 297 workspaces from V17, V18, V19, V24 and V25 passed
+complete GNU tar comparison before removal from raw. This preserves
+untracked files and unfinished-task workspaces without changing outcomes:
+57,644,625,920 allocated source bytes became 7,146,638,520 archive bytes.
+The five archives are `experiments/archive/20261014/vN_legacy_workspaces.tar.zst`.
+Each raw run has `LEGACY_WORKSPACES_ARCHIVED.md` with its exact hash and
+restore command. Receipt: `experiments/reports/v368_legacy_workspace_archive_20261014.json`.
+
+V17-V19 also had 217 orphaned sandbox containers left from October 10.
+The configured UID, exact old workspace mounts, main process identities
+and all container processes were verified twice. Only idle shell/sleep
+loops were present; those exact containers were stopped, preserving their
+layers. Receipt: `experiments/reports/v367_idle_legacy_sandboxes_20261014.json`.
+The initial archive attempt exited without deleting data when it found
+these containers; `v366_legacy_workspace_archive_20261014.json` retains
+that failed verification. No other user's job was stopped.
+
+V27 and V32 server/opportunity JSONL files were subsequently archived
+and fully compared: 15,658,390,913 source bytes became 442,655,777 bytes.
+Archives are `experiments/archive/20261014/v27_superseded_server_traces.tar.zst`
+and `v32_superseded_server_traces.tar.zst`; each raw run has a restore
+pointer. Receipt: `experiments/reports/v370_v27_v32_server_trace_archive_20261014.json`.
+Clients, terminal results, summaries, plans and censoring records remain.
+V29 native and latest V49-V54 traces remain directly readable; restore
+V27/V32 server logs before rerunning analyses that reference those raw paths.
+
+Final available space was 83,004,669,952 bytes, about 77.30 GiB, at the
+archive completion snapshot. Concurrent disk use can change that value.
+All work ran with one compression worker, nice 19 and idle I/O during
+the reservation; no GPU workload was started.
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261014/v17_legacy_workspaces.tar.zst \
+  --directory experiments/raw
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261014/v27_superseded_server_traces.tar.zst \
+  --directory experiments/raw
+```
+
 ## 2026-10-14 verified workspace compression
 
 Archive: `experiments/archive/20261014/v54_stopped_workspaces.tar.zst`
