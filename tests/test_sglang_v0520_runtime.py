@@ -898,6 +898,61 @@ def test_tool_start_triggers_bounded_wait_prediction_then_local_probe():
     runtime.close()
 
 
+@pytest.mark.parametrize("with_parallel_sibling", [False, True])
+def test_batched_tool_refresh_uses_final_metadata_for_the_surviving_tool(with_parallel_sibling):
+    runtime = NativeAdmissionRuntime()
+    runtime._tool_timing_only = True
+    submitted = []
+    runtime._model_worker = NS(
+        disabled=False, submit_tool_wait=submitted.append, close=lambda: None,
+    )
+    request = req("tool")
+    request.session_id, request.session_generation = "session-tool", 1
+    runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE, invocation_id="tool",
+              context_id="ctx-tool", agent_definition_id="tool", agent_instance_id="tool"),
+        event(2, RuntimeEventKind.TOOL_START, invocation_id="tool", attributes={
+            "tool_run_id": "old", "tool_family": "shell", "command_class": "execute",
+            "observed_command_class": "git",
+        }),
+    ))
+    submitted.clear()
+    events = [
+        event(3, RuntimeEventKind.TOOL_END, invocation_id="tool",
+              attributes={"tool_run_id": "old"}),
+        event(4, RuntimeEventKind.TOOL_START, invocation_id="tool", attributes={
+            "tool_run_id": "survivor", "tool_family": "shell", "backend_class": "sandbox",
+            "command_class": "execute", "observed_command_class": "test_suite",
+            "previous_same_input_status": "success", "previous_same_input_duration_ms": 120000.,
+        }),
+    ]
+    if with_parallel_sibling:
+        events.extend((
+            event(5, RuntimeEventKind.TOOL_START, invocation_id="tool", attributes={
+                "tool_run_id": "short", "tool_family": "filesystem",
+                "command_class": "read_file", "observed_command_class": "read_file",
+            }),
+            event(6, RuntimeEventKind.TOOL_END, invocation_id="tool",
+                  attributes={"tool_run_id": "short"}),
+        ))
+    try:
+        runtime.on_events(tuple(events))
+        assert len(submitted) == 1
+        key, features, revision = submitted[0][0]
+        assert key == runtime.context_sessions["ctx-tool"]
+        assert features.backend_class == "sandbox"
+        assert features.command_class == "execute"
+        assert features.observed_command_class == "test_suite"
+        assert features.previous_same_input_duration_ms == 120000.
+        assert features.tool_family == "shell"
+        assert revision == (6. if with_parallel_sibling else 4.)
+        assert set(runtime.graph.invocations["tool"].active_tool_calls) == {"survivor"}
+    finally:
+        runtime.close()
+
+
 def test_live_child_decode_progress_enters_join_forecast():
     runtime = NativeAdmissionRuntime()
     runtime.predictor_sha256 = "a" * 64

@@ -857,6 +857,7 @@ class NativeAdmissionRuntime:
             self.counts["causal_mirror_discarded"] += 1
             raise
         else:
+            tool_wait_refreshes: dict[str, None] | None = None
             terminal_returns = {
                 event.invocation_id: event
                 for event in events if event.kind is RuntimeEventKind.RETURN
@@ -1052,6 +1053,15 @@ class NativeAdmissionRuntime:
                     }
                     self.shadow_candidate = None
                 if event.kind in (RuntimeEventKind.TOOL_START, RuntimeEventKind.TOOL_END) and context_id is not None:
+                    if len(events) == 1:
+                        self._submit_tool_wait(context_id)
+                    else:
+                        if tool_wait_refreshes is None:
+                            tool_wait_refreshes = {}
+                        tool_wait_refreshes[context_id] = None
+            if tool_wait_refreshes is not None:
+                # Graph state is already final; metadata must finish the same batch.
+                for context_id in tool_wait_refreshes:
                     self._submit_tool_wait(context_id)
             report_notices_in_batch: set[str] = set()
             for event in events:

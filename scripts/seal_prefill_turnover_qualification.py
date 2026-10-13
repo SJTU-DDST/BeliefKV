@@ -38,7 +38,8 @@ def main():
     for expected in (
         "test_prefill_turnover_probe", "test_v0520_native_telemetry",
         "test_restore_wait_probe", "test_analyze_prefill_turnover",
-        "test_wait_prefetch_batch", "TestBeliefKVHook",
+        "test_wait_prefetch_batch", "test_sglang_v0520_runtime",
+        "test_tool_predictive_transfers", "TestBeliefKVHook",
     ):
         if not any(expected in name for name in classes):
             raise ValueError(f"missing qualification scope: {expected}")
@@ -77,6 +78,8 @@ def main():
         "tests/test_restore_wait_probe.py",
         "tests/test_analyze_prefill_turnover.py",
         "tests/test_wait_prefetch_batch.py",
+        "tests/test_sglang_v0520_runtime.py",
+        "tests/test_tool_predictive_transfers.py",
     )
     result = {
         "qualified_at_local": datetime.now().astimezone().isoformat(),
@@ -111,6 +114,9 @@ def main():
             "Failed burst checks emit bounded existing-plan evidence, preserving the pre-drain JOIN identity.",
             "Rejection observations add no physical queries, allocations or changes to existing validation.",
             "The old probe CPU fixture excludes the new failure-only observation cost; real perturbation remains unmeasured.",
+            "Multi-event tool refreshes run once per context after final metadata updates; singleton submissions retain their path.",
+            "Two prior failing cases reproduced unknown instead of the surviving command's metadata; corrected inputs do not prove GPU gains.",
+            "Actual multi-event frequency and incremental coalescing cost remain unmeasured in the V54 workload.",
             "Real GPU events, their perturbation, native counterparts and full JCT gains remain unverified.",
             "V54 has a recorded administrative reservation cutoff; preserve its unfinished outcome.",
             "Cold deployment is allowed only after 06:00 Asia/Shanghai and GPU availability checks.",
