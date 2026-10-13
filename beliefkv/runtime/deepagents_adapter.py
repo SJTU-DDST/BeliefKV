@@ -2188,6 +2188,10 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     self._announced_child_ids.add(active.invocation_id)
                 epoch = self._model_epochs.get(active.invocation_id, 0)
             if metadata is not None:
+                queued_control = (
+                    isinstance(self.control_sink, QueuedRuntimeEventSink)
+                    and self.control_sink is not self.trace_sink
+                )
                 self._publish((
                     self._event(
                         RuntimeEventKind.STRUCTURED_ACTION,
@@ -2203,7 +2207,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                             "estimated_final_report_tokens": estimated,
                         },
                     ),
-                ), control=True, async_control=True)
+                ), control=queued_control, async_control=queued_control)
 
     def observe_tool_wait(
         self, tool_run_id: str, invocation_id: str, tool_call_id: str

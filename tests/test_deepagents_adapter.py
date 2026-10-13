@@ -390,13 +390,18 @@ def test_child_completion_intent_has_bound_identity_and_no_model_payload() -> No
         queued.close()
 
 
-def test_completion_stage_tool_ack_binds_child_without_report_payload() -> None:
+@pytest.mark.parametrize("delivery", ("queued", "trace_only", "same_sink", "direct"))
+def test_completion_stage_tool_ack_binds_child_without_report_payload(delivery) -> None:
     trace = CollectingSink()
     control = CollectingSink()
-    queued = QueuedRuntimeEventSink(control)
+    queued = QueuedRuntimeEventSink(control) if delivery == "queued" else None
+    sink = (
+        queued if queued is not None else trace if delivery == "same_sink"
+        else control if delivery == "direct" else None
+    )
     adapter = DeepAgentsRuntimeAdapter(
         trace, BeliefKVRequestMetadata("wf", "root", "ctx", 0),
-        control_sink=queued,
+        control_sink=sink,
     )
     try:
         adapter.start()
@@ -420,9 +425,10 @@ def test_completion_stage_tool_ack_binds_child_without_report_payload() -> None:
             "Completion stage recorded. Give your final report now.",
             run_id=stage_run, parent_run_id=task_run,
         )
-        queued.close()
+        if queued is not None:
+            queued.flush()
         stages = [
-            item for item in control.events
+            item for item in trace.events
             if item.kind == RuntimeEventKind.STRUCTURED_ACTION
             and item.attributes.get("child_completion_signal_kind") == "stage"
         ]
@@ -433,13 +439,21 @@ def test_completion_stage_tool_ack_binds_child_without_report_payload() -> None:
         )
         assert stage.attributes["estimated_final_report_tokens"] == 256
         assert "private assignment" not in json.dumps(stage.to_dict())
+        assert task.invocation_id not in adapter._terminal_invocation_ids
+        control_stages = [
+            item for item in control.events
+            if item.kind == RuntimeEventKind.STRUCTURED_ACTION
+            and item.attributes.get("child_completion_signal_kind") == "stage"
+        ]
+        assert control_stages == ([stage] if queued is not None else [])
         adapter.complete_runtime_task(task)
         assert not any(
             item.attributes.get("child_completion_signal_kind") == "terminal_fallback"
             for item in trace.events
         )
     finally:
-        queued.close()
+        if queued is not None:
+            queued.close()
 
 
 def test_completion_stage_uses_live_child_identity_when_callback_parent_missing() -> None:
