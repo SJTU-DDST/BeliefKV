@@ -1,0 +1,194 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-13T15:55:46.884153+08:00",
+  "scope": "CPU causal queue/lease fixtures; no GPU throughput or JCT claim",
+  "baseline_revision": "9c6f20c",
+  "baseline_runtime_sha256": "fc96358b755eac67db7cd4fbed8648feb5268b6ff553aa8cd98ea4c2c4865f34",
+  "current_runtime_sha256": "fe9dfe0e2a85f6c968c5482322f0243737e333a9b4fa588478d4e8f274f79eee",
+  "prerequisite": "experiments/reports/v277_static_headroom_qualification_20261013.json",
+  "prerequisite_sha256": "a1c86c4a53bec8c6d5fb5a905d7e422079a3808545e4365806f57ce384532080",
+  "cases": [
+    {
+      "case": "complete_native_one_slot",
+      "inputs": {
+        "slots": 1,
+        "source": "native_next_prefill",
+        "observation": {
+          "missing_full_tokens": 0,
+          "missing_mamba_slots": 0,
+          "device_checkpoint_tokens": 100
+        },
+        "ordinary_admissions": 1
+      },
+      "baseline": {
+        "selected": "ordinary",
+        "refreshed_checkpoint": false,
+        "ordinary_quota": null,
+        "physical_actions": 0
+      },
+      "current": {
+        "selected": "restored",
+        "refreshed_checkpoint": true,
+        "ordinary_quota": 1,
+        "physical_actions": 0,
+        "ordinary_turn_after_restored_admission": true
+      }
+    },
+    {
+      "case": "complete_native_four_slots",
+      "inputs": {
+        "slots": 4,
+        "source": "native_next_prefill",
+        "observation": {
+          "missing_full_tokens": 0,
+          "missing_mamba_slots": 0,
+          "device_checkpoint_tokens": 100
+        },
+        "ordinary_admissions": 3
+      },
+      "baseline": {
+        "selected": "ordinary",
+        "refreshed_checkpoint": false,
+        "ordinary_quota": null,
+        "physical_actions": 0
+      },
+      "current": {
+        "selected": "restored",
+        "refreshed_checkpoint": true,
+        "ordinary_quota": 3,
+        "physical_actions": 0,
+        "ordinary_turn_after_restored_admission": true
+      }
+    },
+    {
+      "case": "partial_full",
+      "inputs": {
+        "slots": 1,
+        "source": "native_next_prefill",
+        "observation": {
+          "missing_full_tokens": 1,
+          "missing_mamba_slots": 0,
+          "device_checkpoint_tokens": 100
+        },
+        "ordinary_admissions": 1
+      },
+      "baseline": {
+        "selected": "ordinary",
+        "refreshed_checkpoint": false,
+        "ordinary_quota": null,
+        "physical_actions": 0
+      },
+      "current": {
+        "selected": "ordinary",
+        "refreshed_checkpoint": true,
+        "ordinary_quota": null,
+        "physical_actions": 0
+      }
+    },
+    {
+      "case": "missing_mamba",
+      "inputs": {
+        "slots": 1,
+        "source": "native_next_prefill",
+        "observation": {
+          "missing_full_tokens": 0,
+          "missing_mamba_slots": 1,
+          "device_checkpoint_tokens": 100
+        },
+        "ordinary_admissions": 1
+      },
+      "baseline": {
+        "selected": "ordinary",
+        "refreshed_checkpoint": false,
+        "ordinary_quota": null,
+        "physical_actions": 0
+      },
+      "current": {
+        "selected": "ordinary",
+        "refreshed_checkpoint": true,
+        "ordinary_quota": null,
+        "physical_actions": 0
+      }
+    },
+    {
+      "case": "unknown_checkpoint",
+      "inputs": {
+        "slots": 1,
+        "source": "native_next_prefill",
+        "observation": null,
+        "ordinary_admissions": 1
+      },
+      "baseline": {
+        "selected": "ordinary",
+        "refreshed_checkpoint": false,
+        "ordinary_quota": null,
+        "physical_actions": 0
+      },
+      "current": {
+        "selected": "ordinary",
+        "refreshed_checkpoint": true,
+        "ordinary_quota": null,
+        "physical_actions": 0
+      }
+    },
+    {
+      "case": "no_frontier",
+      "inputs": {
+        "slots": 0,
+        "source": "native_next_prefill",
+        "observation": {
+          "missing_full_tokens": 0,
+          "missing_mamba_slots": 0,
+          "device_checkpoint_tokens": 100
+        },
+        "ordinary_admissions": 1
+      },
+      "baseline": {
+        "selected": "ordinary",
+        "refreshed_checkpoint": false,
+        "ordinary_quota": null,
+        "physical_actions": 0
+      },
+      "current": {
+        "selected": "ordinary",
+        "refreshed_checkpoint": false,
+        "ordinary_quota": null,
+        "physical_actions": 0
+      }
+    },
+    {
+      "case": "unknown_capacity",
+      "inputs": {
+        "slots": 1,
+        "source": "legacy_capacity_unavailable",
+        "observation": {
+          "missing_full_tokens": 0,
+          "missing_mamba_slots": 0,
+          "device_checkpoint_tokens": 100
+        },
+        "ordinary_admissions": 1
+      },
+      "baseline": {
+        "selected": "ordinary",
+        "refreshed_checkpoint": false,
+        "ordinary_quota": null,
+        "physical_actions": 0
+      },
+      "current": {
+        "selected": "ordinary",
+        "refreshed_checkpoint": false,
+        "ordinary_quota": null,
+        "physical_actions": 0
+      }
+    }
+  ],
+  "semantics": [
+    "Actual prior/current runtime classes use the same graph, requests and settled-lease fixture.",
+    "A fresh native checkpoint observation and a valid next-prefill frontier are both required.",
+    "At least one ordinary admission remains between complete restored admissions.",
+    "Partial/unknown dependencies and unavailable capacity retain the four-admission policy.",
+    "Only queue order changes; native allocation, batch filling and execution dependencies remain.",
+    "V50 remains frozen; these candidates require cold deployment and live outcome validation."
+  ],
+  "script_sha256": "7b001be71bb98e54874c2ff139d94c37af6ca5860dab26f671f9382444e706da"
+}

@@ -124,9 +124,8 @@ def test_static_pool_headroom_is_read_only_and_not_a_certificate() -> None:
 
 
 @pytest.mark.parametrize("break_free_list", [
-    lambda cache: setattr(cache.token_to_kv_pool_allocator, "free_group", []),
     lambda cache: setattr(
-        cache.req_to_token_pool.mamba_allocator, "_alloc_iter", iter(()),
+        cache.req_to_token_pool.mamba_allocator, "size", 4,
     ),
     lambda cache: setattr(
         cache.req_to_token_pool.mamba_allocator, "available_size", lambda: 4,
@@ -144,7 +143,7 @@ def test_static_pool_headroom_is_read_only_and_not_a_certificate() -> None:
         ),
     ),
 ])
-def test_static_headroom_rejects_ambiguous_or_unphysical_free_lists(
+def test_static_headroom_rejects_unphysical_free_lists(
     break_free_list,
 ) -> None:
     cache = _static_cache()
@@ -153,6 +152,31 @@ def test_static_headroom_rejects_ambiguous_or_unphysical_free_lists(
     assert not result.observable
     assert result.reason
     assert result.device_full_free_tokens is None
+
+
+@pytest.mark.parametrize("deferred, reserved", [
+    (False, False), (True, False), (False, True), (True, True),
+])
+def test_static_headroom_counts_only_free_lists_during_native_groups(
+    deferred, reserved,
+) -> None:
+    cache = _static_cache()
+    pending = [NS(shape=(2,))]
+    reserved_slots = iter([NS(shape=(1,))])
+    full = cache.token_to_kv_pool_allocator
+    mamba = cache.req_to_token_pool.mamba_allocator
+    full.free_group = pending if deferred else None
+    mamba._alloc_iter = reserved_slots if reserved else None
+    result = observe_static_full_mamba_headroom(cache)
+    assert result.observable
+    assert result.device_full_free_tokens == 10
+    assert result.device_mamba_free_slots == 2
+    assert result.full_frees_deferred is deferred
+    assert result.mamba_batch_reserved is reserved
+    assert result.physical_actions_supported is False
+    assert full.free_group is (pending if deferred else None)
+    assert mamba._alloc_iter is (reserved_slots if reserved else None)
+    assert next(reserved_slots).shape == (1,)
 
 
 def test_static_host_usage_reports_full_and_mamba_independently() -> None:

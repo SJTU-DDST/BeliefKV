@@ -950,6 +950,95 @@ def test_aged_ordinary_head_keeps_its_turn_until_four_normal_admissions():
     assert runtime.counts["prefetch_priority_aged_head_kept"] == 1
 
 
+@pytest.mark.parametrize("slots, expected_quota", [(1, 1), (2, 1), (4, 3)])
+def test_complete_restore_uses_native_quota_and_preserves_ordinary_turns(
+    slots, expected_quota,
+):
+    runtime, _, _, _, _, _ = locked_runtime()
+    restored = submit_restored_request(runtime)
+    ordinary = req("ordinary")
+    runtime.register_visible_request(ordinary)
+    runtime._visible_since[ordinary.rid] = time.monotonic() - 11.
+    runtime._prefetch_priority_normal_admissions = expected_quota
+    rows = []
+    runtime._opportunity_writer = NS(record=rows.append)
+    observation = {
+        "missing_full_tokens": 0, "missing_mamba_slots": 0,
+        "device_checkpoint_tokens": 100,
+    }
+    try:
+        with patch.object(runtime, "_causal_rank", side_effect=lambda req, index, ranks: (0, 0, index)), \
+             patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+                 slots, 1024, source="native_next_prefill",
+             )), \
+             patch.object(runtime, "_read_request_reentry", return_value=observation) as inspect:
+            for _ in range(3):
+                assert select(runtime, [ordinary, restored]).candidates[0] is restored
+                assert inspect.call_args.kwargs["refresh"] is True
+                runtime.on_prefill_candidate_result(restored, admitted=True, result="ok")
+                for _ in range(expected_quota):
+                    assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+                    runtime.on_prefill_candidate_result(ordinary, admitted=True, result="ok")
+        assert runtime.counts["prefetch_priority_complete_ready_admitted"] == 3
+        assert runtime.counts["native_admitted"] == 3 * (1 + expected_quota)
+        assert [row["complete_checkpoint_ordinary_quota"] for row in rows] == [expected_quota] * 3
+        assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime._opportunity_writer = None
+        runtime.close()
+
+
+@pytest.mark.parametrize("observation", [
+    None,
+    {"missing_full_tokens": 1, "missing_mamba_slots": 0, "device_checkpoint_tokens": 100},
+    {"missing_full_tokens": 0, "missing_mamba_slots": 1, "device_checkpoint_tokens": 100},
+    {"missing_full_tokens": 0, "missing_mamba_slots": 0, "device_checkpoint_tokens": 0},
+    {"missing_full_tokens": False, "missing_mamba_slots": 0, "device_checkpoint_tokens": 100},
+    {"missing_full_tokens": 0, "missing_mamba_slots": 0},
+])
+def test_partial_or_unknown_restore_does_not_bypass_aged_admission_quota(observation):
+    runtime, _, _, _, _, _ = locked_runtime()
+    restored = submit_restored_request(runtime)
+    ordinary = req("ordinary")
+    runtime.register_visible_request(ordinary)
+    runtime._visible_since[ordinary.rid] = time.monotonic() - 11.
+    runtime._prefetch_priority_normal_admissions = 1
+    try:
+        with patch.object(runtime, "_causal_rank", side_effect=lambda req, index, ranks: (0, 0, index)), \
+             patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+                 1, 1024, source="native_next_prefill",
+             )), \
+             patch.object(runtime, "_read_request_reentry", return_value=observation):
+            assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+            assert runtime._prefetch_priority_complete_ready_quota is None
+            assert runtime.counts["prefetch_priority_complete_ready_ordered"] == 0
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("slots, source", [
+    (0, "native_next_prefill"), (1, "legacy_capacity_unavailable"),
+])
+def test_complete_restore_needs_a_live_native_frontier_for_dynamic_quota(slots, source):
+    runtime, _, _, _, _, _ = locked_runtime()
+    restored = submit_restored_request(runtime)
+    ordinary = req("ordinary")
+    runtime.register_visible_request(ordinary)
+    runtime._visible_since[ordinary.rid] = time.monotonic() - 11.
+    runtime._prefetch_priority_normal_admissions = 1
+    try:
+        with patch.object(runtime, "_causal_rank", side_effect=lambda req, index, ranks: (0, 0, index)), \
+             patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+                 slots, 1024, source=source,
+             )), \
+             patch.object(runtime, "_read_request_reentry", side_effect=AssertionError(
+                 "no validated consumption frontier",
+             )):
+            assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+    finally:
+        runtime.close()
+
+
 def test_ready_restore_gets_one_turn_after_four_admissions_even_with_aged_head():
     runtime, _, _, _, _, _ = locked_runtime()
     restored = submit_restored_request(runtime)

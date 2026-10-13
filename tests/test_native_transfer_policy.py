@@ -198,6 +198,43 @@ def test_runtime_reads_native_limits_instead_of_treating_idle_memory_as_slots():
     assert budget.reserve_full_tokens == 100 + 16 * 48
 
 
+def test_budget_reuses_same_call_free_lists_without_reobserving_allocator():
+    runtime, *_ = locked_runtime()
+    runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
+    runtime._native_cache.host_pool_group.entry_map["mamba"].host_pool.size_per_token = 64
+    runtime._observe_native_admission_capacity(
+        running_batch=NS(reqs=[NS()] * 46),
+        adder=NS(
+            max_running_requests=48, max_prefill_bs=8, prefill_max_requests=4,
+            page_size=16, rem_input_tokens=100,
+        ),
+    )
+    observed = StaticPoolHeadroomObservation(
+        True, device_full_free_tokens=10_000, device_mamba_free_slots=10,
+        full_frees_deferred=True, mamba_batch_reserved=True,
+    )
+    try:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+            side_effect=AssertionError("same-call headroom was already observed"),
+        ):
+            budget = runtime._current_residency_budget(headroom=observed)
+        assert budget.source == "native_next_prefill"
+        assert budget.request_slots == 2
+        assert budget.reserve_full_tokens == 100 + 16 * 48
+        assert runtime._residency_headroom is observed
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+            return_value=StaticPoolHeadroomObservation(
+                True, device_full_free_tokens=0, device_mamba_free_slots=0,
+            ),
+        ) as inspect:
+            assert runtime._current_residency_budget().byte_limit == 50
+        inspect.assert_called_once()
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("chunk_tokens,input_reserve", [
     (4096, 4096), (32768, 16384), (0, 16384), (None, 16384),
 ])

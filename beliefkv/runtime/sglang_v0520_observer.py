@@ -96,7 +96,7 @@ class StaticHostUsageObservation:
 
 @dataclass(frozen=True)
 class StaticPoolHeadroomObservation:
-    """Instantaneous free-list counts; not an H2D/D2H capacity reservation."""
+    """Unreserved free-list counts; not an H2D/D2H capacity reservation."""
 
     observable: bool
     device_full_free_tokens: int | None = None
@@ -105,6 +105,8 @@ class StaticPoolHeadroomObservation:
     host_mamba_free_slots: int | None = None
     physical_actions_supported: bool = False
     reason: str | None = None
+    full_frees_deferred: bool = False
+    mamba_batch_reserved: bool = False
 
 
 @dataclass(frozen=True, slots=True)
@@ -337,20 +339,17 @@ def observe_static_full_mamba_headroom(
 ) -> StaticPoolHeadroomObservation:
     """Sample validated static free lists without a tensor census or LRU access.
 
-    A free group or preallocated Mamba batch is an ambiguous in-flight
-    reservation. Even a valid snapshot is not a plan certificate: only native
-    can atomically recheck page ownership and allocate the target slots.
+    Static FULL availability excludes pending free_group tensors. Static Mamba
+    preallocation removes slots from free_slots before opening _alloc_iter.
+    Read the remaining free lists without releasing or counting either group.
+    Only native can recheck ownership and allocate the target slots.
     """
     try:
         capacity = _static_full_mamba_pool_geometry(cache)
         full = _named(cache.token_to_kv_pool_allocator, "TokenToKVPoolAllocator")
         mamba = _named(cache.req_to_token_pool.mamba_allocator, "MambaSlotAllocator")
-        if (
-            full.free_group is not None
-            or mamba._alloc_iter is not None
-            or mamba.size != capacity["device_mamba_slots"]
-        ):
-            raise ValueError("static pool contains an ambiguous allocation group")
+        if mamba.size != capacity["device_mamba_slots"]:
+            raise ValueError("static MAMBA allocator and physical pool disagree")
         entries = cache.host_pool_group.entry_map
         full_host = _named(entries["kv"].host_pool, "MHATokenToKVPoolHost")
         mamba_host = _named(entries["mamba"].host_pool, "MambaPoolHost")
@@ -372,6 +371,8 @@ def observe_static_full_mamba_headroom(
                 mamba_host.available_size(), capacity["host_mamba_slots"],
                 "static Host MAMBA free slots",
             ),
+            full_frees_deferred=full.free_group is not None,
+            mamba_batch_reserved=mamba._alloc_iter is not None,
         )
     except (AttributeError, KeyError, TypeError, ValueError, RuntimeError) as exc:
         return StaticPoolHeadroomObservation(observable=False, reason=str(exc))

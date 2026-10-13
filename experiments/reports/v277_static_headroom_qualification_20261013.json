@@ -1,0 +1,270 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-13T15:51:38.023133+08:00",
+  "scope": "CPU native allocator lifecycle; no GPU transfer or JCT gain",
+  "engine_root": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20",
+  "baseline_revision": "9c6f20c",
+  "baseline_observer_sha256": "28fbfbb05a71f782cd8b9601eef88c255375eff51dca627a1e4c39fd616a5ca4",
+  "native_allocator_sources": {
+    "base": {
+      "path": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/base.py",
+      "sha256": "1841523a0aca2f7e27de14d22a254b68154032d33e84c5eb5638e734b1bb8cff"
+    },
+    "token": {
+      "path": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/token.py",
+      "sha256": "ee09d0021b69b111e3262811e2fdaf2f495ecfc2cf6ed142070a7f7e95a030ec"
+    },
+    "mamba": {
+      "path": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/mamba.py",
+      "sha256": "610d6b3b8452741812efb549cca2903aed8f6e4e585f5b34fa23b935116c0e01"
+    }
+  },
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "7820de3e7555a6e73f6929dfca430fd5cba6c5c6519823e7b63661a04c601d41",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "fe9dfe0e2a85f6c968c5482322f0243737e333a9b4fa588478d4e8f274f79eee",
+    "tests/test_sglang_v0520_observer.py": "689615c9a418a5537c794b2a4c7c8111da1ea39211117bde9d0ccce8e47ea3d7",
+    "tests/test_native_transfer_policy.py": "49010d152bdffe98b597e29ccbda1d074fc5876a2f470d3916264a72dc53d837"
+  },
+  "junit": "experiments/reports/v277_static_headroom_junit_20261013.xml",
+  "junit_sha256": "7af4f5375fd14509358dabf81e4d128956032ebc91ddf0ff0bc8fc316a19765f",
+  "test_suites": [
+    {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "456",
+      "time": "3.096",
+      "timestamp": "2026-10-13T15:50:21.851073+08:00",
+      "hostname": "ddst-12"
+    }
+  ],
+  "cases": [
+    {
+      "full_deferred": false,
+      "mamba_reserved": false,
+      "baseline": {
+        "observable": true,
+        "device_full_free_tokens": 8,
+        "device_mamba_free_slots": 3,
+        "host_full_free_tokens": 20,
+        "host_mamba_free_slots": 5,
+        "physical_actions_supported": false,
+        "reason": null
+      },
+      "current": {
+        "observable": true,
+        "device_full_free_tokens": 8,
+        "device_mamba_free_slots": 3,
+        "host_full_free_tokens": 20,
+        "host_mamba_free_slots": 5,
+        "physical_actions_supported": false,
+        "reason": null,
+        "full_frees_deferred": false,
+        "mamba_batch_reserved": false
+      },
+      "baseline_budget": {
+        "request_slots": 2,
+        "byte_limit": 160,
+        "reserve_full_tokens": 4,
+        "reserve_mamba_slots": 2,
+        "source": "native_next_prefill",
+        "evictable_full_tokens": 0,
+        "evictable_mamba_slots": 0
+      },
+      "current_budget": {
+        "request_slots": 2,
+        "byte_limit": 160,
+        "reserve_full_tokens": 4,
+        "reserve_mamba_slots": 2,
+        "source": "native_next_prefill",
+        "evictable_full_tokens": 0,
+        "evictable_mamba_slots": 0
+      },
+      "after_native_group_end": {
+        "observable": true,
+        "device_full_free_tokens": 8,
+        "device_mamba_free_slots": 3,
+        "host_full_free_tokens": 20,
+        "host_mamba_free_slots": 5,
+        "physical_actions_supported": false,
+        "reason": null,
+        "full_frees_deferred": false,
+        "mamba_batch_reserved": false
+      },
+      "physical_actions": 0
+    },
+    {
+      "full_deferred": true,
+      "mamba_reserved": false,
+      "baseline": {
+        "observable": false,
+        "device_full_free_tokens": null,
+        "device_mamba_free_slots": null,
+        "host_full_free_tokens": null,
+        "host_mamba_free_slots": null,
+        "physical_actions_supported": false,
+        "reason": "static pool contains an ambiguous allocation group"
+      },
+      "current": {
+        "observable": true,
+        "device_full_free_tokens": 8,
+        "device_mamba_free_slots": 3,
+        "host_full_free_tokens": 20,
+        "host_mamba_free_slots": 5,
+        "physical_actions_supported": false,
+        "reason": null,
+        "full_frees_deferred": true,
+        "mamba_batch_reserved": false
+      },
+      "baseline_budget": {
+        "request_slots": 4,
+        "byte_limit": 1073741824,
+        "reserve_full_tokens": 0,
+        "reserve_mamba_slots": 0,
+        "source": "legacy_capacity_unavailable",
+        "evictable_full_tokens": 0,
+        "evictable_mamba_slots": 0
+      },
+      "current_budget": {
+        "request_slots": 2,
+        "byte_limit": 160,
+        "reserve_full_tokens": 4,
+        "reserve_mamba_slots": 2,
+        "source": "native_next_prefill",
+        "evictable_full_tokens": 0,
+        "evictable_mamba_slots": 0
+      },
+      "after_native_group_end": {
+        "observable": true,
+        "device_full_free_tokens": 10,
+        "device_mamba_free_slots": 3,
+        "host_full_free_tokens": 20,
+        "host_mamba_free_slots": 5,
+        "physical_actions_supported": false,
+        "reason": null,
+        "full_frees_deferred": false,
+        "mamba_batch_reserved": false
+      },
+      "physical_actions": 0
+    },
+    {
+      "full_deferred": false,
+      "mamba_reserved": true,
+      "baseline": {
+        "observable": false,
+        "device_full_free_tokens": null,
+        "device_mamba_free_slots": null,
+        "host_full_free_tokens": null,
+        "host_mamba_free_slots": null,
+        "physical_actions_supported": false,
+        "reason": "static pool contains an ambiguous allocation group"
+      },
+      "current": {
+        "observable": true,
+        "device_full_free_tokens": 8,
+        "device_mamba_free_slots": 1,
+        "host_full_free_tokens": 20,
+        "host_mamba_free_slots": 5,
+        "physical_actions_supported": false,
+        "reason": null,
+        "full_frees_deferred": false,
+        "mamba_batch_reserved": true
+      },
+      "baseline_budget": {
+        "request_slots": 4,
+        "byte_limit": 1073741824,
+        "reserve_full_tokens": 0,
+        "reserve_mamba_slots": 0,
+        "source": "legacy_capacity_unavailable",
+        "evictable_full_tokens": 0,
+        "evictable_mamba_slots": 0
+      },
+      "current_budget": {
+        "request_slots": 2,
+        "byte_limit": 80,
+        "reserve_full_tokens": 4,
+        "reserve_mamba_slots": 2,
+        "source": "native_next_prefill",
+        "evictable_full_tokens": 0,
+        "evictable_mamba_slots": 0
+      },
+      "after_native_group_end": {
+        "observable": true,
+        "device_full_free_tokens": 8,
+        "device_mamba_free_slots": 2,
+        "host_full_free_tokens": 20,
+        "host_mamba_free_slots": 5,
+        "physical_actions_supported": false,
+        "reason": null,
+        "full_frees_deferred": false,
+        "mamba_batch_reserved": false
+      },
+      "physical_actions": 0
+    },
+    {
+      "full_deferred": true,
+      "mamba_reserved": true,
+      "baseline": {
+        "observable": false,
+        "device_full_free_tokens": null,
+        "device_mamba_free_slots": null,
+        "host_full_free_tokens": null,
+        "host_mamba_free_slots": null,
+        "physical_actions_supported": false,
+        "reason": "static pool contains an ambiguous allocation group"
+      },
+      "current": {
+        "observable": true,
+        "device_full_free_tokens": 8,
+        "device_mamba_free_slots": 1,
+        "host_full_free_tokens": 20,
+        "host_mamba_free_slots": 5,
+        "physical_actions_supported": false,
+        "reason": null,
+        "full_frees_deferred": true,
+        "mamba_batch_reserved": true
+      },
+      "baseline_budget": {
+        "request_slots": 4,
+        "byte_limit": 1073741824,
+        "reserve_full_tokens": 0,
+        "reserve_mamba_slots": 0,
+        "source": "legacy_capacity_unavailable",
+        "evictable_full_tokens": 0,
+        "evictable_mamba_slots": 0
+      },
+      "current_budget": {
+        "request_slots": 2,
+        "byte_limit": 80,
+        "reserve_full_tokens": 4,
+        "reserve_mamba_slots": 2,
+        "source": "native_next_prefill",
+        "evictable_full_tokens": 0,
+        "evictable_mamba_slots": 0
+      },
+      "after_native_group_end": {
+        "observable": true,
+        "device_full_free_tokens": 10,
+        "device_mamba_free_slots": 2,
+        "host_full_free_tokens": 20,
+        "host_mamba_free_slots": 5,
+        "physical_actions_supported": false,
+        "reason": null,
+        "full_frees_deferred": false,
+        "mamba_batch_reserved": false
+      },
+      "physical_actions": 0
+    }
+  ],
+  "semantics": [
+    "Production allocator classes run on CPU; surrounding pool geometry is a named fixture.",
+    "Only the token allocator import is redirected to the inspected native base class.",
+    "Pending FULL frees and Mamba preallocation are excluded from reported free capacity.",
+    "Read-only observations do not close groups, consume iterators or authorize allocation.",
+    "Same-call budget reuse does not reuse a snapshot across native mutations.",
+    "Unknown layouts and full native page/state dependencies remain authoritative.",
+    "V50 remains frozen; this candidate is not deployed during its collection."
+  ],
+  "script_sha256": "85a2e9cd5aa0d096db3ccb3cf694900c63ae7b52854cb50688c987a07d415d66"
+}

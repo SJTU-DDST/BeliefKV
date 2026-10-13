@@ -69,6 +69,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     shadow_expectation_from_native_op,
 )
 from beliefkv.runtime.sglang_v0520_observer import (
+    StaticPoolHeadroomObservation,
     normalize_native_creation_time,
     observe_static_full_mamba_headroom,
     observe_unified_node_closure,
@@ -355,6 +356,7 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_promoted: str | None = None
         self._prefetch_priority_native_rank: int | None = None
         self._prefetch_priority_aged_head_bypassed = False
+        self._prefetch_priority_complete_ready_quota: int | None = None
         self._native_running_batch: object | None = None
         self._native_max_running: int | None = None
         self._native_prefill_slots: int | None = None
@@ -362,6 +364,7 @@ class NativeAdmissionRuntime:
         self._native_input_reserve = 0
         self._native_chunk_input_reserve: int | None = None
         self._residency_budget = PrefetchResidencyBudget(4, 1024 ** 3)
+        self._residency_headroom: StaticPoolHeadroomObservation | None = None
         self._visible_since: dict[str, float] = {}
         lead_setting = float(os.environ.get("BELIEFKV_PREFETCH_LEAD_MS", "1000"))
         if not math.isfinite(lead_setting) or lead_setting < 0:
@@ -1637,6 +1640,10 @@ class NativeAdmissionRuntime:
                 "h2d_seed_samples": self._h2d_seed_count,
                 "h2d_service_samples": len(self._h2d_samples),
                 "prefetch_residency_budget": asdict(self._residency_budget),
+                "prefetch_residency_headroom": (
+                    asdict(self._residency_headroom)
+                    if self._residency_headroom is not None else None
+                ),
                 "prefetch_locked_count": sum(
                     lease.lock_params is not None
                     for lease in self._prefetch_service_leases.values()
@@ -3648,7 +3655,9 @@ class NativeAdmissionRuntime:
         candidate = getattr(opportunity, "candidate", None)
         if candidate is None or not opportunity.headroom.observable:
             return opportunity
-        budget = self._current_residency_budget(include_evictable=True)
+        budget = self._current_residency_budget(
+            include_evictable=True, headroom=opportunity.headroom,
+        )
         headroom = opportunity.headroom
         full_limit = max(
             0, headroom.device_full_free_tokens
@@ -6314,11 +6323,16 @@ class NativeAdmissionRuntime:
 
     def _current_residency_budget(
         self, *, include_evictable: bool = False,
+        headroom: StaticPoolHeadroomObservation | None = None,
     ) -> PrefetchResidencyBudget:
         if self._native_max_running is None or self._native_prefill_slots is None:
             return self._residency_budget
         cache = self._native_cache
-        headroom = observe_static_full_mamba_headroom(cache)
+        # An opportunity observation is read-only and belongs to this same
+        # synchronous planning call; reuse its free lists, not an older budget.
+        if headroom is None:
+            headroom = observe_static_full_mamba_headroom(cache)
+        self._residency_headroom = headroom
         try:
             rows = cache.req_to_token_pool.available_size()
             entries = cache.host_pool_group.entry_map
@@ -7447,6 +7461,7 @@ class NativeAdmissionRuntime:
         self._parent_handoff_priority_promoted = None
         self._prefetch_priority_native_rank = None
         self._prefetch_priority_aged_head_bypassed = False
+        self._prefetch_priority_complete_ready_quota = None
         priority_candidates = []
         ready_restores = len({
             lease.key for lease in self._prefetch_service_leases.values()
@@ -7514,16 +7529,36 @@ class NativeAdmissionRuntime:
             source = chosen[3]
             candidate = chosen[2]
             native_rank = ordered.index(candidate)
-            # Aged requests keep four ordinary admissions between restored
-            # requests; an aged head must not disable restore consumption.
+            # Preserve ordinary admissions while allowing fully restored
+            # checkpoints to use the measured next-batch consumption quota.
             head = keys[ordered[0][0]]
             priority_now = time.monotonic()
             aged_head = head is not None and (
                 priority_now - self._visible_since.get(head.request_id, priority_now) >= 10.
             )
-            ordinary_quota_met = self._prefetch_priority_normal_admissions >= (
-                4 if aged_head else restore_stride
-            )
+            ordinary_quota = 4 if aged_head else restore_stride
+            complete_ready = False
+            if (
+                aged_head and source == "prefetch" and native_rank > 0
+                and budget.source == "native_next_prefill"
+                and budget.request_slots > 0 and restore_stride < 4
+            ):
+                self.counts["prefetch_priority_complete_ready_inspected"] += 1
+                observation = self._read_request_reentry(
+                    candidate[1], key=keys[candidate[0]], refresh=True,
+                )
+                complete_ready = bool(
+                    observation is not None
+                    and type(observation.get("missing_full_tokens")) is int
+                    and observation["missing_full_tokens"] == 0
+                    and type(observation.get("missing_mamba_slots")) is int
+                    and observation["missing_mamba_slots"] == 0
+                    and type(observation.get("device_checkpoint_tokens")) is int
+                    and observation["device_checkpoint_tokens"] > 0
+                )
+                if complete_ready:
+                    ordinary_quota = restore_stride
+            ordinary_quota_met = self._prefetch_priority_normal_admissions >= ordinary_quota
             if native_rank > 0 and ordinary_quota_met:
                 ordered.remove(candidate)
                 ordered.insert(0, candidate)
@@ -7533,6 +7568,9 @@ class NativeAdmissionRuntime:
                 else:
                     self._prefetch_priority_promoted = candidate[1].rid
                     self.counts["prefetch_priority_ordered"] += 1
+                    if complete_ready:
+                        self._prefetch_priority_complete_ready_quota = ordinary_quota
+                        self.counts["prefetch_priority_complete_ready_ordered"] += 1
                 self._prefetch_priority_native_rank = native_rank
                 self._prefetch_priority_aged_head_bypassed = aged_head
                 if aged_head:
@@ -7680,6 +7718,8 @@ class NativeAdmissionRuntime:
                         self.counts["parent_handoff_priority_admitted"] += 1
                     if req.rid == self._prefetch_priority_promoted:
                         self.counts["prefetch_priority_admitted"] += 1
+                        if self._prefetch_priority_complete_ready_quota is not None:
+                            self.counts["prefetch_priority_complete_ready_admitted"] += 1
                         if self._prefetch_priority_aged_head_bypassed:
                             self.counts["prefetch_priority_aged_head_bypass_admitted"] += 1
                         if self._opportunity_writer is not None:
@@ -7689,6 +7729,8 @@ class NativeAdmissionRuntime:
                                 "request_id": req.rid,
                                 "tagged_displaced": self._prefetch_priority_native_rank,
                                 "aged_head_bounded_bypass": self._prefetch_priority_aged_head_bypassed,
+                                "complete_checkpoint_ordinary_quota":
+                                    self._prefetch_priority_complete_ready_quota,
                                 "queue_wait_ms": (
                                     time.monotonic() - self._visible_since.get(req.rid, time.monotonic())
                                 ) * 1000.,

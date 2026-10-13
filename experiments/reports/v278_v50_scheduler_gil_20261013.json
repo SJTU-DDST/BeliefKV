@@ -1,0 +1,4039 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-13T15:43:15.792661+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v50",
+  "collection_commit": "02fd87c764d8f66997e02e5fe517e36874d770ce",
+  "execution_verification": {
+    "collection_code_commit": "02fd87c764d8f66997e02e5fe517e36874d770ce",
+    "verification_code_commit": "569fea47c73a6f7d04c94dc957612448263fd367",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": [
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/reports/v272_v29_critical_queue_roles_20261013.json",
+      "experiments/reports/v273_completion_notice_trace_qualification_20261013.json",
+      "experiments/reports/v274_v50_deployment_validation_20261013.json",
+      "experiments/reports/v275_v49_latest_trace_20261013.json"
+    ]
+  },
+  "scheduler_identity": {
+    "pid": 1929664,
+    "parent": 1929309,
+    "start_ticks": "604272677"
+  },
+  "raw_mtime_local": "2026-10-13T15:25:19.293617+08:00",
+  "requested_duration_seconds": 24.0,
+  "requested_rate_hz": 200,
+  "method": "py-spy record --gil --threads --full-filenames --nonblocking --format raw",
+  "recorded_samples": 2077,
+  "sampling_errors": 491,
+  "raw_sha256": "bcaec6deecfdacae5cb420d421f2d9d4513447b2c47d07abdfa61d93195ab3a6",
+  "compressed_profile": "experiments/reports/v278_v50_scheduler_gil_20261013.raw.gz",
+  "compressed_sha256": "996ef1a3414c833c9a676b986c3915d7ca66eb5466dc8b7fd8175c11406cf33e",
+  "route_samples": {
+    "writer": 181,
+    "other": 144,
+    "selection": 444,
+    "launch": 972,
+    "result": 336
+  },
+  "leaf_functions": [
+    [
+      "encode_record (/home/longhao/experiment/BeliefKV/beliefkv/runtime/record_json.py)",
+      98
+    ],
+    [
+      "extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py)",
+      96
+    ],
+    [
+      "delta_rule_prefill_dsl_sm90 (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/delta_rule_sm90.py)",
+      67
+    ],
+    [
+      "forward_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/gdn_backend.py)",
+      67
+    ],
+    [
+      "run (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/runtime/jit.py)",
+      48
+    ],
+    [
+      "observe_unified_node_closure (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      48
+    ],
+    [
+      "on_batch_completed (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      42
+    ],
+    [
+      "l2norm_fwd (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/fla/l2norm.py)",
+      39
+    ],
+    [
+      "__call__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/backends/nvidia/driver.py)",
+      36
+    ],
+    [
+      "<lambda> (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/runtime/jit.py)",
+      29
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/typing.py)",
+      26
+    ],
+    [
+      "_linear_attention_with_output_impl (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/radix_linear_attention.py)",
+      24
+    ],
+    [
+      "chunk_gated_delta_rule (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_prefill.py)",
+      24
+    ],
+    [
+      "fused_qkv_split_gdn_prefill (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/triton_gdn_fused_proj.py)",
+      24
+    ],
+    [
+      "session_ref (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/base.py)",
+      23
+    ],
+    [
+      "_write_block_request_probe (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      22
+    ],
+    [
+      "accept (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      20
+    ],
+    [
+      "_insert_walk_step (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      20
+    ],
+    [
+      "thread (1929664): MainThread",
+      20
+    ],
+    [
+      "mark_layout_dynamic (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/cute/runtime.py)",
+      19
+    ],
+    [
+      "__call__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/runtime/jit.py)",
+      19
+    ],
+    [
+      "__call__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_ops.py)",
+      19
+    ],
+    [
+      "__init__ (<string>)",
+      19
+    ],
+    [
+      "match_at (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      19
+    ],
+    [
+      "__c_pointers__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/cute/runtime.py)",
+      18
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      17
+    ],
+    [
+      "generate_execution_args (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/jit_executor.py)",
+      17
+    ],
+    [
+      "fused_gdn_gating (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/fla/fused_gdn_gating.py)",
+      17
+    ],
+    [
+      "__len__ (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      16
+    ],
+    [
+      "send_pyobj (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/zmq/sugar/socket.py)",
+      16
+    ],
+    [
+      "process_batch_result_decode (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/batch_result_processor.py)",
+      16
+    ],
+    [
+      "_write (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      16
+    ],
+    [
+      "<lambda> (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/delta_rule_sm90.py)",
+      15
+    ],
+    [
+      "inspect_beliefkv_reentry (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      15
+    ],
+    [
+      "on_completed (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      14
+    ],
+    [
+      "drain (/home/longhao/experiment/BeliefKV/beliefkv/runtime/event_channel.py)",
+      14
+    ],
+    [
+      "on_launch (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      14
+    ],
+    [
+      "_request_key (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_admission.py)",
+      14
+    ],
+    [
+      "dynamic_func (<string>)",
+      14
+    ],
+    [
+      "<setcomp> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      13
+    ],
+    [
+      "fill_from (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/cuda_graph_buffer_registry.py)",
+      13
+    ],
+    [
+      "run_compiled_program (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/jit_executor.py)",
+      13
+    ],
+    [
+      "compute_cache_key (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/runtime/jit.py)",
+      13
+    ],
+    [
+      "replay (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/graphs.py)",
+      13
+    ],
+    [
+      "_identity (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      12
+    ],
+    [
+      "forward_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/flashattention_backend.py)",
+      12
+    ],
+    [
+      "missing_prepare_full_prefix_tokens (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      12
+    ],
+    [
+      "gdn_prefill_qkv_prepare_fwd (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/fla/l2norm.py)",
+      11
+    ],
+    [
+      "plan_prefetch_gpu_steps (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      11
+    ],
+    [
+      "causal_conv1d_fn (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/mamba/causal_conv1d_triton.py)",
+      11
+    ],
+    [
+      "dumps (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/reduction.py)",
+      10
+    ],
+    [
+      "_bounded (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      10
+    ],
+    [
+      "_check_token_based_finish (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      10
+    ],
+    [
+      "<listcomp> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/full.py)",
+      10
+    ],
+    [
+      "__getitem__ (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      9
+    ],
+    [
+      "_terminal (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      9
+    ],
+    [
+      "_track_mamba_state_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      9
+    ],
+    [
+      "get_priority (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/evict_policy.py)",
+      9
+    ],
+    [
+      "is_none (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/speculative/spec_info.py)",
+      9
+    ],
+    [
+      "measured (/home/longhao/experiment/BeliefKV/beliefkv/runtime/hotpath_timing.py)",
+      9
+    ],
+    [
+      "alloc (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/token.py)",
+      8
+    ],
+    [
+      "<listcomp> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      8
+    ],
+    [
+      "update_finish_state (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      8
+    ],
+    [
+      "<listcomp> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      8
+    ],
+    [
+      "extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/gdn_backend.py)",
+      8
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/compiler.py)",
+      8
+    ],
+    [
+      "current_stream (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/__init__.py)",
+      7
+    ],
+    [
+      "_match_prefix_helper (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      7
+    ],
+    [
+      "__eq__ (<string>)",
+      7
+    ],
+    [
+      "reset_padding (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/cuda_graph_buffer_registry.py)",
+      7
+    ],
+    [
+      "drive_host_eviction (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/full.py)",
+      7
+    ],
+    [
+      "set_mamba_track_indices_from_reqs (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      6
+    ],
+    [
+      "_publish_parent_pressure_candidates (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      6
+    ],
+    [
+      "_session_ref_eviction_strategy (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/full.py)",
+      6
+    ],
+    [
+      "set_last_decode_finish_time (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/req_time_stats.py)",
+      6
+    ],
+    [
+      "_prefill_causal_ranks (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      6
+    ],
+    [
+      "_compute_mrope_positions_decode (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/forward_batch_info.py)",
+      6
+    ],
+    [
+      "_init_track_ssm_indices (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      5
+    ],
+    [
+      "__call__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/jit_executor.py)",
+      5
+    ],
+    [
+      "_get_invoke_packed_args (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/jit_executor.py)",
+      5
+    ],
+    [
+      "select_native_prefill_candidates (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_admission.py)",
+      5
+    ],
+    [
+      "wrapper (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/scheduler_stage_metrics.py)",
+      5
+    ],
+    [
+      "_unified_attention_with_output_impl (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/radix_attention.py)",
+      5
+    ],
+    [
+      "set_raw (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/utils/gauge_histogram.py)",
+      5
+    ],
+    [
+      "encode (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/json/encoder.py)",
+      5
+    ],
+    [
+      "_foreach_copy (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/cuda_graph_buffer_registry.py)",
+      5
+    ],
+    [
+      "_match_post_processor (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      5
+    ],
+    [
+      "_write (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_opportunity_telemetry.py)",
+      5
+    ],
+    [
+      "prepare_for_decode (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      5
+    ],
+    [
+      "capture_action_local_shadow (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      5
+    ],
+    [
+      "prepare_for_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      5
+    ],
+    [
+      "synchronize (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/streams.py)",
+      5
+    ],
+    [
+      "is_prefix_at (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      5
+    ],
+    [
+      "forward (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/sampler.py)",
+      5
+    ],
+    [
+      "_iterencode_dict (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/json/encoder.py)",
+      5
+    ],
+    [
+      "_deserialize (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/zmq/sugar/socket.py)",
+      5
+    ],
+    [
+      "alloc_for_decode (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocation.py)",
+      5
+    ],
+    [
+      "__c_pointers__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/typing.py)",
+      5
+    ],
+    [
+      "event_loop_overlap (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      4
+    ],
+    [
+      "load_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py)",
+      4
+    ],
+    [
+      "iterencode (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/json/encoder.py)",
+      4
+    ],
+    [
+      "_write_context_prefix (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      4
+    ],
+    [
+      "_convert_python_pointer_arg (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/jit_executor.py)",
+      4
+    ],
+    [
+      "admission_rank (/home/longhao/experiment/BeliefKV/beliefkv/policy/causal_frontier.py)",
+      4
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/cute/runtime.py)",
+      4
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/reduction.py)",
+      4
+    ],
+    [
+      "get_next_batch_to_run (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      4
+    ],
+    [
+      "_update_best_if_valid (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      4
+    ],
+    [
+      "_namespace_bytes (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      4
+    ],
+    [
+      "_make_owning_c_pointer (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/typing.py)",
+      4
+    ],
+    [
+      "_static_full_mamba_pool_geometry (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      4
+    ],
+    [
+      "run_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      4
+    ],
+    [
+      "grid (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/fla/l2norm.py)",
+      4
+    ],
+    [
+      "cached_compile (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/custom_compile_cache.py)",
+      4
+    ],
+    [
+      "load_dltensor (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/cute/runtime.py)",
+      4
+    ],
+    [
+      "_log_gauge (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/metrics_collector.py)",
+      4
+    ],
+    [
+      "init_new (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/forward_batch_info.py)",
+      4
+    ],
+    [
+      "cache_unfinished_req (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      4
+    ],
+    [
+      "get_c_pointers (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/typing.py)",
+      4
+    ],
+    [
+      "filter_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/sampling/sampling_batch_info.py)",
+      4
+    ],
+    [
+      "__hash__ (<string>)",
+      4
+    ],
+    [
+      "to_payload (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      4
+    ],
+    [
+      "__getstate__ (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/req_time_stats.py)",
+      4
+    ],
+    [
+      "labels (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/prometheus_client/metrics.py)",
+      4
+    ],
+    [
+      "at_layer_idx (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      4
+    ],
+    [
+      "_checkpoint_paths (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      4
+    ],
+    [
+      "dumps (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/json/__init__.py)",
+      3
+    ],
+    [
+      "get_loads (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/load_inquirer.py)",
+      3
+    ],
+    [
+      "_get_pruned_states (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/logits_processor.py)",
+      3
+    ],
+    [
+      "plan_native_prefill (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "alloc (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      3
+    ],
+    [
+      "publish (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/overlap_utils.py)",
+      3
+    ],
+    [
+      "copy (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      3
+    ],
+    [
+      "_stream_output_generation (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      3
+    ],
+    [
+      "_init_full_cg_decode_metadata (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/flashattention_backend.py)",
+      3
+    ],
+    [
+      "_async_d2h (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/utils.py)",
+      3
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      3
+    ],
+    [
+      "seqlen (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      3
+    ],
+    [
+      "_key_path_tokens (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      3
+    ],
+    [
+      "_evict_device_start (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/full.py)",
+      3
+    ],
+    [
+      "<dictcomp> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "forward_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      3
+    ],
+    [
+      "snapshot_latest_session_leaf_anchors (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py)",
+      3
+    ],
+    [
+      "_clear_semantic_invocation (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "get_cp_strategy (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/cp/base.py)",
+      3
+    ],
+    [
+      "from_dict (/home/longhao/experiment/BeliefKV/beliefkv/core/events.py)",
+      3
+    ],
+    [
+      "flatten_arrays_to_pinned_cpu (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/utils/common.py)",
+      3
+    ],
+    [
+      "filter_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      3
+    ],
+    [
+      "acquire_component_lock (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/full.py)",
+      3
+    ],
+    [
+      "finish (/home/longhao/experiment/BeliefKV/beliefkv/runtime/hotpath_timing.py)",
+      3
+    ],
+    [
+      "cache_finished_req (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      3
+    ],
+    [
+      "get (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/queue.py)",
+      3
+    ],
+    [
+      "_live_parent_pressure_key (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "_sample_h2d_opportunities (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "can_implement (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/delta_rule_sm90.py)",
+      3
+    ],
+    [
+      "run (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/compiler/compiler.py)",
+      3
+    ],
+    [
+      "_store_kv_layer (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      3
+    ],
+    [
+      "snapshot_session_anchors (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "prepare_for_caching_req (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/mamba.py)",
+      3
+    ],
+    [
+      "flash_attn_with_kvcache (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/sgl_kernel/flash_attn.py)",
+      3
+    ],
+    [
+      "forward (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      3
+    ],
+    [
+      "_sync_hicache_ready_counts (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      3
+    ],
+    [
+      "stash (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/overlap_utils.py)",
+      3
+    ],
+    [
+      "flash_attn_with_kvcache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/flash_attention_v3.py)",
+      3
+    ],
+    [
+      "<genexpr> (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/dataclasses.py)",
+      3
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      3
+    ],
+    [
+      "_handle (/home/longhao/experiment/BeliefKV/beliefkv/runtime/event_channel.py)",
+      3
+    ],
+    [
+      "_waiting_context_keys (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "_init_track_conv_indices (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      2
+    ],
+    [
+      "trace_slice (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/req_time_stats.py)",
+      2
+    ],
+    [
+      "<genexpr> (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/prometheus_client/metrics.py)",
+      2
+    ],
+    [
+      "fields (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/dataclasses.py)",
+      2
+    ],
+    [
+      "transfer_hicache_all_layer_staged_lf_pf (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/kvcache/hicache.py)",
+      2
+    ],
+    [
+      "live (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_prediction.py)",
+      2
+    ],
+    [
+      "_normalize_decode_outputs (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/batch_result_processor.py)",
+      2
+    ],
+    [
+      "write (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      2
+    ],
+    [
+      "_record_wait_prefetch_plan (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "send_output (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/output_sender.py)",
+      2
+    ],
+    [
+      "child_key_at (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      2
+    ],
+    [
+      "poll (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/popen_fork.py)",
+      2
+    ],
+    [
+      "inspect_session_h2d_opportunity (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      2
+    ],
+    [
+      "is_decode (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/forward_batch_info.py)",
+      2
+    ],
+    [
+      "_grouped_foreach_copy_ (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/cuda_graph_buffer_registry.py)",
+      2
+    ],
+    [
+      "_feed (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/queues.py)",
+      2
+    ],
+    [
+      "_refresh_prefetch_service_leases (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "get_paged_mha_kv_cache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/flashattention_backend.py)",
+      2
+    ],
+    [
+      "<listcomp> (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/jit_executor.py)",
+      2
+    ],
+    [
+      "record_batch_in_overlap (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      2
+    ],
+    [
+      "_maybe_collect_customized_info (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/batch_result_processor.py)",
+      2
+    ],
+    [
+      "alloc_for_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocation.py)",
+      2
+    ],
+    [
+      "_positive (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      2
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      2
+    ],
+    [
+      "_is_owned (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/threading.py)",
+      2
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      2
+    ],
+    [
+      "send_bytes (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/connection.py)",
+      2
+    ],
+    [
+      "_read_request_reentry (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "_call_impl (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/nn/modules/module.py)",
+      2
+    ],
+    [
+      "process_batch_result (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      2
+    ],
+    [
+      "_replay_metadata (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      2
+    ],
+    [
+      "on_events (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "_set_kv_buffer_impl (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      2
+    ],
+    [
+      "<listcomp> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/forward_batch_info.py)",
+      2
+    ],
+    [
+      "_request_token_array (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      2
+    ],
+    [
+      "_common_array_prefix (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      2
+    ],
+    [
+      "_prefetch_slot_available (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "native_residency_budget (/home/longhao/experiment/BeliefKV/beliefkv/runtime/native_transfer_policy.py)",
+      2
+    ],
+    [
+      "_join_parent_key (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "init_incremental_detokenize (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      2
+    ],
+    [
+      "set_kv_buffer (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      2
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      2
+    ],
+    [
+      "_compute_mrope_positions_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/forward_batch_info.py)",
+      2
+    ],
+    [
+      "<listcomp> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      2
+    ],
+    [
+      "inc (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/prometheus_client/metrics.py)",
+      2
+    ],
+    [
+      "normalize_native_creation_time (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      2
+    ],
+    [
+      "scheduler_step (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "build_replay_fb_view (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py)",
+      2
+    ],
+    [
+      "_is_device_leaf (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      2
+    ],
+    [
+      "_track_terminal_cache (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "_zero_padded_pcg_tail (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/radix_attention.py)",
+      2
+    ],
+    [
+      "get_fill_ids (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      2
+    ],
+    [
+      "get (<frozen _collections_abc>)",
+      2
+    ],
+    [
+      "manual_cache_key (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/custom_compile_cache.py)",
+      2
+    ],
+    [
+      "set (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/prometheus_client/metrics.py)",
+      2
+    ],
+    [
+      "alloc_rows (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      2
+    ],
+    [
+      "maybe_build_flashinfer_checkpoint_plan (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py)",
+      2
+    ],
+    [
+      "_live_parent_capacity_handoff (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "causal_conv1d_fn (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/mamba/causal_conv1d.py)",
+      2
+    ],
+    [
+      "from_dlpack (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/cute/runtime.py)",
+      2
+    ],
+    [
+      "resolve_forward_inputs (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/overlap_utils.py)",
+      2
+    ],
+    [
+      "_get_device_attr (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_utils.py)",
+      2
+    ],
+    [
+      "donate_mamba_ping_pong_slot (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      2
+    ],
+    [
+      "replace (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/dataclasses.py)",
+      1
+    ],
+    [
+      "_accept_tool_wait (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "_allocate_token_bitmask (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/constrained/xgrammar_backend.py)",
+      1
+    ],
+    [
+      "__getitem__ (<frozen os>)",
+      1
+    ],
+    [
+      "_refresh_live_wait_hint (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "is_disable_overlap_for_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1
+    ],
+    [
+      "available_size (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/mamba.py)",
+      1
+    ],
+    [
+      "free_mamba_cache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      1
+    ],
+    [
+      "drive_host_eviction (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "_write_block_eviction (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "forward (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/models/qwen3_vl.py)",
+      1
+    ],
+    [
+      "<genexpr> (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/varlen_helper.py)",
+      1
+    ],
+    [
+      "swa_reprefill_tail_tokens (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      1
+    ],
+    [
+      "__get__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/functools.py)",
+      1
+    ],
+    [
+      "__check_for_pid_change (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/prometheus_client/values.py)",
+      1
+    ],
+    [
+      "_copy_output (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py)",
+      1
+    ],
+    [
+      "_namespace_digest (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "all_reduce (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/distributed/distributed_c10d.py)",
+      1
+    ],
+    [
+      "_c_pointers (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/typing.py)",
+      1
+    ],
+    [
+      "__init__ (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "_log_hicache_stats (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/metrics_reporter.py)",
+      1
+    ],
+    [
+      "<lambda> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1
+    ],
+    [
+      "_maybe_update_local_attn_metadata_for_replay (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/flashattention_backend.py)",
+      1
+    ],
+    [
+      "record_host_pool_usage (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "_release_curve (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_prediction.py)",
+      1
+    ],
+    [
+      "merge_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "_get_device_index (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/_utils.py)",
+      1
+    ],
+    [
+      "cp_parallelism_threshold_host (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/varlen_helper.py)",
+      1
+    ],
+    [
+      "_unwrap_if_constexpr (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/language/core.py)",
+      1
+    ],
+    [
+      "_copy_logits_to_buffer (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/logits_processor.py)",
+      1
+    ],
+    [
+      "_drain_host_frees (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      1
+    ],
+    [
+      "is_scripting (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_jit_internal.py)",
+      1
+    ],
+    [
+      "init_next_round_input (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "free (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/mamba.py)",
+      1
+    ],
+    [
+      "_send (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/connection.py)",
+      1
+    ],
+    [
+      "info (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/logging/__init__.py)",
+      1
+    ],
+    [
+      "push_user_annotation (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/profiler/_cupti_monitor.py)",
+      1
+    ],
+    [
+      "record_event (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/streams.py)",
+      1
+    ],
+    [
+      "_current_residency_budget (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "get_world_size (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/distributed/distributed_c10d.py)",
+      1
+    ],
+    [
+      "reset_node_mru (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "finished (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "replace (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/pathlib.py)",
+      1
+    ],
+    [
+      "<dictcomp> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/hotpath_timing.py)",
+      1
+    ],
+    [
+      "launch_batch_sample_if_needed (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1
+    ],
+    [
+      "get_and_increase_time_counter (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/base.py)",
+      1
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "_recv (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/connection.py)",
+      1
+    ],
+    [
+      "_poll_restore_wait (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "get_batch_return_hidden_states_mode (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_predictor_worker.py)",
+      1
+    ],
+    [
+      "_causal_rank (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "match (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      1
+    ],
+    [
+      "record (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/streams.py)",
+      1
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1
+    ],
+    [
+      "_named (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      1
+    ],
+    [
+      "current_device (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/__init__.py)",
+      1
+    ],
+    [
+      "free_kv_row (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/base_prefix_cache.py)",
+      1
+    ],
+    [
+      "_is_host_leaf (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "grid (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/mamba/causal_conv1d_triton.py)",
+      1
+    ],
+    [
+      "_record_scheduler_time (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/metrics_reporter.py)",
+      1
+    ],
+    [
+      "is_available (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/__init__.py)",
+      1
+    ],
+    [
+      "_get_available_device_type (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_utils.py)",
+      1
+    ],
+    [
+      "get_disagg (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/runtime_context.py)",
+      1
+    ],
+    [
+      "inspect_context_h2d_opportunity (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "__exit__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/threading.py)",
+      1
+    ],
+    [
+      "add_one_req (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_policy.py)",
+      1
+    ],
+    [
+      "residency_rank (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "write_cache_indices (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocation.py)",
+      1
+    ],
+    [
+      "flash_attn_with_kvcache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/flash_attention.py)",
+      1
+    ],
+    [
+      "general_mm_embed_routine (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/mm_utils.py)",
+      1
+    ],
+    [
+      "next_shadow_backup_step (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      1
+    ],
+    [
+      "dispatch_tool_prefetch (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "<lambda> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "fused_replay_state_indices (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/mamba/mamba_state_indices_triton.py)",
+      1
+    ],
+    [
+      "schedulable_available_size (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/mamba.py)",
+      1
+    ],
+    [
+      "finalize_match_result_in_cache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/mamba.py)",
+      1
+    ],
+    [
+      "raw_decode (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/json/decoder.py)",
+      1
+    ],
+    [
+      "__new__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/enum.py)",
+      1
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_prediction.py)",
+      1
+    ],
+    [
+      "__exit__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/selectors.py)",
+      1
+    ],
+    [
+      "_get_running_request_total_token_offset (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_policy.py)",
+      1
+    ],
+    [
+      "_live_tool_hint (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "observe (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/prometheus_client/metrics.py)",
+      1
+    ],
+    [
+      "mamba2_layer_cache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      1
+    ],
+    [
+      "_observe_prepare_opportunity (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "available_size (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      1
+    ],
+    [
+      "wait (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/streams.py)",
+      1
+    ],
+    [
+      "<dictcomp> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/writer_timing.py)",
+      1
+    ],
+    [
+      "check_hicache_events (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      1
+    ],
+    [
+      "<listcomp> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "wait_stream (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/streams.py)",
+      1
+    ],
+    [
+      "set_schedule_time_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/req_time_stats.py)",
+      1
+    ],
+    [
+      "store_cache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/kvcache/kvcache.py)",
+      1
+    ],
+    [
+      "get_cached_tokens_details (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      1
+    ],
+    [
+      "_free_values (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      1
+    ],
+    [
+      "wrapper (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/utils/nvtx_utils.py)",
+      1
+    ],
+    [
+      "poll (/home/longhao/experiment/BeliefKV/beliefkv/runtime/semantic_report_worker.py)",
+      1
+    ],
+    [
+      "_evict (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      1
+    ],
+    [
+      "__len__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_tensor.py)",
+      1
+    ],
+    [
+      "redistribute_on_node_split (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/full.py)",
+      1
+    ],
+    [
+      "allocate_scratch (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/backends/nvidia/driver.py)",
+      1
+    ],
+    [
+      "_forward_isolation (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1
+    ],
+    [
+      "is_initialized (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/__init__.py)",
+      1
+    ],
+    [
+      "clamp_position_cuda (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/clamp_position.py)",
+      1
+    ],
+    [
+      "_raw_len (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      1
+    ],
+    [
+      "notify (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/threading.py)",
+      1
+    ],
+    [
+      "_collect_deferred_mamba_cow_and_clear (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "_maybe_log_time_stats (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      1
+    ],
+    [
+      "_apply_cuda_graph_metadata (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/flashattention_backend.py)",
+      1
+    ],
+    [
+      "increment_realtime_tokens (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/metrics_collector.py)",
+      1
+    ],
+    [
+      "_advance_insert (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "evicted (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "raw_token_ids (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      1
+    ],
+    [
+      "_log_gauge_queue_count (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/metrics_collector.py)",
+      1
+    ],
+    [
+      "_beliefkv_prefill_candidates (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1
+    ],
+    [
+      "parent (<frozen importlib._bootstrap>)",
+      1
+    ],
+    [
+      "_poll_semantic_reports (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "_mamba_radix_cache_v2_req_prepare_for_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "_submit_tool_wait (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "insert (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      1
+    ],
+    [
+      "log_stats (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/metrics_collector.py)",
+      1
+    ],
+    [
+      "pending_action_count (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      1
+    ],
+    [
+      "_observe_targeted_pair (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "init_new (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "update (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/collections/__init__.py)",
+      1
+    ],
+    [
+      "release_component_lock (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/full.py)",
+      1
+    ],
+    [
+      "graph_pool_replay_scope (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner_utils/pool.py)",
+      1
+    ],
+    [
+      "capture_pre_sample_logits (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/beam_search/logits_capture.py)",
+      1
+    ],
+    [
+      "merge_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/sampling/sampling_batch_info.py)",
+      1
+    ],
+    [
+      "free (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/token.py)",
+      1
+    ],
+    [
+      "_get_mamba_token_info (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/pool_stats_observer.py)",
+      1
+    ],
+    [
+      "__getattr__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/nn/modules/module.py)",
+      1
+    ],
+    [
+      "ancestors (/home/longhao/experiment/BeliefKV/beliefkv/control/causal_graph.py)",
+      1
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/forward_batch_info.py)",
+      1
+    ],
+    [
+      "_finish_write_through_ack (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      1
+    ],
+    [
+      "_update_evictable_leaf_sets (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "replay_fn (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py)",
+      1
+    ],
+    [
+      "begin (/home/longhao/experiment/BeliefKV/beliefkv/runtime/writer_timing.py)",
+      1
+    ],
+    [
+      "_forward_raw (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/model_runner.py)",
+      1
+    ],
+    [
+      "_ensure_not_terminal (/home/longhao/experiment/BeliefKV/beliefkv/control/causal_graph.py)",
+      1
+    ],
+    [
+      "available_size (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/token.py)",
+      1
+    ],
+    [
+      "<lambda> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/cuda_graph_buffer_registry.py)",
+      1
+    ],
+    [
+      "__new__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/streams.py)",
+      1
+    ],
+    [
+      "launch_metadata (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/compiler/compiler.py)",
+      1
+    ],
+    [
+      "_prefix_digests (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "_join_waiter_count (/home/longhao/experiment/BeliefKV/beliefkv/policy/causal_frontier.py)",
+      1
+    ],
+    [
+      "replay (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py)",
+      1
+    ],
+    [
+      "_touch_node (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "get_cached_compile (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/custom_compile_cache.py)",
+      1
+    ],
+    [
+      "to_record (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      1
+    ],
+    [
+      "_convert_token_to_id_with_added_voc (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/transformers/tokenization_utils_tokenizers.py)",
+      1
+    ],
+    [
+      "dispatch_join_prepare (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "_handle_finish_state_updated_req (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/batch_result_processor.py)",
+      1
+    ],
+    [
+      "append_beam_tail (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/beam_search/batch_tail.py)",
+      1
+    ],
+    [
+      "_wrapped_call_impl (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/nn/modules/module.py)",
+      1
+    ],
+    [
+      "dispatch_tool_prepare (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "get (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/environ.py)",
+      1
+    ],
+    [
+      "increment_prefill_cuda_graph_pass (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/metrics_collector.py)",
+      1
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/delta_rule_sm90.py)",
+      1
+    ],
+    [
+      "_new_node (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ]
+  ],
+  "inclusive_functions": [
+    [
+      "thread (1929664): MainThread",
+      1873
+    ],
+    [
+      "decorate_context (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/utils/_contextlib.py)",
+      1779
+    ],
+    [
+      "spawn_main (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/spawn.py)",
+      1779
+    ],
+    [
+      "run_event_loop (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1779
+    ],
+    [
+      "dispatch_event_loop (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1779
+    ],
+    [
+      "run_scheduler_process (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1779
+    ],
+    [
+      "event_loop_overlap (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1779
+    ],
+    [
+      "run (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/process.py)",
+      1779
+    ],
+    [
+      "_main (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/spawn.py)",
+      1779
+    ],
+    [
+      "<module> (<string>)",
+      1779
+    ],
+    [
+      "_bootstrap (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/process.py)",
+      1779
+    ],
+    [
+      "wrapper (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/scheduler_stage_metrics.py)",
+      1764
+    ],
+    [
+      "wrapper (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/utils/nvtx_utils.py)",
+      1757
+    ],
+    [
+      "run_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      972
+    ],
+    [
+      "forward_batch_generation (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/tp_worker.py)",
+      912
+    ],
+    [
+      "_forward_raw (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/model_runner.py)",
+      888
+    ],
+    [
+      "forward (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/model_runner.py)",
+      885
+    ],
+    [
+      "execute (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py)",
+      848
+    ],
+    [
+      "_call_impl (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/nn/modules/module.py)",
+      833
+    ],
+    [
+      "_wrapped_call_impl (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/nn/modules/module.py)",
+      833
+    ],
+    [
+      "forward (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/models/qwen3_vl.py)",
+      827
+    ],
+    [
+      "_execute_body_capture (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py)",
+      827
+    ],
+    [
+      "general_mm_embed_routine (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/mm_utils.py)",
+      823
+    ],
+    [
+      "replay (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py)",
+      820
+    ],
+    [
+      "replay_layer_forward (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py)",
+      820
+    ],
+    [
+      "replay (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner_backend/breakable_cuda_graph_backend.py)",
+      820
+    ],
+    [
+      "replay_fn (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py)",
+      794
+    ],
+    [
+      "__call__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_ops.py)",
+      792
+    ],
+    [
+      "forward_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      763
+    ],
+    [
+      "forward (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      761
+    ],
+    [
+      "_unified_linear_attention_with_output_impl (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/radix_linear_attention.py)",
+      756
+    ],
+    [
+      "_linear_attention_with_output_impl (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/radix_linear_attention.py)",
+      756
+    ],
+    [
+      "unified_linear_attention_with_output (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/radix_linear_attention.py)",
+      754
+    ],
+    [
+      "forward_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/gdn_backend.py)",
+      726
+    ],
+    [
+      "extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py)",
+      482
+    ],
+    [
+      "extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/gdn_backend.py)",
+      448
+    ],
+    [
+      "get_next_batch_to_run (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      444
+    ],
+    [
+      "measured (/home/longhao/experiment/BeliefKV/beliefkv/runtime/hotpath_timing.py)",
+      363
+    ],
+    [
+      "pop_and_process (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      340
+    ],
+    [
+      "process_batch_result (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      336
+    ],
+    [
+      "_auto_dump_wrapper (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/api_logging.py)",
+      271
+    ],
+    [
+      "chunk_gated_delta_rule (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_prefill.py)",
+      270
+    ],
+    [
+      "delta_rule_prefill_dsl_sm90 (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/delta_rule_sm90.py)",
+      244
+    ],
+    [
+      "get_new_batch_prefill (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      203
+    ],
+    [
+      "_get_new_batch_prefill_raw (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      203
+    ],
+    [
+      "_bootstrap (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/threading.py)",
+      200
+    ],
+    [
+      "run (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/threading.py)",
+      200
+    ],
+    [
+      "_bootstrap_inner (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/threading.py)",
+      200
+    ],
+    [
+      "<lambda> (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/runtime/jit.py)",
+      157
+    ],
+    [
+      "process_batch_result_decode (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/batch_result_processor.py)",
+      142
+    ],
+    [
+      "thread (1931019): native-reactive-audit",
+      139
+    ],
+    [
+      "_write (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      135
+    ],
+    [
+      "run (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/runtime/jit.py)",
+      131
+    ],
+    [
+      "gdn_prefill_qkv_prepare_fwd (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/fla/l2norm.py)",
+      115
+    ],
+    [
+      "_beliefkv_prefill_candidates (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      106
+    ],
+    [
+      "l2norm_fwd (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/fla/l2norm.py)",
+      105
+    ],
+    [
+      "encode_record (/home/longhao/experiment/BeliefKV/beliefkv/runtime/record_json.py)",
+      101
+    ],
+    [
+      "_beliefkv_on_batch_completed (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      99
+    ],
+    [
+      "__call__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/jit_executor.py)",
+      85
+    ],
+    [
+      "inspect_context_h2d_opportunity (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      82
+    ],
+    [
+      "inspect_session_h2d_opportunity (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      82
+    ],
+    [
+      "plan_native_prefill (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      80
+    ],
+    [
+      "observe_unified_node_closure (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      75
+    ],
+    [
+      "causal_conv1d_fn (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/mamba/causal_conv1d_triton.py)",
+      71
+    ],
+    [
+      "prepare_for_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      71
+    ],
+    [
+      "process_batch_result_prefill (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/batch_result_processor.py)",
+      71
+    ],
+    [
+      "scheduler_step (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      68
+    ],
+    [
+      "_evict (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      66
+    ],
+    [
+      "evict_for_alloc (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      65
+    ],
+    [
+      "_evict_components (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      65
+    ],
+    [
+      "evict_from_tree_cache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/common.py)",
+      64
+    ],
+    [
+      "fused_qkv_split_gdn_prefill (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/triton_gdn_fused_proj.py)",
+      64
+    ],
+    [
+      "capture_action_local_shadow (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      60
+    ],
+    [
+      "alloc_for_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocation.py)",
+      59
+    ],
+    [
+      "_roll_tool_prefetch (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      59
+    ],
+    [
+      "stream_output (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      59
+    ],
+    [
+      "_stream_output_generation (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      59
+    ],
+    [
+      "alloc_token_slots (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocation.py)",
+      57
+    ],
+    [
+      "dispatch_tool_prefetch (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      56
+    ],
+    [
+      "sample_runtime_observations (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      55
+    ],
+    [
+      "cache_unfinished_req (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      54
+    ],
+    [
+      "maybe_cache_unfinished_req (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/common.py)",
+      53
+    ],
+    [
+      "_execute_kv_backup (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      51
+    ],
+    [
+      "_execute_and_commit_kv_backup (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      51
+    ],
+    [
+      "_track_mamba_state_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      51
+    ],
+    [
+      "dispatch_join_prepare (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      49
+    ],
+    [
+      "update_running_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      49
+    ],
+    [
+      "generate_execution_args (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/jit_executor.py)",
+      49
+    ],
+    [
+      "evict_host (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      49
+    ],
+    [
+      "<listcomp> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/full.py)",
+      48
+    ],
+    [
+      "drive_host_eviction (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      48
+    ],
+    [
+      "drive_host_eviction (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/full.py)",
+      47
+    ],
+    [
+      "__call__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/backends/nvidia/driver.py)",
+      46
+    ],
+    [
+      "_write (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_opportunity_telemetry.py)",
+      46
+    ],
+    [
+      "thread (1931093): admission-opportunity",
+      46
+    ],
+    [
+      "drain (/home/longhao/experiment/BeliefKV/beliefkv/runtime/event_channel.py)",
+      45
+    ],
+    [
+      "on_batch_completed (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      44
+    ],
+    [
+      "_wait_prefetch_opportunity (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      43
+    ],
+    [
+      "insert (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      43
+    ],
+    [
+      "unified_attention_with_output (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/radix_attention.py)",
+      42
+    ],
+    [
+      "_advance_insert (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      42
+    ],
+    [
+      "begin_insert (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      42
+    ],
+    [
+      "_sample_h2d_opportunities (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      40
+    ],
+    [
+      "causal_conv1d_fn (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/mamba/causal_conv1d.py)",
+      40
+    ],
+    [
+      "_unified_attention_with_output_impl (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/radix_attention.py)",
+      40
+    ],
+    [
+      "_insert_walk_step (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      40
+    ],
+    [
+      "_session_ref_eviction_strategy (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/full.py)",
+      38
+    ],
+    [
+      "forward_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/flashattention_backend.py)",
+      37
+    ],
+    [
+      "execute (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py)",
+      37
+    ],
+    [
+      "_read_request_reentry (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      36
+    ],
+    [
+      "inspect_beliefkv_reentry (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      35
+    ],
+    [
+      "load_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py)",
+      34
+    ],
+    [
+      "fused_gdn_gating (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/fla/fused_gdn_gating.py)",
+      33
+    ],
+    [
+      "match_prefix (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      33
+    ],
+    [
+      "match_prefix (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      33
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      33
+    ],
+    [
+      "accept (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      30
+    ],
+    [
+      "_handle_finish_state_updated_req (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/batch_result_processor.py)",
+      30
+    ],
+    [
+      "on_launch (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      28
+    ],
+    [
+      "prepare_for_decode (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      28
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/typing.py)",
+      28
+    ],
+    [
+      "_handle (/home/longhao/experiment/BeliefKV/beliefkv/runtime/event_channel.py)",
+      27
+    ],
+    [
+      "replay (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/graphs.py)",
+      27
+    ],
+    [
+      "_match_prefix_helper (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      27
+    ],
+    [
+      "fill_from (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/cuda_graph_buffer_registry.py)",
+      27
+    ],
+    [
+      "run_compiled_program (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/jit_executor.py)",
+      27
+    ],
+    [
+      "__init__ (<string>)",
+      27
+    ],
+    [
+      "_write_block_request_probe (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      26
+    ],
+    [
+      "cache_finished_req (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      26
+    ],
+    [
+      "release_kv_cache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/common.py)",
+      26
+    ],
+    [
+      "session_ref (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/base.py)",
+      23
+    ],
+    [
+      "_record_terminal_cache (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      23
+    ],
+    [
+      "mark_layout_dynamic (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/cute/runtime.py)",
+      22
+    ],
+    [
+      "init_next_round_input (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      22
+    ],
+    [
+      "_prefill_causal_ranks (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      22
+    ],
+    [
+      "_copy_output (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py)",
+      21
+    ],
+    [
+      "mamba2_layer_cache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      21
+    ],
+    [
+      "<lambda> (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/delta_rule_sm90.py)",
+      21
+    ],
+    [
+      "send_output (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/output_sender.py)",
+      21
+    ],
+    [
+      "load_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py)",
+      20
+    ],
+    [
+      "dumps (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/json/__init__.py)",
+      20
+    ],
+    [
+      "on_events (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      20
+    ],
+    [
+      "sock_send (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/io_struct.py)",
+      20
+    ],
+    [
+      "send_pyobj (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/zmq/sugar/socket.py)",
+      20
+    ],
+    [
+      "_feed (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/queues.py)",
+      19
+    ],
+    [
+      "on_completed (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      19
+    ],
+    [
+      "_publish_parent_pressure_candidates (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      19
+    ],
+    [
+      "__call__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/runtime/jit.py)",
+      19
+    ],
+    [
+      "match_at (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      19
+    ],
+    [
+      "plan_prefetch_gpu_steps (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      18
+    ],
+    [
+      "__c_pointers__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/cute/runtime.py)",
+      18
+    ],
+    [
+      "_refreshed_shadow_backup_candidate (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      18
+    ],
+    [
+      "refreshed_shadow_backup_step (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      18
+    ],
+    [
+      "__len__ (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      17
+    ],
+    [
+      "init_new (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/forward_batch_info.py)",
+      17
+    ],
+    [
+      "report_prefill_stats (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/metrics_reporter.py)",
+      16
+    ],
+    [
+      "capture_shadow_candidate (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      16
+    ],
+    [
+      "missing_prepare_full_prefix_tokens (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      16
+    ],
+    [
+      "thread (1949527): QueueFeederThread",
+      15
+    ],
+    [
+      "log_stats (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/metrics_collector.py)",
+      15
+    ],
+    [
+      "check_decode_mem (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      15
+    ],
+    [
+      "check_decode_capacity (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/base.py)",
+      15
+    ],
+    [
+      "evict_to_free_tokens (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/base.py)",
+      15
+    ],
+    [
+      "dumps (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/reduction.py)",
+      14
+    ],
+    [
+      "_identity (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      14
+    ],
+    [
+      "update_finish_state (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      14
+    ],
+    [
+      "alloc_for_decode (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocation.py)",
+      14
+    ],
+    [
+      "init_forward_metadata_out_graph (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      14
+    ],
+    [
+      "_request_key (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_admission.py)",
+      14
+    ],
+    [
+      "terminal_waiting_request_ids (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      14
+    ],
+    [
+      "is_none (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/speculative/spec_info.py)",
+      14
+    ],
+    [
+      "dynamic_func (<string>)",
+      14
+    ],
+    [
+      "<setcomp> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      13
+    ],
+    [
+      "_write_block_eviction (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      13
+    ],
+    [
+      "_sample_terminal_cache (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      13
+    ],
+    [
+      "at_layer_idx (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      13
+    ],
+    [
+      "_track_terminal_cache (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      13
+    ],
+    [
+      "compute_cache_key (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/runtime/jit.py)",
+      13
+    ],
+    [
+      "__getitem__ (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      12
+    ],
+    [
+      "<listcomp> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      12
+    ],
+    [
+      "_terminal (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      12
+    ],
+    [
+      "set_kv_buffer (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      12
+    ],
+    [
+      "_write_context_prefix (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      11
+    ],
+    [
+      "__eq__ (<string>)",
+      11
+    ],
+    [
+      "select_native_prefill_candidates (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_admission.py)",
+      11
+    ],
+    [
+      "_check_token_based_finish (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      11
+    ],
+    [
+      "evict_device_start (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      11
+    ],
+    [
+      "evict_device_start (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/base.py)",
+      11
+    ],
+    [
+      "_evict_device_start (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/full.py)",
+      11
+    ],
+    [
+      "flash_attn_with_kvcache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/flash_attention.py)",
+      11
+    ],
+    [
+      "flash_attn_with_kvcache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/flash_attention_v3.py)",
+      11
+    ],
+    [
+      "sample (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/model_runner.py)",
+      10
+    ],
+    [
+      "_namespace_bytes (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      10
+    ],
+    [
+      "encode (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/json/encoder.py)",
+      10
+    ],
+    [
+      "_bounded (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      10
+    ],
+    [
+      "_compute_mrope_positions (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/forward_batch_info.py)",
+      10
+    ],
+    [
+      "_init_full_cg_decode_metadata (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/flashattention_backend.py)",
+      10
+    ],
+    [
+      "_prepare_forward_metadata_for_replay (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py)",
+      9
+    ],
+    [
+      "init_forward_metadata (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      9
+    ],
+    [
+      "init_forward_metadata (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/gdn_backend.py)",
+      9
+    ],
+    [
+      "_record_wait_prefetch_plan (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      9
+    ],
+    [
+      "finish (/home/longhao/experiment/BeliefKV/beliefkv/runtime/hotpath_timing.py)",
+      9
+    ],
+    [
+      "get_priority (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/evict_policy.py)",
+      9
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/compiler.py)",
+      9
+    ],
+    [
+      "_waiting_context_keys (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      8
+    ],
+    [
+      "alloc (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/token.py)",
+      8
+    ],
+    [
+      "current_stream (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/__init__.py)",
+      8
+    ],
+    [
+      "set_by_current_observations (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/utils/gauge_histogram.py)",
+      8
+    ],
+    [
+      "set_raw (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/utils/gauge_histogram.py)",
+      8
+    ],
+    [
+      "_audit_fork_safety (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/filelock/_api.py)",
+      8
+    ],
+    [
+      "set_last_decode_finish_time (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/req_time_stats.py)",
+      8
+    ],
+    [
+      "init_forward_metadata_out_graph (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/flashattention_backend.py)",
+      8
+    ],
+    [
+      "<listcomp> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      8
+    ],
+    [
+      "_call_fa3_kernel (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/flash_attention_v3.py)",
+      8
+    ],
+    [
+      "flash_attn_with_kvcache (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/sgl_kernel/flash_attn.py)",
+      8
+    ],
+    [
+      "_forward_isolation (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      7
+    ],
+    [
+      "_forward_metadata (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      7
+    ],
+    [
+      "forward (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/sampler.py)",
+      7
+    ],
+    [
+      "alloc_req_slots (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocation.py)",
+      7
+    ],
+    [
+      "reset_padding (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/cuda_graph_buffer_registry.py)",
+      7
+    ],
+    [
+      "ingest_requests (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      7
+    ],
+    [
+      "_grouped_foreach_copy_ (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/cuda_graph_buffer_registry.py)",
+      7
+    ],
+    [
+      "_apply_cuda_graph_metadata (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/flashattention_backend.py)",
+      7
+    ],
+    [
+      "_match_post_processor (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      7
+    ],
+    [
+      "<dictcomp> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      7
+    ],
+    [
+      "_store_kv_layer (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      7
+    ],
+    [
+      "record_batch_in_overlap (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      6
+    ],
+    [
+      "dispatch_tool_prepare (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      6
+    ],
+    [
+      "set_mamba_track_indices_from_reqs (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      6
+    ],
+    [
+      "alloc (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      6
+    ],
+    [
+      "_submit_tool_wait (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      6
+    ],
+    [
+      "publish (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/overlap_utils.py)",
+      6
+    ],
+    [
+      "_poll_semantic_reports (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      6
+    ],
+    [
+      "_namespace_digest (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      6
+    ],
+    [
+      "from_dict (/home/longhao/experiment/BeliefKV/beliefkv/core/events.py)",
+      6
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/event_channel.py)",
+      6
+    ],
+    [
+      "filter_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      6
+    ],
+    [
+      "_log_gauge (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/metrics_collector.py)",
+      6
+    ],
+    [
+      "__hash__ (<string>)",
+      6
+    ],
+    [
+      "update (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/collections/__init__.py)",
+      6
+    ],
+    [
+      "recv_pyobj (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/zmq/sugar/socket.py)",
+      6
+    ],
+    [
+      "_compute_mrope_positions_decode (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/forward_batch_info.py)",
+      6
+    ],
+    [
+      "_accept_tool_wait (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      5
+    ],
+    [
+      "_init_track_ssm_indices (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      5
+    ],
+    [
+      "launch_batch_sample_if_needed (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      5
+    ],
+    [
+      "_prefix_digests (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      5
+    ],
+    [
+      "_get_invoke_packed_args (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/jit_executor.py)",
+      5
+    ],
+    [
+      "get_attn_backend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/forward_context.py)",
+      5
+    ],
+    [
+      "inner (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/contextlib.py)",
+      5
+    ],
+    [
+      "labels (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/prometheus_client/metrics.py)",
+      5
+    ],
+    [
+      "_key_path_tokens (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      5
+    ],
+    [
+      "_write_status (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      5
+    ],
+    [
+      "_foreach_copy (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/cuda_graph_buffer_registry.py)",
+      5
+    ],
+    [
+      "grid (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/fla/l2norm.py)",
+      5
+    ],
+    [
+      "get_paged_mha_kv_cache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/flashattention_backend.py)",
+      5
+    ],
+    [
+      "cached_compile (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/custom_compile_cache.py)",
+      5
+    ],
+    [
+      "synchronize (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/streams.py)",
+      5
+    ],
+    [
+      "is_prefix_at (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      5
+    ],
+    [
+      "release_component_lock (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/full.py)",
+      5
+    ],
+    [
+      "dec_lock_ref (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      5
+    ],
+    [
+      "dec_lock_ref (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      5
+    ],
+    [
+      "_release_components (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      5
+    ],
+    [
+      "get_c_pointers (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/typing.py)",
+      5
+    ],
+    [
+      "_iterencode_dict (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/json/encoder.py)",
+      5
+    ],
+    [
+      "_deserialize (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/zmq/sugar/socket.py)",
+      5
+    ],
+    [
+      "residency_rank (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      5
+    ],
+    [
+      "prepare_for_caching_req (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/mamba.py)",
+      5
+    ],
+    [
+      "from_dlpack (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/cute/runtime.py)",
+      5
+    ],
+    [
+      "__c_pointers__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/typing.py)",
+      5
+    ],
+    [
+      "get (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/environ.py)",
+      4
+    ],
+    [
+      "forward (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/logits_processor.py)",
+      4
+    ],
+    [
+      "iterencode (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/json/encoder.py)",
+      4
+    ],
+    [
+      "_convert_python_pointer_arg (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/jit_executor.py)",
+      4
+    ],
+    [
+      "copy (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      4
+    ],
+    [
+      "admission_rank (/home/longhao/experiment/BeliefKV/beliefkv/policy/causal_frontier.py)",
+      4
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/cute/runtime.py)",
+      4
+    ],
+    [
+      "thread (1964327): QueueFeederThread",
+      4
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/reduction.py)",
+      4
+    ],
+    [
+      "_update_best_if_valid (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      4
+    ],
+    [
+      "_make_owning_c_pointer (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/typing.py)",
+      4
+    ],
+    [
+      "_static_full_mamba_pool_geometry (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      4
+    ],
+    [
+      "merge_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      4
+    ],
+    [
+      "load_dltensor (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/cute/runtime.py)",
+      4
+    ],
+    [
+      "<listcomp> (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/jit_executor.py)",
+      4
+    ],
+    [
+      "inc_lock_ref (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      4
+    ],
+    [
+      "_compute_scheduler_metadata (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/flashattention_backend.py)",
+      4
+    ],
+    [
+      "get_scheduler_metadata (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/sgl_kernel/flash_attn.py)",
+      4
+    ],
+    [
+      "_live_parent_pressure_key (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      4
+    ],
+    [
+      "match (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      4
+    ],
+    [
+      "_set_kv_buffer_impl (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      4
+    ],
+    [
+      "_update_evictable_leaf_sets (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      4
+    ],
+    [
+      "run (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/compiler/compiler.py)",
+      4
+    ],
+    [
+      "filter_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/sampling/sampling_batch_info.py)",
+      4
+    ],
+    [
+      "_pull_raw_reqs (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/request_receiver.py)",
+      4
+    ],
+    [
+      "sock_recv (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/io_struct.py)",
+      4
+    ],
+    [
+      "recv_requests (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/request_receiver.py)",
+      4
+    ],
+    [
+      "to_payload (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      4
+    ],
+    [
+      "__getstate__ (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/req_time_stats.py)",
+      4
+    ],
+    [
+      "check_hicache_events (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      4
+    ],
+    [
+      "_checkpoint_paths (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      4
+    ],
+    [
+      "exit (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/scheduler_stage_metrics.py)",
+      3
+    ],
+    [
+      "get_loads (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/load_inquirer.py)",
+      3
+    ],
+    [
+      "publish_load_snapshot (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      3
+    ],
+    [
+      "get (<frozen _collections_abc>)",
+      3
+    ],
+    [
+      "_get_pruned_states (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/logits_processor.py)",
+      3
+    ],
+    [
+      "launch_metadata (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/compiler/compiler.py)",
+      3
+    ],
+    [
+      "_compute_mrope_positions_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/forward_batch_info.py)",
+      3
+    ],
+    [
+      "write (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      3
+    ],
+    [
+      "copy_to_cpu (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/utils.py)",
+      3
+    ],
+    [
+      "_async_d2h (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/utils.py)",
+      3
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      3
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/load_inquirer.py)",
+      3
+    ],
+    [
+      "seqlen (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      3
+    ],
+    [
+      "process_input_requests (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      3
+    ],
+    [
+      "_convert_python_scalar (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/runtime/jit_arg_adapters.py)",
+      3
+    ],
+    [
+      "__enter__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/__init__.py)",
+      3
+    ],
+    [
+      "poll (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_predictor_worker.py)",
+      3
+    ],
+    [
+      "_refresh_prefetch_service_leases (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "snapshot_latest_session_leaf_anchors (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py)",
+      3
+    ],
+    [
+      "_clear_semantic_invocation (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "__exit__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/threading.py)",
+      3
+    ],
+    [
+      "get_cp_strategy (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/cp/base.py)",
+      3
+    ],
+    [
+      "resolve_forward_inputs (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/overlap_utils.py)",
+      3
+    ],
+    [
+      "flatten_arrays_to_pinned_cpu (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/utils/common.py)",
+      3
+    ],
+    [
+      "acquire_component_lock (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/full.py)",
+      3
+    ],
+    [
+      "__len__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_tensor.py)",
+      3
+    ],
+    [
+      "get (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/queue.py)",
+      3
+    ],
+    [
+      "report_decode_stats (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/metrics_reporter.py)",
+      3
+    ],
+    [
+      "_prune_parent_pressure_candidates (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "_replay_metadata (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      3
+    ],
+    [
+      "replay (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner_backend/full_cuda_graph_backend.py)",
+      3
+    ],
+    [
+      "copy_mamba_state (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      3
+    ],
+    [
+      "fused_copy_conv_slots (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/mamba_slot_fused.py)",
+      3
+    ],
+    [
+      "_maybe_execute_deferred_mamba_cow_and_clear (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/model_runner.py)",
+      3
+    ],
+    [
+      "copy_from (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      3
+    ],
+    [
+      "native_residency_budget (/home/longhao/experiment/BeliefKV/beliefkv/runtime/native_transfer_policy.py)",
+      3
+    ],
+    [
+      "evicted (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      3
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/collections/__init__.py)",
+      3
+    ],
+    [
+      "_local_frontier_features (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "_dec_req_lock (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      3
+    ],
+    [
+      "can_implement (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/delta_rule_sm90.py)",
+      3
+    ],
+    [
+      "_get_current_device_index (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_utils.py)",
+      3
+    ],
+    [
+      "_get_device_attr (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_utils.py)",
+      3
+    ],
+    [
+      "snapshot_session_anchors (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "__enter__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/contextlib.py)",
+      3
+    ],
+    [
+      "__getattr__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/nn/modules/module.py)",
+      3
+    ],
+    [
+      "_sync_hicache_ready_counts (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      3
+    ],
+    [
+      "update_after_decode (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/model_runner_components/ngram_embedding_manager.py)",
+      3
+    ],
+    [
+      "stash (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/overlap_utils.py)",
+      3
+    ],
+    [
+      "<genexpr> (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/dataclasses.py)",
+      3
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      3
+    ],
+    [
+      "replace (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/dataclasses.py)",
+      2
+    ],
+    [
+      "_init_track_conv_indices (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      2
+    ],
+    [
+      "trace_slice (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/req_time_stats.py)",
+      2
+    ],
+    [
+      "sample_batch_func (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/tp_worker.py)",
+      2
+    ],
+    [
+      "<genexpr> (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/prometheus_client/metrics.py)",
+      2
+    ],
+    [
+      "_trace_e2e_sampler (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/sampler.py)",
+      2
+    ],
+    [
+      "fields (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/dataclasses.py)",
+      2
+    ],
+    [
+      "_get_mamba_token_info (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/pool_stats_observer.py)",
+      2
+    ],
+    [
+      "backup_from_device_all_layer (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/pool_host/mha.py)",
+      2
+    ],
+    [
+      "start_writing (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/cache_controller.py)",
+      2
+    ],
+    [
+      "submit_device_to_host (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/l2_transfer.py)",
+      2
+    ],
+    [
+      "write (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py)",
+      2
+    ],
+    [
+      "transfer_hicache_all_layer_staged_lf_pf (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/kvcache/hicache.py)",
+      2
+    ],
+    [
+      "live (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_prediction.py)",
+      2
+    ],
+    [
+      "_normalize_decode_outputs (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/batch_result_processor.py)",
+      2
+    ],
+    [
+      "parent (<frozen importlib._bootstrap>)",
+      2
+    ],
+    [
+      "__get__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/functools.py)",
+      2
+    ],
+    [
+      "remaining_quantile (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_prediction.py)",
+      2
+    ],
+    [
+      "_log_gauge_queue_count (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/metrics_collector.py)",
+      2
+    ],
+    [
+      "child_key_at (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      2
+    ],
+    [
+      "poll (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/popen_fork.py)",
+      2
+    ],
+    [
+      "finished (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      2
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      2
+    ],
+    [
+      "is_decode (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/forward_batch_info.py)",
+      2
+    ],
+    [
+      "_c_pointers (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/typing.py)",
+      2
+    ],
+    [
+      "get_cached_tokens_details (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      2
+    ],
+    [
+      "_evict_device_next_node (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      2
+    ],
+    [
+      "_maybe_collect_customized_info (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/batch_result_processor.py)",
+      2
+    ],
+    [
+      "_positive (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      2
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      2
+    ],
+    [
+      "_is_owned (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/threading.py)",
+      2
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      2
+    ],
+    [
+      "get_and_increase_time_counter (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/base.py)",
+      2
+    ],
+    [
+      " (exec:-76619184)",
+      2
+    ],
+    [
+      "send_bytes (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/connection.py)",
+      2
+    ],
+    [
+      "<listcomp> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/forward_batch_info.py)",
+      2
+    ],
+    [
+      "_request_token_array (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      2
+    ],
+    [
+      "_common_array_prefix (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      2
+    ],
+    [
+      "_prefetch_slot_available (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "get_disagg (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/runtime_context.py)",
+      2
+    ],
+    [
+      "_join_parent_key (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "init_incremental_detokenize (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      2
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      2
+    ],
+    [
+      "publish_kv_events (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/kv_events_publisher.py)",
+      2
+    ],
+    [
+      "_observe_prepare_opportunity (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "<listcomp> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      2
+    ],
+    [
+      "_finalize_shm_features (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/request_receiver.py)",
+      2
+    ],
+    [
+      "increment_decode_cuda_graph_pass (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/metrics_collector.py)",
+      2
+    ],
+    [
+      "inc (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/prometheus_client/metrics.py)",
+      2
+    ],
+    [
+      "normalize_native_creation_time (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      2
+    ],
+    [
+      "_live_tool_hint (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "build_replay_fb_view (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py)",
+      2
+    ],
+    [
+      "_is_device_leaf (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      2
+    ],
+    [
+      "<listcomp> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      2
+    ],
+    [
+      "wait_stream (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/streams.py)",
+      2
+    ],
+    [
+      "inc_lock_ref (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      2
+    ],
+    [
+      "__new__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/streams.py)",
+      2
+    ],
+    [
+      "_zero_padded_pcg_tail (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/radix_attention.py)",
+      2
+    ],
+    [
+      "raw_token_ids (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      2
+    ],
+    [
+      "get_fill_ids (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      2
+    ],
+    [
+      "begin (/home/longhao/experiment/BeliefKV/beliefkv/runtime/writer_timing.py)",
+      2
+    ],
+    [
+      "manual_cache_key (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/custom_compile_cache.py)",
+      2
+    ],
+    [
+      "__get__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/enum.py)",
+      2
+    ],
+    [
+      "set (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/prometheus_client/metrics.py)",
+      2
+    ],
+    [
+      "alloc_rows (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      2
+    ],
+    [
+      "_mamba_radix_cache_v2_req_prepare_for_extend (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      2
+    ],
+    [
+      "maybe_build_flashinfer_checkpoint_plan (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py)",
+      2
+    ],
+    [
+      "_live_parent_capacity_handoff (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "cleanup_after_caching_req (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/mamba.py)",
+      2
+    ],
+    [
+      "_semantic_transfer_target_ready (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "_join_waiter_count (/home/longhao/experiment/BeliefKV/beliefkv/policy/causal_frontier.py)",
+      2
+    ],
+    [
+      "donate_mamba_ping_pong_slot (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      2
+    ],
+    [
+      "allocate_vocab_mask (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/constrained/reasoner_grammar_backend.py)",
+      1
+    ],
+    [
+      "update_regex_vocab_mask (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/sampling/sampling_batch_info.py)",
+      1
+    ],
+    [
+      "_preprocess_logits (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/model_runner.py)",
+      1
+    ],
+    [
+      "_allocate_token_bitmask (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/constrained/xgrammar_backend.py)",
+      1
+    ],
+    [
+      "allocate_vocab_mask (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/constrained/xgrammar_backend.py)",
+      1
+    ],
+    [
+      "_resolve_default (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/environ.py)",
+      1
+    ],
+    [
+      "__getitem__ (<frozen os>)",
+      1
+    ],
+    [
+      "_refresh_live_wait_hint (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "is_disable_overlap_for_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1
+    ],
+    [
+      "get_prefill_usage_msg_parts (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/pool_stats_observer.py)",
+      1
+    ],
+    [
+      "available_size (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/mamba.py)",
+      1
+    ],
+    [
+      "free_mamba_cache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      1
+    ],
+    [
+      "config_bag (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/runtime_context.py)",
+      1
+    ],
+    [
+      "get_exec (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/runtime_context.py)",
+      1
+    ],
+    [
+      "<genexpr> (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/varlen_helper.py)",
+      1
+    ],
+    [
+      "swa_reprefill_tail_tokens (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      1
+    ],
+    [
+      "__check_for_pid_change (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/prometheus_client/values.py)",
+      1
+    ],
+    [
+      "_profile_batch_predicate (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/profiler_manager.py)",
+      1
+    ],
+    [
+      "_resident_prefill_scan (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "is_alive (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/process.py)",
+      1
+    ],
+    [
+      "_semantic_key_live (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "all_reduce (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/distributed/distributed_c10d.py)",
+      1
+    ],
+    [
+      "wrapper (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/distributed/c10d_logger.py)",
+      1
+    ],
+    [
+      "__init__ (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "__call__ (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/utils.py)",
+      1
+    ],
+    [
+      "handle_generate_request (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1
+    ],
+    [
+      "_log_hicache_stats (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/metrics_reporter.py)",
+      1
+    ],
+    [
+      "_maybe_update_reasoning_tokens (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/batch_result_processor.py)",
+      1
+    ],
+    [
+      "<lambda> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1
+    ],
+    [
+      "_maybe_update_local_attn_metadata_for_replay (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/flashattention_backend.py)",
+      1
+    ],
+    [
+      "record_host_pool_usage (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "_record_native_final_body (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "_release_curve (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_prediction.py)",
+      1
+    ],
+    [
+      "get_num_allocatable_reqs (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1
+    ],
+    [
+      "_get_device_index (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/_utils.py)",
+      1
+    ],
+    [
+      "cp_parallelism_threshold_host (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/varlen_helper.py)",
+      1
+    ],
+    [
+      "_unwrap_if_constexpr (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/language/core.py)",
+      1
+    ],
+    [
+      "__call__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/knobs.py)",
+      1
+    ],
+    [
+      "_prefill_forward_context (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py)",
+      1
+    ],
+    [
+      "__exit__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/contextlib.py)",
+      1
+    ],
+    [
+      "_copy_logits_to_buffer (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/logits_processor.py)",
+      1
+    ],
+    [
+      "_get_logits (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/logits_processor.py)",
+      1
+    ],
+    [
+      "evict_device_next_node (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "_drain_host_frees (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      1
+    ],
+    [
+      "is_scripting (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_jit_internal.py)",
+      1
+    ],
+    [
+      "free (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/mamba.py)",
+      1
+    ],
+    [
+      "wait (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/threading.py)",
+      1
+    ],
+    [
+      "_send (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/connection.py)",
+      1
+    ],
+    [
+      "_send_bytes (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/connection.py)",
+      1
+    ],
+    [
+      "_index_length (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      1
+    ],
+    [
+      "info (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/logging/__init__.py)",
+      1
+    ],
+    [
+      "push_user_annotation (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/profiler/_cupti_monitor.py)",
+      1
+    ],
+    [
+      "record_event (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/streams.py)",
+      1
+    ],
+    [
+      "_current_residency_budget (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "get_world_size (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/distributed/distributed_c10d.py)",
+      1
+    ],
+    [
+      "_pp_sync (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      1
+    ],
+    [
+      "reset_node_mru (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "value (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/enum.py)",
+      1
+    ],
+    [
+      "replace (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/pathlib.py)",
+      1
+    ],
+    [
+      "snapshot (/home/longhao/experiment/BeliefKV/beliefkv/runtime/hotpath_timing.py)",
+      1
+    ],
+    [
+      "<dictcomp> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/hotpath_timing.py)",
+      1
+    ],
+    [
+      "_record_runtime_state (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "get (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/queues.py)",
+      1
+    ],
+    [
+      "_recv (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/connection.py)",
+      1
+    ],
+    [
+      "_recv_bytes (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/connection.py)",
+      1
+    ],
+    [
+      "_poll_restore_wait (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "get_batch_return_hidden_states_mode (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "decay_step (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/new_token_ratio_tracker.py)",
+      1
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_predictor_worker.py)",
+      1
+    ],
+    [
+      "_causal_rank (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "_resolve_lora_variant (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner/decode_cuda_graph_runner.py)",
+      1
+    ],
+    [
+      "record (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/streams.py)",
+      1
+    ],
+    [
+      "get_global_experts_capturer (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/state_capturer/routed_experts.py)",
+      1
+    ],
+    [
+      "_named (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      1
+    ],
+    [
+      "current_device (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/__init__.py)",
+      1
+    ],
+    [
+      "prepare_paged_mha_query (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/flashattention_backend.py)",
+      1
+    ],
+    [
+      "free_kv_row (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/base_prefix_cache.py)",
+      1
+    ],
+    [
+      "_is_host_leaf (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "grid (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/mamba/causal_conv1d_triton.py)",
+      1
+    ],
+    [
+      "_record_scheduler_time (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/metrics_reporter.py)",
+      1
+    ],
+    [
+      "record_scheduler_active (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/metrics_reporter.py)",
+      1
+    ],
+    [
+      "is_available (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/__init__.py)",
+      1
+    ],
+    [
+      "<lambda> (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_utils.py)",
+      1
+    ],
+    [
+      "_get_available_device_type (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_utils.py)",
+      1
+    ],
+    [
+      "normal_decode_set_metadata (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/metadata.py)",
+      1
+    ],
+    [
+      "_set_decode_page_metadata (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/flashattention_backend.py)",
+      1
+    ],
+    [
+      "add_one_req (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_policy.py)",
+      1
+    ],
+    [
+      "write_cache_indices (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocation.py)",
+      1
+    ],
+    [
+      "next_shadow_backup_step (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      1
+    ],
+    [
+      "<lambda> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "fused_replay_state_indices (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/mamba/mamba_state_indices_triton.py)",
+      1
+    ],
+    [
+      "schedulable_available_size (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/mamba.py)",
+      1
+    ],
+    [
+      "finalize_match_result_in_cache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/mamba.py)",
+      1
+    ],
+    [
+      "decode (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/json/decoder.py)",
+      1
+    ],
+    [
+      "raw_decode (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/json/decoder.py)",
+      1
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/zmq/error.py)",
+      1
+    ],
+    [
+      "__getattr__ (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/runtime_context.py)",
+      1
+    ],
+    [
+      "__new__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/enum.py)",
+      1
+    ],
+    [
+      "rebuild (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/msgspec/_utils.py)",
+      1
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_prediction.py)",
+      1
+    ],
+    [
+      "__exit__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/selectors.py)",
+      1
+    ],
+    [
+      "_get_running_request_total_token_offset (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_policy.py)",
+      1
+    ],
+    [
+      "__init__ (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_policy.py)",
+      1
+    ],
+    [
+      "<listcomp> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_policy.py)",
+      1
+    ],
+    [
+      "observe_per_stage_req_latency (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/metrics_collector.py)",
+      1
+    ],
+    [
+      "observe (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/prometheus_client/metrics.py)",
+      1
+    ],
+    [
+      "available_size (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      1
+    ],
+    [
+      "wait (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/streams.py)",
+      1
+    ],
+    [
+      "snapshot (/home/longhao/experiment/BeliefKV/beliefkv/runtime/writer_timing.py)",
+      1
+    ],
+    [
+      "<dictcomp> (/home/longhao/experiment/BeliefKV/beliefkv/runtime/writer_timing.py)",
+      1
+    ],
+    [
+      "set_schedule_time_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/req_time_stats.py)",
+      1
+    ],
+    [
+      "store_cache (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/kvcache/kvcache.py)",
+      1
+    ],
+    [
+      "_free_values (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      1
+    ],
+    [
+      "poll (/home/longhao/experiment/BeliefKV/beliefkv/runtime/semantic_report_worker.py)",
+      1
+    ],
+    [
+      "__enter__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/autograd/profiler.py)",
+      1
+    ],
+    [
+      "redistribute_on_node_split (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/components/full.py)",
+      1
+    ],
+    [
+      "_split_node (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "allocate_scratch (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/backends/nvidia/driver.py)",
+      1
+    ],
+    [
+      "is_initialized (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/__init__.py)",
+      1
+    ],
+    [
+      "clamp_position_cuda (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/clamp_position.py)",
+      1
+    ],
+    [
+      "forward_jit (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/attention/clamp_position.py)",
+      1
+    ],
+    [
+      "forward (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/fused_op.py)",
+      1
+    ],
+    [
+      "_process_hicache_events (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1
+    ],
+    [
+      "_relay_forward_payload (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py)",
+      1
+    ],
+    [
+      "_raw_len (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py)",
+      1
+    ],
+    [
+      "is_empty (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "_apply_cache_actions (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      1
+    ],
+    [
+      "available_size (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/pool_host/base.py)",
+      1
+    ],
+    [
+      "notify (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/threading.py)",
+      1
+    ],
+    [
+      "_collect_deferred_mamba_cow_and_clear (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "_maybe_log_time_stats (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/output_streamer.py)",
+      1
+    ],
+    [
+      "increment_realtime_tokens (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/metrics_collector.py)",
+      1
+    ],
+    [
+      "next_power_of_2 (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/utils/common.py)",
+      1
+    ],
+    [
+      "observe_static_full_mamba_headroom (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      1
+    ],
+    [
+      "shadow_backup_steps (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      1
+    ],
+    [
+      "running_batch_retraction_barrier_required (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "pending_action_count (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_physical.py)",
+      1
+    ],
+    [
+      "alloc_aux_to_lengths (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py)",
+      1
+    ],
+    [
+      "_observe_targeted_pair (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "init_new (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/schedule_batch.py)",
+      1
+    ],
+    [
+      "commit_decode (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/beam_search/coordinator.py)",
+      1
+    ],
+    [
+      "graph_pool_replay_scope (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner_utils/pool.py)",
+      1
+    ],
+    [
+      "capture_pre_sample_logits (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/beam_search/logits_capture.py)",
+      1
+    ],
+    [
+      "merge_batch (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/sampling/sampling_batch_info.py)",
+      1
+    ],
+    [
+      "free_segment (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/base.py)",
+      1
+    ],
+    [
+      "free (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/token.py)",
+      1
+    ],
+    [
+      "_iterencode (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/json/encoder.py)",
+      1
+    ],
+    [
+      "get_num_waiting_uncached_tokens (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/load_inquirer.py)",
+      1
+    ],
+    [
+      "write (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/load_snapshot.py)",
+      1
+    ],
+    [
+      "_unblock_depth (/home/longhao/experiment/BeliefKV/beliefkv/policy/causal_frontier.py)",
+      1
+    ],
+    [
+      "ancestors (/home/longhao/experiment/BeliefKV/beliefkv/control/causal_graph.py)",
+      1
+    ],
+    [
+      "<genexpr> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/forward_batch_info.py)",
+      1
+    ],
+    [
+      "_finish_write_through_ack (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      1
+    ],
+    [
+      "writing_check (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_radix_cache.py)",
+      1
+    ],
+    [
+      "_prepare_probe_due (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "record (/home/longhao/experiment/BeliefKV/beliefkv/runtime/v0520_opportunity_telemetry.py)",
+      1
+    ],
+    [
+      "_ensure_not_terminal (/home/longhao/experiment/BeliefKV/beliefkv/control/causal_graph.py)",
+      1
+    ],
+    [
+      "maybe_publish_prefill_shared_read_done (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner_utils/shared_read_event.py)",
+      1
+    ],
+    [
+      "available_size (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/allocator/token.py)",
+      1
+    ],
+    [
+      "<lambda> (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/cuda_graph_buffer_registry.py)",
+      1
+    ],
+    [
+      "_is_full_attn (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py)",
+      1
+    ],
+    [
+      "_touch_node (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "get_cached_compile (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/custom_compile_cache.py)",
+      1
+    ],
+    [
+      "cp_delta_rule_t_precompute_dsl_sm90 (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/delta_rule_cp_sm90.py)",
+      1
+    ],
+    [
+      "cp_delta_rule_dsl_sm90 (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/delta_rule_cp_sm90.py)",
+      1
+    ],
+    [
+      "to_record (/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py)",
+      1
+    ],
+    [
+      "__getattr__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/transformers/tokenization_utils_base.py)",
+      1
+    ],
+    [
+      "_convert_token_to_id_with_added_voc (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/transformers/tokenization_utils_tokenizers.py)",
+      1
+    ],
+    [
+      "convert_tokens_to_ids (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/transformers/tokenization_utils_base.py)",
+      1
+    ],
+    [
+      "append_beam_tail (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/beam_search/batch_tail.py)",
+      1
+    ],
+    [
+      "copy (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/collections/__init__.py)",
+      1
+    ],
+    [
+      "increment_prefill_cuda_graph_pass (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/metrics_collector.py)",
+      1
+    ],
+    [
+      "__init__ (/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/flashinfer/gdn_kernels/delta_rule_dsl/delta_rule_sm90.py)",
+      1
+    ],
+    [
+      "_insert_commit_step (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "_new_node (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "_add_new_node (/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "submit (/home/longhao/experiment/BeliefKV/beliefkv/runtime/semantic_report_worker.py)",
+      1
+    ]
+  ],
+  "limitations": [
+    "GIL stack samples are not CPU/wall accounting or kernel duration.",
+    "All sampling errors are retained; the sample is not a full-run profile.",
+    "Inclusive functions overlap; their counts cannot be summed as exclusive cost.",
+    "Main execution source remains frozen during collection.",
+    "The bounded read-only profiler overlaps the live development run.",
+    "No native-relative causal gain or JCT saving is inferred."
+  ],
+  "script_sha256": "aa806ae3a3130e1c94d71d2a42b19a42094f399ce1296e1ae04d49e6d171feff"
+}
