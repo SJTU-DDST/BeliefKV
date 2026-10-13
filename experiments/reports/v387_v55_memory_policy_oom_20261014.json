@@ -1,0 +1,346 @@
+{
+  "status": "initialized_server_startup_memory_policy_oom_preserved",
+  "observed_at_local": "2026-10-14T06:53:29.848188+08:00",
+  "original_run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55",
+  "preserved_run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55_start_failed_numa_0628",
+  "original_launch_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v55_launch_after_reservation_20261014.json",
+  "preserved_launch_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v55_launch_after_reservation_start_failed_numa_0628_20261014.json",
+  "launch_state_sha256": "5a2ddb7503f8358826b551b43a4f4d83b1a18d7558a6714955e10313210e9b86",
+  "source_inventory": {
+    "ab_plan.json": {
+      "bytes": 24552,
+      "sha256": "1d7c760409dad30601d8c617a6d5c29a10ad9d030fb5f1fa5ca8c570edd84466"
+    },
+    "arm_status.txt": {
+      "bytes": 22,
+      "sha256": "ee8c2cc97e7d2b3a3b9c87dc92c69878031fb6e9b7e6f9b563742247f3457cc4"
+    },
+    "frozen_execution_verification.json": {
+      "bytes": 676,
+      "sha256": "681eb9c9517477229705f832f2cd3edfad1a0e960ba321d5ff3edd820fa6509f"
+    },
+    "predictive_h2d/opportunities/admission_opportunities.jsonl": {
+      "bytes": 18820,
+      "sha256": "268d002b104fb8fe020ea40fd761c551ec722909bcd1fe5d31373747aae37b66"
+    },
+    "predictive_h2d/server/eviction_attribution.jsonl": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predictive_h2d/server/host_pool_telemetry.jsonl": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predictive_h2d/server/native_capacity_census.json": {
+      "bytes": 560,
+      "sha256": "ca12f98560e6b3a5f1e4b89990ef68abd76fc041ae04493e928d9f3a62167f1b"
+    },
+    "predictive_h2d/server/native_telemetry_ready.json": {
+      "bytes": 335,
+      "sha256": "b4424fb770d8f883102972db64da6b2d915721404643b82f57de077f79107fcd"
+    },
+    "predictive_h2d/server/native_telemetry_status.json": {
+      "bytes": 3795,
+      "sha256": "e253f3659de100eb37c45a45ceefc80d4975173ffaf9a80629dc8435445bd32f"
+    },
+    "predictive_h2d/server/physical_action_ack.jsonl": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predictive_h2d/server/physical_action_use.jsonl": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predictive_h2d/server/runtime_audit.jsonl": {
+      "bytes": 21907,
+      "sha256": "e0936ac170858d3c1ae5c2641edac551287da3db20a831a0b4987e6b0bb380f1"
+    },
+    "predictive_h2d/server/runtime_events.sglang.jsonl": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predictive_h2d/server/transfer_telemetry.jsonl": {
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    "predictive_h2d/server.log": {
+      "bytes": 126131,
+      "sha256": "470631b8eca9a8fe7ce700963c33d02c6a0a675f8c42976ff112941dff21f6b8"
+    },
+    "predictive_h2d.launch.log": {
+      "bytes": 805,
+      "sha256": "6c9027aa8256e3d00ee763f773b5f6d9262c01e3fa0cdbc3dd8a27ef5a12dffb"
+    }
+  },
+  "collection_code_commit": "b7b56dd6541a19befa5dfe0f32642191406e6c76",
+  "deployed_engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "a8f4ea97da2f1fc8d969d538359a62aa9db23750051f9838956f03bc48174c68",
+    "expected_tree": "f7e0a89564622d530ddcf3b40de9f810974619aa",
+    "actual_tree": "f7e0a89564622d530ddcf3b40de9f810974619aa",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "scheduler_pid": 1947843,
+  "model_loaded": true,
+  "model_service_attempted": true,
+  "model_service_completed": false,
+  "service_scope": "Initial health prefill attempted; no completed health response or workflow client.",
+  "workflows_arrived": 0,
+  "workflow_terminal_results": 0,
+  "administratively_censored_workflows": 0,
+  "capacity_census": {
+    "capacity": {
+      "device_full_bytes": 36843438080,
+      "device_full_tokens": 1798995,
+      "device_mamba_bytes": 33096007680,
+      "device_mamba_slots": 513,
+      "device_total_bytes": 69939445760,
+      "host_full_bytes": 160000020480,
+      "host_full_tokens": 7812501,
+      "host_mamba_bytes": 40050032640,
+      "host_mamba_slots": 622,
+      "host_total_bytes": 200050053120,
+      "pool_layout": "static_separate_full_mamba"
+    },
+    "collection_mode": "admission_observation",
+    "scheduler_pid": 1947843,
+    "schema_version": 1,
+    "source": "native_sglang_v0520"
+  },
+  "kernel_clock": "Raw kernel monotonic log; do not mix dmesg -T with server wall clock.",
+  "kernel_exact_pid_oom_lines": [
+    "[6101743.397512] oom-kill:constraint=CONSTRAINT_MEMORY_POLICY,nodemask=1,cpuset=ssh.service,mems_allowed=0-1,global_oom,task_memcg=/system.slice/ssh.service,task=sglang::schedul,pid=1947843,uid=2603",
+    "[6101743.398368] Out of memory: Killed process 1947843 (sglang::schedul) total-vm:375666236kB, anon-rss:2401536kB, file-rss:462760kB, shmem-rss:195380224kB, UID:2603 pgtables:392348kB oom_score_adj:0",
+    "[6101745.482134] oom_reaper: reaped process 1947843 (sglang::schedul), now anon-rss:0kB, file-rss:10188kB, shmem-rss:87077276kB"
+  ],
+  "thread_dump": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v385_v55_startup_thread_dump_20261014.json",
+    "sha256": "658579a4c96aec64d6f8559c71d3ab9cfd3f13d3e2f978e376aa1647101167a6"
+  },
+  "kernel_perf": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v386_v55_startup_kernel_20261014.data",
+    "sha256": "32f57294419a876d23c9766657912462c8d2a1aa97f9865bc80c7e8c9b918060",
+    "scope": "3-second kernel-only samples, not total CPU or JCT."
+  },
+  "prior_reservation_state": {
+    "reservation_status": "experiment_hours",
+    "last_tick_at": "2026-10-14T06:53:01.311357+08:00",
+    "cutoffs": {
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/server_reservation_cutoff.json"
+    },
+    "prior_resume_attempts": [
+      {
+        "resume_status": "launch_failed",
+        "resume_at": "2026-10-14T06:00:01.249741+08:00",
+        "resume_pid": 1932052,
+        "resume_process": {
+          "pid": 1932052,
+          "state": "R",
+          "ppid": 1932040,
+          "start_ticks": "609906434",
+          "argv": [
+            "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+            "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014/scripts/launch_semantic_h2d_after_pair.py",
+            "--repo",
+            "/home/longhao/experiment/BeliefKV",
+            "--previous-run",
+            "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54",
+            "--target-checkout",
+            "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014",
+            "--run-root",
+            "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55",
+            "--state",
+            "/home/longhao/experiment/BeliefKV/experiments/reports/v55_launch_after_reservation_20261014.json",
+            "--port",
+            "18459",
+            "--arm-order",
+            "predictive_h2d",
+            "--execution-handoff",
+            "0",
+            "--native-reference-run",
+            "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29",
+            "--development-restart",
+            "--previous-checkout",
+            "/home/longhao/experiment/.worktrees/beliefkv-v310-v54-residency-hint-20261013",
+            "--wait-pid",
+            "0"
+          ]
+        },
+        "resume_command": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014/scripts/launch_semantic_h2d_after_pair.py",
+          "--repo",
+          "/home/longhao/experiment/BeliefKV",
+          "--previous-run",
+          "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54",
+          "--target-checkout",
+          "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014",
+          "--run-root",
+          "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55",
+          "--state",
+          "/home/longhao/experiment/BeliefKV/experiments/reports/v55_launch_after_reservation_20261014.json",
+          "--port",
+          "18459",
+          "--arm-order",
+          "predictive_h2d",
+          "--execution-handoff",
+          "0",
+          "--native-reference-run",
+          "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29",
+          "--development-restart",
+          "--previous-checkout",
+          "/home/longhao/experiment/.worktrees/beliefkv-v310-v54-residency-hint-20261013",
+          "--wait-pid",
+          "0"
+        ],
+        "resume_log": "/home/longhao/experiment/ops/v55_resume_20261014.log",
+        "resume_error": "RuntimeError: new experiment driver exited 1",
+        "resume_terminal_observed_at": "2026-10-14T06:07:59.936297+08:00"
+      },
+      {
+        "resume_status": "launch_failed",
+        "resume_at": "2026-10-14T06:18:01.936974+08:00",
+        "resume_pid": 1941904,
+        "resume_process": {
+          "pid": 1941904,
+          "state": "R",
+          "ppid": 1941894,
+          "start_ticks": "610014503",
+          "argv": [
+            "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+            "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014/scripts/launch_semantic_h2d_after_pair.py",
+            "--repo",
+            "/home/longhao/experiment/BeliefKV",
+            "--previous-run",
+            "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54",
+            "--target-checkout",
+            "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014",
+            "--run-root",
+            "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55",
+            "--state",
+            "/home/longhao/experiment/BeliefKV/experiments/reports/v55_launch_after_reservation_20261014.json",
+            "--port",
+            "18459",
+            "--arm-order",
+            "predictive_h2d",
+            "--execution-handoff",
+            "0",
+            "--native-reference-run",
+            "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29",
+            "--development-restart",
+            "--previous-checkout",
+            "/home/longhao/experiment/.worktrees/beliefkv-v310-v54-residency-hint-20261013",
+            "--wait-pid",
+            "0"
+          ]
+        },
+        "resume_command": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014/scripts/launch_semantic_h2d_after_pair.py",
+          "--repo",
+          "/home/longhao/experiment/BeliefKV",
+          "--previous-run",
+          "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54",
+          "--target-checkout",
+          "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014",
+          "--run-root",
+          "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55",
+          "--state",
+          "/home/longhao/experiment/BeliefKV/experiments/reports/v55_launch_after_reservation_20261014.json",
+          "--port",
+          "18459",
+          "--arm-order",
+          "predictive_h2d",
+          "--execution-handoff",
+          "0",
+          "--native-reference-run",
+          "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29",
+          "--development-restart",
+          "--previous-checkout",
+          "/home/longhao/experiment/.worktrees/beliefkv-v310-v54-residency-hint-20261013",
+          "--wait-pid",
+          "0"
+        ],
+        "resume_log": "/home/longhao/experiment/ops/v55_resume_20261014.log",
+        "resume_error": "RuntimeError: new experiment driver exited 1",
+        "resume_terminal_observed_at": "2026-10-14T06:18:07.105347+08:00"
+      }
+    ],
+    "startup_failure_receipt": "/home/longhao/experiment/BeliefKV/experiments/reports/v382_v55_numa_retry_start_failure_20261014.json",
+    "host_memory_preflight": "NUMA node 1: combined FULL+MAMBA host pool budget 186.26 GiB, estimated available 192.45 GiB (NUMA-local allocation still required)",
+    "resume_status": "launch_failed",
+    "resume_at": "2026-10-14T06:27:52.050342+08:00",
+    "resume_pid": 1947174,
+    "resume_process": {
+      "pid": 1947174,
+      "state": "R",
+      "ppid": 1947162,
+      "start_ticks": "610073515",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014/scripts/launch_semantic_h2d_after_pair.py",
+        "--repo",
+        "/home/longhao/experiment/BeliefKV",
+        "--previous-run",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54",
+        "--target-checkout",
+        "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014",
+        "--run-root",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55",
+        "--state",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/v55_launch_after_reservation_20261014.json",
+        "--port",
+        "18459",
+        "--arm-order",
+        "predictive_h2d",
+        "--execution-handoff",
+        "0",
+        "--native-reference-run",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29",
+        "--development-restart",
+        "--previous-checkout",
+        "/home/longhao/experiment/.worktrees/beliefkv-v310-v54-residency-hint-20261013",
+        "--wait-pid",
+        "0"
+      ]
+    },
+    "resume_command": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014/scripts/launch_semantic_h2d_after_pair.py",
+      "--repo",
+      "/home/longhao/experiment/BeliefKV",
+      "--previous-run",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54",
+      "--target-checkout",
+      "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014",
+      "--run-root",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55",
+      "--state",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/v55_launch_after_reservation_20261014.json",
+      "--port",
+      "18459",
+      "--arm-order",
+      "predictive_h2d",
+      "--execution-handoff",
+      "0",
+      "--native-reference-run",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29",
+      "--development-restart",
+      "--previous-checkout",
+      "/home/longhao/experiment/.worktrees/beliefkv-v310-v54-residency-hint-20261013",
+      "--wait-pid",
+      "0"
+    ],
+    "resume_log": "/home/longhao/experiment/ops/v55_resume_20261014.log",
+    "resume_error": "RuntimeError: new experiment driver exited 1",
+    "resume_terminal_observed_at": "2026-10-14T06:44:01.588286+08:00"
+  },
+  "operational_helper_sha256": "17350b05d59d86c169bc198d393048294f4912914ea63218a57751c5e383e450",
+  "scope": "Preserve startup OOM after pool initialization; this is not a workflow failure or a performance result."
+}

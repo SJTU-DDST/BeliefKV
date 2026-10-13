@@ -2,13 +2,27 @@
 
 Status date: 2026-10-14.
 
-The06:18 retry also stopped before service/arrival: estimated NUMA1 capacity
-fell192.36→192.13GiB during startup, below the192.26GiB requirement
-with6GiB extra reserve. V382 preserves this second startup-only failure.
-7c4cd73 sets the current extra startup reserve to5GiB, accommodating this
-observed0.23GiB process fluctuation while retaining actual200GB/80:20/
-NUMA1 and all27 core sources. V383 binds28 sources; live preflight passes
-but actual pinned allocation, service and performance remain unverified.
+Current cold startup uses9dff40b: CPU stays onNUMA1, memory prefersNUMA1
+with fallback, and extra startup reserve returns to8GiB. Keep200GB/80:20,
+the device pools, workload, predictions and scheduling settings fixed.
+Freeze the policy in new plans; legacy frozen-arm resumption keeps bind.
+V390 binds41 sources with all27 prior core hashes unchanged and126 passing
+startup-chain checks. The obsolete literal-handoff assertion also fails on
+b7b56dd; its correction checks the existing configurable behavior.
+
+The third06:28 attempt allocated200.050GB Host and attempted health prefill,
+but produced no completed health response or workflow clients. Exact-PID
+kernel evidence identifies aNUMA1 memory-policy OOM whileNUMA0 had about
+85GiB free. V387 preserves this initialized-server startup independently;
+V385/V386 diagnose thread state and kernel reclaim samples, not scheduler
+overhead or JCT. The06:00/06:18 preflight failures remain inV379/V382.
+The temporary6/5GiB reserve did not solve runtime memory pressure.
+
+Next, cold-start during permitted hours and verify pool census, actualNUMA
+page placement, healthy service, and the first complete600–900s window.
+V29 remains historical development diagnosis; final native controls must
+match the new topology policy and report placement. No new prefill delay,
+batching or guard is enabled. Mean JCT and throughput acceptance is pending.
 
 V55 triggered at06:00:01 and verified deploymentfe05cac/a8f4ea97/
 f7e0a895, then exited before service or workflow arrival: NUMA1 estimated
