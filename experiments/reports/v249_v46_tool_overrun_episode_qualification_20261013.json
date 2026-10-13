@@ -1,0 +1,231 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-13T09:55:39.192481+08:00",
+  "survival_input": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v248_v46_repeated_tool_survival_20261013.json",
+    "sha256": "2e0d5f75aee1178e69445f075dcd36403153677bbb88d680e34df471e3444cd8"
+  },
+  "audit_input": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v238_v46_final_wait_prefetch_20261013.json.gz",
+    "sha256": "711360943b5b36fd65ebc9801dca1c7ef32926a08e9b75e90f5c0013a425e645"
+  },
+  "events_input": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v46/predictive_h2d/client_156/workflows/django__django-11451/runtime_events.deepagents.jsonl",
+    "complete_prefix_bytes": 1872530,
+    "complete_prefix_sha256": "a470675b783688994236a399c2eb63cf58e6006040b211b5dd6d103484542735",
+    "first_read_limit_bytes": 1872530
+  },
+  "first_forecast_clock_offset_ms": 1785829736944.9053,
+  "all_bursts_same_single_active_tool_revision": true,
+  "episode_revisions": [
+    6020438790.123074
+  ],
+  "bursts": [
+    {
+      "submit_ts_ms": 1791850176735.6565,
+      "actual_remaining_to_known_completion_ms": 179040.9599609375,
+      "command_count": 5,
+      "full_bytes": 28774400,
+      "forecast_record_age_ms": 103.664794921875,
+      "current_forecast_conditional_p50_ms": 731.5193366978356,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": 731.5193366978356,
+      "support_detail": "completed_project_command",
+      "forecast_record_conditional_p50_ms": 736.0592404580011,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.9975703712563095,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ],
+      "causal_state_at_submit": {
+        "ts_ms": 1791850176235.1672,
+        "state": "wait_tool",
+        "revision_ts_ms": 6020438790.123074,
+        "active_tool_ids": [
+          "01a13297-dcc9-7b00-bb14-c2549aa69f70"
+        ]
+      }
+    },
+    {
+      "submit_ts_ms": 1791850180589.4019,
+      "actual_remaining_to_known_completion_ms": 175187.21459960938,
+      "command_count": 1,
+      "full_bytes": 82821120,
+      "forecast_record_age_ms": 208.201416015625,
+      "current_forecast_conditional_p50_ms": 1185.1941622243248,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": 3465.1615106760464,
+      "support_detail": null,
+      "forecast_record_conditional_p50_ms": 1119.6601425218137,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.9940997004413532,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ],
+      "causal_state_at_submit": {
+        "ts_ms": 1791850176235.1672,
+        "state": "wait_tool",
+        "revision_ts_ms": 6020438790.123074,
+        "active_tool_ids": [
+          "01a13297-dcc9-7b00-bb14-c2549aa69f70"
+        ]
+      }
+    },
+    {
+      "submit_ts_ms": 1791850180616.4358,
+      "actual_remaining_to_known_completion_ms": 175160.1806640625,
+      "command_count": 10,
+      "full_bytes": 74772480,
+      "forecast_record_age_ms": 235.2353515625,
+      "current_forecast_conditional_p50_ms": 1194.8248075608394,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": 3491.4361207377124,
+      "support_detail": null,
+      "forecast_record_conditional_p50_ms": 1119.6601425218137,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.9940997004413532,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ],
+      "causal_state_at_submit": {
+        "ts_ms": 1791850176235.1672,
+        "state": "wait_tool",
+        "revision_ts_ms": 6020438790.123074,
+        "active_tool_ids": [
+          "01a13297-dcc9-7b00-bb14-c2549aa69f70"
+        ]
+      }
+    },
+    {
+      "submit_ts_ms": 1791850195306.2795,
+      "actual_remaining_to_known_completion_ms": 160470.3369140625,
+      "command_count": 1,
+      "full_bytes": 47677440,
+      "forecast_record_age_ms": 112.475830078125,
+      "current_forecast_conditional_p50_ms": 1149.9630066774669,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": 16521.878538347177,
+      "support_detail": null,
+      "forecast_record_conditional_p50_ms": 1091.7786323087628,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.990130057350375,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ],
+      "causal_state_at_submit": {
+        "ts_ms": 1791850176235.1672,
+        "state": "wait_tool",
+        "revision_ts_ms": 6020438790.123074,
+        "active_tool_ids": [
+          "01a13297-dcc9-7b00-bb14-c2549aa69f70"
+        ]
+      }
+    },
+    {
+      "submit_ts_ms": 1791850219263.2742,
+      "actual_remaining_to_known_completion_ms": 136513.34228515625,
+      "command_count": 17,
+      "full_bytes": 186716160,
+      "forecast_record_age_ms": 352.669189453125,
+      "current_forecast_conditional_p50_ms": 1414.8295794697556,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": 43009.385586470875,
+      "support_detail": null,
+      "forecast_record_conditional_p50_ms": 1039.4392832530664,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.9868817122085071,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ],
+      "causal_state_at_submit": {
+        "ts_ms": 1791850176235.1672,
+        "state": "wait_tool",
+        "revision_ts_ms": 6020438790.123074,
+        "active_tool_ids": [
+          "01a13297-dcc9-7b00-bb14-c2549aa69f70"
+        ]
+      }
+    },
+    {
+      "submit_ts_ms": 1791850253911.1965,
+      "actual_remaining_to_known_completion_ms": 101865.419921875,
+      "command_count": 24,
+      "full_bytes": 243240960,
+      "forecast_record_age_ms": 118.588623046875,
+      "current_forecast_conditional_p50_ms": 1259.564967964684,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": null,
+      "support_detail": null,
+      "forecast_record_conditional_p50_ms": 1175.8505258993646,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.9811115942383329,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ],
+      "causal_state_at_submit": {
+        "ts_ms": 1791850176235.1672,
+        "state": "wait_tool",
+        "revision_ts_ms": 6020438790.123074,
+        "active_tool_ids": [
+          "01a13297-dcc9-7b00-bb14-c2549aa69f70"
+        ]
+      }
+    },
+    {
+      "submit_ts_ms": 1791850260075.3713,
+      "actual_remaining_to_known_completion_ms": 95701.2451171875,
+      "command_count": 28,
+      "full_bytes": 260546560,
+      "forecast_record_age_ms": 9.4248046875,
+      "current_forecast_conditional_p50_ms": 1429.1461130018201,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": null,
+      "support_detail": null,
+      "forecast_record_conditional_p50_ms": 1439.4773765285968,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.9760534707614724,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ],
+      "causal_state_at_submit": {
+        "ts_ms": 1791850176235.1672,
+        "state": "wait_tool",
+        "revision_ts_ms": 6020438790.123074,
+        "active_tool_ids": [
+          "01a13297-dcc9-7b00-bb14-c2549aa69f70"
+        ]
+      }
+    },
+    {
+      "submit_ts_ms": 1791850260122.2305,
+      "actual_remaining_to_known_completion_ms": 95654.38598632812,
+      "command_count": 2,
+      "full_bytes": 19701760,
+      "forecast_record_age_ms": 56.283935546875,
+      "current_forecast_conditional_p50_ms": 1471.775331531649,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": null,
+      "support_detail": null,
+      "forecast_record_conditional_p50_ms": 1439.4773765285968,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.9760534707614724,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ],
+      "causal_state_at_submit": {
+        "ts_ms": 1791850176235.1672,
+        "state": "wait_tool",
+        "revision_ts_ms": 6020438790.123074,
+        "active_tool_ids": [
+          "01a13297-dcc9-7b00-bb14-c2549aa69f70"
+        ]
+      }
+    }
+  ],
+  "proposed_policy_descriptive_check": {
+    "fixed_maximum_lead_ms": 2000.0,
+    "later_recorded_bursts_outside_first_forecast_survival_window": 7,
+    "later_recorded_full_bytes": 915476480
+  },
+  "limitations": [
+    "One selected episode; not a representative cohort or a causal policy experiment.",
+    "Reconstructed client causal state, not observed server delivery revision.",
+    "Clock alignment is the first forecast pair and is not separately synchronized.",
+    "Later recordings are observational; skipping them changes future capacity/trajectory.",
+    "No avoided-byte, DMA, throughput or no-regression claim follows from this check."
+  ],
+  "helper_sha256": "ce0b34d43f8a7a1f18b6debb5c3244c461f8fae825befa71b7582e70e4b0e4c3",
+  "helper_utf8_source": "\"\"\"Qualify the selected tool overrun against its sealed causal event prefix.\"\"\"\n\nfrom bisect import bisect_right\nfrom datetime import datetime\nimport gzip\nimport hashlib\nimport json\nfrom pathlib import Path\nimport sys\n\nROOT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nsys.path.insert(0, str(ROOT))\nfrom beliefkv.control.causal_graph import RuntimeCausalContextGraph\nfrom beliefkv.core.events import RuntimeEvent\n\nREPORTS = ROOT / \"experiments/reports\"\nAUDIT = REPORTS / \"v238_v46_final_wait_prefetch_20261013.json.gz\"\nSURVIVAL = REPORTS / \"v248_v46_repeated_tool_survival_20261013.json\"\nOUTPUT = REPORTS / \"v249_v46_tool_overrun_episode_qualification_20261013.json\"\nif OUTPUT.exists():\n    raise ValueError(\"preserve the existing qualification\")\naudit_bytes, survival_bytes = AUDIT.read_bytes(), SURVIVAL.read_bytes()\naudit = json.loads(gzip.decompress(audit_bytes))\nsurvival = json.loads(survival_bytes)\npath, prefix = next(\n    (Path(path), evidence) for path, evidence in audit[\"input_jsonl_prefixes\"].items()\n    if path.endswith(\"/django__django-11451/runtime_events.deepagents.jsonl\")\n)\nconsumed, digest, events = 0, hashlib.sha256(), []\nwith path.open(\"rb\") as stream:\n    while consumed < prefix[\"complete_prefix_bytes\"]:\n        line = stream.readline(prefix[\"complete_prefix_bytes\"] - consumed)\n        if not line.endswith(b\"\\n\"):\n            raise ValueError(\"incomplete retained event prefix\")\n        consumed += len(line)\n        digest.update(line)\n        if line.strip():\n            events.append(RuntimeEvent.from_dict(json.loads(line)))\nif digest.hexdigest() != prefix[\"complete_prefix_sha256\"]:\n    raise ValueError(\"event prefix differs from sealed audit\")\nevents.sort(key=lambda row: row.ts_ms)\ngraph, states, times = RuntimeCausalContextGraph(), [], []\nanchor = survival[\"first_issue_forecast\"]\noffset = anchor[\"ts_ms\"] - anchor[\"observed_monotonic_ms\"]\nfor event in events:\n    graph.apply(event)\n    invocation = graph.invocations.get(anchor[\"invocation_id\"])\n    if invocation is not None:\n        states.append({\n            \"ts_ms\": event.ts_ms + offset,\n            \"state\": invocation.state.value,\n            \"revision_ts_ms\": invocation.updated_ts_ms,\n            \"active_tool_ids\": sorted(invocation.active_tool_calls),\n        })\n        times.append(event.ts_ms + offset)\nqualified = []\nfor burst in survival[\"restore_bursts\"]:\n    index = bisect_right(times, burst[\"submit_ts_ms\"]) - 1\n    state = states[index] if index >= 0 else None\n    qualified.append({**burst, \"causal_state_at_submit\": state})\nrevisions = {\n    row[\"causal_state_at_submit\"][\"revision_ts_ms\"] for row in qualified\n    if row[\"causal_state_at_submit\"] is not None\n}\nsame_episode = len(revisions) == 1 and all(\n    row[\"causal_state_at_submit\"] is not None\n    and row[\"causal_state_at_submit\"][\"state\"] == \"wait_tool\"\n    and len(row[\"causal_state_at_submit\"][\"active_tool_ids\"]) == 1\n    for row in qualified\n)\nreport = {\n    \"schema_version\": 1,\n    \"observed_at_local\": datetime.now().astimezone().isoformat(),\n    \"survival_input\": {\n        \"path\": str(SURVIVAL), \"sha256\": hashlib.sha256(survival_bytes).hexdigest(),\n    },\n    \"audit_input\": {\"path\": str(AUDIT), \"sha256\": hashlib.sha256(audit_bytes).hexdigest()},\n    \"events_input\": {\"path\": str(path), **prefix},\n    \"first_forecast_clock_offset_ms\": offset,\n    \"all_bursts_same_single_active_tool_revision\": same_episode,\n    \"episode_revisions\": sorted(revisions), \"bursts\": qualified,\n    \"proposed_policy_descriptive_check\": {\n        \"fixed_maximum_lead_ms\": 2000.,\n        \"later_recorded_bursts_outside_first_forecast_survival_window\": sum(\n            row[\"first_issue_forecast_conditioned_on_survival_p50_ms\"] is None\n            or row[\"first_issue_forecast_conditioned_on_survival_p50_ms\"] > 2000.\n            for row in qualified[1:]\n        ),\n        \"later_recorded_full_bytes\": sum(row[\"full_bytes\"] for row in qualified[1:]),\n    },\n    \"limitations\": [\n        \"One selected episode; not a representative cohort or a causal policy experiment.\",\n        \"Reconstructed client causal state, not observed server delivery revision.\",\n        \"Clock alignment is the first forecast pair and is not separately synchronized.\",\n        \"Later recordings are observational; skipping them changes future capacity/trajectory.\",\n        \"No avoided-byte, DMA, throughput or no-regression claim follows from this check.\",\n    ],\n}\nhelper = Path(__file__).read_bytes()\nreport.update({\n    \"helper_sha256\": hashlib.sha256(helper).hexdigest(),\n    \"helper_utf8_source\": helper.decode(),\n})\nOUTPUT.write_text(json.dumps(report, indent=2, allow_nan=False) + \"\\n\")\nprint(json.dumps({\n    \"same_single_tool_episode\": same_episode,\n    \"episode_revisions\": sorted(revisions),\n    \"descriptive_check\": report[\"proposed_policy_descriptive_check\"],\n    \"bursts\": [{\"submit_ts_ms\": row[\"submit_ts_ms\"],\n                \"causal_state_at_submit\": row[\"causal_state_at_submit\"]}\n               for row in qualified],\n}, indent=2))\n"
+}

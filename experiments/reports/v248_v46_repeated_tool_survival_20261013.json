@@ -1,0 +1,248 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-13T09:43:59.882620+08:00",
+  "audit": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v238_v46_final_wait_prefetch_20261013.json.gz",
+    "sha256": "711360943b5b36fd65ebc9801dca1c7ef32926a08e9b75e90f5c0013a425e645"
+  },
+  "forecast_input": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v46/predictive_h2d/opportunities/admission_opportunities.jsonl",
+    "complete_prefix_bytes": 685721229,
+    "complete_prefix_sha256": "96366790462e9b8461e43983783d6dc4a2bad3160b927fd3a7188118e08d2b83",
+    "first_read_limit_bytes": 685721229
+  },
+  "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+  "context_id": "deepagents-context:b2a7b0accb6de08b",
+  "context_epoch": 41,
+  "completion_ts_ms": 1791850355776.6165,
+  "forecast_count": 489,
+  "restore_bursts": [
+    {
+      "submit_ts_ms": 1791850176735.6565,
+      "actual_remaining_to_known_completion_ms": 179040.9599609375,
+      "command_count": 5,
+      "full_bytes": 28774400,
+      "forecast_record_age_ms": 103.664794921875,
+      "current_forecast_conditional_p50_ms": 731.5193366978356,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": 731.5193366978356,
+      "support_detail": "completed_project_command",
+      "forecast_record_conditional_p50_ms": 736.0592404580011,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.9975703712563095,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ]
+    },
+    {
+      "submit_ts_ms": 1791850180589.4019,
+      "actual_remaining_to_known_completion_ms": 175187.21459960938,
+      "command_count": 1,
+      "full_bytes": 82821120,
+      "forecast_record_age_ms": 208.201416015625,
+      "current_forecast_conditional_p50_ms": 1185.1941622243248,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": 3465.1615106760464,
+      "support_detail": null,
+      "forecast_record_conditional_p50_ms": 1119.6601425218137,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.9940997004413532,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ]
+    },
+    {
+      "submit_ts_ms": 1791850180616.4358,
+      "actual_remaining_to_known_completion_ms": 175160.1806640625,
+      "command_count": 10,
+      "full_bytes": 74772480,
+      "forecast_record_age_ms": 235.2353515625,
+      "current_forecast_conditional_p50_ms": 1194.8248075608394,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": 3491.4361207377124,
+      "support_detail": null,
+      "forecast_record_conditional_p50_ms": 1119.6601425218137,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.9940997004413532,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ]
+    },
+    {
+      "submit_ts_ms": 1791850195306.2795,
+      "actual_remaining_to_known_completion_ms": 160470.3369140625,
+      "command_count": 1,
+      "full_bytes": 47677440,
+      "forecast_record_age_ms": 112.475830078125,
+      "current_forecast_conditional_p50_ms": 1149.9630066774669,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": 16521.878538347177,
+      "support_detail": null,
+      "forecast_record_conditional_p50_ms": 1091.7786323087628,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.990130057350375,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ]
+    },
+    {
+      "submit_ts_ms": 1791850219263.2742,
+      "actual_remaining_to_known_completion_ms": 136513.34228515625,
+      "command_count": 17,
+      "full_bytes": 186716160,
+      "forecast_record_age_ms": 352.669189453125,
+      "current_forecast_conditional_p50_ms": 1414.8295794697556,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": 43009.385586470875,
+      "support_detail": null,
+      "forecast_record_conditional_p50_ms": 1039.4392832530664,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.9868817122085071,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ]
+    },
+    {
+      "submit_ts_ms": 1791850253911.1965,
+      "actual_remaining_to_known_completion_ms": 101865.419921875,
+      "command_count": 24,
+      "full_bytes": 243240960,
+      "forecast_record_age_ms": 118.588623046875,
+      "current_forecast_conditional_p50_ms": 1259.564967964684,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": null,
+      "support_detail": null,
+      "forecast_record_conditional_p50_ms": 1175.8505258993646,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.9811115942383329,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ]
+    },
+    {
+      "submit_ts_ms": 1791850260075.3713,
+      "actual_remaining_to_known_completion_ms": 95701.2451171875,
+      "command_count": 28,
+      "full_bytes": 260546560,
+      "forecast_record_age_ms": 9.4248046875,
+      "current_forecast_conditional_p50_ms": 1429.1461130018201,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": null,
+      "support_detail": null,
+      "forecast_record_conditional_p50_ms": 1439.4773765285968,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.9760534707614724,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ]
+    },
+    {
+      "submit_ts_ms": 1791850260122.2305,
+      "actual_remaining_to_known_completion_ms": 95654.38598632812,
+      "command_count": 2,
+      "full_bytes": 19701760,
+      "forecast_record_age_ms": 56.283935546875,
+      "current_forecast_conditional_p50_ms": 1471.775331531649,
+      "first_issue_forecast_conditioned_on_survival_p50_ms": null,
+      "support_detail": null,
+      "forecast_record_conditional_p50_ms": 1439.4773765285968,
+      "release_curve_points": 18,
+      "release_curve_end_probability": 0.9760534707614724,
+      "lease_release_reasons": [
+        "service_window_expired"
+      ]
+    }
+  ],
+  "first_issue_forecast": {
+    "event": "tool_wait_forecast",
+    "ts_ms": 1791850176631.9917,
+    "observed_monotonic_ms": 6020439687.086454,
+    "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+    "invocation_id": "deepagents-invocation:b2a7b0accb6de08b",
+    "context_id": "deepagents-context:b2a7b0accb6de08b",
+    "context_epoch": 41,
+    "p10_ms": 1993.977430343628,
+    "p50_ms": 1993.977430343628,
+    "p90_ms": 1993.977430343628,
+    "release_cdf": [
+      [
+        1.0,
+        0.0001728355295933039
+      ],
+      [
+        2.0,
+        0.0003399962251405551
+      ],
+      [
+        4.0,
+        0.0007792079870744405
+      ],
+      [
+        8.0,
+        0.001960542331166595
+      ],
+      [
+        16.0,
+        0.0051233281517232025
+      ],
+      [
+        32.0,
+        0.013380060821752734
+      ],
+      [
+        64.0,
+        0.03408451042058262
+      ],
+      [
+        128.0,
+        0.08301650482063791
+      ],
+      [
+        256.0,
+        0.18748368969048645
+      ],
+      [
+        512.0,
+        0.37100688393497294
+      ],
+      [
+        1024.0,
+        0.601988397910142
+      ],
+      [
+        2048.0,
+        0.7931335039516216
+      ],
+      [
+        4096.0,
+        0.904014335674124
+      ],
+      [
+        8192.0,
+        0.956759588490211
+      ],
+      [
+        16384.0,
+        0.9801887953599001
+      ],
+      [
+        32768.0,
+        0.9905868864081345
+      ],
+      [
+        65536.0,
+        0.9953275024654702
+      ],
+      [
+        131072.0,
+        0.9975703712563095
+      ]
+    ],
+    "tool_offload_wait_ms": 1000.0,
+    "residual_duration_mass": [
+      [
+        1993.977430343628,
+        1.0
+      ]
+    ],
+    "residual_support_detail": "completed_project_command",
+    "conditional_p50_ms": 736.0592404580011,
+    "timing_policy": "survival_conditioned_completed_history"
+  },
+  "semantics": "One selected repeated-restore episode, not a representative cohort or policy gain. All forecast values are emitted before the corresponding transfer; known completion is used only for offline error reporting. Old forecast survival is descriptive, not permission to restore or evidence of current capacity. Wall/monotonic alignment uses the forecast record pair; delivery lag is not independently reconstructed. Tool revision can change within one context epoch, so a frozen forecast cannot be assumed to describe every sequential tool in this wait group.",
+  "helper_sha256": "e31adfb6afb7578643aa2ba354580e23312512099b2c5c0037e65280c6f64fed",
+  "helper_utf8_source": "\"\"\"Inspect one sealed repeated-restore episode and its surviving forecasts.\"\"\"\n\nfrom bisect import bisect_right\nfrom datetime import datetime\nimport gzip\nimport hashlib\nimport json\nfrom pathlib import Path\nimport sys\n\nROOT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nsys.path.insert(0, str(ROOT))\nfrom beliefkv.runtime.sglang_v0520_admission import PrefillCandidateKey\nfrom beliefkv.runtime.sglang_v0520_prediction import NativeToolWaitHint\n\nREPORTS = ROOT / \"experiments/reports\"\nAUDIT = REPORTS / \"v238_v46_final_wait_prefetch_20261013.json.gz\"\nOUTPUT = REPORTS / \"v248_v46_repeated_tool_survival_20261013.json\"\nCONTEXT, EPOCH = \"deepagents-context:b2a7b0accb6de08b\", 41\n\nif OUTPUT.exists():\n    raise ValueError(\"preserve the existing observation\")\naudit_bytes = AUDIT.read_bytes()\naudit = json.loads(gzip.decompress(audit_bytes))\nselected = [\n    row for row in audit[\"rows\"] if row[\"context_id\"] == CONTEXT\n    and row[\"context_epoch\"] == EPOCH and row[\"source\"] == \"tool_wait\"\n]\nwait = next(\n    row for row in audit[\"wait_event_attribution\"][\"rows\"]\n    if row[\"context_id\"] == CONTEXT and row[\"context_epoch\"] == EPOCH\n    and row[\"source\"] == \"tool_wait\"\n)\nprefix_path, prefix = next(\n    (Path(path), evidence) for path, evidence in audit[\"input_jsonl_prefixes\"].items()\n    if path.endswith(\"/opportunities/admission_opportunities.jsonl\")\n)\nobservations, digest, consumed = [], hashlib.sha256(), 0\nwith prefix_path.open(\"rb\") as stream:\n    while consumed < prefix[\"complete_prefix_bytes\"]:\n        line = stream.readline(prefix[\"complete_prefix_bytes\"] - consumed)\n        if not line.endswith(b\"\\n\"):\n            raise ValueError(\"incomplete retained prefix\")\n        consumed += len(line)\n        digest.update(line)\n        if b'\"tool_wait_forecast\"' in line and CONTEXT.encode() in line:\n            row = json.loads(line)\n            if row[\"context_epoch\"] == EPOCH:\n                observations.append(row)\nif digest.hexdigest() != prefix[\"complete_prefix_sha256\"]:\n    raise ValueError(\"forecast input differs from the sealed audit\")\nobservations.sort(key=lambda row: row[\"ts_ms\"])\ntimes = [row[\"ts_ms\"] for row in observations]\nkey = PrefillCandidateKey(\"observed\", \"wf\", \"inv\", CONTEXT, EPOCH, 0, None, None)\n\n\ndef hint(row):\n    return NativeToolWaitHint(\n        key, row[\"p10_ms\"], row[\"p50_ms\"], row[\"p90_ms\"],\n        row[\"observed_monotonic_ms\"], float(\"inf\"), \"0\" * 64,\n        release_cdf=tuple(map(tuple, row[\"release_cdf\"])),\n        residual_duration_mass=tuple(map(tuple, row[\"residual_duration_mass\"])),\n        residual_support_detail=row[\"residual_support_detail\"],\n    )\n\n\ndef remaining(row, wall_ts):\n    return hint(row).remaining_quantile(\n        .5, now_ms=row[\"observed_monotonic_ms\"] + wall_ts - row[\"ts_ms\"],\n    )\n\n\ngroups = {}\nfor row in selected:\n    groups.setdefault(row[\"submit_ts_ms\"], []).append(row)\ndetails, first = [], None\nfor submitted, actions in sorted(groups.items()):\n    index = bisect_right(times, submitted) - 1\n    current = observations[index] if index >= 0 else None\n    if first is None:\n        first = current\n    details.append({\n        \"submit_ts_ms\": submitted,\n        \"actual_remaining_to_known_completion_ms\": wait[\"completion_ts_ms\"] - submitted,\n        \"command_count\": len(actions),\n        \"full_bytes\": sum(row[\"pool_bytes\"].get(\"kv\", 0) for row in actions),\n        \"forecast_record_age_ms\": submitted - current[\"ts_ms\"] if current else None,\n        \"current_forecast_conditional_p50_ms\": remaining(current, submitted) if current else None,\n        \"first_issue_forecast_conditioned_on_survival_p50_ms\":\n            remaining(first, submitted) if first else None,\n        \"support_detail\": current[\"residual_support_detail\"] if current else None,\n        \"forecast_record_conditional_p50_ms\": current[\"conditional_p50_ms\"] if current else None,\n        \"release_curve_points\": len(current[\"release_cdf\"]) if current else 0,\n        \"release_curve_end_probability\": current[\"release_cdf\"][-1][1]\n            if current and current[\"release_cdf\"] else None,\n        \"lease_release_reasons\": sorted({\n            event[\"reason\"] for action in actions for event in action[\"lease_events\"]\n            if event[\"event\"] == \"prefetch_residency_released\"\n        }),\n    })\nreport = {\n    \"schema_version\": 1,\n    \"observed_at_local\": datetime.now().astimezone().isoformat(),\n    \"audit\": {\"path\": str(AUDIT), \"sha256\": hashlib.sha256(audit_bytes).hexdigest()},\n    \"forecast_input\": {\"path\": str(prefix_path), **prefix},\n    \"workflow_id\": wait[\"workflow_id\"], \"context_id\": CONTEXT,\n    \"context_epoch\": EPOCH, \"completion_ts_ms\": wait[\"completion_ts_ms\"],\n    \"forecast_count\": len(observations), \"restore_bursts\": details,\n    \"first_issue_forecast\": first,\n    \"semantics\": (\n        \"One selected repeated-restore episode, not a representative cohort or policy gain. \"\n        \"All forecast values are emitted before the corresponding transfer; known completion \"\n        \"is used only for offline error reporting. Old forecast survival is descriptive, \"\n        \"not permission to restore or evidence of current capacity. Wall/monotonic alignment \"\n        \"uses the forecast record pair; delivery lag is not independently reconstructed. \"\n        \"Tool revision can change within one context epoch, so a frozen forecast cannot \"\n        \"be assumed to describe every sequential tool in this wait group.\"\n    ),\n}\nhelper = Path(__file__).read_bytes()\nreport.update({\n    \"helper_sha256\": hashlib.sha256(helper).hexdigest(), \"helper_utf8_source\": helper.decode(),\n})\nOUTPUT.write_text(json.dumps(report, indent=2, allow_nan=False) + \"\\n\")\nprint(json.dumps({\n    \"forecast_count\": len(observations), \"restore_bursts\": details,\n}, indent=2))\n"
+}

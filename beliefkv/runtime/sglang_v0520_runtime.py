@@ -347,6 +347,9 @@ class NativeAdmissionRuntime:
         ] = {}
         self._prefetch_issue_budgets: dict[str, PrefetchResidencyBudget] = {}
         self._prefetch_service_leases: dict[str, _PrefetchServiceLease] = {}
+        self._tool_prefetch_survival_evidence: OrderedDict[
+            PrefillCandidateKey, tuple[NativeToolWaitHint, bool]
+        ] = OrderedDict()
         self._prefetch_lock_release_failures: set[str] = set()
         self._prefetch_priority_normal_admissions = 4
         self._prefetch_priority_promoted: str | None = None
@@ -926,6 +929,7 @@ class NativeAdmissionRuntime:
                             self._parent_capacity_handoffs.pop(context_id, None)
                         self._tool_last_queries.pop(key, None)
                         self._tool_opportunity_cache.pop(key, None)
+                        self._tool_prefetch_survival_evidence.pop(key, None)
                         del self.context_sessions[context_id]
                         self._context_sessions_revision += 1
                         self._context_tokens.pop(context_id, None)
@@ -936,6 +940,8 @@ class NativeAdmissionRuntime:
                         RuntimeEventKind.CONTEXT_ADVANCE,
                     ):
                         self.tool_wait_hints.pop(context_id, None)
+                        if key is not None:
+                            self._tool_prefetch_survival_evidence.pop(key, None)
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.WORKFLOW_END:
                     self._execution_handoff_capacity_blocked = {
@@ -971,6 +977,11 @@ class NativeAdmissionRuntime:
                         key: count for key, count in self._tool_prefetch_budget.items()
                         if key.root_workflow_id != event.workflow_id
                     })
+                    self._tool_prefetch_survival_evidence = OrderedDict(
+                        (key, evidence)
+                        for key, evidence in self._tool_prefetch_survival_evidence.items()
+                        if key.root_workflow_id != event.workflow_id
+                    )
                     self._prepare_probe_after_ms = {
                         key: when for key, when in self._prepare_probe_after_ms.items()
                         if key.root_workflow_id != event.workflow_id
@@ -2984,6 +2995,7 @@ class NativeAdmissionRuntime:
                 "observed_monotonic_ms": hint.issued_monotonic_ms,
                 "workflow_id": key.root_workflow_id, "invocation_id": key.invocation_id,
                 "context_id": key.context_id, "context_epoch": key.context_epoch,
+                "invocation_revision_ts_ms": hint.invocation_revision_ts_ms,
                 "p10_ms": hint.wait_p10_ms, "p50_ms": hint.wait_p50_ms,
                 "p90_ms": hint.wait_p90_ms, "release_cdf": hint.release_cdf,
                 "tool_offload_wait_ms": TOOL_OFFLOAD_WAIT_MS,
@@ -3901,7 +3913,9 @@ class NativeAdmissionRuntime:
         if window is not None and source == "tool_wait":
             hint = self._live_tool_hint(key)
             if hint is not None:
-                remaining = hint.remaining_quantile(.5, now_ms=time.monotonic() * 1000.)
+                remaining = self._tool_prefetch_remaining(
+                    hint, .5, now_ms=time.monotonic() * 1000.,
+                )
         elif window is not None and ticket is not None:
             if ticket.phase == "probabilistic":
                 hint = self.join_wait_hints.get(ticket.join_id)
@@ -4982,7 +4996,7 @@ class NativeAdmissionRuntime:
                     deferred += 1
                     outside_window += 1
                     continue
-            remaining = hint.remaining_quantile(.5, now_ms=now_ms)
+            remaining = self._tool_prefetch_remaining(hint, .5, now_ms=now_ms)
             if remaining is None or remaining > self.prefetch_lead_ms:
                 if use_probe:
                     self._tool_survival_probes[hint.key.context_id] = (
@@ -5077,7 +5091,9 @@ class NativeAdmissionRuntime:
                     )
                     continue
                 window = self._h2d_start_window(opportunity)
-                remaining = hint.remaining_quantile(.5, now_ms=time.monotonic() * 1000.)
+                remaining = self._tool_prefetch_remaining(
+                    hint, .5, now_ms=time.monotonic() * 1000.,
+                )
                 if window is None or remaining is None or remaining > window.horizon_ms:
                     self.counts["tool_prefetch_reclaimed_plan_timing_changed"] += 1
                     self._record_wait_prefetch_plan(
@@ -5114,10 +5130,47 @@ class NativeAdmissionRuntime:
     ) -> bool:
         now_ms = time.monotonic() * 1000
         # P50 and parking now refer to the same surviving event distribution.
-        remaining = hint.remaining_quantile(.5, now_ms=now_ms)
+        remaining = self._tool_prefetch_remaining(hint, .5, now_ms=now_ms)
         return remaining is not None and remaining <= (
             self.prefetch_lead_ms if horizon_ms is None else horizon_ms
         )
+
+    def _tool_prefetch_remaining(
+        self, hint: NativeToolWaitHint, quantile: float, *, now_ms: float,
+    ) -> float | None:
+        remaining = hint.remaining_quantile(quantile, now_ms=now_ms)
+        evidence = self._tool_prefetch_survival_evidence.get(hint.key)
+        if evidence is None:
+            return remaining
+        anchor, overrun = evidence
+        if anchor.invocation_revision_ts_ms != hint.invocation_revision_ts_ms:
+            self._tool_prefetch_survival_evidence.pop(hint.key, None)
+            self.counts["tool_prefetch_survival_episode_changed"] += 1
+            return remaining
+        if not overrun or remaining is None:
+            return remaining
+        # The expired hint is statistical evidence, not action authorization.
+        # Current live identity/timing checks still control every native enqueue.
+        surviving = anchor.remaining_quantile(quantile, now_ms=now_ms)
+        if surviving is None:
+            self.counts["tool_prefetch_survival_tail_unsupported"] += 1
+            return None
+        if surviving > remaining:
+            self.counts["tool_prefetch_survival_remaining_extended"] += 1
+        return max(remaining, surviving)
+
+    def _remember_tool_prefetch_survival(self, hint: NativeToolWaitHint) -> None:
+        if not hint.release_cdf and not hint.residual_duration_mass:
+            return
+        previous = self._tool_prefetch_survival_evidence.get(hint.key)
+        if (
+            previous is None
+            or previous[0].invocation_revision_ts_ms != hint.invocation_revision_ts_ms
+        ):
+            self._tool_prefetch_survival_evidence[hint.key] = (hint, False)
+            self._tool_prefetch_survival_evidence.move_to_end(hint.key)
+            if len(self._tool_prefetch_survival_evidence) > 512:
+                self._tool_prefetch_survival_evidence.popitem(last=False)
 
     def _estimate_h2d_service(
         self, size_bytes: int, *, shape: str,
@@ -5160,8 +5213,8 @@ class NativeAdmissionRuntime:
         hint = self._live_tool_hint(opportunity.step.key) if opportunity.step is not None else None
         if hint is not None:
             now_ms = time.monotonic() * 1000.
-            lower = hint.remaining_quantile(.1, now_ms=now_ms)
-            center = hint.remaining_quantile(.5, now_ms=now_ms)
+            lower = self._tool_prefetch_remaining(hint, .1, now_ms=now_ms)
+            center = self._tool_prefetch_remaining(hint, .5, now_ms=now_ms)
             if lower is not None and center is not None:
                 prediction_early_ms = max(0., center - lower)
         elif opportunity.step is not None:
@@ -5256,6 +5309,7 @@ class NativeAdmissionRuntime:
             source="tool_wait",
         )
         if commands:
+            self._remember_tool_prefetch_survival(hint)
             ticket.command_id = commands[-1]
             ticket.command_ids = commands
             ticket.drained = False
@@ -5771,6 +5825,36 @@ class NativeAdmissionRuntime:
                     })
                 return
         self._prefetch_service_leases.pop(command_id)
+        evidence = self._tool_prefetch_survival_evidence.get(lease.key)
+        if (
+            reason == "service_window_expired" and lease.source == "tool_wait"
+            and evidence is not None and not evidence[1]
+        ):
+            anchor = evidence[0]
+            invocation = self.graph.invocations.get(lease.key.invocation_id)
+            if (
+                invocation is not None and invocation.state is InvocationState.WAIT_TOOL
+                and invocation.active_tool_calls
+                and self.context_sessions.get(lease.key.context_id) == lease.key
+                and lease.wait_revision == anchor.invocation_revision_ts_ms
+                and invocation.updated_ts_ms == anchor.invocation_revision_ts_ms
+            ):
+                self._tool_prefetch_survival_evidence[lease.key] = (anchor, True)
+                self._tool_survival_probes.pop(lease.key.context_id, None)
+                self._tool_prefetch_next_ms = 0.
+                self.counts["tool_prefetch_survival_overrun"] += 1
+                if self._opportunity_writer is not None:
+                    self._opportunity_writer.record({
+                        "event": "tool_prefetch_survival_overrun",
+                        "ts_ms": time.time() * 1000., "command_id": command_id,
+                        "context_id": lease.key.context_id,
+                        "context_epoch": lease.key.context_epoch,
+                        "invocation_revision_ts_ms": anchor.invocation_revision_ts_ms,
+                        "forecast_age_ms": (
+                            time.monotonic() * 1000. - anchor.issued_monotonic_ms
+                        ),
+                        "scope": "same active tool survived speculative protection; not completion",
+                    })
         self.counts[f"prefetch_residency_released:{reason}"] += 1
         if self._opportunity_writer is not None:
             self._opportunity_writer.record({

@@ -553,6 +553,131 @@ def test_residency_expiry_is_bounded_and_does_not_free_native_data():
     assert runtime.counts["prefetch_residency_released:service_window_expired"] == 1
 
 
+def test_same_active_tool_overrun_survives_new_forecasts_without_pinning_or_retrying():
+    runtime, original, node, action, receipt, _ = locked_runtime()
+    original = replace(original, release_cdf=((500., .1), (1000., .8), (20000., 1.)))
+    runtime._remember_tool_prefetch_survival(original)
+    lease = runtime._prefetch_service_leases[action.command_id]
+    now_ms = (lease.expires_at + .01) * 1000.
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                   return_value=now_ms / 1000.):
+            runtime._refresh_prefetch_service_leases()
+        runtime._native_cache.tree_core.dec_lock_ref.assert_called_once_with(1, receipt)
+        assert not runtime._prefetch_service_leases
+        assert node.component_data[0].value is not None
+        assert runtime._tool_prefetch_survival_evidence[original.key] == (original, True)
+        fresh = replace(
+            original, issued_monotonic_ms=now_ms, expires_monotonic_ms=now_ms + 5000.,
+            release_cdf=((10., .1), (200., .9), (1000., 1.)),
+        )
+        runtime.tool_wait_hints[original.key.context_id] = fresh
+        assert fresh.remaining_quantile(.5, now_ms=now_ms) < 1000.
+        assert original.remaining_quantile(.5, now_ms=now_ms) > 1000.
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+                   return_value=now_ms / 1000.), \
+             patch.object(runtime, "_wait_prefetch_opportunity") as inspect:
+            runtime.dispatch_tool_prefetch()
+            assert not runtime._tool_prefetch_ready(fresh)
+        inspect.assert_not_called()
+        assert runtime.counts["tool_prefetch_survival_overrun"] == 1
+        assert not runtime.physical_disabled
+        assert runtime.graph.invocations["tool"].state is InvocationState.WAIT_TOOL
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("reason", ("first_gpu_service", "native_residency_lost", "terminal"))
+def test_other_restore_release_reasons_do_not_create_survival_overrun(reason):
+    runtime, hint, _, action = leased_runtime()
+    hint = replace(hint, release_cdf=((100., .1), (1000., .8), (10000., 1.)))
+    try:
+        runtime._remember_tool_prefetch_survival(hint)
+        runtime._release_prefetch_service_lease(action.command_id, reason)
+        assert runtime._tool_prefetch_survival_evidence[hint.key] == (hint, False)
+        assert not runtime.counts["tool_prefetch_survival_overrun"]
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("change", ("revision", "source", "session", "completed_tool"))
+def test_speculative_expiry_requires_the_exact_still_active_tool_episode(change):
+    runtime, hint, _, action = leased_runtime()
+    hint = replace(hint, release_cdf=((100., .1), (1000., .8), (10000., 1.)))
+    try:
+        runtime._remember_tool_prefetch_survival(hint)
+        if change == "revision":
+            runtime.on_events((event(
+                3, RuntimeEventKind.TOOL_START, invocation_id="tool",
+                attributes={"tool_run_id": "other", "tool_family": "shell"},
+            ),))
+        elif change == "source":
+            runtime._prefetch_service_leases[action.command_id] = replace(
+                runtime._prefetch_service_leases[action.command_id], source="join_ticket",
+            )
+        elif change == "session":
+            runtime.context_sessions[hint.key.context_id] = replace(
+                hint.key, session_generation=2,
+            )
+        else:
+            runtime.on_events((event(
+                3, RuntimeEventKind.TOOL_END, invocation_id="tool",
+                attributes={"tool_run_id": "long"},
+            ),))
+        runtime._release_prefetch_service_lease(action.command_id, "service_window_expired")
+        assert not runtime.counts["tool_prefetch_survival_overrun"]
+    finally:
+        runtime.close()
+
+
+def test_survival_feedback_can_reenter_window_and_resets_on_real_tool_revision():
+    runtime, original = tool_runtime()
+    original = replace(
+        original, issued_monotonic_ms=1000., expires_monotonic_ms=6000.,
+        release_cdf=((100., .1), (200., .8), (1000., 1.)),
+    )
+    runtime._tool_prefetch_survival_evidence[original.key] = (original, True)
+    current = replace(
+        original, issued_monotonic_ms=1800., expires_monotonic_ms=6800.,
+        release_cdf=((10., .1), (100., .9), (500., 1.)),
+    )
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.8):
+            assert runtime._tool_prefetch_ready(current, horizon_ms=150.)
+        # A new model refresh alone cannot erase an exhausted observed tail.
+        later = replace(current, issued_monotonic_ms=2100., expires_monotonic_ms=7100.)
+        assert runtime._tool_prefetch_remaining(later, .5, now_ms=2100.) is None
+        revised = replace(later, invocation_revision_ts_ms=4.)
+        assert runtime._tool_prefetch_remaining(revised, .5, now_ms=2100.) == (
+            revised.remaining_quantile(.5, now_ms=2100.)
+        )
+        assert not runtime._tool_prefetch_survival_evidence
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
+def test_quantile_only_hint_and_unmissed_forecast_keep_original_prefetch_behavior():
+    runtime, original = tool_runtime()
+    try:
+        runtime._remember_tool_prefetch_survival(original)
+        assert not runtime._tool_prefetch_survival_evidence
+        curve = replace(original, release_cdf=((100., .1), (1000., .8), (10000., 1.)))
+        runtime._remember_tool_prefetch_survival(curve)
+        later = replace(
+            curve, issued_monotonic_ms=curve.issued_monotonic_ms + 50.,
+            expires_monotonic_ms=curve.expires_monotonic_ms + 50.,
+        )
+        now_ms = later.issued_monotonic_ms + 10.
+        assert runtime._tool_prefetch_remaining(later, .5, now_ms=now_ms) == (
+            later.remaining_quantile(.5, now_ms=now_ms)
+        )
+        runtime._remember_tool_prefetch_survival(later)
+        assert runtime._tool_prefetch_survival_evidence[original.key] == (curve, False)
+    finally:
+        runtime.close()
+
+
 def test_native_eviction_explicitly_revokes_soft_residency():
     runtime, hint, node, action = leased_runtime()
     node.component_data[2].value = None
