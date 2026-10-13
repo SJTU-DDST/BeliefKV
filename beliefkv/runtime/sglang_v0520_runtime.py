@@ -3845,13 +3845,14 @@ class NativeAdmissionRuntime:
         opportunity: SessionH2DOpportunity | None, *,
         reason: str, remaining_ms: float | None = None,
         window: TransferStartWindow | None = None,
+        join_id_override: str | None = None,
     ) -> None:
         writer = self._opportunity_writer
         if writer is None:
             return
         invocation = self.graph.invocations.get(key.invocation_id)
         ticket = self._join_ticket
-        join_id = (
+        join_id = join_id_override or (
             ticket.join_id if source == "join_ticket" and ticket is not None
             else getattr(invocation, "join_id", None) if source == "join_ticket"
             else None
@@ -5695,14 +5696,33 @@ class NativeAdmissionRuntime:
         if not callable(getattr(cache, "prefetch_gpu_session_nodes", None)):
             command = self.issue_prefetch_gpu_step(steps[0], source=source) if steps else None
             return (command,) if command is not None else ()
+        join_id = (
+            getattr(self._join_ticket, "join_id", None)
+            if source == "join_ticket" and self._opportunity_writer is not None else None
+        )
         if self.event_server is not None:
             self.event_server.drain(max_messages=128)
-        if (
-            not steps or not self._live_wait_prefetch(key, source)
-            or self.physical_ledger.pending_action_count("PREFETCH_GPU")
-            or any(step.key != key for step in steps)
-            or len({(step.leaf_node_id, step.leaf_creation_time) for step in steps}) != 1
-        ):
+        if not steps:
+            return ()
+        if not self._live_wait_prefetch(key, source):
+            self._record_wait_prefetch_plan(
+                source, key, None, reason="enqueue_causal_changed",
+                join_id_override=join_id,
+            )
+            return ()
+        if self.physical_ledger.pending_action_count("PREFETCH_GPU"):
+            self._record_wait_prefetch_plan(
+                source, key, None, reason="enqueue_transfer_busy",
+                join_id_override=join_id,
+            )
+            return ()
+        if any(step.key != key for step in steps) or len({
+            (step.leaf_node_id, step.leaf_creation_time) for step in steps
+        }) != 1:
+            self._record_wait_prefetch_plan(
+                source, key, None, reason="enqueue_identity_changed",
+                join_id_override=join_id,
+            )
             return ()
         # Capture once after draining causal events. Native rechecks allocation,
         # ancestry and generation for every node in this same ordered burst.
@@ -5715,6 +5735,10 @@ class NativeAdmissionRuntime:
             or len(fresh.steps) != len(steps)
         ):
             self.counts["prefetch_burst_plan_changed"] += 1
+            self._record_wait_prefetch_plan(
+                source, key, fresh, reason="enqueue_plan_changed",
+                join_id_override=join_id,
+            )
             return ()
         if fresh.steps != steps:
             nodes = {
@@ -5731,6 +5755,10 @@ class NativeAdmissionRuntime:
                 for current, selected in zip(fresh.steps, steps)
             ):
                 self.counts["prefetch_burst_plan_changed"] += 1
+                self._record_wait_prefetch_plan(
+                    source, key, fresh, reason="enqueue_prefix_changed",
+                    join_id_override=join_id,
+                )
                 return ()
             dropped_mamba = sum(
                 int(nodes[current.node_id].mamba_host_present
@@ -5750,6 +5778,10 @@ class NativeAdmissionRuntime:
         issue_budget = self._current_residency_budget(include_evictable=True)
         if not self._prefetch_slot_available(key, budget=issue_budget):
             self.counts["prefetch_slot_lost_before_enqueue"] += 1
+            self._record_wait_prefetch_plan(
+                source, key, fresh, reason="enqueue_slot_changed",
+                join_id_override=join_id,
+            )
             return ()
         byte_allowance = max(0, issue_budget.byte_limit - sum(
             lease.protected_bytes for lease in self._prefetch_service_leases.values()

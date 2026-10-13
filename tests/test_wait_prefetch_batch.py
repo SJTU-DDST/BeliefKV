@@ -607,6 +607,8 @@ def test_wait_plan_reports_remaining_full_and_state_without_implying_ready():
 
 def test_wait_batch_rechecks_causal_state_after_draining_events():
     runtime, key, opportunity, cache, _ = batch_fixture("join_ticket")
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
     runtime.event_server = NS(drain=Mock(side_effect=lambda **kwargs: runtime.on_events((
         event(8, RuntimeEventKind.CONTEXT_ADVANCE, invocation_id="parent",
               context_id="ctx-parent", context_epoch=1),
@@ -615,6 +617,48 @@ def test_wait_batch_rechecks_causal_state_after_draining_events():
     cache.prefetch_gpu_session_nodes.assert_not_called()
     assert runtime.physical_ledger.pending_count == 0
     runtime.event_server = None
+    rejected = [
+        row for row in records
+        if row["event"] == "wait_prefetch_plan" and row["reason"] == "enqueue_causal_changed"
+    ]
+    assert len(rejected) == 1
+    assert rejected[0]["join_id"] == "join"
+    assert rejected[0]["context_epoch"] == key.context_epoch
+    assert rejected[0]["planned_full_tokens"] is None
+    runtime.close()
+
+
+@pytest.mark.parametrize("source", ["join_ticket", "tool_wait"])
+def test_wait_enqueue_rejection_reports_the_existing_fresh_capacity_plan(source):
+    runtime, key, opportunity, cache, _ = batch_fixture(source)
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    fresh = replace(
+        opportunity, fits_current_free_lists=False,
+        blocked_detail="prefetch_full_capacity_budget",
+        capacity_budget={"full_limit_tokens": 8, "requested_full_tokens": 16},
+    )
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity), \
+            patch.object(runtime, "_h2d_start_window", return_value=TransferStartWindow(200., 0., 500.)):
+            if source == "tool_wait":
+                runtime._roll_tool_prefetch()
+            with patch.object(runtime, "_wait_prefetch_opportunity", return_value=fresh) as capture:
+                assert not runtime._issue_wait_prefetch_steps(key, opportunity.steps, source=source)
+        capture.assert_called_once_with(key, max_steps=4, fit_current_capacity=True)
+        rejected = [
+            row for row in records
+            if row["event"] == "wait_prefetch_plan" and row["reason"] == "enqueue_plan_changed"
+        ]
+        assert len(rejected) == 1
+        assert rejected[0]["capacity_budget"] == fresh.capacity_budget
+        assert rejected[0]["blocked_detail"] == "prefetch_full_capacity_budget"
+        assert rejected[0]["join_id"] == ("join" if source == "join_ticket" else None)
+        cache.prefetch_gpu_session_nodes.assert_not_called()
+        assert runtime.physical_ledger.pending_count == 0
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
 
 
 def test_cold_reclaim_excludes_every_node_in_the_target_prefix():

@@ -37,7 +37,8 @@ def main():
     classes = {case.get("classname") for case in suite.findall("testcase")}
     for expected in (
         "test_prefill_turnover_probe", "test_v0520_native_telemetry",
-        "test_restore_wait_probe", "test_analyze_prefill_turnover", "TestBeliefKVHook",
+        "test_restore_wait_probe", "test_analyze_prefill_turnover",
+        "test_wait_prefetch_batch", "TestBeliefKVHook",
     ):
         if not any(expected in name for name in classes):
             raise ValueError(f"missing qualification scope: {expected}")
@@ -75,6 +76,7 @@ def main():
         "tests/test_v0520_native_telemetry.py",
         "tests/test_restore_wait_probe.py",
         "tests/test_analyze_prefill_turnover.py",
+        "tests/test_wait_prefetch_batch.py",
     )
     result = {
         "qualified_at_local": datetime.now().astimezone().isoformat(),
@@ -106,6 +108,9 @@ def main():
             "Prior probe microbenchmarks exclude the new nested launch-telemetry span and first-service prefix conversion.",
             "List/tuple prefix conversion preserves exact numeric fallback; performance remains unmeasured.",
             "launch_telemetry is part of run_batch; never add both as exclusive CPU cost.",
+            "Failed burst checks emit bounded existing-plan evidence, preserving the pre-drain JOIN identity.",
+            "Rejection observations add no physical queries, allocations or changes to existing validation.",
+            "The old probe CPU fixture excludes the new failure-only observation cost; real perturbation remains unmeasured.",
             "Real GPU events, their perturbation, native counterparts and full JCT gains remain unverified.",
             "V54 has a recorded administrative reservation cutoff; preserve its unfinished outcome.",
             "Cold deployment is allowed only after 06:00 Asia/Shanghai and GPU availability checks.",
