@@ -43,8 +43,26 @@ agent 调度、共用路径减负、predictive H2D 与 `PREPARE_HOST`，
 独立尾部571个真实GPU服务样本、
 预测器/物理动作启用、源码/引擎、27项配置及各池容量一致。
 FULL预留4,144 token，Mamba随下一批名额变化，该样本一份。
-冻结配置和固定V29 native保持，运行源码不热改。V46的提前
-消费与完整繁忙窗口待检验；V45的既有窗口仍未达标，目标active。
+冻结配置和固定V29 native保持，运行源码不热改。v231的V46
+600–900秒完整窗口decode request steps为312,178/380,722，
+少18.004%；Python独占墙钟55.041秒，仍未达标。满48请求同
+粗几何decode接近native，短prefill与请求切换继续较慢；这些
+区间含控制/overlap，不是kernel计时，不能从JCT直接扣除。
+
+v232独立密封前缀确认提前且下一请求消费FULL为JOIN8个/
+181.924MB、tool73个/6.623GB，65.572GB handoff确认复用单列
+需求恢复。完成前正FULL/启动/提交为37/36/11和762/81/77，
+仍有显著计划到提交缺口。JOIN arrival到服务P90 457.583ms与
+12个ACK事件最后ACK到服务P90 8.584秒分母不同。采样可容纳
+正FULL为JOIN526.684MB、tool9.052GB，不证明实际触发容量。
+623个PREPARE ACK命令中113个关联后续恢复，不能当净收益。
+
+db68f89/v233只在隔离Followup验证，未部署V46：有完整服务和
+排队证据时，PREPARE预算为首个extent的D2H/H2D ACK P90、
+两向排队P90及100ms观测周期，不把最大预测提前量当固定恢复
+耗时。缺失证据保留回退，慢恢复允许更长预算；344项检查通过。
+首个extent估计不代表完整checkpoint往返，执行仍依赖完整原生
+数据，Mamba不做PREPARE。目标active，实际收益继续检验。
 
 V45于07:43:41.038655行政停止：87 completed、69已创建未完成，
 全156任务已到达；保留行政删失，不作自然RETURN。156个workspace

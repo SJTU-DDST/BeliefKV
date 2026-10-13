@@ -12,8 +12,30 @@ tail, enabled predictors/physical actions, matching sources/engine, all
 27 frozen fields and pool capacities. Observed reserve is 4144 FULL
 tokens and one Mamba slot following the imminent batch. A complete
 busy-window comparison of V45 is sealed in V219 and remains below native.
-V46 consumption and performance are pending; qualify further changes
-in isolated Followup without hot edits. The performance goal stays active.
+V231 seals V46's complete600-900s window:312178/380722 decode request
+steps,18.004% below fixed native. Exclusive instrumented Python wall
+is55.041s:tool/admission/handoff/reentry6.689/5.699/5.517/5.516s.
+Coarse full48 decode is close to native; turnover46/47 and short prefill
+remain slower. These intervals include controls/overlap, not kernel time
+or removable JCT. Reuse V199 native summary. The goal remains unmet.
+
+V232 independently seals file prefixes at08:14:56-08:15:13 CST.
+Pre-completion positive-FULL/start/submit isJOIN37/36/11,tool762/81/77.
+True early next-request FULL reuse is8JOINs/181.924MB and73tools/6.623GB;
+65.572GB confirmed demand handoff stays separate. JOIN arrival-to-service
+P90 is457.583ms, while12ACK events' last-ACK-to-service P90 is8.584s.
+Do not combine denominators or overlapping prefixes.623PREPARE ACK
+commands have113later-restore associations; this does not prove net benefit.
+Sampled fitting positive FULL is526.684MB/9.052GB forJOIN/tool, not
+trigger-time capacity. Continue reducing the plan-to-submit gap and costs.
+
+Next-cold-deployment candidate db68f89 is qualified byV233 with344 checks.
+With measured D2H/H2D queue and ACK P90 evidence, PREPARE uses their
+round trip plus100ms observation cadence instead of compulsory2s restore
+lead. Missing evidence retains fallback; slow restoration may need more
+time. Scope is only the selected first extent, not the entire checkpoint.
+V46 remains frozen; complete native execution dependencies and no Mamba
+PREPARE stay unchanged. No runtime benefit is established for this candidate.
 
 V45 stopped administratively at 07:43:41.038655 CST: 87 completed and
 69 created unfinished, all 156 arrivals present. Keep the unfinished
