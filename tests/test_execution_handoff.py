@@ -1116,6 +1116,114 @@ def test_handoff_and_admission_keep_scan_targets_then_rotate_next_iteration(monk
     runtime.close()
 
 
+@pytest.mark.parametrize("slots, expected_targets", ((0, 0), (1, 9), (3, 11), (8, 16), (16, 16)))
+def test_residency_probes_follow_imminent_slots_and_rotate_without_caching_decisions(
+    monkeypatch, slots, expected_targets,
+):
+    runtime, (cold, warm, _), cache = runtime_with_requests(monkeypatch)
+    runtime._prefill_cycle_active = True
+    runtime._residency_scan_cursor = 8
+    ordered = [(index, cold) for index in range(32)]
+    ordered[8] = (8, warm)
+    keys = {index: runtime.visible[request.rid] for index, request in ordered}
+    with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+        slots, 1024 ** 3, source="native_next_prefill",
+    )):
+        first = runtime._resident_prefill_scan(ordered, keys)
+        assert len(first) == expected_targets
+        assert runtime._resident_prefill_scan(ordered, keys) is first
+        assert runtime._residency_scan_cursor == (16 if slots else 8)
+        assert runtime.counts["admission_residency_scan_targets"] == expected_targets
+        assert runtime.counts["admission_residency_scan_reused"] == 1
+        if slots:
+            assert (8, warm) in first
+        runtime.scheduler_step()
+        second = runtime._resident_prefill_scan(ordered, keys)
+        assert len(second) == expected_targets
+        assert runtime._residency_scan_cursor == (24 if slots else 8)
+    cache.inspect_beliefkv_reentry.assert_not_called()
+    runtime.close()
+
+
+def test_residency_scan_rechecks_slot_changes_within_one_cycle(monkeypatch):
+    runtime, (cold, warm, parent), _ = runtime_with_requests(monkeypatch)
+    runtime._prefill_cycle_active = True
+    runtime._residency_scan_cursor = 8
+    ordered = [(index, cold) for index in range(32)]
+    ordered[2], ordered[18] = (2, warm), (18, parent)
+    keys = {index: runtime.visible[request.rid] for index, request in ordered}
+    budgets = [
+        PrefetchResidencyBudget(slots, 1024 ** 3, source="native_next_prefill")
+        for slots in (1, 3)
+    ]
+    with patch.object(runtime, "_current_residency_budget", side_effect=budgets):
+        assert len(runtime._resident_prefill_scan(ordered, keys)) == 9
+        expanded = runtime._resident_prefill_scan(ordered, keys)
+        assert len(expanded) == 11
+        assert (2, warm) in expanded and (18, parent) in expanded
+    assert runtime.counts["admission_residency_scan_reused"] == 0
+    runtime.close()
+
+
+@pytest.mark.parametrize("source", ("native_next_prefill", "fallback"))
+def test_full_width_residency_scan_retains_existing_rotation_and_read_counts(
+    monkeypatch, source,
+):
+    runtime, (cold, _, _), _ = runtime_with_requests(monkeypatch)
+    ordered = [(index, cold) for index in range(32)]
+    keys = {index: runtime.visible[cold.rid] for index in range(32)}
+    with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+        8, 1024 ** 3, source=source,
+    )):
+        runtime._residency_scan_cursor = 0
+        first = runtime._resident_prefill_scan(ordered, keys)
+        assert first == ordered[:8]
+        assert runtime._residency_scan_cursor == 8
+        second = runtime._resident_prefill_scan(ordered, keys)
+        assert second == ordered[:16]
+        assert runtime._residency_scan_cursor == 16
+    runtime.close()
+
+
+def test_slot_bounded_scan_covers_small_queue_and_eventually_the_entire_tail(monkeypatch):
+    runtime, (cold, warm, _), _ = runtime_with_requests(monkeypatch)
+    with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+        1, 1024 ** 3, source="native_next_prefill",
+    )):
+        short = [(0, cold), (1, warm)]
+        keys = {index: runtime.visible[request.rid] for index, request in short}
+        assert runtime._resident_prefill_scan(short, keys) == short
+        ordered = [(index, cold) for index in range(32)]
+        keys = {index: runtime.visible[cold.rid] for index in range(32)}
+        runtime._residency_scan_cursor = 0
+        observed = set()
+        for _ in range(4):
+            scan = runtime._resident_prefill_scan(ordered, keys)
+            assert scan[0] == ordered[0] and len(scan) == 9
+            assert len({index for index, _ in scan}) == 9
+            observed.update(index for index, _ in scan)
+        assert observed == set(range(32))
+    runtime.close()
+
+
+def test_slot_bounded_sort_still_rechecks_selected_handoff_and_aging(monkeypatch):
+    runtime, (cold, warm, parent), cache = runtime_with_requests(monkeypatch)
+    runtime._residency_scan_cursor = 2
+    with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+        1, 1024 ** 3, source="native_next_prefill",
+    )):
+        assert select(runtime, [cold, warm, parent]).candidates == (warm, cold, parent)
+        assert [call.args[0].rid for call in cache.inspect_beliefkv_reentry.call_args_list] == [
+            cold.rid, parent.rid, warm.rid,
+        ]
+        assert runtime._request_reentry_anchors(warm) is not None
+        assert cache.inspect_beliefkv_reentry.call_args.args == (warm,)
+        assert select(runtime, [cold, warm, parent]).candidates[0] is warm
+        runtime._visible_since[cold.rid] -= 11.
+        assert select(runtime, [cold, warm, parent]).candidates[0] is cold
+    runtime.close()
+
+
 def test_shared_scan_refreshes_after_physical_change_and_queue_reorder(monkeypatch):
     runtime, (cold, warm, _), cache = runtime_with_requests(monkeypatch)
     runtime.scheduler_step([cold, warm])

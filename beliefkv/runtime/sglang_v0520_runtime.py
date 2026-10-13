@@ -7091,8 +7091,13 @@ class NativeAdmissionRuntime:
         self, ordered: list[tuple[int, object]],
         keys: dict[int, PrefillCandidateKey | None],
     ) -> list[tuple[int, object]]:
+        budget = self._current_residency_budget()
+        width = (
+            min(8, budget.request_slots)
+            if budget.source == "native_next_prefill" else 8
+        )
         signature = (
-            self.semantic_revision, self.graph.graph_version,
+            self.semantic_revision, self.graph.graph_version, width,
             tuple((index, id(req), keys[index]) for index, req in ordered),
         )
         cached = self._prefill_residency_scan
@@ -7100,12 +7105,30 @@ class NativeAdmissionRuntime:
             self.counts["admission_residency_scan_reused"] += 1
             return cached[1]
         count = len(ordered)
-        scan = ordered[:8] + [
-            ordered[position]
-            for offset in range(min(8, count))
-            if (position := (self._residency_scan_cursor + offset) % count) >= 8
-        ]
-        self._residency_scan_cursor = (self._residency_scan_cursor + 8) % count
+        # Bound the fixed head by imminent slots, but retain eight rotating
+        # tail probes so fewer slots do not slow cache-locality discovery.
+        # The selected restore still reads its own complete native checkpoint.
+        scan = ordered[:width]
+        if width == 8:
+            scan += [
+                ordered[position]
+                for offset in range(min(8, count))
+                if (position := (self._residency_scan_cursor + offset) % count) >= 8
+            ]
+            self._residency_scan_cursor = (self._residency_scan_cursor + 8) % count
+        elif width and count > width:
+            tail_count = count - width
+            start = (max(width, self._residency_scan_cursor) - width) % tail_count
+            scan += [
+                ordered[width + (start + offset) % tail_count]
+                for offset in range(min(8, tail_count))
+            ]
+            self._residency_scan_cursor = width + (start + 8) % tail_count
+        elif width:
+            self._residency_scan_cursor = 0
+        self.counts["admission_residency_scan_targets"] += len(scan)
+        if width < 8:
+            self.counts["admission_residency_scan_slot_bounded"] += 1
         if self._prefill_cycle_active:
             self._prefill_residency_scan = (signature, scan)
         return scan

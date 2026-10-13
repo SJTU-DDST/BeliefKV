@@ -1,0 +1,73 @@
+{
+  "schema_version": 1,
+  "qualified_at_local": "2026-10-13T08:45:03.373953+08:00",
+  "baseline_commit": "91027ea77b2f2302d390fd588d2c11dc642b654e",
+  "qualified_paths_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "e274e46ea510bac772be07eea6cce2393959419954251ff0c1d65ed93e90a4f5",
+    "tests/test_execution_handoff.py": "e27fb85d223bc7421e5ffbab6ea343b7a1a015ac1e8c6a44010ccf4c10f616d4",
+    "scripts/benchmark_prefill_probe_budget_cpu.py": "dbf63ed44cb93905affba499f3b48ffde6d523c469c5db3c2b55ef42507d4989"
+  },
+  "completed_checks": {
+    "command": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python -m pytest -q tests/test_execution_handoff.py tests/test_native_transfer_policy.py tests/test_sglang_v0520_runtime.py tests/test_sglang_v0520_admission.py",
+    "session_id": 56769,
+    "exit_code": 0,
+    "reported_result": "366 passed in 1.13s",
+    "scope": "Completed session; this helper does not rerun the checks."
+  },
+  "cpu_evidence": {
+    "report": "experiments/reports/v236_prefill_probe_budget_cpu_20261013.json",
+    "sha256": "6b6f3f0781a3b1a56c6bc929d39ef1d299edf035b11c1583496d38a2ae3e0d30",
+    "qualified_cases": 12,
+    "supersedes": "v235_prefill_probe_budget_cpu_20261013.json",
+    "retained_negative_evidence": "The first version increased reads in the eight-slot path. V236 retains its original rotation; V235 remains preserved."
+  },
+  "policy_semantics": [
+    "Only the fixed head of resident-first sorting scales with imminent native slots.",
+    "Keep eight rotating tail probes when a nonempty native slot budget is known.",
+    "No-slot sorting skips residency probes; unknown geometry keeps the old bound.",
+    "Eight-or-more slots and fallback retain the original read counts and rotation.",
+    "Recheck the scan targets if the native slot budget changes within the same cycle.",
+    "Aging, causal rank, restore priority and selected-request native checks remain live.",
+    "Mixed-residency ordering can change; Host-only fixture equality is not a general equivalence claim."
+  ],
+  "main_execution_verification": {
+    "collection_code_commit": "18dbcd600eccff7cdef6aed353c5adeecc0e955d",
+    "verification_code_commit": "767ba9726985d7c531cc43a5eec74bcd749deefd",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": [
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/archive/README.md",
+      "experiments/reports/v225_join_backup_source_qualification_20261013.json",
+      "experiments/reports/v227_v45_development_stop_20261013.json",
+      "experiments/reports/v227_v45_final_wait_prefetch_20261013.json.gz",
+      "experiments/reports/v227_v45_final_wait_prefetch_20261013_summary.json",
+      "experiments/reports/v227_v45_workspace_archive_20261013.json",
+      "experiments/reports/v228_v46_deployment_validation_20261013.json",
+      "experiments/reports/v229_v45_cutoff_qualification_20261013.json",
+      "experiments/reports/v230_v46_live_health_20261013.json",
+      "experiments/reports/v231_v46_busy_600_900_20261013.json",
+      "experiments/reports/v232_v46_live_wait_prefetch_20261013.json.gz",
+      "experiments/reports/v232_v46_live_wait_prefetch_20261013_summary.json",
+      "experiments/reports/v233_prepare_round_trip_qualification_20261013.json"
+    ]
+  },
+  "unchanged_patch_sha256": "3698ce2f8eca9be50cebfecbf25a698f93b872227683ac9fe4671e2dc74480c1",
+  "scope": "Isolated CPU qualification pending cold deployment. No native engine edit, DMA, extra reclaim capacity, useful prefetch or GPU-throughput gain established.",
+  "helper_sha256": "d1b9744fc130ff0e1b047638c25d748a2c704096c419757cb24166299557ae13",
+  "helper_utf8_source": "\"\"\"Bind the pending scan policy to completed checks and CPU evidence.\"\"\"\n\nfrom datetime import datetime\nimport hashlib\nimport json\nfrom pathlib import Path\nimport subprocess\nimport sys\n\nROOT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nMAIN = Path(\"/home/longhao/experiment/BeliefKV\")\nOUTPUT = ROOT / \"experiments/reports/v237_prefill_probe_qualification_20261013.json\"\nsys.path.insert(0, str(ROOT))\nfrom scripts.summarize_semantic_h2d_ab import verify_frozen_execution_source\n\nif OUTPUT.exists():\n    raise ValueError(\"preserve qualification\")\npaths = (\n    \"beliefkv/runtime/sglang_v0520_runtime.py\",\n    \"tests/test_execution_handoff.py\",\n    \"scripts/benchmark_prefill_probe_budget_cpu.py\",\n)\nhashes = {path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths}\nbenchmark_path = ROOT / \"experiments/reports/v236_prefill_probe_budget_cpu_20261013.json\"\nbenchmark = json.loads(benchmark_path.read_bytes())\nif benchmark[\"qualified_runtime_sha256\"] != hashes[paths[0]]:\n    raise ValueError(\"benchmark source changed\")\nif benchmark[\"benchmark_source_sha256\"] != hashes[paths[2]]:\n    raise ValueError(\"benchmark helper changed\")\nsubprocess.run([\"git\", \"diff\", \"--check\"], cwd=ROOT, check=True)\nexecution = verify_frozen_execution_source(\n    MAIN, \"18dbcd600eccff7cdef6aed353c5adeecc0e955d\",\n)\nreceipt = {\n    \"schema_version\": 1,\n    \"qualified_at_local\": datetime.now().astimezone().isoformat(),\n    \"baseline_commit\": subprocess.check_output(\n        [\"git\", \"rev-parse\", \"HEAD\"], cwd=ROOT, text=True,\n    ).strip(),\n    \"qualified_paths_sha256\": hashes,\n    \"completed_checks\": {\n        \"command\": (\n            \"/home/longhao/miniconda3/envs/beliefkv-next/bin/python -m pytest -q \"\n            \"tests/test_execution_handoff.py tests/test_native_transfer_policy.py \"\n            \"tests/test_sglang_v0520_runtime.py tests/test_sglang_v0520_admission.py\"\n        ),\n        \"session_id\": 56769, \"exit_code\": 0,\n        \"reported_result\": \"366 passed in 1.13s\",\n        \"scope\": \"Completed session; this helper does not rerun the checks.\",\n    },\n    \"cpu_evidence\": {\n        \"report\": str(benchmark_path.relative_to(ROOT)),\n        \"sha256\": hashlib.sha256(benchmark_path.read_bytes()).hexdigest(),\n        \"qualified_cases\": len(benchmark[\"cases\"]),\n        \"supersedes\": \"v235_prefill_probe_budget_cpu_20261013.json\",\n        \"retained_negative_evidence\": (\n            \"The first version increased reads in the eight-slot path. \"\n            \"V236 retains its original rotation; V235 remains preserved.\"\n        ),\n    },\n    \"policy_semantics\": [\n        \"Only the fixed head of resident-first sorting scales with imminent native slots.\",\n        \"Keep eight rotating tail probes when a nonempty native slot budget is known.\",\n        \"No-slot sorting skips residency probes; unknown geometry keeps the old bound.\",\n        \"Eight-or-more slots and fallback retain the original read counts and rotation.\",\n        \"Recheck the scan targets if the native slot budget changes within the same cycle.\",\n        \"Aging, causal rank, restore priority and selected-request native checks remain live.\",\n        \"Mixed-residency ordering can change; Host-only fixture equality is not a general equivalence claim.\",\n    ],\n    \"main_execution_verification\": execution,\n    \"unchanged_patch_sha256\": hashlib.sha256(\n        (MAIN / \"patches/sglang-v0.5.20-beliefkv-staging.patch\").read_bytes(),\n    ).hexdigest(),\n    \"scope\": (\n        \"Isolated CPU qualification pending cold deployment. No native engine edit, \"\n        \"DMA, extra reclaim capacity, useful prefetch or GPU-throughput gain established.\"\n    ),\n    \"helper_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n    \"helper_utf8_source\": Path(__file__).read_text(),\n}\nOUTPUT.write_text(json.dumps(receipt, indent=2, allow_nan=False) + \"\\n\")\nprint(json.dumps({\n    \"completed_checks\": receipt[\"completed_checks\"][\"reported_result\"],\n    \"qualified_cases\": receipt[\"cpu_evidence\"][\"qualified_cases\"],\n    \"main_execution_unchanged\": execution[\"execution_source_unchanged\"],\n}, indent=2))\n"
+}
