@@ -5,6 +5,23 @@
 完成/剩余工作预测，runtime 根据因果状态和真实缓存容量
 安排传输；近期改动的稳定吞吐和 JCT 收益仍待验证。
 
+本阶段不止降低调度CPU开销，还要降低workflow关键路径上的
+累计准入等待。v270对V29全部156对任务重建非重叠时间分解：
+平均JCT少391.198秒，最后返回child的入队至首次worker服务
+等待少194.434秒、root对应等待少22.403秒。最后child输出反增
+1.50%，root输出少15.91%；这支持继续研究准入与局部性，也说明
+不能用一项聚合token差或预取字节给完整JCT作因果归因。
+
+代码边界：`CausalFrontierScheduler.admission_rank`已有最后阻塞
+child/链深度分类；`plan_native_prefill`已有驻留、老化、恢复及
+收尾的有界优先。当前tool_timing_only路径跳过
+`_submit_local_predictions`，不能将旧length_ranks分支当作已
+部署的语义剩余工作调度。下一步复用现有阶段/进度信号，在这些
+有界候选中协调关键路径推进与恢复成本，避免新增逐decode全图
+扫描。工具卸载、终态child回收与提前恢复应共同服务同一近期
+准入计划；不要重做已有基础机制或让部分FULL恢复直接授权执行。
+具体目标、正式同版本消融和开发native复用规则见执行计划开头。
+
 v265–v268新增原生Host回收减负：write-back重复FULL副本回收
 已经满足请求时，`FullComponent.drive_host_eviction`直接返回，
 避免仍遍历所有Host叶节点并建堆。容量不足时保留原来的session

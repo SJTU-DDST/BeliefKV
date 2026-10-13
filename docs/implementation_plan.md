@@ -2,6 +2,71 @@
 
 Status date: 2026-10-13.
 
+## Current Goal Revision
+
+With fixed tasks, arrivals, model and physical capacities, reduce mean
+workflow JCT and improve completion throughput relative to native by combining
+low-cost control, workflow-critical admission, tool-wait-aware KV retention
+and incremental offload, terminal-child reclamation, and useful anticipatory
+restoration. Independently graded solution quality is required before calling
+completion throughput successful-task throughput. Keep tail latency, ordinary
+request aging, recomputation and resource costs in the acceptance record.
+Decode token/s is diagnostic, not a prerequisite for a valid mean-JCT benefit.
+
+This is the revised execution contract for the existing active goal. The
+current goal tool exposes status changes but no objective-text update;
+its stored V15 wording has not been rewritten. Do not falsely complete the
+unfinished goal or create a replacement by marking it complete. The user's
+latest instructions and this contract supersede the old per-iteration native
+requirement: development runs predictive first against the fixed V29 native
+reference; repeated same-version comparisons and ablations belong to final
+validation. No new completion guards or canary stage.
+
+1. Finish the current overhead diagnosis. Preserve V49 through full JCT and
+   cold-run already queued V50/82b42d5. Check real satisfied-eviction scan
+   counters, prefill turnover, complete JCT and throughput; CPU branch savings
+   alone do not complete this step.
+2. Prioritize workflow critical-path queueing next. Existing causal ranks
+   already recognize the sole remaining JOIN child; resident-first, final
+   priority and restored-parent consumption also exist. Current ordering is
+   primarily class/depth and bounded promotions. The tool-timing-only config
+   bypasses legacy local-demand predictions, so its dormant output-length
+   tie-break is not evidence of semantic remaining-work scheduling. Integrate
+   available final-stage/progress and restore-cost evidence within bounded
+   admission, rather than giving every root or long investigating child
+   unconditional priority. Preserve native batch filling and request aging.
+3. Coordinate each waiting agent's memory lifecycle. Rank short-wait HBM
+   retention versus incremental FULL backup and reclaim using remaining tool
+   time, complete round-trip cost and actual pressure. Supply freed capacity
+   to an imminently executable request, then retain restored pages through
+   consumption. Existing terminal-child reclaim and survival-conditioned tool
+   prediction remain foundations, not missing features. Never PREPARE mutable
+   Mamba; restore only the necessary valid checkpoint state.
+4. Improve anticipatory coverage at real opportunities. At the same wait-event
+   identity, follow safe checkpoint -> missing pages -> actual capacity ->
+   submission -> completion boundary -> next-request reuse. Test timing,
+   capacity and admission coordination together without claiming a positive
+   plan proves a feasible transfer. Partial overlap can help even when full
+   ACK cannot precede RETURN, but partial pages never authorize execution.
+5. Attribute stable gains after candidate improvement. Report all submitted
+   workflows, mean/P50/P95 JCT, completion curves, failed/unfinished outcomes,
+   generated work and resource costs. Compare native with shared optimizations,
+   workflow scheduling/reclaim, added PREPARE and added JOIN/tool anticipation
+   as controlled factors in final repeated live experiments. Do not subtract
+   transfer-stream time from JCT or credit shared engine fixes only to prediction.
+
+V270 reconstructs both complete V29 traces. Mean JCT improves 391.198s:
+root JOIN wait 268.933s, root LLM 108.731s, root tools 18.935s, offset by
+5.401s more other/out-of-trace time. Last-returning child queue-to-first-worker
+service improves 194.434s and root queueing 22.403s: 55.43% of the observed
+mean difference is in these intervals, not an isolated causal policy effect.
+Critical-child requests/output are 24184/3.887M -> 24270/3.945M; root output
+falls 3.383M -> 2.845M. Both waves improve, but top-ten improvements account
+for 71.19% of the net paired difference and all ten generate less output.
+All tasks remain included. The script verifies interval reconciliation,
+request/tool pairing, all output counts and exact input hashes. See
+`experiments/reports/v270_v29_jct_sources_20261013.json` and its full-task CSV.
+
 Commit 82b42d5 is qualified by 113 checks against the exact reconstructed
 engine; the original implementation reproduces all three no-scan regressions.
 V50 was queued at 12:58:57 CST on October 13, coordinator PID1250265.
