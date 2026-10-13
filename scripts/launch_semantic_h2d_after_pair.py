@@ -13,6 +13,7 @@ import socket
 import subprocess
 import sys
 import time
+from zoneinfo import ZoneInfo
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
@@ -84,6 +85,23 @@ def wait_for_processes(identities: dict[int, tuple | None]) -> None:
         if not remaining:
             return
         time.sleep(5)
+
+
+def wait_for_experiment_hours() -> None:
+    """Respect the daily server reservation before any cold deployment."""
+    local_timezone = ZoneInfo("Asia/Shanghai")
+    notified = False
+    while True:
+        local = datetime.now(local_timezone)
+        if local.hour >= 6 and not (local.hour == 23 and local.minute == 59):
+            return
+        if not notified:
+            print(
+                f"{local.isoformat()}: server reserved; wait until 06:00 Asia/Shanghai",
+                flush=True,
+            )
+            notified = True
+        time.sleep(30)
 
 
 def _require_clean(root: Path) -> None:
@@ -234,6 +252,7 @@ def main() -> None:
     print(json.dumps(state), flush=True)
     try:
         wait_for_processes(identities)
+        wait_for_experiment_hours()
         if not args.development_restart:
             validate_completed_pair(previous, original)
         if json.loads(plan_path.read_text()) != original:
@@ -278,6 +297,7 @@ def main() -> None:
         state["deployed_engine"] = git_source_state(
             engine, canonical_patch=repo / PATCH_PATH,
         )["canonical_patch"]
+        wait_for_experiment_hours()
         state["status"] = (
             "running_new_predictive" if args.arm_order == "predictive_h2d"
             else "running_new_pair"
