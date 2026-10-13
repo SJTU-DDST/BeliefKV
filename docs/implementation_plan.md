@@ -23,6 +23,16 @@ reference; repeated same-version comparisons and ablations belong to final
 validation. No new completion guards or canary stage. The latest user instruction
 replaces V50's older single-change freeze with the latest committed code.
 
+Trace-analysis priority, added on October 13: analyze the latest finished
+development run first. V49 is the current complete trace; V50 is still live.
+Inspect the newest live run with explicitly bounded snapshots when diagnosing
+an active failure, and label those as partial rather than final outcomes.
+Use the fixed V29 native as a qualified comparison reference. Reopen older
+predictive traces only for a specific historical comparison or reproduction;
+they do not substitute for checking the latest implementation's real behavior.
+Bind each analysis to the run, frozen revision, observation scope and input
+hashes, preserving incomplete workflows and unknown evidence.
+
 1. Finish the current overhead diagnosis. V49 has finished full collection;
    V50 cold-started at 14:20:50 CST on October 13 from 02fd87c, including
    both 82b42d5 Host-reclaim and 3b66033 final-admission fixes. This measures
@@ -41,6 +51,11 @@ replaces V50's older single-change freeze with the latest committed code.
    deployment; measure coverage, then integrate restore cost and investigate
    non-final critical-child queueing. Preserve native batch filling, request
    aging and bounded quotas.
+   V275 now uses the full latest V49 trace: paired last-child queue improves
+   76.518s/workflow but after-first-service time grows 98.051s and JOIN wait
+   grows 21.708s. Investigate generated work and interleaved service/turnover
+   together; the latter interval is not isolated scheduler CPU. Keep V50's
+   frozen code running to measure the new admission and shared-path fixes.
 3. Coordinate each waiting agent's memory lifecycle. Rank short-wait HBM
    retention versus incremental FULL backup and reclaim using remaining tool
    time, complete round-trip cost and actual pressure. Supply freed capacity
