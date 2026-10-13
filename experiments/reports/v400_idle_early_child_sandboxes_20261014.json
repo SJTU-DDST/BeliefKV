@@ -1,0 +1,3271 @@
+{
+  "status": "verified_idle_sandboxes_stopped",
+  "started_at_local": "2026-10-14T07:17:12.978742+08:00",
+  "helper_sha256": "76b5fe96a1edb8820f3a4ee35e36654bdbc46aad3f8cd39ffc47cc4459653f87",
+  "runs": [
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_return_eos_recent_32root_20260929_v1",
+      "verified": [
+        {
+          "id": "8acdf436e05f3cfaa704c13474c255d2b24c0bbeaae0d69da64027e38a54c291",
+          "name": "/beliefkv-pydata__xarray-7229-9dcc8051",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 2374023,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-29T01:38:10.337438163Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "2374023",
+              "2373701",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1953704",
+              "2374023",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_return_eos_recent_32root_20260929_v1/workloads/workflows/pydata__xarray-7229/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_return_eos_recent_32root_20260929_v1/workloads/workflows/pydata__xarray-7229/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        }
+      ],
+      "stopped_ids": [
+        "8acdf436e05f3cfaa704c13474c255d2b24c0bbeaae0d69da64027e38a54c291"
+      ]
+    },
+    {
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging",
+      "verified": [
+        {
+          "id": "b9541f5782dbe34110f65609dee74c36ddd9277e2b3e4529102cbf4799885eaf",
+          "name": "/beliefkv-a4f4c3e64897-8d2acdda",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 222425,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:38:43.771307373Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "222425",
+              "222336",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1954007",
+              "222425",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-15368/planned_children/a4f4c3e64897/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-15368/planned_children/a4f4c3e64897/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "287317cbf2840078a6c24d62fa8fbebd96d748c093a8e01a1abf0ac4e8dec6fa",
+          "name": "/beliefkv-ce8a57d38864-6fdade7a",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 222410,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:38:43.771534713Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "222410",
+              "222340",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1954009",
+              "222410",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-15368/planned_children/ce8a57d38864/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-15368/planned_children/ce8a57d38864/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "9d2ff6e244141ed2782f81a6842f2b986a3bc38f10731167dc406676f52a5441",
+          "name": "/beliefkv-645a0ed178e2-51c61806",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 222419,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:38:43.771113985Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "222419",
+              "222342",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1954008",
+              "222419",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-15368/planned_children/645a0ed178e2/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-15368/planned_children/645a0ed178e2/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "caeaf203d3e58aeed26fa69f773deaa5ab8d7caf0036d1da42e7fb8a0939d2d5",
+          "name": "/beliefkv-django__django-15368-e1f4dc37",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 221024,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:38:34.672104911Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "221024",
+              "220999",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1953926",
+              "221024",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-15368/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-15368/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "5632c75d1d580df2feb07be5d8ab4d09c02ec459fcad79654fc212a45e1e3287",
+          "name": "/beliefkv-e025b2afe912-5018a833",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 196683,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:35:15.228014855Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "196683",
+              "196426",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1952303",
+              "196683",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-11400/planned_children/e025b2afe912/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-11400/planned_children/e025b2afe912/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "eb55e9049a687cb673460edf2a7fedf73970c799779a5c7c68fc6ba65c81e0a9",
+          "name": "/beliefkv-c2742a1a3b9b-fb929117",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 196641,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:35:15.226353953Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "196641",
+              "196399",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1952304",
+              "196641",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-11400/planned_children/c2742a1a3b9b/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-11400/planned_children/c2742a1a3b9b/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "b47bc5c8ebea82059cf6c94d8d6705aa1da1c572fad1080d3aa534c56273f10d",
+          "name": "/beliefkv-27edd53f4865-3701988c",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 196704,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:35:15.230841869Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "196704",
+              "196462",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1952305",
+              "196704",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-14631/planned_children/27edd53f4865/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-14631/planned_children/27edd53f4865/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "2e967d0c19272375e53095a801a3d1cb99238ab221d3c538e3254de0d9c1e4ba",
+          "name": "/beliefkv-django__django-14631-63778bb2",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 194312,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:35:05.799616615Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "194312",
+              "194281",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1952210",
+              "194312",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-14631/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-14631/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "ec3168b27f24c09070170a0c5a55bde9c53463c281773944518a6a16031b9ec8",
+          "name": "/beliefkv-django__django-11400-219bded0",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 193641,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:35:02.788628583Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "193641",
+              "193618",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1952187",
+              "193641",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-11400/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-11400/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "8d8d9c1e7c3b7ccfd491c68a34c4f769dd9975a00cb0df81cc9c1abb0056d484",
+          "name": "/beliefkv-eaae6f781882-3d9b75ca",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 192434,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:34:50.222809795Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "192434",
+              "192352",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1952084",
+              "192434",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-10554/planned_children/eaae6f781882/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-10554/planned_children/eaae6f781882/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "0380d32418814cbf772d75ca4007024f92c4114b3e14efb9fccc1f4f71321668",
+          "name": "/beliefkv-d0a4b3f78f3a-cd71651f",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 192005,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:34:49.448040978Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "192005",
+              "191905",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1952082",
+              "192005",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-10554/planned_children/d0a4b3f78f3a/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-10554/planned_children/d0a4b3f78f3a/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "5376d0a6e9f3935bbe185c4d3384540dc9721c1bf711f7d70e015d788281568f",
+          "name": "/beliefkv-3fec39e4eaa3-267d5c6c",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 192012,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:34:49.448725647Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "192012",
+              "191908",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1952081",
+              "192012",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-10554/planned_children/3fec39e4eaa3/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-10554/planned_children/3fec39e4eaa3/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "a5a91f79eac2d6840ab086a26433c49d29119d119c285a12004d43178fc70d18",
+          "name": "/beliefkv-e12a476c9afe-a3d4b883",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 192020,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:34:49.448574964Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "192020",
+              "191911",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1952083",
+              "192020",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-10554/planned_children/e12a476c9afe/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-10554/planned_children/e12a476c9afe/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "8c18151b9d91bafece421bfe502c8e1ba8363af46ef4abb2a62167c038322a97",
+          "name": "/beliefkv-django__django-10554-03f98d88",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 190754,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:34:31.782987611Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "190754",
+              "190724",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1951919",
+              "190754",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-10554/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/django__django-10554/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "eea944c7758a2819254aa81f5620ef0721938e15a5287260a200e7dce4ca6a35",
+          "name": "/beliefkv-3c0e04bf9848-6508fc05",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 166417,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:32:13.384512957Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "166417",
+              "166348",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1950727",
+              "166417",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7982/planned_children/3c0e04bf9848/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7982/planned_children/3c0e04bf9848/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "ec515834c6411a658bf4ac7e1617af5c1dbb24f1d77b9fcf94e644849bff32d1",
+          "name": "/beliefkv-95caa52f3ba1-596854d5",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 166311,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:32:13.31153564Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "166311",
+              "166211",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1950713",
+              "166311",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7982/planned_children/95caa52f3ba1/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7982/planned_children/95caa52f3ba1/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "ebe51078c56216c2d6362e247212ff13c6c316d7b21f697f62b7fc2eaa590316",
+          "name": "/beliefkv-0ff0edb6717a-7c17e0c4",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 166126,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:32:13.105978335Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "166126",
+              "166084",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1950707",
+              "166126",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7982/planned_children/0ff0edb6717a/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7982/planned_children/0ff0edb6717a/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "8723d9b8311f8e58e886d05ec0d69d6d5cd7a2b98f0b07d337716d31ee12f0ca",
+          "name": "/beliefkv-bea8444c3a70-948a7429",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 166118,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:32:13.100342439Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "166118",
+              "166063",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1950706",
+              "166118",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7982/planned_children/bea8444c3a70/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7982/planned_children/bea8444c3a70/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "7a6c242db4c308c0cbf03bf228adfbf79a8949a548d0d55dd8b992428975fe7f",
+          "name": "/beliefkv-pytest-dev__pytest-7982-918a144f",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 164141,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:31:56.935698402Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "164141",
+              "164114",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1950581",
+              "164141",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7982/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7982/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "c2ed68261c86e8549a252b580e5d7eaf0eddb50c3978051e0a5216ebed01722b",
+          "name": "/beliefkv-e65f0e2cc44b-cfb76870",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 156486,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:31:12.922684358Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "156486",
+              "156405",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1950201",
+              "156486",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7490/planned_children/e65f0e2cc44b/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7490/planned_children/e65f0e2cc44b/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "016539044e3d0fea6dcde393fd09cbcebdd7dac6b9085d169fa450404246563d",
+          "name": "/beliefkv-586ba10396c6-407a1c8a",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 156462,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:31:12.917895808Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "156462",
+              "156356",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1950202",
+              "156462",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7490/planned_children/586ba10396c6/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7490/planned_children/586ba10396c6/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "efc7a7dcb44b84354abce6e88b87327d4547b81f44375020d40186be3735ad1a",
+          "name": "/beliefkv-4c5128de24e5-e0a27582",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 156478,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:31:12.920353713Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "156478",
+              "156383",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1950200",
+              "156478",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7490/planned_children/4c5128de24e5/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7490/planned_children/4c5128de24e5/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "08826ab6053b88f4e1b1fb0412179dd959fb8816fe814bc730c5e04f97bd6132",
+          "name": "/beliefkv-eb8fc50ac52b-135a3352",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 156470,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:31:12.915760002Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "156470",
+              "156348",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1950203",
+              "156470",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7490/planned_children/eb8fc50ac52b/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7490/planned_children/eb8fc50ac52b/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "f0653a364e2d40748cd816cd6e80d9b0769d8ed183c3cac05a8969ba2872301c",
+          "name": "/beliefkv-pytest-dev__pytest-7490-25ff064c",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 153473,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:30:58.176330298Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "153473",
+              "153449",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1950075",
+              "153473",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7490/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7490/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "7355c578e6f576235cf8676ffe1825298bc1c07c4e33dbc0a08f78660419be37",
+          "name": "/beliefkv-pytest-dev__pytest-7432-b2160cc0",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 119675,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:27:49.070313725Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "119675",
+              "119648",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1947156",
+              "119675",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7432/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7432/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "5ff10086945e3e2892524771acdd369ce9770d77f5d3915f26596a555b1b6506",
+          "name": "/beliefkv-73811ff2ab63-3948f203",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 79775,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.636454755Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "79775",
+              "78096",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945365",
+              "79775",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-10356/planned_children/73811ff2ab63/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-10356/planned_children/73811ff2ab63/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "1e45752efe48259d3e6b40839cfa730c3667e78c5624639542ac03edbedae616",
+          "name": "/beliefkv-00f212e74efb-f0f930d2",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 79458,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.645156788Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "79458",
+              "78223",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945361",
+              "79458",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-6197/planned_children/00f212e74efb/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-6197/planned_children/00f212e74efb/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "348c207b17ccef13d1365b92a5d5a28df3957c2c22b1a349a9f295dc4b8ebbea",
+          "name": "/beliefkv-4632cee6bd61-189e5605",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 77828,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.570867989Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "77828",
+              "77334",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945349",
+              "77828",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-10356/planned_children/4632cee6bd61/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-10356/planned_children/4632cee6bd61/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "acff09a02b2db4be0cb6c5fe012233bdd6f71066d720bcf1114f703bb2153e4f",
+          "name": "/beliefkv-990dfe433c3c-f8eafa4c",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 78286,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.598144669Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "78286",
+              "77507",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945355",
+              "78286",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-10356/planned_children/990dfe433c3c/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-10356/planned_children/990dfe433c3c/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "197e9030bf2fcd74e616192b934129c8c02b59cdf2b3f09c8e89e84cb57d03c3",
+          "name": "/beliefkv-b46d55cadc3f-9ad0a1e8",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 77789,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.566562242Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "77789",
+              "77309",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945348",
+              "77789",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-10356/planned_children/b46d55cadc3f/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-10356/planned_children/b46d55cadc3f/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "e9d883a651519b156d558a4c9123dc6182f29ba039273888c6f5c072be0794a2",
+          "name": "/beliefkv-769f312bd394-df461c72",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 79186,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.595308643Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "79186",
+              "77442",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945350",
+              "79186",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-6202/planned_children/769f312bd394/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-6202/planned_children/769f312bd394/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "8d6017f86cc159deab518390cb65117bafedc93a97275ca4499c84e74a5628fe",
+          "name": "/beliefkv-042f8eefc5b7-eb9db51a",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 80220,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.652366289Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "80220",
+              "78667",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945363",
+              "80220",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5787/planned_children/042f8eefc5b7/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5787/planned_children/042f8eefc5b7/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "50d3f7bd6ca38ff9df55d0acc41a6471b54eb7eedee32d73e3506916a0c9bba7",
+          "name": "/beliefkv-b45eae7d45e7-90346f77",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 79728,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.625986086Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "79728",
+              "77913",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945358",
+              "79728",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5787/planned_children/b45eae7d45e7/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5787/planned_children/b45eae7d45e7/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "f6dfd93b46b5bea22ea04f168c568a93bb54ca48b39dab635f8d70da9b3e8d60",
+          "name": "/beliefkv-6e79f12762c3-17b17cea",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 80682,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.647883843Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "80682",
+              "78423",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945367",
+              "80682",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7236/planned_children/6e79f12762c3/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7236/planned_children/6e79f12762c3/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "d93551a2fcae95dc0637b2acf2763b6fbc42374f975935c80d12fdf99ba6edfe",
+          "name": "/beliefkv-ee1a86357ec7-1155d34f",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 78710,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.598868242Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "78710",
+              "77528",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945353",
+              "78710",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5787/planned_children/ee1a86357ec7/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5787/planned_children/ee1a86357ec7/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "a24014b51c2a34b47d9695e8bed9d0f35da9086052bce75f731ce96acb442bd9",
+          "name": "/beliefkv-ca2910eca0e6-823c911d",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 80339,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.651539625Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "80339",
+              "78633",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945364",
+              "80339",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7236/planned_children/ca2910eca0e6/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7236/planned_children/ca2910eca0e6/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "60153e4094bc3c570a32fa33e2ebf4faedb8078aa7bc80a7cd198c369011db42",
+          "name": "/beliefkv-4c16339d4c2c-62be2491",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 78187,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.59716239Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "78187",
+              "77471",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945354",
+              "78187",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5840/planned_children/4c16339d4c2c/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5840/planned_children/4c16339d4c2c/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "ae00c63dbb4b6a1c4db08ffbf5190028ba1ebe42d094a228ad9dbd244719a984",
+          "name": "/beliefkv-4a2d2ab4ebe3-05bb0b52",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 80487,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.638816019Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "80487",
+              "78114",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945366",
+              "80487",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5840/planned_children/4a2d2ab4ebe3/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5840/planned_children/4a2d2ab4ebe3/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "09b204dcccf0d5343379ce7ef5cd0ccbfbfa7a540f4452e67f408369a4ff912d",
+          "name": "/beliefkv-706fde40adbb-d96adb7e",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 79400,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.648161938Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "79400",
+              "78332",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945360",
+              "79400",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7236/planned_children/706fde40adbb/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7236/planned_children/706fde40adbb/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "a9a2b5746379d53d36aa41e384284701f7759b3fb6a3aecf0bbc48286afab95c",
+          "name": "/beliefkv-36b509540f81-0a90b879",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 80456,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.650457399Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "80456",
+              "78623",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945359",
+              "80456",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7236/planned_children/36b509540f81/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7236/planned_children/36b509540f81/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "d77fcd4eb04c1789c357b6570492425c3b91a2d2f17f02b60e11e353e7ba6ac7",
+          "name": "/beliefkv-42e6d79c23de-7a3eae0b",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 80573,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.633186511Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "80573",
+              "77993",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945357",
+              "80573",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5840/planned_children/42e6d79c23de/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5840/planned_children/42e6d79c23de/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "beacff86fdaf4708acb9cb0b02bf2b43db1b1e007d2b6ab95ceb36926381e547",
+          "name": "/beliefkv-3d4fbc959868-45eefc28",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 80516,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.649395125Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "80516",
+              "78431",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945368",
+              "80516",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5787/planned_children/3d4fbc959868/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5787/planned_children/3d4fbc959868/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "af7c1ff0d27af57a183d9ff8c622ace76c542ad3acdd3c6e26c743c130700196",
+          "name": "/beliefkv-2cdd8aad6237-896d571d",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 78428,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.600135623Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "78428",
+              "77548",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945352",
+              "78428",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5631/planned_children/2cdd8aad6237/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5631/planned_children/2cdd8aad6237/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "de0ec1f088fad82d8ee70c583a2238f076fc83d7093129747bcf535f99dab603",
+          "name": "/beliefkv-d86a9976befe-f10257e6",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 78853,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.599688835Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "78853",
+              "77532",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945351",
+              "78853",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5631/planned_children/d86a9976befe/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5631/planned_children/d86a9976befe/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "d091a203375339fbe79d5a8598909cc48f7a222d049c514a4d6d20ccbe9cfa84",
+          "name": "/beliefkv-150bde596072-17702787",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 80564,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.651496966Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "80564",
+              "78621",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945362",
+              "80564",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5631/planned_children/150bde596072/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5631/planned_children/150bde596072/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "e5d069697f5178f0864af0351721bec07444287cad76d74e3af6a64a9d91216a",
+          "name": "/beliefkv-2ce5440a89e5-e674c90a",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 79160,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:24:10.600321618Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "79160",
+              "77588",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945356",
+              "79160",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-10081/planned_children/2ce5440a89e5/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-10081/planned_children/2ce5440a89e5/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "b4af2286ab02f25f5376e76993bacaa67d5e6ec8a4b918efd5e6afb8b2fda857",
+          "name": "/beliefkv-pytest-dev__pytest-10081-8e356862",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 73272,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:23:57.578402913Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "73272",
+              "72809",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945255",
+              "73272",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-10081/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-10081/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "7bff77cb4143ee2e041b16ca9cb8e99ae94bcc07cd2366d787bdd5e98fe32b00",
+          "name": "/beliefkv-pytest-dev__pytest-10356-77a9c9eb",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 73176,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:23:57.571861971Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "73176",
+              "72682",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945256",
+              "73176",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-10356/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-10356/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "a8d0709359fe33fad0eb55996aab2cacd8ef06208cbb414d2a7a1ab9d97b531d",
+          "name": "/beliefkv-pytest-dev__pytest-7324-51939e2d",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 73268,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:23:57.579145869Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "73268",
+              "72857",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945259",
+              "73268",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7324/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7324/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "d8b321a64566529a3e8c7dd92084f56fed71c9e9c34dd13830cf8a976de0b49a",
+          "name": "/beliefkv-pytest-dev__pytest-6197-535a3962",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 73184,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:23:57.569894726Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "73184",
+              "72683",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945261",
+              "73184",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-6197/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-6197/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "00119ffecff5fe295eb731a98e73e00ef24abee35156f37b63b890d2ec9c2347",
+          "name": "/beliefkv-pytest-dev__pytest-7236-57972752",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 73192,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:23:57.579954222Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "73192",
+              "72858",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945253",
+              "73192",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7236/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-7236/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "fdbdb44af1a7447427b5ef6b7e312da5fa0a1af9f9326463e8c394f324cffc5f",
+          "name": "/beliefkv-pytest-dev__pytest-6202-57bbd112",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 73291,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:23:57.577373109Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "73291",
+              "72777",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945254",
+              "73291",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-6202/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-6202/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "5340fac1001363c2d83c1f6d5f4388c1fc53d41b46e408c88423dd87ca9c18ab",
+          "name": "/beliefkv-pytest-dev__pytest-5631-cfa4f7ec",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 73221,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:23:57.578949009Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "73221",
+              "72813",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945258",
+              "73221",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5631/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5631/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "92a85100c07a00bca5b0795e35910fbf4c425efde2b3f273af6bd22970075246",
+          "name": "/beliefkv-pytest-dev__pytest-5787-523149c9",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 73261,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:23:57.580118089Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "73261",
+              "72866",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945260",
+              "73261",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5787/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5787/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        },
+        {
+          "id": "2c9a05fe1b8300f614d90b865a2dbd6caa79ddb8e7857c8975dc852cca992239",
+          "name": "/beliefkv-pytest-dev__pytest-5840-7140a3e8",
+          "state": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 73208,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-09-28T16:23:57.579367536Z",
+            "FinishedAt": "0001-01-01T00:00:00Z"
+          },
+          "idle_processes": [
+            [
+              "73208",
+              "72811",
+              "sh",
+              "/bin/sh -c while :; do sleep 3600; done"
+            ],
+            [
+              "1945257",
+              "73208",
+              "sleep",
+              "sleep 3600"
+            ]
+          ],
+          "mounts": [
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5840/workspace",
+              "Destination": "/workspace",
+              "Mode": "",
+              "RW": true,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_stream_eos_sampled_dev_32root_v4_staging/workloads/workflows/pytest-dev__pytest-5840/workspace/.git",
+              "Destination": "/workspace/.git",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            },
+            {
+              "Type": "bind",
+              "Source": "/home/longhao/experiment/BeliefKV/beliefkv/experiments/sandbox_support",
+              "Destination": "/beliefkv-support",
+              "Mode": "",
+              "RW": false,
+              "Propagation": "rprivate"
+            }
+          ]
+        }
+      ],
+      "stopped_ids": [
+        "b9541f5782dbe34110f65609dee74c36ddd9277e2b3e4529102cbf4799885eaf",
+        "287317cbf2840078a6c24d62fa8fbebd96d748c093a8e01a1abf0ac4e8dec6fa",
+        "9d2ff6e244141ed2782f81a6842f2b986a3bc38f10731167dc406676f52a5441",
+        "caeaf203d3e58aeed26fa69f773deaa5ab8d7caf0036d1da42e7fb8a0939d2d5",
+        "5632c75d1d580df2feb07be5d8ab4d09c02ec459fcad79654fc212a45e1e3287",
+        "eb55e9049a687cb673460edf2a7fedf73970c799779a5c7c68fc6ba65c81e0a9",
+        "b47bc5c8ebea82059cf6c94d8d6705aa1da1c572fad1080d3aa534c56273f10d",
+        "2e967d0c19272375e53095a801a3d1cb99238ab221d3c538e3254de0d9c1e4ba",
+        "ec3168b27f24c09070170a0c5a55bde9c53463c281773944518a6a16031b9ec8",
+        "8d8d9c1e7c3b7ccfd491c68a34c4f769dd9975a00cb0df81cc9c1abb0056d484",
+        "0380d32418814cbf772d75ca4007024f92c4114b3e14efb9fccc1f4f71321668",
+        "5376d0a6e9f3935bbe185c4d3384540dc9721c1bf711f7d70e015d788281568f",
+        "a5a91f79eac2d6840ab086a26433c49d29119d119c285a12004d43178fc70d18",
+        "8c18151b9d91bafece421bfe502c8e1ba8363af46ef4abb2a62167c038322a97",
+        "eea944c7758a2819254aa81f5620ef0721938e15a5287260a200e7dce4ca6a35",
+        "ec515834c6411a658bf4ac7e1617af5c1dbb24f1d77b9fcf94e644849bff32d1",
+        "ebe51078c56216c2d6362e247212ff13c6c316d7b21f697f62b7fc2eaa590316",
+        "8723d9b8311f8e58e886d05ec0d69d6d5cd7a2b98f0b07d337716d31ee12f0ca",
+        "7a6c242db4c308c0cbf03bf228adfbf79a8949a548d0d55dd8b992428975fe7f",
+        "c2ed68261c86e8549a252b580e5d7eaf0eddb50c3978051e0a5216ebed01722b",
+        "016539044e3d0fea6dcde393fd09cbcebdd7dac6b9085d169fa450404246563d",
+        "efc7a7dcb44b84354abce6e88b87327d4547b81f44375020d40186be3735ad1a",
+        "08826ab6053b88f4e1b1fb0412179dd959fb8816fe814bc730c5e04f97bd6132",
+        "f0653a364e2d40748cd816cd6e80d9b0769d8ed183c3cac05a8969ba2872301c",
+        "7355c578e6f576235cf8676ffe1825298bc1c07c4e33dbc0a08f78660419be37",
+        "5ff10086945e3e2892524771acdd369ce9770d77f5d3915f26596a555b1b6506",
+        "1e45752efe48259d3e6b40839cfa730c3667e78c5624639542ac03edbedae616",
+        "348c207b17ccef13d1365b92a5d5a28df3957c2c22b1a349a9f295dc4b8ebbea",
+        "acff09a02b2db4be0cb6c5fe012233bdd6f71066d720bcf1114f703bb2153e4f",
+        "197e9030bf2fcd74e616192b934129c8c02b59cdf2b3f09c8e89e84cb57d03c3",
+        "e9d883a651519b156d558a4c9123dc6182f29ba039273888c6f5c072be0794a2",
+        "8d6017f86cc159deab518390cb65117bafedc93a97275ca4499c84e74a5628fe",
+        "50d3f7bd6ca38ff9df55d0acc41a6471b54eb7eedee32d73e3506916a0c9bba7",
+        "f6dfd93b46b5bea22ea04f168c568a93bb54ca48b39dab635f8d70da9b3e8d60",
+        "d93551a2fcae95dc0637b2acf2763b6fbc42374f975935c80d12fdf99ba6edfe",
+        "a24014b51c2a34b47d9695e8bed9d0f35da9086052bce75f731ce96acb442bd9",
+        "60153e4094bc3c570a32fa33e2ebf4faedb8078aa7bc80a7cd198c369011db42",
+        "ae00c63dbb4b6a1c4db08ffbf5190028ba1ebe42d094a228ad9dbd244719a984",
+        "09b204dcccf0d5343379ce7ef5cd0ccbfbfa7a540f4452e67f408369a4ff912d",
+        "a9a2b5746379d53d36aa41e384284701f7759b3fb6a3aecf0bbc48286afab95c",
+        "d77fcd4eb04c1789c357b6570492425c3b91a2d2f17f02b60e11e353e7ba6ac7",
+        "beacff86fdaf4708acb9cb0b02bf2b43db1b1e007d2b6ab95ceb36926381e547",
+        "af7c1ff0d27af57a183d9ff8c622ace76c542ad3acdd3c6e26c743c130700196",
+        "de0ec1f088fad82d8ee70c583a2238f076fc83d7093129747bcf535f99dab603",
+        "d091a203375339fbe79d5a8598909cc48f7a222d049c514a4d6d20ccbe9cfa84",
+        "e5d069697f5178f0864af0351721bec07444287cad76d74e3af6a64a9d91216a",
+        "b4af2286ab02f25f5376e76993bacaa67d5e6ec8a4b918efd5e6afb8b2fda857",
+        "7bff77cb4143ee2e041b16ca9cb8e99ae94bcc07cd2366d787bdd5e98fe32b00",
+        "a8d0709359fe33fad0eb55996aab2cacd8ef06208cbb414d2a7a1ab9d97b531d",
+        "d8b321a64566529a3e8c7dd92084f56fed71c9e9c34dd13830cf8a976de0b49a",
+        "00119ffecff5fe295eb731a98e73e00ef24abee35156f37b63b890d2ec9c2347",
+        "fdbdb44af1a7447427b5ef6b7e312da5fa0a1af9f9326463e8c394f324cffc5f",
+        "5340fac1001363c2d83c1f6d5f4388c1fc53d41b46e408c88423dd87ca9c18ab",
+        "92a85100c07a00bca5b0795e35910fbf4c425efde2b3f273af6bd22970075246",
+        "2c9a05fe1b8300f614d90b865a2dbd6caa79ddb8e7857c8975dc852cca992239"
+      ]
+    }
+  ],
+  "scope": "Exact owned idle remnants only; current V55 and foreign jobs are excluded.",
+  "finished_at_local": "2026-10-14T07:17:32.871599+08:00"
+}

@@ -1,0 +1,3231 @@
+{
+  "observed_at_local": "2026-10-14T07:23:17.938151+08:00",
+  "run": "qwen35_native_predictive_replenished_108plus48_20261014_v55",
+  "scheduler_pid": 1973136,
+  "method": "py-spy record --nonblocking --pid 1973136 --rate 99 --duration 15 --format raw",
+  "recorded_samples": 1356,
+  "sampling_errors": 137,
+  "raw": "/home/longhao/experiment/BeliefKV/experiments/reports/v404_v55_scheduler_early_nonblocking_20261014.raw",
+  "raw_sha256": "4ab9e86b00ecd70263c693464e5ff44c2b60ffee9c267d891c32d7f129debc1e",
+  "raw_mtime_local": "2026-10-14T07:21:08.569261+08:00",
+  "compressed": "/home/longhao/experiment/BeliefKV/experiments/reports/v405_v55_active_stack_profile_20261014.raw.gz",
+  "compressed_sha256": "03319cc214e6ab40276e07e1b33f1c0dc3c5d1bdf9012522bb84a8933ced1dea",
+  "routes": {
+    "launch": 371,
+    "post_launch": 84,
+    "other": 57,
+    "selection": 208,
+    "result": 577,
+    "writer": 59
+  },
+  "leaf_functions": [
+    [
+      "synchronize (torch/cuda/streams.py)",
+      525
+    ],
+    [
+      "extend (linear/kernels/gdn_flashinfer.py)",
+      59
+    ],
+    [
+      "transfer_hicache_all_layer_staged_lf_pf (sglang/kernels/ops/kvcache/hicache.py)",
+      30
+    ],
+    [
+      "observe_unified_node_closure (beliefkv/runtime/sglang_v0520_observer.py)",
+      24
+    ],
+    [
+      "forward_extend (linear/gdn_backend.py)",
+      23
+    ],
+    [
+      "run (triton/runtime/jit.py)",
+      17
+    ],
+    [
+      "send_pyobj (zmq/sugar/socket.py)",
+      15
+    ],
+    [
+      "_forward_metadata (hybrid_linear_attn_backend.py)",
+      15
+    ],
+    [
+      "l2norm_fwd (l2norm.py)",
+      14
+    ],
+    [
+      "_prefix_digests (beliefkv/runtime/v0520_native_telemetry.py)",
+      14
+    ],
+    [
+      "delta_rule_prefill_dsl_sm90 (flashinfer/gdn_kernels/delta_rule_dsl/delta_rule_sm90.py)",
+      13
+    ],
+    [
+      "event_loop_overlap (scheduler.py)",
+      12
+    ],
+    [
+      "_write_block_request_probe (beliefkv/runtime/v0520_native_telemetry.py)",
+      11
+    ],
+    [
+      "__call__ (triton/backends/nvidia/driver.py)",
+      11
+    ],
+    [
+      "_write (beliefkv/runtime/v0520_native_telemetry.py)",
+      10
+    ],
+    [
+      "_linear_attention_with_output_impl (radix_linear_attention.py)",
+      10
+    ],
+    [
+      "match_at (radix_cache.py)",
+      10
+    ],
+    [
+      "replay (torch/cuda/graphs.py)",
+      9
+    ],
+    [
+      "drain (beliefkv/runtime/event_channel.py)",
+      9
+    ],
+    [
+      "__call__ (torch/_ops.py)",
+      9
+    ],
+    [
+      "alloc_for_decode (allocation.py)",
+      7
+    ],
+    [
+      "_track_mamba_state_extend (hybrid_linear_attn_backend.py)",
+      7
+    ],
+    [
+      "__c_pointers__ (cutlass/cute/runtime.py)",
+      7
+    ],
+    [
+      "__init__ (<string>)",
+      7
+    ],
+    [
+      "encode_record (beliefkv/runtime/record_json.py)",
+      7
+    ],
+    [
+      "",
+      7
+    ],
+    [
+      "_insert_walk_step (unified_cache/unified_tree_core.py)",
+      7
+    ],
+    [
+      "dynamic_func (<string>)",
+      6
+    ],
+    [
+      "_compute_mrope_positions_decode (forward_batch_info.py)",
+      6
+    ],
+    [
+      "chunk_gated_delta_rule (flashinfer/gdn_prefill.py)",
+      6
+    ],
+    [
+      "__init__ (cutlass/base_dsl/typing.py)",
+      6
+    ],
+    [
+      "<lambda> (triton/runtime/jit.py)",
+      6
+    ],
+    [
+      "free (allocator/token.py)",
+      5
+    ],
+    [
+      "causal_conv1d_fn (sglang/kernels/ops/mamba/causal_conv1d_triton.py)",
+      5
+    ],
+    [
+      "__len__ (torch/_tensor.py)",
+      5
+    ],
+    [
+      "_live_parent_pressure_key (beliefkv/runtime/sglang_v0520_runtime.py)",
+      5
+    ],
+    [
+      "_static_full_mamba_pool_geometry (beliefkv/runtime/sglang_v0520_observer.py)",
+      5
+    ],
+    [
+      "_request_key (beliefkv/runtime/sglang_v0520_admission.py)",
+      5
+    ],
+    [
+      "resolve_forward_inputs (overlap_utils.py)",
+      5
+    ],
+    [
+      "__getitem__ (radix_cache.py)",
+      5
+    ],
+    [
+      "fused_qkv_split_gdn_prefill (sglang/kernels/ops/attention/triton_gdn_fused_proj.py)",
+      5
+    ],
+    [
+      "estimate_native_service (beliefkv/runtime/native_transfer_service.py)",
+      5
+    ],
+    [
+      "<lambda> (flashinfer/gdn_kernels/delta_rule_dsl/delta_rule_sm90.py)",
+      5
+    ],
+    [
+      "on_batch_completed (beliefkv/runtime/sglang_v0520_runtime.py)",
+      4
+    ],
+    [
+      "_write (beliefkv/runtime/v0520_opportunity_telemetry.py)",
+      4
+    ],
+    [
+      "plan_prefetch_gpu_steps (beliefkv/runtime/sglang_v0520_physical.py)",
+      4
+    ],
+    [
+      "prepare_for_decode (schedule_batch.py)",
+      4
+    ],
+    [
+      "_check_token_based_finish (schedule_batch.py)",
+      4
+    ],
+    [
+      "forward_extend (hybrid_linear_attn_backend.py)",
+      4
+    ],
+    [
+      "replace (dataclasses.py)",
+      4
+    ],
+    [
+      "measured (beliefkv/runtime/hotpath_timing.py)",
+      4
+    ],
+    [
+      "run_compiled_program (cutlass/base_dsl/jit_executor.py)",
+      4
+    ],
+    [
+      "fused_gdn_gating (fused_gdn_gating.py)",
+      4
+    ],
+    [
+      "_init_track_conv_indices (hybrid_linear_attn_backend.py)",
+      4
+    ],
+    [
+      "_prune_parent_pressure_candidates (beliefkv/runtime/sglang_v0520_runtime.py)",
+      4
+    ],
+    [
+      "commit_hicache_transfer (unified_cache/components/full.py)",
+      4
+    ],
+    [
+      "__getstate__ (req_time_stats.py)",
+      3
+    ],
+    [
+      "_common_array_prefix (beliefkv/runtime/v0520_native_telemetry.py)",
+      3
+    ],
+    [
+      "_get_invoke_packed_args (cutlass/base_dsl/jit_executor.py)",
+      3
+    ],
+    [
+      "mark_layout_dynamic (cutlass/cute/runtime.py)",
+      3
+    ],
+    [
+      "causal_conv1d_fn (causal_conv1d.py)",
+      3
+    ],
+    [
+      "transfer_hicache_one_layer (sglang/kernels/ops/kvcache/hicache.py)",
+      3
+    ],
+    [
+      "<listcomp> (beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "compute_cache_key (triton/runtime/jit.py)",
+      3
+    ],
+    [
+      "_index_length (beliefkv/runtime/sglang_v0520_observer.py)",
+      3
+    ],
+    [
+      "record (torch/cuda/streams.py)",
+      3
+    ],
+    [
+      "_sync_hicache_ready_counts (unified_radix_cache.py)",
+      3
+    ],
+    [
+      "forward (sampler.py)",
+      3
+    ],
+    [
+      "process_batch_result_decode (scheduler_components/batch_result_processor.py)",
+      3
+    ],
+    [
+      "_publish_parent_pressure_candidates (beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "_compute_lm_head (logits_processor.py)",
+      3
+    ],
+    [
+      "on_completed (beliefkv/runtime/v0520_native_telemetry.py)",
+      3
+    ],
+    [
+      "__init__ (cutlass/base_dsl/compiler.py)",
+      3
+    ],
+    [
+      "<listcomp> (memory_pool.py)",
+      3
+    ],
+    [
+      "_terminal (beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "extend (linear/gdn_backend.py)",
+      3
+    ],
+    [
+      "merge_batch (schedule_batch.py)",
+      3
+    ],
+    [
+      "_replay_metadata (hybrid_linear_attn_backend.py)",
+      3
+    ],
+    [
+      "set_mamba_track_indices_from_reqs (schedule_batch.py)",
+      3
+    ],
+    [
+      "wrapper (sglang/kernels/jit/utils/common.py)",
+      3
+    ],
+    [
+      "iterencode (json/encoder.py)",
+      3
+    ],
+    [
+      "accept (scheduler_components/output_streamer.py)",
+      3
+    ],
+    [
+      "_iterencode_dict (json/encoder.py)",
+      2
+    ],
+    [
+      "_copy_tensor_pf_lf (pool_host/mamba.py)",
+      2
+    ],
+    [
+      "to_record (beliefkv/runtime/sglang_v0520_observer.py)",
+      2
+    ],
+    [
+      "available_size (allocator/token.py)",
+      2
+    ],
+    [
+      "_identity (beliefkv/runtime/v0520_native_telemetry.py)",
+      2
+    ],
+    [
+      "_unified_attention_with_output_impl (radix_attention.py)",
+      2
+    ],
+    [
+      "forward_extend (flashattention_backend.py)",
+      2
+    ],
+    [
+      "_stream_output_generation (scheduler_components/output_streamer.py)",
+      2
+    ],
+    [
+      "<setcomp> (beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "_live_final_stage (beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "_get_new_batch_prefill_raw (scheduler.py)",
+      2
+    ],
+    [
+      "_init_track_ssm_indices (hybrid_linear_attn_backend.py)",
+      2
+    ],
+    [
+      "flatten_arrays_to_pinned_cpu (utils/common.py)",
+      2
+    ],
+    [
+      "init_forward_metadata (flashattention_backend.py)",
+      2
+    ],
+    [
+      "select_native_prefill_candidates (beliefkv/runtime/sglang_v0520_admission.py)",
+      2
+    ],
+    [
+      "transfer_kv_mamba_lf_pf (sglang/kernels/ops/mamba/transfer_mamba.py)",
+      2
+    ],
+    [
+      "alloc (pool_host/base.py)",
+      2
+    ],
+    [
+      "_submit_tool_wait (beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "filter_batch (schedule_batch.py)",
+      2
+    ],
+    [
+      "finish (beliefkv/runtime/hotpath_timing.py)",
+      2
+    ],
+    [
+      "_deserialize (zmq/sugar/socket.py)",
+      2
+    ],
+    [
+      "gdn_prefill_qkv_prepare_fwd (l2norm.py)",
+      2
+    ],
+    [
+      "<genexpr> (unified_cache/unified_tree_core.py)",
+      2
+    ],
+    [
+      "profile_range (utils/nvtx_utils.py)",
+      2
+    ],
+    [
+      "__new__ (torch/cuda/streams.py)",
+      2
+    ],
+    [
+      "release_component_lock (unified_cache/components/full.py)",
+      2
+    ],
+    [
+      "set_last_decode_finish_time (req_time_stats.py)",
+      2
+    ],
+    [
+      "_prefill_causal_ranks (beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "finished (schedule_batch.py)",
+      2
+    ],
+    [
+      "_wait_prefetch_opportunity (beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py)",
+      2
+    ],
+    [
+      "update_finish_state (schedule_batch.py)",
+      2
+    ],
+    [
+      "<dictcomp> (beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "<listcomp> (schedule_batch.py)",
+      2
+    ],
+    [
+      "_node_key_path (beliefkv/runtime/v0520_native_telemetry.py)",
+      2
+    ],
+    [
+      "_call_impl (torch/nn/modules/module.py)",
+      2
+    ],
+    [
+      "_namespace_bytes (beliefkv/runtime/v0520_native_telemetry.py)",
+      2
+    ],
+    [
+      "merge_batch (sampling_batch_info.py)",
+      2
+    ],
+    [
+      "forward_batch_generation (tp_worker.py)",
+      2
+    ],
+    [
+      "_recv (multiprocessing/connection.py)",
+      2
+    ],
+    [
+      "__call__ (triton/runtime/jit.py)",
+      2
+    ],
+    [
+      "terminal (beliefkv/control/causal_graph.py)",
+      2
+    ],
+    [
+      "run_batch (scheduler.py)",
+      2
+    ],
+    [
+      "current_stream (torch/cuda/__init__.py)",
+      2
+    ],
+    [
+      "capture_action_local_shadow (beliefkv/runtime/sglang_v0520_physical.py)",
+      2
+    ],
+    [
+      "fields (dataclasses.py)",
+      2
+    ],
+    [
+      "_bounded (beliefkv/runtime/sglang_v0520_observer.py)",
+      2
+    ],
+    [
+      "snapshot_latest_session_leaf_anchors (unified_cache/session_ref_tracker.py)",
+      2
+    ],
+    [
+      "_get_pruned_states (logits_processor.py)",
+      2
+    ],
+    [
+      "active (triton/runtime/driver.py)",
+      2
+    ],
+    [
+      "has_host_backed_missing_copy (beliefkv/runtime/sglang_v0520_physical.py)",
+      2
+    ],
+    [
+      "split (torch/_tensor.py)",
+      2
+    ],
+    [
+      "_reclaim_wait_prefetch_capacity (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "general_mm_embed_routine (mm_utils.py)",
+      1
+    ],
+    [
+      "remove_node (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "release_within (beliefkv/predictor/action_frontier.py)",
+      1
+    ],
+    [
+      "move_indices (cache_controller.py)",
+      1
+    ],
+    [
+      "prepare_for_caching_req (unified_cache/components/mamba.py)",
+      1
+    ],
+    [
+      "pop_and_process (scheduler.py)",
+      1
+    ],
+    [
+      "_init_full_cg_decode_metadata (flashattention_backend.py)",
+      1
+    ],
+    [
+      "get (<frozen _collections_abc>)",
+      1
+    ],
+    [
+      "dumps (multiprocessing/reduction.py)",
+      1
+    ],
+    [
+      "get (multiprocessing/queues.py)",
+      1
+    ],
+    [
+      "admission_rank (beliefkv/policy/causal_frontier.py)",
+      1
+    ],
+    [
+      "_async_d2h (utils.py)",
+      1
+    ],
+    [
+      "_clear_semantic_invocation (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "wrapper (scheduler_stage_metrics.py)",
+      1
+    ],
+    [
+      "_get_running_request_total_token_offset (schedule_policy.py)",
+      1
+    ],
+    [
+      "inspect_session_residency_hint (beliefkv/runtime/sglang_v0520_physical.py)",
+      1
+    ],
+    [
+      "reset_padding (cuda_graph_buffer_registry.py)",
+      1
+    ],
+    [
+      "cache_finished_req (unified_radix_cache.py)",
+      1
+    ],
+    [
+      "_auto_dump_wrapper (flashinfer/api_logging.py)",
+      1
+    ],
+    [
+      "maybe_build_flashinfer_checkpoint_plan (linear/kernels/gdn_flashinfer.py)",
+      1
+    ],
+    [
+      "_send_bytes (multiprocessing/connection.py)",
+      1
+    ],
+    [
+      "write_text (pathlib.py)",
+      1
+    ],
+    [
+      "collect_full_device_indices (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "end_phase (beliefkv/runtime/prefill_turnover_probe.py)",
+      1
+    ],
+    [
+      "clamp_position (sglang/kernels/ops/attention/clamp_position.py)",
+      1
+    ],
+    [
+      "_join_parent_key (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "alloc_rows (memory_pool.py)",
+      1
+    ],
+    [
+      "_h2d_start_window (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "<genexpr> (unified_radix_cache.py)",
+      1
+    ],
+    [
+      "load_batch (runner/decode_cuda_graph_runner.py)",
+      1
+    ],
+    [
+      "_write_context_prefix (beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "replay_fn (runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py)",
+      1
+    ],
+    [
+      "wait (torch/cuda/streams.py)",
+      1
+    ],
+    [
+      "_record_wait_prefetch_plan (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "<genexpr> (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "load_batch (runner/prefill_cuda_graph_runner.py)",
+      1
+    ],
+    [
+      "raw_decode (json/decoder.py)",
+      1
+    ],
+    [
+      "<lambda> (cuda_graph_buffer_registry.py)",
+      1
+    ],
+    [
+      "plan_native_prefill (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "inner (contextlib.py)",
+      1
+    ],
+    [
+      "refreshed_shadow_backup_step (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "slice_for (cuda_graph_buffer_registry.py)",
+      1
+    ],
+    [
+      "_write_payload (load_snapshot.py)",
+      1
+    ],
+    [
+      "is_available (torch/cuda/__init__.py)",
+      1
+    ],
+    [
+      "load_to_device_per_layer (pool_host/mamba.py)",
+      1
+    ],
+    [
+      "<listcomp> (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "_evict_device_start (unified_cache/components/full.py)",
+      1
+    ],
+    [
+      "_forward_raw (model_runner.py)",
+      1
+    ],
+    [
+      "_evict_components (unified_radix_cache.py)",
+      1
+    ],
+    [
+      "<lambda> (scheduler.py)",
+      1
+    ],
+    [
+      "forward (qwen3_vl.py)",
+      1
+    ],
+    [
+      "from_parent (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "_is_host_leaf (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "from_forward_batch (logits_processor.py)",
+      1
+    ],
+    [
+      "<genexpr> (scheduler_components/load_inquirer.py)",
+      1
+    ],
+    [
+      "evict_device_leaf (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "_live_join_ticket (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "_copy_tensor_all_layers_lf_pf (pool_host/mamba.py)",
+      1
+    ],
+    [
+      "get_num_allocatable_reqs (scheduler.py)",
+      1
+    ],
+    [
+      "from_schedule_batch (sampling_batch_info.py)",
+      1
+    ],
+    [
+      "from_dict (beliefkv/core/events.py)",
+      1
+    ],
+    [
+      "flash_attn_with_kvcache (sgl_kernel/flash_attn.py)",
+      1
+    ],
+    [
+      "<dictcomp> (triton/runtime/jit.py)",
+      1
+    ],
+    [
+      "mamba_track_aligned_lens (forward_batch_info.py)",
+      1
+    ],
+    [
+      "_handle (beliefkv/runtime/event_channel.py)",
+      1
+    ],
+    [
+      "__init__ (triton/compiler/compiler.py)",
+      1
+    ],
+    [
+      "_semantic_key_live (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "__floordiv__ (torch/_tensor.py)",
+      1
+    ],
+    [
+      "forward (hybrid_linear_attn_backend.py)",
+      1
+    ],
+    [
+      "_send (multiprocessing/connection.py)",
+      1
+    ],
+    [
+      "_make_owning_c_pointer (cutlass/base_dsl/typing.py)",
+      1
+    ],
+    [
+      "exit (scheduler_stage_metrics.py)",
+      1
+    ],
+    [
+      "<listcomp> (unified_cache/components/full.py)",
+      1
+    ],
+    [
+      "get_cached_tokens_details (scheduler_components/output_streamer.py)",
+      1
+    ],
+    [
+      "_checkpoint_paths (beliefkv/runtime/sglang_v0520_physical.py)",
+      1
+    ],
+    [
+      "get_batch_return_hidden_states_mode (schedule_batch.py)",
+      1
+    ],
+    [
+      "_c_pointers (cutlass/base_dsl/typing.py)",
+      1
+    ],
+    [
+      "_namespace_digest (beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "labels (prometheus_client/metrics.py)",
+      1
+    ],
+    [
+      "ancestors (beliefkv/control/causal_graph.py)",
+      1
+    ],
+    [
+      "<dictcomp> (beliefkv/runtime/sglang_v0520_physical.py)",
+      1
+    ],
+    [
+      "_write_block_eviction (beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "alloc_group_end (allocator/mamba.py)",
+      1
+    ],
+    [
+      "floatstr (json/encoder.py)",
+      1
+    ],
+    [
+      "<dictcomp> (beliefkv/core/events.py)",
+      1
+    ],
+    [
+      "detect_encoding (json/__init__.py)",
+      1
+    ],
+    [
+      "has_shm_features (mm_utils.py)",
+      1
+    ],
+    [
+      "embedding (quantization/unquant.py)",
+      1
+    ],
+    [
+      "__init__ (contextlib.py)",
+      1
+    ],
+    [
+      "_named (beliefkv/runtime/sglang_v0520_observer.py)",
+      1
+    ],
+    [
+      "_apply_cache_action (unified_radix_cache.py)",
+      1
+    ],
+    [
+      "stream_output (scheduler_components/output_streamer.py)",
+      1
+    ],
+    [
+      "wait_stream (torch/cuda/streams.py)",
+      1
+    ],
+    [
+      "publish (overlap_utils.py)",
+      1
+    ],
+    [
+      "dispatch_after_forward (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "set_kv_buffer (memory_pool.py)",
+      1
+    ],
+    [
+      "flash_attn_with_kvcache (sglang/kernels/ops/attention/flash_attention_v3.py)",
+      1
+    ],
+    [
+      "move_for_pool (hybrid_cache_controller.py)",
+      1
+    ],
+    [
+      "available_size (memory_pool.py)",
+      1
+    ],
+    [
+      "__enter__ (contextlib.py)",
+      1
+    ],
+    [
+      "_get_group_size (torch/distributed/distributed_c10d.py)",
+      1
+    ],
+    [
+      "alloc (memory_pool.py)",
+      1
+    ],
+    [
+      "poll (beliefkv/runtime/semantic_report_worker.py)",
+      1
+    ],
+    [
+      "_component_available_size (unified_radix_cache.py)",
+      1
+    ],
+    [
+      "inc (prometheus_client/values.py)",
+      1
+    ],
+    [
+      "residency_rank (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "node_by_id (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "seqlen (schedule_batch.py)",
+      1
+    ],
+    [
+      "_do_alloc (allocator/mamba.py)",
+      1
+    ],
+    [
+      "_update_active_tool_census (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "_roll_tool_prefetch (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "record_batch_in_overlap (scheduler.py)",
+      1
+    ],
+    [
+      "cached_compile (flashinfer/gdn_kernels/delta_rule_dsl/custom_compile_cache.py)",
+      1
+    ],
+    [
+      "_set_kv_buffer_impl (memory_pool.py)",
+      1
+    ],
+    [
+      "__call__ (triton/knobs.py)",
+      1
+    ],
+    [
+      "_foreach_copy (cuda_graph_buffer_registry.py)",
+      1
+    ],
+    [
+      "_raw_len (radix_cache.py)",
+      1
+    ],
+    [
+      "is_draft_extend_v2 (forward_batch_info.py)",
+      1
+    ],
+    [
+      "get_loads (scheduler_components/load_inquirer.py)",
+      1
+    ],
+    [
+      "wait_until (cache_controller.py)",
+      1
+    ],
+    [
+      "init_new (forward_batch_info.py)",
+      1
+    ],
+    [
+      "set (prometheus_client/metrics.py)",
+      1
+    ],
+    [
+      "increment_decode_cuda_graph_pass (metrics_collector.py)",
+      1
+    ],
+    [
+      "is_extend (forward_batch_info.py)",
+      1
+    ],
+    [
+      "<listcomp> (multiprocessing/connection.py)",
+      1
+    ],
+    [
+      "new_from_obj (req_time_stats.py)",
+      1
+    ],
+    [
+      "__call__ (cutlass/base_dsl/jit_executor.py)",
+      1
+    ],
+    [
+      "check_match_stop_str_prefix (schedule_batch.py)",
+      1
+    ],
+    [
+      "_update_best_if_valid (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "is_tensor (torch/__init__.py)",
+      1
+    ],
+    [
+      "_normalize_decode_outputs (scheduler_components/batch_result_processor.py)",
+      1
+    ],
+    [
+      "_advance_insert (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "sample (model_runner.py)",
+      1
+    ],
+    [
+      "to_payload (scheduler_components/output_streamer.py)",
+      1
+    ],
+    [
+      "build_replay_fb_view (runner/decode_cuda_graph_runner.py)",
+      1
+    ],
+    [
+      "generate_execution_args (cutlass/base_dsl/jit_executor.py)",
+      1
+    ],
+    [
+      "inspect_session_h2d_opportunity (beliefkv/runtime/sglang_v0520_physical.py)",
+      1
+    ],
+    [
+      "get_exec (runtime_context.py)",
+      1
+    ],
+    [
+      "dispatch_join_prefetch (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "transfer_kv_mamba_pf_lf (sglang/kernels/ops/mamba/transfer_mamba.py)",
+      1
+    ],
+    [
+      "backup_from_device_all_layer (pool_host/mha.py)",
+      1
+    ],
+    [
+      "_get_mamba_token_info (scheduler_components/pool_stats_observer.py)",
+      1
+    ],
+    [
+      "on_launch (beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "_is_trace_dump_enabled (flashinfer/trace/template.py)",
+      1
+    ],
+    [
+      "_call_fa3_kernel (sglang/kernels/ops/attention/flash_attention_v3.py)",
+      1
+    ],
+    [
+      "shadow_backup_steps (beliefkv/runtime/sglang_v0520_physical.py)",
+      1
+    ],
+    [
+      "use_symmetric_memory (pynccl_allocator.py)",
+      1
+    ]
+  ],
+  "inclusive_functions": [
+    [
+      "_main (multiprocessing/spawn.py)",
+      1265
+    ],
+    [
+      "run (multiprocessing/process.py)",
+      1265
+    ],
+    [
+      "spawn_main (multiprocessing/spawn.py)",
+      1265
+    ],
+    [
+      "<module> (<string>)",
+      1265
+    ],
+    [
+      "event_loop_overlap (scheduler.py)",
+      1265
+    ],
+    [
+      "_bootstrap (multiprocessing/process.py)",
+      1265
+    ],
+    [
+      "decorate_context (torch/utils/_contextlib.py)",
+      1265
+    ],
+    [
+      "run_scheduler_process (scheduler.py)",
+      1265
+    ],
+    [
+      "run_event_loop (scheduler.py)",
+      1265
+    ],
+    [
+      "dispatch_event_loop (scheduler.py)",
+      1265
+    ],
+    [
+      "wrapper (scheduler_stage_metrics.py)",
+      1162
+    ],
+    [
+      "wrapper (utils/nvtx_utils.py)",
+      1161
+    ],
+    [
+      "pop_and_process (scheduler.py)",
+      580
+    ],
+    [
+      "process_batch_result (scheduler.py)",
+      577
+    ],
+    [
+      "synchronize (torch/cuda/streams.py)",
+      525
+    ],
+    [
+      "process_batch_result_decode (scheduler_components/batch_result_processor.py)",
+      501
+    ],
+    [
+      "run_batch (scheduler.py)",
+      371
+    ],
+    [
+      "forward_batch_generation (tp_worker.py)",
+      347
+    ],
+    [
+      "forward (model_runner.py)",
+      332
+    ],
+    [
+      "_forward_raw (model_runner.py)",
+      331
+    ],
+    [
+      "execute (runner/prefill_cuda_graph_runner.py)",
+      313
+    ],
+    [
+      "_call_impl (torch/nn/modules/module.py)",
+      287
+    ],
+    [
+      "_wrapped_call_impl (torch/nn/modules/module.py)",
+      283
+    ],
+    [
+      "_execute_body_capture (runner/prefill_cuda_graph_runner.py)",
+      282
+    ],
+    [
+      "forward (qwen3_vl.py)",
+      282
+    ],
+    [
+      "general_mm_embed_routine (mm_utils.py)",
+      276
+    ],
+    [
+      "replay (runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py)",
+      273
+    ],
+    [
+      "replay_layer_forward (runner/prefill_cuda_graph_runner.py)",
+      273
+    ],
+    [
+      "replay (runner_backend/breakable_cuda_graph_backend.py)",
+      273
+    ],
+    [
+      "__call__ (torch/_ops.py)",
+      262
+    ],
+    [
+      "replay_fn (runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py)",
+      260
+    ],
+    [
+      "forward_extend (hybrid_linear_attn_backend.py)",
+      252
+    ],
+    [
+      "unified_linear_attention_with_output (radix_linear_attention.py)",
+      249
+    ],
+    [
+      "_linear_attention_with_output_impl (radix_linear_attention.py)",
+      248
+    ],
+    [
+      "forward (hybrid_linear_attn_backend.py)",
+      248
+    ],
+    [
+      "_unified_linear_attention_with_output_impl (radix_linear_attention.py)",
+      248
+    ],
+    [
+      "forward_extend (linear/gdn_backend.py)",
+      234
+    ],
+    [
+      "get_next_batch_to_run (scheduler.py)",
+      208
+    ],
+    [
+      "measured (beliefkv/runtime/hotpath_timing.py)",
+      149
+    ],
+    [
+      "extend (linear/gdn_backend.py)",
+      148
+    ],
+    [
+      "extend (linear/kernels/gdn_flashinfer.py)",
+      148
+    ],
+    [
+      "get_new_batch_prefill (scheduler.py)",
+      145
+    ],
+    [
+      "_get_new_batch_prefill_raw (scheduler.py)",
+      145
+    ],
+    [
+      "add_one_req (schedule_policy.py)",
+      96
+    ],
+    [
+      "init_load_back (unified_radix_cache.py)",
+      96
+    ],
+    [
+      "_load_back_transfers (unified_radix_cache.py)",
+      95
+    ],
+    [
+      "load_back (unified_radix_cache.py)",
+      95
+    ],
+    [
+      "_evict_components (unified_radix_cache.py)",
+      91
+    ],
+    [
+      "_evict (unified_radix_cache.py)",
+      91
+    ],
+    [
+      "evict_for_alloc (unified_radix_cache.py)",
+      91
+    ],
+    [
+      "_beliefkv_after_forward_dispatch (scheduler.py)",
+      84
+    ],
+    [
+      "dispatch_after_forward (beliefkv/runtime/sglang_v0520_runtime.py)",
+      84
+    ],
+    [
+      "_bootstrap (threading.py)",
+      62
+    ],
+    [
+      "_bootstrap_inner (threading.py)",
+      62
+    ],
+    [
+      "run (threading.py)",
+      62
+    ],
+    [
+      "_auto_dump_wrapper (flashinfer/api_logging.py)",
+      58
+    ],
+    [
+      "chunk_gated_delta_rule (flashinfer/gdn_prefill.py)",
+      56
+    ],
+    [
+      "_write (beliefkv/runtime/v0520_native_telemetry.py)",
+      51
+    ],
+    [
+      "delta_rule_prefill_dsl_sm90 (flashinfer/gdn_kernels/delta_rule_dsl/delta_rule_sm90.py)",
+      50
+    ],
+    [
+      "process_batch_result_prefill (scheduler_components/batch_result_processor.py)",
+      50
+    ],
+    [
+      "<lambda> (triton/runtime/jit.py)",
+      46
+    ],
+    [
+      "_execute_and_commit_kv_backup (unified_radix_cache.py)",
+      42
+    ],
+    [
+      "write (hybrid_cache_controller.py)",
+      42
+    ],
+    [
+      "_execute_kv_backup (unified_radix_cache.py)",
+      42
+    ],
+    [
+      "run (triton/runtime/jit.py)",
+      41
+    ],
+    [
+      "writing_check (unified_radix_cache.py)",
+      40
+    ],
+    [
+      "start_writing (cache_controller.py)",
+      38
+    ],
+    [
+      "observe_unified_node_closure (beliefkv/runtime/sglang_v0520_observer.py)",
+      36
+    ],
+    [
+      "submit_device_to_host (l2_transfer.py)",
+      36
+    ],
+    [
+      "inspect_context_h2d_opportunity (beliefkv/runtime/sglang_v0520_runtime.py)",
+      35
+    ],
+    [
+      "dispatch_tool_prefetch (beliefkv/runtime/sglang_v0520_runtime.py)",
+      34
+    ],
+    [
+      "_roll_tool_prefetch (beliefkv/runtime/sglang_v0520_runtime.py)",
+      34
+    ],
+    [
+      "scheduler_step (beliefkv/runtime/sglang_v0520_runtime.py)",
+      34
+    ],
+    [
+      "inspect_session_h2d_opportunity (beliefkv/runtime/sglang_v0520_physical.py)",
+      34
+    ],
+    [
+      "capture_action_local_shadow (beliefkv/runtime/sglang_v0520_physical.py)",
+      32
+    ],
+    [
+      "gdn_prefill_qkv_prepare_fwd (l2norm.py)",
+      31
+    ],
+    [
+      "load_batch (runner/prefill_cuda_graph_runner.py)",
+      31
+    ],
+    [
+      "backup_from_device_all_layer (pool_host/mha.py)",
+      31
+    ],
+    [
+      "transfer_hicache_all_layer_staged_lf_pf (sglang/kernels/ops/kvcache/hicache.py)",
+      30
+    ],
+    [
+      "l2norm_fwd (l2norm.py)",
+      29
+    ],
+    [
+      "stream_output (scheduler_components/output_streamer.py)",
+      27
+    ],
+    [
+      "_stream_output_generation (scheduler_components/output_streamer.py)",
+      27
+    ],
+    [
+      "_wait_prefetch_opportunity (beliefkv/runtime/sglang_v0520_runtime.py)",
+      27
+    ],
+    [
+      "init_forward_metadata (hybrid_linear_attn_backend.py)",
+      27
+    ],
+    [
+      "_prepare_forward_metadata_for_replay (runner/prefill_cuda_graph_runner.py)",
+      27
+    ],
+    [
+      "drain (beliefkv/runtime/event_channel.py)",
+      26
+    ],
+    [
+      "dispatch_join_prepare (beliefkv/runtime/sglang_v0520_runtime.py)",
+      26
+    ],
+    [
+      "init_forward_metadata (linear/gdn_backend.py)",
+      24
+    ],
+    [
+      "causal_conv1d_fn (sglang/kernels/ops/mamba/causal_conv1d_triton.py)",
+      23
+    ],
+    [
+      "_reclaim_wait_prefetch_capacity (beliefkv/runtime/sglang_v0520_runtime.py)",
+      23
+    ],
+    [
+      "_forward_metadata (hybrid_linear_attn_backend.py)",
+      23
+    ],
+    [
+      "dispatch_join_prefetch (beliefkv/runtime/sglang_v0520_runtime.py)",
+      22
+    ],
+    [
+      "update_running_batch (scheduler.py)",
+      21
+    ],
+    [
+      "_beliefkv_on_batch_completed (scheduler.py)",
+      20
+    ],
+    [
+      "__call__ (cutlass/base_dsl/jit_executor.py)",
+      19
+    ],
+    [
+      "sock_send (io_struct.py)",
+      18
+    ],
+    [
+      "send_output (scheduler_components/output_sender.py)",
+      18
+    ],
+    [
+      "send_pyobj (zmq/sugar/socket.py)",
+      18
+    ],
+    [
+      "execute (runner/decode_cuda_graph_runner.py)",
+      17
+    ],
+    [
+      "_handle (beliefkv/runtime/event_channel.py)",
+      17
+    ],
+    [
+      "causal_conv1d_fn (causal_conv1d.py)",
+      16
+    ],
+    [
+      "_write_block_eviction (beliefkv/runtime/v0520_native_telemetry.py)",
+      16
+    ],
+    [
+      "replay (torch/cuda/graphs.py)",
+      15
+    ],
+    [
+      "_beliefkv_prefill_candidates (scheduler.py)",
+      15
+    ],
+    [
+      "_track_mamba_state_extend (hybrid_linear_attn_backend.py)",
+      15
+    ],
+    [
+      "sample_runtime_observations (beliefkv/runtime/sglang_v0520_runtime.py)",
+      15
+    ],
+    [
+      "cache_unfinished_req (unified_radix_cache.py)",
+      15
+    ],
+    [
+      "maybe_cache_unfinished_req (common.py)",
+      15
+    ],
+    [
+      "fused_qkv_split_gdn_prefill (sglang/kernels/ops/attention/triton_gdn_fused_proj.py)",
+      15
+    ],
+    [
+      "prepare_for_decode (schedule_batch.py)",
+      14
+    ],
+    [
+      "_write_block_request_probe (beliefkv/runtime/v0520_native_telemetry.py)",
+      14
+    ],
+    [
+      "forward_extend (flashattention_backend.py)",
+      14
+    ],
+    [
+      "_prefix_digests (beliefkv/runtime/v0520_native_telemetry.py)",
+      14
+    ],
+    [
+      "load_batch (runner/decode_cuda_graph_runner.py)",
+      13
+    ],
+    [
+      "_unified_attention_with_output_impl (radix_attention.py)",
+      13
+    ],
+    [
+      "insert (unified_radix_cache.py)",
+      13
+    ],
+    [
+      "_advance_insert (unified_cache/unified_tree_core.py)",
+      13
+    ],
+    [
+      "begin_insert (unified_cache/unified_tree_core.py)",
+      13
+    ],
+    [
+      "__call__ (triton/backends/nvidia/driver.py)",
+      13
+    ],
+    [
+      "_sample_h2d_opportunities (beliefkv/runtime/sglang_v0520_runtime.py)",
+      12
+    ],
+    [
+      "unified_attention_with_output (radix_attention.py)",
+      12
+    ],
+    [
+      "_prune_parent_pressure_candidates (beliefkv/runtime/sglang_v0520_runtime.py)",
+      12
+    ],
+    [
+      "_insert_walk_step (unified_cache/unified_tree_core.py)",
+      12
+    ],
+    [
+      "match_prefix (unified_cache/unified_tree_core.py)",
+      12
+    ],
+    [
+      "match_prefix (unified_radix_cache.py)",
+      12
+    ],
+    [
+      "on_events (beliefkv/runtime/sglang_v0520_runtime.py)",
+      11
+    ],
+    [
+      "_record_terminal_cache (beliefkv/runtime/sglang_v0520_runtime.py)",
+      11
+    ],
+    [
+      "refreshed_shadow_backup_step (beliefkv/runtime/sglang_v0520_runtime.py)",
+      11
+    ],
+    [
+      "fused_gdn_gating (fused_gdn_gating.py)",
+      11
+    ],
+    [
+      "_match_prefix_helper (unified_cache/unified_tree_core.py)",
+      11
+    ],
+    [
+      "init_forward_metadata_out_graph (hybrid_linear_attn_backend.py)",
+      10
+    ],
+    [
+      "init_new (forward_batch_info.py)",
+      10
+    ],
+    [
+      "match_at (radix_cache.py)",
+      10
+    ],
+    [
+      "start_loading (cache_controller.py)",
+      9
+    ],
+    [
+      "ready_to_load_host_cache (unified_radix_cache.py)",
+      9
+    ],
+    [
+      "capture_shadow_candidate (beliefkv/runtime/sglang_v0520_runtime.py)",
+      9
+    ],
+    [
+      "generate_execution_args (cutlass/base_dsl/jit_executor.py)",
+      9
+    ],
+    [
+      "init_next_round_input (schedule_batch.py)",
+      9
+    ],
+    [
+      "submit_host_to_device (l2_transfer.py)",
+      8
+    ],
+    [
+      "_track_terminal_cache (beliefkv/runtime/sglang_v0520_runtime.py)",
+      8
+    ],
+    [
+      "plan_native_prefill (beliefkv/runtime/sglang_v0520_runtime.py)",
+      8
+    ],
+    [
+      "_write (beliefkv/runtime/v0520_opportunity_telemetry.py)",
+      8
+    ],
+    [
+      "run_compiled_program (cutlass/base_dsl/jit_executor.py)",
+      8
+    ],
+    [
+      "_live_parent_pressure_key (beliefkv/runtime/sglang_v0520_runtime.py)",
+      8
+    ],
+    [
+      "_copy_output (runner_backend_utils/breakable_cuda_graph/breakable_cuda_graph.py)",
+      8
+    ],
+    [
+      "_refreshed_shadow_backup_candidate (beliefkv/runtime/sglang_v0520_runtime.py)",
+      8
+    ],
+    [
+      "alloc_for_decode (allocation.py)",
+      7
+    ],
+    [
+      "prepare_for_extend (schedule_batch.py)",
+      7
+    ],
+    [
+      "_h2d_start_window (beliefkv/runtime/sglang_v0520_runtime.py)",
+      7
+    ],
+    [
+      "flash_attn_with_kvcache (sglang/kernels/ops/attention/flash_attention_v3.py)",
+      7
+    ],
+    [
+      "flash_attn_with_kvcache (sglang/kernels/ops/attention/flash_attention.py)",
+      7
+    ],
+    [
+      "__c_pointers__ (cutlass/cute/runtime.py)",
+      7
+    ],
+    [
+      "__init__ (<string>)",
+      7
+    ],
+    [
+      "encode_record (beliefkv/runtime/record_json.py)",
+      7
+    ],
+    [
+      "",
+      7
+    ],
+    [
+      "dynamic_func (<string>)",
+      6
+    ],
+    [
+      "_handle_finish_state_updated_req (scheduler_components/batch_result_processor.py)",
+      6
+    ],
+    [
+      "release_kv_cache (common.py)",
+      6
+    ],
+    [
+      "cache_finished_req (unified_radix_cache.py)",
+      6
+    ],
+    [
+      "sample (model_runner.py)",
+      6
+    ],
+    [
+      "dumps (json/__init__.py)",
+      6
+    ],
+    [
+      "_write_context_prefix (beliefkv/runtime/v0520_native_telemetry.py)",
+      6
+    ],
+    [
+      "ingest_requests (scheduler.py)",
+      6
+    ],
+    [
+      "plan_prefetch_gpu_steps (beliefkv/runtime/sglang_v0520_physical.py)",
+      6
+    ],
+    [
+      "_publish_parent_pressure_candidates (beliefkv/runtime/sglang_v0520_runtime.py)",
+      6
+    ],
+    [
+      "_compute_mrope_positions_decode (forward_batch_info.py)",
+      6
+    ],
+    [
+      "_compute_mrope_positions (forward_batch_info.py)",
+      6
+    ],
+    [
+      "<genexpr> (beliefkv/runtime/sglang_v0520_runtime.py)",
+      6
+    ],
+    [
+      "__init__ (cutlass/base_dsl/typing.py)",
+      6
+    ],
+    [
+      "__getitem__ (radix_cache.py)",
+      6
+    ],
+    [
+      "forward (logits_processor.py)",
+      6
+    ],
+    [
+      "_call_fa3_kernel (sglang/kernels/ops/attention/flash_attention_v3.py)",
+      6
+    ],
+    [
+      "mamba2_layer_cache (memory_pool.py)",
+      6
+    ],
+    [
+      "free_segment (allocator/base.py)",
+      5
+    ],
+    [
+      "free (allocator/token.py)",
+      5
+    ],
+    [
+      "_apply_cache_action (unified_radix_cache.py)",
+      5
+    ],
+    [
+      "_init_full_cg_decode_metadata (flashattention_backend.py)",
+      5
+    ],
+    [
+      "__len__ (torch/_tensor.py)",
+      5
+    ],
+    [
+      "<listcomp> (beliefkv/runtime/sglang_v0520_runtime.py)",
+      5
+    ],
+    [
+      "_static_full_mamba_pool_geometry (beliefkv/runtime/sglang_v0520_observer.py)",
+      5
+    ],
+    [
+      "_request_key (beliefkv/runtime/sglang_v0520_admission.py)",
+      5
+    ],
+    [
+      "resolve_forward_inputs (overlap_utils.py)",
+      5
+    ],
+    [
+      "alloc (pool_host/group.py)",
+      5
+    ],
+    [
+      "flash_attn_with_kvcache (sgl_kernel/flash_attn.py)",
+      5
+    ],
+    [
+      "_estimate_h2d_service (beliefkv/runtime/sglang_v0520_runtime.py)",
+      5
+    ],
+    [
+      "estimate_native_service (beliefkv/runtime/native_transfer_service.py)",
+      5
+    ],
+    [
+      "at_layer_idx (memory_pool.py)",
+      5
+    ],
+    [
+      "_init_track_conv_indices (hybrid_linear_attn_backend.py)",
+      5
+    ],
+    [
+      "<lambda> (flashinfer/gdn_kernels/delta_rule_dsl/delta_rule_sm90.py)",
+      5
+    ],
+    [
+      "merge_batch (schedule_batch.py)",
+      5
+    ],
+    [
+      "update_finish_state (schedule_batch.py)",
+      5
+    ],
+    [
+      "_replay_metadata (hybrid_linear_attn_backend.py)",
+      5
+    ],
+    [
+      "accept (scheduler_components/output_streamer.py)",
+      5
+    ],
+    [
+      "_drain_device_frees (unified_radix_cache.py)",
+      4
+    ],
+    [
+      "_free_values (unified_radix_cache.py)",
+      4
+    ],
+    [
+      "apply_component_action (unified_cache/components/full.py)",
+      4
+    ],
+    [
+      "on_batch_completed (beliefkv/runtime/sglang_v0520_runtime.py)",
+      4
+    ],
+    [
+      "_copy_tensor_pf_lf (pool_host/mamba.py)",
+      4
+    ],
+    [
+      "replay (runner_backend/full_cuda_graph_backend.py)",
+      4
+    ],
+    [
+      "available_size (allocator/token.py)",
+      4
+    ],
+    [
+      "available_size (memory_pool.py)",
+      4
+    ],
+    [
+      "forward (sampler.py)",
+      4
+    ],
+    [
+      "publish (overlap_utils.py)",
+      4
+    ],
+    [
+      "encode (json/encoder.py)",
+      4
+    ],
+    [
+      "_prefill_causal_ranks (beliefkv/runtime/sglang_v0520_runtime.py)",
+      4
+    ],
+    [
+      "mark_layout_dynamic (cutlass/cute/runtime.py)",
+      4
+    ],
+    [
+      "complete (cache_controller.py)",
+      4
+    ],
+    [
+      "fill_from (cuda_graph_buffer_registry.py)",
+      4
+    ],
+    [
+      "has_host_backed_missing_copy (beliefkv/runtime/sglang_v0520_physical.py)",
+      4
+    ],
+    [
+      "terminal_waiting_request_ids (beliefkv/runtime/sglang_v0520_runtime.py)",
+      4
+    ],
+    [
+      "wait_stream (torch/cuda/streams.py)",
+      4
+    ],
+    [
+      "_roll_final_stage (beliefkv/runtime/sglang_v0520_runtime.py)",
+      4
+    ],
+    [
+      "_compute_scheduler_metadata (flashattention_backend.py)",
+      4
+    ],
+    [
+      "_apply_cuda_graph_metadata (flashattention_backend.py)",
+      4
+    ],
+    [
+      "filter_batch (schedule_batch.py)",
+      4
+    ],
+    [
+      "finish (beliefkv/runtime/hotpath_timing.py)",
+      4
+    ],
+    [
+      "_check_token_based_finish (schedule_batch.py)",
+      4
+    ],
+    [
+      "replace (dataclasses.py)",
+      4
+    ],
+    [
+      "_terminal (beliefkv/runtime/sglang_v0520_runtime.py)",
+      4
+    ],
+    [
+      "_poll_semantic_reports (beliefkv/runtime/sglang_v0520_runtime.py)",
+      4
+    ],
+    [
+      "set_kv_buffer (memory_pool.py)",
+      4
+    ],
+    [
+      "commit_load_back (unified_cache/unified_tree_core.py)",
+      4
+    ],
+    [
+      "commit_hicache_transfer (unified_cache/components/full.py)",
+      4
+    ],
+    [
+      "_iterencode_dict (json/encoder.py)",
+      3
+    ],
+    [
+      "_demote (unified_radix_cache.py)",
+      3
+    ],
+    [
+      "update_after_decode (model_runner_components/ngram_embedding_manager.py)",
+      3
+    ],
+    [
+      "__getstate__ (req_time_stats.py)",
+      3
+    ],
+    [
+      "_feed (multiprocessing/queues.py)",
+      3
+    ],
+    [
+      "get (multiprocessing/queues.py)",
+      3
+    ],
+    [
+      "_common_array_prefix (beliefkv/runtime/v0520_native_telemetry.py)",
+      3
+    ],
+    [
+      "_get_invoke_packed_args (cutlass/base_dsl/jit_executor.py)",
+      3
+    ],
+    [
+      "on_launch (beliefkv/runtime/v0520_native_telemetry.py)",
+      3
+    ],
+    [
+      "transfer_hicache_one_layer (sglang/kernels/ops/kvcache/hicache.py)",
+      3
+    ],
+    [
+      "compute_cache_key (triton/runtime/jit.py)",
+      3
+    ],
+    [
+      "_index_length (beliefkv/runtime/sglang_v0520_observer.py)",
+      3
+    ],
+    [
+      "record (torch/cuda/streams.py)",
+      3
+    ],
+    [
+      "_join_parent_key (beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "alloc_for_extend (allocation.py)",
+      3
+    ],
+    [
+      "_sync_hicache_ready_counts (unified_radix_cache.py)",
+      3
+    ],
+    [
+      "check_hicache_events (unified_radix_cache.py)",
+      3
+    ],
+    [
+      "_init_track_ssm_indices (hybrid_linear_attn_backend.py)",
+      3
+    ],
+    [
+      "init_forward_metadata (flashattention_backend.py)",
+      3
+    ],
+    [
+      "select_native_prefill_candidates (beliefkv/runtime/sglang_v0520_admission.py)",
+      3
+    ],
+    [
+      "_copy_tensor_all_layers_lf_pf (pool_host/mamba.py)",
+      3
+    ],
+    [
+      "backup_from_device_all_layer (pool_host/mamba.py)",
+      3
+    ],
+    [
+      "_get_logits (logits_processor.py)",
+      3
+    ],
+    [
+      "_compute_lm_head (logits_processor.py)",
+      3
+    ],
+    [
+      "wrapper (pool_host/base.py)",
+      3
+    ],
+    [
+      "get_scheduler_metadata (sgl_kernel/flash_attn.py)",
+      3
+    ],
+    [
+      "dec_lock_ref (unified_cache/unified_tree_core.py)",
+      3
+    ],
+    [
+      "_update_evictable_leaf_sets (unified_cache/unified_tree_core.py)",
+      3
+    ],
+    [
+      "_release_components (unified_cache/unified_tree_core.py)",
+      3
+    ],
+    [
+      "release_component_lock (unified_cache/components/full.py)",
+      3
+    ],
+    [
+      "_dec_req_lock (unified_radix_cache.py)",
+      3
+    ],
+    [
+      "dec_lock_ref (unified_radix_cache.py)",
+      3
+    ],
+    [
+      "<genexpr> (scheduler_components/load_inquirer.py)",
+      3
+    ],
+    [
+      "_evict_device_leaf (unified_radix_cache.py)",
+      3
+    ],
+    [
+      "on_completed (beliefkv/runtime/v0520_native_telemetry.py)",
+      3
+    ],
+    [
+      "__init__ (cutlass/base_dsl/compiler.py)",
+      3
+    ],
+    [
+      "<listcomp> (memory_pool.py)",
+      3
+    ],
+    [
+      "__call__ (triton/runtime/jit.py)",
+      3
+    ],
+    [
+      "finished (schedule_batch.py)",
+      3
+    ],
+    [
+      "_zero_padded_pcg_tail (radix_attention.py)",
+      3
+    ],
+    [
+      "drive_host_eviction (unified_cache/components/mamba.py)",
+      3
+    ],
+    [
+      "_evict_component_and_detach_lru (unified_cache/unified_tree_core.py)",
+      3
+    ],
+    [
+      "on_native_host_block_eviction (beliefkv/runtime/v0520_native_telemetry.py)",
+      3
+    ],
+    [
+      "evict_host (unified_radix_cache.py)",
+      3
+    ],
+    [
+      "_namespace_digest (beliefkv/runtime/v0520_native_telemetry.py)",
+      3
+    ],
+    [
+      "report_prefill_stats (scheduler_components/metrics_reporter.py)",
+      3
+    ],
+    [
+      "set_mamba_track_indices_from_reqs (schedule_batch.py)",
+      3
+    ],
+    [
+      "_current_residency_budget (beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "wrapper (sglang/kernels/jit/utils/common.py)",
+      3
+    ],
+    [
+      "__enter__ (contextlib.py)",
+      3
+    ],
+    [
+      "iterencode (json/encoder.py)",
+      3
+    ],
+    [
+      "_sample_terminal_cache (beliefkv/runtime/sglang_v0520_runtime.py)",
+      3
+    ],
+    [
+      "get_loads (scheduler_components/load_inquirer.py)",
+      3
+    ],
+    [
+      "publish_load_snapshot (scheduler.py)",
+      3
+    ],
+    [
+      "alloc_group_begin (allocator/mamba.py)",
+      3
+    ],
+    [
+      "_forward_isolation (scheduler.py)",
+      3
+    ],
+    [
+      "_set_kv_buffer_impl (memory_pool.py)",
+      3
+    ],
+    [
+      "_store_kv_layer (memory_pool.py)",
+      3
+    ],
+    [
+      "get (environ.py)",
+      2
+    ],
+    [
+      "to_record (beliefkv/runtime/sglang_v0520_observer.py)",
+      2
+    ],
+    [
+      "_write_status (beliefkv/runtime/v0520_native_telemetry.py)",
+      2
+    ],
+    [
+      "<genexpr> (beliefkv/runtime/sglang_v0520_predictor_worker.py)",
+      2
+    ],
+    [
+      "inner (contextlib.py)",
+      2
+    ],
+    [
+      "_identity (beliefkv/runtime/v0520_native_telemetry.py)",
+      2
+    ],
+    [
+      "<setcomp> (beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "_send_bytes (multiprocessing/connection.py)",
+      2
+    ],
+    [
+      "clamp_position (sglang/kernels/ops/attention/clamp_position.py)",
+      2
+    ],
+    [
+      "_live_final_stage (beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "alloc (memory_pool.py)",
+      2
+    ],
+    [
+      "alloc_req_slots (allocation.py)",
+      2
+    ],
+    [
+      "flatten_arrays_to_pinned_cpu (utils/common.py)",
+      2
+    ],
+    [
+      "from_dict (beliefkv/core/events.py)",
+      2
+    ],
+    [
+      "<genexpr> (beliefkv/runtime/event_channel.py)",
+      2
+    ],
+    [
+      "transfer_kv_mamba_lf_pf (sglang/kernels/ops/mamba/transfer_mamba.py)",
+      2
+    ],
+    [
+      "_apply_war_barrier (scheduler.py)",
+      2
+    ],
+    [
+      "alloc (pool_host/base.py)",
+      2
+    ],
+    [
+      "load_to_device_per_layer (pool_host/mamba.py)",
+      2
+    ],
+    [
+      "_submit_tool_wait (beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "_evict_device_start (unified_cache/components/full.py)",
+      2
+    ],
+    [
+      "evict_device_start (unified_cache/components/base.py)",
+      2
+    ],
+    [
+      "recv_requests (scheduler_components/request_receiver.py)",
+      2
+    ],
+    [
+      "sock_recv (io_struct.py)",
+      2
+    ],
+    [
+      "recv_pyobj (zmq/sugar/socket.py)",
+      2
+    ],
+    [
+      "_pull_raw_reqs (scheduler_components/request_receiver.py)",
+      2
+    ],
+    [
+      "_deserialize (zmq/sugar/socket.py)",
+      2
+    ],
+    [
+      "_maybe_update_reasoning_tokens (scheduler_components/batch_result_processor.py)",
+      2
+    ],
+    [
+      "<genexpr> (unified_cache/unified_tree_core.py)",
+      2
+    ],
+    [
+      "profile_range (utils/nvtx_utils.py)",
+      2
+    ],
+    [
+      "__new__ (torch/cuda/streams.py)",
+      2
+    ],
+    [
+      "set_last_decode_finish_time (req_time_stats.py)",
+      2
+    ],
+    [
+      "resolve_host_transfers (pool_host/group.py)",
+      2
+    ],
+    [
+      "<lambda> (hybrid_pool_assembler.py)",
+      2
+    ],
+    [
+      "drive_host_eviction (unified_cache/unified_tree_core.py)",
+      2
+    ],
+    [
+      "check_decode_mem (schedule_batch.py)",
+      2
+    ],
+    [
+      "<dictcomp> (beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "<listcomp> (schedule_batch.py)",
+      2
+    ],
+    [
+      "_node_key_path (beliefkv/runtime/v0520_native_telemetry.py)",
+      2
+    ],
+    [
+      "_namespace_bytes (beliefkv/runtime/v0520_native_telemetry.py)",
+      2
+    ],
+    [
+      "merge_batch (sampling_batch_info.py)",
+      2
+    ],
+    [
+      "log_stats (metrics_collector.py)",
+      2
+    ],
+    [
+      "process_input_requests (scheduler.py)",
+      2
+    ],
+    [
+      "_recv_bytes (multiprocessing/connection.py)",
+      2
+    ],
+    [
+      "_recv (multiprocessing/connection.py)",
+      2
+    ],
+    [
+      "poll (beliefkv/runtime/sglang_v0520_predictor_worker.py)",
+      2
+    ],
+    [
+      "recv_bytes (multiprocessing/connection.py)",
+      2
+    ],
+    [
+      "forward (vocab_parallel_embedding.py)",
+      2
+    ],
+    [
+      "_embed_local_shard (vocab_parallel_embedding.py)",
+      2
+    ],
+    [
+      "_make_graph_key (runner/decode_cuda_graph_runner.py)",
+      2
+    ],
+    [
+      "terminal (beliefkv/control/causal_graph.py)",
+      2
+    ],
+    [
+      "transfer_kv_mamba_pf_lf (sglang/kernels/ops/mamba/transfer_mamba.py)",
+      2
+    ],
+    [
+      "observe_static_full_mamba_headroom (beliefkv/runtime/sglang_v0520_observer.py)",
+      2
+    ],
+    [
+      "wait_until (cache_controller.py)",
+      2
+    ],
+    [
+      "current_stream (torch/cuda/__init__.py)",
+      2
+    ],
+    [
+      "_semantic_transfer_target_ready (beliefkv/runtime/sglang_v0520_runtime.py)",
+      2
+    ],
+    [
+      "fields (dataclasses.py)",
+      2
+    ],
+    [
+      "_bounded (beliefkv/runtime/sglang_v0520_observer.py)",
+      2
+    ],
+    [
+      "snapshot_latest_session_leaf_anchors (unified_cache/session_ref_tracker.py)",
+      2
+    ],
+    [
+      "seqlen (schedule_batch.py)",
+      2
+    ],
+    [
+      "init_forward_metadata_out_graph (flashattention_backend.py)",
+      2
+    ],
+    [
+      "_get_pruned_states (logits_processor.py)",
+      2
+    ],
+    [
+      "record_batch_in_overlap (scheduler.py)",
+      2
+    ],
+    [
+      "active (triton/runtime/driver.py)",
+      2
+    ],
+    [
+      "build_replay_fb_view (runner/decode_cuda_graph_runner.py)",
+      2
+    ],
+    [
+      "_update_best_if_valid (unified_cache/unified_tree_core.py)",
+      2
+    ],
+    [
+      "next_shadow_backup_step (beliefkv/runtime/sglang_v0520_physical.py)",
+      2
+    ],
+    [
+      "split (torch/_tensor.py)",
+      2
+    ],
+    [
+      "remove_node (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "mapper (hybrid_pool_assembler.py)",
+      1
+    ],
+    [
+      "remaining_quantile (beliefkv/runtime/sglang_v0520_prediction.py)",
+      1
+    ],
+    [
+      "_tool_prefetch_remaining (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "release_within (beliefkv/predictor/action_frontier.py)",
+      1
+    ],
+    [
+      "_move_op_indices (hybrid_cache_controller.py)",
+      1
+    ],
+    [
+      "move_hybrid_indices (hybrid_cache_controller.py)",
+      1
+    ],
+    [
+      "move_indices (cache_controller.py)",
+      1
+    ],
+    [
+      "prepare_for_caching_req (unified_cache/components/mamba.py)",
+      1
+    ],
+    [
+      "may_enable (debug_utils/dumper.py)",
+      1
+    ],
+    [
+      "_prefetch_slot_available (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "_resolve_default (environ.py)",
+      1
+    ],
+    [
+      "get (<frozen _collections_abc>)",
+      1
+    ],
+    [
+      "_trace_e2e_sampler (sampler.py)",
+      1
+    ],
+    [
+      "dumps (multiprocessing/reduction.py)",
+      1
+    ],
+    [
+      "_iterencode (json/encoder.py)",
+      1
+    ],
+    [
+      "_identity (beliefkv/runtime/sglang_v0520_predictor_worker.py)",
+      1
+    ],
+    [
+      "admission_rank (beliefkv/policy/causal_frontier.py)",
+      1
+    ],
+    [
+      "_async_d2h (utils.py)",
+      1
+    ],
+    [
+      "copy_to_cpu (utils.py)",
+      1
+    ],
+    [
+      "_clear_semantic_invocation (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "<listcomp> (schedule_policy.py)",
+      1
+    ],
+    [
+      "_get_running_request_total_token_offset (schedule_policy.py)",
+      1
+    ],
+    [
+      "__init__ (schedule_policy.py)",
+      1
+    ],
+    [
+      "inspect_session_residency_hint (beliefkv/runtime/sglang_v0520_physical.py)",
+      1
+    ],
+    [
+      "_read_request_residency_hint (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "reset_padding (cuda_graph_buffer_registry.py)",
+      1
+    ],
+    [
+      "maybe_build_flashinfer_checkpoint_plan (linear/kernels/gdn_flashinfer.py)",
+      1
+    ],
+    [
+      "wait (threading.py)",
+      1
+    ],
+    [
+      "write_text (pathlib.py)",
+      1
+    ],
+    [
+      "collect_full_device_indices (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "end_phase (beliefkv/runtime/prefill_turnover_probe.py)",
+      1
+    ],
+    [
+      "record_event (torch/cuda/streams.py)",
+      1
+    ],
+    [
+      "alloc_rows (memory_pool.py)",
+      1
+    ],
+    [
+      "_process_hicache_events (scheduler.py)",
+      1
+    ],
+    [
+      "write_cache_indices (allocation.py)",
+      1
+    ],
+    [
+      "<genexpr> (unified_radix_cache.py)",
+      1
+    ],
+    [
+      "wait (torch/cuda/streams.py)",
+      1
+    ],
+    [
+      "wait_event (torch/cuda/streams.py)",
+      1
+    ],
+    [
+      "_record_wait_prefetch_plan (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "_semantic_rate (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "decode (json/decoder.py)",
+      1
+    ],
+    [
+      "raw_decode (json/decoder.py)",
+      1
+    ],
+    [
+      "<lambda> (cuda_graph_buffer_registry.py)",
+      1
+    ],
+    [
+      "_prefill_forward_context (runner/prefill_cuda_graph_runner.py)",
+      1
+    ],
+    [
+      "slice_for (cuda_graph_buffer_registry.py)",
+      1
+    ],
+    [
+      "_slot (runner/prefill_cuda_graph_runner.py)",
+      1
+    ],
+    [
+      "write (load_snapshot.py)",
+      1
+    ],
+    [
+      "_write_payload (load_snapshot.py)",
+      1
+    ],
+    [
+      "<lambda> (torch/_utils.py)",
+      1
+    ],
+    [
+      "is_available (torch/cuda/__init__.py)",
+      1
+    ],
+    [
+      "_get_current_device_index (torch/_utils.py)",
+      1
+    ],
+    [
+      "_get_device_attr (torch/_utils.py)",
+      1
+    ],
+    [
+      "<listcomp> (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "_evict_device_next_node (unified_radix_cache.py)",
+      1
+    ],
+    [
+      "_waiting_context_keys (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "<lambda> (scheduler.py)",
+      1
+    ],
+    [
+      "from_parent (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "_is_host_leaf (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "from_forward_batch (logits_processor.py)",
+      1
+    ],
+    [
+      "_get_num_pending_tokens (scheduler_components/load_inquirer.py)",
+      1
+    ],
+    [
+      "evict_device_leaf (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "is_disable_overlap_for_batch (scheduler.py)",
+      1
+    ],
+    [
+      "_wait_prefetch_timing_valid (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "_live_join_ticket (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "inc_lock_ref (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "_is_device_leaf (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "inc_lock_ref (unified_radix_cache.py)",
+      1
+    ],
+    [
+      "get_num_allocatable_reqs (scheduler.py)",
+      1
+    ],
+    [
+      "from_schedule_batch (sampling_batch_info.py)",
+      1
+    ],
+    [
+      "<dictcomp> (triton/runtime/jit.py)",
+      1
+    ],
+    [
+      "mamba_track_aligned_lens (forward_batch_info.py)",
+      1
+    ],
+    [
+      "_mamba_radix_cache_v2_req_prepare_for_extend (schedule_batch.py)",
+      1
+    ],
+    [
+      "__init__ (triton/compiler/compiler.py)",
+      1
+    ],
+    [
+      "alloc_aux_to_lengths (memory_pool.py)",
+      1
+    ],
+    [
+      "_semantic_key_live (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "wrapped (torch/_tensor.py)",
+      1
+    ],
+    [
+      "__floordiv__ (torch/_tensor.py)",
+      1
+    ],
+    [
+      "<genexpr> (scheduler.py)",
+      1
+    ],
+    [
+      "send_bytes (multiprocessing/connection.py)",
+      1
+    ],
+    [
+      "_send (multiprocessing/connection.py)",
+      1
+    ],
+    [
+      "get_c_pointers (cutlass/base_dsl/typing.py)",
+      1
+    ],
+    [
+      "_make_owning_c_pointer (cutlass/base_dsl/typing.py)",
+      1
+    ],
+    [
+      "exit (scheduler_stage_metrics.py)",
+      1
+    ],
+    [
+      "<listcomp> (unified_cache/components/full.py)",
+      1
+    ],
+    [
+      "evict_device_start (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "check_decode_capacity (allocator/base.py)",
+      1
+    ],
+    [
+      "evict_from_tree_cache (common.py)",
+      1
+    ],
+    [
+      "evict_to_free_tokens (allocator/base.py)",
+      1
+    ],
+    [
+      "get_cached_tokens_details (scheduler_components/output_streamer.py)",
+      1
+    ],
+    [
+      "on_native_host_eviction (beliefkv/runtime/v0520_native_telemetry.py)",
+      1
+    ],
+    [
+      "_checkpoint_paths (beliefkv/runtime/sglang_v0520_physical.py)",
+      1
+    ],
+    [
+      "get_batch_return_hidden_states_mode (schedule_batch.py)",
+      1
+    ],
+    [
+      "_c_pointers (cutlass/base_dsl/typing.py)",
+      1
+    ],
+    [
+      "labels (prometheus_client/metrics.py)",
+      1
+    ],
+    [
+      "_log_gauge (metrics_collector.py)",
+      1
+    ],
+    [
+      "_unblock_depth (beliefkv/policy/causal_frontier.py)",
+      1
+    ],
+    [
+      "_classification (beliefkv/policy/causal_frontier.py)",
+      1
+    ],
+    [
+      "ancestors (beliefkv/control/causal_graph.py)",
+      1
+    ],
+    [
+      "_start_event (l2_transfer.py)",
+      1
+    ],
+    [
+      "<dictcomp> (beliefkv/runtime/sglang_v0520_physical.py)",
+      1
+    ],
+    [
+      "alloc_group_end (allocator/mamba.py)",
+      1
+    ],
+    [
+      "floatstr (json/encoder.py)",
+      1
+    ],
+    [
+      "<dictcomp> (beliefkv/core/events.py)",
+      1
+    ],
+    [
+      "loads (json/__init__.py)",
+      1
+    ],
+    [
+      "detect_encoding (json/__init__.py)",
+      1
+    ],
+    [
+      "_finalize_shm_features (scheduler_components/request_receiver.py)",
+      1
+    ],
+    [
+      "has_shm_features (mm_utils.py)",
+      1
+    ],
+    [
+      "embedding (quantization/unquant.py)",
+      1
+    ],
+    [
+      "__init__ (contextlib.py)",
+      1
+    ],
+    [
+      "_named (beliefkv/runtime/sglang_v0520_observer.py)",
+      1
+    ],
+    [
+      "is_none (spec_info.py)",
+      1
+    ],
+    [
+      "mamba2_layer_index (memory_pool.py)",
+      1
+    ],
+    [
+      "wait (beliefkv/runtime/restore_wait_probe.py)",
+      1
+    ],
+    [
+      "move_for_pool (hybrid_cache_controller.py)",
+      1
+    ],
+    [
+      "_move_write_operation (hybrid_cache_controller.py)",
+      1
+    ],
+    [
+      "get_world_size (torch/distributed/distributed_c10d.py)",
+      1
+    ],
+    [
+      "_get_group_size (torch/distributed/distributed_c10d.py)",
+      1
+    ],
+    [
+      "poll (beliefkv/runtime/semantic_report_worker.py)",
+      1
+    ],
+    [
+      "_component_available_size (unified_radix_cache.py)",
+      1
+    ],
+    [
+      "inc (prometheus_client/metrics.py)",
+      1
+    ],
+    [
+      "inc (prometheus_client/values.py)",
+      1
+    ],
+    [
+      "residency_rank (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "snapshot_session_anchors (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "node_by_id (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "_match_post_processor (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "load_to_device_per_layer (pool_host/mha.py)",
+      1
+    ],
+    [
+      "_do_alloc (allocator/mamba.py)",
+      1
+    ],
+    [
+      "_update_active_tool_census (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "copy_for_forward (sampling_batch_info.py)",
+      1
+    ],
+    [
+      "pending_action_count (beliefkv/runtime/sglang_v0520_physical.py)",
+      1
+    ],
+    [
+      "backuped (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "reclaim_beliefkv_handoff_capacity (unified_radix_cache.py)",
+      1
+    ],
+    [
+      "cached_compile (flashinfer/gdn_kernels/delta_rule_dsl/custom_compile_cache.py)",
+      1
+    ],
+    [
+      "make_timing_event_pair (l2_transfer.py)",
+      1
+    ],
+    [
+      "__call__ (triton/knobs.py)",
+      1
+    ],
+    [
+      "_foreach_copy (cuda_graph_buffer_registry.py)",
+      1
+    ],
+    [
+      "_global_num_tokens_post_fill (cuda_graph_buffer_registry.py)",
+      1
+    ],
+    [
+      "_raw_len (radix_cache.py)",
+      1
+    ],
+    [
+      "is_draft_extend_v2 (forward_batch_info.py)",
+      1
+    ],
+    [
+      "get_paged_mha_kv_cache (flashattention_backend.py)",
+      1
+    ],
+    [
+      "get_kv_buffer (memory_pool.py)",
+      1
+    ],
+    [
+      "_wait_for_layer (memory_pool.py)",
+      1
+    ],
+    [
+      "set_by_current_observations (utils/gauge_histogram.py)",
+      1
+    ],
+    [
+      "set (prometheus_client/metrics.py)",
+      1
+    ],
+    [
+      "set_raw (utils/gauge_histogram.py)",
+      1
+    ],
+    [
+      "increment_decode_cuda_graph_pass (metrics_collector.py)",
+      1
+    ],
+    [
+      "is_extend (forward_batch_info.py)",
+      1
+    ],
+    [
+      "<listcomp> (multiprocessing/connection.py)",
+      1
+    ],
+    [
+      "handle_generate_request (scheduler.py)",
+      1
+    ],
+    [
+      "__call__ (sglang/utils.py)",
+      1
+    ],
+    [
+      "__init__ (schedule_batch.py)",
+      1
+    ],
+    [
+      "new_from_obj (req_time_stats.py)",
+      1
+    ],
+    [
+      "check_match_stop_str_prefix (schedule_batch.py)",
+      1
+    ],
+    [
+      "is_tensor (torch/__init__.py)",
+      1
+    ],
+    [
+      "_normalize_decode_outputs (scheduler_components/batch_result_processor.py)",
+      1
+    ],
+    [
+      "get_nowait (multiprocessing/queues.py)",
+      1
+    ],
+    [
+      "_translate_mamba_indices (hybrid_linear_attn_backend.py)",
+      1
+    ],
+    [
+      "to_payload (scheduler_components/output_streamer.py)",
+      1
+    ],
+    [
+      "normal_decode_set_metadata (sglang/kernels/ops/attention/metadata.py)",
+      1
+    ],
+    [
+      "get_exec (runtime_context.py)",
+      1
+    ],
+    [
+      "is_decode_or_idle (forward_batch_info.py)",
+      1
+    ],
+    [
+      "_get_mamba_token_info (scheduler_components/pool_stats_observer.py)",
+      1
+    ],
+    [
+      "_split_node (unified_cache/unified_tree_core.py)",
+      1
+    ],
+    [
+      "apply_component_action (unified_cache/components/mamba.py)",
+      1
+    ],
+    [
+      "next_power_of_2 (utils/common.py)",
+      1
+    ],
+    [
+      "_is_trace_dump_enabled (flashinfer/trace/template.py)",
+      1
+    ],
+    [
+      "shadow_backup_steps (beliefkv/runtime/sglang_v0520_physical.py)",
+      1
+    ],
+    [
+      "_observe_prepare_opportunity (beliefkv/runtime/sglang_v0520_runtime.py)",
+      1
+    ],
+    [
+      "use_symmetric_memory (pynccl_allocator.py)",
+      1
+    ]
+  ],
+  "scope": "All active Python threads, without --gil or --threads; not GIL attribution, thread CPU/wall accounting, per-prefill classification, native causality or JCT savings. Inclusive samples overlap and all read errors are retained. Profiling ended before600s.",
+  "helper_sha256": "a1dfbabdf405c9756fdf5219cfab3d03d9f030ae15fd8a461cbbab64d69f8cc2"
+}

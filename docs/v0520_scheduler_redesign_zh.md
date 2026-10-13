@@ -1,10 +1,24 @@
 # v0.5.20 调度适配边界
 
+V55首个完整600–900s已由v407归纳：连续满批decode接近历史
+native，短prefill截断worker比仍1.350–1.497。64个新相位样本
+覆盖选择/发射/结果及compute-stream跨度；旧native缺相同埋点，
+保持未知。self-wall32.561s/300s和栈采样同步等待不能当可删
+CPU/JCT。v406记录JOIN40个启动窗口仅17个提前提交、工具78/77，
+仍需区分实际服务、工作端点与提交时失效并验证驻留/准入消费。
+V55冻结运行，既有PrefillAdder保留，新delayer/mixed/间隔不变；
+最终验收仍需相同NUMA策略、引擎和重复对照。
+
 d65ed0f关闭由外层管理Host NUMA时的SGLANG_AUTO_NUMA_BIND，
 避免上游V2自动worker包装脚本将preferred替换为membind=1。
 v393在真实CPU spawn中验证覆盖与关闭后继承，原生引擎不变；
 v394保留06:58池初始化OOM、PID1965823和包装脚本，零workflow
-派发。v396绑定41份源码、126项启动检查通过，实际池/服务待冷测。
+派发。v396绑定41份源码、126项启动检查通过；07:11:24恢复
+V55服务，v398核验实际200.050GB池、HTTP200和41份源码/引擎。
+v392记录FULL148.310GB在NUMA1、11.690GB在NUMA0，Mamba
+40.050GB在NUMA0；正式native必须匹配新策略并报告页落点。
+既有PrefillAdder、48槽与interval0保持，新delayer/mixed关闭；
+V55执行冻结，短prefill/GPU/JCT目标仍须完整窗口及同配置验收。
 
 9dff40b将冷启动内存改为NUMA1 preferred并允许回退，CPU仍绑
 NUMA1、余量恢复8GiB。实际Host200GB/80:20、HBM、workload、

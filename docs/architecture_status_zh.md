@@ -2,13 +2,43 @@
 
 更新日期：2026-10-14。
 
+v407汇总V55首个完整600–900s窗口：decode request steps为
+384119/历史native380722（+0.89%），但实际prefill extend工作为
+1.588M/1.891M token，且版本/NUMA落点不同，不能归因预测收益。
+匹配连续48请求decode周转比0.991–1.010；短单请求prefill的截断
+worker比仍1.350–1.497。64个真实phase样本中，selection/run/
+result墙钟P50为20.637/40.815/3.825ms，launch telemetry仅0.177ms；
+CUDA stream跨度P50为37.694ms，含依赖/发射空档而非纯kernel。
+native无同类phase probe，保持未知。已埋点Python self-wall累计
+32.561s/300s，最大tool_prefetch为6.124s；不是纯CPU或可直接减去的JCT。
+
+v406在07:30:46–07:31:00密封各文件完整前缀：完成前启动且由下
+一请求确认复用FULL的独立事件，JOIN10个/0.172GB、工具67个/
+5.170GB。JOIN113个观测中68个完成未知，工具5339个中3个未知，
+不补负标签。已知完成JOIN有40个start_window、17个提前submit；
+工具对应78/77。JOIN记录16个service_progress_unavailable，需
+区分真实暂停服务、过期/耗尽工作端点和提交时状态变化；原因可
+重叠，不能直接把23个缺口全部归于排队。下一步降低tool-prefetch/
+JOIN规划及周转成本、打通有效提交/驻留/准入消费，V55继续冻结
+收集第二波与最终结果。平均JCT/完成吞吐目标仍未验收。
+
 d65ed0f补齐实际worker继承：外层preferred被SGLang默认
 SGLANG_AUTO_NUMA_BIND重新exec为membind=1，06:58尝试在池初始化
 时再次OOM，v394保留独立现场、精确PID1965823和原生包装脚本。
 没有服务/任务派发。v393通过真实上游spawn路径、不加载模型的
 CPU诊断复现父策略1→worker2；关闭自动绑定后为1→1，CPU亲和性
 不变。启动脚本管理Host NUMA时显式关闭自动重绑；v396保持41份
-绑定源码与原核心/引擎，126项检查通过。实际池与服务仍待冷启动。
+绑定源码与原核心/引擎，126项检查通过。
+
+V55于07:08:25重新冷启、07:11:24恢复服务。v398核验41份源码、
+原a8f4ea97/f7e0a895引擎、HTTP200及实际200.050GB Host。
+v392观测FULL148.310GB位于NUMA1、11.690GB位于NUMA0，Mamba
+40.050GB位于NUMA0；实际回退已生效，不能当纯本地PCIe基线。
+服务器确认running48、prefill_decode_interval0、mixed chunk及
+新delayer关闭。07:23核验时108项首波目录、4 completed、无观测
+丢失/写入错误；这不是最终JCT/吞吐验收。V55源码继续冻结。
+v400/v401仅停56个核验闲置旧sandbox并无损归档217个旧workspace，
+26.510→2.368GB；可用约80GiB，最新trace/模型/结果不改。
 
 当前冷启动配置由9dff40b修正为CPU绑定NUMA1、内存优先NUMA1
 且允许其他节点回退，额外启动余量恢复8GiB。Host实际预算仍为

@@ -4,6 +4,33 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-10-14 Early Child Workspace Recovery
+
+During V55 startup, disk space fell to about59GiB after live workspace
+materialization. Two stopped early child runs were selected:
+`qwen35_child_return_eos_recent_32root_20260929_v1` and
+`qwen35_child_stream_eos_sampled_dev_32root_v4_staging`.
+Their116+101 remaining root/child workspaces, including untracked files,
+passed complete GNU tar comparison before cleanup.26,509,643,776 allocated
+source bytes became2,368,498,519 archive bytes. Available space at completion
+was85,767,532,544 bytes; concurrent V55 writes can change it.
+
+Archives are in `experiments/archive/20261014/`, named
+`<original-run-name>_workspaces.tar.zst`. Each original run retains
+`WORKSPACES_ARCHIVED.md` with its exact SHA256 and restore command.
+Receipt: `experiments/reports/v401_early_child_workspace_archive_20261014.json`.
+Client/server traces, model artifacts, outcomes and latest V29/V49-V55
+evidence remain directly readable.
+
+The first check refused to archive while old sandboxes still existed;
+`v399_early_child_workspace_archive_20261014.json` preserves that refusal.
+Exact UID, mounts, process identities and shell/sleep-only activity were
+verified before stopping56 idle remnants. Receipt:
+`experiments/reports/v400_idle_early_child_sandboxes_20261014.json`.
+No active V55 sandbox or other user's job was stopped. Compression used
+one worker, nice19 and idle I/O; it ended at07:20:09, before V55's
+preselected600–900s observation window began at07:21:29.
+
 ## 2026-10-14 legacy workspace and trace recovery
 
 The remaining 297 workspaces from V17, V18, V19, V24 and V25 passed

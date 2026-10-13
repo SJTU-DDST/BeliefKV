@@ -2,11 +2,25 @@
 
 更新日期：2026-10-14
 
+最新V55的完整600–900s相位和历史参考见v407：满批decode已
+接近参考，但短prefill截断worker口径仍高35%–50%。新64个
+phase样本把选择、发射、结果和GPU stream跨度分开，不能从
+旧worker区间虚构native forward。+0.89% request steps伴随更少
+prefill工作及拓扑/版本差异，最终平均JCT与完成吞吐尚未验证。
+v406确认10个JOIN/67个工具独立事件提前且下一请求复用FULL，
+同时保留未知完成和JOIN40次启动窗口仅17次提前提交的缺口。
+近期仍优先周转/控制成本及有效提交与消费，不扩大统计口径。
+
 d65ed0f保证原生worker继承外部NUMA策略：启动器管理Host时关闭
 SGLANG_AUTO_NUMA_BIND，避免上游默认V2将preferred覆盖为bind。
 v393真实CPU spawn验证1→2覆盖及关闭后1→1继承，CPU亲和性保持；
 v394保留06:58池初始化OOM、PID1965823和包装脚本，无任务派发。
-v396延续41份源码绑定和126项检查；实际池、服务与性能仍待冷测。
+v396延续41份源码绑定和126项检查。07:11:24 V55恢复服务，v398
+已核验源码/引擎、HTTP200与200.050GB实际Host；v392观察FULL
+148.310GB在NUMA1、11.690GB在NUMA0，Mamba40.050GB在NUMA0。
+实际回退生效，正式对照须匹配策略并报告落点；性能仍待完整验证。
+V55保持冻结，新delayer/mixed chunk/间隔调整关闭。v401无损
+归档217个旧workspace恢复约24GB空间，不改模型、trace或终态。
 
 当前Host启动策略由9dff40b改为CPU绑定NUMA1、内存优先NUMA1
 并允许回退，启动余量恢复8GiB；实际200GB/80:20及HBM、负载、

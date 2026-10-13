@@ -1,0 +1,448 @@
+{
+  "status": "complete_busy_window_development_diagnosis_not_acceptance",
+  "observed_at_local": "2026-10-14T07:38:43.682975+08:00",
+  "window_seconds": [
+    600,
+    900
+  ],
+  "same_version": false,
+  "code_commit": "0f2a992448812d28d5362e2b97de1aab66e35630",
+  "native_code_commit": "92e47d79ef1186dde954bc489fc38600ef5022ae",
+  "source_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v329_v55_busy_600_900_20261014.json": "43a88646fd7d1b936925f885aa3fcaf78170c68ea1c5913646795a3af6bfc79a",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v329_v55_prefill_turnover_600_900_20261014.json": "bd8e75a568cc396e1d36b16d7e45784e6c662b4eff0d8eb84b9c0e0e65b6ce32",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v406_v55_wait_prefetch_live_20261014_summary.json": "55fda29c908269d089af6f95ac8165152c324bc4b4959b587ee8ee2361509ab9"
+  },
+  "observed_decode_request_steps": {
+    "predictive": 384119,
+    "native": 380722,
+    "relative_change": 0.008922520894510955
+  },
+  "observed_prefill_extend_tokens": {
+    "predictive": 1587858,
+    "native": 1890996
+  },
+  "full_48_consecutive_decode_cohorts": {
+    "decode/48/decode/48/20480/true": {
+      "predictive": {
+        "batches": 1058,
+        "mean_ms": 21.8541688837942,
+        "median_ms": 22.066733360290527,
+        "next_interval_boundary_gap_mean_ms": 0.0,
+        "contiguous_interval_count": 1058
+      },
+      "native": {
+        "batches": 909,
+        "mean_ms": 21.640657054577986,
+        "median_ms": 21.977689743041992,
+        "next_interval_boundary_gap_mean_ms": 0.0,
+        "contiguous_interval_count": 909
+      },
+      "predictive_mean_ratio": 1.009866235977851
+    },
+    "decode/48/decode/48/22528/true": {
+      "predictive": {
+        "batches": 3343,
+        "mean_ms": 22.043378817403955,
+        "median_ms": 22.563624382019043,
+        "next_interval_boundary_gap_mean_ms": 0.0,
+        "contiguous_interval_count": 3343
+      },
+      "native": {
+        "batches": 3709,
+        "mean_ms": 22.085361778720046,
+        "median_ms": 22.45868682861328,
+        "next_interval_boundary_gap_mean_ms": 0.0,
+        "contiguous_interval_count": 3709
+      },
+      "predictive_mean_ratio": 0.9980990593798403
+    },
+    "decode/48/decode/48/24576/true": {
+      "predictive": {
+        "batches": 624,
+        "mean_ms": 22.337645061505146,
+        "median_ms": 23.06621789932251,
+        "next_interval_boundary_gap_mean_ms": 0.0,
+        "contiguous_interval_count": 624
+      },
+      "native": {
+        "batches": 316,
+        "mean_ms": 22.541525210006327,
+        "median_ms": 22.962770462036133,
+        "next_interval_boundary_gap_mean_ms": 0.0,
+        "contiguous_interval_count": 316
+      },
+      "predictive_mean_ratio": 0.9909553525503821
+    }
+  },
+  "short_prefill_worker_ratio_range": {
+    "minimum": 1.3503884634012702,
+    "maximum": 1.4971873929925963,
+    "scope": "Native geometry matched,512-token work bins; clipped worker intervals, not complete forward."
+  },
+  "sampled_short_single_prefill": {
+    "sample_count": 64,
+    "phase_coverage": {
+      "selection": 64,
+      "run_batch": 64,
+      "launch_telemetry": 64,
+      "war_barrier_and_queue_publish": 64,
+      "post_launch_physical": 64,
+      "result_processing": 64
+    },
+    "phases": {
+      "selection": {
+        "wall_ms": {
+          "count": 64,
+          "mean_ms": 22.417368796875,
+          "p50_ms": 20.6371115,
+          "p90_ms": 31.104251,
+          "max_ms": 84.485488,
+          "sum_ms": 1434.711603
+        },
+        "thread_cpu_ms": {
+          "count": 64,
+          "mean_ms": 21.41547603125,
+          "p50_ms": 20.027670999999998,
+          "p90_ms": 29.516921,
+          "max_ms": 82.349777,
+          "sum_ms": 1370.5904659999999
+        },
+        "wall_minus_thread_cpu_ms": {
+          "count": 64,
+          "mean_ms": 1.0018927656249998,
+          "p50_ms": 0.8049955000000004,
+          "p90_ms": 2.0096849999999975,
+          "max_ms": 5.0242,
+          "sum_ms": 64.121137
+        }
+      },
+      "run_batch": {
+        "wall_ms": {
+          "count": 64,
+          "mean_ms": 41.555155234375,
+          "p50_ms": 40.815132500000004,
+          "p90_ms": 46.414142,
+          "max_ms": 54.569348,
+          "sum_ms": 2659.5299350000005
+        },
+        "thread_cpu_ms": {
+          "count": 64,
+          "mean_ms": 40.775427578125,
+          "p50_ms": 40.2231585,
+          "p90_ms": 45.674559,
+          "max_ms": 53.387413,
+          "sum_ms": 2609.6273650000007
+        },
+        "wall_minus_thread_cpu_ms": {
+          "count": 64,
+          "mean_ms": 0.77972765625,
+          "p50_ms": 0.7636974999999993,
+          "p90_ms": 1.1079730000000012,
+          "max_ms": 2.4065670000000026,
+          "sum_ms": 49.90257
+        }
+      },
+      "launch_telemetry": {
+        "wall_ms": {
+          "count": 64,
+          "mean_ms": 0.18921728125,
+          "p50_ms": 0.177325,
+          "p90_ms": 0.244981,
+          "max_ms": 0.456446,
+          "sum_ms": 12.109906
+        },
+        "thread_cpu_ms": {
+          "count": 64,
+          "mean_ms": 0.189251890625,
+          "p50_ms": 0.17736449999999998,
+          "p90_ms": 0.245054,
+          "max_ms": 0.45672,
+          "sum_ms": 12.112121000000002
+        },
+        "wall_minus_thread_cpu_ms": {
+          "count": 64,
+          "mean_ms": -3.4609374999999484e-05,
+          "p50_ms": -1.8999999999991246e-05,
+          "p90_ms": 4.499999999998949e-05,
+          "max_ms": 0.00017400000000000748,
+          "sum_ms": -0.002214999999999967
+        }
+      },
+      "war_barrier_and_queue_publish": {
+        "wall_ms": {
+          "count": 64,
+          "mean_ms": 0.032946828125,
+          "p50_ms": 0.029411,
+          "p90_ms": 0.037617,
+          "max_ms": 0.05999,
+          "sum_ms": 2.1085969999999996
+        },
+        "thread_cpu_ms": {
+          "count": 64,
+          "mean_ms": 0.03299946875,
+          "p50_ms": 0.029401,
+          "p90_ms": 0.037771,
+          "max_ms": 0.05996,
+          "sum_ms": 2.111966
+        },
+        "wall_minus_thread_cpu_ms": {
+          "count": 64,
+          "mean_ms": -5.264062500000001e-05,
+          "p50_ms": -3.6500000000000074e-05,
+          "p90_ms": 2.8000000000000247e-05,
+          "max_ms": 6.199999999999956e-05,
+          "sum_ms": -0.0033690000000000005
+        }
+      },
+      "post_launch_physical": {
+        "wall_ms": {
+          "count": 64,
+          "mean_ms": 2.777383890625,
+          "p50_ms": 2.1906790000000003,
+          "p90_ms": 4.467356,
+          "max_ms": 14.554932,
+          "sum_ms": 177.752569
+        },
+        "thread_cpu_ms": {
+          "count": 64,
+          "mean_ms": 2.77596603125,
+          "p50_ms": 2.1912825,
+          "p90_ms": 4.43083,
+          "max_ms": 14.555876,
+          "sum_ms": 177.661826
+        },
+        "wall_minus_thread_cpu_ms": {
+          "count": 64,
+          "mean_ms": 0.0014178593750000437,
+          "p50_ms": -0.0005389999999998452,
+          "p90_ms": -0.0003260000000000485,
+          "max_ms": 0.06014999999999926,
+          "sum_ms": 0.0907430000000028
+        }
+      },
+      "result_processing": {
+        "wall_ms": {
+          "count": 64,
+          "mean_ms": 3.80711040625,
+          "p50_ms": 3.82539,
+          "p90_ms": 5.136761,
+          "max_ms": 6.107746,
+          "sum_ms": 243.65506599999995
+        },
+        "thread_cpu_ms": {
+          "count": 64,
+          "mean_ms": 3.791706890625,
+          "p50_ms": 3.7590425,
+          "p90_ms": 5.136417,
+          "max_ms": 6.107306,
+          "sum_ms": 242.66924100000003
+        },
+        "wall_minus_thread_cpu_ms": {
+          "count": 64,
+          "mean_ms": 0.015403515624999982,
+          "p50_ms": 0.00040450000000014086,
+          "p90_ms": 0.07369400000000015,
+          "max_ms": 0.177562,
+          "sum_ms": 0.9858249999999988
+        }
+      }
+    },
+    "metrics": {
+      "gpu_run_batch_span_ms": {
+        "count": 64,
+        "mean_ms": 40.031151950359344,
+        "p50_ms": 37.69395065307617,
+        "p90_ms": 46.20761489868164,
+        "max_ms": 54.54403305053711,
+        "sum_ms": 2561.993724822998
+      },
+      "launch_to_processed_completion_ms": {
+        "count": 64,
+        "mean_ms": 56.333938390016556,
+        "p50_ms": 55.04934883117676,
+        "p90_ms": 69.43371677398682,
+        "max_ms": 80.35762405395508,
+        "sum_ms": 3605.3720569610596
+      },
+      "run_start_to_result_end_ms": {
+        "count": 64,
+        "mean_ms": 56.40331880748272,
+        "p50_ms": 55.111623764038086,
+        "p90_ms": 69.51196479797363,
+        "max_ms": 80.4287691116333,
+        "sum_ms": 3609.812403678894
+      },
+      "selection_end_to_run_start_ms": {
+        "count": 64,
+        "mean_ms": 0.016302034258842468,
+        "p50_ms": 0.01522970199584961,
+        "p90_ms": 0.0185546875,
+        "max_ms": 0.027034759521484375,
+        "sum_ms": 1.043330192565918
+      },
+      "run_return_to_result_start_ms": {
+        "count": 64,
+        "mean_ms": 11.041053220629692,
+        "p50_ms": 9.438540935516357,
+        "p90_ms": 19.390947341918945,
+        "max_ms": 30.67465591430664,
+        "sum_ms": 706.6274061203003
+      },
+      "gpu_layer_dependency_wait_ms": {
+        "count": 1,
+        "mean_ms": 0.08908800012432039,
+        "p50_ms": 0.08908800012432039,
+        "p90_ms": 0.08908800012432039,
+        "max_ms": 0.08908800012432039,
+        "sum_ms": 0.08908800012432039
+      }
+    },
+    "gpu_span_status": {
+      "observed": 64
+    },
+    "restore_wait_status": {
+      "not_observed": 63,
+      "observed": 1
+    }
+  },
+  "instrumented_python_self_wall_ms": 32561.491565,
+  "largest_control_scopes": [
+    {
+      "phase": "tool_prefetch",
+      "count": 9998,
+      "self_ms": 6123.9937610000015,
+      "total_ms": 6857.933736999998
+    },
+    {
+      "phase": "join_prepare",
+      "count": 9998,
+      "self_ms": 2899.1126830000003,
+      "total_ms": 5131.8769649999995
+    },
+    {
+      "phase": "control_drain",
+      "count": 9998,
+      "self_ms": 2662.739941,
+      "total_ms": 5187.168227
+    },
+    {
+      "phase": "admission_plan",
+      "count": 1933,
+      "self_ms": 2423.080578,
+      "total_ms": 4409.59203
+    },
+    {
+      "phase": "opportunity_sampling",
+      "count": 294,
+      "self_ms": 2324.6342099999997,
+      "total_ms": 2324.6342099999997
+    },
+    {
+      "phase": "join_prefetch",
+      "count": 9998,
+      "self_ms": 2132.7946020000004,
+      "total_ms": 2409.724815
+    },
+    {
+      "phase": "event_apply",
+      "count": 18715,
+      "self_ms": 2078.2879269999994,
+      "total_ms": 2517.003595
+    },
+    {
+      "phase": "residency_hint",
+      "count": 10173,
+      "self_ms": 1678.524907,
+      "total_ms": 1681.0210539999998
+    }
+  ],
+  "live_prefetch_audit_interval": {
+    "started_at_local": "2026-10-14T07:30:46.127679+08:00",
+    "finished_at_local": "2026-10-14T07:31:00.869839+08:00",
+    "scope": "Independent complete-line file prefixes, not an atomic cross-file snapshot or the600\u2013900s window."
+  },
+  "early_next_request_confirmed_full_reuse": {
+    "join_ticket": {
+      "observed_events": 113,
+      "completion_boundary_unknown_events": 68,
+      "events_with_early_reused_full": 10,
+      "early_started_and_reused_full_bytes": 172441600
+    },
+    "tool_wait": {
+      "observed_events": 5339,
+      "completion_boundary_unknown_events": 3,
+      "events_with_early_reused_full": 67,
+      "early_started_and_reused_full_bytes": 5170380800
+    }
+  },
+  "dispatch_funnel": {
+    "join_ticket": {
+      "event_counts": {
+        "observed_events": 113,
+        "completion_unknown": 68,
+        "completion_observed": 45,
+        "positive_full_plan_before_completion": 40,
+        "start_before_completion": 40,
+        "submitted_before_completion": 17,
+        "start_without_submit_before_completion": 23
+      },
+      "events_with_observed_reason_before_completion": {
+        "admission_budget_busy": 26,
+        "no_restore_plan": 43,
+        "start_window": 40,
+        "before_start_window": 24,
+        "submitted": 17,
+        "service_progress_unavailable": 16,
+        "service_unsupported": 3,
+        "enqueue_slot_changed": 3
+      },
+      "events_with_observed_no_step_reason_before_completion": {
+        "prefetch_capacity_budget": 40,
+        "no_reusable_input_restore_step": 15,
+        "no_host_backed_missing_copy": 5,
+        "closure_unobservable": 1
+      }
+    },
+    "tool_wait": {
+      "event_counts": {
+        "observed_events": 5339,
+        "completion_observed": 5336,
+        "positive_full_plan_before_completion": 1056,
+        "start_before_completion": 78,
+        "submitted_before_completion": 77,
+        "start_without_submit_before_completion": 1,
+        "completion_unknown": 3
+      },
+      "events_with_observed_reason_before_completion": {
+        "no_restore_plan": 4323,
+        "service_unsupported": 48,
+        "submitted": 77,
+        "start_window": 78,
+        "before_start_window": 982
+      },
+      "events_with_observed_no_step_reason_before_completion": {
+        "no_host_backed_missing_copy": 2029,
+        "no_reusable_input_restore_step": 142,
+        "prefetch_capacity_budget": 2202,
+        "closure_unobservable": 1
+      }
+    }
+  },
+  "next_work": [
+    "Separate current short-prefill selection/result costs from overlap-clipped worker intervals; native has no equivalent phase probe yet.",
+    "Reduce the largest tool-prefetch and JOIN planning scopes while preserving live physical checks and action coverage.",
+    "Resolve JOIN start-to-submit gaps: distinguish absent active service, stale/exhausted work endpoints, capacity and changed enqueue slots using exact event identities.",
+    "Verify leases and native admission consumption before counting extra ACKs as benefit.",
+    "Keep V55 running for the second arrival wave and workflow outcomes; formal acceptance needs matching NUMA policy and same-version controls."
+  ],
+  "limitations": [
+    "Historical native has different code/topology; lower realized prefill work confounds the0.89% decode-step increase.",
+    "Python self-wall includes waiting and is not exclusive thread CPU or directly removable JCT.",
+    "No equivalent native CUDA/phase sample is fabricated from worker intervals.",
+    "Command counts differ from independent JOIN/tool wait events; reasons can overlap.",
+    "Pending completions and administrative censoring are not natural failures or negative prediction labels.",
+    "The goal of improved mean JCT and completed-workflow throughput remains unproven."
+  ],
+  "helper_sha256": "c934cb76b24d2d0eea44519c69b976c1490b85e3e3ade55d6bea6bf4ee895ddb"
+}

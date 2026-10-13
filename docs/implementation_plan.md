@@ -2,6 +2,26 @@
 
 Status date: 2026-10-14.
 
+Latest V407 uses V55's complete600–900s window:384119 versus historical
+native380722 decode request steps(+0.89%), with1.588M versus1.891M
+realized prefill extend tokens. Version/topology and demand differences
+preclude a causal gain. Consecutive full48 decode ratios are0.991–1.010;
+short-prefill clipped worker ratios remain1.350–1.497.64 current phase
+samples show selection/run/result wall medians20.637/40.815/3.825ms;
+launch telemetry is0.177ms and compute-stream span37.694ms. Native
+equivalent phases are unknown. Instrumented self-wall is32.561s/300s,
+led by tool_prefetch6.124s; this is not removable CPU or JCT.
+
+V406's independently sealed live prefixes confirm early FULL consumption
+in10 JOIN events(0.172GB) and67 tool events(5.170GB). Preserve68/3
+unknown JOIN/tool completions. Completed JOIN starts/submissions are40/17,
+tools78/77. First distinguish absent actual service from expired/exhausted
+work forecasts and submission-state changes in the16 JOIN
+service_progress_unavailable events; reasons overlap. Then reduce the
+largest planning/turnover scopes and verify effective residency/admission
+consumption. Keep V55 frozen for the second arrival wave and final outcomes.
+Do not enable new batching/delay settings or infer final JCT acceptance.
+
 d65ed0f fixes nested worker rebinding: SGLang's default automatic NUMA
 configuration replaced the outer preferred policy with membind=1. The06:58
 attempt failed during Host initialization; V394 preserves exactPID1965823,
@@ -10,7 +30,17 @@ upstream CPU spawning: parent preferred becomes worker bind with automatic
 binding, and stays preferred when disabled; CPU affinity is identical.
 The launcher now owns NUMA placement without automatic rebinding. V396
 binds41 sources,126 startup checks pass, and core runtime/engine stay fixed.
-Actual pool placement and healthy service still require the next cold run.
+
+V55 restarted at07:08:25 and became healthy at07:11:24. V398 verifies all41
+source hashes, the qualified engine, HTTP200 and actual200.050GB Host.
+V392 observes148.310GB FULL onNUMA1,11.690GB FULL plus40.050GB Mamba
+onNUMA0. Fallback works; this is not an all-local Host topology. The server
+retains48 slots, interval0 and disabled mixed chunk/new prefill delay.
+At07:23 the first108 directories existed and four workflows had completed;
+there were no evidence drops/writer errors. Keep execution frozen for the
+complete600–900s window and eventual quality/JCT/throughput assessment.
+V400/V401 stop56 verified old idle sandboxes and losslessly archive217 old
+workspaces,26.510→2.368GB. Current traces/models/results are retained.
 
 Current cold startup uses9dff40b: CPU stays onNUMA1, memory prefersNUMA1
 with fallback, and extra startup reserve returns to8GiB. Keep200GB/80:20,

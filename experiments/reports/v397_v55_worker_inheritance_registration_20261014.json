@@ -1,0 +1,95 @@
+{
+  "status": "frozen_verified_unarmed_daytime_retry",
+  "registered_at_local": "2026-10-14T07:08:09.613902+08:00",
+  "target_revision": "0f2a992448812d28d5362e2b97de1aab66e35630",
+  "main_revision": "ce2a4819d7777bd0d89afc186ace7397d2785cc9",
+  "main_is_ancestor_of_target": true,
+  "qualification": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v396_v55_worker_inheritance_qualification_20261014.json",
+  "qualification_sha256": "a95f44bd7e27045855f904fd2807182adbb64c583ced1421758fd126b97f177b",
+  "qualified_source_count": 41,
+  "qualification_hashes_match": true,
+  "prior_runtime_checks": {
+    "tests": 806,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v373_join_parent_projection_qualification_20261014.xml",
+    "sha256": "3ba819c93df49e6576259e8efde4775606559507f7ffc5ca4e621b144392e086"
+  },
+  "startup_chain_checks": {
+    "tests": 126,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v395_numa_worker_inheritance_checks_20261014.xml",
+    "sha256": "c779b65b1cad7c8358246a016ed1cb3dad4f4cf0b313b2ccee38299bd8be7256"
+  },
+  "failure_receipt": "/home/longhao/experiment/BeliefKV/experiments/reports/v394_v55_worker_rebind_oom_20261014.json",
+  "failure_receipt_sha256": "492ae5086cd282d660b378c5de7e2cc88679243f06af111bd3938e0fefdf1c38",
+  "all_preserved_failure_files_match": true,
+  "engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "a8f4ea97da2f1fc8d969d538359a62aa9db23750051f9838956f03bc48174c68",
+    "expected_tree": "f7e0a89564622d530ddcf3b40de9f810974619aa",
+    "actual_tree": "f7e0a89564622d530ddcf3b40de9f810974619aa",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "host_preflight_stdout": "NUMA node 1 policy=preferred: combined FULL+MAMBA host pool budget 186.26 GiB, estimated available 388.15 GiB (actual page placement must be observed)",
+  "configuration_before_rearming": {
+    "timezone": "Asia/Shanghai",
+    "reservation": "daily 00:00-06:00",
+    "release_starts": "23:59",
+    "resume": {
+      "armed": false,
+      "not_before": "2026-10-14T06:00:00+08:00",
+      "python": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014",
+      "revision": "0f2a992448812d28d5362e2b97de1aab66e35630",
+      "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54",
+      "previous_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v310-v54-residency-hint-20261013",
+      "previous_pids": [
+        3750069,
+        3753581,
+        3753938,
+        3755697
+      ],
+      "previous_identities": [
+        {
+          "pid": 3750069,
+          "start_ticks": "606816709"
+        },
+        {
+          "pid": 3753581,
+          "start_ticks": "606867943"
+        },
+        {
+          "pid": 3753938,
+          "start_ticks": "606869218"
+        },
+        {
+          "pid": 3755697,
+          "start_ticks": "606885798"
+        }
+      ],
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55",
+      "launch_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v55_launch_after_reservation_20261014.json",
+      "native_reference_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29",
+      "minimum_free_bytes": 64424509440,
+      "host_numa_memory_policy": "preferred",
+      "port": 18459,
+      "log": "/home/longhao/experiment/ops/v55_resume_20261014.log"
+    }
+  },
+  "operational_source_sha256": {
+    "server_reservation.py": "87b3e63e5077023c1f7c2649e2afe95f2ac1f5fd3d0ef9bc95dd4b191844d434",
+    "v55_readonly_audit.py": "ffee4c31129e57b0409a19587215c7d15e7c07e5ad3881c48956449128a73860",
+    "register_v55_retry.py": "5bae46c0e3e6996cb1f45bbd88ce967c372139ba3cea5a0fcbd20d87ccb0fb53"
+  },
+  "scope": "Same workload/runtime cold retry; actual allocation, service and GPU/JCT remain unverified."
+}

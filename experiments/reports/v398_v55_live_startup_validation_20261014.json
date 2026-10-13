@@ -1,0 +1,411 @@
+{
+  "status": "live_startup_verified_not_performance_acceptance",
+  "observed_at_local": "2026-10-14T07:23:18.774301+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55",
+  "plan_sha256": "f09db2e9da1bf5255c19977cde9d61ddc94b0f0e4dfe74a89e1f85884e63d2e7",
+  "execution": {
+    "collection_code_commit": "0f2a992448812d28d5362e2b97de1aab66e35630",
+    "verification_code_commit": "0f2a992448812d28d5362e2b97de1aab66e35630",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "qualification": "/home/longhao/experiment/BeliefKV/experiments/reports/v396_v55_worker_inheritance_qualification_20261014.json",
+  "qualification_sha256": "a95f44bd7e27045855f904fd2807182adbb64c583ced1421758fd126b97f177b",
+  "qualified_source_count": 41,
+  "all_qualified_hashes_match": true,
+  "engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "a8f4ea97da2f1fc8d969d538359a62aa9db23750051f9838956f03bc48174c68",
+    "expected_tree": "f7e0a89564622d530ddcf3b40de9f810974619aa",
+    "actual_tree": "f7e0a89564622d530ddcf3b40de9f810974619aa",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "scheduler_identity": {
+    "pid": 1973136,
+    "state": "R",
+    "ppid": 1972772,
+    "start_ticks": "610318265",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "numa_placement": "/home/longhao/experiment/BeliefKV/experiments/reports/v392_v55_numa_placement_20261014.json",
+  "numa_placement_sha256": "6a01d9bf60c3de4912d62388ab5fcf169cdfbfc86e1efb3a62174223f3d65b49",
+  "capacity_census": {
+    "capacity": {
+      "device_full_bytes": 36843376640,
+      "device_full_tokens": 1798992,
+      "device_mamba_bytes": 33096007680,
+      "device_mamba_slots": 513,
+      "device_total_bytes": 69939384320,
+      "host_full_bytes": 160000020480,
+      "host_full_tokens": 7812501,
+      "host_mamba_bytes": 40050032640,
+      "host_mamba_slots": 622,
+      "host_total_bytes": 200050053120,
+      "pool_layout": "static_separate_full_mamba"
+    },
+    "collection_mode": "admission_observation",
+    "scheduler_pid": 1973136,
+    "schema_version": 1,
+    "source": "native_sglang_v0520"
+  },
+  "get_server_info_status": 200,
+  "selected_server_info": {
+    "status": "ready",
+    "version": "0.5.20",
+    "max_running_requests": 48,
+    "context_length": 131072,
+    "chunked_prefill_size": 4096,
+    "prefill_decode_interval": 0,
+    "enable_mixed_chunk": false,
+    "enable_prefill_delayer": false,
+    "min_free_slots_delay": null,
+    "numa_node": null
+  },
+  "telemetry_status": {
+    "background_writer_timing": {
+      "categories": {
+        "action_ack:beliefkv_physical_action_ack": {
+          "max_sample_cpu_ms": 0.092448,
+          "max_sample_wall_ms": 5.233785,
+          "mean_sample_cpu_ms": 0.045517833333333334,
+          "mean_sample_wall_ms": 0.540235,
+          "records_seen": 743,
+          "sampled_cpu_ms": 0.546214,
+          "sampled_wall_ms": 6.48282,
+          "samples": 12
+        },
+        "action_use:beliefkv_prefetch_first_service": {
+          "max_sample_cpu_ms": 0.060214,
+          "max_sample_wall_ms": 0.060429,
+          "mean_sample_cpu_ms": 0.03810925,
+          "mean_sample_wall_ms": 0.03902275,
+          "records_seen": 214,
+          "sampled_cpu_ms": 0.152437,
+          "sampled_wall_ms": 0.156091,
+          "samples": 4
+        },
+        "action_use:beliefkv_prefetch_mamba_forward_completed": {
+          "max_sample_cpu_ms": 0.014833,
+          "max_sample_wall_ms": 0.014871,
+          "mean_sample_cpu_ms": 0.014833,
+          "mean_sample_wall_ms": 0.014871,
+          "records_seen": 26,
+          "sampled_cpu_ms": 0.014833,
+          "sampled_wall_ms": 0.014871,
+          "samples": 1
+        },
+        "audit:gpu_restore_dependency_wait": {
+          "max_sample_cpu_ms": 0.164748,
+          "max_sample_wall_ms": 0.279259,
+          "mean_sample_cpu_ms": 0.134362,
+          "mean_sample_wall_ms": 0.190612,
+          "records_seen": 175,
+          "sampled_cpu_ms": 0.403086,
+          "sampled_wall_ms": 0.571836,
+          "samples": 3
+        },
+        "audit:gpu_service_sample": {
+          "max_sample_cpu_ms": 0.894177,
+          "max_sample_wall_ms": 5.684079,
+          "mean_sample_cpu_ms": 0.21246725672371639,
+          "mean_sample_wall_ms": 0.4064298166259169,
+          "records_seen": 26123,
+          "sampled_cpu_ms": 86.899108,
+          "sampled_wall_ms": 166.229795,
+          "samples": 409
+        },
+        "audit:prefill_turnover_sample": {
+          "max_sample_cpu_ms": 0.140239,
+          "max_sample_wall_ms": 0.144461,
+          "mean_sample_cpu_ms": 0.08253466666666667,
+          "mean_sample_wall_ms": 0.08294483333333333,
+          "records_seen": 327,
+          "sampled_cpu_ms": 0.495208,
+          "sampled_wall_ms": 0.497669,
+          "samples": 6
+        },
+        "events:record": {
+          "max_sample_cpu_ms": 0.276089,
+          "max_sample_wall_ms": 0.771858,
+          "mean_sample_cpu_ms": 0.056002358585858586,
+          "mean_sample_wall_ms": 0.06763645959595958,
+          "records_seen": 12642,
+          "sampled_cpu_ms": 11.088467,
+          "sampled_wall_ms": 13.392019,
+          "samples": 198
+        },
+        "eviction_attribution:context_prefix_probe": {
+          "max_sample_cpu_ms": 0.437254,
+          "max_sample_wall_ms": 0.434343,
+          "mean_sample_cpu_ms": 0.18574362,
+          "mean_sample_wall_ms": 0.18658755999999999,
+          "records_seen": 6345,
+          "sampled_cpu_ms": 18.574362,
+          "sampled_wall_ms": 18.658756,
+          "samples": 100
+        },
+        "eviction_attribution:host_block_eviction": {
+          "max_sample_cpu_ms": 2.156156,
+          "max_sample_wall_ms": 3.197741,
+          "mean_sample_cpu_ms": 0.9977482173913044,
+          "mean_sample_wall_ms": 1.06388025,
+          "records_seen": 5882,
+          "sampled_cpu_ms": 91.792836,
+          "sampled_wall_ms": 97.876983,
+          "samples": 92
+        },
+        "eviction_attribution:request_probe": {
+          "max_sample_cpu_ms": 3.675371,
+          "max_sample_wall_ms": 3.96468,
+          "mean_sample_cpu_ms": 1.1112561636363636,
+          "mean_sample_wall_ms": 1.2855817272727272,
+          "records_seen": 3485,
+          "sampled_cpu_ms": 61.119089,
+          "sampled_wall_ms": 70.706995,
+          "samples": 55
+        },
+        "eviction_attribution:served_context_prefix": {
+          "max_sample_cpu_ms": 0.327944,
+          "max_sample_wall_ms": 0.327414,
+          "mean_sample_cpu_ms": 0.10081215151515152,
+          "mean_sample_wall_ms": 0.101425898989899,
+          "records_seen": 6297,
+          "sampled_cpu_ms": 9.980403,
+          "sampled_wall_ms": 10.041164,
+          "samples": 99
+        },
+        "host_pool:host_pool_eviction": {
+          "max_sample_cpu_ms": 0.063231,
+          "max_sample_wall_ms": 0.062954,
+          "mean_sample_cpu_ms": 0.022447478260869565,
+          "mean_sample_wall_ms": 0.022570927536231883,
+          "records_seen": 4358,
+          "sampled_cpu_ms": 1.548876,
+          "sampled_wall_ms": 1.557394,
+          "samples": 69
+        },
+        "host_pool:host_pool_transfer_ack": {
+          "max_sample_cpu_ms": 0.064773,
+          "max_sample_wall_ms": 0.051371,
+          "mean_sample_cpu_ms": 0.014542807692307692,
+          "mean_sample_wall_ms": 0.014723871794871795,
+          "records_seen": 9977,
+          "sampled_cpu_ms": 2.268678,
+          "sampled_wall_ms": 2.296924,
+          "samples": 156
+        },
+        "host_pool:host_pool_usage": {
+          "max_sample_cpu_ms": 0.03621,
+          "max_sample_wall_ms": 0.036179,
+          "mean_sample_cpu_ms": 0.030983636363636363,
+          "mean_sample_wall_ms": 0.03115790909090909,
+          "records_seen": 655,
+          "sampled_cpu_ms": 0.34082,
+          "sampled_wall_ms": 0.342737,
+          "samples": 11
+        },
+        "transfer:transfer_telemetry": {
+          "max_sample_cpu_ms": 0.120162,
+          "max_sample_wall_ms": 0.946576,
+          "mean_sample_cpu_ms": 0.038282916666666666,
+          "mean_sample_wall_ms": 0.05358504487179488,
+          "records_seen": 9977,
+          "sampled_cpu_ms": 5.972135,
+          "sampled_wall_ms": 8.359267,
+          "samples": 156
+        }
+      },
+      "cpu_clock": "thread_time_ns",
+      "sample_every": 64,
+      "schema_version": 1,
+      "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+      "snapshot_ts_ms": 1791933798359.0742,
+      "wall_clock": "perf_counter_ns"
+    },
+    "collection_mode": "admission_observation",
+    "context_prefix_reuse_evidence": {
+      "counts": {
+        "new_or_changed_prompt_tokens": 3728246,
+        "previously_served_common_prefix_tokens": 87515706,
+        "previously_served_prefix_recompute_proxy_tokens": 194610,
+        "request_probes": 6345,
+        "requests_with_prefix_recompute_proxy": 5877,
+        "with_prior_served_prompt": 5993,
+        "without_prior_served_prompt": 352
+      },
+      "semantics": "Previously served same-session input-prefix loss, not newly appended input or a per-layer FULL/Mamba recomputation count.",
+      "tracked_context_count": 348,
+      "tracking_limit": 1024
+    },
+    "dropped_records": 0,
+    "failed_records": 0,
+    "gpu_restore_wait_probe": {
+      "counts": {
+        "completed_samples": 175,
+        "duplicate_or_captured_wait": 1,
+        "eligible_batches": 2797,
+        "sampled_batches": 175
+      },
+      "pending_samples": 0,
+      "queue_limit": 32,
+      "sampling_interval": 16
+    },
+    "host_block_eviction_attribution": {
+      "available": true,
+      "counts": {
+        "full_evictions": 1340,
+        "mamba_evictions": 4542,
+        "mamba_prefix_revisited_hit_location_unknown": 2897,
+        "request_probes": 3485
+      },
+      "evicted_units_by_pool": {
+        "full": 497315,
+        "mamba": 4542
+      },
+      "full_reaccess_semantics": "exact prefix match plus request device/host cached-token intervals; remaining evicted FULL interval is attributed to recomputation",
+      "identity_semantics": "run-keyed HMAC over exact cache namespace and radix token prefix; raw token IDs are not written",
+      "mamba_reaccess_semantics": "exact prefix revisit is observable, but native telemetry does not expose the Mamba hit location per node",
+      "pending_blocks_by_pool": {
+        "full": 1340,
+        "mamba": 1645
+      },
+      "pending_latest_evicted_units_by_pool": {
+        "full": 497315,
+        "mamba": 1645
+      },
+      "probe_prefix_length_overflow": 0,
+      "recomputed_full_units": 0,
+      "reused_full_units": 0
+    },
+    "host_pool_evidence": {
+      "full": {
+        "bytes_per_unit": 20480,
+        "capacity_units": 7812501,
+        "d2h_ack_units": 3192500,
+        "evicted_bytes": 165539840,
+        "evicted_units": 8083,
+        "eviction_calls": 13,
+        "h2d_ack_units": 19026102,
+        "h2d_units_after_first_host_eviction": 19026102,
+        "high_water": {
+          "used_bytes": 55160954880,
+          "used_units": 2693406
+        }
+      },
+      "mamba": {
+        "bytes_per_unit": 64389120,
+        "capacity_units": 622,
+        "d2h_ack_units": 5164,
+        "evicted_bytes": 280607784960,
+        "evicted_units": 4358,
+        "eviction_calls": 4358,
+        "h2d_ack_units": 6783,
+        "h2d_units_after_first_host_eviction": 6783,
+        "high_water": {
+          "used_bytes": 40050032640,
+          "used_units": 622
+        }
+      }
+    },
+    "pending_batch_count": 1,
+    "pending_request_count": 148,
+    "prefill_turnover_probe": {
+      "counts": {
+        "completed_samples": 327,
+        "eligible_prefills": 5221,
+        "selected_samples": 327
+      },
+      "pending_samples": 0,
+      "queue_limit": 32,
+      "sampling_interval": 16
+    },
+    "record_counts": {
+      "action_ack": 743,
+      "action_use": 240,
+      "audit": 27322,
+      "events": 12642,
+      "eviction_attribution": 22009,
+      "host_pool": 14990,
+      "transfer": 9977
+    },
+    "request_cache_evidence": {
+      "after_first_full_host_eviction": {
+        "cached_tokens_device": 22287722,
+        "cached_tokens_host": 29078977,
+        "mamba_host_hit_slots": 2617,
+        "prompt_tokens": 53204487,
+        "request_count": 2662,
+        "requests_with_full_host_hit": 2617,
+        "requests_with_mamba_host_hit": 2617,
+        "uncached_prompt_tokens": 1837788
+      },
+      "after_first_host_eviction": {
+        "cached_tokens_device": 26868471,
+        "cached_tokens_host": 32009372,
+        "mamba_host_hit_slots": 3082,
+        "prompt_tokens": 61034729,
+        "request_count": 3136,
+        "requests_with_full_host_hit": 3083,
+        "requests_with_mamba_host_hit": 3082,
+        "uncached_prompt_tokens": 2156886
+      },
+      "after_first_mamba_host_eviction": {
+        "cached_tokens_device": 26868471,
+        "cached_tokens_host": 32009372,
+        "mamba_host_hit_slots": 3082,
+        "prompt_tokens": 61034729,
+        "request_count": 3136,
+        "requests_with_full_host_hit": 3083,
+        "requests_with_mamba_host_hit": 3082,
+        "uncached_prompt_tokens": 2156886
+      },
+      "all": {
+        "cached_tokens_device": 55308597,
+        "cached_tokens_host": 33787309,
+        "mamba_host_hit_slots": 3374,
+        "prompt_tokens": 93874891,
+        "request_count": 6345,
+        "requests_with_full_host_hit": 3375,
+        "requests_with_mamba_host_hit": 3374,
+        "uncached_prompt_tokens": 4778985
+      }
+    },
+    "request_cache_evidence_semantics": {
+      "after_eviction": "pool-level request hits and uncached prompt tokens after the first eviction; use eviction_attribution.jsonl for node-level FULL reaccess attribution",
+      "full_host_hit": "cached_tokens_host input-token count",
+      "mamba_host_hit": "mamba_host_hit_length checkpoint-slot count; not tokens"
+    },
+    "schema_version": 1,
+    "snapshot_ts_ms": 1791933798359.0715,
+    "source": "native_sglang_v0520",
+    "writer_error": null,
+    "writer_queue_depth": 2
+  },
+  "arrived_workspace_directories": 108,
+  "terminal_results_at_observation": {
+    "completed": 4
+  },
+  "scope": "Frozen live startup and read-only service validation. Arrival directories are not all admitted model requests or completed workflows. No JCT or throughput success claimed.",
+  "helper_sha256": "0c9c9913d4ce0c9d93bd8ce2465a960b4a7cbbaf8364cf4808b704d7f219a08a"
+}

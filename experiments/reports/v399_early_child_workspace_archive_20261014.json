@@ -1,0 +1,9 @@
+{
+  "status": "failed_preserve_unverified_sources",
+  "started_at_local": "2026-10-14T07:15:43.777998+08:00",
+  "helper_sha256": "d0407c17bd488e261dab67ed65f57fb48c59dcfbd0460952f00f81f52f4802d9",
+  "runs": [],
+  "free_bytes_before": 62021918720,
+  "scope": "Only stopped early child workspaces, including untracked files; all traces, model artifacts, results and latest V29/V49-V55 stay directly readable.",
+  "error": "ValueError('experiment still owns live resources: /home/longhao/experiment/BeliefKV/experiments/raw/qwen35_child_return_eos_recent_32root_20260929_v1')"
+}

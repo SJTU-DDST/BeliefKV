@@ -4,12 +4,37 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+最新V55完整600–900s证据见v407：request steps相对旧V29仅
++0.89%，且prefill工作少约16%、NUMA策略/落点与版本不同，
+不得写成预测迁移的可归因性能提升。短prefill旧worker口径仍
+高35%–50%；新64个phase样本不能用旧native worker代替对照。
+32.561s埋点self-wall不是纯CPU或可直接扣除JCT；active-stack
+1356样本/137错误也不是GIL或CPU时间，原始压缩栈由v405保留。
+
+v406按独立等待报告提前且下一请求复用FULL：JOIN10个/
+0.172GB、工具67个/5.170GB，不用节点ACK数充当事件数。
+68个JOIN和3个工具完成仍未知，不能填miss/终态。JOIN的
+40个start_window仅17个提前submit，16个service_progress_unavailable
+只是记录原因，不足以区分排队、端点耗尽或提交时失效；原因
+组可重叠。各JSONL分别密封，不冒充原子快照。V55源码/预算
+保持冻结；新候选只在后续冷启动生效。
+
 Host启动由外层numactl管理时必须关闭SGLANG_AUTO_NUMA_BIND。
 SGLang的默认V2会为worker另建membind包装脚本，外层preferred
 并不保证实际生效；不要仅凭launcher参数宣称已修复。v393实际
 CPU spawn复现这一覆盖并验证关闭后继承，d65ed0f已修复入口。
 v394保留06:58再次启动的原始OOM/包装脚本，仍无workflow派发；
-v396绑定41份源码，126项检查通过，实际内存落点仍要观察。
+v396绑定41份源码，126项检查通过。07:11:24 V55恢复服务，
+v398已核验41份源码/引擎/HTTP200及200.050GB实际Host；v392记录
+148.310GB FULL在NUMA1、11.690GB FULL与40.050GB Mamba在NUMA0。
+这不能写成全NUMA本地配置；新正式native须匹配策略并报告落点。
+执行源码冻结，早期完成/无丢记录不等于最终性能或质量验收。
+
+v401仅归档两轮早期child实验的217个workspace，逐文件比较后
+26.510→2.368GB，恢复指令留在原目录和archive/README。
+v399拒绝清理仍存活sandbox的初检现场保留；v400先精确核验后
+仅停止56个旧闲置shell/sleep。新V55及其他用户作业不受影响；
+归档与15秒采样均在预选600–900s窗口开始前结束。
 
 当前启动使用9dff40b：CPU仍绑定NUMA1，内存策略为preferred，
 容量不足可回退；额外余量恢复8GiB。Host200GB/80:20、HBM和
