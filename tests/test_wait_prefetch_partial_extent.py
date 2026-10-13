@@ -349,3 +349,114 @@ def test_partial_enqueue_reclaims_only_the_bounded_safe_input_tail_without_waiti
             assert row["freed_units"] == {0: tail_target}
     finally:
         runtime.close()
+
+
+@pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
+@pytest.mark.parametrize(
+    "case,free_full,free_mamba,byte_limit",
+    (
+        ("fit", 17, 2, 180),
+        ("full_reserve_shortfall", 16, 2, 180),
+        ("mamba_reserve_shortfall", 17, 1, 180),
+        ("byte_shortfall", 17, 2, 179),
+        ("unobservable", 17, 2, 180),
+        ("partial_extent", 17, 2, 180),
+        ("capacity_probe", 17, 2, 180),
+        ("nothing_freed", 17, 2, 180),
+    ),
+)
+def test_successful_reclaim_reuses_only_a_complete_reserved_burst_plan(
+    source, case, free_full, free_mamba, byte_limit,
+):
+    runtime, key, original, cache, _ = batch_fixture(source)
+    opportunity = replace(
+        original, fits_current_free_lists=False,
+        capacity_budget={"requested_full_tokens": 16, "requested_mamba_slots": 1},
+        partial_full_step=original.step if case == "partial_extent" else None,
+        partial_full_tokens=2 if case == "partial_extent" else 0,
+        capacity_reclaim_probe=case == "capacity_probe",
+    )
+    headroom = replace(
+        original.headroom, observable=case != "unobservable",
+        device_full_free_tokens=free_full, device_mamba_free_slots=free_mamba,
+    )
+    diagnosis = {"freed_units": {0: 8}}
+    cache.beliefkv_handoff_last_capacity = diagnosis
+    cache.reclaim_beliefkv_handoff_capacity = Mock(
+        return_value={} if case == "nothing_freed" else {0: 8},
+    )
+    fallback = replace(
+        original, step=None, steps=(), no_step_reason="fresh_target_unavailable",
+    )
+    try:
+        with patch.object(runtime, "_publish_parent_pressure_candidates"), \
+             patch.object(runtime, "_wait_prefetch_opportunity", return_value=fallback) as inspect, \
+             patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+                 1, byte_limit, reserve_full_tokens=1, reserve_mamba_slots=1,
+             )), \
+             patch("beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+                   return_value=headroom):
+            result = runtime._reclaim_wait_prefetch_capacity(
+                key, opportunity, source=source,
+            )
+        assert result.capacity_reclaim == {**diagnosis, "waiting_candidate_checks": []}
+        if case == "fit":
+            inspect.assert_not_called()
+            assert result.steps == original.steps
+            assert result.candidate is original.candidate
+            assert result.headroom is headroom
+            assert result.fits_current_free_lists
+            assert result.capacity_budget["full_limit_tokens"] == 16
+            assert result.capacity_budget["mamba_limit_slots"] == 1
+            assert result.capacity_budget["remaining_byte_limit"] == 180
+            assert result.capacity_budget["capacity_refresh_source"] == "post_reclaim_free_lists"
+            assert runtime.counts["wait_prefetch_reclaim_plan_reused"] == 1
+        else:
+            inspect.assert_called_once_with(key, fit_current_capacity=True)
+            assert result.step is None
+            assert result.no_step_reason == "fresh_target_unavailable"
+            assert not runtime.counts["wait_prefetch_reclaim_plan_reused"]
+        cache.prefetch_gpu_session_nodes.assert_not_called()
+        assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("changed", (False, True))
+def test_reused_reclaim_plan_still_recaptures_target_before_native_enqueue(changed):
+    runtime, key, original, cache, _ = batch_fixture("tool_wait")
+    original = replace(
+        original, headroom=replace(original.headroom, device_full_free_tokens=1),
+    )
+    after = replace(original.headroom, device_full_free_tokens=100)
+    final = original
+    if changed:
+        steps = (replace(original.steps[0], creation_time=100),) + original.steps[1:]
+        final = replace(original, step=steps[0], steps=steps)
+    cache.reclaim_beliefkv_handoff_capacity = Mock(return_value={0: 99})
+    reads = []
+
+    def inspect(**kwargs):
+        reads.append(kwargs)
+        return original if len(reads) == 1 else replace(final, headroom=after)
+
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity", side_effect=inspect), \
+             patch.object(runtime, "_publish_parent_pressure_candidates"), \
+             patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+                 1, 1024, reserve_full_tokens=1, reserve_mamba_slots=1,
+                 evictable_full_tokens=100,
+             )), \
+             patch.object(runtime, "_h2d_start_window",
+                          return_value=TransferStartWindow(200., 0., 500.)), \
+             patch("beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+                   return_value=after):
+            runtime.dispatch_tool_prefetch()
+        assert runtime.counts["wait_prefetch_reclaim_plan_reused"] == 1
+        assert len(reads) == 2
+        assert runtime.counts["prefetch_burst_plan_changed"] == int(changed)
+        assert cache.prefetch_gpu_session_nodes.call_count == int(not changed)
+        assert runtime.physical_ledger.pending_count == (0 if changed else 4)
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()

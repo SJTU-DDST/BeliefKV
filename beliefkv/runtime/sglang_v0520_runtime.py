@@ -4004,6 +4004,53 @@ class NativeAdmissionRuntime:
                     "capacity_reclaim_probe": opportunity.capacity_reclaim_probe,
                     "capacity_reclaim": diagnosis,
                 })
+        if (
+            freed and opportunity.partial_full_step is None
+            and not opportunity.capacity_reclaim_probe
+        ):
+            headroom = observe_static_full_mamba_headroom(self._native_cache)
+            budget = self._current_residency_budget(include_evictable=True)
+            allowance = max(0, budget.byte_limit - sum(
+                lease.protected_bytes for lease in self._prefetch_service_leases.values()
+            ))
+            entries = self._native_cache.cache_controller.mem_pool_host.entry_map
+            planned_bytes = (
+                opportunity.required_full_tokens * entries["kv"].host_pool.size_per_token
+                + opportunity.required_mamba_slots * entries["mamba"].host_pool.size_per_token
+            )
+            if (
+                headroom.observable
+                and opportunity.required_full_tokens + budget.reserve_full_tokens
+                <= headroom.device_full_free_tokens
+                and opportunity.required_mamba_slots + budget.reserve_mamba_slots
+                <= headroom.device_mamba_free_slots
+                and planned_bytes <= allowance
+            ):
+                # Reclaim excludes this closure. Reuse its selected burst only
+                # as a plan; enqueue still recaptures the complete live target.
+                self.counts["wait_prefetch_reclaim_plan_reused"] += 1
+                capacity = opportunity.capacity_budget
+                if capacity is not None:
+                    capacity = {
+                        **capacity, "source": budget.source,
+                        "device_full_free_tokens": headroom.device_full_free_tokens,
+                        "device_mamba_free_slots": headroom.device_mamba_free_slots,
+                        "evictable_full_tokens": 0, "evictable_mamba_slots": 0,
+                        "reserve_full_tokens": budget.reserve_full_tokens,
+                        "reserve_mamba_slots": budget.reserve_mamba_slots,
+                        "full_limit_tokens": max(
+                            0, headroom.device_full_free_tokens - budget.reserve_full_tokens,
+                        ),
+                        "mamba_limit_slots": max(
+                            0, headroom.device_mamba_free_slots - budget.reserve_mamba_slots,
+                        ),
+                        "remaining_byte_limit": allowance,
+                        "capacity_refresh_source": "post_reclaim_free_lists",
+                    }
+                return replace(
+                    opportunity, headroom=headroom, fits_current_free_lists=True,
+                    capacity_budget=capacity, capacity_reclaim=diagnosis,
+                )
         # Bounded reclaim need not fit the whole checkpoint. Restore the
         # continuous prefix that fits now and leave the tail for a later load.
         refreshed = self._wait_prefetch_opportunity(key, fit_current_capacity=True)

@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-13T09:36:47.203554+08:00",
+  "parent_commit": "5814de5ea477b1d98d98d20409287ebd6389957d",
+  "qualified_paths_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "0d60a5909f9efc885d966a4974d860ca46907bf94de6b3c8c1ff4e67f0a5fa02",
+    "tests/test_wait_prefetch_partial_extent.py": "451edecb2c648d66fc98420a76a323d88dc8a08cf02dd85579630226a172ab91",
+    "scripts/benchmark_wait_reclaim_plan_cpu.py": "eb970e1f970cc03b1ebde0e92cb031f59390d7d8d06a208c6fde5cdcc7d9dd06"
+  },
+  "completed_validation": {
+    "tool_session_id": 54259,
+    "returncode": 0,
+    "pytest_args": [
+      "tests/test_wait_prefetch_partial_extent.py",
+      "tests/test_wait_prefetch_batch.py",
+      "tests/test_native_transfer_policy.py",
+      "tests/test_tool_predictive_transfers.py",
+      "tests/test_sglang_v0520_runtime.py"
+    ],
+    "passed": 460,
+    "duration_seconds": 1.6,
+    "evidence_source": "completed tool output in this thread; no repeated test run"
+  },
+  "benchmark": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v245_wait_reclaim_plan_cpu_20261013.json",
+    "sha256": "1102d74b0b5a469f3df93dcc2eecf81372f594a1a1abe1e17b6a21ad1954a048",
+    "cases": 48,
+    "successful_fit_thread_cpu_reduction_range": [
+      0.8394971447970703,
+      0.9553236870410671
+    ],
+    "fallback_thread_cpu_delta_us_range": [
+      -2.923774193548411,
+      13.627290322580677
+    ]
+  },
+  "semantics": [
+    "Undeployed candidate; V47 execution and actual engine remain frozen.",
+    "Complete selected plan only; partial/probe/insufficient cases refresh as before.",
+    "Headroom, both reserves and remaining protection bytes are checked after reclaim.",
+    "Final enqueue still drains causal events and recaptures the entire live target.",
+    "Changed native target safely declines; partial restore never grants execution readiness.",
+    "Successful CPU planning gain is conditional; fallback regressions are retained.",
+    "No live frequency, physical capacity, DMA or throughput improvement established.",
+    "Do not restart solely for this small conditional CPU optimization."
+  ],
+  "helper_sha256": "f24e314b55544f3478129f0b2dba39e27c1218ba43395c917569818e03763aed",
+  "helper_utf8_source": "\"\"\"Bind completed candidate tests and matched CPU evidence to exact sources.\"\"\"\n\nfrom datetime import datetime\nimport hashlib\nimport json\nfrom pathlib import Path\nimport subprocess\n\nROOT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nOUTPUT = ROOT / \"experiments/reports/v247_wait_reclaim_plan_qualification_20261013.json\"\nBENCHMARK = ROOT / \"experiments/reports/v245_wait_reclaim_plan_cpu_20261013.json\"\nPATHS = (\n    \"beliefkv/runtime/sglang_v0520_runtime.py\",\n    \"tests/test_wait_prefetch_partial_extent.py\",\n    \"scripts/benchmark_wait_reclaim_plan_cpu.py\",\n)\n\nif OUTPUT.exists():\n    raise ValueError(\"preserve the existing qualification\")\nbenchmark_bytes = BENCHMARK.read_bytes()\nbenchmark = json.loads(benchmark_bytes)\nhashes = {\n    path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest()\n    for path in PATHS\n}\nif (\n    hashes[PATHS[0]] != benchmark[\"optimized_source_sha256\"]\n    or hashes[PATHS[2]] != benchmark[\"benchmark_source_sha256\"]\n    or not benchmark[\"actionable_outputs_equal\"]\n):\n    raise ValueError(\"candidate differs from measured code\")\nfit = [case for case in benchmark[\"cases\"] if case[\"case\"] == \"fit\"]\nfallback = [case for case in benchmark[\"cases\"] if case[\"case\"] != \"fit\"]\nreport = {\n    \"schema_version\": 1,\n    \"observed_at_local\": datetime.now().astimezone().isoformat(),\n    \"parent_commit\": subprocess.check_output(\n        [\"git\", \"rev-parse\", \"HEAD\"], cwd=ROOT, text=True,\n    ).strip(),\n    \"qualified_paths_sha256\": hashes,\n    \"completed_validation\": {\n        \"tool_session_id\": 54259, \"returncode\": 0,\n        \"pytest_args\": [\n            \"tests/test_wait_prefetch_partial_extent.py\",\n            \"tests/test_wait_prefetch_batch.py\",\n            \"tests/test_native_transfer_policy.py\",\n            \"tests/test_tool_predictive_transfers.py\",\n            \"tests/test_sglang_v0520_runtime.py\",\n        ],\n        \"passed\": 460, \"duration_seconds\": 1.60,\n        \"evidence_source\": \"completed tool output in this thread; no repeated test run\",\n    },\n    \"benchmark\": {\n        \"path\": str(BENCHMARK),\n        \"sha256\": hashlib.sha256(benchmark_bytes).hexdigest(),\n        \"cases\": len(benchmark[\"cases\"]),\n        \"successful_fit_thread_cpu_reduction_range\": [\n            min(case[\"thread_cpu_reduction_fraction\"] for case in fit),\n            max(case[\"thread_cpu_reduction_fraction\"] for case in fit),\n        ],\n        \"fallback_thread_cpu_delta_us_range\": [\n            min(case[\"costs\"][\"optimized\"][\"thread_cpu_us\"][\"mean\"]\n                - case[\"costs\"][\"baseline\"][\"thread_cpu_us\"][\"mean\"] for case in fallback),\n            max(case[\"costs\"][\"optimized\"][\"thread_cpu_us\"][\"mean\"]\n                - case[\"costs\"][\"baseline\"][\"thread_cpu_us\"][\"mean\"] for case in fallback),\n        ],\n    },\n    \"semantics\": [\n        \"Undeployed candidate; V47 execution and actual engine remain frozen.\",\n        \"Complete selected plan only; partial/probe/insufficient cases refresh as before.\",\n        \"Headroom, both reserves and remaining protection bytes are checked after reclaim.\",\n        \"Final enqueue still drains causal events and recaptures the entire live target.\",\n        \"Changed native target safely declines; partial restore never grants execution readiness.\",\n        \"Successful CPU planning gain is conditional; fallback regressions are retained.\",\n        \"No live frequency, physical capacity, DMA or throughput improvement established.\",\n        \"Do not restart solely for this small conditional CPU optimization.\",\n    ],\n}\nhelper = Path(__file__).read_bytes()\nreport.update({\n    \"helper_sha256\": hashlib.sha256(helper).hexdigest(),\n    \"helper_utf8_source\": helper.decode(),\n})\nOUTPUT.write_text(json.dumps(report, indent=2, allow_nan=False) + \"\\n\")\nprint(json.dumps({\n    \"output\": str(OUTPUT), \"checks\": 460, \"benchmark\": report[\"benchmark\"],\n}, indent=2))\n"
+}
