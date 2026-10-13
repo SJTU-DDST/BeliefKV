@@ -2,6 +2,18 @@
 
 Status date: 2026-10-14.
 
+V377 links all31 fully released early-tool waits through exact invocation/
+tool_run_id and sealed clocks. Each has one active call at first H2D submit;
+13 roots/18 children all lack a completed same-input prior.22 are test-suite
+commands;15 children have project-class support and18 have input neighbors,
+but mixed short-call history does not establish current long-call timing.
+20 callback error outcomes are offline labels, not causal prediction inputs.
+30 whole rounds contain one observed call; one contains two, so preserve
+callback/whole-round labels and unobserved actual execution starts.
+Do not expand root repeat support or shift ETA based on this cohort.
+Later command-shape/history-support improvements require independent-project
+tail validation; V55 execution,180s tool cap and other budgets remain frozen.
+
 6bd0dd3 reuses JOIN parent identity projections for unchanged RCCG and
 context/session revisions. Return, completion, epoch, rebind and abort
 invalidate those revisions; causal failure explicitly discards the cache.
