@@ -1,6 +1,30 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-13.
+Status date: 2026-10-14.
+
+V54 actually stopped for the reservation at 2026-10-13 23:59:09 CST:
+all owned processes and containers exited; the GPU recheck was 14MiB/0%.
+V326 retains 155 completed and one administratively censored django-11211
+without fabricating summary.json. The common completed subset has mean JCT
+2682.129/3028.016s (-11.42%); this is not the all-arrival mean or causal
+acceptance. Two exact command hashes repeat 19/15 times with empty output,
+exit=1 and cumulative 2282.641/901.920s, so the tool tail remains visible.
+
+Candidate a843e83 converts list/tuple input only through the longest needed
+ACK prefix and uses the existing exact C comparison at first service.
+Nonintegral/overflowing input keeps the original numeric fallback.
+Physical allocation, namespace and component-use evidence remain unchanged.
+launch_telemetry is sampled inside run_batch; never add their costs.
+The analyzer pairs clock domain, forward_iter, ordered request identity and
+native work geometry, preserving missing/ambiguous/shutdown evidence.
+194 checks plus two subchecks pass; V325 binds the revised source and the
+unchanged f7e0a895/a8f4ea97 engine. The old probe microbenchmark excludes the
+new nested span and prefix conversion; actual cost and gains remain pending.
+Freeze the updated V55 target for deployment after 06:00 with a free GPU.
+First verify real turnover records and their phase/GPU coverage, then compare
+complete 600-900s windows and actual useful FULL consumption. Historical V29
+has no new phase counterparts; full acceptance still needs same-version
+repeated controls. Keep workload, budgets and disabled batching unchanged.
 
 Server reservation, effective 2026-10-13: no experiments during the daily
 00:00-06:00 Asia/Shanghai interval. Release our experiment processes and
@@ -41,7 +65,7 @@ same-version native counterparts remain pending. Keep V54 frozen at
 postprocessing or a recorded administrative cutoff and process exit.
 No workload or budget changes.
 
-Current run: V54 cold-started at 21:33:35 CST on port 18459 from 45f7afb,
+Last run: V54 cold-started at 21:33:35 CST on port 18459 from 45f7afb,
 after all 156 V53 outcomes and HTML/workspace postprocessing completed.
 V53 retains 155 completed and one incomplete over 9004.454s. Among the 155
 common completed tasks, mean JCT is 2666.636/3024.858s (-11.84%); 88 favor
