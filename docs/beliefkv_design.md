@@ -41,6 +41,10 @@ predictive H2D，降低平均workflow JCT并提高完成吞吐。正式成功
 V50已于2026-10-13 14:20:50 CST从02fd87c冷启动，包含当前
 已提交的Host回收减负与收尾准入修复。运行源码保持冻结。
 
+分析每次优先最新实验trace：当前完整诊断以已结束V49为主，
+V50运行中的快照单列阶段范围，结束后优先分析V50。旧native
+可复用已核验参考，旧predictive只补充具体历史比较和复现。
+
 v274确认实际`remaining_report_work`排序、handoff=false以及
 JOIN/tool、PREPARE、驻留和优先准入启用；V49/V50只有revision
 和patch变化，其余82项计划字段和物理容量一致。HTTP200与真实
