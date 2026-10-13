@@ -1,0 +1,214 @@
+{
+  "observed_at_local": "2026-10-14T01:23:25.832444+08:00",
+  "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/server/physical_action_use.jsonl",
+  "complete_prefix_bytes": 2368650,
+  "complete_prefix_sha256": "c4f9082a5853452b18bb89c42c00883e5b108bab4c4e8437141f7e854e7ad4d1",
+  "stop_receipt": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/server_reservation_cutoff.json",
+  "stop_receipt_sha256": "d7d51b84966a8fcbfdfd75183b0833ac4ffbd7f1dcfee1734bd32dfa6d9da0ce",
+  "administrative_cutoff_at_local": "2026-10-13T23:59:01.870697+08:00",
+  "counts": {
+    "first_service_events": 2165,
+    "without_prefix_evidence": 0,
+    "targets": 2165,
+    "prefix_shorter_than_2048": 0,
+    "complete_prefix": 2139,
+    "later_mismatch_or_short_input": 26
+  },
+  "prefix_tokens": {
+    "count": 2165,
+    "mean": 19588.19584295612,
+    "p50": 19465,
+    "max": 37184
+  },
+  "divergent_targets": [
+    {
+      "command_id": "beliefkv-prefetch-d0501fcd71ac4fc9b923b2656af399dc",
+      "context_id": "deepagents-context:6dfff627ac25a4e8",
+      "request_id": "beliefkv:01a13588-1494-7fb2-b873-8775f60eebeb",
+      "prefix_tokens": 10880,
+      "common_input_prefix_tokens": 5364
+    },
+    {
+      "command_id": "beliefkv-prefetch-9fbcb456654f43b7887badfccaaff0bc",
+      "context_id": "deepagents-context:6dfff627ac25a4e8",
+      "request_id": "beliefkv:01a13588-1494-7fb2-b873-8775f60eebeb",
+      "prefix_tokens": 10944,
+      "common_input_prefix_tokens": 5364
+    },
+    {
+      "command_id": "beliefkv-prefetch-e02734243635449c89e43c1a7184e650",
+      "context_id": "deepagents-context:6dfff627ac25a4e8",
+      "request_id": "beliefkv:01a13588-1494-7fb2-b873-8775f60eebeb",
+      "prefix_tokens": 10990,
+      "common_input_prefix_tokens": 5364
+    },
+    {
+      "command_id": "beliefkv-prefetch-f8100a21c28846a19fafd234fb3e5223",
+      "context_id": "deepagents-context:6dfff627ac25a4e8",
+      "request_id": "beliefkv:01a13588-1494-7fb2-b873-8775f60eebeb",
+      "prefix_tokens": 11072,
+      "common_input_prefix_tokens": 5364
+    },
+    {
+      "command_id": "beliefkv-prefetch-bd8821b70b884d899e8952b4e5d055cb",
+      "context_id": "deepagents-context:6dfff627ac25a4e8",
+      "request_id": "beliefkv:01a13588-1494-7fb2-b873-8775f60eebeb",
+      "prefix_tokens": 11904,
+      "common_input_prefix_tokens": 5364
+    },
+    {
+      "command_id": "beliefkv-prefetch-95cd930b4f7c4d449f399aa564072356",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 30336,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-0a7ed68137804374b7c45b6c9d2f02f0",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 30848,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-0969c3049fe44c89892e75cc335f32f6",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 30893,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-149836596ce34395974f5192056e999a",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 31296,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-8647defd8b174677a120cf5cd60777be",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 31616,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-88ea38c27bad48bf993f44cb5d33b835",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 32192,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-d6c8fa118deb43b69ffb5044b9be8515",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 32253,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-f049ab9ca147449d944e0ce6f331ca62",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 32448,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-be040bb6d3554c938106392208896088",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 32466,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-cbd7227512124bf3af151f253ec5ffef",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 33152,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-248e4baec7a14f3b865702f9701c4e6f",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 33664,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-96d6b34ef19e45409816c5eed19a4151",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 34816,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-4018b3097461416ba61de4a1cec6aeaf",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 34944,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-f2e55377936547b2b155a63e68b9a59e",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 35136,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-33a49de8eb4f483e900bcc475cb96bd9",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 35264,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-087b98678b7b48d1ae43b943252ae7da",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 35286,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-544069c9ed2148eead5ef5d954170b9e",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 35456,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-2dcde48c72e248f2ba20b962d51e4a70",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 35520,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-27e1c1beaeb34e2aa967cb35e63ec8fb",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 35563,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-64d1cb207c6f4b218bc0d6a69ca03e5a",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 35840,
+      "common_input_prefix_tokens": 8254
+    },
+    {
+      "command_id": "beliefkv-prefetch-842b0d6863db4b539eab47bdc19a7b45",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "request_id": "beliefkv:01a13594-b1f1-72a1-a85f-1836200d7a70",
+      "prefix_tokens": 35904,
+      "common_input_prefix_tokens": 8254
+    }
+  ],
+  "helper_sha256": "bc9b8bd2d86a633b1aa3c1feca093075c8b6cccca407f44220637b3703c349ae",
+  "scope": [
+    "Observed ACK target-prefix comparisons at first service before the administrative cutoff.",
+    "Target match does not itself establish FULL allocation reuse or avoided native H2D.",
+    "Numeric comparisons after the cutoff are excluded; unseen service remains unknown.",
+    "Trace geometry motivates a CPU implementation choice, not an online performance or JCT claim."
+  ]
+}
