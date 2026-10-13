@@ -9,7 +9,8 @@
 成立的前提。开发阶段只跑predictive并复用固定V29 native，最终
 再做同版本重复对照及策略消融。完整目标与验收见
 `beliefkv_design.md`第1.1节和`implementation_plan.md`开头。
-目标未达成，V49继续完整采集、V50按冻结队列冷启动。
+目标未达成，V49继续完整采集；按最新用户要求，V50冷启动改用
+包含全部已提交优化的最新代码。
 
 v271已完成关键JOIN child准入候选修复，尚未部署到运行轮次。
 通知epoch N和报告请求epoch N+1同批到达时，图会先应用全批，
@@ -29,14 +30,20 @@ v271已完成关键JOIN child准入候选修复，尚未部署到运行轮次。
 约束，所有用例没有物理动作。复现脚本为
 `scripts/qualify_final_report_admission.py`，源码、测试与JUnit哈希
 绑定在`experiments/reports/v271_final_admission_qualification_20261013.json`。
-这是CPU行为证据，未证明GPU吞吐或JCT改善。V49、V50/82b42d5
-冻结不变，下一次冷部署再用计数和完整JCT评估真实作用范围。
+这是CPU行为证据，未证明GPU吞吐或JCT改善。V49源码保持；
+最新用户要求V50直接验证最新代码，因此V50同时包含82b42d5
+Host回收减负和3b66033收尾绑定/剩余工作排序。它不再是单独
+隔离Host回收的实验，需用计数和完整JCT评估组合效果。
 
-修复已提交为`82b42d5`。2026-10-13 12:58:57 CST已登记V50
-等待启动（协调器PID1250265）：V49完整结果、HTML导出、workspace
-收尾及旧进程退出后，自动冷部署该提交并只运行predictive。
-当前仍是V49，未热改运行源码；V50尚无性能结果。保留108+48、
-Host80:20、工具180秒等配置及固定V29 native开发参考。
+原Host回收修复已提交为`82b42d5`。2026-10-13 12:58:57 CST
+登记的V50旧等待协调器PID1250265已于13:58:20安全停止，当时
+V50尚未创建、V49仍在执行。旧回执和日志保留为
+`v50_launch_after_v49_20261013.superseded_host_only.*`。
+V50新冻结工作树为`beliefkv-v271-v50-latest-20261013`，包含
+3b66033及其文档修订；仍等待V49完整结果、HTML/workspace收尾
+和旧进程退出后冷部署，只运行predictive。未热改V49源码，
+V50尚无性能结果。108+48、Host80:20、工具180秒及固定V29
+native开发参考保持，实际新revision以启动回执为准。
 v268在与canonical逐树一致的新引擎上通过113项检查，并复现旧
 实现三个无效扫描回归；启动状态位于Main的
 `experiments/reports/v50_launch_after_v49_20261013.json`。

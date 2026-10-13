@@ -20,12 +20,15 @@ unfinished goal or create a replacement by marking it complete. The user's
 latest instructions and this contract supersede the old per-iteration native
 requirement: development runs predictive first against the fixed V29 native
 reference; repeated same-version comparisons and ablations belong to final
-validation. No new completion guards or canary stage.
+validation. No new completion guards or canary stage. The latest user instruction
+replaces V50's older single-change freeze with the latest committed code.
 
 1. Finish the current overhead diagnosis. Preserve V49 through full JCT and
-   cold-run already queued V50/82b42d5. Check real satisfied-eviction scan
-   counters, prefill turnover, complete JCT and throughput; CPU branch savings
-   alone do not complete this step.
+   cold-run V50 with both 82b42d5 Host-reclaim and 3b66033 final-admission
+   fixes. This now measures their combined effect, not an isolated Host fix.
+   Check real satisfied-eviction scans, final-stage binding/selection counters,
+   prefill turnover, complete JCT and throughput; CPU evidence alone does not
+   complete this step.
 2. Prioritize workflow critical-path queueing next. Existing causal ranks
    already recognize the sole remaining JOIN child; resident-first, final
    priority and restored-parent consumption also exist. Current ordering is
@@ -73,8 +76,9 @@ runtime/graph/queue fixtures and keeps physical action count zero; original
 `experiments/reports/v271_final_admission_qualification_20261013.json`.
 Cumulative candidate/binding counters establish production frequency in a
 later cold run; they are not unique events or admitted-request counts.
-Keep Main V49 and queued V50/82b42d5 unchanged. Broader critical-child
-queueing and coordinated tool retention/offload remain unfinished.
+Keep Main V49 unchanged. Per the latest user instruction, V50's replacement
+cold-deployment target includes this candidate. Broader critical-child queueing
+and coordinated tool retention/offload remain unfinished.
 
 V270 reconstructs both complete V29 traces. Mean JCT improves 391.198s:
 root JOIN wait 268.933s, root LLM 108.731s, root tools 18.935s, offset by
@@ -90,12 +94,18 @@ request/tool pairing, all output counts and exact input hashes. See
 
 Commit 82b42d5 is qualified by 113 checks against the exact reconstructed
 engine; the original implementation reproduces all three no-scan regressions.
-V50 was queued at 12:58:57 CST on October 13, coordinator PID1250265.
-It waits for complete V49 outcomes, HTML/workspace postprocessing and
-process exit, then cold-deploys the frozen commit and runs predictive only.
-108+48 arrivals, Host80:20, tool180s and fixed V29 native reference remain.
+The original V50 queue registered at 12:58:57 CST on October 13,
+coordinator PID1250265, was safely stopped at 13:58:20 while V49 remained
+live and V50 had not started. Its state/log are preserved under
+`v50_launch_after_v49_20261013.superseded_host_only.*`.
+The replacement target checkout is `beliefkv-v271-v50-latest-20261013`,
+including runtime 3b66033 and current documentation. It waits for complete
+V49 outcomes, HTML/workspace postprocessing and process exit, then cold-deploys
+the latest frozen revision and runs predictive only. 108+48 arrivals,
+Host80:20, tool180s, handoff0 and fixed V29 native reference remain.
 V49 is still collecting; V50 has no performance result yet. Main's
-`experiments/reports/v50_launch_after_v49_20261013.json` is the live receipt.
+`experiments/reports/v50_launch_after_v49_20261013.json` is the replacement
+live receipt; `v50_latest_code_retarget_20261013.json` preserves the change.
 
 Current bottleneck work (V265-V268): disabling demand handoff reduced
 instrumented exclusive Python wall from 55.537 to 39.679s in the complete
