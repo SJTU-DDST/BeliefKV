@@ -1,0 +1,65 @@
+{
+  "schema_version": 1,
+  "started_at_local": "2026-10-13T17:28:38.325598+08:00",
+  "qualified_at_local": "2026-10-13T17:28:39.273888+08:00",
+  "qualified_engine": "/home/longhao/experiment/.worktrees/sglang-v292-post-launch-20261013",
+  "engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "6938bd10ff393dc89c9aeb5ed14da2385d5d95e00529113e12eced93cca5fff0",
+    "expected_tree": "8ee56450869c4a067c581ceda9cb4d46839763d5",
+    "actual_tree": "8ee56450869c4a067c581ceda9cb4d46839763d5",
+    "matches_worktree": true,
+    "covered_untracked_paths": []
+  },
+  "main_execution_verification": {
+    "collection_code_commit": "0990b73e639bdf7b23e05e24734c168e2d78d2d6",
+    "verification_code_commit": "0990b73e639bdf7b23e05e24734c168e2d78d2d6",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "checks": {
+    "experiments/reports/v292_post_launch_engine_junit_20261013.xml": {
+      "tests": 83,
+      "sha256": "9a30306addc427a643dfc9e14e978e4a82b5829c1e692000f44187efd55e072f"
+    },
+    "experiments/reports/v292_post_launch_runtime_junit_20261013.xml": {
+      "tests": 385,
+      "sha256": "17e244665120cfb4212858add63005bba424a0ccdc6853524a59f4941bdd2125"
+    }
+  },
+  "passed": 468,
+  "initial_fixture_failure": {
+    "path": "experiments/reports/v292_post_launch_runtime_junit_initial_20261013.xml",
+    "reason": "The new timing assertion used the default disabled observer; fixture now explicitly enables timing."
+  },
+  "engine_delta_files": [
+    "diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py",
+    "diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py"
+  ],
+  "engine_delta_sha256": "ebb201121a727b35d329178fd1b2e237a24f7bc3915eeb0ac870a30111886f99",
+  "qualified_paths_sha256": {
+    "patches/sglang-v0.5.20-beliefkv-staging.patch": "6938bd10ff393dc89c9aeb5ed14da2385d5d95e00529113e12eced93cca5fff0",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "3ce0fddc4bcb5852b06dde0048d903deeb165e737ede5caf8bc47c8c72e8b222",
+    "tests/test_sglang_v0520_runtime.py": "9cf25812572a5624d9e2f8375d1e2f0359159cca9e7d9d4fa86e3e8142e45aa2"
+  },
+  "scope": "Single-rank native overlap with execution handoff disabled: waiting JOIN/tool H2D planning and PREPARE follow native forward submission and its WAR barrier. Idle dispatch remains live; unsupported/nonoverlap paths retain the existing order.",
+  "limits": [
+    "Native page validity, locks, allocation and per-layer data dependencies remain unchanged.",
+    "Deferred planning may reduce the remaining anticipatory lead and changes worker-interval clipping.",
+    "No throughput, JCT or useful FULL coverage improvement is established by these CPU checks.",
+    "V51 source stays frozen; this candidate requires cold deployment."
+  ],
+  "helper_sha256": "955f7b1bf31c46ce3bef15833223b6efe1eb2e4d1ac518d2741aec2acdde25fc",
+  "helper_utf8_source": "\"\"\"Build and qualify the canonical post-forward waiting-migration candidate.\"\"\"\n\nfrom datetime import datetime\nimport hashlib\nimport json\nfrom pathlib import Path\nimport subprocess\nimport sys\nimport xml.etree.ElementTree as ET\n\n\nROOT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nMAIN = Path(\"/home/longhao/experiment/BeliefKV\")\nENGINE = Path(\"/home/longhao/experiment/.worktrees/sglang-v292-post-launch-20261013\")\nPATCH = ROOT / \"patches/sglang-v0.5.20-beliefkv-staging.patch\"\nOUTPUT = ROOT / \"experiments/reports/v292_post_launch_qualification_20261013.json\"\nsys.path.insert(0, str(ROOT))\n\nfrom beliefkv.experiments.source_provenance import git_source_state\nfrom scripts.resume_predictive_after_native import engine_delta\nfrom scripts.summarize_semantic_h2d_ab import verify_frozen_execution_source\n\n\nif OUTPUT.exists():\n    raise ValueError(\"preserve candidate qualification\")\nstarted = datetime.now().astimezone().isoformat()\nchecks = {}\nfor relative, expected in (\n    (\"experiments/reports/v292_post_launch_engine_junit_20261013.xml\", 83),\n    (\"experiments/reports/v292_post_launch_runtime_junit_20261013.xml\", 385),\n):\n    path = ROOT / relative\n    suites = list(ET.parse(path).getroot())\n    tests = sum(int(row.get(\"tests\", 0)) for row in suites)\n    if tests != expected or any(int(row.get(\"errors\", 0)) or int(row.get(\"failures\", 0)) for row in suites):\n        raise ValueError(f\"candidate checks failed: {relative}\")\n    checks[relative] = {\n        \"tests\": tests, \"sha256\": hashlib.sha256(path.read_bytes()).hexdigest(),\n    }\nsubprocess.run([\"git\", \"add\", \"--all\"], cwd=ENGINE, check=True)\ngenerated = subprocess.check_output([\"git\", \"diff\", \"--binary\", \"HEAD\"], cwd=ENGINE)\nPATCH.write_bytes(generated)\nengine = git_source_state(ENGINE, canonical_patch=PATCH)[\"canonical_patch\"]\ndelta = engine_delta(ENGINE, MAIN / PATCH.relative_to(ROOT), PATCH)\ndelta_files = [row for row in delta.decode().splitlines() if row.startswith(\"diff --git \")]\nexpected_files = {\n    \"diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py\",\n    \"diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py\",\n}\nif set(delta_files) != expected_files:\n    raise ValueError(f\"unexpected engine delta: {delta_files}\")\nsubprocess.run([\"git\", \"apply\", \"--reverse\", \"--check\", str(PATCH)], cwd=ENGINE, check=True)\npaths = (\n    \"patches/sglang-v0.5.20-beliefkv-staging.patch\",\n    \"beliefkv/runtime/sglang_v0520_runtime.py\",\n    \"tests/test_sglang_v0520_runtime.py\",\n)\nreport = {\n    \"schema_version\": 1, \"started_at_local\": started,\n    \"qualified_at_local\": datetime.now().astimezone().isoformat(),\n    \"qualified_engine\": str(ENGINE), \"engine\": engine,\n    \"main_execution_verification\": verify_frozen_execution_source(\n        MAIN, \"0990b73e639bdf7b23e05e24734c168e2d78d2d6\",\n    ),\n    \"checks\": checks, \"passed\": sum(row[\"tests\"] for row in checks.values()),\n    \"initial_fixture_failure\": {\n        \"path\": \"experiments/reports/v292_post_launch_runtime_junit_initial_20261013.xml\",\n        \"reason\": \"The new timing assertion used the default disabled observer; fixture now explicitly enables timing.\",\n    },\n    \"engine_delta_files\": delta_files,\n    \"engine_delta_sha256\": hashlib.sha256(delta).hexdigest(),\n    \"qualified_paths_sha256\": {\n        relative: hashlib.sha256((ROOT / relative).read_bytes()).hexdigest()\n        for relative in paths\n    },\n    \"scope\": \"Single-rank native overlap with execution handoff disabled: waiting JOIN/tool H2D planning and PREPARE follow native forward submission and its WAR barrier. Idle dispatch remains live; unsupported/nonoverlap paths retain the existing order.\",\n    \"limits\": [\n        \"Native page validity, locks, allocation and per-layer data dependencies remain unchanged.\",\n        \"Deferred planning may reduce the remaining anticipatory lead and changes worker-interval clipping.\",\n        \"No throughput, JCT or useful FULL coverage improvement is established by these CPU checks.\",\n        \"V51 source stays frozen; this candidate requires cold deployment.\",\n    ],\n    \"helper_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n    \"helper_utf8_source\": Path(__file__).read_text(),\n}\nOUTPUT.write_text(json.dumps(report, indent=2) + \"\\n\")\nprint(json.dumps({\"passed\": report[\"passed\"], \"engine\": engine, \"delta_files\": delta_files}, indent=2))\n"
+}

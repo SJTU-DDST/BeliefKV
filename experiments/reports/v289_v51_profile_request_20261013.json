@@ -1,0 +1,32 @@
+{
+  "schema_version": 1,
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v51",
+  "collection_code_commit": "0990b73e639bdf7b23e05e24734c168e2d78d2d6",
+  "scheduler_identity": {
+    "pid": 3783899,
+    "state": "R",
+    "ppid": 3783525,
+    "pgid": 3783525,
+    "start_ticks": "605108974"
+  },
+  "request": {
+    "output_dir": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v51/predictive_h2d/profiles/v289_short_prefill",
+    "num_steps": 192,
+    "activities": [
+      "CPU",
+      "GPU"
+    ],
+    "with_stack": false,
+    "record_shapes": false,
+    "profile_id": "v289-short-prefill",
+    "detailed_annotations": true
+  },
+  "request_started_at_local": "2026-10-13T17:03:20.546605+08:00",
+  "deployment_receipt_sha256": "59a34e761287484ea862f5a38d279970346c5e14fb5d175d248c53e09cb539ee",
+  "scope": "Bounded diagnostic outside the complete 600-900s window. Profiling and trace export perturb execution; their intervals cannot establish throughput or JCT gain.",
+  "helper_sha256": "c0a407e58ae198395d77db2dec9227de4cd99b8d16e78446fb73072e585aee8e",
+  "helper_utf8_source": "\"\"\"Request one bounded native CPU/CUDA diagnostic after the busy window.\"\"\"\n\nfrom datetime import datetime\nimport hashlib\nimport json\nfrom pathlib import Path\nfrom urllib.request import Request, urlopen\n\n\nROOT = Path(\"/home/longhao/experiment/BeliefKV\")\nFOLLOWUP = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nRUN = ROOT / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v51\"\nRECEIPT = FOLLOWUP / \"experiments/reports/v289_v51_profile_request_20261013.json\"\nOUTPUT = RUN / \"predictive_h2d/profiles/v289_short_prefill\"\nDEPLOYMENT = FOLLOWUP / \"experiments/reports/v286_v51_deployment_validation_20261013.json\"\nREVISION = \"0990b73e639bdf7b23e05e24734c168e2d78d2d6\"\n\n\nif RECEIPT.exists() or OUTPUT.exists():\n    raise ValueError(\"preserve existing profiler evidence\")\ndeployment = json.loads(DEPLOYMENT.read_bytes())\nidentity = deployment[\"live_process_identities\"][\"scheduler\"]\nstat = Path(f\"/proc/{identity['pid']}/stat\").read_text().rsplit(\")\", 1)[1].split()\nif stat[0] == \"Z\" or stat[19] != identity[\"start_ticks\"]:\n    raise ValueError(\"scheduler identity changed\")\nplan = json.loads((RUN / \"ab_plan.json\").read_bytes())\nif plan[\"code_commit\"] != REVISION:\n    raise ValueError(\"unexpected collection source\")\nrequest = {\n    \"output_dir\": str(OUTPUT), \"num_steps\": 192,\n    \"activities\": [\"CPU\", \"GPU\"], \"with_stack\": False,\n    \"record_shapes\": False, \"profile_id\": \"v289-short-prefill\",\n    \"detailed_annotations\": True,\n}\nrecord = {\n    \"schema_version\": 1, \"run_root\": str(RUN), \"collection_code_commit\": REVISION,\n    \"scheduler_identity\": identity, \"request\": request,\n    \"request_started_at_local\": datetime.now().astimezone().isoformat(),\n    \"deployment_receipt_sha256\": hashlib.sha256(DEPLOYMENT.read_bytes()).hexdigest(),\n    \"scope\": \"Bounded diagnostic outside the complete 600-900s window. Profiling and trace export perturb execution; their intervals cannot establish throughput or JCT gain.\",\n    \"helper_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n    \"helper_utf8_source\": Path(__file__).read_text(),\n}\nRECEIPT.write_text(json.dumps(record, indent=2) + \"\\n\")\ntry:\n    with urlopen(Request(\n        \"http://127.0.0.1:18456/start_profile\",\n        data=json.dumps(request).encode(), headers={\"Content-Type\": \"application/json\"},\n        method=\"POST\",\n    ), timeout=45) as response:\n        record[\"http_status\"] = response.status\n        record[\"response\"] = response.read().decode()\n    record[\"request_finished_at_local\"] = datetime.now().astimezone().isoformat()\nfinally:\n    RECEIPT.write_text(json.dumps(record, indent=2) + \"\\n\")\nprint(json.dumps({key: record.get(key) for key in (\n    \"request_started_at_local\", \"request_finished_at_local\", \"http_status\", \"response\",\n)}, indent=2))\n",
+  "http_status": 200,
+  "response": "Start profiling.\n",
+  "request_finished_at_local": "2026-10-13T17:03:20.855634+08:00"
+}

@@ -681,10 +681,10 @@ index 7811e44..cd7aea5 100755
                  cow_dst_tensors.append(req.kv.mamba_pool_idx.unsqueeze(0))
                  req.kv.mamba_cow_src_index = None
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..8d31941 100644
+index 743c8af..32f293b 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
-@@ -725,9 +725,147 @@ class Scheduler(
+@@ -725,9 +725,148 @@ class Scheduler(
  
          self.init_rank_consensus_checker()
  
@@ -700,6 +700,7 @@ index 743c8af..8d31941 100644
 +        self._beliefkv_predictor_fds = set()
 +        self._beliefkv_registered_request_ids = set()
 +        self._beliefkv_retraction_drain_pending = False
++        self._beliefkv_physical_planning_deferred = False
 +        if getattr(self.server_args, "enable_beliefkv", False):
 +            raise RuntimeError(
 +                "BeliefKV v0.5.20 physical activation unsupported: action-local "
@@ -832,7 +833,16 @@ index 743c8af..8d31941 100644
      def init_startup_timing_begin(self) -> None:
          self.scheduler_startup_begin = time.perf_counter()
  
-@@ -2727,6 +2865,9 @@ class Scheduler(
+@@ -1996,6 +2135,8 @@ class Scheduler(
+                 batch_result = None
+                 self._sched_idled = True
+ 
++            self._beliefkv_after_forward_dispatch()
++
+             # Process the last batch
+             if self.last_batch:
+                 if not disable_overlap_for_batch:
+@@ -2727,6 +2868,9 @@ class Scheduler(
          *,
          mm_input_error: Optional[str] = None,
      ):
@@ -842,7 +852,7 @@ index 743c8af..8d31941 100644
          # Route: normal request / session request / session-not-found
          session_id = (
              recv_req.session_params.id if recv_req.session_params is not None else None
-@@ -2789,6 +2930,7 @@ class Scheduler(
+@@ -2789,6 +2933,7 @@ class Scheduler(
                  dllm_config=self.dllm_config,
                  time_stats=recv_req.time_stats,
                  multi_item_delimiter_indices=recv_req.multi_item_delimiter_indices,
@@ -850,7 +860,7 @@ index 743c8af..8d31941 100644
              )
              req.tokenizer = self.tokenizer
  
-@@ -3190,6 +3332,33 @@ class Scheduler(
+@@ -3190,6 +3335,33 @@ class Scheduler(
          self._retry_storage_prefetch(req)
          return True
  
@@ -884,7 +894,7 @@ index 743c8af..8d31941 100644
      def _add_request_to_queue(self, req: Req, is_retracted: bool = False):
          if not self._set_or_validate_priority(req):
              return
-@@ -3200,6 +3369,12 @@ class Scheduler(
+@@ -3200,6 +3372,12 @@ class Scheduler(
          if self.disaggregation_mode == DisaggregationMode.NULL:
              if self._abort_on_queued_limit(req):
                  return
@@ -897,7 +907,7 @@ index 743c8af..8d31941 100644
              self._prefetch_kvcache(req)
              self.waiting_queue.append(req)
              req.time_stats.set_wait_queue_entry_time()
-@@ -3281,6 +3456,7 @@ class Scheduler(
+@@ -3281,6 +3459,7 @@ class Scheduler(
                  direction * recv_req.priority < direction * candidate_req.priority
              )
              if abort_existing_req:
@@ -905,7 +915,7 @@ index 743c8af..8d31941 100644
                  self._release_aborted_request(candidate_req)
                  self.waiting_queue.pop(idx)
                  self.beam_coordinator.retire_group(candidate_req)
-@@ -3558,12 +3734,79 @@ class Scheduler(
+@@ -3558,12 +3737,79 @@ class Scheduler(
              if self.enable_hicache_storage:
                  self._process_storage_prefetch_retries()
  
@@ -985,19 +995,29 @@ index 743c8af..8d31941 100644
  
          if self.enable_fpm:
              self._fpm_batch_t0 = time.monotonic()
-@@ -3647,6 +3890,27 @@ class Scheduler(
+@@ -3647,6 +3893,37 @@ class Scheduler(
              if running_batch.is_empty():
                  running_batch.batch_is_full = False
  
 +        if self._beliefkv_before_batch_selection(running_batch, last_batch):
 +            return NextBatchPlan(batch_to_run=None, running_batch=running_batch)
-+        if beliefkv_runtime is not None and (
++        defer_physical_planning = bool(
++            beliefkv_runtime is not None
++            and self.enable_overlap
++            and self.ps.tp_size == 1
++            and self.ps.pp_size == 1
++            and getattr(
++                beliefkv_runtime, "can_defer_waiting_migrations", lambda: False
++            )()
++        )
++        self._beliefkv_physical_planning_deferred = defer_physical_planning
++        if beliefkv_runtime is not None and not defer_physical_planning and (
 +            not self.enable_overlap or last_batch is None and not self.result_queue
 +            or getattr(beliefkv_runtime, "can_prefetch_during_overlap", lambda: False)()
 +        ):
 +            beliefkv_runtime.dispatch_join_prefetch()
 +            beliefkv_runtime.dispatch_tool_prefetch()
-+        if beliefkv_runtime is not None:
++        if beliefkv_runtime is not None and not defer_physical_planning:
 +            # A finished waiting parent's input is immutable; D2H read locks
 +            # do not require draining unrelated agents' decode work.
 +            beliefkv_runtime.dispatch_join_prepare(
@@ -1013,7 +1033,7 @@ index 743c8af..8d31941 100644
          if self.dllm_config is not None:
              new_batch = self.get_new_batch_dllm(running_batch)
          elif self._should_defer_prefill():
-@@ -3705,6 +3969,10 @@ class Scheduler(
+@@ -3705,8 +3982,22 @@ class Scheduler(
              if self.enable_fpm:
                  ret.fpm_start_time = self._fpm_batch_t0
  
@@ -1023,8 +1043,20 @@ index 743c8af..8d31941 100644
 +                beliefkv_runtime.sample_runtime_observations(self.waiting_queue)
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
++    def _beliefkv_after_forward_dispatch(self) -> None:
++        if not getattr(self, "_beliefkv_physical_planning_deferred", False):
++            return
++        self._beliefkv_physical_planning_deferred = False
++        runtime = getattr(self, "beliefkv_runtime", None)
++        if runtime is not None:
++            runtime.dispatch_after_forward(
++                self.waiting_queue, running_batch=self.running_batch,
++            )
++
      def get_num_allocatable_reqs(
-@@ -3754,6 +4022,50 @@ class Scheduler(
+         self,
+         running_bs: int,
+@@ -3754,6 +4045,50 @@ class Scheduler(
  
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
@@ -1075,7 +1107,7 @@ index 743c8af..8d31941 100644
      def _get_new_batch_prefill_raw(
          self,
          prefill_delayer_single_pass: Optional[PrefillDelayerSinglePassExecutor],
-@@ -3871,7 +4183,8 @@ class Scheduler(
+@@ -3871,7 +4206,8 @@ class Scheduler(
              mamba_allocator.alloc_group_begin(len(self.waiting_queue))
          buffer_pipeline = self.tree_cache.buffer_pipeline
          # Get requests from the waiting queue to a new prefill batch
@@ -1085,7 +1117,7 @@ index 743c8af..8d31941 100644
              if self.enable_lora and not self.can_schedule_lora_req(req, running_loras):
                  continue
  
-@@ -3897,6 +4210,12 @@ class Scheduler(
+@@ -3897,6 +4233,12 @@ class Scheduler(
                  ):
                      break
  
@@ -1098,7 +1130,7 @@ index 743c8af..8d31941 100644
              if self.enable_hicache_storage:
                  prefetch_done = self.tree_cache.check_prefetch_progress(
                      req.cache_request_handle
-@@ -3932,6 +4251,10 @@ class Scheduler(
+@@ -3932,6 +4274,10 @@ class Scheduler(
                  has_chunked_req=(self.chunked_req is not None),
                  truncation_align_size=self.truncation_align_size,
              )
@@ -1109,7 +1141,7 @@ index 743c8af..8d31941 100644
  
              if self.enable_lora:
                  running_loras.add(req.lora_id)
-@@ -3963,6 +4286,18 @@ class Scheduler(
+@@ -3963,6 +4309,18 @@ class Scheduler(
                              req.kv.mamba_pool_idx.unsqueeze(-1)
                          )
                          req.kv.mamba_pool_idx = None
@@ -1128,7 +1160,7 @@ index 743c8af..8d31941 100644
                  break
  
          if mamba_allocator is not None:
-@@ -4254,6 +4589,9 @@ class Scheduler(
+@@ -4254,6 +4612,9 @@ class Scheduler(
          batch.launch_ts = time.monotonic()
          batch.after_idle_gap = self._sched_idled
          self._sched_idled = False
@@ -1138,7 +1170,7 @@ index 743c8af..8d31941 100644
  
          # Accumulate the prefill-token counter used by the HRRN scheduling policy. Decode / prebuilt batches contribute 0.
          if batch.extend_num_tokens:
-@@ -4622,6 +4960,10 @@ class Scheduler(
+@@ -4622,6 +4983,10 @@ class Scheduler(
          elif batch.forward_mode.is_idle():
              self.batch_result_processor.process_batch_result_idle(batch, result)
  
@@ -1149,7 +1181,7 @@ index 743c8af..8d31941 100644
          self._record_step_counters(batch, result)
  
          self.metrics_reporter.log_batch_result_stats(batch, result)
-@@ -4634,6 +4976,20 @@ class Scheduler(
+@@ -4634,6 +4999,20 @@ class Scheduler(
          self.maybe_send_health_check_signal()
          self.metrics_reporter.update_device_timer()
  
@@ -1170,7 +1202,7 @@ index 743c8af..8d31941 100644
      def _record_step_counters(
          self, batch: ScheduleBatch, result: GenerationBatchResult
      ) -> None:
-@@ -5215,6 +5571,9 @@ class Scheduler(
+@@ -5215,6 +5594,9 @@ class Scheduler(
          }
  
      def abort_request(self, recv_req: AbortReq):
@@ -1180,7 +1212,7 @@ index 743c8af..8d31941 100644
          if (chunked_req := self.chunked_req) is not None:
              if recv_req.abort_all or chunked_req.rid.startswith(recv_req.rid):
                  self._pending_chunked_abort_req = chunked_req
-@@ -5369,6 +5728,25 @@ class Scheduler(
+@@ -5369,6 +5751,25 @@ class Scheduler(
                  else:
                      req.to_finish = FINISH_ABORT()
  
@@ -1206,7 +1238,7 @@ index 743c8af..8d31941 100644
      def _pause_engine(self) -> Tuple[List[Req], int]:
          raise NotImplementedError()
  
-@@ -5642,6 +6020,8 @@ class Scheduler(
+@@ -5642,6 +6043,8 @@ class Scheduler(
  
      def maybe_sleep_on_idle(self):
          if self.idle_sleeper is not None:
@@ -1215,7 +1247,7 @@ index 743c8af..8d31941 100644
              self.idle_sleeper.maybe_sleep()
  
      def handle_freeze_gc(self, recv_req: FreezeGCReq):
-@@ -5652,6 +6032,17 @@ class Scheduler(
+@@ -5652,6 +6055,17 @@ class Scheduler(
  
      def handle_shutdown(self, recv_req: ShutdownReq):
          # Break the event loop; the finally in run_scheduler_process releases resources.
@@ -1590,6 +1622,44 @@ index e7bee63..41abf6b 100644
      def child_key(self, page_size: int = 1):
          """Hashable dict-key for the first ``page_size`` logical units, namespaced by ``extra_key``."""
          return self.child_key_at(offset=0, page_size=page_size)
+diff --git a/python/sglang/srt/mem_cache/unified_cache/components/full.py b/python/sglang/srt/mem_cache/unified_cache/components/full.py
+index 1d4b255..ae376f1 100644
+--- a/python/sglang/srt/mem_cache/unified_cache/components/full.py
++++ b/python/sglang/srt/mem_cache/unified_cache/components/full.py
+@@ -53,6 +53,9 @@ class FullComponent(TreeComponent):
+             if cache.enable_session_radix_cache
+             else None
+         )
++        self.host_eviction_counts = {
++            "calls": 0, "already_satisfied": 0, "heap_builds": 0, "heap_candidates": 0,
++        }
+ 
+     def _ensure_eviction_strategy(self) -> None:
+         if self.session_ref_eviction_strategy is None:
+@@ -239,13 +242,22 @@ class FullComponent(TreeComponent):
+         host_frees: dict[ComponentType, list[torch.Tensor]],
+     ) -> None:
+         """Evict host leaves to free KV host pool space."""
++        ct = self.component_type
++        counts = self.host_eviction_counts
++        counts["calls"] += 1
++        # Write-back duplicate reclamation may have already met this request.
++        # Avoid ranking the entire host cache when no leaf will be evicted.
++        if tracker[ct] >= num_tokens:
++            counts["already_satisfied"] += 1
++            return
+         self._ensure_eviction_strategy()
+         heap = [
+             (self.session_ref_eviction_strategy(n), n)
+             for n in self.tree_core.evictable_host_leaves
+         ]
+         heapq.heapify(heap)
+-        ct = self.component_type
++        counts["heap_builds"] += 1
++        counts["heap_candidates"] += len(heap)
+         while tracker[ct] < num_tokens and heap:
+             _, x = heapq.heappop(heap)
+             if x not in self.tree_core.evictable_host_leaves:
 diff --git a/python/sglang/srt/mem_cache/unified_cache/components/mamba.py b/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
 index 3c18cee..74fb7ca 100644
 --- a/python/sglang/srt/mem_cache/unified_cache/components/mamba.py
@@ -4689,6 +4759,118 @@ index 0000000..18b17ed
 +    cache._demote = Mock(side_effect=demote)
 +    assert cache.reclaim_beliefkv_handoff_capacity(full_tokens=2, mamba_slots=0) == {0: 2}
 +    cache._preserve_mamba_reentry_node.assert_not_called()
+diff --git a/test/srt/test_beliefkv_full_host_eviction.py b/test/srt/test_beliefkv_full_host_eviction.py
+new file mode 100644
+index 0000000..ed83480
+--- /dev/null
++++ b/test/srt/test_beliefkv_full_host_eviction.py
+@@ -0,0 +1,106 @@
++"""CPU regressions for FULL eviction after write-back duplicate reclamation."""
++
++from array import array
++from unittest.mock import Mock
++
++import pytest
++import torch
++
++from sglang.srt.mem_cache.allocator import TokenToKVPoolAllocator
++from sglang.srt.mem_cache.base_prefix_cache import InsertParams
++from sglang.srt.mem_cache.cache_init_params import CacheInitParams
++from sglang.srt.mem_cache.memory_pool import MHATokenToKVPool, ReqToTokenPool
++from sglang.srt.mem_cache.radix_cache import RadixKey
++from sglang.srt.mem_cache.unified_cache.component_type import ComponentType
++from sglang.srt.mem_cache.unified_radix_cache import UnifiedRadixCache
++
++
++@pytest.fixture
++def cache():
++    pool = MHATokenToKVPool(
++        size=64, page_size=1, dtype=torch.float16, head_num=2, head_dim=8,
++        layer_num=1, device="cpu", enable_memory_saver=False,
++    )
++    allocator = TokenToKVPoolAllocator(
++        size=64, dtype=torch.float16, device="cpu", kvcache=pool, need_sort=False,
++    )
++    result = UnifiedRadixCache(CacheInitParams(
++        disable=False,
++        req_to_token_pool=ReqToTokenPool(
++            size=8, max_context_len=128, device="cpu", enable_memory_saver=False,
++        ),
++        token_to_kv_pool_allocator=allocator, page_size=1, eviction_policy="lru",
++        enable_session_radix_cache=True, tree_components=(ComponentType.FULL,),
++    ))
++    result.tree_core.is_write_back = True
++    return result
++
++
++def backed_leaf(cache, tokens, *, device=True):
++    allocator = cache.token_to_kv_pool_allocator
++    node_id = cache.insert(InsertParams(
++        key=RadixKey(array("q", tokens)), value=allocator.alloc(len(tokens)),
++    )).last_device_node
++    tree = cache.tree_core
++    node = tree.node_by_id(node_id)
++    node.component_data[ComponentType.FULL].host_value = torch.arange(len(tokens))
++    if not device:
++        allocator.free(node.component_data[ComponentType.FULL].value)
++        node.component_data[ComponentType.FULL].value = None
++        tree.component_evictable_size_[ComponentType.FULL] -= len(tokens)
++    tree._update_evictable_leaf_sets(node)
++    tree._update_duplicate_tracking(node)
++    return node
++
++
++def release_result(result):
++    result.device_frees.clear()
++    result.host_frees.clear()
++
++
++@pytest.mark.parametrize("requested", (0, 1, 2))
++def test_satisfied_duplicate_reclaim_does_not_rank_or_remove_host_only_data(cache, requested):
++    duplicate = backed_leaf(cache, [1, 2])
++    sole_copy = backed_leaf(cache, [9, 10], device=False)
++    full = cache.components[ComponentType.FULL]
++    full.session_ref_eviction_strategy = Mock(
++        wraps=full.session_ref_eviction_strategy,
++    )
++    device_value = duplicate.component_data[ComponentType.FULL].value
++    host_value = sole_copy.component_data[ComponentType.FULL].host_value
++    result = cache.tree_core.drive_host_eviction(ComponentType.FULL, requested)
++    try:
++        assert result.tracker[ComponentType.FULL] == (2 if requested else 0)
++        assert duplicate.component_data[ComponentType.FULL].value is device_value
++        assert sole_copy.component_data[ComponentType.FULL].host_value is host_value
++        assert sole_copy in cache.tree_core.evictable_host_leaves
++        full.session_ref_eviction_strategy.assert_not_called()
++        assert full.host_eviction_counts == {
++            "calls": 1, "already_satisfied": 1, "heap_builds": 0, "heap_candidates": 0,
++        }
++    finally:
++        release_result(result)
++
++
++@pytest.mark.parametrize("protected", (False, True))
++def test_unsatisfied_reclaim_keeps_native_session_priority_and_lock_exclusion(cache, protected):
++    duplicate = backed_leaf(cache, [1, 2])
++    older = backed_leaf(cache, [3, 4], device=False)
++    referenced = backed_leaf(cache, [5, 6], device=False)
++    referenced.component_data[ComponentType.FULL].session_ref = 1
++    referenced.last_access_time = older.last_access_time - 1
++    if protected:
++        duplicate.component_data[ComponentType.FULL].host_lock_ref = 1
++    requested = 2 if protected else 3
++    result = cache.tree_core.drive_host_eviction(ComponentType.FULL, requested)
++    try:
++        assert result.tracker[ComponentType.FULL] == (2 if protected else 4)
++        assert older.component_data[ComponentType.FULL].host_value is None
++        assert referenced.component_data[ComponentType.FULL].host_value is not None
++        assert duplicate.component_data[ComponentType.FULL].value is not None
++        assert (duplicate.component_data[ComponentType.FULL].host_value is not None) == protected
++        assert cache.components[ComponentType.FULL].host_eviction_counts == {
++            "calls": 1, "already_satisfied": 0, "heap_builds": 1, "heap_candidates": 2,
++        }
++    finally:
++        release_result(result)
 diff --git a/test/srt/test_beliefkv_host_eviction_observer.py b/test/srt/test_beliefkv_host_eviction_observer.py
 new file mode 100644
 index 0000000..ae52cd2
@@ -5803,10 +5985,10 @@ index 0000000..da0ca58
 +        left.is_prefix_at(other, 0)
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
-index 0000000..980045a
+index 0000000..45e3c45
 --- /dev/null
 +++ b/test/srt/test_beliefkv_scheduler_hook.py
-@@ -0,0 +1,753 @@
+@@ -0,0 +1,862 @@
 +"""BeliefKV scheduler safe-point contract, without model/GPU dependencies."""
 +
 +import ast
@@ -5814,7 +5996,7 @@ index 0000000..980045a
 +import sys
 +import types
 +import unittest
-+from collections import namedtuple
++from collections import deque, namedtuple
 +from pathlib import Path
 +from types import SimpleNamespace
 +from unittest.mock import patch
@@ -5840,7 +6022,9 @@ index 0000000..980045a
 +        "_beliefkv_on_batch_completed",
 +        "_beliefkv_tp_agree",
 +        "_beliefkv_before_batch_selection",
++        "_beliefkv_after_forward_dispatch",
 +        "_beliefkv_prefill_candidates",
++        "event_loop_overlap",
 +        "get_next_batch_to_run",
 +        "handle_shutdown",
 +    }
@@ -5872,6 +6056,10 @@ index 0000000..980045a
 +    namespace = {
 +        "__file__": str(SCHEDULER),
 +        "os": os,
++        "deque": deque,
++        "envs": SimpleNamespace(
++            SGLANG_ENABLE_STRICT_MEM_CHECK_DURING_BUSY=SimpleNamespace(get=lambda: False),
++        ),
 +        "NextBatchPlan": PLAN,
 +        "DisaggregationMode": SimpleNamespace(NULL="null"),
 +        "HTTPStatus": SimpleNamespace(SERVICE_UNAVAILABLE=503),
@@ -5922,6 +6110,109 @@ index 0000000..980045a
 +
 +
 +class TestBeliefKVHook(unittest.TestCase):
++    def test_waiting_migrations_run_once_after_forward_and_war_barrier(self):
++        scheduler, running, calls = idle_scheduler(overlap=True)
++        batch = SimpleNamespace(copy=lambda: "batch-copy")
++        scheduler.running_batch = running
++        scheduler.last_batch = None
++        scheduler.gracefully_exit = False
++        scheduler._engine_paused = False
++        scheduler.ingest_requests = lambda: None
++        scheduler.is_disable_overlap_for_batch = lambda *args, **kwargs: False
++        scheduler.is_generation = False
++        scheduler.beliefkv_runtime = SimpleNamespace(
++            dispatch_after_forward=lambda queue, **kwargs: calls.append((
++                "physical", queue, kwargs["running_batch"],
++                tuple(scheduler.result_queue),
++            )),
++        )
++
++        def select(**kwargs):
++            scheduler._beliefkv_physical_planning_deferred = True
++            return PLAN(batch, running)
++
++        def launch(selected):
++            calls.append("forward")
++            scheduler.gracefully_exit = True
++            return "result"
++
++        scheduler.get_next_batch_to_run = select
++        scheduler.run_batch = launch
++        scheduler._apply_war_barrier = lambda: calls.append("war")
++        scheduler.event_loop_overlap()
++        self.assertEqual(calls, [
++            "forward", "war",
++            ("physical", [], running, (("batch-copy", "result"),)),
++        ])
++        scheduler._beliefkv_after_forward_dispatch()
++        self.assertEqual(len(calls), 3)
++
++    def test_idle_overlap_still_dispatches_deferred_migrations(self):
++        scheduler, running, calls = idle_scheduler(overlap=True)
++        scheduler.running_batch = running
++        scheduler.last_batch = None
++        scheduler.gracefully_exit = False
++        scheduler._engine_paused = False
++        scheduler.ingest_requests = lambda: None
++        scheduler.is_disable_overlap_for_batch = lambda *args, **kwargs: False
++        scheduler.is_generation = False
++        scheduler.beliefkv_runtime = SimpleNamespace(
++            dispatch_after_forward=lambda *args, **kwargs: calls.append("physical"),
++        )
++
++        def select(**kwargs):
++            scheduler._beliefkv_physical_planning_deferred = True
++            scheduler.gracefully_exit = True
++            return PLAN(None, running)
++
++        scheduler.get_next_batch_to_run = select
++        scheduler.on_idle = lambda: calls.append("idle")
++        scheduler.event_loop_overlap()
++        self.assertEqual(calls, ["physical", "idle"])
++
++    def test_safe_overlap_defers_waiting_work_until_after_dispatch(self):
++        scheduler, running, calls = idle_scheduler(overlap=True)
++        scheduler.running_batch = running
++        scheduler.beliefkv_runtime = SimpleNamespace(
++            scheduler_step=lambda **kwargs: None,
++            running_batch_retraction_barrier_required=lambda batch: False,
++            plan_running_batch_retraction=lambda batch: None,
++            can_defer_waiting_migrations=lambda: True,
++            dispatch_join_prefetch=lambda: calls.append("join-before"),
++            dispatch_tool_prefetch=lambda: calls.append("tool-before"),
++            dispatch_join_prepare=lambda *args, **kwargs: calls.append("prepare-before"),
++            dispatch_tool_prepare=lambda *args, **kwargs: calls.append("prepare-before"),
++            dispatch_execution_handoff=lambda *args, **kwargs: calls.append("handoff"),
++            on_batch_selected=lambda batch: None,
++            sample_runtime_observations=lambda *args: None,
++            dispatch_after_forward=lambda *args, **kwargs: calls.append("physical-after"),
++        )
++        scheduler.get_next_batch_to_run(running, None)
++        self.assertEqual(calls, ["abort", "cache"])
++        self.assertTrue(scheduler._beliefkv_physical_planning_deferred)
++        scheduler._beliefkv_after_forward_dispatch()
++        self.assertEqual(calls[-1], "physical-after")
++
++    def test_nonoverlap_keeps_waiting_work_before_selection(self):
++        scheduler, running, calls = idle_scheduler(overlap=False)
++        scheduler.beliefkv_runtime = SimpleNamespace(
++            scheduler_step=lambda **kwargs: None,
++            plan_running_batch_retraction=lambda batch: None,
++            can_defer_waiting_migrations=lambda: True,
++            dispatch_join_prefetch=lambda: calls.append("join"),
++            dispatch_tool_prefetch=lambda: calls.append("tool"),
++            dispatch_join_prepare=lambda *args, **kwargs: calls.append("join-prepare"),
++            dispatch_tool_prepare=lambda *args, **kwargs: calls.append("tool-prepare"),
++            dispatch_execution_handoff=lambda *args, **kwargs: calls.append("handoff"),
++            on_batch_selected=lambda batch: None,
++            sample_runtime_observations=lambda *args: None,
++        )
++        scheduler.get_next_batch_to_run(running, None)
++        self.assertEqual(calls, [
++            "abort", "cache", "join", "tool", "join-prepare", "tool-prepare", "handoff",
++        ])
++        self.assertFalse(scheduler._beliefkv_physical_planning_deferred)
++
 +    def test_native_transfer_ack_reaches_telemetry_and_physical_ledger(self):
 +        scheduler = Hook()
 +        calls = []
@@ -10193,153 +10484,3 @@ index 0000000..6320bf9
 +
 +if __name__ == "__main__":
 +    unittest.main()
-diff --git a/python/sglang/srt/mem_cache/unified_cache/components/full.py b/python/sglang/srt/mem_cache/unified_cache/components/full.py
-index 1d4b255..ae376f1 100644
---- a/python/sglang/srt/mem_cache/unified_cache/components/full.py
-+++ b/python/sglang/srt/mem_cache/unified_cache/components/full.py
-@@ -53,6 +53,9 @@ class FullComponent(TreeComponent):
-             if cache.enable_session_radix_cache
-             else None
-         )
-+        self.host_eviction_counts = {
-+            "calls": 0, "already_satisfied": 0, "heap_builds": 0, "heap_candidates": 0,
-+        }
- 
-     def _ensure_eviction_strategy(self) -> None:
-         if self.session_ref_eviction_strategy is None:
-@@ -239,13 +242,22 @@ class FullComponent(TreeComponent):
-         host_frees: dict[ComponentType, list[torch.Tensor]],
-     ) -> None:
-         """Evict host leaves to free KV host pool space."""
-+        ct = self.component_type
-+        counts = self.host_eviction_counts
-+        counts["calls"] += 1
-+        # Write-back duplicate reclamation may have already met this request.
-+        # Avoid ranking the entire host cache when no leaf will be evicted.
-+        if tracker[ct] >= num_tokens:
-+            counts["already_satisfied"] += 1
-+            return
-         self._ensure_eviction_strategy()
-         heap = [
-             (self.session_ref_eviction_strategy(n), n)
-             for n in self.tree_core.evictable_host_leaves
-         ]
-         heapq.heapify(heap)
--        ct = self.component_type
-+        counts["heap_builds"] += 1
-+        counts["heap_candidates"] += len(heap)
-         while tracker[ct] < num_tokens and heap:
-             _, x = heapq.heappop(heap)
-             if x not in self.tree_core.evictable_host_leaves:
-diff --git a/test/srt/test_beliefkv_full_host_eviction.py b/test/srt/test_beliefkv_full_host_eviction.py
-new file mode 100644
-index 0000000..ed83480
---- /dev/null
-+++ b/test/srt/test_beliefkv_full_host_eviction.py
-@@ -0,0 +1,106 @@
-+"""CPU regressions for FULL eviction after write-back duplicate reclamation."""
-+
-+from array import array
-+from unittest.mock import Mock
-+
-+import pytest
-+import torch
-+
-+from sglang.srt.mem_cache.allocator import TokenToKVPoolAllocator
-+from sglang.srt.mem_cache.base_prefix_cache import InsertParams
-+from sglang.srt.mem_cache.cache_init_params import CacheInitParams
-+from sglang.srt.mem_cache.memory_pool import MHATokenToKVPool, ReqToTokenPool
-+from sglang.srt.mem_cache.radix_cache import RadixKey
-+from sglang.srt.mem_cache.unified_cache.component_type import ComponentType
-+from sglang.srt.mem_cache.unified_radix_cache import UnifiedRadixCache
-+
-+
-+@pytest.fixture
-+def cache():
-+    pool = MHATokenToKVPool(
-+        size=64, page_size=1, dtype=torch.float16, head_num=2, head_dim=8,
-+        layer_num=1, device="cpu", enable_memory_saver=False,
-+    )
-+    allocator = TokenToKVPoolAllocator(
-+        size=64, dtype=torch.float16, device="cpu", kvcache=pool, need_sort=False,
-+    )
-+    result = UnifiedRadixCache(CacheInitParams(
-+        disable=False,
-+        req_to_token_pool=ReqToTokenPool(
-+            size=8, max_context_len=128, device="cpu", enable_memory_saver=False,
-+        ),
-+        token_to_kv_pool_allocator=allocator, page_size=1, eviction_policy="lru",
-+        enable_session_radix_cache=True, tree_components=(ComponentType.FULL,),
-+    ))
-+    result.tree_core.is_write_back = True
-+    return result
-+
-+
-+def backed_leaf(cache, tokens, *, device=True):
-+    allocator = cache.token_to_kv_pool_allocator
-+    node_id = cache.insert(InsertParams(
-+        key=RadixKey(array("q", tokens)), value=allocator.alloc(len(tokens)),
-+    )).last_device_node
-+    tree = cache.tree_core
-+    node = tree.node_by_id(node_id)
-+    node.component_data[ComponentType.FULL].host_value = torch.arange(len(tokens))
-+    if not device:
-+        allocator.free(node.component_data[ComponentType.FULL].value)
-+        node.component_data[ComponentType.FULL].value = None
-+        tree.component_evictable_size_[ComponentType.FULL] -= len(tokens)
-+    tree._update_evictable_leaf_sets(node)
-+    tree._update_duplicate_tracking(node)
-+    return node
-+
-+
-+def release_result(result):
-+    result.device_frees.clear()
-+    result.host_frees.clear()
-+
-+
-+@pytest.mark.parametrize("requested", (0, 1, 2))
-+def test_satisfied_duplicate_reclaim_does_not_rank_or_remove_host_only_data(cache, requested):
-+    duplicate = backed_leaf(cache, [1, 2])
-+    sole_copy = backed_leaf(cache, [9, 10], device=False)
-+    full = cache.components[ComponentType.FULL]
-+    full.session_ref_eviction_strategy = Mock(
-+        wraps=full.session_ref_eviction_strategy,
-+    )
-+    device_value = duplicate.component_data[ComponentType.FULL].value
-+    host_value = sole_copy.component_data[ComponentType.FULL].host_value
-+    result = cache.tree_core.drive_host_eviction(ComponentType.FULL, requested)
-+    try:
-+        assert result.tracker[ComponentType.FULL] == (2 if requested else 0)
-+        assert duplicate.component_data[ComponentType.FULL].value is device_value
-+        assert sole_copy.component_data[ComponentType.FULL].host_value is host_value
-+        assert sole_copy in cache.tree_core.evictable_host_leaves
-+        full.session_ref_eviction_strategy.assert_not_called()
-+        assert full.host_eviction_counts == {
-+            "calls": 1, "already_satisfied": 1, "heap_builds": 0, "heap_candidates": 0,
-+        }
-+    finally:
-+        release_result(result)
-+
-+
-+@pytest.mark.parametrize("protected", (False, True))
-+def test_unsatisfied_reclaim_keeps_native_session_priority_and_lock_exclusion(cache, protected):
-+    duplicate = backed_leaf(cache, [1, 2])
-+    older = backed_leaf(cache, [3, 4], device=False)
-+    referenced = backed_leaf(cache, [5, 6], device=False)
-+    referenced.component_data[ComponentType.FULL].session_ref = 1
-+    referenced.last_access_time = older.last_access_time - 1
-+    if protected:
-+        duplicate.component_data[ComponentType.FULL].host_lock_ref = 1
-+    requested = 2 if protected else 3
-+    result = cache.tree_core.drive_host_eviction(ComponentType.FULL, requested)
-+    try:
-+        assert result.tracker[ComponentType.FULL] == (2 if protected else 4)
-+        assert older.component_data[ComponentType.FULL].host_value is None
-+        assert referenced.component_data[ComponentType.FULL].host_value is not None
-+        assert duplicate.component_data[ComponentType.FULL].value is not None
-+        assert (duplicate.component_data[ComponentType.FULL].host_value is not None) == protected
-+        assert cache.components[ComponentType.FULL].host_eviction_counts == {
-+            "calls": 1, "already_satisfied": 0, "heap_builds": 1, "heap_candidates": 2,
-+        }
-+    finally:
-+        release_result(result)

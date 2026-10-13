@@ -26,6 +26,9 @@ replaces V50's older single-change freeze with the latest committed code.
 Trace-analysis priority, added on October 13: analyze the latest finished
 development run first. V49 is the current complete trace; V50 was stopped at
 16:22:48 CST, retaining 133 completed and 23 unfinished workflows.
+V51 cold-started from 0990b73 at 16:40:12 CST. Its complete 600–900s window
+is the latest busy-window evidence; V292's post-forward migration candidate
+has passed qualification and will be cold-validated in V52.
 Inspect the newest live run with explicitly bounded snapshots when diagnosing
 an active failure, and label those as partial rather than final outcomes.
 Use the fixed V29 native as a qualified comparison reference. Reopen older
@@ -34,13 +37,28 @@ they do not substitute for checking the latest implementation's real behavior.
 Bind each analysis to the run, frozen revision, observation scope and input
 hashes, preserving incomplete workflows and unknown evidence.
 
-1. Finish the current overhead diagnosis. V49 has finished full collection;
+1. Resolve short-prefill overhead as the first performance issue. V49 has finished full collection;
    V50 cold-started at 14:20:50 CST on October 13 from 02fd87c, including
    both 82b42d5 Host-reclaim and 3b66033 final-admission fixes. This measures
    their combined effect, not an isolated Host fix.
    Check real satisfied-eviction scans, final-stage binding/selection counters,
    prefill turnover, complete JCT and throughput; CPU evidence alone does not
    complete this step.
+   V287 rules out missing graph replay in V50's matched short prefills.
+   Native prefix reuse, breakable graphs and eager GDN dispatch are shared.
+   V51 has 344425/380722 decode steps (-9.53%) and 37.814s instrumented
+   exclusive Python wall in 600–900s; short-prefill cohorts remain 1.98–2.23x.
+   V290's 54 short samples have 0.0863ms median GPU dependency wait and
+   42.086/41.927ms median observed GPU/CPU layer spans. Neither spans nor
+   clipped worker intervals isolate full forward or kernels.
+   V292 moves waiting JOIN/tool migration planning and PREPARE after native
+   forward submission and its WAR barrier on the qualified single-rank overlap
+   path with demand handoff disabled. Other paths keep the previous order.
+   83 engine and 385 runtime checks pass; cold V52 must measure actual
+   launch/service and early-consumed FULL. Changed worker clipping or reduced
+   planning cost alone does not establish throughput/JCT improvement.
+   V51's bounded 192-step profiler ran at 17:03:20–17:03:30 after this window;
+   profiler and export overhead remain diagnostic perturbations, not gain evidence.
 2. Prioritize workflow critical-path queueing next. Existing causal ranks
    already recognize the sole remaining JOIN child; resident-first, final
    priority and restored-parent consumption also exist. Current ordering is

@@ -699,6 +699,20 @@ class NativeAdmissionRuntime:
             and callable(supports) and supports()
         )
 
+    def can_defer_waiting_migrations(self) -> bool:
+        return not self.enable_execution_handoff and self.can_prefetch_during_overlap()
+
+    @timed_runtime("post_launch_physical")
+    def dispatch_after_forward(
+        self, waiting_queue: Sequence[object] = (), *, running_batch: object = None,
+    ) -> None:
+        """Plan immutable waiting contexts after native forward submission."""
+        self.counts["physical_planning_after_forward"] += 1
+        self.dispatch_join_prefetch()
+        self.dispatch_tool_prefetch()
+        self.dispatch_join_prepare(waiting_queue, running_batch=running_batch)
+        self.dispatch_tool_prepare(waiting_queue, running_batch=running_batch)
+
     def predictor_fileno(self) -> int | None:
         if self._semantic_worker is not None:
             return self._semantic_worker.fileno()

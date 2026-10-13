@@ -5,6 +5,20 @@
 完成/剩余工作预测，runtime 根据因果状态和真实缓存容量
 安排传输；近期改动的稳定吞吐和 JCT 收益仍待验证。
 
+V292候选优先解决短prefill前后的串行迁移规划。单卡原生支持
+overlap且执行handoff关闭时，forward及WAR barrier提交后再调用
+JOIN/tool规划和PREPARE；空闲时也执行一次，nonoverlap与不支持
+的adapter保持原顺序。未改变GPU页/状态依赖、引用或分配原语，
+83项引擎和385项runtime检查通过；V51保持冻结，候选冷测V52。
+
+V287证明短prefill两侧都用了breakable graph，而GDN attention
+仍在图外执行。V51忙时短请求约1.98–2.23倍，54组样本GPU
+依赖等待P50仅0.0863ms，GPU/CPU首末层跨度42.086/41.927ms。
+原生worker区间经过overlap截断，不是完整forward；重排CPU工作
+也会移动该边界。V289/V291的192步profiler在600–900秒窗口
+之后采集，揭示图外发射路径但会放大时间。后续必须以实际GPU
+服务和提前消费FULL共同判断重排是否有收益，而非只看worker。
+
 本阶段不止降低调度CPU开销，还要降低workflow关键路径上的
 累计准入等待。v270对V29全部156对任务重建非重叠时间分解：
 平均JCT少391.198秒，最后返回child的入队至首次worker服务

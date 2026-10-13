@@ -38,6 +38,38 @@ from beliefkv.runtime.semantic_report_worker import (
     SEMANTIC_TEXT, SemanticReportInput, SemanticReportReply,
 )
 
+def test_waiting_migration_deferral_requires_overlap_and_native_demand_recovery():
+    runtime = NativeAdmissionRuntime()
+    assert not runtime.can_defer_waiting_migrations()
+    runtime.attach_native_cache(NS(supports_beliefkv_overlap_prefetch=lambda: True))
+    assert runtime.can_defer_waiting_migrations()
+    runtime.enable_execution_handoff = True
+    assert not runtime.can_defer_waiting_migrations()
+    runtime.enable_execution_handoff = False
+    runtime._native_cache.supports_beliefkv_overlap_prefetch = lambda: False
+    assert not runtime.can_defer_waiting_migrations()
+
+
+def test_after_forward_planning_retains_existing_waiting_context_handlers():
+    runtime = NativeAdmissionRuntime()
+    runtime._hotpath_timing.enabled = True
+    calls = []
+    runtime.dispatch_join_prefetch = lambda: calls.append("join")
+    runtime.dispatch_tool_prefetch = lambda: calls.append("tool")
+    runtime.dispatch_join_prepare = lambda queue, **kwargs: calls.append(
+        ("join-prepare", queue, kwargs["running_batch"]),
+    )
+    runtime.dispatch_tool_prepare = lambda queue, **kwargs: calls.append(
+        ("tool-prepare", queue, kwargs["running_batch"]),
+    )
+    queue, running = [object()], object()
+    runtime.dispatch_after_forward(queue, running_batch=running)
+    assert calls == [
+        "join", "tool", ("join-prepare", queue, running), ("tool-prepare", queue, running),
+    ]
+    assert runtime.counts["physical_planning_after_forward"] == 1
+    assert runtime._hotpath_timing.snapshot()["phases"]["post_launch_physical"]["count"] == 1
+
 
 def test_native_ack_is_credited_only_after_live_context_reconciliation():
     runtime = NativeAdmissionRuntime()
