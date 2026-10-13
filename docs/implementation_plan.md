@@ -2,6 +2,16 @@
 
 Status date: 2026-10-14.
 
+d65ed0f fixes nested worker rebinding: SGLang's default automatic NUMA
+configuration replaced the outer preferred policy with membind=1. The06:58
+attempt failed during Host initialization; V394 preserves exactPID1965823,
+the generated wrapper and zero-workflow failure. V393 exercises actual
+upstream CPU spawning: parent preferred becomes worker bind with automatic
+binding, and stays preferred when disabled; CPU affinity is identical.
+The launcher now owns NUMA placement without automatic rebinding. V396
+binds41 sources,126 startup checks pass, and core runtime/engine stay fixed.
+Actual pool placement and healthy service still require the next cold run.
+
 Current cold startup uses9dff40b: CPU stays onNUMA1, memory prefersNUMA1
 with fallback, and extra startup reserve returns to8GiB. Keep200GB/80:20,
 the device pools, workload, predictions and scheduling settings fixed.

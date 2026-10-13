@@ -1,0 +1,33 @@
+{
+  "status": "cpu_only_native_worker_inheritance_verified",
+  "probe_source": "/home/longhao/experiment/ops/probe_numa_worker_inheritance.py",
+  "probe_source_sha256": "74353c4d731b46ad10ef6ec5df765b92174e9581363827a33610411a9f00531b",
+  "outer_arguments": ["--cpunodebind=1", "--preferred=1"],
+  "observations": [
+    {
+      "automatic_binding": true,
+      "parent_pid": 1970424,
+      "worker_pid": 1970986,
+      "parent_policy_mode": 1,
+      "worker_policy_mode": 2,
+      "parent_policy_nodes": [1],
+      "worker_policy_nodes": [1],
+      "cpu_affinity_unchanged": true,
+      "cpu_affinity_count": 64
+    },
+    {
+      "automatic_binding": false,
+      "parent_pid": 1970425,
+      "worker_pid": 1970982,
+      "parent_policy_mode": 1,
+      "worker_policy_mode": 1,
+      "parent_policy_nodes": [1],
+      "worker_policy_nodes": [1],
+      "cpu_affinity_unchanged": true,
+      "cpu_affinity_count": 64
+    }
+  ],
+  "mode_semantics": {"1": "MPOL_PREFERRED", "2": "MPOL_BIND"},
+  "source": "Direct get_mempolicy and sched_getaffinity results from the actual SGLang configure_subprocess spawn path.",
+  "scope": "CPU child-process diagnostic only. No model, CUDA tensors, workflow, memory-pressure experiment or performance result."
+}

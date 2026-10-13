@@ -2,6 +2,12 @@
 
 更新日期：2026-10-14
 
+d65ed0f保证原生worker继承外部NUMA策略：启动器管理Host时关闭
+SGLANG_AUTO_NUMA_BIND，避免上游默认V2将preferred覆盖为bind。
+v393真实CPU spawn验证1→2覆盖及关闭后1→1继承，CPU亲和性保持；
+v394保留06:58池初始化OOM、PID1965823和包装脚本，无任务派发。
+v396延续41份源码绑定和126项检查；实际池、服务与性能仍待冷测。
+
 当前Host启动策略由9dff40b改为CPU绑定NUMA1、内存优先NUMA1
 并允许回退，启动余量恢复8GiB；实际200GB/80:20及HBM、负载、
 预测和调度规则保持。新plan冻结策略，旧冻结arm仍按原bind恢复。

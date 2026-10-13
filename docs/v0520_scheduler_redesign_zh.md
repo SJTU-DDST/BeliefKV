@@ -1,5 +1,11 @@
 # v0.5.20 调度适配边界
 
+d65ed0f关闭由外层管理Host NUMA时的SGLANG_AUTO_NUMA_BIND，
+避免上游V2自动worker包装脚本将preferred替换为membind=1。
+v393在真实CPU spawn中验证覆盖与关闭后继承，原生引擎不变；
+v394保留06:58池初始化OOM、PID1965823和包装脚本，零workflow
+派发。v396绑定41份源码、126项启动检查通过，实际池/服务待冷测。
+
 9dff40b将冷启动内存改为NUMA1 preferred并允许回退，CPU仍绑
 NUMA1、余量恢复8GiB。实际Host200GB/80:20、HBM、workload、
 调度和既有PrefillAdder不变；新增延迟凑批保持关闭。新plan冻结

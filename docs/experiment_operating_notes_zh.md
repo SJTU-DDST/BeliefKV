@@ -4,6 +4,13 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+Host启动由外层numactl管理时必须关闭SGLANG_AUTO_NUMA_BIND。
+SGLang的默认V2会为worker另建membind包装脚本，外层preferred
+并不保证实际生效；不要仅凭launcher参数宣称已修复。v393实际
+CPU spawn复现这一覆盖并验证关闭后继承，d65ed0f已修复入口。
+v394保留06:58再次启动的原始OOM/包装脚本，仍无workflow派发；
+v396绑定41份源码，126项检查通过，实际内存落点仍要观察。
+
 当前启动使用9dff40b：CPU仍绑定NUMA1，内存策略为preferred，
 容量不足可回退；额外余量恢复8GiB。Host200GB/80:20、HBM和
 冻结负载/预算不变。新plan必须记录host_numa_memory_policy，
