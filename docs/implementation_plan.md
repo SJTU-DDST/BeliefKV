@@ -2,6 +2,36 @@
 
 Status date: 2026-10-14.
 
+Commit3a47942 maintains the existing global WAIT_TOOL/family census from
+RCCG deltas instead of rescanning all retained invocations after every version
+change. Include changed-context members and completed children's return targets:
+a caller can resume WAIT_TOOL without appearing in awakened_invocations.
+Keep full rebuilding after a version discontinuity and discard both membership
+and counts after causal failure. Predictor values and the known local/global
+training contract remain unchanged. Decode text is already filtered before
+RCCG, so it is not the graph-version rescan cause.
+
+V358 measures complete event/feature cycles, preserving about3.5us additional
+CPU when there is no query. Its93.66% improvement at7644 retained invocations
+is a large synthetic geometry. V361 uses all156 latest sealed V54 client
+prefixes:390742 events,12211 batches/comparisons, zero application failures
+and at most1235 retained invocations. Features equal the full-state oracle.
+Combined event-plus-one-query thread CPU averages240.62/206.22us (-14.30%);
+event maintenance rises181.96/196.76us while feature time falls58.66/9.46us.
+These are separate measured intervals summed without overlap. Offline
+timestamp sorting,32-event batches and one query per batch differ from live
+socket/query cadence; native registration, cache, model and GPU are excluded.
+Keep the administratively censored task, and do not invent completion/JCT.
+781 checks plus two subchecks pass. V362 binds21 sources, unchanged prior
+CPU method bodies and f7e0a895/a8f4ea97. Register the updated V55 cold candidate
+for06:00+ when resources are available. Validate real phases and total control
+cost, useful FULL, quality/fairness and JCT; the final goal remains unproven.
+
+V355's initial PREPARE profile lacks native FULL-leaf/Mamba-LRU indices and
+overstates fallback publication scans. V356 supplies those index shapes and
+shifts attribution toward ancestry observation and wait validation. Both are
+cProfile-distorted CPU stand-ins, not evidence of live native hotspots.
+
 Commit6186577 avoids a shared-ancestor state table for a single FULL leaf in
 the ordering hint. Full ancestry, node identity/cycle, namespace, pending and
 live residency checks stay intact; multiple branches retain the shared table.

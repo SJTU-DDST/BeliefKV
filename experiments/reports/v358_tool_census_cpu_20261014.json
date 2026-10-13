@@ -1,0 +1,495 @@
+{
+  "observed_at_local": "2026-10-14T04:23:32.508669+08:00",
+  "status": "same_input_complete_cpu_cycles_not_gpu_or_jct_evidence",
+  "baseline_revision": "ba06b4a6146033e16b08ef59a4e9fa38be294310",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "7820de3e7555a6e73f6929dfca430fd5cba6c5c6519823e7b63661a04c601d41",
+    "beliefkv/runtime/sglang_v0520_physical.py": "f53b15523badf3f31123f14300b3fda60a503d3c0cf1cfbf71df19713e112ec5",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "6ce86bea0aa8cbdb4c7f58acae99e9ca5068093168cf618ab9ea9b98e96fd963"
+  },
+  "candidate_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "203e118ae2fe5980b0f664c7346bf189a6aba2c74ba503372f01cb7900f3524c",
+    "beliefkv/control/causal_graph.py": "2b5070822d2dba1cc994b94e40245430de18edd12b2fd1dceed76e9a88d3f657",
+    "scripts/benchmark_native_prepare_path.py": "3ccb01eb8778c1fa11f5a6cdd67c03c300998085b0846a44eec76323c7e2e6a3",
+    "scripts/benchmark_native_shared_path.py": "5105c132fa8ad4be3074019f9567b4c9800dd12960a2c44d1c2342875aa7f75c"
+  },
+  "helper_sha256": "3eace6052081fb31e63fa0447c393e93d78001aeb3a5191afe3a506a3da51db1",
+  "cases": [
+    {
+      "workflows": 156,
+      "retained_rounds": 1,
+      "invocations": 624,
+      "events": 600,
+      "warmup_events": 20,
+      "features_per_event": 0,
+      "initially_waiting_invocations": 64,
+      "features_equal": true,
+      "graph_states_equal": true,
+      "runtime_counters_equal": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 600,
+            "mean_us": 25.279648333333334,
+            "p50_us": 25.6055,
+            "p90_us": 28.6199,
+            "min_us": 19.063,
+            "max_us": 34.551
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 24.540098333333333,
+            "p50_us": 24.875,
+            "p90_us": 27.8181,
+            "min_us": 18.313,
+            "max_us": 33.575
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 600,
+            "mean_us": 28.836765,
+            "p50_us": 29.753,
+            "p90_us": 33.426199999999994,
+            "min_us": 19.537,
+            "max_us": 37.464
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 28.088361666666668,
+            "p50_us": 29.014,
+            "p90_us": 32.5908,
+            "min_us": 18.835,
+            "max_us": 36.723
+          }
+        }
+      },
+      "thread_cpu_delta_us": 3.5482633333333347,
+      "thread_cpu_reduction_fraction": -0.1445904284952948
+    },
+    {
+      "workflows": 156,
+      "retained_rounds": 1,
+      "invocations": 624,
+      "events": 600,
+      "warmup_events": 20,
+      "features_per_event": 1,
+      "initially_waiting_invocations": 64,
+      "features_equal": true,
+      "graph_states_equal": true,
+      "runtime_counters_equal": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 600,
+            "mean_us": 98.49611833333333,
+            "p50_us": 98.69749999999999,
+            "p90_us": 102.7212,
+            "min_us": 89.659,
+            "max_us": 117.305
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 97.69763833333333,
+            "p50_us": 97.957,
+            "p90_us": 101.8604,
+            "min_us": 88.962,
+            "max_us": 108.686
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 600,
+            "mean_us": 41.90918333333333,
+            "p50_us": 42.9465,
+            "p90_us": 46.990199999999994,
+            "min_us": 32.915,
+            "max_us": 55.572
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 41.14337166666667,
+            "p50_us": 42.155,
+            "p90_us": 46.1978,
+            "min_us": 32.263,
+            "max_us": 54.727
+          }
+        }
+      },
+      "thread_cpu_delta_us": -56.55426666666666,
+      "thread_cpu_reduction_fraction": 0.5788703558392054
+    },
+    {
+      "workflows": 156,
+      "retained_rounds": 1,
+      "invocations": 624,
+      "events": 600,
+      "warmup_events": 20,
+      "features_per_event": 8,
+      "initially_waiting_invocations": 64,
+      "features_equal": true,
+      "graph_states_equal": true,
+      "runtime_counters_equal": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 600,
+            "mean_us": 156.99091833333333,
+            "p50_us": 157.365,
+            "p90_us": 162.2638,
+            "min_us": 146.688,
+            "max_us": 169.094
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 156.13117666666668,
+            "p50_us": 156.4475,
+            "p90_us": 161.2966,
+            "min_us": 145.964,
+            "max_us": 168.057
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 600,
+            "mean_us": 99.06518333333334,
+            "p50_us": 100.08,
+            "p90_us": 105.01469999999999,
+            "min_us": 87.664,
+            "max_us": 112.258
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 98.21373333333334,
+            "p50_us": 99.2815,
+            "p90_us": 104.14410000000001,
+            "min_us": 86.795,
+            "max_us": 111.206
+          }
+        }
+      },
+      "thread_cpu_delta_us": -57.91744333333334,
+      "thread_cpu_reduction_fraction": 0.3709537362738551
+    },
+    {
+      "workflows": 156,
+      "retained_rounds": 16,
+      "invocations": 7644,
+      "events": 600,
+      "warmup_events": 20,
+      "features_per_event": 0,
+      "initially_waiting_invocations": 64,
+      "features_equal": true,
+      "graph_states_equal": true,
+      "runtime_counters_equal": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 600,
+            "mean_us": 25.036161666666665,
+            "p50_us": 25.225,
+            "p90_us": 28.464,
+            "min_us": 19.266,
+            "max_us": 32.418
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 24.29591,
+            "p50_us": 24.534,
+            "p90_us": 27.684900000000003,
+            "min_us": 18.597,
+            "max_us": 31.557
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 600,
+            "mean_us": 28.560163333333332,
+            "p50_us": 29.499499999999998,
+            "p90_us": 33.4401,
+            "min_us": 20.384,
+            "max_us": 37.205
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 27.810473333333334,
+            "p50_us": 28.7775,
+            "p90_us": 32.641799999999996,
+            "min_us": 19.774,
+            "max_us": 36.438
+          }
+        }
+      },
+      "thread_cpu_delta_us": 3.514563333333335,
+      "thread_cpu_reduction_fraction": -0.14465658348805777
+    },
+    {
+      "workflows": 156,
+      "retained_rounds": 16,
+      "invocations": 7644,
+      "events": 600,
+      "warmup_events": 20,
+      "features_per_event": 1,
+      "initially_waiting_invocations": 64,
+      "features_equal": true,
+      "graph_states_equal": true,
+      "runtime_counters_equal": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 600,
+            "mean_us": 750.2853616666666,
+            "p50_us": 746.7975,
+            "p90_us": 780.4381000000001,
+            "min_us": 706.393,
+            "max_us": 841.809
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 749.010125,
+            "p50_us": 745.5574999999999,
+            "p90_us": 779.4339,
+            "min_us": 704.781,
+            "max_us": 840.413
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 600,
+            "mean_us": 48.303428333333336,
+            "p50_us": 48.0955,
+            "p90_us": 57.260600000000004,
+            "min_us": 34.338,
+            "max_us": 66.637
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 47.5084,
+            "p50_us": 47.2785,
+            "p90_us": 56.444,
+            "min_us": 33.558,
+            "max_us": 65.885
+          }
+        }
+      },
+      "thread_cpu_delta_us": -701.501725,
+      "thread_cpu_reduction_fraction": 0.9365717519506161
+    },
+    {
+      "workflows": 156,
+      "retained_rounds": 16,
+      "invocations": 7644,
+      "events": 600,
+      "warmup_events": 20,
+      "features_per_event": 8,
+      "initially_waiting_invocations": 64,
+      "features_equal": true,
+      "graph_states_equal": true,
+      "runtime_counters_equal": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 600,
+            "mean_us": 699.7383866666667,
+            "p50_us": 691.683,
+            "p90_us": 734.3111,
+            "min_us": 645.716,
+            "max_us": 2275.266
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 698.4232116666667,
+            "p50_us": 690.4739999999999,
+            "p90_us": 732.8524,
+            "min_us": 644.618,
+            "max_us": 2259.9
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 600,
+            "mean_us": 89.05051,
+            "p50_us": 86.49000000000001,
+            "p90_us": 97.1163,
+            "min_us": 70.936,
+            "max_us": 922.77
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 88.32397,
+            "p50_us": 85.75800000000001,
+            "p90_us": 96.4028,
+            "min_us": 70.334,
+            "max_us": 921.633
+          }
+        }
+      },
+      "thread_cpu_delta_us": -610.0992416666667,
+      "thread_cpu_reduction_fraction": 0.8735380375041802
+    },
+    {
+      "workflows": 156,
+      "retained_rounds": 64,
+      "invocations": 30108,
+      "events": 600,
+      "warmup_events": 20,
+      "features_per_event": 0,
+      "initially_waiting_invocations": 64,
+      "features_equal": true,
+      "graph_states_equal": true,
+      "runtime_counters_equal": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 600,
+            "mean_us": 19.506661666666666,
+            "p50_us": 19.864,
+            "p90_us": 21.9725,
+            "min_us": 14.789,
+            "max_us": 30.571
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 18.904323333333334,
+            "p50_us": 19.296,
+            "p90_us": 21.3417,
+            "min_us": 14.26,
+            "max_us": 25.042
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 600,
+            "mean_us": 22.360143333333333,
+            "p50_us": 22.9715,
+            "p90_us": 26.024600000000003,
+            "min_us": 15.49,
+            "max_us": 29.253
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 21.766581666666667,
+            "p50_us": 22.442,
+            "p90_us": 25.4221,
+            "min_us": 14.968,
+            "max_us": 28.498
+          }
+        }
+      },
+      "thread_cpu_delta_us": 2.862258333333333,
+      "thread_cpu_reduction_fraction": -0.15140760570289302
+    },
+    {
+      "workflows": 156,
+      "retained_rounds": 64,
+      "invocations": 30108,
+      "events": 600,
+      "warmup_events": 20,
+      "features_per_event": 1,
+      "initially_waiting_invocations": 64,
+      "features_equal": true,
+      "graph_states_equal": true,
+      "runtime_counters_equal": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 600,
+            "mean_us": 2457.695205,
+            "p50_us": 2464.709,
+            "p90_us": 2504.9398,
+            "min_us": 2326.256,
+            "max_us": 3907.946
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 2456.1393783333333,
+            "p50_us": 2463.3185000000003,
+            "p90_us": 2503.6106,
+            "min_us": 2324.447,
+            "max_us": 3906.791
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 600,
+            "mean_us": 40.8196,
+            "p50_us": 39.377,
+            "p90_us": 50.751999999999995,
+            "min_us": 27.509,
+            "max_us": 58.69
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 40.179923333333335,
+            "p50_us": 38.783500000000004,
+            "p90_us": 50.095600000000005,
+            "min_us": 26.881,
+            "max_us": 58.073
+          }
+        }
+      },
+      "thread_cpu_delta_us": -2415.959455,
+      "thread_cpu_reduction_fraction": 0.9836410247367158
+    },
+    {
+      "workflows": 156,
+      "retained_rounds": 64,
+      "invocations": 30108,
+      "events": 600,
+      "warmup_events": 20,
+      "features_per_event": 8,
+      "initially_waiting_invocations": 64,
+      "features_equal": true,
+      "graph_states_equal": true,
+      "runtime_counters_equal": true,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 600,
+            "mean_us": 2515.1329416666667,
+            "p50_us": 2516.9105,
+            "p90_us": 2575.3,
+            "min_us": 2331.113,
+            "max_us": 2638.922
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 2513.7604516666665,
+            "p50_us": 2515.4880000000003,
+            "p90_us": 2573.9616,
+            "min_us": 2329.803,
+            "max_us": 2637.598
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 600,
+            "mean_us": 88.71303333333333,
+            "p50_us": 87.768,
+            "p90_us": 100.8746,
+            "min_us": 71.31,
+            "max_us": 108.654
+          },
+          "thread_cpu": {
+            "count": 600,
+            "mean_us": 87.969625,
+            "p50_us": 87.0685,
+            "p90_us": 100.1018,
+            "min_us": 70.599,
+            "max_us": 107.796
+          }
+        }
+      },
+      "thread_cpu_delta_us": -2425.7908266666664,
+      "thread_cpu_reduction_fraction": 0.9650047700680172
+    }
+  ],
+  "scope": [
+    "Complete on_events plus features on deterministic causal cycles; both variants use identical events and clocks.",
+    "Includes zero/one/eight queries, retained terminal history, parallel family changes and read-only graph events.",
+    "Decode text is filtered before RCCG and is not modeled as a graph-version invalidator.",
+    "Preserve existing global WAIT_TOOL invocation counts; this is not a change to timing input semantics.",
+    "Model inference, sockets, native cache, DMA, GPU service and actual online event/query frequencies are excluded.",
+    "Alternating variant order; thread CPU and wall clocks are separate measurements."
+  ]
+}
