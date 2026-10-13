@@ -1,0 +1,1535 @@
+{
+  "observed_at_local": "2026-10-14T05:50:51.886466+08:00",
+  "status": "sealed_v54_released_tool_input_linkage_not_model_or_policy_qualification",
+  "counts": {
+    "active_tools_at_first_submit:1": 31,
+    "command_class:other": 7,
+    "command_class:python_inline": 1,
+    "command_class:python_script": 1,
+    "command_class:test_suite": 22,
+    "independent_waits": 31,
+    "is_child:False": 13,
+    "is_child:True": 18,
+    "previous_status:absent": 31
+  },
+  "rows": [
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:7fc528798410e279",
+      "context_epoch": 29,
+      "completion_ts_ms": 1791899317842.5908,
+      "early_full_bytes": 180367360,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 156211.93676757812,
+      "invocation_id": "deepagents-invocation:7fc528798410e279",
+      "first_submit_ts_ms": 1791899161572.7021,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13583-30d0-7d83-aaa6-f90ba268f456",
+          "start_ts_ms": 1791899152592.5706,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "other",
+            "observed_command_shape": "other",
+            "input_chars": 69,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": 299.61046266555786,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 8980.131591796875,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791899317842.5908,
+            "callback_duration_ms": 165250.0204410553,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 156269.888671875,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:7fc528798410e279",
+      "context_epoch": 30,
+      "completion_ts_ms": 1791899490392.9614,
+      "early_full_bytes": 54497280,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 113672.0791015625,
+      "invocation_id": "deepagents-invocation:7fc528798410e279",
+      "first_submit_ts_ms": 1791899376661.1824,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13585-fbdd-7291-a2de-da90c9b02c94",
+          "start_ts_ms": 1791899335646.2375,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "other",
+            "observed_command_shape": "other",
+            "input_chars": 92,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": 137.72472667694092,
+            "project_class_completed_support": 17,
+            "project_input_neighbor_duration_ms": 597.9332695007324,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 41014.94482421875,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791899490392.9614,
+            "callback_duration_ms": 154746.7237882614,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 113731.77905273438,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:184e3a0b6112ffa9",
+      "context_epoch": 31,
+      "completion_ts_ms": 1791899490467.42,
+      "early_full_bytes": 135147520,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 150762.87060546875,
+      "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+      "first_submit_ts_ms": 1791899339663.7505,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13585-fbf4-7430-bff0-62dd36e34701",
+          "start_ts_ms": 1791899335668.7805,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "other",
+            "observed_command_shape": "other",
+            "input_chars": 131,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": 137.72472667694092,
+            "project_class_completed_support": 17,
+            "project_input_neighbor_duration_ms": 597.9332695007324,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 3994.969970703125,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791899490467.42,
+            "callback_duration_ms": 154798.63940143585,
+            "callback_status": "success",
+            "single_callback_remaining_at_first_submit_ms": 150803.66943359375,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-12741:874cc5a30550",
+      "context_id": "deepagents:autonomous:django__django-12741:874cc5a30550:context:root",
+      "context_epoch": 31,
+      "completion_ts_ms": 1791899499978.8765,
+      "early_full_bytes": 163512320,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 26750.25,
+      "invocation_id": "deepagents:autonomous:django__django-12741:874cc5a30550:root",
+      "first_submit_ts_ms": 1791899473153.6372,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13588-12cf-7d90-810e-e9b35c6a37b3",
+          "start_ts_ms": 1791899472592.2095,
+          "causal_tool_start_attributes": {
+            "is_child": false,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 102,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": null,
+            "project_input_neighbor_support": null,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 561.427734375,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791899499978.8765,
+            "callback_duration_ms": 27386.666986465454,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 26825.2392578125,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:7fc528798410e279",
+      "context_epoch": 31,
+      "completion_ts_ms": 1791899670012.3684,
+      "early_full_bytes": 177684480,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 158963.98120117188,
+      "invocation_id": "deepagents-invocation:7fc528798410e279",
+      "first_submit_ts_ms": 1791899510989.3801,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13588-a2dd-7bb0-8bbe-98fc86c7a90a",
+          "start_ts_ms": 1791899509469.9849,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "other",
+            "observed_command_shape": "other",
+            "input_chars": 116,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": 137.72472667694092,
+            "project_class_completed_support": 21,
+            "project_input_neighbor_duration_ms": 597.9332695007324,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": 611.703784942627,
+            "project_shape_survivor_500ms_support": 7,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 1519.395263671875,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791899670012.3684,
+            "callback_duration_ms": 160542.38359165192,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 159022.98828125,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:184e3a0b6112ffa9",
+      "context_epoch": 33,
+      "completion_ts_ms": 1791899670165.3604,
+      "early_full_bytes": 270725120,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 96824.19653320312,
+      "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+      "first_submit_ts_ms": 1791899573286.1277,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13588-e2e1-7490-89de-590f392c2534",
+          "start_ts_ms": 1791899525857.6921,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "other",
+            "observed_command_shape": "other",
+            "input_chars": 121,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": 137.72472667694092,
+            "project_class_completed_support": 21,
+            "project_input_neighbor_duration_ms": 597.9332695007324,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": 611.703784942627,
+            "project_shape_survivor_500ms_support": 7,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 47428.435546875,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791899670165.3604,
+            "callback_duration_ms": 144307.66816997528,
+            "callback_status": "success",
+            "single_callback_remaining_at_first_submit_ms": 96879.23266601562,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:7fc528798410e279",
+      "context_epoch": 32,
+      "completion_ts_ms": 1791899841838.8467,
+      "early_full_bytes": 420270080,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 138600.45263671875,
+      "invocation_id": "deepagents-invocation:7fc528798410e279",
+      "first_submit_ts_ms": 1791899703064.8276,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a1358b-5975-72c2-a521-035749ecdc80",
+          "start_ts_ms": 1791899687286.2522,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "other",
+            "observed_command_shape": "other",
+            "input_chars": 117,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": 129.05959701538086,
+            "project_class_completed_support": 24,
+            "project_input_neighbor_duration_ms": 562.1760921478271,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": 619.9528708457947,
+            "project_shape_survivor_500ms_support": 8,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 15778.575439453125,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791899841838.8467,
+            "callback_duration_ms": 154552.59452915192,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 138774.01904296875,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+      "context_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:context:root",
+      "context_epoch": 14,
+      "completion_ts_ms": 1791899810771.1409,
+      "early_full_bytes": 234987520,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 89245.25805664062,
+      "invocation_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:root",
+      "first_submit_ts_ms": 1791899721395.1052,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a1358b-66b5-7c53-8a7d-57f0d45b7155",
+          "start_ts_ms": 1791899690678.6306,
+          "causal_tool_start_attributes": {
+            "is_child": false,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 99,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": null,
+            "project_input_neighbor_support": null,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 30716.474609375,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791899810771.1409,
+            "callback_duration_ms": 120092.5102443695,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 89376.03564453125,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-11119:7ad073658ab1",
+      "context_id": "deepagents:autonomous:django__django-11119:7ad073658ab1:context:root",
+      "context_epoch": 19,
+      "completion_ts_ms": 1791899877476.218,
+      "early_full_bytes": 83578880,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 3678.5634765625,
+      "invocation_id": "deepagents:autonomous:django__django-11119:7ad073658ab1:root",
+      "first_submit_ts_ms": 1791899873778.0579,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a1358e-2e30-70b2-afaa-5d193299e3a8",
+          "start_ts_ms": 1791899872817.1777,
+          "causal_tool_start_attributes": {
+            "is_child": false,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 87,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": null,
+            "project_input_neighbor_support": null,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 960.880126953125,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791899877476.218,
+            "callback_duration_ms": 4659.040314674377,
+            "callback_status": "success",
+            "single_callback_remaining_at_first_submit_ms": 3698.16015625,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-5262:2bf485d2d225",
+      "context_id": "deepagents:autonomous:pytest-dev__pytest-5262:2bf485d2d225:context:root",
+      "context_epoch": 19,
+      "completion_ts_ms": 1791899902086.65,
+      "early_full_bytes": 73441280,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 5790.517578125,
+      "invocation_id": "deepagents:autonomous:pytest-dev__pytest-5262:2bf485d2d225:root",
+      "first_submit_ts_ms": 1791899896250.2583,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a1358e-6728-72e0-9f06-9685505b1eed",
+          "start_ts_ms": 1791899887401.145,
+          "causal_tool_start_attributes": {
+            "is_child": false,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 128,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": null,
+            "project_input_neighbor_support": null,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 8849.11328125,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791899902086.65,
+            "callback_duration_ms": 14685.505096435547,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 5836.3916015625,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:7fc528798410e279",
+      "context_epoch": 36,
+      "completion_ts_ms": 1791900071432.5146,
+      "early_full_bytes": 43868160,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 162392.7724609375,
+      "invocation_id": "deepagents-invocation:7fc528798410e279",
+      "first_submit_ts_ms": 1791899908998.016,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a1358e-b0cb-71b1-ad08-a735bfdbe3bd",
+          "start_ts_ms": 1791899906251.5571,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "python_inline",
+            "observed_command_shape": "python_inline_unparsed",
+            "input_chars": 104,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": 448.1690602302551,
+            "project_class_completed_support": 64,
+            "project_input_neighbor_duration_ms": 434.1423316001892,
+            "project_input_neighbor_support": 6,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 2746.458984375,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791900071432.5146,
+            "callback_duration_ms": 165180.957695961,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 162434.49853515625,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:184e3a0b6112ffa9",
+      "context_epoch": 42,
+      "completion_ts_ms": 1791900072059.2046,
+      "early_full_bytes": 95088640,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 153979.55200195312,
+      "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+      "first_submit_ts_ms": 1791899918022.2778,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a1358e-caa7-7333-9fbf-813cb9c08c91",
+          "start_ts_ms": 1791899912871.3533,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "python_script",
+            "observed_command_shape": "python_script",
+            "input_chars": 139,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": 774.1004590988159,
+            "project_class_completed_support": 27,
+            "project_input_neighbor_duration_ms": 826.5499567985535,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": 776.7581272125244,
+            "project_shape_survivor_500ms_support": 24,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 5150.924560546875,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791900072059.2046,
+            "callback_duration_ms": 159187.85123062134,
+            "callback_status": "success",
+            "single_callback_remaining_at_first_submit_ms": 154036.9267578125,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3095:fa0d3057575d",
+      "context_id": "deepagents-context:0a06a52583810051",
+      "context_epoch": 62,
+      "completion_ts_ms": 1791899944049.34,
+      "early_full_bytes": 71475200,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 5359.743408203125,
+      "invocation_id": "deepagents-invocation:0a06a52583810051",
+      "first_submit_ts_ms": 1791899938671.912,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a1358f-12dd-7583-a187-8eae1a0bcb92",
+          "start_ts_ms": 1791899931357.9548,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 98,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": 4152.040437221527,
+            "project_class_completed_support": 24,
+            "project_input_neighbor_duration_ms": 4374.383229255676,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": 4152.040437221527,
+            "project_shape_survivor_500ms_support": 24,
+            "project_long_completed_median_ms": 4152.040437221527,
+            "project_long_completed_support": 24
+          },
+          "elapsed_at_first_submit_ms": 7313.957275390625,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791899944049.34,
+            "callback_duration_ms": 12691.385318756104,
+            "callback_status": "success",
+            "single_callback_remaining_at_first_submit_ms": 5377.427978515625,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "context_epoch": 50,
+      "completion_ts_ms": 1791899960118.3694,
+      "early_full_bytes": 157020160,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 5696.59326171875,
+      "invocation_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:root",
+      "first_submit_ts_ms": 1791899954386.7036,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a1358f-6a01-7573-afdd-74f4666576c2",
+          "start_ts_ms": 1791899953665.3901,
+          "causal_tool_start_attributes": {
+            "is_child": false,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 81,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": null,
+            "project_input_neighbor_support": null,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 721.3134765625,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791899960118.3694,
+            "callback_duration_ms": 6452.979363441467,
+            "callback_status": "success",
+            "single_callback_remaining_at_first_submit_ms": 5731.665771484375,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3095:fa0d3057575d",
+      "context_id": "deepagents-context:0a06a52583810051",
+      "context_epoch": 63,
+      "completion_ts_ms": 1791899970858.2957,
+      "early_full_bytes": 92200960,
+      "next_request_confirmed_full_reuse_bytes": 6307840,
+      "latest_early_ack_to_completion_ms": 5038.074462890625,
+      "invocation_id": "deepagents-invocation:0a06a52583810051",
+      "first_submit_ts_ms": 1791899965776.399,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a1358f-7698-7a31-9814-d3e223b92e2f",
+          "start_ts_ms": 1791899956889.1602,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 170,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": 4193.5649671554565,
+            "project_class_completed_support": 25,
+            "project_input_neighbor_duration_ms": 4022.384130001068,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": 4193.5649671554565,
+            "project_shape_survivor_500ms_support": 25,
+            "project_long_completed_median_ms": 4193.5649671554565,
+            "project_long_completed_support": 25
+          },
+          "elapsed_at_first_submit_ms": 8887.23876953125,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791899970858.2957,
+            "callback_duration_ms": 13969.135585784912,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 5081.896728515625,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "context_epoch": 58,
+      "completion_ts_ms": 1791900096018.5261,
+      "early_full_bytes": 56750080,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 4219.35205078125,
+      "invocation_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:root",
+      "first_submit_ts_ms": 1791900091705.803,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13591-78ce-7600-9886-0758100f1aba",
+          "start_ts_ms": 1791900088527.1956,
+          "causal_tool_start_attributes": {
+            "is_child": false,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 83,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": null,
+            "project_input_neighbor_support": null,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 3178.607421875,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791900096018.5261,
+            "callback_duration_ms": 7491.330527305603,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 4312.72314453125,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+      "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+      "context_epoch": 36,
+      "completion_ts_ms": 1791900311958.9336,
+      "early_full_bytes": 105861120,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 161793.84399414062,
+      "invocation_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:root",
+      "first_submit_ts_ms": 1791900150147.0737,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13592-2228-7d12-b30c-af75ced63fe7",
+          "start_ts_ms": 1791900131880.7344,
+          "causal_tool_start_attributes": {
+            "is_child": false,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_full",
+            "input_chars": 83,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": null,
+            "project_input_neighbor_support": null,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 18266.33935546875,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791900311958.9336,
+            "callback_duration_ms": 180078.19928836823,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 161811.85986328125,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "context_epoch": 66,
+      "completion_ts_ms": 1791900252947.63,
+      "early_full_bytes": 149073920,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 38080.351806640625,
+      "invocation_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:root",
+      "first_submit_ts_ms": 1791900214843.3613,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13593-52a7-7a13-82a1-2c87eced33c5",
+          "start_ts_ms": 1791900209831.7517,
+          "causal_tool_start_attributes": {
+            "is_child": false,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 92,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": null,
+            "project_input_neighbor_support": null,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 5011.609619140625,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791900252947.63,
+            "callback_duration_ms": 43115.878251075745,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 38104.2685546875,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pydata__xarray-6721:9efc8a1d5ea5",
+      "context_id": "deepagents-context:8a6253b32e0bd6d3",
+      "context_epoch": 76,
+      "completion_ts_ms": 1791900279328.2756,
+      "early_full_bytes": 87592960,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 5424.21240234375,
+      "invocation_id": "deepagents-invocation:8a6253b32e0bd6d3",
+      "first_submit_ts_ms": 1791900273843.0474,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13594-3cb5-7a52-8288-c48f65f9766c",
+          "start_ts_ms": 1791900269750.0884,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 128,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": 4170.983905315399,
+            "project_class_completed_support": 32,
+            "project_input_neighbor_duration_ms": 4015.0215878486633,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": 4170.983905315399,
+            "project_shape_survivor_500ms_support": 32,
+            "project_long_completed_median_ms": 4170.983905315399,
+            "project_long_completed_support": 32
+          },
+          "elapsed_at_first_submit_ms": 4092.958984375,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791900279328.2756,
+            "callback_duration_ms": 9578.1871175766,
+            "callback_status": "success",
+            "single_callback_remaining_at_first_submit_ms": 5485.228271484375,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+      "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+      "context_epoch": 37,
+      "completion_ts_ms": 1791900505737.2844,
+      "early_full_bytes": 48762880,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 163833.73974609375,
+      "invocation_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:root",
+      "first_submit_ts_ms": 1791900341828.8218,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13595-171e-79e0-8467-f469a1cdc9a3",
+          "start_ts_ms": 1791900325662.4207,
+          "causal_tool_start_attributes": {
+            "is_child": false,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_full",
+            "input_chars": 85,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": null,
+            "project_input_neighbor_support": null,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 16166.401123046875,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791900505737.2844,
+            "callback_duration_ms": 180074.86371421814,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 163908.46264648438,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:psf__requests-6028:85c9df3aa89f",
+      "context_id": "deepagents-context:7484410a872e1903",
+      "context_epoch": 89,
+      "completion_ts_ms": 1791900338721.0603,
+      "early_full_bytes": 4218880,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 5845.8798828125,
+      "invocation_id": "deepagents-invocation:7484410a872e1903",
+      "first_submit_ts_ms": 1791900332798.169,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13595-2afb-7021-b5a3-fc571751c34f",
+          "start_ts_ms": 1791900330747.472,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "other",
+            "observed_command_shape": "other",
+            "input_chars": 66,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": 101.03333377838135,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 2050.697021484375,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791900338721.0603,
+            "callback_duration_ms": 7973.58837890625,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 5922.891357421875,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-11095:67d9455d8566",
+      "context_id": "deepagents:autonomous:django__django-11095:67d9455d8566:context:root",
+      "context_epoch": 41,
+      "completion_ts_ms": 1791900381193.2212,
+      "early_full_bytes": 61521920,
+      "next_request_confirmed_full_reuse_bytes": 20746240,
+      "latest_early_ack_to_completion_ms": 6568.2958984375,
+      "invocation_id": "deepagents:autonomous:django__django-11095:67d9455d8566:root",
+      "first_submit_ts_ms": 1791900374568.7524,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13595-a4e5-77c0-8338-5b7f785cf1ea",
+          "start_ts_ms": 1791900361958.1035,
+          "causal_tool_start_attributes": {
+            "is_child": false,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 98,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": null,
+            "project_input_neighbor_support": null,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 12610.64892578125,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791900381193.2212,
+            "callback_duration_ms": 19235.11755657196,
+            "callback_status": "success",
+            "single_callback_remaining_at_first_submit_ms": 6624.46875,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-4661:52eff856c28a",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-4661:52eff856c28a:context:root",
+      "context_epoch": 35,
+      "completion_ts_ms": 1791900369598.9175,
+      "early_full_bytes": 198717440,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 7501.526611328125,
+      "invocation_id": "deepagents:autonomous:pylint-dev__pylint-4661:52eff856c28a:root",
+      "first_submit_ts_ms": 1791900362033.6348,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13595-a2b7-7321-b761-be8629946e9d",
+          "start_ts_ms": 1791900361400.462,
+          "causal_tool_start_attributes": {
+            "is_child": false,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 345,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": null,
+            "project_input_neighbor_support": null,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 633.1728515625,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791900369598.9175,
+            "callback_duration_ms": 8198.455515861511,
+            "callback_status": "success",
+            "single_callback_remaining_at_first_submit_ms": 7565.28271484375,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6903:7fb6fff00c5e",
+      "context_id": "deepagents-context:1b8929b15a78008c",
+      "context_epoch": 75,
+      "completion_ts_ms": 1791900373045.6143,
+      "early_full_bytes": 50073600,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 7243.200927734375,
+      "invocation_id": "deepagents-invocation:1b8929b15a78008c",
+      "first_submit_ts_ms": 1791900365715.0513,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13595-aee8-7362-9152-fbdffb1f437d",
+          "start_ts_ms": 1791900364520.5981,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 96,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": 1227.3706436157227,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": 1227.3706436157227,
+            "project_shape_survivor_500ms_support": 8,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 1194.453125,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791900373045.6143,
+            "callback_duration_ms": 8525.015995979309,
+            "callback_status": "success",
+            "single_callback_remaining_at_first_submit_ms": 7330.56298828125,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31:context:root",
+      "context_epoch": 4,
+      "completion_ts_ms": 1791900374367.893,
+      "early_full_bytes": 62115840,
+      "next_request_confirmed_full_reuse_bytes": 20766720,
+      "latest_early_ack_to_completion_ms": 8198.187255859375,
+      "invocation_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31:root",
+      "first_submit_ts_ms": 1791900366098.0671,
+      "whole_round_observed_tool_call_count": 2,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13595-b19a-7840-9cd3-30fe95ea70f0",
+          "start_ts_ms": 1791900365211.0364,
+          "causal_tool_start_attributes": {
+            "is_child": false,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 107,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": null,
+            "project_input_neighbor_support": null,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 887.03076171875,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791900374367.893,
+            "callback_duration_ms": 9156.856566429138,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 8269.825927734375,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-11095:67d9455d8566",
+      "context_id": "deepagents:autonomous:django__django-11095:67d9455d8566:context:root",
+      "context_epoch": 43,
+      "completion_ts_ms": 1791900413533.1987,
+      "early_full_bytes": 9297920,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 3299.175048828125,
+      "invocation_id": "deepagents:autonomous:django__django-11095:67d9455d8566:root",
+      "first_submit_ts_ms": 1791900410137.6963,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a13596-5d68-7c02-a100-4f50485d4afa",
+          "start_ts_ms": 1791900409193.211,
+          "causal_tool_start_attributes": {
+            "is_child": false,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_many_targets",
+            "input_chars": 251,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": null,
+            "project_class_completed_support": null,
+            "project_input_neighbor_duration_ms": null,
+            "project_input_neighbor_support": null,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": null,
+            "project_long_completed_support": null
+          },
+          "elapsed_at_first_submit_ms": 944.4853515625,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791900413533.1987,
+            "callback_duration_ms": 4339.987892150879,
+            "callback_status": "success",
+            "single_callback_remaining_at_first_submit_ms": 3395.50244140625,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+      "context_id": "deepagents-context:6f98bf861c2a987f",
+      "context_epoch": 190,
+      "completion_ts_ms": 1791902697090.1716,
+      "early_full_bytes": 2703360,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 132638.1962890625,
+      "invocation_id": "deepagents-invocation:6f98bf861c2a987f",
+      "first_submit_ts_ms": 1791902564351.3533,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a135b6-870c-72d1-9dc2-b0eea9108c81",
+          "start_ts_ms": 1791902517004.789,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_full",
+            "input_chars": 109,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": 731.6955990791321,
+            "project_class_completed_support": 64,
+            "project_input_neighbor_duration_ms": 1243.167628288269,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": 2586.1543865203857,
+            "project_long_completed_support": 6
+          },
+          "elapsed_at_first_submit_ms": 47346.564208984375,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791902697090.1716,
+            "callback_duration_ms": 180085.38258075714,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 132738.818359375,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+      "context_id": "deepagents-context:4edc59b238de24f8",
+      "context_epoch": 151,
+      "completion_ts_ms": 1791902697541.0686,
+      "early_full_bytes": 146534400,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 114900.14428710938,
+      "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+      "first_submit_ts_ms": 1791902582583.5122,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a135b6-89cc-7131-90c1-a8f232414476",
+          "start_ts_ms": 1791902517709.263,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 121,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": 731.6955990791321,
+            "project_class_completed_support": 64,
+            "project_input_neighbor_duration_ms": 661.3882436752319,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": 757.4617691040039,
+            "project_shape_survivor_500ms_support": 64,
+            "project_long_completed_median_ms": 2586.1543865203857,
+            "project_long_completed_support": 6
+          },
+          "elapsed_at_first_submit_ms": 64874.249267578125,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791902697541.0686,
+            "callback_duration_ms": 179831.80563545227,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 114957.55639648438,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+      "context_id": "deepagents-context:4edc59b238de24f8",
+      "context_epoch": 153,
+      "completion_ts_ms": 1791902906837.2075,
+      "early_full_bytes": 22978560,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 168525.08642578125,
+      "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+      "first_submit_ts_ms": 1791902738266.6409,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a135b9-ba61-7872-aa86-1296bbee35a1",
+          "start_ts_ms": 1791902726754.284,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_full",
+            "input_chars": 97,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": 738.4640264511108,
+            "project_class_completed_support": 64,
+            "project_input_neighbor_duration_ms": 786.2986545562744,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": 2435.267478942871,
+            "project_long_completed_support": 7
+          },
+          "elapsed_at_first_submit_ms": 11512.35693359375,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791902906837.2075,
+            "callback_duration_ms": 180082.92352962494,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 168570.56665039062,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+      "context_id": "deepagents-context:6f98bf861c2a987f",
+      "context_epoch": 193,
+      "completion_ts_ms": 1791903086912.2805,
+      "early_full_bytes": 10567680,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 336611.2307128906,
+      "invocation_id": "deepagents-invocation:6f98bf861c2a987f",
+      "first_submit_ts_ms": 1791902750261.1348,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a135b9-ea79-72a0-9158-13d04c7950c6",
+          "start_ts_ms": 1791902739065.9758,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_full",
+            "input_chars": 116,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": 737.292637348175,
+            "project_class_completed_support": 64,
+            "project_input_neighbor_duration_ms": 789.8111443519592,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": null,
+            "project_shape_survivor_500ms_support": null,
+            "project_long_completed_median_ms": 2435.267478942871,
+            "project_long_completed_support": 7
+          },
+          "elapsed_at_first_submit_ms": 11195.158935546875,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791903086912.2805,
+            "callback_duration_ms": 347846.304643631,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 336651.1457519531,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+      "context_id": "deepagents-context:4edc59b238de24f8",
+      "context_epoch": 154,
+      "completion_ts_ms": 1791903087020.0327,
+      "early_full_bytes": 166195200,
+      "next_request_confirmed_full_reuse_bytes": 0,
+      "latest_early_ack_to_completion_ms": 156123.935546875,
+      "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+      "first_submit_ts_ms": 1791902930837.1892,
+      "whole_round_observed_tool_call_count": 1,
+      "whole_round_completion_evidence": "whole_tool_request_round",
+      "active_tool_inputs": [
+        {
+          "tool_run_id": "01a135bc-b1ea-74d2-b4db-74d799454aa3",
+          "start_ts_ms": 1791902921195.1978,
+          "causal_tool_start_attributes": {
+            "is_child": true,
+            "tool_name": "execute",
+            "tool_family": "other",
+            "backend_class": "execute",
+            "observed_command_class": "test_suite",
+            "observed_command_shape": "test_suite_targeted",
+            "input_chars": 133,
+            "previous_same_input_status": null,
+            "previous_same_input_duration_ms": null,
+            "project_class_duration_median_ms": 685.0310482978821,
+            "project_class_completed_support": 64,
+            "project_input_neighbor_duration_ms": 688.1074981689453,
+            "project_input_neighbor_support": 8,
+            "project_shape_survivor_500ms_total_median_ms": 811.0906023979187,
+            "project_shape_survivor_500ms_support": 64,
+            "project_long_completed_median_ms": 2586.1543865203857,
+            "project_long_completed_support": 8
+          },
+          "elapsed_at_first_submit_ms": 9641.991455078125,
+          "offline_labels": {
+            "callback_end_ts_ms": 1791903087020.0327,
+            "callback_duration_ms": 165824.83475399017,
+            "callback_status": "error",
+            "single_callback_remaining_at_first_submit_ms": 156182.84350585938,
+            "actual_backend_execution_start": "unobserved"
+          }
+        }
+      ]
+    }
+  ],
+  "source_sha256": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v334_v54_final_wait_prefetch_20261014.json.gz": "7f4ae2960aa5fa4c6b787667fb32bb36e1227128ce06b6b326001f5a85918d3d",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v369_v54_restore_protection_population_20261014.json": "f1bcc83e20eaf0eb7b65a9ec1c6af9f321be06944f0bcdc6673500963f4c1c82",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v341_v54_tool_forecast_linked_inputs_20261014.json": "5861ffcf720e7b5148d6ecdb5533a5378c685dced78bec6f10aa47a8361917ad",
+    "/home/longhao/experiment/ops/audit_v54_expired_tool_inputs.py": "0c3e3b78278b1bae63d367dd934748420d5988ed8235690ae41738387b341c7e"
+  },
+  "client_monotonic_to_wall_offset_ms": 1785829736899.4338,
+  "client_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11095/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 2326209,
+      "complete_prefix_sha256": "0b00c922cd5eec0b2f3c49d713a2fc905cba39613aed75aa5a2482fdde1f95b2",
+      "first_read_limit_bytes": 2326209
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11119/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1244391,
+      "complete_prefix_sha256": "f108410552fc90c6f0544b252690bf51525c48406f71a5f061189e681067f4d9",
+      "first_read_limit_bytes": 1244391
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11211/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 4722130,
+      "complete_prefix_sha256": "4716fedde9b568f5d620cc513f91274a9528c887e7da0bcb3aaa2c0cdecb65e4",
+      "first_read_limit_bytes": 4722130
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11451/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1029760,
+      "complete_prefix_sha256": "e56b1c94cf138c29c10920c6352d8b8bc25614e5a66a57e0cdf691236b7ba10a",
+      "first_read_limit_bytes": 1029760
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12741/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1103127,
+      "complete_prefix_sha256": "0ede9430851b4fcfb0b4ab16c605be2a042e205e0f736c36df2362143c160eab",
+      "first_read_limit_bytes": 1103127
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-15315/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1608292,
+      "complete_prefix_sha256": "4d1dde47bf9fbfad6e50fd0125dce87681bdeefe09f04c90f7e2ca36026c502e",
+      "first_read_limit_bytes": 1608292
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/psf__requests-6028/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 2292778,
+      "complete_prefix_sha256": "6bb86adc42a73e3efef670b05d15bc2369b078f5052916a0cf438bee15db45bf",
+      "first_read_limit_bytes": 2292778
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-3095/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 4271999,
+      "complete_prefix_sha256": "5ea2c435b81dad2517743e2370533da12f3110ca55796b1c39de12dc1f0c7773",
+      "first_read_limit_bytes": 4271999
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pydata__xarray-6721/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 2579918,
+      "complete_prefix_sha256": "30d68786f651b136c0958ea06492661e9c8eb1efa4ecb832986e04f0fb3f9041",
+      "first_read_limit_bytes": 2579918
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-4661/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1879874,
+      "complete_prefix_sha256": "b15d63d0dabc730f6a30a87cb9322689c8145fe8af252cd48e179cbe795ecfd8",
+      "first_read_limit_bytes": 1879874
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-6386/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1938443,
+      "complete_prefix_sha256": "6e1c7f489fdd9098258a2cfb73ccf6dc692e32dcc4d4b6d5a6905601e42bf9f4",
+      "first_read_limit_bytes": 1938443
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 3587919,
+      "complete_prefix_sha256": "f25babb7f3bcc147ab36c385151a43cd1e182035cf04de82cfb57383db8d1064",
+      "first_read_limit_bytes": 3587919
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-6903/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 2758802,
+      "complete_prefix_sha256": "aceb691965fa68b80712f2214ca0fa1dadaf784e4adf02ad91d6aa2bf52658c8",
+      "first_read_limit_bytes": 2758802
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-8898/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1314873,
+      "complete_prefix_sha256": "7c015487758722c360b4f026be47dedf0337a7fb08d5316c3f2706db23bb4425",
+      "first_read_limit_bytes": 1314873
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pytest-dev__pytest-5262/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1213479,
+      "complete_prefix_sha256": "98da0e4ee3874f5f50f77eddb7360155b10cbea674d7286b625d08c83d707880",
+      "first_read_limit_bytes": 1213479
+    }
+  },
+  "scope": [
+    "All31 selected early-FULL waits with protection released before whole-round completion.",
+    "Legacy callback context/epoch omissions are handled by exact workflow/invocation/tool_run_id and sealed clock evidence.",
+    "Use only tool-start metadata available before first actual H2D submit as causal inputs.",
+    "Completions are diagnostic labels; a single callback duration is not backend execution time or a multi-call round label.",
+    "Unknown or multiple active calls remain explicit; no ordinal fallback or fabricated completion.",
+    "No model, eligibility flag, ETA offset, global lease, workload or frozen V55 execution changed."
+  ]
+}
