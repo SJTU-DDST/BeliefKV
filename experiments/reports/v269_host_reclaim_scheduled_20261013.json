@@ -1,0 +1,110 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-13T13:01:13.216365+08:00",
+  "live_state_path": "/home/longhao/experiment/BeliefKV/experiments/reports/v50_launch_after_v49_20261013.json",
+  "snapshot_sha256": "ffebee65b12e66aaf69527f178a1145c7cc416fe8c5c1f7634a3feef229fd9be",
+  "snapshot": {
+    "status": "waiting_for_previous_pair",
+    "previous_collection_scope": "completed_pair",
+    "previous_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v49",
+    "previous_code_commit": "69beb35cdb7eafa6e6c8399bff4484222ec8c189",
+    "previous_patch_sha256": "3698ce2f8eca9be50cebfecbf25a698f93b872227683ac9fe4671e2dc74480c1",
+    "previous_execution_root": "/home/longhao/experiment/BeliefKV",
+    "previous_execution_verification": {
+      "collection_code_commit": "69beb35cdb7eafa6e6c8399bff4484222ec8c189",
+      "verification_code_commit": "5aeeb0593aafcbd224987f84da358ad010ad9bf4",
+      "execution_source_unchanged": true,
+      "non_execution_paths": [
+        "docs/",
+        "tests/",
+        "experiments/archive/README.md",
+        "experiments/reports/*.json",
+        "experiments/reports/*.json.gz",
+        "experiments/reports/*.raw.gz",
+        "experiments/reports/*.md",
+        "scripts/summarize_semantic_h2d_ab.py",
+        "scripts/launch_semantic_h2d_after_pair.py"
+      ],
+      "changed_committed_paths": [
+        "docs/architecture_status_zh.md",
+        "docs/beliefkv_design.md",
+        "docs/experiment_operating_notes_zh.md",
+        "docs/implementation_plan.md",
+        "docs/v0520_scheduler_redesign_zh.md",
+        "experiments/archive/README.md",
+        "experiments/reports/v261_v48_development_stop_20261013.json",
+        "experiments/reports/v261_v48_final_wait_prefetch_20261013.json.gz",
+        "experiments/reports/v261_v48_final_wait_prefetch_20261013_summary.json",
+        "experiments/reports/v261_v48_workspace_archive_20261013.json",
+        "experiments/reports/v262_v49_deployment_validation_20261013.json",
+        "experiments/reports/v263_v48_cutoff_qualification_20261013.json",
+        "experiments/reports/v264_v29_complete_jct_recheck_20261013.json"
+      ],
+      "execution_root": "/home/longhao/experiment/BeliefKV"
+    },
+    "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v267-host-reclaim-20261013",
+    "target_revision": "82b42d5bf0b7277b9ae78b7f3db7923c22353b54",
+    "target_patch_sha256": "10ea49f7513ff1c0eaa2f065cc69036e127452f1b627c962ddbf10d41d6d16a9",
+    "new_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v50",
+    "wait_process_identities": {
+      "4048550": [
+        "S",
+        1,
+        "603254271"
+      ],
+      "4048792": [
+        "R",
+        4048774,
+        "603254531"
+      ],
+      "4049175": [
+        "R",
+        4048792,
+        "603255858"
+      ],
+      "4050789": [
+        "S",
+        4048774,
+        "603271083"
+      ]
+    },
+    "environment": {
+      "PYTHON": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "RUN_ROOT": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v50",
+      "ROOT_COUNT": "156",
+      "ARRIVAL_BATCH_SIZE": "108",
+      "ARRIVAL_BATCH_INTERVAL_MS": "3600000",
+      "ARM_ORDER": "predictive_h2d",
+      "RESUME_PENDING": "0",
+      "HOST_SPLIT": "80:20",
+      "PORT": "18455",
+      "SAMPLING_SEED": "21",
+      "REPETITION_ID": "0",
+      "ACTIVATION_WALL_CLOCK_SECONDS": "14400.0",
+      "SEMANTIC_REPORT_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/child_semantic_work_live_v7_quantiles/semantic_event_calibrated.json",
+      "PREPARE_HOST": "1",
+      "EXECUTION_HANDOFF": "0",
+      "H2D_SEED_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/native_h2d_ack_seed_20261004.json",
+      "TOOL_TIMING_ARTIFACT": "/home/longhao/experiment/BeliefKV/experiments/models/qwen35_native_event_horizons_20260928_calibrated.json",
+      "TRANSFER_SERVICE_SEED": "/home/longhao/experiment/BeliefKV/experiments/models/native_transfer_service_seed_v4.json",
+      "ENABLE_TOOL_TIMING": "1",
+      "PREFETCH_LEAD_MS": "2000",
+      "SEMANTIC_WORK_STATISTIC": "center",
+      "EOS_PROTOCOL_WINDOW_MS": "250",
+      "FANOUT_PROFILE": "native_in_graph_2to4",
+      "CHILD_FINAL_REPORT_SHADOW": "1",
+      "WORKLOAD_MANIFEST": "/home/longhao/experiment/BeliefKV/configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json",
+      "NATIVE_REFERENCE_RUN": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29"
+    },
+    "native_reference_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29",
+    "registered_at_utc": "2026-10-13T04:58:57.046549+00:00"
+  },
+  "coordinator_identity": {
+    "pid": 1250265,
+    "parent": 1,
+    "start_ticks": "603779941"
+  },
+  "launcher_helper_sha256": "5a857b505ab18e61f0052587b15732dc9143a4de9b9603b7b63836414c4b8e0d",
+  "launcher_helper_utf8_source": "\"\"\"Queue the qualified Host reclaim fix after V49's complete collection.\"\"\"\n\nimport hashlib\nimport json\nfrom pathlib import Path\nimport subprocess\n\nMAIN = Path(\"/home/longhao/experiment/BeliefKV\")\nTARGET = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v267-host-reclaim-20261013\")\nPYTHON = \"/home/longhao/miniconda3/envs/beliefkv-next/bin/python\"\nSTATE = MAIN / \"experiments/reports/v50_launch_after_v49_20261013.json\"\nLOG = STATE.with_suffix(\".log\")\nRUN = MAIN / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v50\"\nPREVIOUS = MAIN / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v49\"\nif any(path.exists() for path in (STATE, LOG, RUN)):\n    raise ValueError(\"preserve existing launch state\")\nrevision = subprocess.check_output(\n    [\"git\", \"rev-parse\", \"HEAD\"], cwd=TARGET, text=True,\n).strip()\nexpected = subprocess.check_output(\n    [\"git\", \"rev-parse\", \"82b42d5\"], cwd=TARGET, text=True,\n).strip()\nif revision != expected:\n    raise ValueError(\"target commit changed\")\nqualification = json.loads(\n    (TARGET / \"experiments/reports/v268_host_reclaim_qualification_20261013.json\").read_bytes()\n)\nif qualification[\"passed\"] != 113 or qualification[\"qualification_returncode\"]:\n    raise ValueError(\"candidate not qualified\")\nfor path, digest in qualification[\"qualified_paths_sha256\"].items():\n    if hashlib.sha256((TARGET / path).read_bytes()).hexdigest() != digest:\n        raise ValueError(f\"qualified source changed: {path}\")\nexpected_processes = {\n    4048550: (\"1\", \"603254271\"),\n    4048792: (None, \"603254531\"),\n    4049175: (\"4048792\", \"603255858\"),\n    4050789: (None, \"603271083\"),\n}\nfor pid, (parent, ticks) in expected_processes.items():\n    raw = Path(f\"/proc/{pid}/stat\").read_text()\n    fields = raw[raw.rfind(\")\") + 2:].split()\n    if fields[0] == \"Z\" or fields[19] != ticks or parent is not None and fields[1] != parent:\n        raise ValueError(f\"V49 process identity changed: {pid}\")\nargs = [\n    PYTHON, str(TARGET / \"scripts/launch_semantic_h2d_after_pair.py\"),\n    \"--repo\", str(MAIN), \"--previous-run\", str(PREVIOUS),\n    \"--target-checkout\", str(TARGET), \"--run-root\", str(RUN),\n    \"--state\", str(STATE), \"--port\", \"18455\",\n    \"--arm-order\", \"predictive_h2d\", \"--execution-handoff\", \"0\",\n]\nfor pid in expected_processes:\n    args.extend((\"--wait-pid\", str(pid)))\nwith LOG.open(\"xb\") as stream:\n    process = subprocess.Popen(\n        args, cwd=MAIN, stdout=stream, stderr=subprocess.STDOUT, start_new_session=True,\n    )\nprint(json.dumps({\n    \"coordinator_pid\": process.pid, \"state\": str(STATE), \"log\": str(LOG),\n    \"target_revision\": revision, \"wait_for_complete_v49\": True,\n}))\n",
+  "semantics": "Queued, not deployed or performance-qualified. V49 must complete postprocessing before V50 starts; the fixed native is a development reference."
+}

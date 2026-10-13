@@ -2,6 +2,15 @@
 
 Status date: 2026-10-13.
 
+Commit 82b42d5 is qualified by 113 checks against the exact reconstructed
+engine; the original implementation reproduces all three no-scan regressions.
+V50 was queued at 12:58:57 CST on October 13, coordinator PID1250265.
+It waits for complete V49 outcomes, HTML/workspace postprocessing and
+process exit, then cold-deploys the frozen commit and runs predictive only.
+108+48 arrivals, Host80:20, tool180s and fixed V29 native reference remain.
+V49 is still collecting; V50 has no performance result yet. Main's
+`experiments/reports/v50_launch_after_v49_20261013.json` is the live receipt.
+
 Current bottleneck work (V265-V268): disabling demand handoff reduced
 instrumented exclusive Python wall from 55.537 to 39.679s in the complete
 600-900s window, but V49 still produced 318714/380722 decode request steps.
