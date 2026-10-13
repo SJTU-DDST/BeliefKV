@@ -1,4 +1,5 @@
 from types import SimpleNamespace as NS
+from unittest.mock import patch
 
 from beliefkv.runtime.restore_wait_probe import RestoreWaitProbe
 
@@ -91,3 +92,27 @@ def test_sample_queue_is_bounded_without_stopping_execution():
     probe.poll()
     assert probe.begin(batch(), device) is None
     assert probe.begin(batch(), device) is not None
+
+
+def test_observed_span_includes_interlayer_dispatch_and_preserves_wait_accounting():
+    device = Device()
+    probe = RestoreWaitProbe(every=1)
+    sample = probe.begin(batch(), device)
+    with patch(
+        "beliefkv.runtime.restore_wait_probe.time.monotonic",
+        side_effect=[1., 1.001, 1.008, 1.010],
+    ):
+        sample.wait(device, 7, 0)
+        device.clock += 4.
+        sample.wait(device, 2, 0)
+    assert device.event_count == 4
+    assert probe.poll() == []
+    device.ready = True
+    row, = probe.poll()
+    assert row["gpu_layer_dependency_wait_ms"] == 11.
+    assert row["gpu_observed_layer_span_ms"] == 15.
+    assert abs(row["cpu_observed_layer_span_ms"] - 10.) < 1e-6
+    assert abs(row["cpu_layer_wait_enqueue_ms"] - 3.) < 1e-6
+    assert abs(row["layers"][0]["cpu_wait_enqueue_ms"] - 1.) < 1e-6
+    assert abs(row["layers"][1]["cpu_wait_enqueue_ms"] - 2.) < 1e-6
+    assert "CPU submission gaps" in row["span_semantics"]

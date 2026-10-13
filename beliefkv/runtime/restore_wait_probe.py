@@ -22,10 +22,11 @@ class _Sample:
         stream = self.device.current_stream()
         start = self.device.Event(enable_timing=True)
         finish = self.device.Event(enable_timing=True)
+        cpu_start = time.monotonic()
         start.record(stream=stream)
         loading_event.wait(layer)
         finish.record(stream=stream)
-        self.layers[layer] = (consumer, start, finish)
+        self.layers[layer] = (consumer, start, finish, cpu_start, time.monotonic())
 
 
 class RestoreWaitProbe:
@@ -74,17 +75,31 @@ class RestoreWaitProbe:
             if not sample.layers:
                 self.counts["samples_without_python_layer_wait"] += 1
                 continue
-            if not all(finish.query() for _, _, finish in sample.layers.values()):
+            if not all(pair[2].query() for pair in sample.layers.values()):
                 retained.append(sample)
                 continue
             layers = [{
                 "layer": layer, "consumer_index": consumer,
                 "gpu_wait_ms": max(0., start.elapsed_time(finish)),
-            } for layer, (consumer, start, finish) in sample.layers.items()]
+                "cpu_wait_enqueue_ms": max(0., (cpu_finish - cpu_start) * 1000.),
+            } for layer, (consumer, start, finish, cpu_start, cpu_finish)
+                in sample.layers.items()]
+            first, last = next(iter(sample.layers.values())), next(
+                reversed(sample.layers.values()),
+            )
             records.append({
                 **sample.metadata, "layers": layers,
                 "gpu_layer_dependency_wait_ms": sum(row["gpu_wait_ms"] for row in layers),
                 "gpu_layer_dependency_wait_max_ms": max(row["gpu_wait_ms"] for row in layers),
+                "gpu_observed_layer_span_ms": max(0., first[1].elapsed_time(last[2])),
+                "cpu_observed_layer_span_ms": max(0., (last[4] - first[3]) * 1000.),
+                "cpu_layer_wait_enqueue_ms": sum(row["cpu_wait_enqueue_ms"] for row in layers),
+                "span_semantics": (
+                    "first observed layer-wait start through last observed wait end; "
+                    "GPU span includes kernels and CPU submission gaps between layers; "
+                    "CPU span includes dispatch between waits; neither is a complete "
+                    "forward or exclusive kernel duration"
+                ),
             })
             self.counts["completed_samples"] += 1
         self._pending = retained
