@@ -2,6 +2,21 @@
 
 Status date: 2026-10-14.
 
+Commit6186577 avoids a shared-ancestor state table for a single FULL leaf in
+the ordering hint. Full ancestry, node identity/cycle, namespace, pending and
+live residency checks stay intact; multiple branches retain the shared table.
+V351 uses the qualified engine RadixKey and48 identical CPU fixtures spanning
+1/8 leaves,4/8/256/1024 depths, mixed/Host/device/pending/short/foreign inputs.
+Outputs match. One-leaf non-namespace thread CPU improves median13.13%;
+multi-leaf median regresses1.89% and worst9.87%. Preserve these regressions;
+online leaf/depth frequency and actual gains remain unmeasured. Hints are still
+input-unverified ordering evidence, not restoration authority.
+769 checks and two subchecks pass. V353 binds19 sources plus both CPU candidates
+and unchanged f7e0a895/a8f4ea97. Update the V55 frozen target and registration
+for a permitted cold launch; do not deploy before06:00 or while another GPU
+job is active. Real phase/service/consumption and same-version JCT acceptance
+remain outstanding despite the local CPU improvements.
+
 Commit978bdc9 removes eager temporary deque allocation from every semantic
 decode callback. Allocate once for a new request; retain both empty and
 nonempty histories and the existing progress/marker/EOS behavior. V347 compares

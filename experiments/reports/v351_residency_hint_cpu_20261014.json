@@ -1,0 +1,2458 @@
+{
+  "observed_at_local": "2026-10-14T04:00:51.757397+08:00",
+  "status": "same_input_cpu_hint_comparison_not_gpu_or_jct_evidence",
+  "baseline_revision": "5deec7ae6ca708b9f4f8461a83a8fa794ee75402",
+  "baseline_source_sha256": "1a96144b9d7f74f8b79ddb939371f4a177118440f67a35be66dab61d9ea81506",
+  "candidate_source_sha256": "f53b15523badf3f31123f14300b3fda60a503d3c0cf1cfbf71df19713e112ec5",
+  "helper_sha256": "b4b5fcda107ac386a1e4a1fd0bec70dbb016b22436b9707c1af026d7554c7690",
+  "engine": "/home/longhao/experiment/.worktrees/sglang-v320-prefill-turnover-20261013",
+  "engine_source_sha256": {
+    "python/sglang/srt/mem_cache/radix_cache.py": "05e6332956b0ac4f256eff26303779b2511c93ab4c61621a2bf7491cbb1ba402",
+    "python/sglang/srt/mem_cache/unified_radix_cache.py": "7800f84c46feb41a7a4ede1c741deea886e80f305ab87384395cf7efde3ab37f"
+  },
+  "cases": [
+    {
+      "tokens": 32768,
+      "depth": 4,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "mixed",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 0,
+        "missing_full_tokens": 16384,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 8.011903333333333,
+            "p50_us": 7.987550000000001,
+            "min_us": 7.727375,
+            "max_us": 8.8515
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 7.988696666666667,
+            "p50_us": 7.971525,
+            "min_us": 7.712275,
+            "max_us": 8.757325000000002
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 7.1882383333333335,
+            "p50_us": 7.18745,
+            "min_us": 6.972325,
+            "max_us": 7.4621
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 7.169651666666667,
+            "p50_us": 7.169449999999999,
+            "min_us": 6.956825,
+            "max_us": 7.438
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.10252548496646718
+    },
+    {
+      "tokens": 32768,
+      "depth": 4,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "resident",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 32768,
+        "missing_full_tokens": 0,
+        "missing_mamba_slots": 0,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 7.623901666666667,
+            "p50_us": 7.5964,
+            "min_us": 7.417825,
+            "max_us": 7.926175
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 7.605945,
+            "p50_us": 7.581075,
+            "min_us": 7.401375,
+            "max_us": 7.889774999999999
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 6.766905,
+            "p50_us": 6.760800000000001,
+            "min_us": 6.4737,
+            "max_us": 7.035425
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 6.750236666666667,
+            "p50_us": 6.746524999999999,
+            "min_us": 6.456975000000001,
+            "max_us": 7.011325
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.11250519604511122
+    },
+    {
+      "tokens": 32768,
+      "depth": 4,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "host_only",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 0,
+        "missing_full_tokens": 32768,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 8.199856666666667,
+            "p50_us": 8.18955,
+            "min_us": 8.003625,
+            "max_us": 8.5336
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 8.183103333333333,
+            "p50_us": 8.1723,
+            "min_us": 7.98805,
+            "max_us": 8.517625
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 7.577026666666667,
+            "p50_us": 7.5685,
+            "min_us": 7.3473999999999995,
+            "max_us": 7.88605
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 7.561136666666666,
+            "p50_us": 7.551925,
+            "min_us": 7.331275,
+            "max_us": 7.871449999999999
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.0760062095431604
+    },
+    {
+      "tokens": 32768,
+      "depth": 4,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": true,
+      "state": "short_input",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 5.847518333333333,
+            "p50_us": 5.79125,
+            "min_us": 5.563825,
+            "max_us": 6.561125
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 5.8309750000000005,
+            "p50_us": 5.7762,
+            "min_us": 5.5476,
+            "max_us": 6.5436000000000005
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 5.5988,
+            "p50_us": 5.598,
+            "min_us": 5.311975,
+            "max_us": 5.745550000000001
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 5.582751666666667,
+            "p50_us": 5.580325,
+            "min_us": 5.296,
+            "max_us": 5.729475000000001
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.042569781783206695
+    },
+    {
+      "tokens": 32768,
+      "depth": 4,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "namespace",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 3.643641666666667,
+            "p50_us": 3.5859,
+            "min_us": 3.4930250000000003,
+            "max_us": 4.0316
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 3.62228,
+            "p50_us": 3.569875,
+            "min_us": 3.478225,
+            "max_us": 3.984125
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 3.59184,
+            "p50_us": 3.551475,
+            "min_us": 3.383675,
+            "max_us": 3.957275
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 3.573445,
+            "p50_us": 3.53655,
+            "min_us": 3.3669000000000002,
+            "max_us": 3.9086
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.01348184016696663
+    },
+    {
+      "tokens": 32768,
+      "depth": 4,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "pending",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 7.45301,
+            "p50_us": 7.398575,
+            "min_us": 7.06145,
+            "max_us": 8.0462
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 7.434575,
+            "p50_us": 7.382899999999999,
+            "min_us": 7.04655,
+            "max_us": 7.9882
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 6.709615,
+            "p50_us": 6.6673,
+            "min_us": 6.517225000000001,
+            "max_us": 7.137
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 6.693696666666667,
+            "p50_us": 6.65125,
+            "min_us": 6.501725,
+            "max_us": 7.121524999999999
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.09965308485465985
+    },
+    {
+      "tokens": 32768,
+      "depth": 4,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "mixed",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 0,
+        "missing_full_tokens": 16384,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 26.315356666666666,
+            "p50_us": 26.22115,
+            "min_us": 25.469675,
+            "max_us": 27.21745
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 26.296516666666665,
+            "p50_us": 26.20595,
+            "min_us": 25.4518,
+            "max_us": 27.201525
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 28.097168333333332,
+            "p50_us": 28.099575,
+            "min_us": 27.341825,
+            "max_us": 29.066875
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 28.07917666666667,
+            "p50_us": 28.0832,
+            "min_us": 27.32545,
+            "max_us": 29.04375
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.0677907276692542
+    },
+    {
+      "tokens": 32768,
+      "depth": 4,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "resident",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 32768,
+        "missing_full_tokens": 0,
+        "missing_mamba_slots": 0,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 24.578206666666667,
+            "p50_us": 24.645525000000003,
+            "min_us": 23.917849999999998,
+            "max_us": 25.107950000000002
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 24.560196666666666,
+            "p50_us": 24.630225,
+            "min_us": 23.9034,
+            "max_us": 25.092975
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 26.290551666666666,
+            "p50_us": 26.321675,
+            "min_us": 25.487724999999998,
+            "max_us": 27.2238
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 26.273023333333335,
+            "p50_us": 26.3033,
+            "min_us": 25.4707,
+            "max_us": 27.206400000000002
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.0697399410075299
+    },
+    {
+      "tokens": 32768,
+      "depth": 4,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "host_only",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 0,
+        "missing_full_tokens": 32768,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 27.083385,
+            "p50_us": 27.01095,
+            "min_us": 26.22615,
+            "max_us": 27.952025000000003
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 27.064123333333335,
+            "p50_us": 26.99455,
+            "min_us": 26.207900000000002,
+            "max_us": 27.932875
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 28.879133333333332,
+            "p50_us": 28.810875,
+            "min_us": 28.17905,
+            "max_us": 29.616225
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 28.860436666666665,
+            "p50_us": 28.79375,
+            "min_us": 28.161925,
+            "max_us": 29.597224999999998
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.06637249288325964
+    },
+    {
+      "tokens": 32768,
+      "depth": 4,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": true,
+      "state": "short_input",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 15.462703333333334,
+            "p50_us": 15.376425,
+            "min_us": 15.21325,
+            "max_us": 16.38255
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 15.445096666666666,
+            "p50_us": 15.361,
+            "min_us": 15.19765,
+            "max_us": 16.350649999999998
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 15.753486666666667,
+            "p50_us": 15.747825,
+            "min_us": 15.519125,
+            "max_us": 16.098125
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 15.736978333333333,
+            "p50_us": 15.731399999999999,
+            "min_us": 15.501925,
+            "max_us": 16.081225
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.018898014882393177
+    },
+    {
+      "tokens": 32768,
+      "depth": 4,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "namespace",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 4.115938333333333,
+            "p50_us": 4.094075,
+            "min_us": 3.9538249999999997,
+            "max_us": 4.5036499999999995
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 4.098905,
+            "p50_us": 4.077475,
+            "min_us": 3.939975,
+            "max_us": 4.46345
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 4.227796666666666,
+            "p50_us": 4.20835,
+            "min_us": 4.101225,
+            "max_us": 4.5873
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 4.211926666666667,
+            "p50_us": 4.193725000000001,
+            "min_us": 4.086025,
+            "max_us": 4.566925
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.02757362433788213
+    },
+    {
+      "tokens": 32768,
+      "depth": 4,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "pending",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 25.131206666666667,
+            "p50_us": 24.9271,
+            "min_us": 24.339175,
+            "max_us": 26.0865
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 25.111675,
+            "p50_us": 24.908875,
+            "min_us": 24.32345,
+            "max_us": 26.0518
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 27.607286666666667,
+            "p50_us": 27.6008,
+            "min_us": 26.7147,
+            "max_us": 28.9045
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 27.589256666666667,
+            "p50_us": 27.583875,
+            "min_us": 26.693475,
+            "max_us": 28.883875
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.09866254109559258
+    },
+    {
+      "tokens": 32768,
+      "depth": 8,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "mixed",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 16384,
+        "missing_full_tokens": 16384,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 12.947918333333334,
+            "p50_us": 12.9022,
+            "min_us": 12.590275,
+            "max_us": 14.09235
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 12.921438333333333,
+            "p50_us": 12.88715,
+            "min_us": 12.574575000000001,
+            "max_us": 13.919825000000001
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 11.727481666666666,
+            "p50_us": 11.651375,
+            "min_us": 11.30325,
+            "max_us": 12.99895
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 11.7106,
+            "p50_us": 11.633875,
+            "min_us": 11.2872,
+            "max_us": 12.9832
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.09370770514066873
+    },
+    {
+      "tokens": 32768,
+      "depth": 8,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "resident",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 32768,
+        "missing_full_tokens": 0,
+        "missing_mamba_slots": 0,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 12.320711666666666,
+            "p50_us": 12.244625,
+            "min_us": 11.91125,
+            "max_us": 13.600375
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 12.301496666666667,
+            "p50_us": 12.228325,
+            "min_us": 11.8945,
+            "max_us": 13.541975
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 10.813991666666666,
+            "p50_us": 10.8143,
+            "min_us": 10.548425,
+            "max_us": 11.014299999999999
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 10.796865,
+            "p50_us": 10.797450000000001,
+            "min_us": 10.53075,
+            "max_us": 10.992775
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.1223128947182307
+    },
+    {
+      "tokens": 32768,
+      "depth": 8,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "host_only",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 0,
+        "missing_full_tokens": 32768,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 13.599911666666667,
+            "p50_us": 13.639899999999999,
+            "min_us": 13.31965,
+            "max_us": 13.98525
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 13.581625,
+            "p50_us": 13.621075000000001,
+            "min_us": 13.301675,
+            "max_us": 13.96655
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 12.235281666666667,
+            "p50_us": 12.21725,
+            "min_us": 12.00195,
+            "max_us": 12.426549999999999
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 12.218393333333333,
+            "p50_us": 12.199125,
+            "min_us": 11.986424999999999,
+            "max_us": 12.40835
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.10037323712491453
+    },
+    {
+      "tokens": 32768,
+      "depth": 8,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": true,
+      "state": "short_input",
+      "hint": {
+        "checkpoint_tokens": 16384,
+        "device_checkpoint_tokens": 16384,
+        "missing_full_tokens": 0,
+        "missing_mamba_slots": 0,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 8.996756666666666,
+            "p50_us": 8.957125,
+            "min_us": 8.6899,
+            "max_us": 9.647200000000002
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 8.979143333333333,
+            "p50_us": 8.93985,
+            "min_us": 8.67475,
+            "max_us": 9.606825
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 8.207876666666667,
+            "p50_us": 8.210424999999999,
+            "min_us": 7.95525,
+            "max_us": 8.65145
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 8.191505,
+            "p50_us": 8.195799999999998,
+            "min_us": 7.9379,
+            "max_us": 8.63095
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.08771865022015835
+    },
+    {
+      "tokens": 32768,
+      "depth": 8,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "namespace",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 4.923621666666667,
+            "p50_us": 4.879074999999999,
+            "min_us": 4.734425,
+            "max_us": 5.52735
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 4.905223333333334,
+            "p50_us": 4.8637,
+            "min_us": 4.719175,
+            "max_us": 5.513
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 4.67668,
+            "p50_us": 4.6641,
+            "min_us": 4.508625,
+            "max_us": 5.01565
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 4.658313333333333,
+            "p50_us": 4.642475,
+            "min_us": 4.493625,
+            "max_us": 4.9686
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.05033613827980665
+    },
+    {
+      "tokens": 32768,
+      "depth": 8,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "pending",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 12.234948333333334,
+            "p50_us": 12.218,
+            "min_us": 11.945450000000001,
+            "max_us": 12.668875
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 12.217516666666667,
+            "p50_us": 12.202875,
+            "min_us": 11.928775,
+            "max_us": 12.638
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 10.602616666666666,
+            "p50_us": 10.5775,
+            "min_us": 10.23105,
+            "max_us": 11.085049999999999
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 10.58572,
+            "p50_us": 10.561875,
+            "min_us": 10.21575,
+            "max_us": 11.067375
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.13356205775587238
+    },
+    {
+      "tokens": 32768,
+      "depth": 8,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "mixed",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 16384,
+        "missing_full_tokens": 16384,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 31.505415,
+            "p50_us": 31.565625,
+            "min_us": 30.8992,
+            "max_us": 32.385975
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 31.486813333333334,
+            "p50_us": 31.544900000000002,
+            "min_us": 30.882275,
+            "max_us": 32.369225
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 33.754685,
+            "p50_us": 33.886300000000006,
+            "min_us": 32.7876,
+            "max_us": 34.483425000000004
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 33.73692333333333,
+            "p50_us": 33.871275000000004,
+            "min_us": 32.771175,
+            "max_us": 34.465225
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.07146197921584929
+    },
+    {
+      "tokens": 32768,
+      "depth": 8,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "resident",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 32768,
+        "missing_full_tokens": 0,
+        "missing_mamba_slots": 0,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 29.307725,
+            "p50_us": 29.391475,
+            "min_us": 28.5733,
+            "max_us": 29.855700000000002
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 29.290113333333334,
+            "p50_us": 29.376849999999997,
+            "min_us": 28.5583,
+            "max_us": 29.840875
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 31.082985,
+            "p50_us": 31.076025,
+            "min_us": 30.329175,
+            "max_us": 31.80495
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 31.06574833333333,
+            "p50_us": 31.06,
+            "min_us": 30.314325,
+            "max_us": 31.7883
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.060622332859984196
+    },
+    {
+      "tokens": 32768,
+      "depth": 8,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "host_only",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 0,
+        "missing_full_tokens": 32768,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 32.54150833333333,
+            "p50_us": 32.631,
+            "min_us": 31.165950000000002,
+            "max_us": 33.44685
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 32.51463,
+            "p50_us": 32.612049999999996,
+            "min_us": 31.147650000000002,
+            "max_us": 33.425725
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 34.466476666666665,
+            "p50_us": 34.578824999999995,
+            "min_us": 33.68075,
+            "max_us": 35.19195
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 34.447876666666666,
+            "p50_us": 34.554199999999994,
+            "min_us": 33.663925000000006,
+            "max_us": 35.174800000000005
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.059457747686707974
+    },
+    {
+      "tokens": 32768,
+      "depth": 8,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": true,
+      "state": "short_input",
+      "hint": {
+        "checkpoint_tokens": 16384,
+        "device_checkpoint_tokens": 16384,
+        "missing_full_tokens": 0,
+        "missing_mamba_slots": 0,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 23.382891666666666,
+            "p50_us": 23.4097,
+            "min_us": 22.85185,
+            "max_us": 23.927275
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 23.365143333333332,
+            "p50_us": 23.3936,
+            "min_us": 22.832549999999998,
+            "max_us": 23.905175
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 23.549858333333333,
+            "p50_us": 23.540225,
+            "min_us": 22.875700000000002,
+            "max_us": 24.037325
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 23.53230333333333,
+            "p50_us": 23.518525,
+            "min_us": 22.8617,
+            "max_us": 24.020925
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.007154246717653301
+    },
+    {
+      "tokens": 32768,
+      "depth": 8,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "namespace",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 5.166931666666667,
+            "p50_us": 5.1473249999999995,
+            "min_us": 5.050325,
+            "max_us": 5.31505
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 5.150795,
+            "p50_us": 5.13305,
+            "min_us": 5.036149999999999,
+            "max_us": 5.299525
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 5.317553333333334,
+            "p50_us": 5.286524999999999,
+            "min_us": 5.15595,
+            "max_us": 5.549475
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 5.302641666666666,
+            "p50_us": 5.270425,
+            "min_us": 5.141649999999999,
+            "max_us": 5.5333000000000006
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.029480238811031345
+    },
+    {
+      "tokens": 32768,
+      "depth": 8,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "pending",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 40,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 30.19461,
+            "p50_us": 30.1788,
+            "min_us": 29.513875,
+            "max_us": 30.997725
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 30.176031666666667,
+            "p50_us": 30.1623,
+            "min_us": 29.49795,
+            "max_us": 30.963175
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 32.113915,
+            "p50_us": 32.14945,
+            "min_us": 31.405900000000003,
+            "max_us": 32.644675
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 32.094813333333335,
+            "p50_us": 32.131475,
+            "min_us": 31.390775,
+            "max_us": 32.6293
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.06358628224751661
+    },
+    {
+      "tokens": 32768,
+      "depth": 256,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "mixed",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 16384,
+        "missing_full_tokens": 16384,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 291.76858666666664,
+            "p50_us": 291.99859999999995,
+            "min_us": 287.15979999999996,
+            "max_us": 297.3248
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 291.59962666666667,
+            "p50_us": 291.6522,
+            "min_us": 286.98720000000003,
+            "max_us": 297.1746
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 251.07241333333334,
+            "p50_us": 251.3392,
+            "min_us": 245.4846,
+            "max_us": 257.168
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 250.92805333333334,
+            "p50_us": 251.2208,
+            "min_us": 245.35739999999998,
+            "max_us": 256.9806
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.13947745337762663
+    },
+    {
+      "tokens": 32768,
+      "depth": 256,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "resident",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 32768,
+        "missing_full_tokens": 0,
+        "missing_mamba_slots": 0,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 271.2966133333333,
+            "p50_us": 271.113,
+            "min_us": 263.6494,
+            "max_us": 276.45340000000004
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 271.15138666666667,
+            "p50_us": 270.98940000000005,
+            "min_us": 263.523,
+            "max_us": 276.289
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 231.56593333333333,
+            "p50_us": 230.93679999999998,
+            "min_us": 225.15820000000002,
+            "max_us": 239.7574
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 231.43109333333334,
+            "p50_us": 230.8114,
+            "min_us": 225.015,
+            "max_us": 239.63
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.14648751688724537
+    },
+    {
+      "tokens": 32768,
+      "depth": 256,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "host_only",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 0,
+        "missing_full_tokens": 32768,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 312.03242666666665,
+            "p50_us": 311.5674,
+            "min_us": 304.1662,
+            "max_us": 326.385
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 311.8808133333333,
+            "p50_us": 311.4326,
+            "min_us": 304.0204,
+            "max_us": 326.21520000000004
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 271.3534,
+            "p50_us": 271.6344,
+            "min_us": 263.8562,
+            "max_us": 278.9948
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 271.21618666666666,
+            "p50_us": 271.494,
+            "min_us": 263.719,
+            "max_us": 278.84459999999996
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.1303851501220915
+    },
+    {
+      "tokens": 32768,
+      "depth": 256,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": true,
+      "state": "short_input",
+      "hint": {
+        "checkpoint_tokens": 16384,
+        "device_checkpoint_tokens": 16384,
+        "missing_full_tokens": 0,
+        "missing_mamba_slots": 0,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 172.6012,
+            "p50_us": 171.5214,
+            "min_us": 166.8014,
+            "max_us": 180.2814
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 172.45004,
+            "p50_us": 171.35060000000001,
+            "min_us": 166.6682,
+            "max_us": 179.93779999999998
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 148.22393333333332,
+            "p50_us": 148.34320000000002,
+            "min_us": 145.081,
+            "max_us": 151.3288
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 148.08852000000002,
+            "p50_us": 148.2212,
+            "min_us": 144.952,
+            "max_us": 151.1936
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.14126711713143114
+    },
+    {
+      "tokens": 32768,
+      "depth": 256,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "namespace",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 69.02646666666666,
+            "p50_us": 68.672,
+            "min_us": 67.8162,
+            "max_us": 71.5774
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 68.88890666666667,
+            "p50_us": 68.552,
+            "min_us": 67.7002,
+            "max_us": 71.45039999999999
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 61.995693333333335,
+            "p50_us": 61.9086,
+            "min_us": 60.4894,
+            "max_us": 63.565
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 61.85977333333334,
+            "p50_us": 61.774,
+            "min_us": 60.3602,
+            "max_us": 63.4296
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.10203578011979864
+    },
+    {
+      "tokens": 32768,
+      "depth": 256,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "pending",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 262.94572,
+            "p50_us": 262.9922,
+            "min_us": 254.5418,
+            "max_us": 271.2144
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 262.79756,
+            "p50_us": 262.8578,
+            "min_us": 254.4118,
+            "max_us": 271.08
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 219.32936,
+            "p50_us": 219.475,
+            "min_us": 214.0062,
+            "max_us": 225.485
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 219.19808,
+            "p50_us": 219.331,
+            "min_us": 213.8886,
+            "max_us": 225.3546
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.16590519333588938
+    },
+    {
+      "tokens": 32768,
+      "depth": 256,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "mixed",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 16384,
+        "missing_full_tokens": 16384,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 314.56482666666665,
+            "p50_us": 315.24379999999996,
+            "min_us": 304.8412,
+            "max_us": 329.1706
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 314.40401333333335,
+            "p50_us": 315.1076,
+            "min_us": 304.6798,
+            "max_us": 329.03020000000004
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 313.95114666666666,
+            "p50_us": 312.4932,
+            "min_us": 307.1228,
+            "max_us": 324.4326
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 313.80316,
+            "p50_us": 312.33840000000004,
+            "min_us": 306.9846,
+            "max_us": 324.1868
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.001911086715983945
+    },
+    {
+      "tokens": 32768,
+      "depth": 256,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "resident",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 32768,
+        "missing_full_tokens": 0,
+        "missing_mamba_slots": 0,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 294.27721333333335,
+            "p50_us": 293.8992,
+            "min_us": 284.9158,
+            "max_us": 302.5802
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 294.11030666666665,
+            "p50_us": 293.6826,
+            "min_us": 284.758,
+            "max_us": 302.4352
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 295.5683333333333,
+            "p50_us": 294.87620000000004,
+            "min_us": 286.88340000000005,
+            "max_us": 318.4636
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 295.4008666666667,
+            "p50_us": 294.7276,
+            "min_us": 286.74379999999996,
+            "max_us": 318.3318
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.004388013513116018
+    },
+    {
+      "tokens": 32768,
+      "depth": 256,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "host_only",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 0,
+        "missing_full_tokens": 32768,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 331.11957333333334,
+            "p50_us": 331.17359999999996,
+            "min_us": 323.3684,
+            "max_us": 336.57779999999997
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 330.8698,
+            "p50_us": 330.9846,
+            "min_us": 323.20320000000004,
+            "max_us": 336.20459999999997
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 335.5945066666667,
+            "p50_us": 332.25620000000004,
+            "min_us": 324.50120000000004,
+            "max_us": 352.9402
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 335.13513333333333,
+            "p50_us": 332.1108,
+            "min_us": 324.3422,
+            "max_us": 352.7652
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.012891274251483065
+    },
+    {
+      "tokens": 32768,
+      "depth": 256,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": true,
+      "state": "short_input",
+      "hint": {
+        "checkpoint_tokens": 16384,
+        "device_checkpoint_tokens": 16384,
+        "missing_full_tokens": 0,
+        "missing_mamba_slots": 0,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 411.94570666666664,
+            "p50_us": 411.6876,
+            "min_us": 406.6812,
+            "max_us": 426.3956
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 411.75913333333335,
+            "p50_us": 411.51959999999997,
+            "min_us": 406.507,
+            "max_us": 426.221
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 419.71728,
+            "p50_us": 420.1782,
+            "min_us": 413.1134,
+            "max_us": 429.0286
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 419.55664,
+            "p50_us": 420.013,
+            "min_us": 412.986,
+            "max_us": 428.8506
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.018937058186282663
+    },
+    {
+      "tokens": 32768,
+      "depth": 256,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "namespace",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 68.39434666666666,
+            "p50_us": 68.239,
+            "min_us": 67.1642,
+            "max_us": 69.6344
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 68.2398,
+            "p50_us": 68.1074,
+            "min_us": 67.03580000000001,
+            "max_us": 69.31360000000001
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 71.05664,
+            "p50_us": 70.8138,
+            "min_us": 68.6178,
+            "max_us": 75.4116
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 70.92628,
+            "p50_us": 70.686,
+            "min_us": 68.49239999999999,
+            "max_us": 75.28139999999999
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.039368227925638655
+    },
+    {
+      "tokens": 32768,
+      "depth": 256,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "pending",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 278.71258666666665,
+            "p50_us": 277.97020000000003,
+            "min_us": 271.8198,
+            "max_us": 286.4182
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 278.54170666666664,
+            "p50_us": 277.7976,
+            "min_us": 271.658,
+            "max_us": 286.2756
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 286.10802666666666,
+            "p50_us": 286.6276,
+            "min_us": 276.06579999999997,
+            "max_us": 295.4056
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 285.94884,
+            "p50_us": 286.48359999999997,
+            "min_us": 275.90659999999997,
+            "max_us": 295.2402
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.026592546667338235
+    },
+    {
+      "tokens": 32768,
+      "depth": 1024,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "mixed",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 16384,
+        "missing_full_tokens": 16384,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 1162.86924,
+            "p50_us": 1160.574,
+            "min_us": 1149.7296000000001,
+            "max_us": 1181.6553999999999
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 1162.66308,
+            "p50_us": 1160.3616000000002,
+            "min_us": 1149.53,
+            "max_us": 1181.4678000000001
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 992.3189600000001,
+            "p50_us": 991.897,
+            "min_us": 982.8874000000001,
+            "max_us": 1012.5702
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 992.13028,
+            "p50_us": 991.7188000000001,
+            "min_us": 982.6741999999999,
+            "max_us": 1012.386
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.14667430568105766
+    },
+    {
+      "tokens": 32768,
+      "depth": 1024,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "resident",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 32768,
+        "missing_full_tokens": 0,
+        "missing_mamba_slots": 0,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 1090.9050266666666,
+            "p50_us": 1090.4642,
+            "min_us": 1078.2184,
+            "max_us": 1117.9764
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 1090.7045466666666,
+            "p50_us": 1090.2902,
+            "min_us": 1078.0452,
+            "max_us": 1117.7754
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 921.4500400000001,
+            "p50_us": 918.0878,
+            "min_us": 913.831,
+            "max_us": 935.214
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 921.26552,
+            "p50_us": 917.9046,
+            "min_us": 913.6542,
+            "max_us": 935.0516
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.15534823539930587
+    },
+    {
+      "tokens": 32768,
+      "depth": 1024,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "host_only",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 0,
+        "missing_full_tokens": 32768,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 1248.6133333333332,
+            "p50_us": 1246.9222,
+            "min_us": 1225.4371999999998,
+            "max_us": 1297.256
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 1248.39964,
+            "p50_us": 1246.7333999999998,
+            "min_us": 1224.987,
+            "max_us": 1297.0128
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 1083.5410266666668,
+            "p50_us": 1080.6658,
+            "min_us": 1067.0874,
+            "max_us": 1156.8016
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 1083.3425466666667,
+            "p50_us": 1080.5023999999999,
+            "min_us": 1066.9092,
+            "max_us": 1156.4766000000002
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.13221494787785526
+    },
+    {
+      "tokens": 32768,
+      "depth": 1024,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": true,
+      "state": "short_input",
+      "hint": {
+        "checkpoint_tokens": 16384,
+        "device_checkpoint_tokens": 16384,
+        "missing_full_tokens": 0,
+        "missing_mamba_slots": 0,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 682.5977466666667,
+            "p50_us": 676.9276,
+            "min_us": 665.1221999999999,
+            "max_us": 738.6382
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 682.40424,
+            "p50_us": 676.7254,
+            "min_us": 664.9734,
+            "max_us": 738.4301999999999
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 575.8367333333333,
+            "p50_us": 575.2626,
+            "min_us": 567.3026,
+            "max_us": 587.8932
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 575.67664,
+            "p50_us": 575.0954,
+            "min_us": 567.1292,
+            "max_us": 587.7514
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.1563993799335126
+    },
+    {
+      "tokens": 32768,
+      "depth": 1024,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "namespace",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 253.24337333333332,
+            "p50_us": 253.302,
+            "min_us": 248.3386,
+            "max_us": 256.3304
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 253.08088,
+            "p50_us": 252.8758,
+            "min_us": 248.18079999999998,
+            "max_us": 256.1988
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 226.29781333333332,
+            "p50_us": 226.3082,
+            "min_us": 213.0066,
+            "max_us": 233.8786
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 226.14742666666666,
+            "p50_us": 226.159,
+            "min_us": 212.79739999999998,
+            "max_us": 233.7278
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.1064223157961729
+    },
+    {
+      "tokens": 32768,
+      "depth": 1024,
+      "leaves": 1,
+      "page_size": 16,
+      "short_request": false,
+      "state": "pending",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 1055.6660533333334,
+            "p50_us": 1056.3672,
+            "min_us": 1042.116,
+            "max_us": 1071.8074
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 1055.2881733333334,
+            "p50_us": 1056.1792,
+            "min_us": 1041.9308,
+            "max_us": 1071.622
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 876.0137733333333,
+            "p50_us": 874.6586,
+            "min_us": 866.9322,
+            "max_us": 890.6261999999999
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 875.83772,
+            "p50_us": 874.5088000000001,
+            "min_us": 866.7178,
+            "max_us": 890.459
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.17004876759539922
+    },
+    {
+      "tokens": 32768,
+      "depth": 1024,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "mixed",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 16384,
+        "missing_full_tokens": 16384,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 1206.3468533333332,
+            "p50_us": 1208.9181999999998,
+            "min_us": 1184.4586000000002,
+            "max_us": 1230.7233999999999
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 1206.0819466666667,
+            "p50_us": 1208.517,
+            "min_us": 1184.2598,
+            "max_us": 1230.5076000000001
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 1202.0857066666667,
+            "p50_us": 1202.4866000000002,
+            "min_us": 1191.9212,
+            "max_us": 1212.9376000000002
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 1201.85112,
+            "p50_us": 1202.2582,
+            "min_us": 1191.73,
+            "max_us": 1212.7464
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.0035079097886836497
+    },
+    {
+      "tokens": 32768,
+      "depth": 1024,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "resident",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 32768,
+        "missing_full_tokens": 0,
+        "missing_mamba_slots": 0,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 874.3904133333333,
+            "p50_us": 872.0764,
+            "min_us": 862.0602,
+            "max_us": 904.6442
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 874.2006933333333,
+            "p50_us": 871.9224,
+            "min_us": 861.8771999999999,
+            "max_us": 904.2162
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 873.2873866666666,
+            "p50_us": 869.472,
+            "min_us": 859.273,
+            "max_us": 889.8134
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 873.1131466666667,
+            "p50_us": 869.2901999999999,
+            "min_us": 859.073,
+            "max_us": 889.6161999999999
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.0012440469047443337
+    },
+    {
+      "tokens": 32768,
+      "depth": 1024,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "host_only",
+      "hint": {
+        "checkpoint_tokens": 32768,
+        "device_checkpoint_tokens": 0,
+        "missing_full_tokens": 32768,
+        "missing_mamba_slots": 1,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 997.6028266666667,
+            "p50_us": 999.0468000000001,
+            "min_us": 982.0824,
+            "max_us": 1011.9138
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 997.3487333333334,
+            "p50_us": 998.9042,
+            "min_us": 981.905,
+            "max_us": 1011.754
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 996.37832,
+            "p50_us": 995.068,
+            "min_us": 982.615,
+            "max_us": 1014.9324
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 996.2040666666667,
+            "p50_us": 994.8858,
+            "min_us": 982.4301999999999,
+            "max_us": 1014.7424
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.0011477095507416157
+    },
+    {
+      "tokens": 32768,
+      "depth": 1024,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": true,
+      "state": "short_input",
+      "hint": {
+        "checkpoint_tokens": 16384,
+        "device_checkpoint_tokens": 16384,
+        "missing_full_tokens": 0,
+        "missing_mamba_slots": 0,
+        "input_prefix_verified": false
+      },
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 1250.9712,
+            "p50_us": 1250.319,
+            "min_us": 1239.549,
+            "max_us": 1267.673
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 1250.7679066666667,
+            "p50_us": 1250.0786,
+            "min_us": 1239.364,
+            "max_us": 1267.4716
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 1272.8136933333333,
+            "p50_us": 1273.4166,
+            "min_us": 1257.929,
+            "max_us": 1284.2604
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 1272.62672,
+            "p50_us": 1273.2406,
+            "min_us": 1257.736,
+            "max_us": 1284.1068
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.017476314523921177
+    },
+    {
+      "tokens": 32768,
+      "depth": 1024,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "namespace",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 200.68813333333333,
+            "p50_us": 200.2802,
+            "min_us": 197.007,
+            "max_us": 205.33939999999998
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 200.54253333333332,
+            "p50_us": 200.05,
+            "min_us": 196.8858,
+            "max_us": 205.21079999999998
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 205.71913333333333,
+            "p50_us": 205.62560000000002,
+            "min_us": 203.643,
+            "max_us": 208.0376
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 205.58697333333333,
+            "p50_us": 205.4808,
+            "min_us": 203.49960000000002,
+            "max_us": 207.879
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.02515396567577688
+    },
+    {
+      "tokens": 32768,
+      "depth": 1024,
+      "leaves": 8,
+      "page_size": 16,
+      "short_request": false,
+      "state": "pending",
+      "hint": null,
+      "outputs_equal": true,
+      "samples": 15,
+      "calls_per_sample": 5,
+      "costs": {
+        "baseline": {
+          "wall": {
+            "count": 15,
+            "mean_us": 851.7350133333333,
+            "p50_us": 850.86,
+            "min_us": 829.9,
+            "max_us": 877.9502
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 851.5449866666667,
+            "p50_us": 850.7206,
+            "min_us": 829.7242,
+            "max_us": 877.4781999999999
+          }
+        },
+        "candidate": {
+          "wall": {
+            "count": 15,
+            "mean_us": 862.29688,
+            "p50_us": 863.1508,
+            "min_us": 839.4356,
+            "max_us": 883.4078000000001
+          },
+          "thread_cpu": {
+            "count": 15,
+            "mean_us": 862.1355866666667,
+            "p50_us": 862.9936,
+            "min_us": 839.3036,
+            "max_us": 883.2636
+          }
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.012436923669125743
+    }
+  ],
+  "scope": [
+    "Exact old/current complete hint functions, identical native RadixKey/tree fixtures.",
+    "One and eight leaves; shallow/deep paths, Host/device/pending/namespace/short inputs.",
+    "Alternating variants; thread CPU and wall clocks are reported separately.",
+    "Residency hints remain input-unverified ordering evidence, never allocation authority.",
+    "No transfer, GPU service, native queue, input accuracy or end-to-end gain measured."
+  ]
+}
