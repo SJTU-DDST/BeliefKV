@@ -2,21 +2,69 @@
 
 Status date: 2026-10-13.
 
-Current development run is V47, cold-started at 08:51:32 CST on October 13
-from 9e017a1/3698ce2f, actual engine tree 6d6af094. It deploys slot-bounded
-fixed-head residency probing and measured PREPARE round-trip budgets.
-Retain eight rotating tail probes, the original eight-slot/fallback scan,
-aging, causal/restore priority and selected-request native validation.
-V237 binds 366 checks. V236's 12 Host-only CPU cases reduce thread CPU by
-14.0-32.1% at one slot and 7.9-14.2% at four; eight slots range from 1.7%
-regression to 2.4% improvement. Preserve V235's initial negative results.
-Mixed-residency ordering can change; CPU fixtures do not prove GPU gains.
-Keep frozen configuration, fixed V29 native and running sources. Deployment
-validation V239 at 09:00:32 confirms HTTP 200, 538 real GPU-service samples
-in an independent tail, enabled predictors/physical actions, matching
-source/engine, all 27 frozen fields and pool capacities. The bounded
-probe counter is 6,128; the sampled reserve is 4,145 FULL tokens and one
-Mamba slot, following the imminent batch.
+Current development run is V48, cold-started at 10:14:57 CST on October 13
+from b8616d1. Canonical patch 3698ce2f and actual engine tree 6d6af094
+remain unchanged. Retain 108+48 arrivals, running 48, Host 200GB/80:20,
+HBM Mamba/FULL 0.9, tool 180s, output 8192 and maximum lead 2000ms.
+Development runs predictive only against fixed V29 native. V253 independently
+validates deployment at 10:20:19: HTTP 200, 613 real GPU-service samples,
+enabled predictors/physical actions, matching source/engine, 27 frozen
+fields and pool capacities. The sampled next batch reserves 4144 FULL
+tokens and three Mamba slots. Startup does not establish performance benefit.
+
+Commit e7b0d7a reuses the complete selected plan only after successful
+cold reclaim and fresh pool/reserve/protection-budget checks. Final
+enqueue still drains causal events and recaptures the whole target.
+b8616d1 restores the original fallback before missing-pool indexing.
+V255 binds 472 checks; V254's 48 CPU cases match actionable outputs.
+Successful-branch thread CPU falls 84.1-95.5%; fallback adds at most
+9.09us. Partial/probe/insufficient paths refresh. No GPU gain is proven.
+
+Commit 0902199 retains survival evidence for the exact same tool invocation.
+After a speculative restore expires while that tool is still running,
+combine the latest forecast with the first forecast conditioned on survival.
+Refresh cannot erase this observed overrun; an unsupported old tail remains
+unknown rather than authorizing repeated near-term speculation. Latest
+identity and native checks still authorize actions. Clear on real invocation,
+revision, session or context changes; keep existing residency expiration.
+V248/V249 reconstruct one V46 invocation with eight bursts/944.251MB and
+expired protection without reuse proof. Seven later bursts fall outside
+the old survival-conditioned two-second lead. This is mechanism evidence,
+not avoided traffic, population accuracy or measured GPU improvement.
+
+V47 stopped at 10:00:46.068105: 80 completed and 76 created unfinished,
+all 156 arrivals present. Keep the latter administratively censored.
+V251/V252 qualify pre-cutoff early next-request FULL reuse as 34 JOINs/
+468.521MB and 158 tools/10.213GB; 145.072GB demand handoff remains separate.
+Known pre-cutoff completions are 107/13287. Exclude three post-cutoff
+tool completions and four first services from terminal training.
+Sampled fitting positive-FULL events are 99/271, with 65/113 lacking
+early confirmed consumption; snapshots do not prove trigger capacity.
+Event last-ACK-to-service P90 remains 11.087s/17.620s for JOIN/tool.
+Do not combine denominators into a queue-delay claim. All 156 workspaces
+passed full tar comparison before cleanup at 10:07:05: 38.760GB source
+became 4.346GB archive. Only 76 owned stopped containers were removed.
+Raw traces, outcomes, manifest and frozen plan remain available.
+
+V243 seals V47's complete600-900s window:323881/380722 decode request
+steps,3.75% above V46 but still14.93% below fixed native. Exclusive Python
+wall is55.197s; turnover46/47 and short-prefill gaps remain. V244 retains
+897 nonblocking GIL stacks and241 sampling errors; closure has51 leaf
+samples,remaining_quantile only one. Prioritize repeated physical planning
+and control work rather than unsupported probability-math optimization.
+V246's independent earlier prefixes are superseded by V251/V252; do not
+add overlapping reports. Final dispatch positive-FULL/start/submit is
+93/92/52 and 1967/186/180; the tool funnel contains three post-cutoff
+boundaries, so training must use V252 qualification. V242 derives V46's gap evidence without raw
+rereads:42of48sampled-fitting JOIN gaps have no submission;26tool events
+transfer6.007GB early without next-request reuse proof. Inspect trigger
+capacity and repeated restores after pre-completion protection expiration.
+
+Retain V47's slot-bounded probing, measured PREPARE budget and V239
+deployment evidence. V48 must validate actual source, capacity and service
+separately. Next inspect real tool-overrun/retry counters, JOIN submission
+gaps and first-service consumption, then the complete 600-900s busy window.
+The throughput/JCT goal remains active and unmet.
 
 V46 stopped at 08:47:12.309023: 69 completed, 1 incomplete, 38 created unfinished
 and 48 unarrived; the latter 86 remain administratively censored. The existing
