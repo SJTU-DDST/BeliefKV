@@ -10,6 +10,37 @@ without fabricating summary.json. The common completed subset has mean JCT
 acceptance. Two exact command hashes repeat 19/15 times with empty output,
 exit=1 and cumulative 2282.641/901.920s, so the tool tail remains visible.
 
+V328 records verified compression of all 156 V54 workspaces, including
+untracked files and the censored task, at 2026-10-14 00:53:26 CST.
+Full tar comparison passed before cleanup: 39.014GB allocated sources became
+a 4.227GB archive, leaving no raw workspaces. Traces, results, frozen plan
+and censoring remain. The existing archive README contains the restore command.
+Available disk afterward was 52,086,583,296 bytes (48.51GiB); recheck capacity
+and GPU availability at the permitted cold launch. V55 has not started.
+
+V331 also fully compared and archived 72 server/opportunity JSONL files from
+stopped V40-V48: 21.889GB sources became 0.684GB archives. Per-run restore
+pointers and the existing archive inventory preserve access; client traces,
+results, plans and censoring remain. Keep V49-V54 and native references direct.
+The last available-space snapshot is 65.53GiB. Require at least 60GiB before
+launch based on recent workspace/trace allocation, instead of the old 20GiB
+check; do not change workload or stop another user's job.
+
+V329's independent cron audit is registered for the first complete 600-900s
+V55 window after permitted startup. Check collection PID identity, candidate
+commit and script/patch hashes before reading sealed prefixes. Run once with
+nice19, idle I/O and CUDA hidden; preserve interrupted or incomplete output.
+Missing historical-native phases remain unknown. This audit does not alter
+scheduling and does not itself prove final acceptance.
+
+V330 benchmarks exact frozen first-service methods on 36 same-input cases
+with equal evidence. Matched list/tuple inputs reduce CPU by 32.1-66.4%;
+early divergence can regress sharply, and mid-prefix divergence has conversion
+cost. V332 observes 2165 pre-cutoff V54 targets: 2139 complete matches,
+26 later divergence/short inputs, no divergence within 1024 tokens, prefix
+P50 19465 tokens. Keep the qualified candidate unchanged. These fixtures
+exclude writer, physical allocation, nested on_launch and GPU/JCT effects.
+
 Candidate a843e83 converts list/tuple input only through the longest needed
 ACK prefix and uses the existing exact C comparison at first service.
 Nonintegral/overflowing input keeps the original numeric fallback.

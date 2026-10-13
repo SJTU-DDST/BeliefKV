@@ -4,6 +4,56 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-10-14 verified workspace compression
+
+Archive: `experiments/archive/20261014/v54_stopped_workspaces.tar.zst`
+
+SHA256: `4f1e7f7e18bce023e8b4813ce2bdfc31854a3cfb470f928ca6aad55ed341727e`
+
+All 156 V54 workspaces, including untracked files and the censored workflow,
+passed full GNU tar comparison before source cleanup at 00:53:26 CST.
+Source allocation was 39,013,941,248 bytes; the archive is 4,227,243,737 bytes.
+The reservation cutoff remains 2026-10-13 23:59:09 CST, with 155 completed
+and one administratively censored workflow. No owned experiment processes or
+containers remained when cleanup was revalidated. Raw traces, results, manifest,
+frozen plan and censoring evidence remain; zero raw workspaces remain.
+Available disk after cleanup was 52,086,583,296 bytes. This is an observed
+filesystem snapshot, not a guarantee of capacity for the next experiment.
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261014/v54_stopped_workspaces.tar.zst \
+  --directory experiments/raw
+```
+
+Receipts: `experiments/reports/v328_v54_workspace_archive_20261014.json`
+and `experiments/reports/v326_v54_reservation_cutoff_20261014.json`.
+Compression ran with one thread, nice 19 and idle I/O while the server was
+reserved; no GPU experiment or another user's workload was touched.
+
+V40-V48 server/opportunity traces were also compressed, with each file compared
+in full before cleanup. The nine archives preserve 72 JSONL files:
+21,889,042,774 source bytes became 684,016,550 archive bytes. Client traces,
+outcomes, frozen plans, administrative stop receipts and audit reports remain.
+V49-V54 and historical native reference traces remain directly available.
+Each old raw run now has a `SERVER_TRACES_ARCHIVED.md` restore pointer; restore
+its server traces before rerunning an old audit that references raw paths.
+Receipt: `experiments/reports/v331_v40_v48_server_trace_archive_20261014.json`,
+including all archive hashes and comparisons.
+
+Restore one version, substituting its number for `40`:
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261014/v40_superseded_server_traces.tar.zst \
+  --directory experiments/raw
+```
+
+The final free-space observation was 70,361,628,672 bytes (65.53GiB).
+Concurrent disk use means source-minus-archive size is not the measured
+filesystem recovery. These operations preserve evidence and do not validate
+performance. Nightly compression used one worker, nice 19 and idle I/O.
+
 ## 2026-10-13 verified workspace compression
 
 Archive: `experiments/archive/20261013/v48_development_workspaces.tar.zst`
