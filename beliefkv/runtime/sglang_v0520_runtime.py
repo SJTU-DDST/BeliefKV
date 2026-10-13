@@ -4021,8 +4021,8 @@ class NativeAdmissionRuntime:
         if (
             freed and opportunity.partial_full_step is None
             and not opportunity.capacity_reclaim_probe
+            and (headroom := observe_static_full_mamba_headroom(self._native_cache)).observable
         ):
-            headroom = observe_static_full_mamba_headroom(self._native_cache)
             budget = self._current_residency_budget(include_evictable=True)
             allowance = max(0, budget.byte_limit - sum(
                 lease.protected_bytes for lease in self._prefetch_service_leases.values()
@@ -4033,8 +4033,7 @@ class NativeAdmissionRuntime:
                 + opportunity.required_mamba_slots * entries["mamba"].host_pool.size_per_token
             )
             if (
-                headroom.observable
-                and opportunity.required_full_tokens + budget.reserve_full_tokens
+                opportunity.required_full_tokens + budget.reserve_full_tokens
                 <= headroom.device_full_free_tokens
                 and opportunity.required_mamba_slots + budget.reserve_mamba_slots
                 <= headroom.device_mamba_free_slots

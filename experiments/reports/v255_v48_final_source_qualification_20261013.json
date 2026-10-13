@@ -1,0 +1,52 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-13T10:13:41.227500+08:00",
+  "parent_commit": "0902199112c3719ff5c755bdba42f841a9a316ec",
+  "qualified_paths_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "7b066e2a2a2bbb11ff91d7eac81c28870a904ffcba54604d9dada83c72b947e9",
+    "tests/test_wait_prefetch_partial_extent.py": "d5a0eb9c6866093df5bca5f9268d828a9e1ef039441e532201728a39360f3a62",
+    "tests/test_tool_predictive_transfers.py": "c211332c8d793264b2953faa6db45b033c5ed03d655bf974c549724e0509fca4",
+    "scripts/benchmark_wait_reclaim_plan_cpu.py": "eb970e1f970cc03b1ebde0e92cb031f59390d7d8d06a208c6fde5cdcc7d9dd06"
+  },
+  "completed_validation": {
+    "tool_session_id": 97253,
+    "returncode": 0,
+    "passed": 472,
+    "duration_seconds": 1.69,
+    "pytest_args": [
+      "tests/test_tool_predictive_transfers.py",
+      "tests/test_wait_prefetch_batch.py",
+      "tests/test_wait_prefetch_partial_extent.py",
+      "tests/test_native_transfer_policy.py",
+      "tests/test_sglang_v0520_runtime.py"
+    ],
+    "evidence_source": "completed tool output in this thread"
+  },
+  "cpu_benchmark": {
+    "path": "experiments/reports/v254_wait_reclaim_plan_cpu_final_20261013.json",
+    "sha256": "697c16cdc6ffdb08ba1ca72111018384e65a0f4241cf7f244a5f06bae099b437",
+    "cases": 48,
+    "actionable_outputs_equal": true,
+    "successful_reclaim_thread_cpu_reduction_fraction_range": [
+      0.8412789553707524,
+      0.9554946702413297
+    ],
+    "largest_fallback_thread_cpu_increase_us": 9.0913125
+  },
+  "retained_tool_survival_qualification": {
+    "path": "experiments/reports/v250_tool_prefetch_survival_qualification_20261013.json",
+    "sha256": "0491c4a061004a4343ff4b74f9aa0df5171a4ae4139bd43cc55713b9d219d867",
+    "scope": "Previous CPU survival fixture evidence; final source also passed the focused suite."
+  },
+  "semantics": [
+    "Unavailable fresh pool observations take the original complete-plan fallback before pool indexing.",
+    "Selected-plan reuse requires actual successful reclaim, complete plan, observable pools and reserves.",
+    "Final enqueue still drains causal events and recaptures the entire target.",
+    "Partial data does not authorize execution without complete native dependencies.",
+    "Retained tool survival evidence changes only same-invocation speculative retries.",
+    "CPU stand-ins and regression checks do not establish allocator capacity or GPU throughput.",
+    "The actual engine and frozen workload are unchanged; cold deployment must verify them separately."
+  ],
+  "qualification_helper_sha256": "74f3bd7e9dc0aee4c21bc244c057cf139468b23bca7ba8773ef9fc7ea79c70da",
+  "qualification_helper_utf8_source": "\"\"\"Bind completed regression checks and CPU planning evidence to V48 source.\"\"\"\n\nfrom datetime import datetime\nimport hashlib\nimport json\nfrom pathlib import Path\nimport subprocess\n\nROOT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nOUTPUT = ROOT / \"experiments/reports/v255_v48_final_source_qualification_20261013.json\"\nBENCHMARK = ROOT / \"experiments/reports/v254_wait_reclaim_plan_cpu_final_20261013.json\"\nPREVIOUS = ROOT / \"experiments/reports/v250_tool_prefetch_survival_qualification_20261013.json\"\nPATHS = (\n    \"beliefkv/runtime/sglang_v0520_runtime.py\",\n    \"tests/test_wait_prefetch_partial_extent.py\",\n    \"tests/test_tool_predictive_transfers.py\",\n    \"scripts/benchmark_wait_reclaim_plan_cpu.py\",\n)\n\n\ndef digest(path):\n    return hashlib.sha256(path.read_bytes()).hexdigest()\n\n\nif OUTPUT.exists():\n    raise ValueError(\"preserve existing qualification\")\nbenchmark = json.loads(BENCHMARK.read_bytes())\nprevious = json.loads(PREVIOUS.read_bytes())\nqualified = {relative: digest(ROOT / relative) for relative in PATHS}\nif benchmark[\"optimized_source_sha256\"] != qualified[PATHS[0]]:\n    raise ValueError(\"benchmark source changed\")\nif not benchmark[\"actionable_outputs_equal\"] or len(benchmark[\"cases\"]) != 48:\n    raise ValueError(\"CPU planning equivalence unconfirmed\")\nif (\n    previous[\"qualified_paths_sha256\"][\"tests/test_tool_predictive_transfers.py\"]\n    != qualified[\"tests/test_tool_predictive_transfers.py\"]\n):\n    raise ValueError(\"previous tool survival checks changed\")\nsubprocess.run([\"git\", \"diff\", \"--check\"], cwd=ROOT, check=True)\nfit = [row[\"thread_cpu_reduction_fraction\"] for row in benchmark[\"cases\"] if row[\"case\"] == \"fit\"]\nfallback = [\n    row[\"costs\"][\"optimized\"][\"thread_cpu_us\"][\"mean\"]\n    - row[\"costs\"][\"baseline\"][\"thread_cpu_us\"][\"mean\"]\n    for row in benchmark[\"cases\"] if row[\"case\"] != \"fit\"\n]\nrecord = {\n    \"schema_version\": 1,\n    \"observed_at_local\": datetime.now().astimezone().isoformat(),\n    \"parent_commit\": subprocess.check_output(\n        [\"git\", \"rev-parse\", \"HEAD\"], cwd=ROOT, text=True,\n    ).strip(),\n    \"qualified_paths_sha256\": qualified,\n    \"completed_validation\": {\n        \"tool_session_id\": 97253,\n        \"returncode\": 0,\n        \"passed\": 472,\n        \"duration_seconds\": 1.69,\n        \"pytest_args\": [\n            \"tests/test_tool_predictive_transfers.py\",\n            \"tests/test_wait_prefetch_batch.py\",\n            \"tests/test_wait_prefetch_partial_extent.py\",\n            \"tests/test_native_transfer_policy.py\",\n            \"tests/test_sglang_v0520_runtime.py\",\n        ],\n        \"evidence_source\": \"completed tool output in this thread\",\n    },\n    \"cpu_benchmark\": {\n        \"path\": str(BENCHMARK.relative_to(ROOT)),\n        \"sha256\": digest(BENCHMARK),\n        \"cases\": 48,\n        \"actionable_outputs_equal\": True,\n        \"successful_reclaim_thread_cpu_reduction_fraction_range\": [min(fit), max(fit)],\n        \"largest_fallback_thread_cpu_increase_us\": max(fallback),\n    },\n    \"retained_tool_survival_qualification\": {\n        \"path\": str(PREVIOUS.relative_to(ROOT)),\n        \"sha256\": digest(PREVIOUS),\n        \"scope\": \"Previous CPU survival fixture evidence; final source also passed the focused suite.\",\n    },\n    \"semantics\": [\n        \"Unavailable fresh pool observations take the original complete-plan fallback before pool indexing.\",\n        \"Selected-plan reuse requires actual successful reclaim, complete plan, observable pools and reserves.\",\n        \"Final enqueue still drains causal events and recaptures the entire target.\",\n        \"Partial data does not authorize execution without complete native dependencies.\",\n        \"Retained tool survival evidence changes only same-invocation speculative retries.\",\n        \"CPU stand-ins and regression checks do not establish allocator capacity or GPU throughput.\",\n        \"The actual engine and frozen workload are unchanged; cold deployment must verify them separately.\",\n    ],\n    \"qualification_helper_sha256\": digest(Path(__file__)),\n    \"qualification_helper_utf8_source\": Path(__file__).read_text(),\n}\nOUTPUT.write_text(json.dumps(record, indent=2, allow_nan=False) + \"\\n\")\nprint(json.dumps({\n    \"output\": str(OUTPUT), \"passed\": 472, \"cpu_benchmark\": record[\"cpu_benchmark\"],\n}, indent=2))\n"
+}

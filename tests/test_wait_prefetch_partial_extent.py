@@ -360,6 +360,7 @@ def test_partial_enqueue_reclaims_only_the_bounded_safe_input_tail_without_waiti
         ("mamba_reserve_shortfall", 17, 1, 180),
         ("byte_shortfall", 17, 2, 179),
         ("unobservable", 17, 2, 180),
+        ("unobservable_missing_pool", 17, 2, 180),
         ("partial_extent", 17, 2, 180),
         ("capacity_probe", 17, 2, 180),
         ("nothing_freed", 17, 2, 180),
@@ -377,7 +378,7 @@ def test_successful_reclaim_reuses_only_a_complete_reserved_burst_plan(
         capacity_reclaim_probe=case == "capacity_probe",
     )
     headroom = replace(
-        original.headroom, observable=case != "unobservable",
+        original.headroom, observable=not case.startswith("unobservable"),
         device_full_free_tokens=free_full, device_mamba_free_slots=free_mamba,
     )
     diagnosis = {"freed_units": {0: 8}}
@@ -385,6 +386,8 @@ def test_successful_reclaim_reuses_only_a_complete_reserved_burst_plan(
     cache.reclaim_beliefkv_handoff_capacity = Mock(
         return_value={} if case == "nothing_freed" else {0: 8},
     )
+    if case == "unobservable_missing_pool":
+        cache.cache_controller.mem_pool_host.entry_map.pop("mamba")
     fallback = replace(
         original, step=None, steps=(), no_step_reason="fresh_target_unavailable",
     )
