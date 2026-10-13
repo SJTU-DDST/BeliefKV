@@ -1,0 +1,138 @@
+{
+  "schema_version": 1,
+  "qualified_at_local": "2026-10-14T01:40:05.441012+08:00",
+  "administrative_cutoff_at_local": "2026-10-13T23:59:01.870697+08:00",
+  "administrative_cutoff_ts_ms": 1791907141870.697,
+  "collection_code_commit": "45f7afb0fc3b8b2921a388560101e00eac291df7",
+  "sealed_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v334_v54_final_wait_prefetch_20261014.json.gz",
+  "sealed_report_sha256": "7f4ae2960aa5fa4c6b787667fb32bb36e1227128ce06b6b326001f5a85918d3d",
+  "stop_receipt": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/server_reservation_cutoff.json",
+  "stop_receipt_sha256": "d7d51b84966a8fcbfdfd75183b0833ac4ffbd7f1dcfee1734bd32dfa6d9da0ce",
+  "event_counts": {
+    "join_ticket": {
+      "observed_events": 186,
+      "known_completion_at_or_before_cutoff_events": 185,
+      "sampled_fitting_positive_full_events": 161,
+      "sampled_fitting_without_early_confirmed_reuse_events": 88,
+      "early_next_request_confirmed_full_reuse_events": 73,
+      "early_next_request_confirmed_full_reuse_bytes": 1770618880,
+      "unknown_completion_events": 1
+    },
+    "tool_wait": {
+      "observed_events": 23995,
+      "known_completion_at_or_before_cutoff_events": 23994,
+      "sampled_fitting_positive_full_events": 346,
+      "sampled_fitting_without_early_confirmed_reuse_events": 186,
+      "early_next_request_confirmed_full_reuse_events": 160,
+      "early_next_request_confirmed_full_reuse_bytes": 11141898240,
+      "unknown_completion_events": 1
+    }
+  },
+  "eligible_timing": {
+    "join_ticket": {
+      "eligible_completed_and_served_events": 185,
+      "fields_ms": {
+        "completion_to_client_submit_ms": {
+          "count": 185,
+          "p50": 18.9189453125,
+          "p90": 60.216796875,
+          "max": 107.146728515625
+        },
+        "client_submit_to_native_arrival_ms": {
+          "count": 185,
+          "p50": 90.486328125,
+          "p90": 171.806640625,
+          "max": 380.6650390625
+        },
+        "client_submit_to_first_service_ms": {
+          "count": 185,
+          "p50": 300.889404296875,
+          "p90": 13587.494384765625,
+          "max": 16635.0302734375
+        },
+        "submit_to_first_service_ms": {
+          "count": 185,
+          "p50": 189.31103515625,
+          "p90": 13447.814453125,
+          "max": 16454.42041015625
+        },
+        "first_ack_to_first_service_ms": {
+          "count": 88,
+          "p50": 3235.6556396484375,
+          "p90": 17750.855712890625,
+          "max": 470455.6669921875
+        },
+        "last_ack_to_first_service_ms": {
+          "count": 88,
+          "p50": 2429.51513671875,
+          "p90": 17342.631103515625,
+          "max": 25656.107666015625
+        }
+      },
+      "completion_to_first_service_ms": {
+        "count": 185,
+        "p50": 340.304443359375,
+        "p90": 13694.64111328125,
+        "max": 16700.476318359375
+      }
+    },
+    "tool_wait": {
+      "eligible_completed_and_served_events": 23994,
+      "fields_ms": {
+        "completion_to_client_submit_ms": {
+          "count": 23994,
+          "p50": 15.307373046875,
+          "p90": 63.865966796875,
+          "max": 232245.88549804688
+        },
+        "client_submit_to_native_arrival_ms": {
+          "count": 23994,
+          "p50": 148.29541015625,
+          "p90": 289.43017578125,
+          "max": 3140.662353515625
+        },
+        "client_submit_to_first_service_ms": {
+          "count": 23994,
+          "p50": 988.413818359375,
+          "p90": 13085.776611328125,
+          "max": 16999.770263671875
+        },
+        "submit_to_first_service_ms": {
+          "count": 23994,
+          "p50": 770.8603515625,
+          "p90": 12851.861572265625,
+          "max": 16816.81201171875
+        },
+        "first_ack_to_first_service_ms": {
+          "count": 199,
+          "p50": 632.854736328125,
+          "p90": 18420.20068359375,
+          "max": 346889.8935546875
+        },
+        "last_ack_to_first_service_ms": {
+          "count": 199,
+          "p50": 629.94970703125,
+          "p90": 18420.165283203125,
+          "max": 346889.8605957031
+        }
+      },
+      "completion_to_first_service_ms": {
+        "count": 23994,
+        "p50": 1176.1114501953125,
+        "p90": 13383.22216796875,
+        "max": 232357.53271484375
+      }
+    }
+  },
+  "post_cutoff_completion_rows_excluded": [],
+  "post_cutoff_first_service_rows_excluded": [],
+  "helper_sha256": "fb2c29ca346bf42573b8ccb0a2a5779aa333d9d1d330106546bae197fc7f3f9e",
+  "scope": [
+    "Derived from sealed V334 prefixes and V54's actual stop receipt; no raw reread.",
+    "Known completion and first service must both occur at or before the cutoff for timing.",
+    "Sampled fitting plans do not prove capacity at actual trigger time.",
+    "Unknown and post-cutoff events cannot provide natural RETURN training labels.",
+    "Do not use the unqualified full-prefix summary as a pre-cutoff outcome.",
+    "Event coverage and queue timing do not prove causal throughput or JCT gains."
+  ]
+}
