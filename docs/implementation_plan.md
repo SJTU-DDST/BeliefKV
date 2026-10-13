@@ -2,6 +2,21 @@
 
 Status date: 2026-10-14.
 
+Commit978bdc9 removes eager temporary deque allocation from every semantic
+decode callback. Allocate once for a new request; retain both empty and
+nonempty histories and the existing progress/marker/EOS behavior. V347 compares
+1200 identical-input cycles against frozen2c488a9 with156 workflows,64 tracked
+parent handoffs and48 serviced requests. Completed-batch mean wall time is
+111.822/91.067us (-18.56%); admission changes about+0.06%, with identical order
+and observation state. This local CPU result is not whole-prefill or GPU/JCT gain.
+V348 counts allocations separately:960 versus48 for48 requests over20 batches,
+or zero new allocations when history already exists.534 checks and two subchecks
+pass against the existing candidate engine. V349 binds14 sources and these
+CPU/allocation receipts to unchanged f7e0a895/a8f4ea97. Include the qualified
+fix in the next V55 cold target; keep workload, budgets and disabled batching.
+Start after06:00 only when the GPU is available, then validate real turnover
+phases, admission waiting, useful FULL consumption and full quality/JCT outcomes.
+
 V344 exactly replays all 18 recorded V54 tail curves using linked roles,
 commands, elapsed time and effective counts inferred from all curve points.
 The timing export uses calls active within the target invocation; runtime

@@ -1,0 +1,182 @@
+{
+  "scope": "synthetic CPU benchmark; not live GPU overhead or an end-to-end speedup",
+  "baseline_revision": "2c488a9606d91437445c46850787b516dd768adb",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "06ac8895fee38339cae0761af8ecf7bbc273b66b23396404833b966e127291cf",
+    "beliefkv/policy/causal_frontier.py": "b2e1567cc5a6f50f33329c9b73f21949a6da6061b4560cbc36beb65e7e54acb2",
+    "beliefkv/runtime/sglang_v0520_admission.py": "092d0f2814402e2a8a8211ba6afa6fad273b2c85323d73cc5bf8f89f29cc5ecd"
+  },
+  "optimized_runtime_source": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/sglang_v0520_runtime.py",
+  "optimized_runtime_source_sha256": "6ce86bea0aa8cbdb4c7f58acae99e9ca5068093168cf618ab9ea9b98e96fd963",
+  "workflows": 156,
+  "retained_rounds_per_workflow": 8,
+  "invocations": 3900,
+  "joins": 1248,
+  "waiting_requests": 156,
+  "iterations": 1200,
+  "planning_calls_per_cycle": 1,
+  "parent_handoff_contexts": 64,
+  "semantic_progress": true,
+  "batch_state_equal": true,
+  "planning_scope": "causal admission calls only; excludes physical handoff inspection and enqueue",
+  "resident_first": false,
+  "residency_fixture": null,
+  "native_inspection_counts_equal": null,
+  "native_inspections_including_warmup": null,
+  "invalidate_caches_each_iteration": true,
+  "queue_order_equal": true,
+  "costs": {
+    "baseline": {
+      "admission": {
+        "count": 1200,
+        "mean_ms": 1.3220797133333333,
+        "p50_ms": 1.251352,
+        "p99_ms": 1.607999,
+        "max_ms": 1.697867
+      },
+      "batch_completed": {
+        "count": 1200,
+        "mean_ms": 0.1118219675,
+        "p50_ms": 0.107662,
+        "p99_ms": 0.133619,
+        "max_ms": 0.627531
+      }
+    },
+    "optimized": {
+      "admission": {
+        "count": 1200,
+        "mean_ms": 1.3229195941666667,
+        "p50_ms": 1.250533,
+        "p99_ms": 1.638056,
+        "max_ms": 2.065729
+      },
+      "batch_completed": {
+        "count": 1200,
+        "mean_ms": 0.091066675,
+        "p50_ms": 0.088426,
+        "p99_ms": 0.108478,
+        "max_ms": 0.11547
+      }
+    },
+    "optimized_profiled": {
+      "admission": {
+        "count": 1200,
+        "mean_ms": 1.3422447608333334,
+        "p50_ms": 1.269928,
+        "p99_ms": 1.631875,
+        "max_ms": 1.794365
+      },
+      "batch_completed": {
+        "count": 1200,
+        "mean_ms": 0.09298732833333333,
+        "p50_ms": 0.090013,
+        "p99_ms": 0.111063,
+        "max_ms": 0.128964
+      }
+    }
+  },
+  "admission_mean_reduction_fraction": -0.0006352724611558003,
+  "batch_completed_mean_reduction_fraction": 0.18561015303187178,
+  "profiled_timing": {
+    "schema_version": 1,
+    "enabled": true,
+    "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+    "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+    "elapsed_ms": 6736.431445,
+    "bucket_upper_ms": [
+      0.01,
+      0.025,
+      0.05,
+      0.1,
+      0.25,
+      0.5,
+      1.0,
+      2.5,
+      5.0,
+      10.0,
+      25.0,
+      50.0,
+      100.0,
+      250.0,
+      1000.0,
+      null
+    ],
+    "phases": {
+      "residency_hint": {
+        "count": 18784,
+        "total_ms": 57.253861,
+        "self_ms": 57.253861,
+        "mean_ms": 0.003048012191226576,
+        "max_ms": 0.013136,
+        "histogram": [
+          18778,
+          6,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "admission_plan": {
+        "count": 1205,
+        "total_ms": 1611.609557,
+        "self_ms": 1554.355696,
+        "mean_ms": 1.337435317012448,
+        "max_ms": 1.783063,
+        "histogram": [
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          1205,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      },
+      "batch_completed": {
+        "count": 1205,
+        "total_ms": 107.831377,
+        "self_ms": 107.831377,
+        "mean_ms": 0.08948661991701244,
+        "max_ms": 0.129318,
+        "histogram": [
+          0,
+          0,
+          0,
+          1043,
+          162,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0,
+          0
+        ]
+      }
+    }
+  }
+}
