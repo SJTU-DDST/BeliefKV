@@ -339,6 +339,7 @@ class NativeAdmissionRuntime:
         self._h2d_service_estimates: dict[tuple[int, str], NativeServiceEstimate | None] = {}
         self._d2h_service_estimates: dict[tuple[int, str], NativeServiceEstimate | None] = {}
         self._residency_ordering_hints: dict[PrefillCandidateKey, tuple[float, dict]] = {}
+        self._residency_hint_admissions: dict[str, tuple[int, PrefillCandidateKey, int]] = {}
         service_path = os.environ.get("BELIEFKV_TRANSFER_SERVICE_SEED")
         service_sha = os.environ.get("BELIEFKV_TRANSFER_SERVICE_SEED_SHA256")
         if bool(service_path) != bool(service_sha):
@@ -637,6 +638,10 @@ class NativeAdmissionRuntime:
         self._prefill_causal_cache = None
         self._prefill_cycle_active = False
         self._residency_ordering_hints.clear()
+        self.counts["residency_ordering_hint_feedback_unserved"] += len(
+            self._residency_hint_admissions,
+        )
+        self._residency_hint_admissions.clear()
         self._discard_join_ticket("shutdown")
         self._final_stages.clear()
         self._final_request_stages.clear()
@@ -7789,12 +7794,17 @@ class NativeAdmissionRuntime:
                 hinted = self._residency_ordering_hints.get(key)
                 if hinted is not None and hinted[0] > time.monotonic() * 1000.:
                     self.counts["residency_ordering_hint_admitted"] += 1
-                    actual = getattr(req, "cached_tokens_device", None)
-                    if type(actual) is int:
-                        self.counts["residency_ordering_hint_native_observed"] += 1
-                        self.counts["residency_ordering_hint_shorter_native_prefix"] += int(
-                            actual < hinted[1]["device_checkpoint_tokens"],
+                    # Native fills the tier breakdown in prepare_for_extend,
+                    # after this admission callback.
+                    if (
+                        getattr(req, "_cache_breakdown_computed", None) is False
+                        and not getattr(req, "retracted_stain", False)
+                        and key is not None
+                    ):
+                        self._residency_hint_admissions.setdefault(
+                            req.rid, (id(req), key, hinted[1]["device_checkpoint_tokens"]),
                         )
+                        self.counts["residency_ordering_hint_feedback_deferred"] += 1
                     else:
                         self.counts["residency_ordering_hint_native_unknown"] += 1
                 self.demand_hints.pop(req.rid, None)
@@ -7887,6 +7897,23 @@ class NativeAdmissionRuntime:
         for req in batch.reqs:
             rid = req.rid
             visible_key = self.visible.get(rid)
+            if self._residency_hint_admissions and (
+                feedback := self._residency_hint_admissions.pop(rid, None)
+            ) is not None:
+                instance, key, expected = feedback
+                actual = getattr(req, "cached_tokens_device", None)
+                if (
+                    id(req) == instance and visible_key == key
+                    and getattr(req, "_cache_breakdown_computed", None) is True
+                    and not getattr(req, "retracted_stain", False)
+                    and type(actual) is int
+                ):
+                    self.counts["residency_ordering_hint_native_observed"] += 1
+                    self.counts["residency_ordering_hint_shorter_native_prefix"] += int(
+                        actual < expected,
+                    )
+                else:
+                    self.counts["residency_ordering_hint_native_unknown"] += 1
             if self._parent_capacity_handoffs:
                 if visible_key is not None and visible_key.context_id in self._parent_capacity_handoffs:
                     self._observe_parent_handoff_service(req)
@@ -8012,6 +8039,8 @@ class NativeAdmissionRuntime:
             if getattr(abort, "abort_all", False) or rid.startswith(abort.rid)
         ]
         for rid in removed:
+            if self._residency_hint_admissions.pop(rid, None) is not None:
+                self.counts["residency_ordering_hint_feedback_unserved"] += 1
             del self.visible[rid]
             self._visible_since.pop(rid, None)
             self.demand_hints.pop(rid, None)

@@ -127,6 +127,59 @@ def test_ordering_hint_cannot_prove_reentry_or_bypass_aged_quota():
     runtime.close()
 
 
+@pytest.mark.parametrize("actual,computed,retracted,observed,shorter", [
+    (240, True, False, 1, 0),
+    (80, True, False, 1, 1),
+    (0, False, False, 0, 0),
+    (80, True, True, 0, 0),
+])
+def test_residency_hint_feedback_uses_first_service_breakdown(
+    actual, computed, retracted, observed, shorter,
+):
+    runtime = NativeAdmissionRuntime()
+    request = req("feedback")
+    request.origin_input_ids, request.output_ids = range(257), [1]
+    request._cache_breakdown_computed = False
+    request.retracted_stain = False
+    request.cached_tokens_device = 0
+    assert runtime.register_visible_request(request)
+    key = runtime.visible[request.rid]
+    runtime._residency_ordering_hints[key] = (
+        time.monotonic() * 1000. + 50., {"device_checkpoint_tokens": 200},
+    )
+    runtime.on_prefill_candidate_result(request, admitted=True, result="CONTINUE")
+    assert runtime.counts["residency_ordering_hint_native_observed"] == 0
+    assert runtime.counts["residency_ordering_hint_shorter_native_prefix"] == 0
+    assert request.rid in runtime._residency_hint_admissions
+    request.cached_tokens_device = actual
+    request._cache_breakdown_computed = computed
+    request.retracted_stain = retracted
+    runtime.on_batch_completed(NS(reqs=[request]))
+    assert runtime.counts["residency_ordering_hint_native_observed"] == observed
+    assert runtime.counts["residency_ordering_hint_shorter_native_prefix"] == shorter
+    assert runtime.counts["residency_ordering_hint_native_unknown"] == 1 - observed
+    runtime.on_batch_completed(NS(reqs=[request]))
+    assert runtime.counts["residency_ordering_hint_native_observed"] == observed
+    runtime.close()
+
+
+def test_residency_hint_feedback_keeps_aborted_request_unserved():
+    runtime = NativeAdmissionRuntime()
+    request = req("feedback")
+    request._cache_breakdown_computed = False
+    assert runtime.register_visible_request(request)
+    key = runtime.visible[request.rid]
+    runtime._residency_ordering_hints[key] = (
+        time.monotonic() * 1000. + 50., {"device_checkpoint_tokens": 200},
+    )
+    runtime.on_prefill_candidate_result(request, admitted=True, result="CONTINUE")
+    runtime.on_abort_request(NS(rid=request.rid, abort_all=False))
+    assert not runtime._residency_hint_admissions
+    assert runtime.counts["residency_ordering_hint_feedback_unserved"] == 1
+    assert runtime.counts["residency_ordering_hint_native_observed"] == 0
+    runtime.close()
+
+
 def test_waiting_migration_deferral_requires_overlap_and_native_demand_recovery():
     runtime = NativeAdmissionRuntime()
     assert not runtime.can_defer_waiting_migrations()
