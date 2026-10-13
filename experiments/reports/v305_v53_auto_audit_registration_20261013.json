@@ -1,0 +1,10 @@
+{
+  "registered_at_local": "2026-10-13T19:04:37.994437+08:00",
+  "pid": 2044428,
+  "log": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v305_v53_auto_audit_20261013.log",
+  "helper": "/tmp/beliefkv_v305_v53_auto_audit.py",
+  "helper_sha256": "d5f10c371d31b8d9a47a5181f0347ac1e78000149ab0e73782daee470e89e54d",
+  "registration_helper_sha256": "ca40aa17919a5dba865482eb78527d0bef8487738f10335b9735b0954dc26659",
+  "registration_helper_utf8_source": "\"\"\"Register a detached, read-only audit and verify its initialized state.\"\"\"\n\nfrom datetime import datetime\nimport hashlib\nimport json\nfrom pathlib import Path\nimport subprocess\n\n\nROOT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nPYTHON = \"/home/longhao/miniconda3/envs/beliefkv-next/bin/python\"\nHELPER = Path(\"/tmp/beliefkv_v305_v53_auto_audit.py\")\nLOG = ROOT / \"experiments/reports/v305_v53_auto_audit_20261013.log\"\nOUTPUT = ROOT / \"experiments/reports/v305_v53_auto_audit_registration_20261013.json\"\nif LOG.exists() or OUTPUT.exists():\n    raise ValueError(\"preserve registered audit\")\nwith LOG.open(\"xb\") as stream:\n    process = subprocess.Popen(\n        [PYTHON, str(HELPER)], cwd=ROOT, stdin=subprocess.DEVNULL,\n        stdout=stream, stderr=subprocess.STDOUT, start_new_session=True,\n    )\nrow = {\n    \"registered_at_local\": datetime.now().astimezone().isoformat(),\n    \"pid\": process.pid, \"log\": str(LOG), \"helper\": str(HELPER),\n    \"helper_sha256\": hashlib.sha256(HELPER.read_bytes()).hexdigest(),\n    \"registration_helper_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n    \"registration_helper_utf8_source\": Path(__file__).read_text(),\n    \"scope\": \"Process registration; audit initialization and completed result must be separately observed.\",\n}\nOUTPUT.write_text(json.dumps(row, indent=2, allow_nan=False) + \"\\n\")\nprint(json.dumps(row, indent=2))\n",
+  "scope": "Process registration; audit initialization and completed result must be separately observed."
+}

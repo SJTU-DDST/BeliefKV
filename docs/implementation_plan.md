@@ -7,12 +7,31 @@ and semantic-target checks. A negative hint skips detailed closure allocation;
 positive or unknown evidence retains complete planning and native enqueue
 validation. Detailed opportunity audit remains on the full path. 662 checks
 pass; identical CPU fixtures reduce empty-path cost by 77-91% but add 6-38us
-for positive targets. Cold V53 must evaluate actual control cost, short-prefill
+for positive targets. V53 cold-started at 18:55:48 from 02c171a. V303 verifies
+83 unchanged plan fields, identical physical capacity, actual GPU service and
+2327 shortcut calls; no sampled thread spans were yet observed. Cold V53 must
+evaluate actual control cost, short-prefill
 execution and useful prefetch, not infer GPU speedup from this microbenchmark.
 Sampled layer probes add thread CPU spans to distinguish own CPU from wall time;
 their difference does not identify GIL stalls. V298 records 461 GIL samples and
 119 errors after the busy window; background writer interference remains
 unquantified, so no writer suppression has been added.
+V52 stopped at 18:51:35 with 81 completed and 75 arrived unfinished, all retained.
+Its 156 workspaces were fully compared and archived from 38.773 to 4.147GB;
+75 owned containers were removed. V304 seals pre-cutoff early-consumed FULL
+at JOIN 43/1.279GB and tool 133/7.800GB, retaining 56 unknown JOIN boundaries
+and excluding seven late tool completions and six late first services.
+V305 completed the fully covered 600-900s audit at 19:13:51. V53 has
+337028/380722 decode request steps (-11.48%) and 36.154s instrumented
+exclusive control wall, versus V52's 41.287s. Tool-prefetch self wall is
+6.389s versus 8.692s; these different live trajectories do not yield a causal
+speedup. Matched short-prefill worker cohorts remain 1.55-1.95x native.
+Among 55 short samples, GPU/CPU/own-thread CPU span P50 is
+41.748/41.506/41.505ms; actual span has not materially improved.
+The measured thread consumes most observed wall, but the native counterpart
+was not measured, so neither GIL attribution nor the full excess GDN cost is
+established. Keep V53 running while qualifying a substantive dispatch/turnover
+fix; no throughput or full-JCT acceptance has passed.
 
 ## Current Goal Revision
 
@@ -54,7 +73,8 @@ while observed GPU/CPU layer-span P50 remains41.990/41.783ms. Moving the
 planning boundary did not establish a throughput or complete-forward gain.
 Continue reducing actual control work and locating eager GDN dispatch cost.
 Both live-resolved backends match: FlashInferGDN prefill, TritonGDN decode
-and breakable prefill graphs. Keep V52 frozen while preparing further candidates.
+and breakable prefill graphs. V52 has been administratively stopped; keep V53
+frozen while preparing further candidates.
 Inspect the newest live run with explicitly bounded snapshots when diagnosing
 an active failure, and label those as partial rather than final outcomes.
 Use the fixed V29 native as a qualified comparison reference. Reopen older
