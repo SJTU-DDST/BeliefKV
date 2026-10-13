@@ -14,6 +14,23 @@ min_free_slots_delay=None、enable_mixed_chunk=False、
 prefill_decode_interval=0；这组共用配置保持，V53不热改。
 官方最新稳定发布已由API核验为v0.5.21；实现存在不等于实验启用。
 
+v309补齐V53的3600–3900秒窗口：decode服务步数332347/353757，
+少6.05%，控制独占墙钟23.423秒，短单请求787/829个均replay。
+v311按16-token工作桶、前缀桶及前后批次配对，94/92个匹配样本
+的原始launch→处理完成均值为66.841/64.401ms，多2.440ms；
+截断worker却为8.943/6.572ms。精确token配对不足5例，保持未知。
+不能把worker比率当完整forward倍数，也不能据此宣布全程收益。
+v310候选将同因果组的缓存局部性排序改为只读session驻留提示；
+提示明确input_prefix_verified=false，与完整reentry观测分开，
+沿用50ms有效期。未知仍完整检查，原生输入匹配/容量/依赖以及
+老化队首的恢复就绪确认保持权威；正提示不能生成恢复anchors。
+409项检查及36组实际CPU int64索引对照通过，匹配输入下完整
+规划CPU下降4.7%–36.5%，不代表实际hint准确率或GPU/JCT收益。
+新增原生前缀分歧聚合计数用于冷测；V53继续冻结，候选计划在
+156条结果及HTML/workspace收尾后冷测V54，不新增prefill策略。
+最新incomplete django-11885末轮finish_reason=length，报告反复
+重述同一问题；deadline未到、child均返回，无新增guard或预算调整。
+
 v307补充V53完整1800–2100秒窗口：decode服务步数为
 357336/347017，阶段上多2.97%；平均可见上下文为23212/23808
 token，prefill新增工作为2.230/1.985M token。轨迹与工作量仍不同，

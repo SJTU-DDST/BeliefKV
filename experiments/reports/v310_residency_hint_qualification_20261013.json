@@ -1,0 +1,44 @@
+{
+  "qualified_at_local": "2026-10-13T21:10:44.071526+08:00",
+  "status": "qualified_for_cold_development",
+  "base_revision": "305c6bb82d1d2257aab6037b1e3a318c555b9df3",
+  "candidate_root": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011",
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "9d1a86842a1a20e8f4afca563b15deb9605182b9f062e8afb341a3665f4f3b87",
+    "beliefkv/runtime/sglang_v0520_physical.py": "1a96144b9d7f74f8b79ddb939371f4a177118440f67a35be66dab61d9ea81506",
+    "scripts/benchmark_prefill_probe_budget_cpu.py": "a003c291735da38ac340aaee96074ae9ff492ad586e74da63f0c6be26c5eb482",
+    "scripts/analyze_prefill_work_bins.py": "4440fcfa3e1c68433b57ffb56696eb8f3bb2c631bf3887dfd67e3d52c694ff3f",
+    "scripts/seal_residency_hint_qualification.py": "0ed95dff839c65d6a82640e1a84284e228dad0b70d0561c681e5c4b0781445fd",
+    "tests/test_session_residency_hint.py": "5381604fe714c574668f5fa4a2d8afd40b61adea969d8b0d69e0019a577b0d61",
+    "tests/test_sglang_v0520_runtime.py": "56c035ee452a577f04b9d67a14c088a57f246dcd82bc0cc44984567f344d0cf9"
+  },
+  "canonical_patch_sha256": "6938bd10ff393dc89c9aeb5ed14da2385d5d95e00529113e12eced93cca5fff0",
+  "checks": {
+    "tests": 409,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v310_residency_hint_tests_20261013.xml",
+    "sha256": "da53239f5a7583493de0866ee1aa711fd6fe5fc1693bfc0fb7700234e3981f8d"
+  },
+  "benchmark": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v310_residency_hint_prefill_cpu_20261013.json",
+    "sha256": "c2d4edd80ef99e69b679b208df7cec82ea71abeed2da74534cb6dda252007096",
+    "case_count": 36,
+    "minimum_cpu_reduction": 0.0473214442193175,
+    "maximum_cpu_reduction": 0.3646443435340768
+  },
+  "constraints": [
+    "Session residency hints affect ordering only; input token contents are explicitly unverified.",
+    "Hints are kept separate from authoritative reentry observations and expire on the existing 50ms cadence.",
+    "Unknown or unsupported hints retain the complete native input-checkpoint inspection.",
+    "Changed-input positive hints cannot create restore anchors or prove readiness for a reduced aged-head quota.",
+    "Native prefix matching, complete data dependencies and resource admission remain authoritative.",
+    "Aggregate native-prefix observations measure hint disagreement without new per-request I/O or policy gates.",
+    "Matching-input CPU fixtures are not online hint accuracy, GPU speedup, useful prefetch or JCT proof.",
+    "No new prefill batching, delay, mixed chunk, canary or completion guard is enabled.",
+    "Running V53 stays frozen; deploy only after its process and postprocessing completion checks."
+  ],
+  "helper_sha256": "0ed95dff839c65d6a82640e1a84284e228dad0b70d0561c681e5c4b0781445fd",
+  "helper_utf8_source": "#!/usr/bin/env python3\n\"\"\"Seal residency-ordering qualification while preserving the running source.\"\"\"\n\nfrom __future__ import annotations\n\nimport argparse\nfrom datetime import datetime\nimport hashlib\nimport json\nfrom pathlib import Path\nimport subprocess\nimport xml.etree.ElementTree as ET\n\n\nROOT = Path(__file__).resolve().parents[1]\n\n\ndef digest(path):\n    return hashlib.sha256(path.read_bytes()).hexdigest()\n\n\ndef main():\n    parser = argparse.ArgumentParser(description=__doc__)\n    parser.add_argument(\"--junit\", type=Path, required=True)\n    parser.add_argument(\"--benchmark\", type=Path, required=True)\n    parser.add_argument(\"--output\", type=Path, required=True)\n    args = parser.parse_args()\n    if args.output.exists():\n        raise ValueError(\"preserve qualification\")\n    suite, = ET.parse(args.junit).getroot().findall(\"testsuite\")\n    checks = {key: int(suite.get(key)) for key in (\"tests\", \"failures\", \"errors\", \"skipped\")}\n    if checks != {\"tests\": 409, \"failures\": 0, \"errors\": 0, \"skipped\": 0}:\n        raise ValueError(f\"unexpected qualification: {checks}\")\n    benchmark = json.loads(args.benchmark.read_bytes())\n    source = ROOT / \"beliefkv/runtime/sglang_v0520_runtime.py\"\n    if benchmark[\"qualified_runtime_sha256\"] != digest(source):\n        raise ValueError(\"benchmark runtime changed\")\n    cases = benchmark[\"cases\"]\n    if len(cases) != 36 or any(\n        not row[\"matching_input_checkpoint_order_equal\"] or not row[\"tensor_indices\"]\n        for row in cases\n    ):\n        raise ValueError(\"missing native matching-input CPU evidence\")\n    reductions = [row[\"mean_thread_cpu_reduction_fraction\"] for row in cases]\n    paths = (\n        \"beliefkv/runtime/sglang_v0520_runtime.py\",\n        \"beliefkv/runtime/sglang_v0520_physical.py\",\n        \"scripts/benchmark_prefill_probe_budget_cpu.py\",\n        \"scripts/analyze_prefill_work_bins.py\",\n        \"scripts/seal_residency_hint_qualification.py\",\n        \"tests/test_session_residency_hint.py\",\n        \"tests/test_sglang_v0520_runtime.py\",\n    )\n    result = {\n        \"qualified_at_local\": datetime.now().astimezone().isoformat(),\n        \"status\": \"qualified_for_cold_development\",\n        \"base_revision\": subprocess.check_output(\n            [\"git\", \"rev-parse\", \"HEAD\"], cwd=ROOT, text=True,\n        ).strip(),\n        \"candidate_root\": str(ROOT),\n        \"source_sha256\": {path: digest(ROOT / path) for path in paths},\n        \"canonical_patch_sha256\": digest(\n            ROOT / \"patches/sglang-v0.5.20-beliefkv-staging.patch\",\n        ),\n        \"checks\": {**checks, \"path\": str(args.junit.resolve()), \"sha256\": digest(args.junit)},\n        \"benchmark\": {\n            \"path\": str(args.benchmark.resolve()), \"sha256\": digest(args.benchmark),\n            \"case_count\": len(cases), \"minimum_cpu_reduction\": min(reductions),\n            \"maximum_cpu_reduction\": max(reductions),\n        },\n        \"constraints\": [\n            \"Session residency hints affect ordering only; input token contents are explicitly unverified.\",\n            \"Hints are kept separate from authoritative reentry observations and expire on the existing 50ms cadence.\",\n            \"Unknown or unsupported hints retain the complete native input-checkpoint inspection.\",\n            \"Changed-input positive hints cannot create restore anchors or prove readiness for a reduced aged-head quota.\",\n            \"Native prefix matching, complete data dependencies and resource admission remain authoritative.\",\n            \"Aggregate native-prefix observations measure hint disagreement without new per-request I/O or policy gates.\",\n            \"Matching-input CPU fixtures are not online hint accuracy, GPU speedup, useful prefetch or JCT proof.\",\n            \"No new prefill batching, delay, mixed chunk, canary or completion guard is enabled.\",\n            \"Running V53 stays frozen; deploy only after its process and postprocessing completion checks.\",\n        ],\n        \"helper_sha256\": digest(Path(__file__)),\n        \"helper_utf8_source\": Path(__file__).read_text(),\n    }\n    args.output.write_text(json.dumps(result, indent=2, allow_nan=False) + \"\\n\")\n    print(json.dumps({key: result[key] for key in (\"status\", \"checks\", \"benchmark\")}, indent=2))\n\n\nif __name__ == \"__main__\":\n    main()\n"
+}
