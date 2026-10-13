@@ -9,7 +9,7 @@ from pathlib import Path
 GB = 1_000_000_000  # SGLang --hicache-size is total decimal GB, split across pools.
 GIB = 1024**3
 MAX_POOL_GB = 200
-RESERVE_GIB = 8
+RESERVE_GIB = 6
 
 
 def check_host_pool(
