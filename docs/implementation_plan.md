@@ -2,6 +2,45 @@
 
 Status date: 2026-10-13.
 
+Server reservation, effective 2026-10-13: no experiments during the daily
+00:00-06:00 Asia/Shanghai interval. Release our experiment processes and
+verified owned containers starting at 23:59; never reset the GPU or stop
+another user's workload. Preserve raw traces and administrative censoring
+for any unfinished collection. V55 may cold-start no earlier than
+2026-10-14 06:00, after GPU availability is checked; keep waiting if occupied.
+The independent cron controller lives in /home/longhao/experiment/ops.
+Natural V54 completion uses the existing complete-postprocessing validation;
+an actual reservation cutoff uses the development-restart path and retained
+execution checkout. This supersedes the old immediate-after-V54 launch.
+The goal stays active; workload, model budgets and disabled batching stay fixed.
+
+Latest V321 covers V54's post-replenishment 3600-3900s window:
+350521/353757 decode steps (-0.91%), contexts 18109/18077 tokens,
+extend work 2.215/2.271M tokens and 20.241s exclusive instrumented control.
+Fine work/neighbor matching supports 108/118 short samples: raw completion
+60.326/67.333ms (-7.008ms), yet clipped worker is 8.112/6.997ms.
+No paired restore-wait probes exist here; GPU spans and dependency waits
+remain unknown. V319's 3000-3300s window remains -3.78% service, 16.141s
+control and +10.276ms raw completion in 101/97 broad neighbor-matched
+samples; fine neighbor cohorts lack support. Preserve the changing direction
+and do not turn interval boundaries or a fixed excess into GPU/JCT proof.
+
+Development commit 1a9286e adds one-in-16 prefill turnover observations:
+selection/admission, run_batch, WAR/queue publication, post-launch physical
+planning and result processing have wall/own-thread CPU spans. Nonblocking
+CUDA events enclose compute-stream work and dispatch/dependency gaps, not
+exclusive kernels. Normal mode uses its actual current stream; overlap uses
+the worker forward stream. Native and predictive share the instrumentation,
+with no Req/tensor ownership, policy changes or new prefill delay strategies.
+gpu_service_sample now includes forward_iter for exact sample pairing.
+144 checks and two subchecks pass; same-dispatch CPU fixtures add 2.2-4.2us
+per scheduler iteration, excluding actual CUDA-event cost. V322 binds patch
+a8f4ea97 to engine tree f7e0a895. Real GPU correctness/perturbation and
+same-version native counterparts remain pending. Keep V54 frozen at
+45f7afb/6938bd10, then cold-test V55 during allowed hours after natural
+postprocessing or a recorded administrative cutoff and process exit.
+No workload or budget changes.
+
 Current run: V54 cold-started at 21:33:35 CST on port 18459 from 45f7afb,
 after all 156 V53 outcomes and HTML/workspace postprocessing completed.
 V53 retains 155 completed and one incomplete over 9004.454s. Among the 155

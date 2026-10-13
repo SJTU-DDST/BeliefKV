@@ -1,0 +1,120 @@
+{
+  "busy_window_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v321_v54_busy_3600_3900_20261013.json",
+  "busy_window_report_sha256": "60db10c757dfd7a640508581fa5c4e858177ac1026e27b66ccfbdefa225e88ea",
+  "source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/server/runtime_audit.jsonl",
+  "read_prefix_bytes": 2053346295,
+  "read_prefix_sha256": "53be5dea8e4ff33308cbe3a740d9ffd52d6be54f793b825b61fcbf587275ffb3",
+  "begin_ts_ms": 1791902198670.0,
+  "end_ts_ms": 1791902498670.0,
+  "prefill_batches_in_window": 2195,
+  "probes_launched_in_window": 0,
+  "paired_samples": 0,
+  "unmatched_samples": [],
+  "sampled_wait": {
+    "count": 0,
+    "sum_ms": 0,
+    "p50_ms": null,
+    "p90_ms": null,
+    "max_ms": null
+  },
+  "sampled_worker_interval": {
+    "count": 0,
+    "sum_ms": 0,
+    "p50_ms": null,
+    "p90_ms": null,
+    "max_ms": null
+  },
+  "short_single_request_sampled_wait": {
+    "count": 0,
+    "sum_ms": 0,
+    "p50_ms": null,
+    "p90_ms": null,
+    "max_ms": null
+  },
+  "short_single_request_sampled_worker_interval": {
+    "count": 0,
+    "sum_ms": 0,
+    "p50_ms": null,
+    "p90_ms": null,
+    "max_ms": null
+  },
+  "observed_layer_span_distributions": {
+    "all_paired": {
+      "gpu_observed_layer_span_ms": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "p90_ms": null,
+        "max_ms": null
+      },
+      "cpu_observed_layer_span_ms": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "p90_ms": null,
+        "max_ms": null
+      },
+      "thread_cpu_observed_layer_span_ms": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "p90_ms": null,
+        "max_ms": null
+      },
+      "cpu_layer_wait_enqueue_ms": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "p90_ms": null,
+        "max_ms": null
+      }
+    },
+    "short_single_request": {
+      "gpu_observed_layer_span_ms": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "p90_ms": null,
+        "max_ms": null
+      },
+      "cpu_observed_layer_span_ms": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "p90_ms": null,
+        "max_ms": null
+      },
+      "thread_cpu_observed_layer_span_ms": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "p90_ms": null,
+        "max_ms": null
+      },
+      "cpu_layer_wait_enqueue_ms": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "p90_ms": null,
+        "max_ms": null
+      }
+    }
+  },
+  "samples": [],
+  "semantics": [
+    "Audit reads stop at the previous report's exact hashed complete-line prefix.",
+    "Probes use launch wall time; worker samples use completed half-open-window membership.",
+    "Pairing requires identical request sets and one launch-to-completion interval containing the probe.",
+    "Overlap launch time is reconstructed from the sample's own monotonic timestamps and completion wall time.",
+    "Ambiguous and unmatched samples remain unknown; sample ordinal is not treated as forward_iter.",
+    "CUDA waits include timing-event overhead; worker intervals include CPU and overlap processing.",
+    "No extrapolation to unsampled prefills, exact kernel attribution or removable JCT is inferred.",
+    "Small sampled waits do not establish that every speculative dependency is correctly scoped.",
+    "Missing span fields in older traces stay unknown, not zero.",
+    "GPU observed-layer spans include kernels and CPU submission gaps between waits, not a full forward.",
+    "Thread CPU spans exclude other threads and unscheduled time; wall minus CPU is not a GIL attribution."
+  ],
+  "analysis_started_at_local": "2026-10-13T23:06:07.810039+08:00",
+  "analysis_finished_at_local": "2026-10-13T23:06:12.270732+08:00",
+  "analyzer_sha256": "91046c2a32f40a3f486348f78263716b02730b65538905110e4a552cf7d42430"
+}

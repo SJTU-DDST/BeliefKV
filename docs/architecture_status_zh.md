@@ -2,6 +2,16 @@
 
 更新日期：2026-10-13。
 
+2026-10-13新增服务器使用约定：每天Asia/Shanghai 00:00–06:00
+让给其他使用者；23:59开始释放我们实验的GPU、客户端和所属容器，
+禁止夜间启动新实验。06:00后确认GPU空闲再恢复冷实验；其他用户
+仍在使用时等待，不停止其任务。V54若未自然收尾则保存截止快照和
+行政删失，不把缺少终态的workflow改成error/incomplete。下一轮
+V55定于2026-10-14 06:00后使用冻结候选，负载/预算及暂缓凑批
+约定不变；此服务器时段限制优先于旧的“本轮结束即启动”计划。
+独立定时管理位于`/home/longhao/experiment/ops/server_reservation.py`，
+不热改V54执行源码，/goal保持active。
+
 下一阶段/goal已重新建立并为active：优先解释并减少同分桶
 decode→短prefill周期约10–14ms的额外耗时，分别测实际GPU工作、
 线程CPU发射、准入/前缀检查、控制事件、迁移规划和结果处理。
@@ -13,6 +23,28 @@ v306确认V53/V29实际enable_prefill_delayer=False、
 min_free_slots_delay=None、enable_mixed_chunk=False、
 prefill_decode_interval=0；这组共用配置保持，V54不热改。
 官方最新稳定发布已由API核验为v0.5.21；实现存在不等于实验启用。
+
+最新阶段证据v321覆盖V54第二波后的3600–3900秒：decode服务
+步数350521/353757，少0.91%，上下文18109/18077 token，
+prefill新增工作2.215/2.271M token，控制独占墙钟20.241秒。
+细工作/邻批次匹配108/118个短样本，raw完成60.326/67.333ms，
+短7.008ms，worker却为8.112/6.997ms。该窗口没有可配对的
+H2D逐层探针，GPU跨度/依赖等待保持未知，不能填零。v319的
+3000–3300秒仍少3.78%服务步数，控制16.141秒；粗邻居匹配
+101/97例raw仍多10.276ms，细邻居配对无足够样本。保留方向
+相反的窗口，不把短prefill差额视为固定常数，也未完成全程验收。
+
+开发提交1a9286e增加下一冷版本的逐批周转观测：每16个prefill
+采一次，分别记录选择/准入、run_batch、WAR/队列发布、迁移规划、
+结果处理的墙钟及本线程CPU；GPU事件非阻塞查询，覆盖计算流区间
+而非纯kernel。normal用实际current stream，overlap用forward
+stream；不持有Req/tensor，不改调度规则/数据依赖。native和
+predictive共用；已为gpu_service_sample补forward_iter以精确配对。
+144项检查及2项子检查通过，CPU同派发对照增量2.2–4.2us/循环；
+真实CUDA事件开销和GPU/JCT收益仍待冷测。v322绑定新patch
+a8f4ea97与引擎树f7e0a895，当前V54仍冻结45f7afb/6938bd10。
+V55计划在允许的时段、V54自然收尾或保存行政中断且退出后冷测，
+继续沿用既有负载、预算及关闭的新prefill延迟/凑批策略。
 
 当前运行V54：2026-10-13 21:33:35 CST从45f7afb冷启动，
 端口18459。V53已完成156条结果及HTML/workspace收尾，结果为
