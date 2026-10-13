@@ -24,7 +24,8 @@ validation. No new completion guards or canary stage. The latest user instructio
 replaces V50's older single-change freeze with the latest committed code.
 
 Trace-analysis priority, added on October 13: analyze the latest finished
-development run first. V49 is the current complete trace; V50 is still live.
+development run first. V49 is the current complete trace; V50 was stopped at
+16:22:48 CST, retaining 133 completed and 23 unfinished workflows.
 Inspect the newest live run with explicitly bounded snapshots when diagnosing
 an active failure, and label those as partial rather than final outcomes.
 Use the fixed V29 native as a qualified comparison reference. Reopen older
@@ -96,6 +97,16 @@ events or synchronization; spans include dispatch gaps, not isolated kernels.
 110 relevant checks pass. Cold V51 keeps the workload, limits and handoff0.
 V50 unfinished tasks retain administrative censoring after the development
 restart; stopped-run completed-only JCT cannot establish improvement.
+
+V284 pairs 99 actual dependency samples in the sealed V50 busy window.
+Among 50 short single-request prefills, GPU wait P50/max is 0.0889/0.3795ms
+versus 15.2809ms worker P50. Unknown old layer-span fields stay unknown;
+this does not establish isolated kernel or scheduler attribution. V285
+qualifies early consumed FULL before cutoff: JOIN66/1.454GB,
+tool241/14.897GB; eight JOIN completions remain unknown, two shutdown tool
+completions and two late first services are excluded. V281 preserves the
+administrative outcomes and verified 156-workspace archive (38.962 to
+4.204GB), removing only the run's 23 stopped containers. Raw traces remain.
 
 V271 is deployed in the frozen V50 code; performance remains unproven.
 Notice recovery is limited to the exact fresh same-batch notice/request and

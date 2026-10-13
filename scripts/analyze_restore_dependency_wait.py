@@ -97,6 +97,9 @@ def analyze(report_path: Path, arm: str) -> dict:
             "worker_interval_ms": row["service_elapsed_ms"],
             "sampled_layer_dependency_wait_ms": probe["gpu_layer_dependency_wait_ms"],
             "sampled_max_layer_dependency_wait_ms": probe["gpu_layer_dependency_wait_max_ms"],
+            "gpu_observed_layer_span_ms": probe.get("gpu_observed_layer_span_ms"),
+            "cpu_observed_layer_span_ms": probe.get("cpu_observed_layer_span_ms"),
+            "cpu_layer_wait_enqueue_ms": probe.get("cpu_layer_wait_enqueue_ms"),
         })
     short = [
         row for row in paired if row["batch_size"] == 1
@@ -126,6 +129,19 @@ def analyze(report_path: Path, arm: str) -> dict:
         "short_single_request_sampled_worker_interval": distribution([
             row["worker_interval_ms"] for row in short
         ]),
+        "observed_layer_span_distributions": {
+            group: {
+                field: distribution([
+                    row[field] for row in rows
+                    if type(row[field]) in (int, float)
+                ])
+                for field in (
+                    "gpu_observed_layer_span_ms", "cpu_observed_layer_span_ms",
+                    "cpu_layer_wait_enqueue_ms",
+                )
+            }
+            for group, rows in (("all_paired", paired), ("short_single_request", short))
+        },
         "samples": paired,
         "semantics": [
             "Audit reads stop at the previous report's exact hashed complete-line prefix.",
@@ -136,6 +152,8 @@ def analyze(report_path: Path, arm: str) -> dict:
             "CUDA waits include timing-event overhead; worker intervals include CPU and overlap processing.",
             "No extrapolation to unsampled prefills, exact kernel attribution or removable JCT is inferred.",
             "Small sampled waits do not establish that every speculative dependency is correctly scoped.",
+            "Missing span fields in older traces stay unknown, not zero.",
+            "GPU observed-layer spans include kernels and CPU submission gaps between waits, not a full forward.",
         ],
     }
 
