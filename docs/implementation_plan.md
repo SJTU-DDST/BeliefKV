@@ -2,6 +2,26 @@
 
 Status date: 2026-10-13.
 
+V310 qualifies session-residency hints for same-causal-group locality ordering.
+Hints explicitly leave input token contents unverified, use a separate 50ms
+cache, and never replace restore-anchor or complete-ready quota checks.
+Unknown hints fall back to native complete reentry inspection; native prefix
+matching, allocation and data dependencies remain authoritative. Add aggregate
+native-prefix disagreement evidence, without extra per-request I/O or gates.
+409 checks pass. Across 36 matching-input CPU int64-index cases with Host,
+mixed and device placement, complete planning CPU falls 4.7-36.5%; this does
+not establish online hint accuracy, useful consumption, GPU or JCT gains.
+V309 seals the latest 3600-3900s window: 332347/353757 service steps (-6.05%)
+and 23.423s instrumented exclusive control wall. V311's 16-token/prefix/
+neighbor matching covers only 94/92 samples: raw launch-to-completion means
+66.841/64.401ms, while clipped worker means are 8.943/6.572ms. Exact-token
+cohorts lack five samples; retain unknown support. Do not claim a complete
+forward ratio or whole-run acceptance. Keep V53 frozen through 156 results
+and postprocessing, then cold-test this candidate in V54; new batching,
+delay and mixed chunk remain deferred. The observed Django-11885 incomplete
+ends on finish_reason=length after repetitive text, with returned children and
+an unexpired deadline; preserve it without a new guard or budget change.
+
 V299 qualifies live, read-only empty-restore hints for operational JOIN/tool
 and semantic-target checks. A negative hint skips detailed closure allocation;
 positive or unknown evidence retains complete planning and native enqueue
