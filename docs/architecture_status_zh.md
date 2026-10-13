@@ -2,6 +2,18 @@
 
 更新日期：2026-10-13。
 
+下一阶段/goal已重新建立并为active：优先解释并减少同分桶
+decode→短prefill周期约10–14ms的额外耗时，分别测实际GPU工作、
+线程CPU发射、准入/前缀检查、控制事件、迁移规划和结果处理。
+阶段目标为短prefill周转差距≤10%、繁忙服务量差距≤5%；最终仍需
+同版本重复对照证明平均JCT和完成吞吐改善及质量/公平性不恶化。
+用户随后要求暂不启用prefilladder：当前原生PrefillAdder已在
+准入路径使用，保持该既有实现；本阶段暂缓新增凑批/延迟策略。
+v306确认V53/V29实际enable_prefill_delayer=False、
+min_free_slots_delay=None、enable_mixed_chunk=False、
+prefill_decode_interval=0；这组共用配置保持，V53不热改。
+官方最新稳定发布已由API核验为v0.5.21；实现存在不等于实验启用。
+
 v299候选在等待上下文的JOIN/tool规划和语义目标检查前，只读原生
 祖先的Host/GPU副本存在性；没有任何Host有、GPU缺失的副本时
 跳过详细closure构造。有潜在目标或观测未知仍走完整规划/校验，

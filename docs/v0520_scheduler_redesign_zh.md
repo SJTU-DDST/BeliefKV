@@ -1,5 +1,14 @@
 # v0.5.20 调度适配边界
 
+新/goal以短prefill周转和实际服务收益为当前优先项。用户最新
+要求暂不启用prefilladder：原生PrefillAdder已使用且没有独立
+启用开关，保留既有准入；暂缓新增凑批/延迟策略。v306确认
+V53/V29延迟开关均False、最小空闲槽均None、mixed chunk均False、
+prefill_decode_interval均0。单槽可准入时Adder仍可能生成单请求
+prefill；新增策略应在后续解除约束后单独评估，不能手动绕过
+完整依赖或48请求上限。当前先减少重复准入/前缀和候选工作，
+解释同分桶周转额外耗时，再以JCT/吞吐和公平性共同验收。
+
 状态：2026-10-13。JOIN/tool 预测恢复、FULL-only PREPARE、
 执行 handoff 和首次服务复用归因已用于开发实验。模型提供
 完成/剩余工作预测，runtime 根据因果状态和真实缓存容量

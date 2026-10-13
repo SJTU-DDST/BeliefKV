@@ -1,0 +1,94 @@
+{
+  "observed_at_local": "2026-10-13T19:34:38.306162+08:00",
+  "official_latest_release": {
+    "tag_name": "v0.5.21",
+    "published_at": "2026-10-02T01:09:04Z",
+    "draft": false,
+    "prerelease": false,
+    "target_commitish": "main"
+  },
+  "official_release_api": "https://api.github.com/repos/sgl-project/sglang/releases/latest",
+  "official_release_response_sha256": "f30d0effcddaa0284a557e7bd3747c79839d9852042afea05ab790f240c920f0",
+  "official_refs": "ref: refs/heads/main\tHEAD\n991a29d0ad2b711bfd32415e7d85c465c431e5ee\tHEAD\nd158602ff1d2cb953196c95158c488d503d2470c\trefs/tags/v0.5.20\n7337b27853377544a322fd4390df332d8ca7d8cb\trefs/tags/v0.5.21\n",
+  "engine_base_commit": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
+  "source_sha256": {
+    "python/sglang/srt/managers/scheduler.py": "06b0e1dec9376f3182961e4a9434be8d54805a2b17da8e99d34ab70dacaee08a",
+    "python/sglang/srt/managers/schedule_policy.py": "1192410f1c5898d8ba2c422670971d3359ff586c02e9b6968a15c857599ba749",
+    "python/sglang/srt/managers/prefill_delayer.py": "907356ee0a42e95b506560788c9da1a5bfaabac210a8ae04c96f2ed49f65dc81",
+    "python/sglang/srt/managers/min_free_slots_delayer.py": "bb864fc17446d3ccedc208250ac0171a235a39870bc151139c411049772fbeef",
+    "python/sglang/srt/arg_groups/fields/schedule.py": "8cb3a42816e747d433b82f4248e3f14ffe2f4740547e81be7009f0102724586b"
+  },
+  "deployed_settings": {
+    "predictive_v53": {
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v53/predictive_h2d",
+      "startup_line_sha256": "190af093021c36342ef560a58bfcdd0a1fe67195b585c634aa78e94a35e8a46e",
+      "settings": {
+        "enable_prefill_delayer": false,
+        "prefill_delayer_max_delay_passes": 30,
+        "prefill_delayer_token_usage_low_watermark": null,
+        "prefill_delayer_queue_min_ratio": null,
+        "prefill_delayer_max_delay_ms": null,
+        "min_free_slots_delay": null,
+        "enable_mixed_chunk": false,
+        "prefill_decode_interval": 0,
+        "chunked_prefill_size": 4096,
+        "max_prefill_tokens": 16384,
+        "prefill_max_requests": null,
+        "max_running_requests": 48,
+        "disable_overlap_schedule": false,
+        "schedule_policy": "fcfs",
+        "speculative_algorithm": null
+      }
+    },
+    "native_v29": {
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29/native",
+      "startup_line_sha256": "ac793118fe027f0074237f100a8100c620749b5b529c3f85f98727777c2a8fcc",
+      "settings": {
+        "enable_prefill_delayer": false,
+        "prefill_delayer_max_delay_passes": 30,
+        "prefill_delayer_token_usage_low_watermark": null,
+        "prefill_delayer_queue_min_ratio": null,
+        "prefill_delayer_max_delay_ms": null,
+        "min_free_slots_delay": null,
+        "enable_mixed_chunk": false,
+        "prefill_decode_interval": 0,
+        "chunked_prefill_size": 4096,
+        "max_prefill_tokens": 16384,
+        "prefill_max_requests": null,
+        "max_running_requests": 48,
+        "disable_overlap_schedule": false,
+        "schedule_policy": "fcfs",
+        "speculative_algorithm": null
+      }
+    }
+  },
+  "verified_paths": {
+    "prefill_adder": "Constructed in _get_new_batch_prefill_raw; candidate additions use add_one_req after init_next_round_input.",
+    "beliefkv": "Uses the native adder, with additional causal ordering, reentry inspection and callback work.",
+    "prefill_delayer": "Implementation exists; enable_prefill_delayer=False in both actual startup records.",
+    "min_free_slots_delay": "None in both; no speculative algorithm auto-enables it for this workload.",
+    "mixed_chunk": "False in both; compatibility must be checked before an experiment.",
+    "prefill_decode_interval": "0 in both; no extra configured decode passes between prefills."
+  },
+  "latest_busy_report": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v305_v53_busy_600_900_20261013.json",
+  "latest_busy_report_sha256": "ec3147b4e294be7aae2e154419eb018c9c0803d232f3d08fdeca849ec74cc602",
+  "latest_exclusive_control_wall_ms": {
+    "admission_plan": 2842.9968980000003,
+    "reentry_inspection": 2885.0871510000006,
+    "control_drain": 2978.839994,
+    "event_apply": 2201.2155989999997,
+    "join_prepare": 3981.1436540000004,
+    "prepare_candidate_publication": 1631.036531,
+    "prepare_candidate_maintenance": 1614.89232
+  },
+  "semantics": [
+    "Actual startup values, not CLI defaults inferred from implementation presence.",
+    "Both arms lack delayer/mixed settings; that absence alone does not explain their relative deficit.",
+    "Native request-slot and FULL/Mamba capacity constraints remain authoritative.",
+    "A batching change shared with native requires a common-configuration comparison; old V29 is only a diagnostic reference.",
+    "Exclusive phase wall spans are additional control work, not a complete prefill/kernel attribution or subtractable JCT.",
+    "This audit changes no live configuration, engine source or running experiment."
+  ],
+  "helper_sha256": "881980cc0a6120fee60ffe73de39cd8a838ef875b3a2b7992f3879579498c7fe",
+  "helper_utf8_source": "\"\"\"Bind official release identity and deployed short-prefill feature settings.\"\"\"\n\nimport ast\nfrom datetime import datetime\nimport hashlib\nimport json\nfrom pathlib import Path\nimport subprocess\nfrom urllib.request import Request, urlopen\n\n\nMAIN = Path(\"/home/longhao/experiment/BeliefKV\")\nROOT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nENGINE = MAIN / \"third_party/sglang-v0.5.20\"\nOUTPUT = ROOT / \"experiments/reports/v306_prefill_feature_audit_20261013.json\"\nif OUTPUT.exists():\n    raise ValueError(\"preserve existing feature audit\")\nfields = (\n    \"enable_prefill_delayer\", \"prefill_delayer_max_delay_passes\",\n    \"prefill_delayer_token_usage_low_watermark\",\n    \"prefill_delayer_queue_min_ratio\", \"prefill_delayer_max_delay_ms\",\n    \"min_free_slots_delay\", \"enable_mixed_chunk\", \"prefill_decode_interval\",\n    \"chunked_prefill_size\", \"max_prefill_tokens\", \"prefill_max_requests\",\n    \"max_running_requests\", \"disable_overlap_schedule\", \"schedule_policy\",\n    \"speculative_algorithm\",\n)\nruns = {\n    \"predictive_v53\": MAIN / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v53/predictive_h2d\",\n    \"native_v29\": MAIN / \"experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29/native\",\n}\nvalues = {}\nfor name, arm in runs.items():\n    log = arm / \"server.log\"\n    with log.open(\"rb\") as stream:\n        startup = next(line for line in stream if b\"] server_args=\" in line)\n    args = ast.literal_eval(startup.split(b\"] server_args=\", 1)[1].decode())\n    values[name] = {\n        \"arm\": str(arm), \"startup_line_sha256\": hashlib.sha256(startup).hexdigest(),\n        \"settings\": {field: args[field] for field in fields},\n    }\nrequire_same = tuple(field for field in fields if field != \"schedule_policy\")\nif any(\n    values[\"predictive_v53\"][\"settings\"][field] != values[\"native_v29\"][\"settings\"][field]\n    for field in require_same\n):\n    raise ValueError(\"shared prefill settings differ\")\nsources = (\n    \"python/sglang/srt/managers/scheduler.py\",\n    \"python/sglang/srt/managers/schedule_policy.py\",\n    \"python/sglang/srt/managers/prefill_delayer.py\",\n    \"python/sglang/srt/managers/min_free_slots_delayer.py\",\n    \"python/sglang/srt/arg_groups/fields/schedule.py\",\n)\nrelease_url = \"https://api.github.com/repos/sgl-project/sglang/releases/latest\"\nwith urlopen(Request(release_url, headers={\"User-Agent\": \"BeliefKV-feature-audit\"}), timeout=20) as response:\n    release_bytes = response.read()\nrelease = json.loads(release_bytes)\nrefs = subprocess.check_output([\n    \"git\", \"ls-remote\", \"--symref\", \"origin\", \"HEAD\",\n    \"refs/tags/v0.5.20\", \"refs/tags/v0.5.21\",\n], cwd=ENGINE, text=True, timeout=30)\nbusy_path = ROOT / \"experiments/reports/v305_v53_busy_600_900_20261013.json\"\nbusy = json.loads(busy_path.read_bytes())\nrow = {\n    \"observed_at_local\": datetime.now().astimezone().isoformat(),\n    \"official_latest_release\": {\n        key: release[key] for key in (\"tag_name\", \"published_at\", \"draft\", \"prerelease\", \"target_commitish\")\n    },\n    \"official_release_api\": release_url,\n    \"official_release_response_sha256\": hashlib.sha256(release_bytes).hexdigest(),\n    \"official_refs\": refs,\n    \"engine_base_commit\": subprocess.check_output([\"git\", \"rev-parse\", \"HEAD\"], cwd=ENGINE, text=True).strip(),\n    \"source_sha256\": {\n        path: hashlib.sha256((ENGINE / path).read_bytes()).hexdigest() for path in sources\n    },\n    \"deployed_settings\": values,\n    \"verified_paths\": {\n        \"prefill_adder\": \"Constructed in _get_new_batch_prefill_raw; candidate additions use add_one_req after init_next_round_input.\",\n        \"beliefkv\": \"Uses the native adder, with additional causal ordering, reentry inspection and callback work.\",\n        \"prefill_delayer\": \"Implementation exists; enable_prefill_delayer=False in both actual startup records.\",\n        \"min_free_slots_delay\": \"None in both; no speculative algorithm auto-enables it for this workload.\",\n        \"mixed_chunk\": \"False in both; compatibility must be checked before an experiment.\",\n        \"prefill_decode_interval\": \"0 in both; no extra configured decode passes between prefills.\",\n    },\n    \"latest_busy_report\": str(busy_path),\n    \"latest_busy_report_sha256\": hashlib.sha256(busy_path.read_bytes()).hexdigest(),\n    \"latest_exclusive_control_wall_ms\": {\n        name: busy[\"arms\"][\"predictive_h2d\"][\"control_profile\"][\"phases\"][name][\"self_ms\"]\n        for name in (\n            \"admission_plan\", \"reentry_inspection\", \"control_drain\", \"event_apply\",\n            \"join_prepare\", \"prepare_candidate_publication\", \"prepare_candidate_maintenance\",\n        )\n    },\n    \"semantics\": [\n        \"Actual startup values, not CLI defaults inferred from implementation presence.\",\n        \"Both arms lack delayer/mixed settings; that absence alone does not explain their relative deficit.\",\n        \"Native request-slot and FULL/Mamba capacity constraints remain authoritative.\",\n        \"A batching change shared with native requires a common-configuration comparison; old V29 is only a diagnostic reference.\",\n        \"Exclusive phase wall spans are additional control work, not a complete prefill/kernel attribution or subtractable JCT.\",\n        \"This audit changes no live configuration, engine source or running experiment.\",\n    ],\n    \"helper_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n    \"helper_utf8_source\": Path(__file__).read_text(),\n}\nOUTPUT.write_text(json.dumps(row, indent=2, allow_nan=False) + \"\\n\")\nprint(json.dumps({\n    \"observed_at_local\": row[\"observed_at_local\"],\n    \"official_latest_release\": row[\"official_latest_release\"],\n    \"deployed_settings\": {name: item[\"settings\"] for name, item in values.items()},\n}, indent=2))\n"
+}

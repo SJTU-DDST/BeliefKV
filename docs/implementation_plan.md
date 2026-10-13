@@ -44,20 +44,37 @@ completion throughput successful-task throughput. Keep tail latency, ordinary
 request aging, recomputation and resource costs in the acceptance record.
 Decode token/s is diagnostic, not a prerequisite for a valid mean-JCT benefit.
 
-This is the revised execution contract for the existing active goal. The
-current goal tool exposes status changes but no objective-text update;
-its stored V15 wording has not been rewritten. Do not falsely complete the
-unfinished goal or create a replacement by marking it complete. The user's
-latest instructions and this contract supersede the old per-iteration native
-requirement: development runs predictive first against the fixed V29 native
-reference; repeated same-version comparisons and ablations belong to final
-validation. No new completion guards or canary stage. The latest user instruction
-replaces V50's older single-change freeze with the latest committed code.
+The goal interface returned no active goal on October 13; the user explicitly
+requested a next-stage goal, which has now been created and is active. Prioritize
+explaining and removing the roughly 10-14ms matched decode-to-short-prefill
+turnover excess. Separately measure GPU work, own-thread CPU dispatch, native
+PrefillAdder admission/prefix inspection, causal events, migration planning and
+result processing. Interim targets are a matched short-prefill turnover gap
+within 10% and a busy service-volume gap within 5%. These are evaluation targets,
+not runtime gates or proof of success. Final acceptance still requires quality-
+controlled mean-JCT and completion-throughput improvements.
+
+The user's subsequent instruction defers enabling prefilladder. Native
+PrefillAdder is already the admission implementation; keep that existing path.
+Defer new prefill batching/delay strategies: V306 confirms actual V53/V29
+enable_prefill_delayer=False, min_free_slots_delay=None,
+enable_mixed_chunk=False and prefill_decode_interval=0. Shared absence does not
+explain the relative deficit. This latest instruction takes precedence over the
+stored goal's future batching candidates; the status API cannot edit objective
+text, so the active execution contract records the deferral here. Do not pause
+the whole goal or falsely complete it to replace its wording.
+
+Development runs predictive first against the fixed V29 reference; repeated
+same-version comparisons and ablations belong to final validation. If shared
+native code or prefill settings later change, obtain an appropriate common-
+configuration native comparison instead of treating old V29 as an isolation
+control. No new completion guards or canary stage. Keep the running source
+frozen; qualify and commit important fixes before cold deployment.
 
 Trace-analysis priority, added on October 13: analyze the latest finished
 development run first. V49 is the current complete trace; V50 was stopped at
 16:22:48 CST, retaining 133 completed and 23 unfinished workflows.
-V51 cold-started from 0990b73 at 16:40:12 CST. V52's complete 600–900s window
+V51 cold-started from 0990b73 at 16:40:12 CST. V53's complete 600–900s window
 is the latest busy-window evidence; V292's post-forward migration candidate
 has passed qualification and cold-started in V52 at 17:43:50 CST from 3892fe1.
 V51's 17:35:21 cutoff retains 63 completed, 45 arrived unfinished and 48
