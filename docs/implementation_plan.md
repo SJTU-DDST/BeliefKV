@@ -2,16 +2,33 @@
 
 Status date: 2026-10-13.
 
-Current development run is V46, cold-started at 07:50:54 CST on October 13
-from 18dbcd6/3698ce2f, actual engine tree 6d6af094. It deploys static
-closure reduction, settled Host-copy registration and the JOIN backup fix.
-Keep frozen configuration and fixed V29 native for development; freeze
-running sources. V228 at 07:55:54 verifies HTTP200, 571 real GPU-service samples
-in an independent
-tail, enabled predictors/physical actions, matching sources/engine, all
-27 frozen fields and pool capacities. Observed reserve is 4144 FULL
-tokens and one Mamba slot following the imminent batch. A complete
-busy-window comparison of V45 is sealed in V219 and remains below native.
+Current development run is V47, cold-started at 08:51:32 CST on October 13
+from 9e017a1/3698ce2f, actual engine tree 6d6af094. It deploys slot-bounded
+fixed-head residency probing and measured PREPARE round-trip budgets.
+Retain eight rotating tail probes, the original eight-slot/fallback scan,
+aging, causal/restore priority and selected-request native validation.
+V237 binds 366 checks. V236's 12 Host-only CPU cases reduce thread CPU by
+14.0-32.1% at one slot and 7.9-14.2% at four; eight slots range from 1.7%
+regression to 2.4% improvement. Preserve V235's initial negative results.
+Mixed-residency ordering can change; CPU fixtures do not prove GPU gains.
+Keep frozen configuration, fixed V29 native and running sources. Deployment
+validation V239 at 09:00:32 confirms HTTP 200, 538 real GPU-service samples
+in an independent tail, enabled predictors/physical actions, matching
+source/engine, all 27 frozen fields and pool capacities. The bounded
+probe counter is 6,128; the sampled reserve is 4,145 FULL tokens and one
+Mamba slot, following the imminent batch.
+
+V46 stopped at 08:47:12.309023: 69 completed, 1 incomplete, 38 created unfinished
+and 48 unarrived; the latter 86 remain administratively censored. The existing
+django-11206 incomplete has two final root length terminations, no guard
+completion or system error; preserve the output cap and V240 evidence.
+At 08:50:28, 108 workspaces passed full tar comparison before 20.961 GB source
+became a 2.234 GB archive; only 38 owned stopped containers were removed.
+V238/V241 pre-cutoff early confirmed FULL reuse is 42 JOINs/1.951 GB and
+150 tools/11.536 GB; 130.613 GB demand handoff remains separate.
+Positive-FULL/start/submit is 87/83/47 and 1342/181/175. Exclude six
+post-cutoff tool completions and four first services from training.
+The plan-to-submit gap and below-native busy performance remain active work.
 V231 seals V46's complete600-900s window:312178/380722 decode request
 steps,18.004% below fixed native. Exclusive instrumented Python wall
 is55.041s:tool/admission/handoff/reentry6.689/5.699/5.517/5.516s.
@@ -29,13 +46,13 @@ commands have113later-restore associations; this does not prove net benefit.
 Sampled fitting positive FULL is526.684MB/9.052GB forJOIN/tool, not
 trigger-time capacity. Continue reducing the plan-to-submit gap and costs.
 
-Next-cold-deployment candidate db68f89 is qualified byV233 with344 checks.
+Commit db68f89, qualified byV233 with344 checks, is cold-deployed inV47.
 With measured D2H/H2D queue and ACK P90 evidence, PREPARE uses their
 round trip plus100ms observation cadence instead of compulsory2s restore
 lead. Missing evidence retains fallback; slow restoration may need more
 time. Scope is only the selected first extent, not the entire checkpoint.
-V46 remains frozen; complete native execution dependencies and no Mamba
-PREPARE stay unchanged. No runtime benefit is established for this candidate.
+V46 did not deploy it. Complete native execution dependencies and no Mamba
+PREPARE stay unchanged. No runtime benefit is established for this change.
 
 V45 stopped administratively at 07:43:41.038655 CST: 87 completed and
 69 created unfinished, all 156 arrivals present. Keep the unfinished

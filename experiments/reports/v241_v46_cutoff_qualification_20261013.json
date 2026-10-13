@@ -1,0 +1,173 @@
+{
+  "schema_version": 1,
+  "qualified_at_local": "2026-10-13T08:53:55.844660+08:00",
+  "administrative_cutoff_at_local": "2026-10-13T08:47:12.309023+08:00",
+  "administrative_cutoff_ts_ms": 1791852432309.023,
+  "collection_code_commit": "18dbcd600eccff7cdef6aed353c5adeecc0e955d",
+  "sealed_report": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v238_v46_final_wait_prefetch_20261013.json.gz",
+  "sealed_report_sha256": "711360943b5b36fd65ebc9801dca1c7ef32926a08e9b75e90f5c0013a425e645",
+  "stop_receipt": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v238_v46_development_stop_20261013.json",
+  "stop_receipt_sha256": "d43c558f215d81ae92b01a69131f126930ea3191c65901c87283219d1481688d",
+  "event_counts": {
+    "join_ticket": {
+      "observed_events": 121,
+      "unknown_completion_events": 28,
+      "known_completion_at_or_before_cutoff_events": 93,
+      "sampled_fitting_positive_full_events": 89,
+      "sampled_fitting_without_early_confirmed_reuse_events": 48,
+      "early_next_request_confirmed_full_reuse_events": 42,
+      "early_next_request_confirmed_full_reuse_bytes": 1951293440
+    },
+    "tool_wait": {
+      "observed_events": 10931,
+      "known_completion_at_or_before_cutoff_events": 10913,
+      "sampled_fitting_positive_full_events": 235,
+      "sampled_fitting_without_early_confirmed_reuse_events": 85,
+      "early_next_request_confirmed_full_reuse_events": 150,
+      "early_next_request_confirmed_full_reuse_bytes": 11535769600,
+      "unknown_completion_events": 12,
+      "completion_after_cutoff_events": 6,
+      "first_service_after_cutoff_events": 4
+    }
+  },
+  "early_next_request_confirmed_full_reuse": {
+    "join_ticket": {
+      "events": 42,
+      "bytes": 1951293440
+    },
+    "tool_wait": {
+      "events": 150,
+      "bytes": 11535769600
+    }
+  },
+  "post_cutoff_completion_rows_excluded": [
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:psf__requests-5414:a1327c8dd67d",
+      "context_id": "deepagents-context:4926476e8f34d6c4",
+      "context_epoch": 226,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a132ba-4c47-7ba3-bf6e-a2c7a1cc5a04",
+      "completion_ts_ms": 1791852432443.9487,
+      "completion_evidence": "whole_tool_request_round",
+      "early_started_and_reused_full_bytes": 0,
+      "after_cutoff_ms": 134.92578125
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-14500:ad07c81188ab",
+      "context_id": "deepagents-context:2538f2b559d1067b",
+      "context_epoch": 283,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a132ba-4db8-78e2-a82c-096c700d8def",
+      "completion_ts_ms": 1791852432786.5261,
+      "completion_evidence": "whole_tool_request_round",
+      "early_started_and_reused_full_bytes": 0,
+      "after_cutoff_ms": 477.503173828125
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11734:08aaffab09f0",
+      "context_id": "deepagents-context:bf1736bdd3c5d39d",
+      "context_epoch": 116,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a132ba-501c-7ab3-912a-c895d2b7dcd0",
+      "completion_ts_ms": 1791852433417.3,
+      "completion_evidence": "whole_tool_request_round",
+      "early_started_and_reused_full_bytes": 0,
+      "after_cutoff_ms": 1108.277099609375
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11265:e92f680cdb72",
+      "context_id": "deepagents-context:2164d854a98929fc",
+      "context_epoch": 211,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a132ba-4f1a-7d02-876e-d99313040353",
+      "completion_ts_ms": 1791852433162.161,
+      "completion_evidence": "whole_tool_request_round",
+      "early_started_and_reused_full_bytes": 0,
+      "after_cutoff_ms": 853.137939453125
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-16938:d91cfa323992",
+      "context_id": "deepagents-context:9b6701b59add5341",
+      "context_epoch": 322,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a132ba-5097-7e82-9512-75acdaa54c4b",
+      "completion_ts_ms": 1791852433544.528,
+      "completion_evidence": "whole_tool_request_round",
+      "early_started_and_reused_full_bytes": 0,
+      "after_cutoff_ms": 1235.505126953125
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-10051:ce010bfbbfdd",
+      "context_id": "deepagents:autonomous:pytest-dev__pytest-10051:ce010bfbbfdd:context:root",
+      "context_epoch": 251,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a132ba-4f2f-7613-aa1d-7ad81757483d",
+      "completion_ts_ms": 1791852433187.382,
+      "completion_evidence": "whole_tool_request_round",
+      "early_started_and_reused_full_bytes": 0,
+      "after_cutoff_ms": 878.359130859375
+    }
+  ],
+  "post_cutoff_first_service_rows_excluded": [
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:psf__requests-5414:a1327c8dd67d",
+      "context_id": "deepagents-context:4926476e8f34d6c4",
+      "context_epoch": 226,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a132ba-4c47-7ba3-bf6e-a2c7a1cc5a04",
+      "completion_ts_ms": 1791852432443.9487,
+      "first_service_ts_ms": 1791852432652.547,
+      "early_started_and_reused_full_bytes": 0,
+      "after_cutoff_ms": 343.524169921875
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-14500:ad07c81188ab",
+      "context_id": "deepagents-context:2538f2b559d1067b",
+      "context_epoch": 283,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a132ba-4db8-78e2-a82c-096c700d8def",
+      "completion_ts_ms": 1791852432786.5261,
+      "first_service_ts_ms": 1791852433021.8887,
+      "early_started_and_reused_full_bytes": 0,
+      "after_cutoff_ms": 712.86572265625
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11265:e92f680cdb72",
+      "context_id": "deepagents-context:2164d854a98929fc",
+      "context_epoch": 211,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a132ba-4f1a-7d02-876e-d99313040353",
+      "completion_ts_ms": 1791852433162.161,
+      "first_service_ts_ms": 1791852433330.5852,
+      "early_started_and_reused_full_bytes": 0,
+      "after_cutoff_ms": 1021.562255859375
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-10051:ce010bfbbfdd",
+      "context_id": "deepagents:autonomous:pytest-dev__pytest-10051:ce010bfbbfdd:context:root",
+      "context_epoch": 251,
+      "join_id": null,
+      "next_request_id": "beliefkv:01a132ba-4f2f-7613-aa1d-7ad81757483d",
+      "completion_ts_ms": 1791852433187.382,
+      "first_service_ts_ms": 1791852433422.1272,
+      "early_started_and_reused_full_bytes": 0,
+      "after_cutoff_ms": 1113.104248046875
+    }
+  ],
+  "scope": "Derived only from the existing sealed V238 report and stop receipt. No raw reread or overwrite. Sampled fitting plans do not prove capacity at actual trigger time. Unknown and post-cutoff completion/service outcomes remain censored and cannot supply natural RETURN training labels. These event counts do not prove throughput/JCT improvement.",
+  "helper_sha256": "43132736aa30c7c4ba8ce56b428cdbc55428ca9a23fdd9c03167fb5f4060e64d",
+  "helper_utf8_source": "\"\"\"Qualify the completed V46 audit with its administrative cutoff.\"\"\"\n\nimport hashlib\nfrom pathlib import Path\nfrom types import ModuleType\n\nTEMPLATE = Path(\"/tmp/beliefkv_v229_cutoff_qualification.py\")\nsource = TEMPLATE.read_text()\nfor before, after in (\n    (\"V45\", \"V46\"), (\"v45\", \"v46\"),\n    (\"v227_v46\", \"v238_v46\"), (\"v229_v46\", \"v241_v46\"),\n    (\"sealed V227 report\", \"sealed V238 report\"),\n    ('\"helper_utf8_source\": source_bytes.decode(),',\n     '\"helper_utf8_source\": source_bytes.decode(),\\n'\n     '        \"template_sha256\": TEMPLATE_SHA,\\n'\n     '        \"rendered_helper_sha256\": RENDERED_SHA,\\n'\n     '        \"rendered_helper_utf8_source\": RENDERED_SOURCE,'),\n):\n    if before not in source:\n        raise ValueError(f\"missing cutoff binding: {before}\")\n    source = source.replace(before, after)\nmodule = ModuleType(\"v241_v46_cutoff\")\nmodule.__file__ = str(Path(__file__).resolve())\nmodule.TEMPLATE_SHA = hashlib.sha256(TEMPLATE.read_bytes()).hexdigest()\nmodule.RENDERED_SHA = hashlib.sha256(source.encode()).hexdigest()\nmodule.RENDERED_SOURCE = source\nexec(compile(source, str(TEMPLATE), \"exec\"), vars(module))\nmodule.main()\n",
+  "template_sha256": "720d1dc17254be1d59d1be8261721f211af3e5c925b03d5fb64fbd9245077c8f",
+  "rendered_helper_sha256": "1530e00b261688d76e4a5cb2429406222ca93a382e1f5c0de8047b84b00a92be",
+  "rendered_helper_utf8_source": "\"\"\"Qualify V46's sealed wait events against its administrative cutoff.\"\"\"\n\nfrom collections import Counter\nfrom datetime import datetime\nimport gzip\nimport hashlib\nimport json\nfrom pathlib import Path\n\n\nROOT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nREPORTS = ROOT / \"experiments/reports\"\nSEALED = REPORTS / \"v238_v46_final_wait_prefetch_20261013.json.gz\"\nSTOP = REPORTS / \"v238_v46_development_stop_20261013.json\"\nOUTPUT = REPORTS / \"v241_v46_cutoff_qualification_20261013.json\"\n\n\ndef main():\n    if OUTPUT.exists():\n        raise ValueError(\"preserve existing cutoff qualification\")\n    sealed_bytes = SEALED.read_bytes()\n    stop_bytes = STOP.read_bytes()\n    sealed = json.loads(gzip.decompress(sealed_bytes))\n    stop = json.loads(stop_bytes)\n    cutoff_ms = datetime.fromisoformat(\n        stop[\"administrative_cutoff_at_local\"],\n    ).timestamp() * 1000.\n    rows = sealed[\"wait_event_attribution\"][\"rows\"]\n    counters = {}\n    late_completions = []\n    late_services = []\n    for row in rows:\n        source = row[\"source\"]\n        counts = counters.setdefault(source, Counter())\n        counts[\"observed_events\"] += 1\n        completion = row.get(\"completion_ts_ms\")\n        service = row.get(\"first_service_ts_ms\")\n        reused = row.get(\"early_started_and_reused_full_bytes\", 0)\n        if completion is None:\n            counts[\"unknown_completion_events\"] += 1\n        elif completion > cutoff_ms:\n            counts[\"completion_after_cutoff_events\"] += 1\n            late_completions.append({\n                key: row.get(key) for key in (\n                    \"source\", \"workflow_id\", \"context_id\", \"context_epoch\",\n                    \"join_id\", \"next_request_id\", \"completion_ts_ms\",\n                    \"completion_evidence\", \"early_started_and_reused_full_bytes\",\n                )\n            } | {\"after_cutoff_ms\": completion - cutoff_ms})\n        else:\n            counts[\"known_completion_at_or_before_cutoff_events\"] += 1\n            if (row.get(\"max_pre_completion_fitting_full_bytes\") or 0) > 0:\n                counts[\"sampled_fitting_positive_full_events\"] += 1\n                if reused == 0:\n                    counts[\"sampled_fitting_without_early_confirmed_reuse_events\"] += 1\n            if reused > 0 and service is not None and service <= cutoff_ms:\n                counts[\"early_next_request_confirmed_full_reuse_events\"] += 1\n                counts[\"early_next_request_confirmed_full_reuse_bytes\"] += reused\n            elif reused > 0:\n                raise ValueError(\"early reuse requires pre-cutoff first-service proof\")\n        if service is not None and service > cutoff_ms:\n            counts[\"first_service_after_cutoff_events\"] += 1\n            late_services.append({\n                key: row.get(key) for key in (\n                    \"source\", \"workflow_id\", \"context_id\", \"context_epoch\",\n                    \"join_id\", \"next_request_id\", \"completion_ts_ms\",\n                    \"first_service_ts_ms\", \"early_started_and_reused_full_bytes\",\n                )\n            } | {\"after_cutoff_ms\": service - cutoff_ms})\n    full_reuse = {\n        source: {\n            \"events\": counts[\"early_next_request_confirmed_full_reuse_events\"],\n            \"bytes\": counts[\"early_next_request_confirmed_full_reuse_bytes\"],\n        }\n        for source, counts in counters.items()\n    }\n    source_bytes = Path(__file__).read_bytes()\n    result = {\n        \"schema_version\": 1,\n        \"qualified_at_local\": datetime.now().astimezone().isoformat(),\n        \"administrative_cutoff_at_local\": stop[\"administrative_cutoff_at_local\"],\n        \"administrative_cutoff_ts_ms\": cutoff_ms,\n        \"collection_code_commit\": sealed[\"collection_code_commit\"],\n        \"sealed_report\": str(SEALED),\n        \"sealed_report_sha256\": hashlib.sha256(sealed_bytes).hexdigest(),\n        \"stop_receipt\": str(STOP),\n        \"stop_receipt_sha256\": hashlib.sha256(stop_bytes).hexdigest(),\n        \"event_counts\": {source: dict(counts) for source, counts in counters.items()},\n        \"early_next_request_confirmed_full_reuse\": full_reuse,\n        \"post_cutoff_completion_rows_excluded\": late_completions,\n        \"post_cutoff_first_service_rows_excluded\": late_services,\n        \"scope\": (\n            \"Derived only from the existing sealed V238 report and stop receipt. \"\n            \"No raw reread or overwrite. Sampled fitting plans do not prove capacity \"\n            \"at actual trigger time. Unknown and post-cutoff completion/service \"\n            \"outcomes remain censored and cannot supply natural RETURN training \"\n            \"labels. These event counts do not prove throughput/JCT improvement.\"\n        ),\n        \"helper_sha256\": hashlib.sha256(source_bytes).hexdigest(),\n        \"helper_utf8_source\": source_bytes.decode(),\n        \"template_sha256\": TEMPLATE_SHA,\n        \"rendered_helper_sha256\": RENDERED_SHA,\n        \"rendered_helper_utf8_source\": RENDERED_SOURCE,\n    }\n    OUTPUT.write_text(json.dumps(result, indent=2, allow_nan=False) + \"\\n\")\n    print(json.dumps({\n        \"event_counts\": result[\"event_counts\"],\n        \"early_next_request_confirmed_full_reuse\": full_reuse,\n    }, indent=2))\n\n\nif __name__ == \"__main__\":\n    main()\n"
+}

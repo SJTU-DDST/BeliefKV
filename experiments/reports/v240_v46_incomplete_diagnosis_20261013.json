@@ -1,0 +1,59 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-13T08:53:54.387794+08:00",
+  "stop_receipt_sha256": "d43c558f215d81ae92b01a69131f126930ea3191c65901c87283219d1481688d",
+  "cases": [
+    {
+      "workflow": "django__django-11206",
+      "result_sha256": "c48f9b5f01c7c5c5e9406615f9b692b0dc3ed593503c4b61d3859b9cb2c55649",
+      "runtime_events_sha256": "be0d59c4f234492592598585e471a1c7ee47f80eee31cd0bb017c3074cd4dd60",
+      "last_root_llm_results": [
+        {
+          "event_id": "deepagents:autonomous:django__django-11206:2d80ef444f55:deepagents:000000711",
+          "ts_ms": 6021339381.312191,
+          "context_epoch": 16,
+          "attributes": {
+            "request_id": "beliefkv:01a1329f-baab-7e80-8305-26deb8e47861",
+            "finish_reason": "length",
+            "output_chars": 0,
+            "tool_call_count": 0
+          }
+        },
+        {
+          "event_id": "deepagents:autonomous:django__django-11206:2d80ef444f55:deepagents:000000713",
+          "ts_ms": 6021697517.468263,
+          "context_epoch": 17,
+          "attributes": {
+            "request_id": "beliefkv:01a132a5-9abb-7263-a336-ba4b927d6a53",
+            "finish_reason": "length",
+            "output_chars": 27617,
+            "tool_call_count": 0
+          }
+        }
+      ],
+      "agent_control": {
+        "duplicate_tool_calls_suppressed": 0,
+        "event_counts": {
+          "agent_empty_reasoning_retry": 1,
+          "agent_empty_reasoning_retry_result": 1,
+          "agent_guard_pattern_observed": 1,
+          "agent_natural_return": 3
+        },
+        "forced_semantic_completions": 0,
+        "guard_intervened_completions": 0,
+        "natural_language_return_count": 3,
+        "natural_semantic_completions": 0,
+        "protocol_normalized_completions": 0,
+        "protocol_repair_failures": 0,
+        "protocol_repaired_completions": 0,
+        "semantic_completions": 0,
+        "stuck_reasons": {}
+      },
+      "runtime_delivery_degraded": false,
+      "classification": "output_length_exhaustion_before_semantic_completion",
+      "policy": "Preserve the previously requested output cap. The final text repeatedly reconsiders the same test requirement; a larger cap is not a verified fix. This pre-cutoff incomplete is separate from administrative censoring."
+    }
+  ],
+  "helper_sha256": "2349994f7709a534c5b3c76af6d1b985b3980a016fd9f94d1fdff925f7ae6cb9",
+  "helper_utf8_source": "\"\"\"Preserve the existing incomplete outcome separately from the stop.\"\"\"\n\nfrom datetime import datetime\nimport hashlib\nimport json\nfrom pathlib import Path\n\nROOT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nOUTPUT = ROOT / \"experiments/reports/v240_v46_incomplete_diagnosis_20261013.json\"\nSTOP = ROOT / \"experiments/reports/v238_v46_development_stop_20261013.json\"\nif OUTPUT.exists():\n    raise ValueError(\"preserve diagnosis\")\nstop = json.loads(STOP.read_bytes())\ncases = []\nfor result in stop[\"terminal_results_observed_during_snapshot\"]:\n    if result[\"outcome\"] != \"incomplete\":\n        continue\n    result_path = Path(result[\"path\"])\n    result_bytes = result_path.read_bytes()\n    if hashlib.sha256(result_bytes).hexdigest() != result[\"sha256\"]:\n        raise ValueError(\"pre-cutoff result changed\")\n    outcome = json.loads(result_bytes)\n    event_path = result_path.parent / \"runtime_events.deepagents.jsonl\"\n    payload = event_path.read_bytes()\n    rows = [json.loads(line) for line in payload.splitlines() if line.strip()]\n    root = next(row[\"invocation_id\"] for row in rows if row[\"kind\"] == \"llm_submit\")\n    llm = [\n        row for row in rows if row[\"kind\"] == \"llm_result\" and row[\"invocation_id\"] == root\n    ]\n    if [row[\"attributes\"].get(\"finish_reason\") for row in llm[-2:]] != [\"length\", \"length\"]:\n        raise ValueError(\"incomplete evidence differs\")\n    if outcome[\"agent_control\"][\"guard_intervened_completions\"] != 0 or outcome[\"error\"] is not None:\n        raise ValueError(\"guard/system failure requires separate diagnosis\")\n    cases.append({\n        \"workflow\": result[\"workflow\"], \"result_sha256\": result[\"sha256\"],\n        \"runtime_events_sha256\": hashlib.sha256(payload).hexdigest(),\n        \"last_root_llm_results\": [\n            {**{key: row[key] for key in (\"event_id\", \"ts_ms\", \"context_epoch\")},\n             \"attributes\": {\n                 key: row[\"attributes\"].get(key)\n                 for key in (\"request_id\", \"finish_reason\", \"output_chars\", \"tool_call_count\")\n             }}\n            for row in llm[-2:]\n        ],\n        \"agent_control\": outcome[\"agent_control\"],\n        \"runtime_delivery_degraded\": outcome[\"runtime_control_delivery\"][\"degraded\"],\n        \"classification\": \"output_length_exhaustion_before_semantic_completion\",\n        \"policy\": (\n            \"Preserve the previously requested output cap. The final text repeatedly \"\n            \"reconsiders the same test requirement; a larger cap is not a verified fix. \"\n            \"This pre-cutoff incomplete is separate from administrative censoring.\"\n        ),\n    })\nreport = {\n    \"schema_version\": 1, \"observed_at_local\": datetime.now().astimezone().isoformat(),\n    \"stop_receipt_sha256\": hashlib.sha256(STOP.read_bytes()).hexdigest(),\n    \"cases\": cases,\n    \"helper_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n    \"helper_utf8_source\": Path(__file__).read_text(),\n}\nOUTPUT.write_text(json.dumps(report, indent=2, allow_nan=False) + \"\\n\")\nprint(json.dumps({\"cases\": len(cases), \"classifications\": [\n    case[\"classification\"] for case in cases\n]}, indent=2))\n"
+}
