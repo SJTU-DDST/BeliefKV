@@ -1,0 +1,123 @@
+{
+  "status": "verified_startup_failure_preserved",
+  "observed_at_local": "2026-10-14T06:10:17.172676+08:00",
+  "original_run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55",
+  "preserved_run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55_start_failed_numa_0600",
+  "original_launch_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v55_launch_after_reservation_20261014.json",
+  "preserved_launch_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v55_launch_after_reservation_start_failed_numa_0600_20261014.json",
+  "launch_state_sha256": "f84752df1d29c5dd60388859ddf69b11e7a384de7518b09ba5e4c287b954893f",
+  "source_inventory": {
+    "ab_plan.json": {
+      "bytes": 24552,
+      "sha256": "5a667a3f354d872c7bc03985bf786941585009c48721f9bc3c262b3ca8ce28ce"
+    },
+    "arm_status.txt": {
+      "bytes": 22,
+      "sha256": "ee8c2cc97e7d2b3a3b9c87dc92c69878031fb6e9b7e6f9b563742247f3457cc4"
+    },
+    "frozen_execution_verification.json": {
+      "bytes": 676,
+      "sha256": "78b00d9d7f8ae33498c87cd86fd72504a508b3eb00d14a505157332e49f1644a"
+    },
+    "predictive_h2d/server.log": {
+      "bytes": 278,
+      "sha256": "f84f7511989bbe3a408d1c0f78753e9bcdd071b12bd8b075b58e64d566d9e9d9"
+    },
+    "predictive_h2d.launch.log": {
+      "bytes": 172,
+      "sha256": "0311a78b4db5e08a155edca3a8e3815764d1802e15b832b7fd3b5eb5f26053aa"
+    }
+  },
+  "collection_code_commit": "fe05cac4426ad0a2ef6121ef1922f025709f8c0a",
+  "deployed_engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "a8f4ea97da2f1fc8d969d538359a62aa9db23750051f9838956f03bc48174c68",
+    "expected_tree": "f7e0a89564622d530ddcf3b40de9f810974619aa",
+    "actual_tree": "f7e0a89564622d530ddcf3b40de9f810974619aa",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "server_preflight_error": "usage: preflight_qwen35_host_pool.py [-h] --node NODE --size-gb SIZE_GB\npreflight_qwen35_host_pool.py: error: NUMA node 1 needs at least 194.26 GiB available for 200 GB total Host pools plus 8 GiB reserve; currently 192.36 GiB estimated reclaimable (47.57 GiB immediately free)\n",
+  "workflows_arrived": 0,
+  "model_service_observed": false,
+  "prior_reservation_state": {
+    "reservation_status": "experiment_hours",
+    "last_tick_at": "2026-10-14T06:10:01.092168+08:00",
+    "cutoffs": {
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/server_reservation_cutoff.json"
+    },
+    "resume_status": "launch_failed",
+    "resume_at": "2026-10-14T06:00:01.249741+08:00",
+    "resume_pid": 1932052,
+    "resume_process": {
+      "pid": 1932052,
+      "state": "R",
+      "ppid": 1932040,
+      "start_ticks": "609906434",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014/scripts/launch_semantic_h2d_after_pair.py",
+        "--repo",
+        "/home/longhao/experiment/BeliefKV",
+        "--previous-run",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54",
+        "--target-checkout",
+        "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014",
+        "--run-root",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55",
+        "--state",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/v55_launch_after_reservation_20261014.json",
+        "--port",
+        "18459",
+        "--arm-order",
+        "predictive_h2d",
+        "--execution-handoff",
+        "0",
+        "--native-reference-run",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29",
+        "--development-restart",
+        "--previous-checkout",
+        "/home/longhao/experiment/.worktrees/beliefkv-v310-v54-residency-hint-20261013",
+        "--wait-pid",
+        "0"
+      ]
+    },
+    "resume_command": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014/scripts/launch_semantic_h2d_after_pair.py",
+      "--repo",
+      "/home/longhao/experiment/BeliefKV",
+      "--previous-run",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54",
+      "--target-checkout",
+      "/home/longhao/experiment/.worktrees/beliefkv-v322-v55-prefill-turnover-20261014",
+      "--run-root",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55",
+      "--state",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/v55_launch_after_reservation_20261014.json",
+      "--port",
+      "18459",
+      "--arm-order",
+      "predictive_h2d",
+      "--execution-handoff",
+      "0",
+      "--native-reference-run",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29",
+      "--development-restart",
+      "--previous-checkout",
+      "/home/longhao/experiment/.worktrees/beliefkv-v310-v54-residency-hint-20261013",
+      "--wait-pid",
+      "0"
+    ],
+    "resume_log": "/home/longhao/experiment/ops/v55_resume_20261014.log",
+    "resume_error": "RuntimeError: new experiment driver exited 1",
+    "resume_terminal_observed_at": "2026-10-14T06:07:59.936297+08:00"
+  },
+  "operational_helper_sha256": "665dc9d43ea63668278aca03c0a0ded1dacbf8dae5ec26631e2fa5ce74f16043",
+  "scope": "Startup-only NUMA preflight failure; no workflow outcomes or administrative censoring are fabricated."
+}
