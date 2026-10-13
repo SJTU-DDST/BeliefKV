@@ -2,6 +2,28 @@
 
 Status date: 2026-10-14.
 
+V334 seals the latest V54 full prefixes; V335 qualifies the actual reservation
+cutoff at 23:59:01.870697 CST. There are 185 known JOINs and 23994 known tool
+waits with pre-cutoff first service, plus one unknown completion per source.
+Early, next-request-confirmed FULL reuse is 73 JOINs/1.771GB and
+160 tools/11.142GB. Sampled fitting positive-FULL events are 161/346;
+88/186 remain without early confirmed reuse. Fitting snapshots do not prove
+capacity at the trigger. Completion-to-client-submit P50 is 18.92/15.31ms,
+whereas native-arrival-to-service P90 is 13.45/12.85s and JOIN last-ACK-to-service
+P90 remains 17.34s. Investigate actual admission, capacity and timing jointly.
+
+V336 rules out treating zero-work validation as the principal cause: of 110
+zero-work start records, 97 lacked free-list capacity; 94 next observed
+no-plan records reject FULL/Mamba budgets (72/22). Preserve the existing
+endpoint, EOS and allocation checks. Commit 8fec5be adds only bounded evidence
+to formerly silent enqueue rejections, preserving the pre-drain JOIN identity
+and reporting causal/transfer/identity/plan/prefix/slot changes from already
+read state. No additional physical query, allocation or scheduling change.
+267 checks and two subchecks pass; V337 binds 12 source hashes and the unchanged
+f7e0a895/a8f4ea97 engine. The prior CPU benchmark excludes these failure-only
+records. Cold-test this observation candidate in V55 after 06:00; real phase
+cost, rejection attribution and end-to-end gains remain unverified.
+
 V54 actually stopped for the reservation at 2026-10-13 23:59:09 CST:
 all owned processes and containers exited; the GPU recheck was 14MiB/0%.
 V326 retains 155 completed and one administratively censored django-11211
