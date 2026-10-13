@@ -23,9 +23,10 @@ reference; repeated same-version comparisons and ablations belong to final
 validation. No new completion guards or canary stage. The latest user instruction
 replaces V50's older single-change freeze with the latest committed code.
 
-1. Finish the current overhead diagnosis. Preserve V49 through full JCT and
-   cold-run V50 with both 82b42d5 Host-reclaim and 3b66033 final-admission
-   fixes. This now measures their combined effect, not an isolated Host fix.
+1. Finish the current overhead diagnosis. V49 has finished full collection;
+   V50 cold-started at 14:20:50 CST on October 13 from 02fd87c, including
+   both 82b42d5 Host-reclaim and 3b66033 final-admission fixes. This measures
+   their combined effect, not an isolated Host fix.
    Check real satisfied-eviction scans, final-stage binding/selection counters,
    prefill turnover, complete JCT and throughput; CPU evidence alone does not
    complete this step.
@@ -36,9 +37,10 @@ replaces V50's older single-change freeze with the latest committed code.
    remaining work or a positive report budget to select among explicitly bound
    last-child reports; it also repairs a fresh notice and next-submit arriving
    in one batch. This is not general output-length scheduling: the tool-timing-only
-   config still bypasses legacy local-demand predictions. Cold-validate actual
-   coverage, then integrate restore cost and investigate non-final critical-child
-   queueing. Preserve native batch filling, request aging and bounded quotas.
+   config still bypasses legacy local-demand predictions. V274 confirms actual
+   deployment; measure coverage, then integrate restore cost and investigate
+   non-final critical-child queueing. Preserve native batch filling, request
+   aging and bounded quotas.
 3. Coordinate each waiting agent's memory lifecycle. Rank short-wait HBM
    retention versus incremental FULL backup and reclaim using remaining tool
    time, complete round-trip cost and actual pressure. Supply freed capacity
@@ -59,7 +61,7 @@ replaces V50's older single-change freeze with the latest committed code.
    as controlled factors in final repeated live experiments. Do not subtract
    transfer-stream time from JCT or credit shared engine fixes only to prediction.
 
-V271 is a followup-only admission candidate, not a live performance result.
+V271 is deployed in the frozen V50 code; performance remains unproven.
 Notice recovery is limited to the exact fresh same-batch notice/request and
 the currently valid sole unfinished JOIN child. Later tool/RETURN events do
 not create a live final stage. Candidate work uses a matching recent forecast
@@ -74,10 +76,10 @@ runtime/graph/queue fixtures and keeps physical action count zero; original
 030b7df reproduces the binding and ordering defects. The tracked
 `scripts/qualify_final_report_admission.py` binds source/test/JUnit hashes in
 `experiments/reports/v271_final_admission_qualification_20261013.json`.
-Cumulative candidate/binding counters establish production frequency in a
-later cold run; they are not unique events or admitted-request counts.
-Keep Main V49 unchanged. Per the latest user instruction, V50's replacement
-cold-deployment target includes this candidate. Broader critical-child queueing
+Cumulative candidate/binding counters establish production frequency in V50;
+they are not unique events or admitted-request counts.
+V49 completed with unchanged execution source. Per the latest user instruction,
+V50's cold deployment includes this candidate. Broader critical-child queueing
 and coordinated tool retention/offload remain unfinished.
 
 V270 reconstructs both complete V29 traces. Mean JCT improves 391.198s:
@@ -98,14 +100,53 @@ The original V50 queue registered at 12:58:57 CST on October 13,
 coordinator PID1250265, was safely stopped at 13:58:20 while V49 remained
 live and V50 had not started. Its state/log are preserved under
 `v50_launch_after_v49_20261013.superseded_host_only.*`.
-The replacement target checkout is `beliefkv-v271-v50-latest-20261013`,
-including runtime 3b66033 and current documentation. It waits for complete
-V49 outcomes, HTML/workspace postprocessing and process exit, then cold-deploys
-the latest frozen revision and runs predictive only. 108+48 arrivals,
-Host80:20, tool180s, handoff0 and fixed V29 native reference remain.
-V49 is still collecting; V50 has no performance result yet. Main's
+The replacement target checkout is `beliefkv-v271-v50-latest-20261013`.
+After complete V49 outcomes, HTML/workspace postprocessing and process exit,
+V50 cold-started from 02fd87c at 14:20:50 CST, running predictive only.
+108+48 arrivals, Host80:20, tool180s, handoff0 and fixed V29 native remain.
+V50 has no complete performance result yet. Main's
 `experiments/reports/v50_launch_after_v49_20261013.json` is the replacement
 live receipt; `v50_latest_code_retarget_20261013.json` preserves the change.
+
+V274 independently validates deployment at 14:44:10: unchanged 82 plan
+fields, 27 configuration fields and physical capacities; qualified runtime
+and canonical patch/tree match Main and the frozen checkout. HTTP200 and
+494 real GPU samples accompany actual remaining-report-work admission,
+handoff=false and enabled JOIN/tool, PREPARE, residency and priority.
+Recorded semantic/native drops and writer failures are zero. FULL Host
+eviction calls are still zero, so its no-scan effect is not measured yet.
+The recent 30 runtime snapshots contain 10 actual next-prefill budgets
+and 20 capacity-unavailable fallbacks. The latest fallback and the separately
+timestamped actual 4145-token/one-Mamba reserve are both preserved;
+neither establishes continuous capacity visibility or action feasibility.
+Investigate allocator intermediate states without relaxing native dependencies.
+
+V49 collected all 156: 155 completed, one incomplete, duration 9662.691s.
+Completion throughput is 57.748 versus fixed native 61.074 workflow/h.
+The 155 paired completions average 2962.757 versus 3039.510s; 76 improve,
+79 regress, and P95 worsens to 8097.639 versus 7342.445s. The incomplete
+is explicit; this completed-only mean cannot establish goal success.
+Early next-request-consumed FULL is JOIN 67/1.237GB and tool 182/12.073GB,
+with no demand handoff. Native H2D is 3.099TB; explicitly Host-eviction-linked
+recompute is 62791 versus 15879 tokens. Do not claim a recomputation win.
+
+V272 reconciles all 94892 V29 requests, output totals and original V270 hashes.
+Critical queue seconds per workflow split into already-sole-child 413.311
+to 211.632 and still-parallel 493.145 to 500.390. Predictive sole-child requests
+without a valid report-stage notice contribute 208.456s versus just 3.177s from 162 announced
+reports. About 84.07% of critical queue time comes from requests waiting
+at least ten seconds. Broader tool-return/sole-child admission is therefore
+a more substantial candidate than report-only tuning. Client roles do not
+prove control delivery/rank or a causal aging effect; summed concurrent
+request waits cannot be subtracted from JCT.
+
+V273 repairs native/trace-only completion-stage trace loss. Original 02fd87c
+loses all three nonqueued modes; 58 checks pass after the fix and queued
+predictive behavior matches. Commit fe7b54b is followup-only, not hot-deployed
+in V50. Native V29's 301 successful announcement calls have zero stage records,
+so its old report phases remain unknown rather than "unannounced". Use the
+repair for later same-version collection without adding control authorization,
+prompt changes, model calls or high-frequency semantic telemetry.
 
 Current bottleneck work (V265-V268): disabling demand handoff reduced
 instrumented exclusive Python wall from 55.537 to 39.679s in the complete
@@ -126,8 +167,8 @@ CPU cases with 4096/32768 synthetic leaves reduce that branch's P50 from
 2.508/19.647ms to 0.0037/0.0057ms, with GC disabled only during timed calls.
 Necessary eviction outputs match; this is not GPU/JCT evidence.
 
-Keep V49 frozen through complete JCT collection and cold-deploy the qualified
-fix afterward. The old followup engine lagged the canonical patch; preserve
+V49 finished with frozen execution code and the qualified fix is deployed
+in V50. The old followup engine lagged the canonical patch; preserve
 it and qualify against a new engine rebuilt from the complete current patch.
 This shared cache optimization can help native too: fixed V29 remains a
 development reference, while final attribution needs same-version evaluation.
