@@ -59,6 +59,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     SessionH2DOpportunity,
     ShadowBackupStep,
     capture_action_local_shadow,
+    inspect_session_residency_hint,
     inspect_session_h2d_opportunity,
     missing_prepare_full_prefix_tokens,
     next_prefetch_gpu_step,
@@ -337,6 +338,7 @@ class NativeAdmissionRuntime:
         self._native_service_samples: deque[NativeServiceSample] = deque(maxlen=256)
         self._h2d_service_estimates: dict[tuple[int, str], NativeServiceEstimate | None] = {}
         self._d2h_service_estimates: dict[tuple[int, str], NativeServiceEstimate | None] = {}
+        self._residency_ordering_hints: dict[PrefillCandidateKey, tuple[float, dict]] = {}
         service_path = os.environ.get("BELIEFKV_TRANSFER_SERVICE_SEED")
         service_sha = os.environ.get("BELIEFKV_TRANSFER_SERVICE_SEED_SHA256")
         if bool(service_path) != bool(service_sha):
@@ -634,6 +636,7 @@ class NativeAdmissionRuntime:
         self._prefill_residency_scan = None
         self._prefill_causal_cache = None
         self._prefill_cycle_active = False
+        self._residency_ordering_hints.clear()
         self._discard_join_ticket("shutdown")
         self._final_stages.clear()
         self._final_request_stages.clear()
@@ -3423,6 +3426,7 @@ class NativeAdmissionRuntime:
             })
         if device:
             self._reentry_observations.clear()
+            self._residency_ordering_hints.clear()
             self._execution_handoff_next_ms = 0.
             if handoff is not None and handoff.join_id == reclaim.join_id:
                 self._invalidate_wait_transfer_observation(handoff.key)
@@ -5570,6 +5574,7 @@ class NativeAdmissionRuntime:
         self.counts["prefetch_native_issued"] += 1
         self._prefetch_issue_times[command_id] = issue_wall_ms
         self._reentry_observations.pop(step.key, None)
+        self._residency_ordering_hints.pop(step.key, None)
         self.counts["prefetch_immediate_submit"] += int(getattr(outcome, "load_started", False))
         if self.prefetch_issued_callback is not None:
             expected = self.physical_ledger.pending_expectation(command_id)
@@ -6153,6 +6158,7 @@ class NativeAdmissionRuntime:
             return
         step, source, revision = pending
         self._reentry_observations.pop(step.key, None)
+        self._residency_ordering_hints.pop(step.key, None)
         now = time.monotonic()
         lock_params, protected_bytes = None, 0
         cache = self._native_cache
@@ -6495,6 +6501,31 @@ class NativeAdmissionRuntime:
         if len(self._reentry_observations) > 512:
             self._reentry_observations = {
                 item: value for item, value in self._reentry_observations.items()
+                if value[0] > now_ms and self.visible.get(item.request_id) == item
+            }
+        return observation
+
+    @timed_runtime("residency_hint")
+    def _read_request_residency_hint(
+        self, req: object, *, key: PrefillCandidateKey,
+    ) -> dict | None:
+        key = self._executable_waiting_key(req, key=key)
+        if key is None or self._native_cache is None:
+            return None
+        now_ms = time.monotonic() * 1000.
+        cached = self._residency_ordering_hints.get(key)
+        if cached is not None and cached[0] > now_ms:
+            self.counts["residency_ordering_hint_reused"] += 1
+            return cached[1]
+        observation = inspect_session_residency_hint(self._native_cache, req)
+        if observation is None:
+            self.counts["residency_ordering_hint_unavailable"] += 1
+            return self._read_request_reentry(req, key=key)
+        self._residency_ordering_hints[key] = (now_ms + 50., observation)
+        self.counts["residency_ordering_hint_read"] += 1
+        if len(self._residency_ordering_hints) > 512:
+            self._residency_ordering_hints = {
+                item: value for item, value in self._residency_ordering_hints.items()
                 if value[0] > now_ms and self.visible.get(item.request_id) == item
             }
         return observation
@@ -7434,6 +7465,7 @@ class NativeAdmissionRuntime:
 
         waiting_ranks = {pair[0]: waiting_rank(pair) for pair in tagged}
         ordered = sorted(tagged, key=lambda pair: waiting_ranks[pair[0]])
+        residency_observations = {}
         if (
             self.enable_resident_first and ordered
             and waiting_ranks[ordered[-1][0]][0] != -1
@@ -7470,17 +7502,22 @@ class NativeAdmissionRuntime:
                     else residency_groups[rank[:2]] > 1
                 ):
                     key = keys[index]
-                    cached = self._reentry_observations.get(key)
-                    if cached is None or cached[0] <= now_ms:
-                        self._read_request_reentry(req, key=key)
+                    if key is not None:
+                        residency_observations[index] = self._read_request_residency_hint(
+                            req, key=key,
+                        )
 
             def residency_rank(pair: tuple[int, object]) -> tuple:
                 rank = waiting_ranks[pair[0]]
                 if rank[0] == -1:
                     return rank[:2] + (0,) + rank[2:]
                 key = keys[pair[0]]
-                cached = self._reentry_observations.get(key)
-                observation = cached[1] if cached is not None and cached[0] > now_ms else None
+                observation = residency_observations.get(pair[0])
+                if observation is None:
+                    cached = self._residency_ordering_hints.get(key)
+                    if cached is None or cached[0] <= now_ms:
+                        cached = self._reentry_observations.get(key)
+                    observation = cached[1] if cached is not None and cached[0] > now_ms else None
                 resident = (
                     0 if observation is not None
                     and not observation["missing_full_tokens"]
@@ -7748,6 +7785,18 @@ class NativeAdmissionRuntime:
         if getattr(req, "beliefkv_metadata", None) is not None:
             self.counts["native_admitted" if admitted else f"native_{result}"] += 1
             if admitted:
+                key = self.visible.get(req.rid)
+                hinted = self._residency_ordering_hints.get(key)
+                if hinted is not None and hinted[0] > time.monotonic() * 1000.:
+                    self.counts["residency_ordering_hint_admitted"] += 1
+                    actual = getattr(req, "cached_tokens_device", None)
+                    if type(actual) is int:
+                        self.counts["residency_ordering_hint_native_observed"] += 1
+                        self.counts["residency_ordering_hint_shorter_native_prefix"] += int(
+                            actual < hinted[1]["device_checkpoint_tokens"],
+                        )
+                    else:
+                        self.counts["residency_ordering_hint_native_unknown"] += 1
                 self.demand_hints.pop(req.rid, None)
                 if req.rid in (
                     self._prefetch_priority_promoted, self._final_priority_promoted,

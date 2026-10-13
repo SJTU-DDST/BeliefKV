@@ -299,6 +299,105 @@ def _checkpoint_paths(
     return paths, checkpoints
 
 
+def inspect_session_residency_hint(cache: object, request: object) -> dict | None:
+    """Read session residency for ordering; input token contents remain unverified."""
+    try:
+        refs, tree = cache.session_refs, cache.tree_core
+        session_id = refs.session_id_for_req(request)
+        anchors = refs.snapshot_latest_session_leaf_anchors(
+            session_id, getattr(request, "session_generation", None), max_leaves=8,
+        )
+        if anchors is None or tree.is_eagle:
+            return None
+        components = dict(anchors)
+        leaves = components.get(0, ())
+        if not leaves or len(dict(leaves)) != len(leaves) or len(leaves) > 8:
+            return None
+        root, lookup = tree.root_node, tree.node_by_id
+        limit = max(0, len(request.origin_input_ids) - 1)
+        namespace = (
+            getattr(request, "extra_key", None), getattr(request, "cache_salt", None),
+        )
+        states = {}
+        best_prefix = device_prefix = best_device = best_missing = 0
+        best_mamba = None
+        for leaf_id, created in leaves:
+            leaf = lookup(leaf_id)
+            if (
+                leaf.id != leaf_id
+                or normalize_native_creation_time(leaf.creation_time)
+                != normalize_native_creation_time(created)
+            ):
+                return None
+            chain, current, seen = [], leaf, set()
+            prefix = missing = 0
+            device_prefix = 0
+            full_device = full_available = True
+            pending = pending_load = False
+            while current is not root:
+                if current is None or current.id in seen or lookup(current.id) is not current:
+                    return None
+                seen.add(current.id)
+                prior = states.get(current.id)
+                if prior is not None:
+                    if prior is False:
+                        chain.clear()
+                    else:
+                        (
+                            prefix, missing, device_prefix, full_device,
+                            full_available, pending, pending_load,
+                        ) = prior
+                    break
+                chain.append(current)
+                current = current.parent
+            for node in reversed(chain):
+                key = node.key
+                if (
+                    getattr(key, "is_bigram", False)
+                    or (key.extra_key, key.cache_salt) != namespace
+                ):
+                    return None
+                prefix += len(key)
+                if prefix > limit:
+                    states[node.id] = False
+                    break
+                full, state = node.component_data[0], node.component_data[2]
+                full_device = full_device and full.value is not None
+                full_available = full_available and (
+                    full.value is not None or full.host_value is not None
+                )
+                if full.value is None and full.host_value is not None:
+                    shape = getattr(full.host_value, "shape", None)
+                    missing += int(shape[0]) if shape is not None else len(full.host_value)
+                pending = pending or (
+                    node.write_through_pending_id is not None
+                    or node.load_back_pending_id is not None
+                )
+                pending_load = pending_load or node.load_back_pending_id is not None
+                if state.value is not None or state.host_value is not None:
+                    ready = full_device and state.value is not None and not pending_load
+                    if ready:
+                        device_prefix = prefix
+                    if full_available and (ready or not pending) and prefix > best_prefix:
+                        best_prefix = prefix
+                        best_device = device_prefix
+                        best_missing = missing
+                        best_mamba = int(state.value is None)
+                states[node.id] = (
+                    prefix, missing, device_prefix, full_device,
+                    full_available, pending, pending_load,
+                )
+        if best_prefix <= 0:
+            return None
+        return {
+            "checkpoint_tokens": best_prefix, "device_checkpoint_tokens": best_device,
+            "missing_full_tokens": best_missing, "missing_mamba_slots": best_mamba,
+            "input_prefix_verified": False,
+        }
+    except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError):
+        return None
+
+
 def has_host_backed_missing_copy(
     cache: object, anchors: ContextSessionAnchors,
 ) -> bool | None:

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Measure slot-bounded residency probing with real native reentry on CPU."""
+"""Measure prefill ordering on matching native inputs and varied residency."""
 
 from __future__ import annotations
 
@@ -36,12 +36,15 @@ def measure(classes, implementation, case, clock, iterations):
             )
             cache, input_request = reentry_fixture(implementation, {
                 "tokens": 32768, "depth": case["depth"], "leaves": 1, "page_size": 1,
+                "tensor_indices": case.get("tensor_indices", False),
             })
             anchors = cache.session_refs.snapshot_latest_session_leaf_anchors()
             node = cache.tree_core.node_by_id(anchors[0][1][0][0])
             while node.parent is not None:
-                node.component_data[0].value = None
-                node.component_data[2].value = None
+                if case.get("layout", "host") != "mixed":
+                    for component in (0, 2):
+                        data = node.component_data[component]
+                        data.value = data.host_value if case.get("layout") == "resident" else None
                 node = node.parent
             for request in queue:
                 request.origin_input_ids = input_request.origin_input_ids
@@ -82,7 +85,7 @@ def measure(classes, implementation, case, clock, iterations):
                     for metric, value in observed.items():
                         costs[name][metric].append(value)
             if plans["baseline"] != plans["optimized"]:
-                raise AssertionError("identical Host-only checkpoints changed causal ordering")
+                raise AssertionError("matching checkpoints changed causal ordering")
         measurements = {
             name: {metric: distribution(values) for metric, values in clocks.items()}
             for name, clocks in costs.items()
@@ -90,8 +93,15 @@ def measure(classes, implementation, case, clock, iterations):
         before = measurements["baseline"]["thread_cpu_ms"]["mean_ms"]
         after = measurements["optimized"]["thread_cpu_ms"]["mean_ms"]
         return {
-            **case, "host_only_checkpoint_order_equal": True,
+            **case, "matching_input_checkpoint_order_equal": True,
+            "host_only_checkpoint_order_equal": (
+                True if case.get("layout", "host") == "host" else None
+            ),
             "native_inspection_counts_including_warmup": reads,
+            "hint_reads_including_warmup": {
+                name: runtime.counts["residency_ordering_hint_read"]
+                for name, (runtime, _) in variants.items()
+            },
             "measurements": measurements, "raw_samples": costs,
             "mean_thread_cpu_reduction_fraction": 1 - after / before,
         }
@@ -105,6 +115,9 @@ def main():
     parser.add_argument("--baseline-commit", required=True)
     parser.add_argument("--engine-root", type=Path, required=True)
     parser.add_argument("--iterations", type=int, default=40)
+    parser.add_argument("--layouts", nargs="+", choices=("host", "mixed", "resident"),
+                        default=("host",))
+    parser.add_argument("--tensor-indices", action="store_true")
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.iterations < 1 or args.output.exists():
@@ -121,13 +134,15 @@ def main():
     }
     with patch.dict(os.environ, environment, clear=True), \
          patch.object(runtime_module.time, "monotonic", new=lambda: clock[0]):
-        for queue in (32, 156):
-            for depth in (8, 64):
-                for slots in (1, 4, 8):
-                    clock[0] = 1000.
-                    results.append(measure(classes, implementation, {
-                        "queue": queue, "depth": depth, "slots": slots,
-                    }, clock, args.iterations))
+        for layout in args.layouts:
+            for queue in (32, 156):
+                for depth in (8, 64):
+                    for slots in (1, 4, 8):
+                        clock[0] = 1000.
+                        results.append(measure(classes, implementation, {
+                            "queue": queue, "depth": depth, "slots": slots,
+                            "layout": layout, "tensor_indices": args.tensor_indices,
+                        }, clock, args.iterations))
     report = {
         "schema_version": 1,
         "observed_at_local": datetime.now().astimezone().isoformat(),
@@ -141,8 +156,9 @@ def main():
         "iterations": args.iterations, "warmup": 5, "planning_calls_per_iteration": 2,
         "cases": results,
         "scope": (
-            "CPU-only complete causal planning on synthetic Host-only checkpoints with "
+            "CPU-only complete causal planning on matching input checkpoints with "
             "the actual native RadixKey and inspect_beliefkv_reentry methods. "
+            "Placement varies by case; session hints do not verify input contents. "
             "Slot budgets are fixture inputs; native pool geometry is not measured. "
             "Ordering equality applies only to these Host-only fixtures. Fewer head "
             "probes can alter mixed-residency ordering; eight rotating tail probes, "

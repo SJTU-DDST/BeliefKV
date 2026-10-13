@@ -73,6 +73,60 @@ def test_transfer_estimate_cache_tracks_new_receipts_and_opposite_direction_evic
     runtime.close()
 
 
+def test_ordering_hint_cannot_prove_reentry_or_bypass_aged_quota():
+    from pathlib import Path
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+    from beliefkv.runtime.sglang_v0520_runtime import _PrefetchServiceLease
+    from scripts.benchmark_native_reentry_cpu import fixture, variant
+
+    native = variant(Path(__file__).resolve().parents[1] / "third_party/sglang-v0.5.20")
+    cache, original = fixture(native, {
+        "tokens": 32768, "depth": 8, "leaves": 1, "page_size": 1,
+    })
+    node = cache.tree_core.node_by_id(
+        cache.session_refs.snapshot_latest_session_leaf_anchors()[0][1][0][0],
+    )
+    while node is not cache.tree_core.root_node:
+        for component in (0, 2):
+            data = node.component_data[component]
+            data.value = data.host_value
+        node = node.parent
+    cache.inspect_beliefkv_reentry = lambda request: native.inspect(cache, request)
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_resident_first = True
+    requests = [req(name) for name in ("head", "restore")]
+    runtime.on_events((event(0, RuntimeEventKind.WORKFLOW_START),))
+    for index, request in enumerate(requests):
+        request.session_id, request.session_generation = "fixture", 1
+        request.origin_input_ids = original.origin_input_ids[:]
+        runtime.on_events((event(
+            index + 1, RuntimeEventKind.INVOCATION_CREATE,
+            invocation_id=request.rid, context_id=f"ctx-{request.rid}",
+        ),))
+        assert runtime.register_visible_request(request)
+    requests[1].origin_input_ids[0] = -1
+    runtime.attach_native_cache(cache)
+    now = time.monotonic()
+    runtime._visible_since["head"] = now - 11.
+    key = runtime.visible["restore"]
+    runtime._prefetch_service_leases["restore"] = _PrefetchServiceLease(
+        replace(key, request_id="previous"), "restore", 1, 1., "tool_wait",
+        None, now, now + 10., (("kv", 20480),), demand_ready=True,
+    )
+    budget = PrefetchResidencyBudget(1, 1024 ** 3, source="native_next_prefill")
+    runtime._current_residency_budget = lambda **kwargs: budget
+    runtime._prefetch_priority_normal_admissions = 3
+    hint = runtime._read_request_residency_hint(requests[1], key=key)
+    assert hint is not None and hint["missing_full_tokens"] == hint["missing_mamba_slots"] == 0
+    assert key not in runtime._reentry_observations
+    plan = runtime.plan_native_prefill(requests, running_batch=None, adder=None)
+    assert plan.prioritized[0].request_id == "head"
+    assert runtime.counts["prefetch_priority_complete_ready_inspected"] == 1
+    assert runtime.counts["prefetch_priority_complete_ready_ordered"] == 0
+    assert runtime._request_reentry_anchors(requests[1]) is None
+    runtime.close()
+
+
 def test_waiting_migration_deferral_requires_overlap_and_native_demand_recovery():
     runtime = NativeAdmissionRuntime()
     assert not runtime.can_defer_waiting_migrations()
