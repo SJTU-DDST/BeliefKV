@@ -2,6 +2,28 @@
 
 Status date: 2026-10-14.
 
+V368/V370 losslessly archive297 legacy workspaces and V27/V32 server logs;
+all files pass GNU tar comparison before raw cleanup. Available disk recovers
+to77.30GiB at completion. V29 native and latest V49-V54 remain directly
+readable; preserve original outcomes and administrative censoring. V367 stops
+only217 verified idle legacy sandbox containers, retaining their layers.
+V55 resumes no earlier than2026-10-14 06:00 when GPU, port and disk permit;
+the21 execution/analysis source hashes qualified by V362 remain unchanged.
+
+V369 extends protection observations to all273 sealed early-FULL waits.
+Of84 JOIN waits,36 release every early command's protection before completion;
+25 still confirm0.678GB reuse from0.934GB transferred. Of189 tool waits,
+31 have that release pattern and confirm only0.0478GB from3.437GB;
+their latest-ACK-to-completion median is89.245s. The41 JOIN/158 tool
+waits with no observed pre-completion release confirm0.916/0.916GB
+and11.094/11.149GB respectively. This transfer-selected population
+does not prove a global lease extension would reproduce that reuse or
+describe all unissued opportunities; three tool shared-lock associations
+remain unknown. Prioritize effective tool-tail restoration timing and
+jointly verify complete inputs, residence and admission consumption.
+Retain JOIN reuse after release as counterevidence to equating unlock with
+eviction. V55 policy remains frozen; real throughput/JCT acceptance is pending.
+
 V364 links the existing18 native-queue-dominated tails (7 JOIN,11 tools)
 to protection and exact next-request admission observations. All140 early
 FULL commands begin with3s protection and release for service_window_expired

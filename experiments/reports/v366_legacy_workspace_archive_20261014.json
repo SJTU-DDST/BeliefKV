@@ -1,0 +1,16 @@
+{
+  "schema_version": 1,
+  "status": "failed_preserve_unverified_sources",
+  "started_at_local": "2026-10-14T05:13:36.379669+08:00",
+  "helper_sha256": "800797e0b24c0627f833fc2c483bc97c7720a55c1ec558c4bf296c07f2ed7018",
+  "process_verification_helper_sha256": "028aa1559ae78cbb0e41b9ed14878ed385be04aee98d5ac7a093d6fb2ac2f234",
+  "compression_policy": "zstd -T1 --long=30 -3; nice19; idle I/O",
+  "free_bytes_before": 17273012224,
+  "runs": [],
+  "preserved": [
+    "all original workspace files including untracked files",
+    "all raw traces, results, plans, manifests and censoring receipts",
+    "latest V49-V54 and V29 native directly readable evidence"
+  ],
+  "error": "ValueError('experiment still owns live resources: /home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261010_v17')"
+}
