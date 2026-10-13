@@ -1,0 +1,2735 @@
+{
+  "observed_at_local": "2026-10-13T23:20:02.962694+08:00",
+  "short_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v321_v54_short_prefill_3600_3900_20261013.json",
+  "short_report_sha256": "6697691cc148d9895ced406d40338023f780709f8a4346dda8ece621c00e6395",
+  "analyzer_sha256": "4440fcfa3e1c68433b57ffb56696eb8f3bb2c631bf3887dfd67e3d52c694ff3f",
+  "cases": [
+    {
+      "work_bin": 512,
+      "prefix_bin": 2048,
+      "minimum_per_arm": 5,
+      "match_neighbors": false,
+      "cohort_count": 15,
+      "weight_sum": 790,
+      "matched_samples": {
+        "predictive_h2d": 955,
+        "native": 827
+      },
+      "unmatched_samples": {
+        "predictive_h2d": 11,
+        "native": 2
+      },
+      "aggregate": {
+        "worker_interval_ms": {
+          "predictive": 9.396165262057085,
+          "native": 8.37500826317234,
+          "difference_ms": 1.021156998884745,
+          "ratio": 1.1219290735956773
+        },
+        "launch_to_processed_completion_ms": {
+          "predictive": 61.48091978066721,
+          "native": 68.0746525948322,
+          "difference_ms": -6.593732814164994,
+          "ratio": 0.9031396773567149
+        },
+        "clipped_launch_overlap_ms": {
+          "predictive": 52.0847545147391,
+          "native": 59.699644340630364,
+          "difference_ms": -7.614889825891261,
+          "ratio": 0.8724466467096066
+        }
+      },
+      "cohorts": [
+        {
+          "group": [
+            0,
+            10240,
+            "true"
+          ],
+          "predictive_count": 100,
+          "native_count": 96,
+          "weight": 96,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.976052341982722,
+              "native_mean_ms": 6.982216737621154
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.406432456970215,
+              "native_mean_ms": 65.6830160121123
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.43038007736206,
+              "native_mean_ms": 58.700799276431404
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            12288,
+            "true"
+          ],
+          "predictive_count": 96,
+          "native_count": 104,
+          "weight": 96,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 10.015855960470313,
+              "native_mean_ms": 8.039402435175502
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 62.281838883956276,
+              "native_mean_ms": 68.93816898419307
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.26598294576009,
+              "native_mean_ms": 60.898766590998726
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            14336,
+            "true"
+          ],
+          "predictive_count": 70,
+          "native_count": 70,
+          "weight": 70,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 9.07266318265881,
+              "native_mean_ms": 7.994568028620312
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 62.684271921430316,
+              "native_mean_ms": 69.59374352863857
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.611608791351316,
+              "native_mean_ms": 61.59917553492955
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            16384,
+            "true"
+          ],
+          "predictive_count": 64,
+          "native_count": 44,
+          "weight": 44,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 9.372314962092787,
+              "native_mean_ms": 7.976908850568262
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.30890253186226,
+              "native_mean_ms": 68.72249419038945
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.93658758699894,
+              "native_mean_ms": 60.74558546326377
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            18432,
+            "true"
+          ],
+          "predictive_count": 48,
+          "native_count": 31,
+          "weight": 31,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 9.679173313391706,
+              "native_mean_ms": 8.240232995200541
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 63.41938728094101,
+              "native_mean_ms": 68.22845400533369
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.740214029947914,
+              "native_mean_ms": 59.98822095317225
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            20480,
+            "true"
+          ],
+          "predictive_count": 51,
+          "native_count": 23,
+          "weight": 23,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 10.506180388962521,
+              "native_mean_ms": 10.630090680459272
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 63.208406055674835,
+              "native_mean_ms": 68.61413184456204
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.70222564772064,
+              "native_mean_ms": 57.984040965204656
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            22528,
+            "true"
+          ],
+          "predictive_count": 42,
+          "native_count": 38,
+          "weight": 38,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 10.07431825356824,
+              "native_mean_ms": 9.795157974095721
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.337755793616886,
+              "native_mean_ms": 65.93797656109459
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.263437611716135,
+              "native_mean_ms": 56.142818576411194
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            24576,
+            "true"
+          ],
+          "predictive_count": 52,
+          "native_count": 37,
+          "weight": 37,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 11.588776484131813,
+              "native_mean_ms": 12.087701215735963
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 63.789977898964516,
+              "native_mean_ms": 67.9825006948935
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.20120142056392,
+              "native_mean_ms": 55.89479956755767
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            26624,
+            "true"
+          ],
+          "predictive_count": 30,
+          "native_count": 40,
+          "weight": 30,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 10.638138900200525,
+              "native_mean_ms": 15.468044532462955
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.902657413482665,
+              "native_mean_ms": 71.68758254051208
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 49.26451848347982,
+              "native_mean_ms": 56.21953792572022
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            28672,
+            "true"
+          ],
+          "predictive_count": 51,
+          "native_count": 29,
+          "weight": 29,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 13.373147349293326,
+              "native_mean_ms": 11.219956623069171
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 62.479046148412365,
+              "native_mean_ms": 65.35085332804712
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 49.10589880101821,
+              "native_mean_ms": 54.130896699839624
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            30720,
+            "true"
+          ],
+          "predictive_count": 21,
+          "native_count": 16,
+          "weight": 16,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.952860365666094,
+              "native_mean_ms": 11.614497052505612
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.7336821329026,
+              "native_mean_ms": 67.04970800876617
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 50.78082170940581,
+              "native_mean_ms": 55.435210824012756
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            32768,
+            "true"
+          ],
+          "predictive_count": 13,
+          "native_count": 5,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 10.651450819120956,
+              "native_mean_ms": 13.528907671570778
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 63.28146354968731,
+              "native_mean_ms": 74.57816123962402
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.63001251220703,
+              "native_mean_ms": 61.04925365447998
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            4096,
+            "true"
+          ],
+          "predictive_count": 125,
+          "native_count": 144,
+          "weight": 125,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.759205527603626,
+              "native_mean_ms": 6.782677813640071
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 60.98992459869385,
+              "native_mean_ms": 73.37707953320609
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.230719009399415,
+              "native_mean_ms": 66.59440169731776
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            6144,
+            "true"
+          ],
+          "predictive_count": 94,
+          "native_count": 79,
+          "weight": 79,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.206855555243315,
+              "native_mean_ms": 6.83436149000367
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.011126832759125,
+              "native_mean_ms": 65.35020915164223
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.80427127188825,
+              "native_mean_ms": 58.515847713132445
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            8192,
+            "true"
+          ],
+          "predictive_count": 98,
+          "native_count": 71,
+          "weight": 71,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 10.891028081199952,
+              "native_mean_ms": 7.232834165259986
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.50374221801758,
+              "native_mean_ms": 62.246442754503704
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 50.612714144648336,
+              "native_mean_ms": 55.01360861012633
+            }
+          }
+        }
+      ]
+    },
+    {
+      "work_bin": 512,
+      "prefix_bin": 2048,
+      "minimum_per_arm": 5,
+      "match_neighbors": true,
+      "cohort_count": 30,
+      "weight_sum": 658,
+      "matched_samples": {
+        "predictive_h2d": 745,
+        "native": 710
+      },
+      "unmatched_samples": {
+        "predictive_h2d": 221,
+        "native": 119
+      },
+      "aggregate": {
+        "worker_interval_ms": {
+          "predictive": 8.268008257829669,
+          "native": 7.698989537160409,
+          "difference_ms": 0.5690187206692601,
+          "ratio": 1.073908234051079
+        },
+        "launch_to_processed_completion_ms": {
+          "predictive": 60.52595300246056,
+          "native": 68.03885849672686,
+          "difference_ms": -7.512905494266299,
+          "ratio": 0.8895791954736024
+        },
+        "clipped_launch_overlap_ms": {
+          "predictive": 52.25794474113853,
+          "native": 60.339868976555884,
+          "difference_ms": -8.081924235417354,
+          "ratio": 0.866059963793467
+        }
+      },
+      "cohorts": [
+        {
+          "group": [
+            0,
+            10240,
+            "true",
+            "decode",
+            47,
+            "decode",
+            46
+          ],
+          "predictive_count": 8,
+          "native_count": 6,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.218736689537764,
+              "native_mean_ms": 6.869068058828513
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.47088444232941,
+              "native_mean_ms": 66.70460065205891
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 54.252147912979126,
+              "native_mean_ms": 59.83553250630697
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            10240,
+            "true",
+            "decode",
+            47,
+            "decode",
+            47
+          ],
+          "predictive_count": 35,
+          "native_count": 33,
+          "weight": 33,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.809722982347012,
+              "native_mean_ms": 7.076106485769604
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.33706419808524,
+              "native_mean_ms": 65.87125396728516
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.52734118870327,
+              "native_mean_ms": 58.795147549022325
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            10240,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 52,
+          "native_count": 53,
+          "weight": 52,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.5490116320837,
+              "native_mean_ms": 7.0121057226129295
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 58.838008678876434,
+              "native_mean_ms": 66.32147369744642
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.28899700825031,
+              "native_mean_ms": 59.30936795360637
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            12288,
+            "true",
+            "decode",
+            47,
+            "decode",
+            46
+          ],
+          "predictive_count": 10,
+          "native_count": 10,
+          "weight": 10,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.163449633866549,
+              "native_mean_ms": 7.802315428853035
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.459672355651854,
+              "native_mean_ms": 68.93612842559814
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.29622278213501,
+              "native_mean_ms": 61.13381299972534
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            12288,
+            "true",
+            "decode",
+            47,
+            "decode",
+            47
+          ],
+          "predictive_count": 27,
+          "native_count": 28,
+          "weight": 27,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.452154764974559,
+              "native_mean_ms": 8.215887638341103
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 63.34293369010643,
+              "native_mean_ms": 70.4524279321943
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 54.890778965420196,
+              "native_mean_ms": 62.236540351595195
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            12288,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 53,
+          "native_count": 62,
+          "weight": 53,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 9.280836139366311,
+              "native_mean_ms": 8.150919655998868
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 60.66662804585583,
+              "native_mean_ms": 68.97950501595774
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.385791922515295,
+              "native_mean_ms": 60.82858539396717
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            14336,
+            "true",
+            "decode",
+            47,
+            "decode",
+            47
+          ],
+          "predictive_count": 19,
+          "native_count": 16,
+          "weight": 16,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.668037114566879,
+              "native_mean_ms": 8.426890650298446
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 60.06617817125822,
+              "native_mean_ms": 71.36439734697342
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.39814110806114,
+              "native_mean_ms": 62.937506675720215
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            14336,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 33,
+          "native_count": 42,
+          "weight": 33,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.162706497717988,
+              "native_mean_ms": 7.945829181976261
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.32420380910238,
+              "native_mean_ms": 68.73889998027256
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.16149734728264,
+              "native_mean_ms": 60.793070793151855
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            16384,
+            "true",
+            "decode",
+            47,
+            "decode",
+            47
+          ],
+          "predictive_count": 16,
+          "native_count": 7,
+          "weight": 7,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.829062338918447,
+              "native_mean_ms": 7.620796162102904
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 62.57633888721466,
+              "native_mean_ms": 67.313232421875
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.74727654457092,
+              "native_mean_ms": 59.69243649074009
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            16384,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 35,
+          "native_count": 34,
+          "weight": 34,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.267241898391928,
+              "native_mean_ms": 8.080874487538548
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 57.799631173270086,
+              "native_mean_ms": 69.94772622164558
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 50.532389286586216,
+              "native_mean_ms": 61.866851806640625
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            18432,
+            "true",
+            "decode",
+            47,
+            "decode",
+            47
+          ],
+          "predictive_count": 10,
+          "native_count": 10,
+          "weight": 10,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.90268499404192,
+              "native_mean_ms": 7.886762451380491
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.99583101272583,
+              "native_mean_ms": 71.27286109924316
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.09314584732056,
+              "native_mean_ms": 63.386098575592044
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            18432,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 16,
+          "native_count": 16,
+          "weight": 16,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.895433634985238,
+              "native_mean_ms": 8.529874205123633
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 60.93891179561615,
+              "native_mean_ms": 65.93966233730316
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.043478310108185,
+              "native_mean_ms": 57.40978813171387
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            20480,
+            "true",
+            "decode",
+            47,
+            "decode",
+            47
+          ],
+          "predictive_count": 12,
+          "native_count": 6,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 9.130469911421338,
+              "native_mean_ms": 10.008800153930983
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 63.36625099182129,
+              "native_mean_ms": 73.87891308466594
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 54.235781033833824,
+              "native_mean_ms": 63.87011273701986
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            20480,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 18,
+          "native_count": 14,
+          "weight": 14,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.732161898579863,
+              "native_mean_ms": 7.601323404482433
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.60522233115302,
+              "native_mean_ms": 65.19196094785418
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.87306049134996,
+              "native_mean_ms": 57.590637411390034
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            22528,
+            "true",
+            "decode",
+            47,
+            "decode",
+            47
+          ],
+          "predictive_count": 7,
+          "native_count": 9,
+          "weight": 7,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 11.319918558001518,
+              "native_mean_ms": 8.190723239547676
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 70.14382825578961,
+              "native_mean_ms": 61.397337171766495
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 58.823909759521484,
+              "native_mean_ms": 53.20661375257704
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            22528,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 18,
+          "native_count": 10,
+          "weight": 10,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 9.931691353105837,
+              "native_mean_ms": 8.112086541950703
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.059955014122856,
+              "native_mean_ms": 71.87413892745971
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.12826368543837,
+              "native_mean_ms": 63.76205244064331
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            24576,
+            "true",
+            "decode",
+            47,
+            "decode",
+            47
+          ],
+          "predictive_count": 9,
+          "native_count": 10,
+          "weight": 9,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 11.658883239659998,
+              "native_mean_ms": 9.5971898175776
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 66.42540878719754,
+              "native_mean_ms": 66.52542972564697
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 54.76652569240994,
+              "native_mean_ms": 56.92824010848999
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            24576,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 22,
+          "native_count": 14,
+          "weight": 14,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 9.40892155366865,
+              "native_mean_ms": 12.998638342001609
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.782656322826035,
+              "native_mean_ms": 69.72297157560077
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 50.373734734275125,
+              "native_mean_ms": 56.72433342252459
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            26624,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 10,
+          "native_count": 17,
+          "weight": 10,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 9.103708993643522,
+              "native_mean_ms": 11.472653707160669
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 58.78290872573852,
+              "native_mean_ms": 73.62861470615162
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 49.67919969558716,
+              "native_mean_ms": 62.15596098058364
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            28672,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 25,
+          "native_count": 16,
+          "weight": 16,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 9.465879611670971,
+              "native_mean_ms": 10.87416528025642
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 56.92012962341309,
+              "native_mean_ms": 64.8249996304512
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 47.454249954223634,
+              "native_mean_ms": 53.95083445310593
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            30720,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 11,
+          "native_count": 11,
+          "weight": 11,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 9.390703825788064,
+              "native_mean_ms": 12.91786464439197
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.540169975974344,
+              "native_mean_ms": 69.85447441447864
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.14946599440141,
+              "native_mean_ms": 56.93660961497914
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            4096,
+            "true",
+            "decode",
+            47,
+            "decode",
+            46
+          ],
+          "predictive_count": 17,
+          "native_count": 15,
+          "weight": 15,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.0729628753136184,
+              "native_mean_ms": 6.127146321038405
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 60.21939294478472,
+              "native_mean_ms": 61.977183214823405
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.146430015563965,
+              "native_mean_ms": 55.8500368754069
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            4096,
+            "true",
+            "decode",
+            47,
+            "decode",
+            47
+          ],
+          "predictive_count": 36,
+          "native_count": 45,
+          "weight": 36,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.757427662404047,
+              "native_mean_ms": 6.813352844781345
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 63.099744611316254,
+              "native_mean_ms": 91.45978469848633
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 55.34231686592102,
+              "native_mean_ms": 84.64643175337049
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            4096,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 69,
+          "native_count": 82,
+          "weight": 69,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.856927623135456,
+              "native_mean_ms": 6.789913117067843
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 60.14494336169699,
+              "native_mean_ms": 64.97356353154997
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.28801568349203,
+              "native_mean_ms": 58.18365043547095
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            6144,
+            "true",
+            "decode",
+            47,
+            "decode",
+            46
+          ],
+          "predictive_count": 12,
+          "native_count": 5,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.943418420230349,
+              "native_mean_ms": 6.531348824501038
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 65.79729827245076,
+              "native_mean_ms": 69.40225200653076
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 57.85387976964315,
+              "native_mean_ms": 62.870903205871585
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            6144,
+            "true",
+            "decode",
+            47,
+            "decode",
+            47
+          ],
+          "predictive_count": 27,
+          "native_count": 20,
+          "weight": 20,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.008112923966515,
+              "native_mean_ms": 6.810081331059337
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.44976093150951,
+              "native_mean_ms": 67.8667664527893
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.44164798877858,
+              "native_mean_ms": 61.05668535232544
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            6144,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 52,
+          "native_count": 51,
+          "weight": 51,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.375876851809712,
+              "native_mean_ms": 6.797433155132275
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.440469191624565,
+              "native_mean_ms": 63.41342260323319
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.064592379790085,
+              "native_mean_ms": 56.61598944196514
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            8192,
+            "true",
+            "decode",
+            47,
+            "decode",
+            46
+          ],
+          "predictive_count": 6,
+          "native_count": 6,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.06543572495381,
+              "native_mean_ms": 5.7214175661404925
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 64.98355563481648,
+              "native_mean_ms": 57.77591482798258
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 56.91811974843343,
+              "native_mean_ms": 52.054497400919594
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            8192,
+            "true",
+            "decode",
+            47,
+            "decode",
+            47
+          ],
+          "predictive_count": 34,
+          "native_count": 18,
+          "weight": 18,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.350658340489163,
+              "native_mean_ms": 6.666919889135493
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.19473120745491,
+              "native_mean_ms": 66.42961104710896
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.8440728187561,
+              "native_mean_ms": 59.762691232893204
+            }
+          }
+        },
+        {
+          "group": [
+            0,
+            8192,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 46,
+          "native_count": 44,
+          "weight": 44,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.305969020432752,
+              "native_mean_ms": 6.240915464745327
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.366224558457084,
+              "native_mean_ms": 60.55829691886902
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.06025561042454,
+              "native_mean_ms": 54.317381447011776
+            }
+          }
+        }
+      ]
+    },
+    {
+      "work_bin": 16,
+      "prefix_bin": 2048,
+      "minimum_per_arm": 5,
+      "match_neighbors": false,
+      "cohort_count": 34,
+      "weight_sum": 272,
+      "matched_samples": {
+        "predictive_h2d": 314,
+        "native": 319
+      },
+      "unmatched_samples": {
+        "predictive_h2d": 652,
+        "native": 510
+      },
+      "aggregate": {
+        "worker_interval_ms": {
+          "predictive": 8.082415423224404,
+          "native": 7.060861555148106,
+          "difference_ms": 1.0215538680762979,
+          "ratio": 1.1446783597295542
+        },
+        "launch_to_processed_completion_ms": {
+          "predictive": 61.142728922994486,
+          "native": 70.15206711314218,
+          "difference_ms": -9.009338190147695,
+          "ratio": 0.8715741593812579
+        },
+        "clipped_launch_overlap_ms": {
+          "predictive": 53.06031345502614,
+          "native": 63.0912055619269,
+          "difference_ms": -10.030892106900758,
+          "ratio": 0.8410096618449464
+        }
+      },
+      "cohorts": [
+        {
+          "group": [
+            112,
+            10240,
+            "true"
+          ],
+          "predictive_count": 11,
+          "native_count": 9,
+          "weight": 9,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.172161035917022,
+              "native_mean_ms": 6.5622452853454485
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 58.77553497661244,
+              "native_mean_ms": 66.21843168470595
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.60337387431752,
+              "native_mean_ms": 59.65618642171224
+            }
+          }
+        },
+        {
+          "group": [
+            112,
+            12288,
+            "true"
+          ],
+          "predictive_count": 14,
+          "native_count": 14,
+          "weight": 14,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 11.977473007781166,
+              "native_mean_ms": 7.806617966187852
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 67.56475189753941,
+              "native_mean_ms": 67.43480362210956
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 55.58727870668684,
+              "native_mean_ms": 59.62818561281477
+            }
+          }
+        },
+        {
+          "group": [
+            112,
+            16384,
+            "true"
+          ],
+          "predictive_count": 5,
+          "native_count": 6,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 6.2658194452524185,
+              "native_mean_ms": 8.128317849089703
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 56.967918968200685,
+              "native_mean_ms": 71.993980884552
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 50.70209922790527,
+              "native_mean_ms": 63.86566289265951
+            }
+          }
+        },
+        {
+          "group": [
+            112,
+            4096,
+            "true"
+          ],
+          "predictive_count": 12,
+          "native_count": 15,
+          "weight": 12,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.699336554855108,
+              "native_mean_ms": 6.326691495875518
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 62.35537838935852,
+              "native_mean_ms": 136.72555643717448
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.656041940053306,
+              "native_mean_ms": 130.39886500040691
+            }
+          }
+        },
+        {
+          "group": [
+            112,
+            6144,
+            "true"
+          ],
+          "predictive_count": 18,
+          "native_count": 9,
+          "weight": 9,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.071793295029137,
+              "native_mean_ms": 6.25941509173976
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 60.16183217366537,
+              "native_mean_ms": 62.437707583109535
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.09003888236152,
+              "native_mean_ms": 56.17829269833035
+            }
+          }
+        },
+        {
+          "group": [
+            112,
+            8192,
+            "true"
+          ],
+          "predictive_count": 12,
+          "native_count": 9,
+          "weight": 9,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 6.9479807280004025,
+              "native_mean_ms": 6.023039316965474
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 60.06698513031006,
+              "native_mean_ms": 62.931433783637154
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.119004249572754,
+              "native_mean_ms": 56.90839438968234
+            }
+          }
+        },
+        {
+          "group": [
+            128,
+            10240,
+            "true"
+          ],
+          "predictive_count": 9,
+          "native_count": 12,
+          "weight": 9,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.322620910902818,
+              "native_mean_ms": 8.241672922546664
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 60.67205545637343,
+              "native_mean_ms": 72.69612526893616
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.34943453470866,
+              "native_mean_ms": 64.45445227622986
+            }
+          }
+        },
+        {
+          "group": [
+            128,
+            12288,
+            "true"
+          ],
+          "predictive_count": 9,
+          "native_count": 11,
+          "weight": 9,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.602353847689098,
+              "native_mean_ms": 8.15301142971624
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.87671163347032,
+              "native_mean_ms": 71.85419628836893
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.27435768975152,
+              "native_mean_ms": 63.701184792952105
+            }
+          }
+        },
+        {
+          "group": [
+            128,
+            14336,
+            "true"
+          ],
+          "predictive_count": 11,
+          "native_count": 6,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.201152848249132,
+              "native_mean_ms": 8.967625287671884
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.67808463356712,
+              "native_mean_ms": 74.68289947509766
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.47693191875111,
+              "native_mean_ms": 65.71527401606242
+            }
+          }
+        },
+        {
+          "group": [
+            128,
+            16384,
+            "true"
+          ],
+          "predictive_count": 8,
+          "native_count": 6,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.735427585430443,
+              "native_mean_ms": 9.733332476268211
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 58.91517102718353,
+              "native_mean_ms": 81.10877068837483
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.17974352836609,
+              "native_mean_ms": 71.37543853123982
+            }
+          }
+        },
+        {
+          "group": [
+            128,
+            18432,
+            "true"
+          ],
+          "predictive_count": 6,
+          "native_count": 5,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 12.543194616834322,
+              "native_mean_ms": 7.125599682331085
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 67.67971022923787,
+              "native_mean_ms": 64.84946422576904
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 55.136515617370605,
+              "native_mean_ms": 57.72386436462402
+            }
+          }
+        },
+        {
+          "group": [
+            128,
+            4096,
+            "true"
+          ],
+          "predictive_count": 11,
+          "native_count": 10,
+          "weight": 10,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 6.969749080863866,
+              "native_mean_ms": 5.57686286047101
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.834650559858844,
+              "native_mean_ms": 61.111696529388425
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.86490128257058,
+              "native_mean_ms": 55.53483362197876
+            }
+          }
+        },
+        {
+          "group": [
+            128,
+            6144,
+            "true"
+          ],
+          "predictive_count": 14,
+          "native_count": 18,
+          "weight": 14,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.236746503306287,
+              "native_mean_ms": 6.545479254176219
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 65.1115061214992,
+              "native_mean_ms": 64.74801625145807
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 56.874759674072266,
+              "native_mean_ms": 58.202537059783936
+            }
+          }
+        },
+        {
+          "group": [
+            128,
+            8192,
+            "true"
+          ],
+          "predictive_count": 13,
+          "native_count": 8,
+          "weight": 8,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.27994367480278,
+              "native_mean_ms": 8.934250799939036
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.46538521693303,
+              "native_mean_ms": 77.18410539627075
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.185441530667816,
+              "native_mean_ms": 68.24985480308533
+            }
+          }
+        },
+        {
+          "group": [
+            144,
+            10240,
+            "true"
+          ],
+          "predictive_count": 6,
+          "native_count": 6,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.72943364083767,
+              "native_mean_ms": 7.588885103662808
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 58.55905866622925,
+              "native_mean_ms": 70.35918935139973
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 49.829624811808266,
+              "native_mean_ms": 62.77030420303345
+            }
+          }
+        },
+        {
+          "group": [
+            144,
+            12288,
+            "true"
+          ],
+          "predictive_count": 6,
+          "native_count": 7,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.428548773129782,
+              "native_mean_ms": 7.547344081103802
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 63.003398736317955,
+              "native_mean_ms": 69.90769427163261
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 54.57485008239746,
+              "native_mean_ms": 62.36035020010812
+            }
+          }
+        },
+        {
+          "group": [
+            144,
+            4096,
+            "true"
+          ],
+          "predictive_count": 8,
+          "native_count": 13,
+          "weight": 8,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.6147213112562895,
+              "native_mean_ms": 7.522514018301781
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 65.89698791503906,
+              "native_mean_ms": 68.24230568225568
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 58.282266497612,
+              "native_mean_ms": 60.71979155907264
+            }
+          }
+        },
+        {
+          "group": [
+            144,
+            6144,
+            "true"
+          ],
+          "predictive_count": 6,
+          "native_count": 7,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 6.981139071285725,
+              "native_mean_ms": 8.763376357299942
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 62.48188575108846,
+              "native_mean_ms": 71.43041964939663
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 55.500746726989746,
+              "native_mean_ms": 62.66704341343471
+            }
+          }
+        },
+        {
+          "group": [
+            144,
+            8192,
+            "true"
+          ],
+          "predictive_count": 5,
+          "native_count": 6,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 9.506412781774998,
+              "native_mean_ms": 5.836670907835166
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 62.330723190307616,
+              "native_mean_ms": 60.599689960479736
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.824310302734375,
+              "native_mean_ms": 54.76301908493042
+            }
+          }
+        },
+        {
+          "group": [
+            160,
+            14336,
+            "true"
+          ],
+          "predictive_count": 6,
+          "native_count": 8,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.6166498474776745,
+              "native_mean_ms": 8.139036828652024
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 60.18305619557699,
+              "native_mean_ms": 73.12419486045837
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.56640656789144,
+              "native_mean_ms": 64.98515808582306
+            }
+          }
+        },
+        {
+          "group": [
+            160,
+            6144,
+            "true"
+          ],
+          "predictive_count": 7,
+          "native_count": 5,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.431798614561558,
+              "native_mean_ms": 4.84843086451292
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.7808347429548,
+              "native_mean_ms": 55.758969688415526
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.34903580801828,
+              "native_mean_ms": 50.91053848266601
+            }
+          }
+        },
+        {
+          "group": [
+            208,
+            4096,
+            "true"
+          ],
+          "predictive_count": 15,
+          "native_count": 14,
+          "weight": 14,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 6.690890776614348,
+              "native_mean_ms": 6.849135205681835
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.203843625386554,
+              "native_mean_ms": 68.8940908568246
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.51295280456543,
+              "native_mean_ms": 62.044955662318635
+            }
+          }
+        },
+        {
+          "group": [
+            224,
+            12288,
+            "true"
+          ],
+          "predictive_count": 6,
+          "native_count": 7,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 6.7834000413616495,
+              "native_mean_ms": 7.416840509644577
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 58.21462472279867,
+              "native_mean_ms": 68.39576939174107
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.43122466405233,
+              "native_mean_ms": 60.97892883845738
+            }
+          }
+        },
+        {
+          "group": [
+            224,
+            4096,
+            "true"
+          ],
+          "predictive_count": 9,
+          "native_count": 27,
+          "weight": 9,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.406857485572497,
+              "native_mean_ms": 6.604299121708782
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 62.76255247328017,
+              "native_mean_ms": 68.83265735484936
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 55.35569477081299,
+              "native_mean_ms": 62.22835819809525
+            }
+          }
+        },
+        {
+          "group": [
+            240,
+            4096,
+            "true"
+          ],
+          "predictive_count": 11,
+          "native_count": 10,
+          "weight": 10,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.498508488590067,
+              "native_mean_ms": 6.669496279209852
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.57707049629905,
+              "native_mean_ms": 60.10063333511353
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 54.07856186953458,
+              "native_mean_ms": 53.43113689422607
+            }
+          }
+        },
+        {
+          "group": [
+            256,
+            4096,
+            "true"
+          ],
+          "predictive_count": 9,
+          "native_count": 8,
+          "weight": 8,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 6.60980927447478,
+              "native_mean_ms": 5.990845034830272
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 58.26890023549398,
+              "native_mean_ms": 64.030681848526
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.65909088982476,
+              "native_mean_ms": 58.0398371219635
+            }
+          }
+        },
+        {
+          "group": [
+            80,
+            10240,
+            "true"
+          ],
+          "predictive_count": 11,
+          "native_count": 7,
+          "weight": 7,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.79234964535995,
+              "native_mean_ms": 5.775815009006432
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 64.45255123485218,
+              "native_mean_ms": 58.14203030722482
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 55.660201506181195,
+              "native_mean_ms": 52.36621529715402
+            }
+          }
+        },
+        {
+          "group": [
+            80,
+            4096,
+            "true"
+          ],
+          "predictive_count": 9,
+          "native_count": 8,
+          "weight": 8,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.22000712570217,
+              "native_mean_ms": 7.279703859239817
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 60.75290404425727,
+              "native_mean_ms": 71.40670013427734
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.532896995544434,
+              "native_mean_ms": 64.12699615955353
+            }
+          }
+        },
+        {
+          "group": [
+            80,
+            6144,
+            "true"
+          ],
+          "predictive_count": 8,
+          "native_count": 10,
+          "weight": 8,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 6.569742574356496,
+              "native_mean_ms": 7.253456581383944
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 57.50579643249512,
+              "native_mean_ms": 70.54803342819214
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 50.93605375289917,
+              "native_mean_ms": 63.294576740264894
+            }
+          }
+        },
+        {
+          "group": [
+            80,
+            8192,
+            "true"
+          ],
+          "predictive_count": 8,
+          "native_count": 8,
+          "weight": 8,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 12.303589261136949,
+              "native_mean_ms": 5.887674516998231
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 63.182915806770325,
+              "native_mean_ms": 59.8368364572525
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 50.879326581954956,
+              "native_mean_ms": 53.949161767959595
+            }
+          }
+        },
+        {
+          "group": [
+            96,
+            10240,
+            "true"
+          ],
+          "predictive_count": 9,
+          "native_count": 7,
+          "weight": 7,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 6.720497376388973,
+              "native_mean_ms": 7.182874716818333
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 56.9883901807997,
+              "native_mean_ms": 67.741929599217
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 50.267892837524414,
+              "native_mean_ms": 60.55905505589077
+            }
+          }
+        },
+        {
+          "group": [
+            96,
+            16384,
+            "true"
+          ],
+          "predictive_count": 7,
+          "native_count": 5,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 6.847287129078593,
+              "native_mean_ms": 7.590616308152676
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 55.814050265720915,
+              "native_mean_ms": 70.38927955627442
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 48.96676322392055,
+              "native_mean_ms": 62.79866352081299
+            }
+          }
+        },
+        {
+          "group": [
+            96,
+            4096,
+            "true"
+          ],
+          "predictive_count": 8,
+          "native_count": 10,
+          "weight": 8,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.427648524753749,
+              "native_mean_ms": 5.944210570305586
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.134578704833984,
+              "native_mean_ms": 59.89264850616455
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.70693004131317,
+              "native_mean_ms": 53.94843807220459
+            }
+          }
+        },
+        {
+          "group": [
+            96,
+            8192,
+            "true"
+          ],
+          "predictive_count": 7,
+          "native_count": 8,
+          "weight": 7,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 9.476604871451855,
+              "native_mean_ms": 7.2801654459908605
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 58.63626343863351,
+              "native_mean_ms": 63.77025747299194
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 49.15965870448521,
+              "native_mean_ms": 56.490092039108276
+            }
+          }
+        }
+      ]
+    },
+    {
+      "work_bin": 16,
+      "prefix_bin": 2048,
+      "minimum_per_arm": 5,
+      "match_neighbors": true,
+      "cohort_count": 17,
+      "weight_sum": 97,
+      "matched_samples": {
+        "predictive_h2d": 108,
+        "native": 118
+      },
+      "unmatched_samples": {
+        "predictive_h2d": 858,
+        "native": 711
+      },
+      "aggregate": {
+        "worker_interval_ms": {
+          "predictive": 8.112142017196929,
+          "native": 6.997143557737482,
+          "difference_ms": 1.1149984594594464,
+          "ratio": 1.159350519288185
+        },
+        "launch_to_processed_completion_ms": {
+          "predictive": 60.32552903955782,
+          "native": 67.33326385107432,
+          "difference_ms": -7.0077348115164995,
+          "ratio": 0.8959246231251169
+        },
+        "clipped_launch_overlap_ms": {
+          "predictive": 52.21338698712571,
+          "native": 60.336120311163164,
+          "difference_ms": -8.122733324037455,
+          "ratio": 0.8653752796476273
+        }
+      },
+      "cohorts": [
+        {
+          "group": [
+            112,
+            12288,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 9,
+          "native_count": 9,
+          "weight": 9,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 13.68542822698752,
+              "native_mean_ms": 8.41739804794391
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 66.6440528233846,
+              "native_mean_ms": 69.99600813123915
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.95862441592746,
+              "native_mean_ms": 61.57861010233561
+            }
+          }
+        },
+        {
+          "group": [
+            112,
+            4096,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 7,
+          "native_count": 9,
+          "weight": 7,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 9.603217244148254,
+              "native_mean_ms": 5.878524440858099
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.842452594212126,
+              "native_mean_ms": 63.29168340894911
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.23923533303397,
+              "native_mean_ms": 57.41315894656711
+            }
+          }
+        },
+        {
+          "group": [
+            112,
+            6144,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 11,
+          "native_count": 6,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.650137196210297,
+              "native_mean_ms": 6.780342664569616
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.49281415072355,
+              "native_mean_ms": 66.64419364929199
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 50.842676942998715,
+              "native_mean_ms": 59.86385107040405
+            }
+          }
+        },
+        {
+          "group": [
+            128,
+            12288,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 8,
+          "native_count": 5,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.556726737879217,
+              "native_mean_ms": 7.811512611806393
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 60.24001610279083,
+              "native_mean_ms": 71.64481029510497
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.68328928947449,
+              "native_mean_ms": 63.83329772949219
+            }
+          }
+        },
+        {
+          "group": [
+            128,
+            14336,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 6,
+          "native_count": 6,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 8.532578746477762,
+              "native_mean_ms": 8.967625287671884
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 64.92530743281047,
+              "native_mean_ms": 74.68289947509766
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 56.39272896448771,
+              "native_mean_ms": 65.71527401606242
+            }
+          }
+        },
+        {
+          "group": [
+            128,
+            16384,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 6,
+          "native_count": 5,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.932984425375859,
+              "native_mean_ms": 10.298533737659454
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 58.429282347361244,
+              "native_mean_ms": 84.24036903381348
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 50.49629799524943,
+              "native_mean_ms": 73.94183559417725
+            }
+          }
+        },
+        {
+          "group": [
+            128,
+            4096,
+            "true",
+            "decode",
+            47,
+            "decode",
+            47
+          ],
+          "predictive_count": 5,
+          "native_count": 5,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.78973214328289,
+              "native_mean_ms": 5.107695609331131
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.788428115844724,
+              "native_mean_ms": 56.84187679290771
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.99869575500488,
+              "native_mean_ms": 51.7341812133789
+            }
+          }
+        },
+        {
+          "group": [
+            128,
+            4096,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 5,
+          "native_count": 5,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 6.212329678237438,
+              "native_mean_ms": 6.046030111610889
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.73333930969238,
+              "native_mean_ms": 65.38151626586914
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.52100944519043,
+              "native_mean_ms": 59.335486030578615
+            }
+          }
+        },
+        {
+          "group": [
+            128,
+            6144,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 5,
+          "native_count": 10,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.033809646964073,
+              "native_mean_ms": 5.761535651981831
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 59.50544052124023,
+              "native_mean_ms": 60.21228628158569
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 52.471630859375,
+              "native_mean_ms": 54.450750541687015
+            }
+          }
+        },
+        {
+          "group": [
+            128,
+            8192,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 5,
+          "native_count": 6,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.179388776421547,
+              "native_mean_ms": 8.807262871414423
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 56.67362632751465,
+              "native_mean_ms": 75.01114082336426
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 49.49423770904541,
+              "native_mean_ms": 66.20387808481853
+            }
+          }
+        },
+        {
+          "group": [
+            208,
+            4096,
+            "true",
+            "decode",
+            47,
+            "decode",
+            47
+          ],
+          "predictive_count": 5,
+          "native_count": 5,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.561729289591312,
+              "native_mean_ms": 8.158966153860092
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 63.572987174987794,
+              "native_mean_ms": 76.66635627746582
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 56.01125793457031,
+              "native_mean_ms": 68.50739002227783
+            }
+          }
+        },
+        {
+          "group": [
+            208,
+            4096,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 6,
+          "native_count": 8,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 6.0294559225440025,
+              "native_mean_ms": 5.595195223577321
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 56.15680901209513,
+              "native_mean_ms": 60.36522924900055
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 50.127353032430015,
+              "native_mean_ms": 54.770034074783325
+            }
+          }
+        },
+        {
+          "group": [
+            224,
+            4096,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 5,
+          "native_count": 13,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.741660811007023,
+              "native_mean_ms": 6.309060666423577
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 62.7780345916748,
+              "native_mean_ms": 68.7412633895874
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 55.036373710632326,
+              "native_mean_ms": 62.43220277932974
+            }
+          }
+        },
+        {
+          "group": [
+            256,
+            4096,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 5,
+          "native_count": 7,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 6.214356608688831,
+              "native_mean_ms": 5.365124770573208
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 55.79436817169189,
+              "native_mean_ms": 59.28473908560617
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 49.58001136779785,
+              "native_mean_ms": 53.91961465563093
+            }
+          }
+        },
+        {
+          "group": [
+            80,
+            6144,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 7,
+          "native_count": 8,
+          "weight": 7,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 6.3927309321505685,
+              "native_mean_ms": 7.189361727796495
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 56.271121570042204,
+              "native_mean_ms": 69.32163763046265
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 49.8783905846732,
+              "native_mean_ms": 62.13227581977844
+            }
+          }
+        },
+        {
+          "group": [
+            80,
+            8192,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 6,
+          "native_count": 6,
+          "weight": 6,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.373140503962834,
+              "native_mean_ms": 5.602715692172448
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 58.87254015604655,
+              "native_mean_ms": 59.332442919413246
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 51.49939966201782,
+              "native_mean_ms": 53.72972695032755
+            }
+          }
+        },
+        {
+          "group": [
+            96,
+            4096,
+            "true",
+            "decode",
+            47,
+            "decode",
+            48
+          ],
+          "predictive_count": 7,
+          "native_count": 5,
+          "weight": 5,
+          "metrics": {
+            "worker_interval_ms": {
+              "predictive_mean_ms": 7.422363917742457,
+              "native_mean_ms": 6.2974510714411736
+            },
+            "launch_to_processed_completion_ms": {
+              "predictive_mean_ms": 61.144476890563965,
+              "native_mean_ms": 63.359778022766115
+            },
+            "clipped_launch_overlap_ms": {
+              "predictive_mean_ms": 53.72211292811802,
+              "native_mean_ms": 57.062327194213864
+            }
+          }
+        }
+      ]
+    },
+    {
+      "work_bin": 1,
+      "prefix_bin": 2048,
+      "minimum_per_arm": 5,
+      "match_neighbors": false,
+      "cohort_count": 0,
+      "weight_sum": 0,
+      "matched_samples": {
+        "predictive_h2d": 0,
+        "native": 0
+      },
+      "unmatched_samples": {
+        "predictive_h2d": 966,
+        "native": 829
+      },
+      "aggregate": {
+        "worker_interval_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        },
+        "launch_to_processed_completion_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        },
+        "clipped_launch_overlap_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        }
+      },
+      "cohorts": []
+    },
+    {
+      "work_bin": 1,
+      "prefix_bin": 2048,
+      "minimum_per_arm": 5,
+      "match_neighbors": true,
+      "cohort_count": 0,
+      "weight_sum": 0,
+      "matched_samples": {
+        "predictive_h2d": 0,
+        "native": 0
+      },
+      "unmatched_samples": {
+        "predictive_h2d": 966,
+        "native": 829
+      },
+      "aggregate": {
+        "worker_interval_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        },
+        "launch_to_processed_completion_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        },
+        "clipped_launch_overlap_ms": {
+          "predictive": null,
+          "native": null,
+          "difference_ms": null,
+          "ratio": null
+        }
+      },
+      "cohorts": []
+    }
+  ],
+  "semantics": [
+    "Read exact short-prefill samples from an already sealed busy-window report.",
+    "A cohort has matching extend work, prefix bin and actual graph status.",
+    "Neighbor matching also fixes previous/next observed phases and batch sizes.",
+    "Both arm means use the minimum cohort count as a common descriptive weight.",
+    "Unsupported or sparse cohorts stay unmatched; no missing work is filled with zero.",
+    "Worker intervals are overlap-clipped; launch-to-completion includes result handling.",
+    "This is descriptive cross-version matching, not causal speedup or full-forward timing."
+  ]
+}

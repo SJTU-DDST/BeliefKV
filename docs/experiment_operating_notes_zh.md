@@ -4,11 +4,44 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+服务器使用时间：每天Asia/Shanghai 00:00–06:00留给其他人。
+23:59开始收尾，午夜前释放GPU、客户端及本轮所属容器；不重置
+GPU、不按宽泛进程名终止任务、不处理其他使用者的进程或容器。
+独立cron每分钟检查`/home/longhao/experiment/ops/server_reservation.py`，
+夜间写入现有启动脚本支持的`/tmp/beliefkv-experiments.paused`标记，
+仅删除管理脚本自身创建的标记。06:00后先确认GPU空闲，再冷启动
+已冻结的V55；若仍被占用则继续等待，不抢占。冻结版本/日志/启动
+状态见同目录的`server_reservation.json`和`server_reservation_state.json`。
+V54未自然结束时，在raw下保存`server_reservation_cutoff.json`，
+包含PID及启动ticks、真实已存结果和未有终态的任务，后者保留行政
+删失；不能伪造summary或将其改成自然incomplete/error，也不能
+跨过中断把整个实验当完整JCT。恢复不是进程原地续跑，而是V55冷测。
+服务器预约不是新增agent guard；/goal继续active，夜间不启动实验。
+
 当前验收以平均workflow JCT和完成吞吐为主，decode token/s作为
 成本/服务诊断；completed仍不等于独立评测通过。开发只跑predictive，
 固定V29 native作参考，最终重复同版本对照才分离共用修复、工作流
 准入/回收和预测迁移的收益。不可因忙时decode落后直接否定完整
 JCT改善，也不可用因轨迹不同而删掉的不利任务构造有利均值。
+
+最新v321窗口3600–3900秒服务步数350521/353757，少0.91%，
+控制独占墙钟20.241秒；细工作/邻批次108/118例raw完成短
+7.008ms，worker仍长1.115ms。无可配对的H2D逐层样本不是零
+等待证据。保留v319 3000–3300秒服务少3.78%、粗配对raw多
+10.276ms及细邻居支持不足，不能只挑正面窗口。v319另有20秒
+GIL栈采样202样本、115读取错误，独立于封存窗口；计数不是耗时。
+
+下一冷版本1a9286e采样每16个prefill的完整周转阶段，并保留
+各阶段墙钟、本线程CPU与非阻塞计算流事件。normal必须使用
+实际current stream，不能用空闲worker forward stream冒充；
+overlap使用forward stream。缺相位、未完成事件和关闭时样本
+保持unknown/incomplete observation，不能改workflow终态。
+新gpu_service_sample.forward_iter用于精确配对，旧记录缺失
+该字段保持兼容。144项检查和2项子检查通过；CPU循环对照新增
+2.2–4.2us，不包含真实CUDA事件成本，不作GPU/JCT收益承诺。
+v322已核对隔离引擎f7e0a895和patch a8f4ea97；native/predictive
+共用观测，最终对照应使用同版本。V54不热改，V55按服务器时段
+在自然收尾或已记录行政中断后冷部署，prefill延迟/凑批仍关闭。
 
 2026-10-13新约束：本阶段暂不新增prefill凑批/延迟策略。当前
 PrefillAdder已是原生准入核心，保持现有路径；不能将其与
