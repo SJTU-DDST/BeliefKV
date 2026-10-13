@@ -18,7 +18,9 @@ import time
 from typing import TYPE_CHECKING
 from uuid import uuid4
 
-from beliefkv.control.causal_graph import InvocationState, RuntimeCausalContextGraph
+from beliefkv.control.causal_graph import (
+    GraphDelta, InvocationState, RuntimeCausalContextGraph,
+)
 from beliefkv.core.events import RelationType, RuntimeEventKind
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
 from beliefkv.predictor.composer import observed_boundary_action
@@ -484,6 +486,7 @@ class NativeAdmissionRuntime:
         self._tool_survival_probes: dict[str, tuple[NativeToolWaitHint, float]] = {}
         self._active_tool_census_version: int | None = None
         self._active_tool_census: Counter[str | None] = Counter()
+        self._active_tool_census_invocations: dict[str, str | None] = {}
         tool_setting = os.environ.get("BELIEFKV_ENABLE_TOOL_PREFETCH", "0")
         if tool_setting not in ("0", "1"):
             raise ValueError("tool prefetch setting must be 0 or 1")
@@ -818,9 +821,10 @@ class NativeAdmissionRuntime:
             if self.visible.get(hint.key.request_id) != hint.key:
                 raise ValueError("admission prediction has no matching live request")
             hints.append(hint)
+        graph_version = self.graph.graph_version
         try:
             with self._hotpath_timing.measure("graph_apply"):
-                self.graph.apply_batch(events, atomic=False)
+                deltas = self.graph.apply_batch(events, atomic=False)
         except Exception:
             # A partially applied batch cannot remain a scheduling authority.
             self.graph = RuntimeCausalContextGraph(strict_timestamps=False)
@@ -853,10 +857,12 @@ class NativeAdmissionRuntime:
             self._scan_offsets = {"tool_wait": 0, "join_wait": 0}
             self._active_tool_census_version = None
             self._active_tool_census.clear()
+            self._active_tool_census_invocations.clear()
             self.semantic_revision += 1
             self.counts["causal_mirror_discarded"] += 1
             raise
         else:
+            self._update_active_tool_census(deltas, previous_version=graph_version)
             tool_wait_refreshes: dict[str, None] | None = None
             terminal_returns = {
                 event.invocation_id: event
@@ -2935,6 +2941,49 @@ class NativeAdmissionRuntime:
         self._tool_last_queries[key] = (invocation.updated_ts_ms, now_ms)
         self.counts["tool_wait_submitted"] += 1
 
+    def _update_active_tool_census(
+        self, deltas: Sequence[GraphDelta], *, previous_version: int,
+    ) -> None:
+        if self._active_tool_census_version != previous_version:
+            return
+        affected = set()
+        for delta in deltas:
+            affected.update(delta.awakened_invocations)
+            affected.update(delta.parked_invocations)
+            affected.update(delta.completed_invocations)
+            for context_id in delta.changed_contexts:
+                context = self.graph.contexts.get(context_id)
+                if context is not None:
+                    affected.update(context.invocation_ids)
+            # A blocked caller can resume WAIT_TOOL without being awakened.
+            for invocation_id in delta.completed_invocations:
+                invocation = self.graph.invocations.get(invocation_id)
+                if invocation is not None:
+                    parent_id = invocation.return_target_id or invocation.parent_invocation_id
+                    if parent_id is not None:
+                        affected.add(parent_id)
+        for invocation_id in affected:
+            invocation = self.graph.invocations.get(invocation_id)
+            family = (
+                invocation.active_tool_family
+                if invocation is not None and invocation.state is InvocationState.WAIT_TOOL
+                else None
+            )
+            waiting = invocation is not None and invocation.state is InvocationState.WAIT_TOOL
+            prior_waiting = invocation_id in self._active_tool_census_invocations
+            prior_family = self._active_tool_census_invocations.get(invocation_id)
+            if waiting == prior_waiting and family == prior_family:
+                continue
+            if prior_waiting:
+                self._active_tool_census[prior_family] -= 1
+                if not self._active_tool_census[prior_family]:
+                    del self._active_tool_census[prior_family]
+                del self._active_tool_census_invocations[invocation_id]
+            if waiting:
+                self._active_tool_census[family] += 1
+                self._active_tool_census_invocations[invocation_id] = family
+        self._active_tool_census_version = self.graph.graph_version
+
     @timed_runtime("tool_features")
     def _local_frontier_features(
         self, invocation: object, context_epoch: int, *, now_ms: float
@@ -2946,10 +2995,12 @@ class NativeAdmissionRuntime:
             else (0, 0, False)
         )
         if self._active_tool_census_version != self.graph.graph_version:
-            self._active_tool_census = Counter(
-                item.active_tool_family for item in self.graph.invocations.values()
+            self._active_tool_census_invocations = {
+                item.invocation_id: item.active_tool_family
+                for item in self.graph.invocations.values()
                 if item.state is InvocationState.WAIT_TOOL
-            )
+            }
+            self._active_tool_census = Counter(self._active_tool_census_invocations.values())
             self._active_tool_census_version = self.graph.graph_version
         family = invocation.active_tool_family or "unknown"
         family_count = self._active_tool_census[family]
