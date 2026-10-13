@@ -4637,9 +4637,28 @@ class NativeAdmissionRuntime:
                     ready_ms = service.submit_to_ack_p90_ms + (
                         service.enqueue_to_submit_p90_ms or 0.
                     )
-                    if remaining is not None and remaining < ready_ms + self.prefetch_lead_ms:
+                    restore_ms = self.prefetch_lead_ms
+                    if remaining is not None and service.enqueue_to_submit_p90_ms is not None:
+                        restore = self._estimate_h2d_service(
+                            transfer_bytes, shape=pool_shape(full_units, mamba_units),
+                        )
+                        if restore is not None and restore.enqueue_to_submit_p90_ms is not None:
+                            # A maximum prediction lead is not a mandatory restore
+                            # duration. Budget the measured round trip and cadence.
+                            restore_ms = (
+                                restore.submit_to_ack_p90_ms
+                                + restore.enqueue_to_submit_p90_ms
+                                + SEMANTIC_FRAME_INTERVAL_MS
+                            )
+                            self.counts["prepare_round_trip_service_used"] += 1
+                    if remaining is not None and remaining < ready_ms + restore_ms:
                         self.counts["prepare_candidate_short_wait_window"] += 1
                         return None
+                    if (
+                        remaining is not None
+                        and remaining < ready_ms + self.prefetch_lead_ms
+                    ):
+                        self.counts["prepare_round_trip_window_relaxed"] += 1
             # Ancestor backup can unlock a later exclusive checkpoint; retain
             # it behind candidates that can directly release pressured bytes.
             return (-float(reclaim_bytes), float(transfer_bytes))

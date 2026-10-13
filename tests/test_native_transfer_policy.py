@@ -843,6 +843,54 @@ def test_prepare_rejects_window_too_short_to_copy_then_prefetch():
     assert runtime.counts["prepare_candidate_short_wait_window"] == 1
 
 
+@pytest.mark.parametrize("d2h_queue, h2d_ack, h2d_queue, remaining, accepted", [
+    (20., 100., 20., 1000., True),
+    (20., 100., 20., 339., False),
+    (20., 100., 20., 340., True),
+    (20., 900., 80., 1000., False),
+    (20., 3000., 80., 2500., False),
+    (None, 100., 20., 1000., False),
+    (20., 100., None, 1000., False),
+    (20., None, None, 1000., False),
+])
+def test_prepare_uses_measured_round_trip_with_queues_before_relaxing_maximum_lead(
+    d2h_queue, h2d_ack, h2d_queue, remaining, accepted,
+):
+    from dataclasses import replace
+
+    runtime, hint = tool_runtime()
+    headroom = prepare_cache(runtime)
+    runtime.prefetch_lead_ms = 2000.
+    hint = replace(hint, wait_p10_ms=remaining)
+    runtime.tool_wait_hints[hint.key.context_id] = hint
+    step = ShadowBackupStep(hint.key, 11, 4, 11, 4)
+    d2h = NativeServiceEstimate(100., 100., d2h_queue, 3, "matched_pool_shape_and_size")
+    h2d = (
+        NativeServiceEstimate(h2d_ack, h2d_ack, h2d_queue, 3, "matched_pool_shape_and_size")
+        if h2d_ack is not None else None
+    )
+    with patch(
+        "beliefkv.runtime.sglang_v0520_runtime.time.monotonic",
+        return_value=hint.issued_monotonic_ms / 1000.,
+    ), patch(
+        "beliefkv.runtime.sglang_v0520_runtime.estimate_native_service",
+        return_value=d2h,
+    ), patch.object(runtime, "_estimate_h2d_service", return_value=h2d) as estimate:
+        rank = runtime._prepare_step_rank(
+            step, headroom, full_pressure=True, mamba_pressure=False,
+        )
+    assert (rank is not None) is accepted
+    if d2h_queue is not None:
+        estimate.assert_called_once_with(1000, shape="full")
+    else:
+        estimate.assert_not_called()
+    measured = d2h_queue is not None and h2d is not None and h2d_queue is not None
+    assert runtime.counts["prepare_round_trip_service_used"] == int(measured)
+    assert runtime.counts["prepare_round_trip_window_relaxed"] == int(accepted)
+    assert runtime.counts["prepare_candidate_short_wait_window"] == int(not accepted)
+    runtime.close()
+
+
 def test_backed_full_without_mamba_is_available_for_pressure_demotion():
     runtime = final_stage_runtime()
     runtime.enable_prepare_host = True
