@@ -135,6 +135,8 @@ if (( HICACHE_SIZE_GB > 0 )); then
   "${PYTHON}" "${BELIEFKV_ROOT}/scripts/preflight_qwen35_host_pool.py" \
     --memory-policy "$HOST_NUMA_MEMORY_POLICY" \
     --node "${HOST_NUMA_NODE}" --size-gb "${HICACHE_SIZE_GB}"
+  # SGLang's automatic worker binding otherwise replaces this policy with membind.
+  export SGLANG_AUTO_NUMA_BIND=0
 fi
 CUDA_HOME="${CUDA_HOME:-$(dirname "$(dirname "${PYTHON}")")/lib/python3.11/site-packages/nvidia/cu13}"
 if [[ ! -x "${CUDA_HOME}/bin/nvcc" ]]; then

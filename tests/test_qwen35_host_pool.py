@@ -164,6 +164,7 @@ def _stub(tmp_path: Path) -> dict[str, str]:
         "printf '%s\\n' \"$@\" > \"$NUMACTL_ARGS_LOG\"\n"
         "printf '%s' \"${BELIEFKV_NATIVE_TELEMETRY_DIR:-}\" > \"$TELEMETRY_LOG\"\n"
         "printf '%s' \"${BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH:-}\" > \"$STAGE_LOG\"\n"
+        "printf '%s' \"${SGLANG_AUTO_NUMA_BIND:-}\" > \"$AUTO_NUMA_LOG\"\n"
     )
     numactl.chmod(0o755)
     git = tmp_path / "git"
@@ -185,6 +186,7 @@ def _stub(tmp_path: Path) -> dict[str, str]:
         "NUMACTL_ARGS_LOG": str(tmp_path / "numactl-args"),
         "TELEMETRY_LOG": str(tmp_path / "telemetry"),
         "STAGE_LOG": str(tmp_path / "final-stage"),
+        "AUTO_NUMA_LOG": str(tmp_path / "auto-numa"),
         "HICACHE_SIZE_GB": "200",
         "HOST_NUMA_NODE": "1",
         "HOST_NUMA_MEMORY_POLICY": "bind",
@@ -212,6 +214,7 @@ def test_launch_binds_one_node_and_passes_telemetry_dir(tmp_path: Path) -> None:
         "--node", "1", "--size-gb", "200",
     ]
     assert (tmp_path / "telemetry").read_text() == str(telemetry)
+    assert (tmp_path / "auto-numa").read_text() == "0"
 
 
 def test_launch_accepts_selective_write_through(tmp_path: Path) -> None:
@@ -230,6 +233,7 @@ def test_launch_preferred_retains_cpu_binding_and_matches_preflight(tmp_path: Pa
     assert args[:2] == ["--cpunodebind=1", "--preferred=1"]
     preflight = (tmp_path / "preflight-args").read_text().splitlines()
     assert preflight[preflight.index("--memory-policy") + 1] == "preferred"
+    assert (tmp_path / "auto-numa").read_text() == "0"
 
 
 def test_launch_rejects_unknown_memory_policy_before_allocating(tmp_path: Path) -> None:
