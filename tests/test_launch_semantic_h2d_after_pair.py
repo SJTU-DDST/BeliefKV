@@ -69,6 +69,24 @@ def test_next_pair_lead_override_preserves_previous_plan_and_every_other_setting
     assert json.dumps(configuration, sort_keys=True) == snapshot
 
 
+def test_native_demand_restore_override_preserves_prediction_and_workload_settings():
+    configuration = plan()
+    snapshot = json.dumps(configuration, sort_keys=True)
+    arguments = {"python": "/python", "port": 18454}
+    original = launcher.fresh_pair_environment(configuration, Path("/fresh-run"), **arguments)
+    revised = launcher.fresh_pair_environment(
+        configuration, Path("/fresh-run"), **arguments, execution_handoff=False,
+    )
+    assert original["EXECUTION_HANDOFF"] == "1"
+    assert revised == {**original, "EXECUTION_HANDOFF": "0"}
+    configuration["policy_configuration"]["predictive_h2d"]["execution_handoff"] = False
+    assert launcher.fresh_pair_environment(
+        configuration, Path("/fresh-run"), **arguments,
+    ) == revised
+    configuration["policy_configuration"]["predictive_h2d"].pop("execution_handoff")
+    assert json.dumps(configuration, sort_keys=True) == snapshot
+
+
 def test_development_defaults_to_predictive_and_keeps_fixed_reference():
     configuration = plan()
     snapshot = json.dumps(configuration, sort_keys=True)

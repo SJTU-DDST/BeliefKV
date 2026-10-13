@@ -25,6 +25,16 @@ Workflow fairness 只作为有界防饿死和最终 tie-break，不以平均分�
 
 ### 1.1 当前阶段目标：相对 native 的可验证性能提升
 
+下一轮V49单独验证原生需求恢复：`EXECUTION_HANDOFF=0`，已提交
+请求由原生prefill恢复完整必要依赖，动态工作流仍驱动JOIN/tool
+提前预取、PREPARE和恢复后优先准入。需求handoff应以净服务收益
+证明其额外规划、传输及管理成本；不能用需求恢复字节增加作为
+预测覆盖提升。v260确认其余80项计划字段保持，runtime/引擎保持。
+部分预测恢复仍只提供前缀，完整输入和必要状态就绪由原生决定。
+v258的61个短prefill采样逐层等待P50仅0.0838ms，而worker区间P50
+为17.301ms；不据此删除依赖，继续查控制和请求切换成本。v259
+较晚GIL样本再次见handoff/准入/reentry；V49尚待冷部署和实测。
+
 **当前主目标：**在固定 workload、模型、容量及到达流下，通过
 agent 调度、共用路径减负、predictive H2D 与 `PREPARE_HOST`，
 使 predictive 相对 native 取得可核实的完成吞吐与 JCT 改善。

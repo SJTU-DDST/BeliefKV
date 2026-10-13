@@ -31,6 +31,9 @@ def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) ->
         "ACTIVATION_WALL_CLOCK_SECONDS": plan["activation_wall_clock_seconds"],
         "SEMANTIC_REPORT_ARTIFACT": plan["semantic_artifact"],
         "PREPARE_HOST": int(plan["policy_configuration"]["predictive_h2d"]["prepare_host"]),
+        "EXECUTION_HANDOFF": int(
+            plan["policy_configuration"]["predictive_h2d"].get("execution_handoff", True)
+        ),
         "H2D_SEED_ARTIFACT": plan["h2d_seed_artifact"],
         "TOOL_TIMING_ARTIFACT": plan["tool_timing_artifact"],
         "TRANSFER_SERVICE_SEED": plan["transfer_service_seed"],

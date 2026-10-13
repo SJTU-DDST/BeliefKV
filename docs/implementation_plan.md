@@ -2,6 +2,27 @@
 
 Status date: 2026-10-13.
 
+Next cold development run V49 will test native demand recovery as one factor:
+`EXECUTION_HANDOFF=0` delegates submitted requests to native prefill's complete
+FULL/Mamba dependencies, while JOIN/tool anticipation, PREPARE, residency
+protection and admission priority remain enabled. V260 initializes the real
+plan and checks resume propagation; 80 previous plan fields remain unchanged
+outside the recovery policy and source revision. Runtime/engine sources match.
+Freeze the explicit flag and verify the actual runtime before measuring benefit.
+Capture V48's administrative cutoff, archive and compare its workspaces, then
+cold-deploy V49. Assess busy throughput, control cost, native H2D/recompute,
+early confirmed FULL consumption and restore-to-service waiting. Goal remains
+unmet; removing demand handoff is a diagnostic policy change, not a proven gain.
+
+V258 checks V257's exact 399660508-byte audit prefix: 101 unique probe/batch
+pairs, with two ambiguous overlap candidates retained as unknown. Among 61
+short single-request prefills, CUDA layer wait P50/P90/max is
+0.0838/0.1019/0.4421ms; worker interval P50 is 17.301ms. Preserve native
+dependencies: these samples do not explain the main short-prefill gap or
+establish whole-run fence overhead. V259 retains a later nonblocking GIL
+profile with 1783 samples and all 447 errors; ranking/reentry remains visible.
+Sampling is not CPU accounting, kernel attribution or removable JCT.
+
 Current development run is V48, cold-started at 10:14:57 CST on October 13
 from b8616d1. Canonical patch 3698ce2f and actual engine tree 6d6af094
 remain unchanged. Retain 108+48 arrivals, running 48, Host 200GB/80:20,

@@ -444,6 +444,7 @@ def main() -> None:
     parser.add_argument("--activation-wall-clock-seconds", type=float, default=14400.)
     parser.add_argument("--workload-manifest", type=Path)
     parser.add_argument("--prepare-host", type=int, choices=(0, 1), default=0)
+    parser.add_argument("--execution-handoff", type=int, choices=(0, 1), default=1)
     parser.add_argument("--host-split", default="80:20")
     parser.add_argument("--h2d-seed", type=Path)
     parser.add_argument("--tool-timing-artifact", type=Path)
@@ -617,7 +618,11 @@ def main() -> None:
                 else "explicit_full_mamba_percentages"
             ),
             "resident_first_in_both_arms": True,
-            "execution_handoff_predictive_only": True,
+            "execution_handoff_predictive_only": bool(args.execution_handoff),
+            "demand_restore_policy": (
+                "controlled_execution_handoff" if args.execution_handoff
+                else "native_prefill_layerwise_dependencies"
+            ),
             "mamba_full_memory_ratio": .9, "native_write_policy": "write_back",
             "semantic_artifact": str(artifact),
             "semantic_artifact_sha256": hashlib.sha256(artifact.read_bytes()).hexdigest(),
@@ -685,7 +690,7 @@ def main() -> None:
                     "final_stage_priority": name != "native",
                     "prepare_host": bool(args.prepare_host) and name != "native",
                     "predictive_h2d": name == "predictive_h2d",
-                    "execution_handoff": name == "predictive_h2d",
+                    "execution_handoff": name == "predictive_h2d" and bool(args.execution_handoff),
                 } for name in order
             },
             "order": order,
@@ -763,6 +768,12 @@ def main() -> None:
         )
         if state["prepare_host"] != arm_prepare or not state["final_stage_priority"]:
             raise ValueError(f"{name}: mismatched PREPARE/priority configuration")
+        policy = plan.get("policy_configuration", {}).get(name, {})
+        if (
+            "execution_handoff" in policy
+            and state.get("execution_handoff") != policy["execution_handoff"]
+        ):
+            raise ValueError(f"{name}: mismatched execution_handoff configuration")
         for setting in (
             "semantic_work_statistic", "eos_protocol_window_ms",
             "eos_prefetch_evidence_window_ms",

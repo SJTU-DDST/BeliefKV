@@ -33,6 +33,7 @@ from scripts.summarize_semantic_h2d_ab import verify_frozen_execution_source
 def fresh_pair_environment(
     plan: dict, run_root: Path, *, python: str, port: int,
     prefetch_lead_ms: int | None = None,
+    execution_handoff: bool | None = None,
     arm_order: str = "predictive_h2d",
     native_reference_run: Path | None = None,
 ) -> dict[str, str]:
@@ -43,6 +44,8 @@ def fresh_pair_environment(
         environment["NATIVE_REFERENCE_RUN"] = str(native_reference_run)
     if prefetch_lead_ms is not None:
         environment["PREFETCH_LEAD_MS"] = str(prefetch_lead_ms)
+    if execution_handoff is not None:
+        environment["EXECUTION_HANDOFF"] = str(int(execution_handoff))
     return environment
 
 
@@ -162,6 +165,10 @@ def main() -> None:
         help="Explicitly override the next pair's residency lead while preserving the previous plan.",
     )
     parser.add_argument(
+        "--execution-handoff", type=int, choices=(0, 1),
+        help="Use 0 to let native prefill restore submitted demand; JOIN/tool anticipation remains enabled.",
+    )
+    parser.add_argument(
         "--python",
         default="/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
     )
@@ -195,6 +202,9 @@ def main() -> None:
     environment = fresh_pair_environment(
         original, run_root, python=args.python, port=args.port,
         prefetch_lead_ms=args.prefetch_lead_ms,
+        execution_handoff=(
+            bool(args.execution_handoff) if args.execution_handoff is not None else None
+        ),
         arm_order=args.arm_order, native_reference_run=native_reference,
     )
     state = {
