@@ -1,0 +1,3692 @@
+{
+  "observed_at_local": "2026-10-14T03:03:03.495560+08:00",
+  "prior_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v340_v54_tool_early_forecast_details_20261014.json",
+  "prior_report_sha256": "a741acada8219d66c2c3e1f04616579c26139e04c1434325b1954c230cbaf476",
+  "sealed_report_sha256": "7f4ae2960aa5fa4c6b787667fb32bb36e1227128ce06b6b326001f5a85918d3d",
+  "source_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 1407203063,
+      "complete_prefix_sha256": "135612bc86373bc643e9a90d861bfcd8132be8b5fb9381d474fa87a226a1fc37",
+      "first_read_limit_bytes": 1407203063
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11211/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 4722130,
+      "complete_prefix_sha256": "4716fedde9b568f5d620cc513f91274a9528c887e7da0bcb3aaa2c0cdecb65e4",
+      "first_read_limit_bytes": 4722130
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-11451/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1029760,
+      "complete_prefix_sha256": "e56b1c94cf138c29c10920c6352d8b8bc25614e5a66a57e0cdf691236b7ba10a",
+      "first_read_limit_bytes": 1029760
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-12741/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1103127,
+      "complete_prefix_sha256": "0ede9430851b4fcfb0b4ab16c605be2a042e205e0f736c36df2362143c160eab",
+      "first_read_limit_bytes": 1103127
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/django__django-15315/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 1608292,
+      "complete_prefix_sha256": "4d1dde47bf9fbfad6e50fd0125dce87681bdeefe09f04c90f7e2ca36026c502e",
+      "first_read_limit_bytes": 1608292
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 3587919,
+      "complete_prefix_sha256": "f25babb7f3bcc147ab36c385151a43cd1e182035cf04de82cfb57383db8d1064",
+      "first_read_limit_bytes": 3587919
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/client_156/workflows/pylint-dev__pylint-6903/runtime_events.deepagents.jsonl": {
+      "complete_prefix_bytes": 2758802,
+      "complete_prefix_sha256": "aceb691965fa68b80712f2214ca0fa1dadaf784e4adf02ad91d6aa2bf52658c8",
+      "first_read_limit_bytes": 2758802
+    }
+  },
+  "counts": {
+    "selected_episodes": 18,
+    "active_tools_at_submit:1": 18,
+    "command_class:other": 6,
+    "previous_status:absent": 18,
+    "forecast_support:operational": 17,
+    "command_class:test_suite": 10,
+    "forecast_support:completed_project_command": 1,
+    "command_class:python_inline": 1,
+    "command_class:python_script": 1
+  },
+  "rows": [
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:7fc528798410e279",
+      "context_epoch": 29,
+      "first_submit_ts_ms": 1791899161572.7021,
+      "completion_ts_ms": 1791899317842.5908,
+      "early_full_bytes": 180367360,
+      "latest_early_ack_to_completion_ms": 156211.93676757812,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899161535.0574,
+        "observed_monotonic_ms": 6069424628.734965,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 29,
+        "invocation_revision_ts_ms": 6069415693.136607,
+        "p10_ms": 6888.623434,
+        "p50_ms": 23170.475006,
+        "p90_ms": 46340.950012,
+        "release_cdf": [
+          [
+            1.0,
+            0.0004254776272004668
+          ],
+          [
+            2.0,
+            0.0008172832479558191
+          ],
+          [
+            4.0,
+            0.0018161117221423754
+          ],
+          [
+            8.0,
+            0.004400708427754994
+          ],
+          [
+            16.0,
+            0.010988501708349316
+          ],
+          [
+            32.0,
+            0.027089969322842578
+          ],
+          [
+            64.0,
+            0.06377841780293445
+          ],
+          [
+            128.0,
+            0.1387255968046212
+          ],
+          [
+            256.0,
+            0.268411461822467
+          ],
+          [
+            512.0,
+            0.446532804992679
+          ],
+          [
+            1024.0,
+            0.6330269182432522
+          ],
+          [
+            2048.0,
+            0.7839739580233103
+          ],
+          [
+            4096.0,
+            0.8839070231910598
+          ],
+          [
+            8192.0,
+            0.9412605859158988
+          ],
+          [
+            16384.0,
+            0.9710249018540094
+          ],
+          [
+            32768.0,
+            0.9855698174932803
+          ],
+          [
+            65536.0,
+            0.9925660314187731
+          ],
+          [
+            131072.0,
+            0.9959939598065639
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 622.1631393092349,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899161562.7192,
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 29,
+        "wait_revision_ts_ms": 6069415693.136607,
+        "remaining_p50_ms": 626.2949871179376,
+        "start_window_ms": 730.9370461228762,
+        "h2d_ms": 83.56469499791265,
+        "enqueue_to_submit_p90_ms": 1.5570647083222866,
+        "prediction_early_ms": 545.8152864166412
+      },
+      "invocation_id": "deepagents-invocation:7fc528798410e279",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 69,
+          "input_sha256": "215578ee8137da650fce3821de69303adee28c77d1fee2550307bcdd95ebe971",
+          "is_child": true,
+          "observed_command_class": "other",
+          "observed_command_shape": "other",
+          "parameter_signature": "215578ee8137da650fce3821de69303adee28c77d1fee2550307bcdd95ebe971",
+          "project_input_neighbor_duration_ms": 299.61046266555786,
+          "project_input_neighbor_support": 8,
+          "source": "deepagents_callback",
+          "tool_call_id": "call_f1935bc7494c4d288611acc6",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a13583-30d0-7d83-aaa6-f90ba268f456",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000475",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 475,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899152592.5706,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6069415693.136607
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 165250.0204410553,
+          "exception_type": null,
+          "output_chars": 104454,
+          "output_sha256": "1454793af72997dcc6f0a2215acc7d591878a00334f957276c4adbaeae72b7bf",
+          "source": "deepagents_callback",
+          "status": "error",
+          "tool_call_id": "call_f1935bc7494c4d288611acc6",
+          "tool_error_class": "command_failed",
+          "tool_name": "execute",
+          "tool_run_id": "01a13583-30d0-7d83-aaa6-f90ba268f456",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000507",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 507,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899317842.5908,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6069580943.157048
+      },
+      "tool_elapsed_at_submit_ms": 8980.131591796875,
+      "tool_remaining_at_submit_ms": 156269.888671875,
+      "tool_duration_ms": 165250.0204410553
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:7fc528798410e279",
+      "context_epoch": 30,
+      "first_submit_ts_ms": 1791899376661.1824,
+      "completion_ts_ms": 1791899490392.9614,
+      "early_full_bytes": 54497280,
+      "latest_early_ack_to_completion_ms": 113672.0791015625,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899376654.3196,
+        "observed_monotonic_ms": 6069639747.292092,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 30,
+        "invocation_revision_ts_ms": 6069598746.803817,
+        "p10_ms": 5792.618751,
+        "p50_ms": 5792.618751,
+        "p90_ms": 13777.246868,
+        "release_cdf": [
+          [
+            1.0,
+            0.00027979666679868063
+          ],
+          [
+            2.0,
+            0.0005294270579827629
+          ],
+          [
+            4.0,
+            0.0011545391310347633
+          ],
+          [
+            8.0,
+            0.0027389774556800125
+          ],
+          [
+            16.0,
+            0.006693044900475869
+          ],
+          [
+            32.0,
+            0.016189300511531824
+          ],
+          [
+            64.0,
+            0.037692174015184356
+          ],
+          [
+            128.0,
+            0.08246566539622428
+          ],
+          [
+            256.0,
+            0.16514924061611969
+          ],
+          [
+            512.0,
+            0.29427169415273136
+          ],
+          [
+            1024.0,
+            0.4572865612991817
+          ],
+          [
+            2048.0,
+            0.6209801730467603
+          ],
+          [
+            4096.0,
+            0.7553968690644337
+          ],
+          [
+            8192.0,
+            0.8509562576092645
+          ],
+          [
+            16384.0,
+            0.9130290374037495
+          ],
+          [
+            32768.0,
+            0.9508853484498474
+          ],
+          [
+            65536.0,
+            0.9726672029906264
+          ],
+          [
+            131072.0,
+            0.9846137105173876
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1226.2707732874514,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899376658.634,
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 30,
+        "wait_revision_ts_ms": 6069598746.803817,
+        "remaining_p50_ms": 1228.150805302296,
+        "start_window_ms": 1247.1704863048776,
+        "h2d_ms": 61.12422067672015,
+        "enqueue_to_submit_p90_ms": 0.0,
+        "prediction_early_ms": 1086.0462656281575
+      },
+      "invocation_id": "deepagents-invocation:7fc528798410e279",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 92,
+          "input_sha256": "bfcafa72c039be93427619568d7fb7a62cd9cdc3d734f64fc02294495c8c6afd",
+          "is_child": true,
+          "observed_command_class": "other",
+          "observed_command_shape": "other",
+          "parameter_signature": "bfcafa72c039be93427619568d7fb7a62cd9cdc3d734f64fc02294495c8c6afd",
+          "project_class_completed_support": 17,
+          "project_class_duration_median_ms": 137.72472667694092,
+          "project_input_neighbor_duration_ms": 597.9332695007324,
+          "project_input_neighbor_support": 8,
+          "source": "deepagents_callback",
+          "tool_call_id": "call_cb43b313db5c4d909cf2be40",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a13585-fbdd-7291-a2de-da90c9b02c94",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000520",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 520,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899335646.2375,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6069598746.803817
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 154746.7237882614,
+          "exception_type": null,
+          "output_chars": 4594,
+          "output_sha256": "be9d18b5c3d120bd13c3c0ec1b5c590bb21fc97006a2bce8a1b16f5272ba0fc5",
+          "source": "deepagents_callback",
+          "status": "error",
+          "tool_call_id": "call_cb43b313db5c4d909cf2be40",
+          "tool_error_class": "command_failed",
+          "tool_name": "execute",
+          "tool_run_id": "01a13585-fbdd-7291-a2de-da90c9b02c94",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000522",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 522,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899490392.9614,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6069753493.527605
+      },
+      "tool_elapsed_at_submit_ms": 41014.94482421875,
+      "tool_remaining_at_submit_ms": 113731.77905273438,
+      "tool_duration_ms": 154746.7237882614
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:184e3a0b6112ffa9",
+      "context_epoch": 31,
+      "first_submit_ts_ms": 1791899339663.7505,
+      "completion_ts_ms": 1791899490467.42,
+      "early_full_bytes": 135147520,
+      "latest_early_ack_to_completion_ms": 150762.87060546875,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899339591.044,
+        "observed_monotonic_ms": 6069602640.250035,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+        "context_id": "deepagents-context:184e3a0b6112ffa9",
+        "context_epoch": 31,
+        "invocation_revision_ts_ms": 6069598769.346648,
+        "p10_ms": 11585.237503,
+        "p50_ms": 27554.493735,
+        "p90_ms": 55108.98747,
+        "release_cdf": [
+          [
+            1.0,
+            0.00018861955745011477
+          ],
+          [
+            2.0,
+            0.0003654521584167253
+          ],
+          [
+            4.0,
+            0.00082125590985469
+          ],
+          [
+            8.0,
+            0.0020178609138346605
+          ],
+          [
+            16.0,
+            0.005127342892391586
+          ],
+          [
+            32.0,
+            0.012946827814594228
+          ],
+          [
+            64.0,
+            0.031625424873301174
+          ],
+          [
+            128.0,
+            0.07310098853690061
+          ],
+          [
+            256.0,
+            0.15587873388008408
+          ],
+          [
+            512.0,
+            0.2967488355379239
+          ],
+          [
+            1024.0,
+            0.48775820516125645
+          ],
+          [
+            2048.0,
+            0.6823674456318225
+          ],
+          [
+            4096.0,
+            0.8293504450783834
+          ],
+          [
+            8192.0,
+            0.9158662845757022
+          ],
+          [
+            16384.0,
+            0.9594637890673506
+          ],
+          [
+            32768.0,
+            0.9801040515019548
+          ],
+          [
+            65536.0,
+            0.9898580537763358
+          ],
+          [
+            131072.0,
+            0.9945925038293982
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1068.3269807485437,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899339657.281,
+        "context_id": "deepagents-context:184e3a0b6112ffa9",
+        "context_epoch": 31,
+        "wait_revision_ts_ms": 6069598769.346648,
+        "remaining_p50_ms": 1089.6260040571012,
+        "start_window_ms": 1132.7937607324757,
+        "h2d_ms": 86.4170235581696,
+        "enqueue_to_submit_p90_ms": 1.8097725696861744,
+        "prediction_early_ms": 944.56696460462
+      },
+      "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 131,
+          "input_sha256": "9507c2beb598ce2aa01ba1a6d39dc1d2fbd5b0191c4661bf38658f128f8ee39f",
+          "is_child": true,
+          "observed_command_class": "other",
+          "observed_command_shape": "other",
+          "parameter_signature": "9507c2beb598ce2aa01ba1a6d39dc1d2fbd5b0191c4661bf38658f128f8ee39f",
+          "project_class_completed_support": 17,
+          "project_class_duration_median_ms": 137.72472667694092,
+          "project_input_neighbor_duration_ms": 597.9332695007324,
+          "project_input_neighbor_support": 8,
+          "source": "deepagents_callback",
+          "tool_call_id": "call_23c59fb6b1ec450581fec5f1",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a13585-fbf4-7430-bff0-62dd36e34701",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000521",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 521,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899335668.7805,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6069598769.346648
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 154798.63940143585,
+          "exception_type": null,
+          "output_chars": 181,
+          "output_sha256": "922692d1886c99524603d9f466f34278e5f8cc59ed225bd2f578c6f59e3b48d6",
+          "source": "deepagents_callback",
+          "status": "success",
+          "tool_call_id": "call_23c59fb6b1ec450581fec5f1",
+          "tool_error_class": null,
+          "tool_name": "execute",
+          "tool_run_id": "01a13585-fbf4-7430-bff0-62dd36e34701",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000524",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 524,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899490467.42,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6069753567.98605
+      },
+      "tool_elapsed_at_submit_ms": 3994.969970703125,
+      "tool_remaining_at_submit_ms": 150803.66943359375,
+      "tool_duration_ms": 154798.63940143585
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-12741:874cc5a30550",
+      "context_id": "deepagents:autonomous:django__django-12741:874cc5a30550:context:root",
+      "context_epoch": 31,
+      "first_submit_ts_ms": 1791899473153.6372,
+      "completion_ts_ms": 1791899499978.8765,
+      "early_full_bytes": 163512320,
+      "latest_early_ack_to_completion_ms": 26750.25,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899472821.7773,
+        "observed_monotonic_ms": 6069735911.983215,
+        "workflow_id": "deepagents:autonomous:django__django-12741:874cc5a30550",
+        "invocation_id": "deepagents:autonomous:django__django-12741:874cc5a30550:root",
+        "context_id": "deepagents:autonomous:django__django-12741:874cc5a30550:context:root",
+        "context_epoch": 31,
+        "invocation_revision_ts_ms": 6069735692.775687,
+        "p10_ms": 152.218511,
+        "p50_ms": 512.0,
+        "p90_ms": 4096.0,
+        "release_cdf": [
+          [
+            1.0,
+            9.804611075176793e-05
+          ],
+          [
+            2.0,
+            0.00019612589432140587
+          ],
+          [
+            4.0,
+            0.0004599856372024503
+          ],
+          [
+            8.0,
+            0.0011939031415200453
+          ],
+          [
+            16.0,
+            0.0032563172896408928
+          ],
+          [
+            32.0,
+            0.009040861652375358
+          ],
+          [
+            64.0,
+            0.025143145604437322
+          ],
+          [
+            128.0,
+            0.06874667204282495
+          ],
+          [
+            256.0,
+            0.1755093265426285
+          ],
+          [
+            512.0,
+            0.3780334038407361
+          ],
+          [
+            1024.0,
+            0.6272392938061992
+          ],
+          [
+            2048.0,
+            0.8167314402846113
+          ],
+          [
+            4096.0,
+            0.9182720897366184
+          ],
+          [
+            8192.0,
+            0.9642201308673664
+          ],
+          [
+            16384.0,
+            0.9840045779106055
+          ],
+          [
+            32768.0,
+            0.9925774382474684
+          ],
+          [
+            65536.0,
+            0.9964014601832131
+          ],
+          [
+            131072.0,
+            0.9981726112141587
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 710.4279624884175,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899473143.3525,
+        "context_id": "deepagents:autonomous:django__django-12741:874cc5a30550:context:root",
+        "context_epoch": 31,
+        "wait_revision_ts_ms": 6069735692.775687,
+        "remaining_p50_ms": 687.6247856175129,
+        "start_window_ms": 770.5153032137483,
+        "h2d_ms": 77.41294084690651,
+        "enqueue_to_submit_p90_ms": 2.3950464092195034,
+        "prediction_early_ms": 590.7073159576223
+      },
+      "invocation_id": "deepagents:autonomous:django__django-12741:874cc5a30550:root",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 102,
+          "input_sha256": "f9a2271f9234f97bf5c3595fac83c31ccfb7ad71388ac00a61e70acd5a19ef93",
+          "is_child": false,
+          "observed_command_class": "test_suite",
+          "observed_command_shape": "test_suite_targeted",
+          "parameter_signature": "f9a2271f9234f97bf5c3595fac83c31ccfb7ad71388ac00a61e70acd5a19ef93",
+          "source": "deepagents_callback",
+          "tool_call_id": "call_b8cf5aa434784b2a8f5ff1d6",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a13588-12cf-7d90-810e-e9b35c6a37b3",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-12741:874cc5a30550:deepagents:000000690",
+        "execution_mode": null,
+        "invocation_id": "deepagents:autonomous:django__django-12741:874cc5a30550:root",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 690,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899472592.2095,
+        "workflow_id": "deepagents:autonomous:django__django-12741:874cc5a30550",
+        "client_monotonic_ts_ms": 6069735692.775687
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 27386.666986465454,
+          "exception_type": null,
+          "output_chars": 1795,
+          "output_sha256": "6bbf901e32386269f20cc549e25837403ddfd942ffb244916ff52a889d78d804",
+          "source": "deepagents_callback",
+          "status": "error",
+          "tool_call_id": "call_b8cf5aa434784b2a8f5ff1d6",
+          "tool_error_class": "command_failed",
+          "tool_name": "execute",
+          "tool_run_id": "01a13588-12cf-7d90-810e-e9b35c6a37b3",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-12741:874cc5a30550:deepagents:000000691",
+        "execution_mode": null,
+        "invocation_id": "deepagents:autonomous:django__django-12741:874cc5a30550:root",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 691,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899499978.8765,
+        "workflow_id": "deepagents:autonomous:django__django-12741:874cc5a30550",
+        "client_monotonic_ts_ms": 6069763079.442674
+      },
+      "tool_elapsed_at_submit_ms": 561.427734375,
+      "tool_remaining_at_submit_ms": 26825.2392578125,
+      "tool_duration_ms": 27386.666986465454
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:7fc528798410e279",
+      "context_epoch": 31,
+      "first_submit_ts_ms": 1791899510989.3801,
+      "completion_ts_ms": 1791899670012.3684,
+      "early_full_bytes": 177684480,
+      "latest_early_ack_to_completion_ms": 158963.98120117188,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899510909.5515,
+        "observed_monotonic_ms": 6069773988.038689,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 31,
+        "invocation_revision_ts_ms": 6069772570.551036,
+        "p10_ms": 877.6271457672119,
+        "p50_ms": 877.6271457672119,
+        "p90_ms": 877.6271457672119,
+        "release_cdf": [
+          [
+            1.0,
+            0.0002632319679440093
+          ],
+          [
+            2.0,
+            0.0005152657192756615
+          ],
+          [
+            4.0,
+            0.0011731445417055872
+          ],
+          [
+            8.0,
+            0.0029269122103378156
+          ],
+          [
+            16.0,
+            0.007563967717961471
+          ],
+          [
+            32.0,
+            0.019440033377785826
+          ],
+          [
+            64.0,
+            0.04828005648584799
+          ],
+          [
+            128.0,
+            0.11275935457490037
+          ],
+          [
+            256.0,
+            0.23860905811479158
+          ],
+          [
+            512.0,
+            0.4347410175344362
+          ],
+          [
+            1024.0,
+            0.6545311418711172
+          ],
+          [
+            2048.0,
+            0.8234330106167036
+          ],
+          [
+            4096.0,
+            0.9184830937375706
+          ],
+          [
+            8192.0,
+            0.9632781531544159
+          ],
+          [
+            16384.0,
+            0.9831265490049611
+          ],
+          [
+            32768.0,
+            0.9919429384695423
+          ],
+          [
+            65536.0,
+            0.9959755587059331
+          ],
+          [
+            131072.0,
+            0.9978927027396887
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [
+          [
+            877.6271457672119,
+            1.0
+          ]
+        ],
+        "residual_support_detail": "completed_project_command",
+        "conditional_p50_ms": 620.0311267103745,
+        "timing_policy": "survival_conditioned_completed_history"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899510983.1826,
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 31,
+        "wait_revision_ts_ms": 6069772570.551036,
+        "remaining_p50_ms": 624.3091242279227,
+        "start_window_ms": 700.8176182249422,
+        "h2d_ms": 63.29629337415099,
+        "enqueue_to_submit_p90_ms": 0.0,
+        "prediction_early_ms": 537.5213248507912
+      },
+      "invocation_id": "deepagents-invocation:7fc528798410e279",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 116,
+          "input_sha256": "f73f5f4f7751bcf4e78cb11615ee760e15f033b19dab42c628d24c9907f6da1f",
+          "is_child": true,
+          "observed_command_class": "other",
+          "observed_command_shape": "other",
+          "parameter_signature": "f73f5f4f7751bcf4e78cb11615ee760e15f033b19dab42c628d24c9907f6da1f",
+          "project_class_completed_support": 21,
+          "project_class_duration_median_ms": 137.72472667694092,
+          "project_input_neighbor_duration_ms": 597.9332695007324,
+          "project_input_neighbor_support": 8,
+          "project_shape_survivor_500ms_support": 7,
+          "project_shape_survivor_500ms_total_median_ms": 611.703784942627,
+          "source": "deepagents_callback",
+          "tool_call_id": "call_e51eb9dab19641c69436693d",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a13588-a2dd-7bb0-8bbe-98fc86c7a90a",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000546",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 546,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899509469.9849,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6069772570.551036
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 160542.38359165192,
+          "exception_type": null,
+          "output_chars": 981,
+          "output_sha256": "e0bd01dd62c43eb707bf14f12e7925732ff01975e7967a1e80a6f8a4b0102147",
+          "source": "deepagents_callback",
+          "status": "error",
+          "tool_call_id": "call_e51eb9dab19641c69436693d",
+          "tool_error_class": "command_failed",
+          "tool_name": "execute",
+          "tool_run_id": "01a13588-a2dd-7bb0-8bbe-98fc86c7a90a",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000555",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 555,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899670012.3684,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6069933112.934628
+      },
+      "tool_elapsed_at_submit_ms": 1519.395263671875,
+      "tool_remaining_at_submit_ms": 159022.98828125,
+      "tool_duration_ms": 160542.38359165192
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:184e3a0b6112ffa9",
+      "context_epoch": 33,
+      "first_submit_ts_ms": 1791899573286.1277,
+      "completion_ts_ms": 1791899670165.3604,
+      "early_full_bytes": 270725120,
+      "latest_early_ack_to_completion_ms": 96824.19653320312,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899573150.5876,
+        "observed_monotonic_ms": 6069836223.823013,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+        "context_id": "deepagents-context:184e3a0b6112ffa9",
+        "context_epoch": 33,
+        "invocation_revision_ts_ms": 6069788958.258312,
+        "p10_ms": 8192.0,
+        "p50_ms": 8192.0,
+        "p90_ms": 8192.0,
+        "release_cdf": [
+          [
+            1.0,
+            0.00033914031699027353
+          ],
+          [
+            2.0,
+            0.0006407766208121535
+          ],
+          [
+            4.0,
+            0.0013946944240675328
+          ],
+          [
+            8.0,
+            0.0033008510949421145
+          ],
+          [
+            16.0,
+            0.008041665303842484
+          ],
+          [
+            32.0,
+            0.0193693101101386
+          ],
+          [
+            64.0,
+            0.04479856812598005
+          ],
+          [
+            128.0,
+            0.09693783252055521
+          ],
+          [
+            256.0,
+            0.19068857046983412
+          ],
+          [
+            512.0,
+            0.3311660337240814
+          ],
+          [
+            1024.0,
+            0.49921876305737867
+          ],
+          [
+            2048.0,
+            0.6586008893049596
+          ],
+          [
+            4096.0,
+            0.7831741014707284
+          ],
+          [
+            8192.0,
+            0.868679069518677
+          ],
+          [
+            16384.0,
+            0.9231684092037499
+          ],
+          [
+            32768.0,
+            0.9562816280514271
+          ],
+          [
+            65536.0,
+            0.9754854774060236
+          ],
+          [
+            131072.0,
+            0.9861336247668586
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1038.316591371328,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899573269.3516,
+        "context_id": "deepagents-context:184e3a0b6112ffa9",
+        "context_epoch": 33,
+        "wait_revision_ts_ms": 6069788958.258312,
+        "remaining_p50_ms": 1170.8223235452692,
+        "start_window_ms": 1204.4889008510797,
+        "h2d_ms": 56.44352975936015,
+        "enqueue_to_submit_p90_ms": 1.7687566578388214,
+        "prediction_early_ms": 1046.2766144338807
+      },
+      "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 121,
+          "input_sha256": "46b9c0a3e53fe91de2bcf3ce48393a66d02380e5de8e3b4a49e52c87c6237bc0",
+          "is_child": true,
+          "observed_command_class": "other",
+          "observed_command_shape": "other",
+          "parameter_signature": "46b9c0a3e53fe91de2bcf3ce48393a66d02380e5de8e3b4a49e52c87c6237bc0",
+          "project_class_completed_support": 21,
+          "project_class_duration_median_ms": 137.72472667694092,
+          "project_input_neighbor_duration_ms": 597.9332695007324,
+          "project_input_neighbor_support": 8,
+          "project_shape_survivor_500ms_support": 7,
+          "project_shape_survivor_500ms_total_median_ms": 611.703784942627,
+          "source": "deepagents_callback",
+          "tool_call_id": "call_eee0a48bc6844f85945e2b40",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a13588-e2e1-7490-89de-590f392c2534",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000553",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 553,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899525857.6921,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6069788958.258312
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 144307.66816997528,
+          "exception_type": null,
+          "output_chars": 236,
+          "output_sha256": "dd038334af55a43ba5741d416a7d05412bdda1d5aca4af6f86b8cafcd730c933",
+          "source": "deepagents_callback",
+          "status": "success",
+          "tool_call_id": "call_eee0a48bc6844f85945e2b40",
+          "tool_error_class": null,
+          "tool_name": "execute",
+          "tool_run_id": "01a13588-e2e1-7490-89de-590f392c2534",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000557",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 557,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899670165.3604,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6069933265.926482
+      },
+      "tool_elapsed_at_submit_ms": 47428.435546875,
+      "tool_remaining_at_submit_ms": 96879.23266601562,
+      "tool_duration_ms": 144307.66816997528
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:7fc528798410e279",
+      "context_epoch": 32,
+      "first_submit_ts_ms": 1791899703064.8276,
+      "completion_ts_ms": 1791899841838.8467,
+      "early_full_bytes": 420270080,
+      "latest_early_ack_to_completion_ms": 138600.45263671875,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899702991.6355,
+        "observed_monotonic_ms": 6069966069.919603,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 32,
+        "invocation_revision_ts_ms": 6069950386.81842,
+        "p10_ms": 724.077344,
+        "p50_ms": 16384.0,
+        "p90_ms": 38967.938744,
+        "release_cdf": [
+          [
+            1.0,
+            0.0002367507084363688
+          ],
+          [
+            2.0,
+            0.0004522968770722325
+          ],
+          [
+            4.0,
+            0.0009983984692427585
+          ],
+          [
+            8.0,
+            0.0024022549193200337
+          ],
+          [
+            16.0,
+            0.0059625301205710945
+          ],
+          [
+            32.0,
+            0.014668242794455286
+          ],
+          [
+            64.0,
+            0.034785456081359634
+          ],
+          [
+            128.0,
+            0.07766756412422043
+          ],
+          [
+            256.0,
+            0.15903537655635638
+          ],
+          [
+            512.0,
+            0.2899082618233066
+          ],
+          [
+            1024.0,
+            0.4597022547264093
+          ],
+          [
+            2048.0,
+            0.6332231293101361
+          ],
+          [
+            4096.0,
+            0.7755445682939676
+          ],
+          [
+            8192.0,
+            0.8735648202456257
+          ],
+          [
+            16384.0,
+            0.932666147210482
+          ],
+          [
+            32768.0,
+            0.9649134932608173
+          ],
+          [
+            65536.0,
+            0.9814875994115325
+          ],
+          [
+            131072.0,
+            0.9898836113271948
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1205.0971307062812,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899703055.5378,
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 32,
+        "wait_revision_ts_ms": 6069950386.81842,
+        "remaining_p50_ms": 1251.4178416962227,
+        "start_window_ms": 1254.7378492879739,
+        "h2d_ms": 49.887366020713245,
+        "enqueue_to_submit_p90_ms": 0.0,
+        "prediction_early_ms": 1104.8504832672606
+      },
+      "invocation_id": "deepagents-invocation:7fc528798410e279",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 117,
+          "input_sha256": "c3392e8375dc48ae190d8cdb58cabc683878dfa1770ef2d0d78e8fff57238245",
+          "is_child": true,
+          "observed_command_class": "other",
+          "observed_command_shape": "other",
+          "parameter_signature": "c3392e8375dc48ae190d8cdb58cabc683878dfa1770ef2d0d78e8fff57238245",
+          "project_class_completed_support": 24,
+          "project_class_duration_median_ms": 129.05959701538086,
+          "project_input_neighbor_duration_ms": 562.1760921478271,
+          "project_input_neighbor_support": 8,
+          "project_shape_survivor_500ms_support": 8,
+          "project_shape_survivor_500ms_total_median_ms": 619.9528708457947,
+          "source": "deepagents_callback",
+          "tool_call_id": "call_f8945c0008bc4d97a85670c7",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a1358b-5975-72c2-a521-035749ecdc80",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000572",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 572,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899687286.2522,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6069950386.81842
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 154552.59452915192,
+          "exception_type": null,
+          "output_chars": 981,
+          "output_sha256": "f4ba449dbe21ad2c2f23258f79e18991f1547a02a2e54f38c68ff3bf91aa369c",
+          "source": "deepagents_callback",
+          "status": "error",
+          "tool_call_id": "call_f8945c0008bc4d97a85670c7",
+          "tool_error_class": "command_failed",
+          "tool_name": "execute",
+          "tool_run_id": "01a1358b-5975-72c2-a521-035749ecdc80",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000603",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 603,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899841838.8467,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6070104939.41295
+      },
+      "tool_elapsed_at_submit_ms": 15778.575439453125,
+      "tool_remaining_at_submit_ms": 138774.01904296875,
+      "tool_duration_ms": 154552.59452915192
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+      "context_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:context:root",
+      "context_epoch": 14,
+      "first_submit_ts_ms": 1791899721395.1052,
+      "completion_ts_ms": 1791899810771.1409,
+      "early_full_bytes": 234987520,
+      "latest_early_ack_to_completion_ms": 89245.25805664062,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899721382.527,
+        "observed_monotonic_ms": 6069984454.304556,
+        "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+        "invocation_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:root",
+        "context_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:context:root",
+        "context_epoch": 14,
+        "invocation_revision_ts_ms": 6069953779.196687,
+        "p10_ms": 2048.0,
+        "p50_ms": 32768.0,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.0002232208720205264
+          ],
+          [
+            2.0,
+            0.00042361625771759626
+          ],
+          [
+            4.0,
+            0.0009272747982991312
+          ],
+          [
+            8.0,
+            0.0022097508982675397
+          ],
+          [
+            16.0,
+            0.005428554073783969
+          ],
+          [
+            32.0,
+            0.013217110344829742
+          ],
+          [
+            64.0,
+            0.031046962259970015
+          ],
+          [
+            128.0,
+            0.06882641167082179
+          ],
+          [
+            256.0,
+            0.1406099998479225
+          ],
+          [
+            512.0,
+            0.2576877316526907
+          ],
+          [
+            1024.0,
+            0.4142302743274628
+          ],
+          [
+            2048.0,
+            0.5815849473794019
+          ],
+          [
+            4096.0,
+            0.7268006773935068
+          ],
+          [
+            8192.0,
+            0.83398538419079
+          ],
+          [
+            16384.0,
+            0.9045836253513327
+          ],
+          [
+            32768.0,
+            0.9471846598680036
+          ],
+          [
+            65536.0,
+            0.9710793678186613
+          ],
+          [
+            131072.0,
+            0.983872717019907
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1468.8375372938135,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899721385.9097,
+        "context_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:context:root",
+        "context_epoch": 14,
+        "wait_revision_ts_ms": 6069953779.196687,
+        "remaining_p50_ms": 1469.3471724030483,
+        "start_window_ms": 1470.5869357392933,
+        "h2d_ms": 61.28171292062402,
+        "enqueue_to_submit_p90_ms": 1.9621518440544605,
+        "prediction_early_ms": 1307.3430709746149
+      },
+      "invocation_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:root",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 99,
+          "input_sha256": "e9a603c6157d3a4fc3c5354a1cb32d00f3c223a55389c7ab7975f4d87e0b6c8f",
+          "is_child": false,
+          "observed_command_class": "test_suite",
+          "observed_command_shape": "test_suite_targeted",
+          "parameter_signature": "e9a603c6157d3a4fc3c5354a1cb32d00f3c223a55389c7ab7975f4d87e0b6c8f",
+          "source": "deepagents_callback",
+          "tool_call_id": "call_205e5c95f1c343c28d555739",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a1358b-66b5-7c53-8a7d-57f0d45b7155",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:deepagents:000000714",
+        "execution_mode": null,
+        "invocation_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:root",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 714,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899690678.6306,
+        "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+        "client_monotonic_ts_ms": 6069953779.196687
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 120092.5102443695,
+          "exception_type": null,
+          "output_chars": 119,
+          "output_sha256": "a6b8dc44cc65d1c5270712012eae3c3eea718c82ee62de2058a601f45582d30d",
+          "source": "deepagents_callback",
+          "status": "error",
+          "tool_call_id": "call_205e5c95f1c343c28d555739",
+          "tool_error_class": "command_failed",
+          "tool_name": "execute",
+          "tool_run_id": "01a1358b-66b5-7c53-8a7d-57f0d45b7155",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:deepagents:000000715",
+        "execution_mode": null,
+        "invocation_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:root",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 715,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899810771.1409,
+        "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+        "client_monotonic_ts_ms": 6070073871.706931
+      },
+      "tool_elapsed_at_submit_ms": 30716.474609375,
+      "tool_remaining_at_submit_ms": 89376.03564453125,
+      "tool_duration_ms": 120092.5102443695
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:7fc528798410e279",
+      "context_epoch": 36,
+      "first_submit_ts_ms": 1791899908998.016,
+      "completion_ts_ms": 1791900071432.5146,
+      "early_full_bytes": 43868160,
+      "latest_early_ack_to_completion_ms": 162392.7724609375,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899908986.2961,
+        "observed_monotonic_ms": 6070171993.219346,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 36,
+        "invocation_revision_ts_ms": 6070169352.123211,
+        "p10_ms": 256.0,
+        "p50_ms": 861.077929,
+        "p90_ms": 19483.969372,
+        "release_cdf": [
+          [
+            1.0,
+            0.00023691226117495627
+          ],
+          [
+            2.0,
+            0.00046078597940357345
+          ],
+          [
+            4.0,
+            0.0010405218933747715
+          ],
+          [
+            8.0,
+            0.002570821648389194
+          ],
+          [
+            16.0,
+            0.006570477629033602
+          ],
+          [
+            32.0,
+            0.01668015702274735
+          ],
+          [
+            64.0,
+            0.04088608618724747
+          ],
+          [
+            128.0,
+            0.0943582209508463
+          ],
+          [
+            256.0,
+            0.1987573828015167
+          ],
+          [
+            512.0,
+            0.3672474256717596
+          ],
+          [
+            1024.0,
+            0.5747332080727443
+          ],
+          [
+            2048.0,
+            0.7594861017316789
+          ],
+          [
+            4096.0,
+            0.8803873129476386
+          ],
+          [
+            8192.0,
+            0.943824719502443
+          ],
+          [
+            16384.0,
+            0.9736152773317286
+          ],
+          [
+            32768.0,
+            0.9872248148568947
+          ],
+          [
+            65536.0,
+            0.9935458754749548
+          ],
+          [
+            131072.0,
+            0.9965840415921627
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 803.4119617366134,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899908992.9739,
+        "context_id": "deepagents-context:7fc528798410e279",
+        "context_epoch": 36,
+        "wait_revision_ts_ms": 6070169352.123211,
+        "remaining_p50_ms": 804.2463980312701,
+        "start_window_ms": 889.1879218247813,
+        "h2d_ms": 89.5891091786325,
+        "enqueue_to_submit_p90_ms": 3.2757408916950226,
+        "prediction_early_ms": 696.3230717544537
+      },
+      "invocation_id": "deepagents-invocation:7fc528798410e279",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 104,
+          "input_sha256": "fbf00aafc212795a591f7f85d1dcce5e61b6af435c9d491f8d62facd23e2683a",
+          "is_child": true,
+          "observed_command_class": "python_inline",
+          "observed_command_shape": "python_inline_unparsed",
+          "parameter_signature": "fbf00aafc212795a591f7f85d1dcce5e61b6af435c9d491f8d62facd23e2683a",
+          "project_class_completed_support": 64,
+          "project_class_duration_median_ms": 448.1690602302551,
+          "project_input_neighbor_duration_ms": 434.1423316001892,
+          "project_input_neighbor_support": 6,
+          "source": "deepagents_callback",
+          "tool_call_id": "call_4e398e8252314d458676eb41",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a1358e-b0cb-71b1-ad08-a735bfdbe3bd",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000661",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 661,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899906251.5571,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6070169352.123211
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 165180.957695961,
+          "exception_type": null,
+          "output_chars": 113,
+          "output_sha256": "f3d96be07b93ffce8c5a5087aa03bde1b21f82479b89ce0daa1fc7186c6cf09b",
+          "source": "deepagents_callback",
+          "status": "error",
+          "tool_call_id": "call_4e398e8252314d458676eb41",
+          "tool_error_class": "command_failed",
+          "tool_name": "execute",
+          "tool_run_id": "01a1358e-b0cb-71b1-ad08-a735bfdbe3bd",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000669",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:7fc528798410e279",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 669,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791900071432.5146,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6070334533.080907
+      },
+      "tool_elapsed_at_submit_ms": 2746.458984375,
+      "tool_remaining_at_submit_ms": 162434.49853515625,
+      "tool_duration_ms": 165180.957695961
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+      "context_id": "deepagents-context:184e3a0b6112ffa9",
+      "context_epoch": 42,
+      "first_submit_ts_ms": 1791899918022.2778,
+      "completion_ts_ms": 1791900072059.2046,
+      "early_full_bytes": 95088640,
+      "latest_early_ack_to_completion_ms": 153979.55200195312,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791899918011.7395,
+        "observed_monotonic_ms": 6070181046.596513,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+        "context_id": "deepagents-context:184e3a0b6112ffa9",
+        "context_epoch": 42,
+        "invocation_revision_ts_ms": 6070175971.919545,
+        "p10_ms": 4870.992343,
+        "p50_ms": 19483.969372,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.0003092058583183776
+          ],
+          [
+            2.0,
+            0.0005973866107893078
+          ],
+          [
+            4.0,
+            0.0013374201015499086
+          ],
+          [
+            8.0,
+            0.0032702719430845735
+          ],
+          [
+            16.0,
+            0.008255889301927059
+          ],
+          [
+            32.0,
+            0.020642391950298697
+          ],
+          [
+            64.0,
+            0.04957874265715562
+          ],
+          [
+            128.0,
+            0.11113849291183694
+          ],
+          [
+            256.0,
+            0.2247079176890392
+          ],
+          [
+            512.0,
+            0.3950135486302502
+          ],
+          [
+            1024.0,
+            0.5909301382687678
+          ],
+          [
+            2048.0,
+            0.7608213775904809
+          ],
+          [
+            4096.0,
+            0.8754266542116139
+          ],
+          [
+            8192.0,
+            0.9392914140442458
+          ],
+          [
+            16384.0,
+            0.9708618877832417
+          ],
+          [
+            32768.0,
+            0.9857104404146765
+          ],
+          [
+            65536.0,
+            0.992707826139604
+          ],
+          [
+            131072.0,
+            0.9961020699975863
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 748.0614756928346,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791899918015.9844,
+        "context_id": "deepagents-context:184e3a0b6112ffa9",
+        "context_epoch": 42,
+        "wait_revision_ts_ms": 6070175971.919545,
+        "remaining_p50_ms": 751.7915474956038,
+        "start_window_ms": 859.54683293937,
+        "h2d_ms": 98.86705735698342,
+        "enqueue_to_submit_p90_ms": 2.953610848635435,
+        "prediction_early_ms": 657.7261647337511
+      },
+      "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 139,
+          "input_sha256": "77a96b1e159b855bc46a9316645c025ac5c5a9a0632de9bbf841b9f21ec6df08",
+          "is_child": true,
+          "observed_command_class": "python_script",
+          "observed_command_shape": "python_script",
+          "parameter_signature": "77a96b1e159b855bc46a9316645c025ac5c5a9a0632de9bbf841b9f21ec6df08",
+          "project_class_completed_support": 27,
+          "project_class_duration_median_ms": 774.1004590988159,
+          "project_input_neighbor_duration_ms": 826.5499567985535,
+          "project_input_neighbor_support": 8,
+          "project_shape_survivor_500ms_support": 24,
+          "project_shape_survivor_500ms_total_median_ms": 776.7581272125244,
+          "source": "deepagents_callback",
+          "tool_call_id": "call_e4f0ee5f77ff447ca830e113",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a1358e-caa7-7333-9fbf-813cb9c08c91",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000667",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 667,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791899912871.3533,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6070175971.919545
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 159187.85123062134,
+          "exception_type": null,
+          "output_chars": 111,
+          "output_sha256": "fe550328fba2486765e0f8ac42305db0cb1f83d70ecf354c65aa6fac6540b817",
+          "source": "deepagents_callback",
+          "status": "success",
+          "tool_call_id": "call_e4f0ee5f77ff447ca830e113",
+          "tool_error_class": null,
+          "tool_name": "execute",
+          "tool_run_id": "01a1358e-caa7-7333-9fbf-813cb9c08c91",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609:deepagents:000000671",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:184e3a0b6112ffa9",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 671,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791900072059.2046,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6528:b583750f2609",
+        "client_monotonic_ts_ms": 6070335159.770776
+      },
+      "tool_elapsed_at_submit_ms": 5150.924560546875,
+      "tool_remaining_at_submit_ms": 154036.9267578125,
+      "tool_duration_ms": 159187.85123062134
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+      "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+      "context_epoch": 36,
+      "first_submit_ts_ms": 1791900150147.0737,
+      "completion_ts_ms": 1791900311958.9336,
+      "early_full_bytes": 105861120,
+      "latest_early_ack_to_completion_ms": 161793.84399414062,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791900149925.7856,
+        "observed_monotonic_ms": 6070413007.70849,
+        "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+        "invocation_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:root",
+        "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+        "context_epoch": 36,
+        "invocation_revision_ts_ms": 6070394981.300452,
+        "p10_ms": 9741.984686,
+        "p50_ms": 13777.246868,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.00022072242754457387
+          ],
+          [
+            2.0,
+            0.00042109739055945804
+          ],
+          [
+            4.0,
+            0.0009279367168556309
+          ],
+          [
+            8.0,
+            0.0022284216380988107
+          ],
+          [
+            16.0,
+            0.005520295403738862
+          ],
+          [
+            32.0,
+            0.01355746792642709
+          ],
+          [
+            64.0,
+            0.032122612617665226
+          ],
+          [
+            128.0,
+            0.07178318745111979
+          ],
+          [
+            256.0,
+            0.14757624189086996
+          ],
+          [
+            512.0,
+            0.2712906162935332
+          ],
+          [
+            1024.0,
+            0.4355827932808924
+          ],
+          [
+            2048.0,
+            0.6084918850084929
+          ],
+          [
+            4096.0,
+            0.7548058869812952
+          ],
+          [
+            8192.0,
+            0.8587296621832343
+          ],
+          [
+            16384.0,
+            0.9233143197756654
+          ],
+          [
+            32768.0,
+            0.9595174990543613
+          ],
+          [
+            65536.0,
+            0.9784853211477109
+          ],
+          [
+            131072.0,
+            0.9881962717134508
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1326.5947321447438,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791900150136.2607,
+        "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+        "context_epoch": 36,
+        "wait_revision_ts_ms": 6070394981.300452,
+        "remaining_p50_ms": 1510.0492913016576,
+        "start_window_ms": 1511.176640444759,
+        "h2d_ms": 58.566037453560035,
+        "enqueue_to_submit_p90_ms": 1.7204107716679573,
+        "prediction_early_ms": 1350.890192219531
+      },
+      "invocation_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:root",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 83,
+          "input_sha256": "f1240e40a4394c80e2b4c4429a90aecd67b79edf526ef9340566abf34a724893",
+          "is_child": false,
+          "observed_command_class": "test_suite",
+          "observed_command_shape": "test_suite_full",
+          "parameter_signature": "f1240e40a4394c80e2b4c4429a90aecd67b79edf526ef9340566abf34a724893",
+          "source": "deepagents_callback",
+          "tool_call_id": "call_4348bb5ea27c44bb9d92b960",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a13592-2228-7d12-b30c-af75ced63fe7",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:deepagents:000000870",
+        "execution_mode": null,
+        "invocation_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:root",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 870,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791900131880.7344,
+        "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+        "client_monotonic_ts_ms": 6070394981.300452
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 180078.19928836823,
+          "exception_type": null,
+          "output_chars": 119,
+          "output_sha256": "b39cc985b885e5b1061262e1ed17017b6c3a572add04d23ca487567cdc0a272e",
+          "source": "deepagents_callback",
+          "status": "error",
+          "tool_call_id": "call_4348bb5ea27c44bb9d92b960",
+          "tool_error_class": "command_failed",
+          "tool_name": "execute",
+          "tool_run_id": "01a13592-2228-7d12-b30c-af75ced63fe7",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:deepagents:000000871",
+        "execution_mode": null,
+        "invocation_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:root",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 871,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791900311958.9336,
+        "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+        "client_monotonic_ts_ms": 6070575059.499741
+      },
+      "tool_elapsed_at_submit_ms": 18266.33935546875,
+      "tool_remaining_at_submit_ms": 161811.85986328125,
+      "tool_duration_ms": 180078.19928836823
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+      "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+      "context_epoch": 37,
+      "first_submit_ts_ms": 1791900341828.8218,
+      "completion_ts_ms": 1791900505737.2844,
+      "early_full_bytes": 48762880,
+      "latest_early_ack_to_completion_ms": 163833.73974609375,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791900341820.1929,
+        "observed_monotonic_ms": 6070604895.433367,
+        "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+        "invocation_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:root",
+        "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+        "context_epoch": 37,
+        "invocation_revision_ts_ms": 6070588762.986773,
+        "p10_ms": 256.0,
+        "p50_ms": 16384.0,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.0002888183472324317
+          ],
+          [
+            2.0,
+            0.00055158727552685
+          ],
+          [
+            4.0,
+            0.0012169930583500017
+          ],
+          [
+            8.0,
+            0.0029261144979254717
+          ],
+          [
+            16.0,
+            0.007253882961553993
+          ],
+          [
+            32.0,
+            0.017802863288977816
+          ],
+          [
+            64.0,
+            0.042015065265487705
+          ],
+          [
+            128.0,
+            0.09290380571523084
+          ],
+          [
+            256.0,
+            0.1868984385435513
+          ],
+          [
+            512.0,
+            0.33147682550385177
+          ],
+          [
+            1024.0,
+            0.5079164457599504
+          ],
+          [
+            2048.0,
+            0.6764947848390519
+          ],
+          [
+            4096.0,
+            0.8068039600812098
+          ],
+          [
+            8192.0,
+            0.8928096090528078
+          ],
+          [
+            16384.0,
+            0.9433684771809786
+          ],
+          [
+            32768.0,
+            0.9706041932839261
+          ],
+          [
+            65536.0,
+            0.9845194614963408
+          ],
+          [
+            131072.0,
+            0.9915479817435313
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 995.4178121125935,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791900341823.524,
+        "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+        "context_epoch": 37,
+        "wait_revision_ts_ms": 6070588762.986773,
+        "remaining_p50_ms": 995.7851578698991,
+        "start_window_ms": 1045.2687085894086,
+        "h2d_ms": 69.42467065528035,
+        "enqueue_to_submit_p90_ms": 1.4308537356555462,
+        "prediction_early_ms": 874.4131841984728
+      },
+      "invocation_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:root",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 85,
+          "input_sha256": "3bbbd663ccb245016b960f03440bfd964bdf6166cc4eb4625505e074657c5174",
+          "is_child": false,
+          "observed_command_class": "test_suite",
+          "observed_command_shape": "test_suite_full",
+          "parameter_signature": "3bbbd663ccb245016b960f03440bfd964bdf6166cc4eb4625505e074657c5174",
+          "source": "deepagents_callback",
+          "tool_call_id": "call_0b136f6fb51e48ddb8ed03c8",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a13595-171e-79e0-8467-f469a1cdc9a3",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:deepagents:000000874",
+        "execution_mode": null,
+        "invocation_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:root",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 874,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791900325662.4207,
+        "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+        "client_monotonic_ts_ms": 6070588762.986773
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 180074.86371421814,
+          "exception_type": null,
+          "output_chars": 119,
+          "output_sha256": "e6167dc4418f6b46d5d75f07848dcc7e649b10750c1632fa75a52857102ef67f",
+          "source": "deepagents_callback",
+          "status": "error",
+          "tool_call_id": "call_0b136f6fb51e48ddb8ed03c8",
+          "tool_error_class": "command_failed",
+          "tool_name": "execute",
+          "tool_run_id": "01a13595-171e-79e0-8467-f469a1cdc9a3",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:deepagents:000000875",
+        "execution_mode": null,
+        "invocation_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:root",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 875,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791900505737.2844,
+        "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+        "client_monotonic_ts_ms": 6070768837.850487
+      },
+      "tool_elapsed_at_submit_ms": 16166.401123046875,
+      "tool_remaining_at_submit_ms": 163908.46264648438,
+      "tool_duration_ms": 180074.86371421814
+    },
+    {
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6903:7fb6fff00c5e",
+      "context_id": "deepagents-context:1b8929b15a78008c",
+      "context_epoch": 75,
+      "first_submit_ts_ms": 1791900365715.0513,
+      "completion_ts_ms": 1791900373045.6143,
+      "early_full_bytes": 50073600,
+      "latest_early_ack_to_completion_ms": 7243.200927734375,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791900365511.2944,
+        "observed_monotonic_ms": 6070628584.728018,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6903:7fb6fff00c5e",
+        "invocation_id": "deepagents-invocation:1b8929b15a78008c",
+        "context_id": "deepagents-context:1b8929b15a78008c",
+        "context_epoch": 75,
+        "invocation_revision_ts_ms": 6070627621.164375,
+        "p10_ms": 64.0,
+        "p50_ms": 256.0,
+        "p90_ms": 2896.309376,
+        "release_cdf": [
+          [
+            1.0,
+            0.00013955642060486646
+          ],
+          [
+            2.0,
+            0.0002743279600237229
+          ],
+          [
+            4.0,
+            0.0006281236493623852
+          ],
+          [
+            8.0,
+            0.0015787617530474826
+          ],
+          [
+            16.0,
+            0.004121679830502199
+          ],
+          [
+            32.0,
+            0.010759584499130522
+          ],
+          [
+            64.0,
+            0.027445480149657916
+          ],
+          [
+            128.0,
+            0.0672551761074705
+          ],
+          [
+            256.0,
+            0.15451546452554266
+          ],
+          [
+            512.0,
+            0.3169939128119762
+          ],
+          [
+            1024.0,
+            0.5419196525738658
+          ],
+          [
+            2048.0,
+            0.7491777015417759
+          ],
+          [
+            4096.0,
+            0.8798287798955847
+          ],
+          [
+            8192.0,
+            0.944991963706373
+          ],
+          [
+            16384.0,
+            0.9746029887621039
+          ],
+          [
+            32768.0,
+            0.9878841559330218
+          ],
+          [
+            65536.0,
+            0.9939710118729859
+          ],
+          [
+            131072.0,
+            0.9968593526929208
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 885.6000741911249,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791900365710.7258,
+        "context_id": "deepagents-context:1b8929b15a78008c",
+        "context_epoch": 75,
+        "wait_revision_ts_ms": 6070627621.164375,
+        "remaining_p50_ms": 896.4973125382626,
+        "start_window_ms": 944.3512307411189,
+        "h2d_ms": 65.7243754790461,
+        "enqueue_to_submit_p90_ms": 1.614585518836975,
+        "prediction_early_ms": 777.0122697432358
+      },
+      "invocation_id": "deepagents-invocation:1b8929b15a78008c",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 96,
+          "input_sha256": "6d362f7e7ea86fac2cb8e98ef191e15ffbf924302e2ddf7e6c68ec08c5e12bf3",
+          "is_child": true,
+          "observed_command_class": "test_suite",
+          "observed_command_shape": "test_suite_targeted",
+          "parameter_signature": "6d362f7e7ea86fac2cb8e98ef191e15ffbf924302e2ddf7e6c68ec08c5e12bf3",
+          "project_input_neighbor_duration_ms": 1227.3706436157227,
+          "project_input_neighbor_support": 8,
+          "project_shape_survivor_500ms_support": 8,
+          "project_shape_survivor_500ms_total_median_ms": 1227.3706436157227,
+          "source": "deepagents_callback",
+          "tool_call_id": "call_0180e93ad2594a6ba6d31912",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a13595-aee8-7362-9152-fbdffb1f437d",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6903:7fb6fff00c5e:deepagents:000001025",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:1b8929b15a78008c",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 1025,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791900364520.5981,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6903:7fb6fff00c5e",
+        "client_monotonic_ts_ms": 6070627621.164375
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 8525.015995979309,
+          "exception_type": null,
+          "output_chars": 1949,
+          "output_sha256": "04592c122799537926399e40682a9be6599c9f4050422809156960b87a7da332",
+          "source": "deepagents_callback",
+          "status": "success",
+          "tool_call_id": "call_0180e93ad2594a6ba6d31912",
+          "tool_error_class": null,
+          "tool_name": "execute",
+          "tool_run_id": "01a13595-aee8-7362-9152-fbdffb1f437d",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:pylint-dev__pylint-6903:7fb6fff00c5e:deepagents:000001027",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:1b8929b15a78008c",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 1027,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791900373045.6143,
+        "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6903:7fb6fff00c5e",
+        "client_monotonic_ts_ms": 6070636146.180371
+      },
+      "tool_elapsed_at_submit_ms": 1194.453125,
+      "tool_remaining_at_submit_ms": 7330.56298828125,
+      "tool_duration_ms": 8525.015995979309
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+      "context_id": "deepagents-context:6f98bf861c2a987f",
+      "context_epoch": 190,
+      "first_submit_ts_ms": 1791902564351.3533,
+      "completion_ts_ms": 1791902697090.1716,
+      "early_full_bytes": 2703360,
+      "latest_early_ack_to_completion_ms": 132638.1962890625,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791902564345.973,
+        "observed_monotonic_ms": 6072827440.558654,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "invocation_id": "deepagents-invocation:6f98bf861c2a987f",
+        "context_id": "deepagents-context:6f98bf861c2a987f",
+        "context_epoch": 190,
+        "invocation_revision_ts_ms": 6072780105.355288,
+        "p10_ms": 623487.019911,
+        "p50_ms": 623487.019911,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.00027942362748020706
+          ],
+          [
+            2.0,
+            0.0005279673754052717
+          ],
+          [
+            4.0,
+            0.0011492887988170618
+          ],
+          [
+            8.0,
+            0.0027209008730121956
+          ],
+          [
+            16.0,
+            0.006634159451403761
+          ],
+          [
+            32.0,
+            0.01601078340184729
+          ],
+          [
+            64.0,
+            0.037197108009144886
+          ],
+          [
+            128.0,
+            0.08123983335022852
+          ],
+          [
+            256.0,
+            0.16253744990864005
+          ],
+          [
+            512.0,
+            0.2896935208445818
+          ],
+          [
+            1024.0,
+            0.4508791897976178
+          ],
+          [
+            2048.0,
+            0.6137311578408741
+          ],
+          [
+            4096.0,
+            0.7484102076040643
+          ],
+          [
+            8192.0,
+            0.8448970856080777
+          ],
+          [
+            16384.0,
+            0.90820132257097
+          ],
+          [
+            32768.0,
+            0.9473908382059029
+          ],
+          [
+            65536.0,
+            0.970375914842086
+          ],
+          [
+            131072.0,
+            0.9832041220978973
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1261.678372829376,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791902564349.497,
+        "context_id": "deepagents-context:6f98bf861c2a987f",
+        "context_epoch": 190,
+        "wait_revision_ts_ms": 6072780105.355288,
+        "remaining_p50_ms": 1261.5140027999446,
+        "start_window_ms": 1291.423010964736,
+        "h2d_ms": 72.578483261168,
+        "enqueue_to_submit_p90_ms": 1.3556280173361301,
+        "prediction_early_ms": 1117.488899686232
+      },
+      "invocation_id": "deepagents-invocation:6f98bf861c2a987f",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 109,
+          "input_sha256": "4aba922ac295d3aa8cdac4dededfe56347dc0cf3ead665e6cafb50c7b89275a3",
+          "is_child": true,
+          "observed_command_class": "test_suite",
+          "observed_command_shape": "test_suite_full",
+          "parameter_signature": "4aba922ac295d3aa8cdac4dededfe56347dc0cf3ead665e6cafb50c7b89275a3",
+          "project_class_completed_support": 64,
+          "project_class_duration_median_ms": 731.6955990791321,
+          "project_input_neighbor_duration_ms": 1243.167628288269,
+          "project_input_neighbor_support": 8,
+          "project_long_completed_median_ms": 2586.1543865203857,
+          "project_long_completed_support": 6,
+          "source": "deepagents_callback",
+          "tool_call_id": "call_3359a06e1f6f43f98b6beb5a",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a135b6-870c-72d1-9dc2-b0eea9108c81",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-11211:497274ba2e12:deepagents:000003134",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:6f98bf861c2a987f",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 3134,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791902517004.789,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "client_monotonic_ts_ms": 6072780105.355288
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 180085.38258075714,
+          "exception_type": null,
+          "output_chars": 119,
+          "output_sha256": "9c06fe378a60d4ea209a52f189226823830b87f10203ac7022b6609edfdb7426",
+          "source": "deepagents_callback",
+          "status": "error",
+          "tool_call_id": "call_3359a06e1f6f43f98b6beb5a",
+          "tool_error_class": "command_failed",
+          "tool_name": "execute",
+          "tool_run_id": "01a135b6-870c-72d1-9dc2-b0eea9108c81",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-11211:497274ba2e12:deepagents:000003139",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:6f98bf861c2a987f",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 3139,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791902697090.1716,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "client_monotonic_ts_ms": 6072960190.737868
+      },
+      "tool_elapsed_at_submit_ms": 47346.564208984375,
+      "tool_remaining_at_submit_ms": 132738.818359375,
+      "tool_duration_ms": 180085.38258075714
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+      "context_id": "deepagents-context:4edc59b238de24f8",
+      "context_epoch": 151,
+      "first_submit_ts_ms": 1791902582583.5122,
+      "completion_ts_ms": 1791902697541.0686,
+      "early_full_bytes": 146534400,
+      "latest_early_ack_to_completion_ms": 114900.14428710938,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791902582575.3337,
+        "observed_monotonic_ms": 6072845605.947649,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+        "context_id": "deepagents-context:4edc59b238de24f8",
+        "context_epoch": 151,
+        "invocation_revision_ts_ms": 6072780809.829089,
+        "p10_ms": 524288.0,
+        "p50_ms": 524288.0,
+        "p90_ms": 524288.0,
+        "release_cdf": [
+          [
+            1.0,
+            0.00027764030190493264
+          ],
+          [
+            2.0,
+            0.0005229655917621211
+          ],
+          [
+            4.0,
+            0.001133943586272688
+          ],
+          [
+            8.0,
+            0.002672516587998627
+          ],
+          [
+            16.0,
+            0.006484852063702119
+          ],
+          [
+            32.0,
+            0.01557433161932993
+          ],
+          [
+            64.0,
+            0.03601803717073719
+          ],
+          [
+            128.0,
+            0.07837664900370755
+          ],
+          [
+            256.0,
+            0.15652266606454102
+          ],
+          [
+            512.0,
+            0.2792489561519917
+          ],
+          [
+            1024.0,
+            0.4363496905921417
+          ],
+          [
+            2048.0,
+            0.5973770185442463
+          ],
+          [
+            4096.0,
+            0.7327230044208276
+          ],
+          [
+            8192.0,
+            0.831283466954813
+          ],
+          [
+            16384.0,
+            0.8971861316295286
+          ],
+          [
+            32768.0,
+            0.9391462043646996
+          ],
+          [
+            65536.0,
+            0.9647484330861626
+          ],
+          [
+            131072.0,
+            0.9796348098503547
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1402.5069854123149,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791902582579.3691,
+        "context_id": "deepagents-context:4edc59b238de24f8",
+        "context_epoch": 151,
+        "wait_revision_ts_ms": 6072780809.829089,
+        "remaining_p50_ms": 1408.1835294275984,
+        "start_window_ms": 1436.295020735418,
+        "h2d_ms": 73.40278071809968,
+        "enqueue_to_submit_p90_ms": 1.5054503455758095,
+        "prediction_early_ms": 1261.3867896717425
+      },
+      "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 121,
+          "input_sha256": "014dfdc2bc2297c9b528864e16ee7f222c97e16d645528385bb82936d5f6a726",
+          "is_child": true,
+          "observed_command_class": "test_suite",
+          "observed_command_shape": "test_suite_targeted",
+          "parameter_signature": "014dfdc2bc2297c9b528864e16ee7f222c97e16d645528385bb82936d5f6a726",
+          "project_class_completed_support": 64,
+          "project_class_duration_median_ms": 731.6955990791321,
+          "project_input_neighbor_duration_ms": 661.3882436752319,
+          "project_input_neighbor_support": 8,
+          "project_long_completed_median_ms": 2586.1543865203857,
+          "project_long_completed_support": 6,
+          "project_shape_survivor_500ms_support": 64,
+          "project_shape_survivor_500ms_total_median_ms": 757.4617691040039,
+          "source": "deepagents_callback",
+          "tool_call_id": "call_ca7f3f63b70646aa89d3a28b",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a135b6-89cc-7131-90c1-a8f232414476",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-11211:497274ba2e12:deepagents:000003137",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 3137,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791902517709.263,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "client_monotonic_ts_ms": 6072780809.829089
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 179831.80563545227,
+          "exception_type": null,
+          "output_chars": 1299,
+          "output_sha256": "265ec6d9ac781ead15cabb251dc5c942f4dae058f4cb6fa95cda33de79bde913",
+          "source": "deepagents_callback",
+          "status": "error",
+          "tool_call_id": "call_ca7f3f63b70646aa89d3a28b",
+          "tool_error_class": "command_failed",
+          "tool_name": "execute",
+          "tool_run_id": "01a135b6-89cc-7131-90c1-a8f232414476",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-11211:497274ba2e12:deepagents:000003141",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 3141,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791902697541.0686,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "client_monotonic_ts_ms": 6072960641.634725
+      },
+      "tool_elapsed_at_submit_ms": 64874.249267578125,
+      "tool_remaining_at_submit_ms": 114957.55639648438,
+      "tool_duration_ms": 179831.80563545227
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+      "context_id": "deepagents-context:4edc59b238de24f8",
+      "context_epoch": 153,
+      "first_submit_ts_ms": 1791902738266.6409,
+      "completion_ts_ms": 1791902906837.2075,
+      "early_full_bytes": 22978560,
+      "latest_early_ack_to_completion_ms": 168525.08642578125,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791902738261.7544,
+        "observed_monotonic_ms": 6073001297.178136,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+        "context_id": "deepagents-context:4edc59b238de24f8",
+        "context_epoch": 153,
+        "invocation_revision_ts_ms": 6072989854.850063,
+        "p10_ms": 152.218511,
+        "p50_ms": 11585.237503,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.0002709562716496563
+          ],
+          [
+            2.0,
+            0.0005192585728123366
+          ],
+          [
+            4.0,
+            0.0011506796349691891
+          ],
+          [
+            8.0,
+            0.002780819137342818
+          ],
+          [
+            16.0,
+            0.006932994676456373
+          ],
+          [
+            32.0,
+            0.017122307663721626
+          ],
+          [
+            64.0,
+            0.04069389467594892
+          ],
+          [
+            128.0,
+            0.09071158473494317
+          ],
+          [
+            256.0,
+            0.1841772376611144
+          ],
+          [
+            512.0,
+            0.3298325943254662
+          ],
+          [
+            1024.0,
+            0.509700268741765
+          ],
+          [
+            2048.0,
+            0.6825463636718803
+          ],
+          [
+            4096.0,
+            0.8153032474772033
+          ],
+          [
+            8192.0,
+            0.9008531250464069
+          ],
+          [
+            16384.0,
+            0.9491865022389783
+          ],
+          [
+            32768.0,
+            0.9741561019566422
+          ],
+          [
+            65536.0,
+            0.9865406455803059
+          ],
+          [
+            131072.0,
+            0.9926999147246496
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1006.2831631352024,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791902738264.9307,
+        "context_id": "deepagents-context:4edc59b238de24f8",
+        "context_epoch": 153,
+        "wait_revision_ts_ms": 6072989854.850063,
+        "remaining_p50_ms": 1010.4269373719719,
+        "start_window_ms": 1065.7879656581,
+        "h2d_ms": 71.68957032263279,
+        "enqueue_to_submit_p90_ms": 1.069048885256052,
+        "prediction_early_ms": 893.0293464502112
+      },
+      "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 97,
+          "input_sha256": "1d2843210d1af447d6dec199a95bb25c256e7f5ffe050a3f9c089a0a59c48c81",
+          "is_child": true,
+          "observed_command_class": "test_suite",
+          "observed_command_shape": "test_suite_full",
+          "parameter_signature": "1d2843210d1af447d6dec199a95bb25c256e7f5ffe050a3f9c089a0a59c48c81",
+          "project_class_completed_support": 64,
+          "project_class_duration_median_ms": 738.4640264511108,
+          "project_input_neighbor_duration_ms": 786.2986545562744,
+          "project_input_neighbor_support": 8,
+          "project_long_completed_median_ms": 2435.267478942871,
+          "project_long_completed_support": 7,
+          "source": "deepagents_callback",
+          "tool_call_id": "call_43a0cce1b9654763a80365fd",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a135b9-ba61-7872-aa86-1296bbee35a1",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-11211:497274ba2e12:deepagents:000003178",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 3178,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791902726754.284,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "client_monotonic_ts_ms": 6072989854.850063
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 180082.92352962494,
+          "exception_type": null,
+          "output_chars": 119,
+          "output_sha256": "5036df693d1b8b15bdb6e468b3beff28b79ec89f85e9b6bb664a22cf111cf9b3",
+          "source": "deepagents_callback",
+          "status": "error",
+          "tool_call_id": "call_43a0cce1b9654763a80365fd",
+          "tool_error_class": "command_failed",
+          "tool_name": "execute",
+          "tool_run_id": "01a135b9-ba61-7872-aa86-1296bbee35a1",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-11211:497274ba2e12:deepagents:000003184",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 3184,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791902906837.2075,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "client_monotonic_ts_ms": 6073169937.773593
+      },
+      "tool_elapsed_at_submit_ms": 11512.35693359375,
+      "tool_remaining_at_submit_ms": 168570.56665039062,
+      "tool_duration_ms": 180082.92352962494
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+      "context_id": "deepagents-context:6f98bf861c2a987f",
+      "context_epoch": 193,
+      "first_submit_ts_ms": 1791902750261.1348,
+      "completion_ts_ms": 1791903086912.2805,
+      "early_full_bytes": 10567680,
+      "latest_early_ack_to_completion_ms": 336611.2307128906,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791902750249.0046,
+        "observed_monotonic_ms": 6073013195.722204,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "invocation_id": "deepagents-invocation:6f98bf861c2a987f",
+        "context_id": "deepagents-context:6f98bf861c2a987f",
+        "context_epoch": 193,
+        "invocation_revision_ts_ms": 6073002166.541933,
+        "p10_ms": 512.0,
+        "p50_ms": 11585.237503,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.00023267295681003565
+          ],
+          [
+            2.0,
+            0.00044607215221159597
+          ],
+          [
+            4.0,
+            0.0009890453530614816
+          ],
+          [
+            8.0,
+            0.0023920362217038577
+          ],
+          [
+            16.0,
+            0.0059706939884353735
+          ],
+          [
+            32.0,
+            0.014776050678319106
+          ],
+          [
+            64.0,
+            0.03525698249976563
+          ],
+          [
+            128.0,
+            0.07920025271459916
+          ],
+          [
+            256.0,
+            0.16305840330544036
+          ],
+          [
+            512.0,
+            0.29837177044382635
+          ],
+          [
+            1024.0,
+            0.4736241473573355
+          ],
+          [
+            2048.0,
+            0.6510165143666147
+          ],
+          [
+            4096.0,
+            0.7934744185171181
+          ],
+          [
+            8192.0,
+            0.8880773119803591
+          ],
+          [
+            16384.0,
+            0.9423864037969519
+          ],
+          [
+            32768.0,
+            0.9706403104232512
+          ],
+          [
+            65536.0,
+            0.9846960709833025
+          ],
+          [
+            131072.0,
+            0.9916969959133526
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 1230.1501440169448,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791902750256.6006,
+        "context_id": "deepagents-context:6f98bf861c2a987f",
+        "context_epoch": 193,
+        "wait_revision_ts_ms": 6073002166.541933,
+        "remaining_p50_ms": 1234.0303557641253,
+        "start_window_ms": 1277.4301456181033,
+        "h2d_ms": 80.75534226372838,
+        "enqueue_to_submit_p90_ms": 0.8174460381269455,
+        "prediction_early_ms": 1095.857357316248
+      },
+      "invocation_id": "deepagents-invocation:6f98bf861c2a987f",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 116,
+          "input_sha256": "84272768bb3b91c41aa5a255e9591be37ad103f5390afbc6b3ea0164beb547a5",
+          "is_child": true,
+          "observed_command_class": "test_suite",
+          "observed_command_shape": "test_suite_full",
+          "parameter_signature": "84272768bb3b91c41aa5a255e9591be37ad103f5390afbc6b3ea0164beb547a5",
+          "project_class_completed_support": 64,
+          "project_class_duration_median_ms": 737.292637348175,
+          "project_input_neighbor_duration_ms": 789.8111443519592,
+          "project_input_neighbor_support": 8,
+          "project_long_completed_median_ms": 2435.267478942871,
+          "project_long_completed_support": 7,
+          "source": "deepagents_callback",
+          "tool_call_id": "call_1d10938f13cc4bf6bbbeab50",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a135b9-ea79-72a0-9158-13d04c7950c6",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-11211:497274ba2e12:deepagents:000003183",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:6f98bf861c2a987f",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 3183,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791902739065.9758,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "client_monotonic_ts_ms": 6073002166.541933
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 347846.304643631,
+          "exception_type": null,
+          "output_chars": 119,
+          "output_sha256": "a2f649ad4b9e6b79af01dbd3ccf02b78576239b18d682e5a6cc33025fe9243a3",
+          "source": "deepagents_callback",
+          "status": "error",
+          "tool_call_id": "call_1d10938f13cc4bf6bbbeab50",
+          "tool_error_class": "command_failed",
+          "tool_name": "execute",
+          "tool_run_id": "01a135b9-ea79-72a0-9158-13d04c7950c6",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-11211:497274ba2e12:deepagents:000003193",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:6f98bf861c2a987f",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 3193,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791903086912.2805,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "client_monotonic_ts_ms": 6073350012.846577
+      },
+      "tool_elapsed_at_submit_ms": 11195.158935546875,
+      "tool_remaining_at_submit_ms": 336651.1457519531,
+      "tool_duration_ms": 347846.304643631
+    },
+    {
+      "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+      "context_id": "deepagents-context:4edc59b238de24f8",
+      "context_epoch": 154,
+      "first_submit_ts_ms": 1791902930837.1892,
+      "completion_ts_ms": 1791903087020.0327,
+      "early_full_bytes": 166195200,
+      "latest_early_ack_to_completion_ms": 156123.935546875,
+      "last_forecast_before_first_submit": {
+        "event": "tool_wait_forecast",
+        "ts_ms": 1791902930829.773,
+        "observed_monotonic_ms": 6073193916.95132,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+        "context_id": "deepagents-context:4edc59b238de24f8",
+        "context_epoch": 154,
+        "invocation_revision_ts_ms": 6073184295.764001,
+        "p10_ms": 2048.0,
+        "p50_ms": 13777.246868,
+        "p90_ms": 623487.019911,
+        "release_cdf": [
+          [
+            1.0,
+            0.0003254383097140566
+          ],
+          [
+            2.0,
+            0.0006247173047962562
+          ],
+          [
+            4.0,
+            0.0013872336268643463
+          ],
+          [
+            8.0,
+            0.003359882774390123
+          ],
+          [
+            16.0,
+            0.008392724127325692
+          ],
+          [
+            32.0,
+            0.020744030173789226
+          ],
+          [
+            64.0,
+            0.04920650695553481
+          ],
+          [
+            128.0,
+            0.10886526214920313
+          ],
+          [
+            256.0,
+            0.2173494195077828
+          ],
+          [
+            512.0,
+            0.37851349670819734
+          ],
+          [
+            1024.0,
+            0.5646983821885424
+          ],
+          [
+            2048.0,
+            0.7308048095130575
+          ],
+          [
+            4096.0,
+            0.8498093240919381
+          ],
+          [
+            8192.0,
+            0.9220619911545612
+          ],
+          [
+            16384.0,
+            0.960971822949434
+          ],
+          [
+            32768.0,
+            0.9804092034402122
+          ],
+          [
+            65536.0,
+            0.9898669280084584
+          ],
+          [
+            131072.0,
+            0.994526718868062
+          ]
+        ],
+        "tool_offload_wait_ms": 1000.0,
+        "residual_duration_mass": [],
+        "residual_support_detail": null,
+        "conditional_p50_ms": 802.1433606662943,
+        "timing_policy": "survival_conditioned_cdf_or_unexpired_quantile"
+      },
+      "last_start_window_before_first_submit": {
+        "event": "tool_prefetch_latest_start",
+        "ts_ms": 1791902930833.1138,
+        "context_id": "deepagents-context:4edc59b238de24f8",
+        "context_epoch": 154,
+        "wait_revision_ts_ms": 6073184295.764001,
+        "remaining_p50_ms": 801.9810773095801,
+        "start_window_ms": 980.2160807292985,
+        "h2d_ms": 84.07786929588056,
+        "enqueue_to_submit_p90_ms": 104.52037891373041,
+        "prediction_early_ms": 691.6178325196875
+      },
+      "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+      "tool_start": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 133,
+          "input_sha256": "73072c0d1223e9b40e23a10f7f19fa0ba9e35aeeea454b8e50d3bfb0a5f71322",
+          "is_child": true,
+          "observed_command_class": "test_suite",
+          "observed_command_shape": "test_suite_targeted",
+          "parameter_signature": "73072c0d1223e9b40e23a10f7f19fa0ba9e35aeeea454b8e50d3bfb0a5f71322",
+          "project_class_completed_support": 64,
+          "project_class_duration_median_ms": 685.0310482978821,
+          "project_input_neighbor_duration_ms": 688.1074981689453,
+          "project_input_neighbor_support": 8,
+          "project_long_completed_median_ms": 2586.1543865203857,
+          "project_long_completed_support": 8,
+          "project_shape_survivor_500ms_support": 64,
+          "project_shape_survivor_500ms_total_median_ms": 811.0906023979187,
+          "source": "deepagents_callback",
+          "tool_call_id": "call_5c684273c1c2480e8b1610ab",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a135bc-b1ea-74d2-b4db-74d799454aa3",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-11211:497274ba2e12:deepagents:000003191",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 3191,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791902921195.1978,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "client_monotonic_ts_ms": 6073184295.764001
+      },
+      "tool_end": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "duration_ms": 165824.83475399017,
+          "exception_type": null,
+          "output_chars": 174,
+          "output_sha256": "211d6e2b81c51a836f6d1453b79a5307f43c897a2ac5ac01cd48f134fb7cbbd9",
+          "source": "deepagents_callback",
+          "status": "error",
+          "tool_call_id": "call_5c684273c1c2480e8b1610ab",
+          "tool_error_class": "command_failed",
+          "tool_name": "execute",
+          "tool_run_id": "01a135bc-b1ea-74d2-b4db-74d799454aa3",
+          "workspace_changed": null,
+          "workspace_digest_after": null,
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-11211:497274ba2e12:deepagents:000003195",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:4edc59b238de24f8",
+        "join_id": null,
+        "kind": "tool_end",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 3195,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 1791903087020.0327,
+        "workflow_id": "deepagents:autonomous:django__django-11211:497274ba2e12",
+        "client_monotonic_ts_ms": 6073350120.598755
+      },
+      "tool_elapsed_at_submit_ms": 9641.991455078125,
+      "tool_remaining_at_submit_ms": 156182.84350585938,
+      "tool_duration_ms": 165824.83475399017
+    }
+  ],
+  "client_monotonic_to_wall_offset_ms": 1785829736899.4338,
+  "helper_sha256": "635ac3909e158dcf123c00c73b67e19033d51394ea64dc451b9983bc1302acf6",
+  "scope": [
+    "Legacy tool callbacks omit context/epoch; V340's empty direct matches are unlinked inputs, not zero active tools.",
+    "Use exact workflow/invocation and tool_run_id with timestamp activity; no ordinal fallback.",
+    "Convert legacy client monotonic timestamps using the same sealed census bridge as V334.",
+    "Only the preselected tail cohort is described; it does not estimate global model accuracy.",
+    "Starts and forecast features are causal inputs; completions remain offline labels."
+  ]
+}
