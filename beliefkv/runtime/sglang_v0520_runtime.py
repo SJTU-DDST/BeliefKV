@@ -336,6 +336,7 @@ class NativeAdmissionRuntime:
         self._h2d_samples: deque[tuple[int, float]] = deque(maxlen=64)
         self._native_service_samples: deque[NativeServiceSample] = deque(maxlen=256)
         self._h2d_service_estimates: dict[tuple[int, str], NativeServiceEstimate | None] = {}
+        self._d2h_service_estimates: dict[tuple[int, str], NativeServiceEstimate | None] = {}
         service_path = os.environ.get("BELIEFKV_TRANSFER_SERVICE_SEED")
         service_sha = os.environ.get("BELIEFKV_TRANSFER_SERVICE_SEED_SHA256")
         if bool(service_path) != bool(service_sha):
@@ -4735,9 +4736,8 @@ class NativeAdmissionRuntime:
             )
             hint = self._live_tool_hint(step.key)
             if hint is not None:
-                service = estimate_native_service(
-                    self._native_service_samples, transfer_bytes, direction="d2h",
-                    shape=pool_shape(full_units, mamba_units),
+                service = self._estimate_d2h_service(
+                    transfer_bytes, shape=pool_shape(full_units, mamba_units),
                 )
                 if service is not None:
                     remaining = hint.remaining_quantile(.1, now_ms=time.monotonic() * 1000.)
@@ -5217,6 +5217,23 @@ class NativeAdmissionRuntime:
             self._tool_prefetch_survival_evidence.move_to_end(hint.key)
             if len(self._tool_prefetch_survival_evidence) > 512:
                 self._tool_prefetch_survival_evidence.popitem(last=False)
+
+    def _estimate_d2h_service(
+        self, size_bytes: int, *, shape: str,
+    ) -> NativeServiceEstimate | None:
+        identity = (size_bytes, shape)
+        cache = self._d2h_service_estimates
+        if identity in cache:
+            self.counts["d2h_service_estimate_reused"] += 1
+            return cache[identity]
+        estimate = estimate_native_service(
+            self._native_service_samples, size_bytes, direction="d2h", shape=shape,
+        )
+        if len(cache) >= 256:
+            cache.clear()
+        cache[identity] = estimate
+        self.counts["d2h_service_estimate_computed"] += 1
+        return estimate
 
     def _estimate_h2d_service(
         self, size_bytes: int, *, shape: str,
@@ -7062,6 +7079,9 @@ class NativeAdmissionRuntime:
                 actual_bytes, float(ack_ms), getattr(commit, "direction"),
                 pool_shape(full, mamba), getattr(commit, "enqueue_to_submit_ms", None),
             ))
+            # Either direction can evict opposite-direction evidence from the
+            # shared bounded history, including an unsupported estimate.
+            self._d2h_service_estimates.clear()
             self._h2d_service_estimates.clear()
         # A burst's deepest node locks its FULL ancestry once; registering its
         # ancestors first would consume the budget without protecting the state.

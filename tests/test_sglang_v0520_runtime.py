@@ -37,6 +37,41 @@ from beliefkv.runtime.sglang_v0520_observer import StaticPoolHeadroomObservation
 from beliefkv.runtime.semantic_report_worker import (
     SEMANTIC_TEXT, SemanticReportInput, SemanticReportReply,
 )
+from beliefkv.runtime.native_transfer_service import NativeServiceSample
+
+@pytest.mark.parametrize("direction", ("h2d", "d2h"))
+def test_transfer_estimate_cache_tracks_new_receipts_and_opposite_direction_eviction(direction):
+    runtime = NativeAdmissionRuntime()
+    opposite = "d2h" if direction == "h2d" else "h2d"
+    estimate = getattr(runtime, f"_estimate_{direction}_service")
+    runtime._native_service_samples.extend(
+        NativeServiceSample(20480, delay, direction=direction, shape="full")
+        for delay in (10., 20.)
+    )
+    assert estimate(20480, shape="full") is None
+    assert estimate(20480, shape="full") is None
+    runtime.on_native_transfer_commit(NS(
+        status="completed", direction=direction, node_ids=(), child_commits=(),
+        actual_bytes=20480, submit_to_ack_ms=30.,
+        num_tokens_by_pool=(("kv", 1),), enqueue_to_submit_ms=0.,
+    ))
+    supported = estimate(20480, shape="full")
+    assert supported is not None and supported.sample_count == 3
+    assert supported.submit_to_ack_p90_ms == 28.
+    assert estimate(20480, shape="full") == supported
+    runtime._native_service_samples.extend(
+        NativeServiceSample(20480, 100., direction=opposite, shape="full")
+        for _ in range(253)
+    )
+    runtime.on_native_transfer_commit(NS(
+        status="completed", direction=opposite, node_ids=(), child_commits=(),
+        actual_bytes=20480, submit_to_ack_ms=100.,
+        num_tokens_by_pool=(("kv", 1),), enqueue_to_submit_ms=0.,
+    ))
+    assert len(runtime._native_service_samples) == 256
+    assert estimate(20480, shape="full") is None
+    runtime.close()
+
 
 def test_waiting_migration_deferral_requires_overlap_and_native_demand_recovery():
     runtime = NativeAdmissionRuntime()
