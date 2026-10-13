@@ -2,12 +2,74 @@
 
 Status date: 2026-10-13.
 
+Current run: V54 cold-started at 21:33:35 CST on port 18459 from 45f7afb,
+after all 156 V53 outcomes and HTML/workspace postprocessing completed.
+V53 retains 155 completed and one incomplete over 9004.454s. Among the 155
+common completed tasks, mean JCT is 2666.636/3024.858s (-11.84%); 88 favor
+predictive and 67 favor native. All-terminal means of 2672.147/3039.851s
+include the incomplete and are not successful-task JCT. Completion throughput
+is 61.969/61.074 workflows/hour, with different output volume (7.781/9.450M
+tokens), trajectories and engine versions. Historical diagnosis does not pass
+quality-controlled or causal acceptance. The goal remains active.
+
+The newer V317 window covers 1800-2100s: 365441/347017 decode request
+steps (+5.31%), with similar visible context (23804/23808 tokens) but different
+extend work (2.157/1.985M tokens). Exclusive instrumented control wall is
+25.221s. Fine work/prefix/neighbor matching supports only 35/22 short samples:
+raw completion 64.738/56.239ms (+8.499ms); broader neighbor matching over
+905/815 samples is also +8.926ms. Clipped worker is 9.032/6.007ms.
+Eighteen short probes show GPU/CPU/own-thread P50 of 36.965/34.546/34.545ms
+and dependency wait 0.0868ms. The short-prefill objective remains unmet;
+retain this unfavorable result alongside the earlier favorable window.
+
+Development commit ea7cff5 chooses candidate-side FULL indexing only when
+global device leaves exceed waiting candidate count by 8x. It preserves
+native-consumed order, exclusions, identity, in-flight and reference checks.
+299 checks and 12 same-input CPU cases pass with identical consumed prefixes.
+Disparate geometries reduce CPU by 57.9-85.3%; ordinary geometries still add
+1.5-6.2%. The rejected equality-based crossover added 61-115% in marginal
+cases; keep its V315 reports and patch. The conservative 8x CPU selection
+rule is not an action gate or proven optimum. Actual frequency and GPU/JCT
+effects remain unmeasured; stage for future cold verification, without
+interrupting V54 solely for this limited optimization.
+
+V314 seals V54's complete 600-900s window: 369578/380722 decode request
+steps (-2.93%) and 35.162s instrumented exclusive control wall. All 1009/1039
+short single-request samples replay graphs. Fine 16-token/prefix/neighbor
+matching supports only 105/110 samples: raw launch-to-processed-completion
+is 57.845/55.452ms (+2.393ms), while clipped worker is 10.719/7.094ms.
+Sparse exact-token cohorts stay unknown. Across 59 short sampled requests,
+GPU/CPU/own-thread layer-span P50 is 34.598/34.219/34.217ms, while dependency
+wait P50 is 0.0865ms. Native counterpart spans are absent; do not infer exact
+kernel costs, writer interference or whole-run improvement.
+
+V312/V314 verify qualified source, actual hint use, identical V53 capacities,
+unchanged engine patch 6938bd10 and health 200. V54's native-prefix feedback
+is unusable: admission reads initialized zero cached_tokens_device before
+prepare_for_extend populates the native tier breakdown. Development fix
+e4c1931 observes first service instead, validating instance, causal key,
+computed breakdown and absence of retraction. Missing evidence remains unknown;
+abort/close stays unserved. 414 checks pass. Keep this observation-only fix
+staged for future cold deployment; do not hot-edit or restart V54 for it.
+
+At independently sealed prefixes ending by 21:59:01, V54 confirms early
+next-request FULL consumption for JOIN 5/0.0828GB and tool 62/6.967GB;
+68 JOIN completion boundaries remain unknown. JOIN/tool ACK-to-first-service
+P90 remains 22.290/51.223s. Continue reducing redundant candidate maintenance
+and planning, and trace capacity/dispatch/consumption gaps. Match actual work
+and retain incomplete outcomes; useful prefetch and complete mean JCT remain
+part of acceptance. V54 keeps all workload and prefill settings frozen.
+
+The following V53 window and candidate qualification notes are historical.
+Both V308 service-estimate reuse and V310 locality hints are deployed in V54.
+
 V310 qualifies session-residency hints for same-causal-group locality ordering.
 Hints explicitly leave input token contents unverified, use a separate 50ms
 cache, and never replace restore-anchor or complete-ready quota checks.
 Unknown hints fall back to native complete reentry inspection; native prefix
 matching, allocation and data dependencies remain authoritative. Add aggregate
-native-prefix disagreement evidence, without extra per-request I/O or gates.
+native-prefix feedback is deferred to first service by the staged V313 fix,
+without extra per-request I/O or gates.
 409 checks pass. Across 36 matching-input CPU int64-index cases with Host,
 mixed and device placement, complete planning CPU falls 4.7-36.5%; this does
 not establish online hint accuracy, useful consumption, GPU or JCT gains.
@@ -16,8 +78,8 @@ and 23.423s instrumented exclusive control wall. V311's 16-token/prefix/
 neighbor matching covers only 94/92 samples: raw launch-to-completion means
 66.841/64.401ms, while clipped worker means are 8.943/6.572ms. Exact-token
 cohorts lack five samples; retain unknown support. Do not claim a complete
-forward ratio or whole-run acceptance. Keep V53 frozen through 156 results
-and postprocessing, then cold-test this candidate in V54; new batching,
+forward ratio or whole-run acceptance. V53 has finished; V54 cold-tests
+the qualified candidate with frozen source. New batching,
 delay and mixed chunk remain deferred. The observed Django-11885 incomplete
 ends on finish_reason=length after repetitive text, with returned children and
 an unexpired deadline; preserve it without a new guard or budget change.
@@ -107,8 +169,10 @@ configuration native comparison instead of treating old V29 as an isolation
 control. No new completion guards or canary stage. Keep the running source
 frozen; qualify and commit important fixes before cold deployment.
 
-Trace-analysis priority, added on October 13: analyze the latest finished
-development run first. V49 is the current complete trace; V50 was stopped at
+Trace-analysis priority, updated on October 13: inspect the latest V54 live
+prefixes and its complete busy windows first; V53 is the latest full trace.
+Use explicit scope/cutoff and retain unknown boundaries. Historical sequence:
+V49 completed, and V50 was stopped at
 16:22:48 CST, retaining 133 completed and 23 unfinished workflows.
 V51 cold-started from 0990b73 at 16:40:12 CST. V53's complete 600–900s window
 is the latest busy-window evidence; V292's post-forward migration candidate
