@@ -561,6 +561,7 @@ class NativeAdmissionRuntime:
         self.context_sessions: dict[str, PrefillCandidateKey] = {}
         self._context_sessions_revision = 0
         self._wait_context_cache = None
+        self._join_parent_cache = None
         self.physical_ledger = PhysicalTransactionLedger()
         self.completed_physical_actions: deque[PhysicalActionCompleted] = deque(
             maxlen=128
@@ -835,6 +836,7 @@ class NativeAdmissionRuntime:
             self._last_model_signature = None
             self.context_sessions.clear()
             self._wait_context_cache = None
+            self._join_parent_cache = None
             self._terminal_child_reclaims.clear()
             self._parent_capacity_handoffs.clear()
             self.tool_wait_hint = None
@@ -1961,8 +1963,16 @@ class NativeAdmissionRuntime:
         })
 
     def _join_parent_key(self, join_id: str) -> PrefillCandidateKey | None:
+        signature = (self.graph.graph_version, self._context_sessions_revision)
+        cached = self._join_parent_cache
+        if cached is None or cached[0] != signature:
+            cached = (signature, {})
+            self._join_parent_cache = cached
+        if join_id in cached[1]:
+            return cached[1][join_id]
         join = self.graph.joins.get(join_id)
         if join is None or not 0 < len(join.member_invocation_ids) <= 8:
+            cached[1][join_id] = None
             return None
         for parent_id in sorted(join.waiter_invocation_ids):
             parent = self.graph.invocations.get(parent_id)
@@ -1973,7 +1983,9 @@ class NativeAdmissionRuntime:
                 and key.session_generation is not None
                 and not self._terminal(key)
             ):
+                cached[1][join_id] = key
                 return key
+        cached[1][join_id] = None
         return None
 
     def _refresh_live_wait_hint(self) -> None:

@@ -99,3 +99,91 @@ def test_graph_failure_discards_cached_wait_candidates():
         runtime.on_events((event(11, RuntimeEventKind.WORKFLOW_START),))
     assert runtime._waiting_context_keys(InvocationState.WAIT_JOIN) == ()
     assert runtime._waiting_context_keys(InvocationState.WAIT_TOOL) == ()
+
+
+def test_join_parent_selection_reuses_sorted_live_waiter(monkeypatch):
+    runtime, _ = waiting_runtime()
+    checked = []
+    original = runtime._terminal
+
+    def terminal(key):
+        checked.append(key)
+        return original(key)
+
+    monkeypatch.setattr(runtime, "_terminal", terminal)
+    first = runtime._join_parent_key("join")
+    assert first.invocation_id == "a"
+    for _ in range(8):
+        assert runtime._join_parent_key("join") is first
+    assert checked == [first]
+
+
+def test_join_parent_negative_cache_is_invalidated_by_native_binding():
+    runtime, requests = waiting_runtime(bind=False)
+    assert runtime._join_parent_key("join") is None
+    version = runtime.graph.graph_version
+    runtime.register_visible_request(requests["z"])
+    assert runtime.graph.graph_version == version
+    assert runtime._join_parent_key("join").invocation_id == "z"
+    runtime.register_visible_request(requests["a"])
+    assert runtime._join_parent_key("join").invocation_id == "a"
+
+
+def test_join_parent_cache_follows_requeued_session_generation():
+    runtime, requests = waiting_runtime()
+    first = runtime._join_parent_key("join")
+    version = runtime.graph.graph_version
+    requests["a"].session_generation = 2
+    runtime.on_requests_requeued((requests["a"],), is_retracted=True)
+    second = runtime._join_parent_key("join")
+    assert runtime.graph.graph_version == version
+    assert first.session_generation == 1
+    assert second.session_generation == 2
+
+
+def test_join_parent_cache_follows_terminal_waiter_and_workflow_events():
+    runtime, _ = waiting_runtime()
+    assert runtime._join_parent_key("join").invocation_id == "a"
+    runtime.on_events((event(11, RuntimeEventKind.RETURN, invocation_id="a"),))
+    assert runtime._join_parent_key("join").invocation_id == "z"
+    runtime.on_events((event(12, RuntimeEventKind.WORKFLOW_END),))
+    assert runtime._join_parent_key("join") is None
+
+
+def test_join_parent_cache_follows_abort_without_graph_change():
+    runtime, _ = waiting_runtime()
+    assert runtime._join_parent_key("join").invocation_id == "a"
+    version = runtime.graph.graph_version
+    runtime.on_abort_request(NS(rid="a", abort_all=False))
+    assert runtime.graph.graph_version == version
+    assert runtime._join_parent_key("join").invocation_id == "z"
+
+
+def test_graph_failure_discards_cached_join_parent():
+    runtime, _ = waiting_runtime()
+    assert runtime._join_parent_key("join") is not None
+    with pytest.raises(CausalGraphError):
+        runtime.on_events((event(11, RuntimeEventKind.WORKFLOW_START),))
+    assert runtime._join_parent_cache is None
+    assert runtime._join_parent_key("join") is None
+
+
+def test_join_parent_cache_follows_context_epoch_advance():
+    runtime, _ = waiting_runtime()
+    assert runtime._join_parent_key("join").invocation_id == "a"
+    runtime.on_events((event(
+        11, RuntimeEventKind.CONTEXT_ADVANCE, invocation_id="a",
+        context_id="ctx-a", context_epoch=1,
+    ),))
+    assert runtime._join_parent_key("join").invocation_id == "z"
+
+
+def test_unknown_join_projection_follows_join_create_and_wait():
+    runtime, _ = waiting_runtime()
+    assert runtime._join_parent_key("later") is None
+    runtime.on_events((
+        event(11, RuntimeEventKind.JOIN_CREATE,
+              join_id="later", member_invocation_ids=("child",)),
+        event(12, RuntimeEventKind.JOIN_WAIT, invocation_id="z", join_id="later"),
+    ))
+    assert runtime._join_parent_key("later").invocation_id == "z"
