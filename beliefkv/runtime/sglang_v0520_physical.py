@@ -149,8 +149,16 @@ def _prefetch_block_detail(candidate: ActionLocalPrefetchCandidate) -> str:
 def inspect_session_h2d_opportunity(
     cache: object, anchors: ContextSessionAnchors,
     *, max_steps: int = 1, fit_current_capacity: bool = False,
+    skip_empty_restore: bool = False,
 ) -> SessionH2DOpportunity:
     headroom = observe_static_full_mamba_headroom(cache)
+    if skip_empty_restore and has_host_backed_missing_copy(cache, anchors) is False:
+        return SessionH2DOpportunity(
+            anchors, headroom, None, 0, 0, None,
+            no_step_reason="no_host_backed_missing_copy",
+            host_backed_full_missing_device_tokens=0,
+            host_backed_mamba_missing_device_nodes=0,
+        )
     capture_failures = []
     candidate = capture_action_local_shadow(
         cache, anchors, for_prefetch=True, include_non_actionable=True,
@@ -289,6 +297,63 @@ def _checkpoint_paths(
                 break
             current = node.parent_id
     return paths, checkpoints
+
+
+def has_host_backed_missing_copy(
+    cache: object, anchors: ContextSessionAnchors,
+) -> bool | None:
+    """Reject empty restores using live ancestry; a positive hint is not a plan."""
+    try:
+        components = dict(anchors.component_leaves)
+        if (
+            len(components) != len(anchors.component_leaves)
+            or set(components) != {0, 2}
+            or not components[0] or not components[2]
+            or sum(map(len, components.values())) > 8
+        ):
+            return None
+        tree = cache.tree_core
+        leaves = {}
+        for component_leaves in components.values():
+            for node_id, created in component_leaves:
+                if type(node_id) is not int or node_id < 0:
+                    return None
+                node = tree.node_by_id(node_id)
+                if (
+                    node.id != node_id
+                    or normalize_native_creation_time(node.creation_time) != created
+                    or node_id in leaves and leaves[node_id] is not node
+                ):
+                    return None
+                leaves[node_id] = node
+        checked = {}
+        for node in leaves.values():
+            path = set()
+            while node is not None:
+                node_id = node.id
+                if (
+                    type(node_id) is not int or node_id < 0 or node_id in path
+                    or tree.node_by_id(node_id) is not node
+                ):
+                    return None
+                prior = checked.get(node_id)
+                if prior is not None:
+                    if prior is not node:
+                        return None
+                    break
+                path.add(node_id)
+                full, state = node.component_data[0], node.component_data[2]
+                if (
+                    (full.value is None or len(full.value) == 0)
+                    and full.host_value is not None and len(full.host_value) > 0
+                    or state.value is None and state.host_value is not None
+                ):
+                    return True
+                checked[node_id] = node
+                node = node.parent
+        return False
+    except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError):
+        return None
 
 
 def missing_prepare_full_prefix_tokens(

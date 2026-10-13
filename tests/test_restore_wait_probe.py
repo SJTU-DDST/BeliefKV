@@ -101,6 +101,9 @@ def test_observed_span_includes_interlayer_dispatch_and_preserves_wait_accountin
     with patch(
         "beliefkv.runtime.restore_wait_probe.time.monotonic",
         side_effect=[1., 1.001, 1.008, 1.010],
+    ), patch(
+        "beliefkv.runtime.restore_wait_probe.time.thread_time_ns",
+        side_effect=[1_000_000, 1_200_000, 4_000_000, 4_500_000],
     ):
         sample.wait(device, 7, 0)
         device.clock += 4.
@@ -113,6 +116,7 @@ def test_observed_span_includes_interlayer_dispatch_and_preserves_wait_accountin
     assert row["gpu_observed_layer_span_ms"] == 15.
     assert abs(row["cpu_observed_layer_span_ms"] - 10.) < 1e-6
     assert abs(row["cpu_layer_wait_enqueue_ms"] - 3.) < 1e-6
+    assert row["thread_cpu_observed_layer_span_ms"] == 3.5
     assert abs(row["layers"][0]["cpu_wait_enqueue_ms"] - 1.) < 1e-6
     assert abs(row["layers"][1]["cpu_wait_enqueue_ms"] - 2.) < 1e-6
     assert "CPU submission gaps" in row["span_semantics"]

@@ -23,10 +23,14 @@ class _Sample:
         start = self.device.Event(enable_timing=True)
         finish = self.device.Event(enable_timing=True)
         cpu_start = time.monotonic()
+        thread_start = time.thread_time_ns()
         start.record(stream=stream)
         loading_event.wait(layer)
         finish.record(stream=stream)
-        self.layers[layer] = (consumer, start, finish, cpu_start, time.monotonic())
+        self.layers[layer] = (
+            consumer, start, finish, cpu_start, time.monotonic(),
+            thread_start, time.thread_time_ns(),
+        )
 
 
 class RestoreWaitProbe:
@@ -82,7 +86,7 @@ class RestoreWaitProbe:
                 "layer": layer, "consumer_index": consumer,
                 "gpu_wait_ms": max(0., start.elapsed_time(finish)),
                 "cpu_wait_enqueue_ms": max(0., (cpu_finish - cpu_start) * 1000.),
-            } for layer, (consumer, start, finish, cpu_start, cpu_finish)
+            } for layer, (consumer, start, finish, cpu_start, cpu_finish, _, _)
                 in sample.layers.items()]
             first, last = next(iter(sample.layers.values())), next(
                 reversed(sample.layers.values()),
@@ -93,12 +97,15 @@ class RestoreWaitProbe:
                 "gpu_layer_dependency_wait_max_ms": max(row["gpu_wait_ms"] for row in layers),
                 "gpu_observed_layer_span_ms": max(0., first[1].elapsed_time(last[2])),
                 "cpu_observed_layer_span_ms": max(0., (last[4] - first[3]) * 1000.),
+                "thread_cpu_observed_layer_span_ms": max(0., (last[6] - first[5]) / 1e6),
                 "cpu_layer_wait_enqueue_ms": sum(row["cpu_wait_enqueue_ms"] for row in layers),
                 "span_semantics": (
                     "first observed layer-wait start through last observed wait end; "
                     "GPU span includes kernels and CPU submission gaps between layers; "
                     "CPU span includes dispatch between waits; neither is a complete "
-                    "forward or exclusive kernel duration"
+                    "forward or exclusive kernel duration. Thread CPU span excludes "
+                    "other threads and time not scheduled; its wall-clock difference "
+                    "does not identify GIL contention or blocking by itself"
                 ),
             })
             self.counts["completed_samples"] += 1

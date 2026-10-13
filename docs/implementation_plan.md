@@ -2,6 +2,18 @@
 
 Status date: 2026-10-13.
 
+V299 qualifies live, read-only empty-restore hints for operational JOIN/tool
+and semantic-target checks. A negative hint skips detailed closure allocation;
+positive or unknown evidence retains complete planning and native enqueue
+validation. Detailed opportunity audit remains on the full path. 662 checks
+pass; identical CPU fixtures reduce empty-path cost by 77-91% but add 6-38us
+for positive targets. Cold V53 must evaluate actual control cost, short-prefill
+execution and useful prefetch, not infer GPU speedup from this microbenchmark.
+Sampled layer probes add thread CPU spans to distinguish own CPU from wall time;
+their difference does not identify GIL stalls. V298 records 461 GIL samples and
+119 errors after the busy window; background writer interference remains
+unquantified, so no writer suppression has been added.
+
 ## Current Goal Revision
 
 With fixed tasks, arrivals, model and physical capacities, reduce mean

@@ -1,0 +1,481 @@
+{
+  "scope": "Identical synthetic CPU tree fixtures; not a workload-weighted cost or throughput gain.",
+  "results": [
+    {
+      "depth": 4,
+      "case": "resident",
+      "planned_extents": 0,
+      "iterations_per_variant": 200,
+      "baseline": {
+        "wall": {
+          "mean_ms": 0.105313695,
+          "p50_ms": 0.10370299999999999,
+          "max_ms": 0.202763
+        },
+        "cpu": {
+          "mean_ms": 0.104313555,
+          "p50_ms": 0.102827,
+          "max_ms": 0.201636
+        }
+      },
+      "optimized": {
+        "wall": {
+          "mean_ms": 0.02427105,
+          "p50_ms": 0.0249825,
+          "max_ms": 0.042329
+        },
+        "cpu": {
+          "mean_ms": 0.023395415,
+          "p50_ms": 0.024153,
+          "max_ms": 0.038352
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.7757202791142532
+    },
+    {
+      "depth": 4,
+      "case": "unbacked",
+      "planned_extents": 0,
+      "iterations_per_variant": 200,
+      "baseline": {
+        "wall": {
+          "mean_ms": 0.099509915,
+          "p50_ms": 0.0991035,
+          "max_ms": 0.13057
+        },
+        "cpu": {
+          "mean_ms": 0.098548245,
+          "p50_ms": 0.0981085,
+          "max_ms": 0.129575
+        }
+      },
+      "optimized": {
+        "wall": {
+          "mean_ms": 0.023244395,
+          "p50_ms": 0.0243615,
+          "max_ms": 0.028511
+        },
+        "cpu": {
+          "mean_ms": 0.02239278,
+          "p50_ms": 0.023504999999999998,
+          "max_ms": 0.027244
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.7727734268631572
+    },
+    {
+      "depth": 4,
+      "case": "full_host_only",
+      "planned_extents": 1,
+      "iterations_per_variant": 200,
+      "baseline": {
+        "wall": {
+          "mean_ms": 0.10846213,
+          "p50_ms": 0.10804549999999999,
+          "max_ms": 0.140759
+        },
+        "cpu": {
+          "mean_ms": 0.107507745,
+          "p50_ms": 0.10709650000000001,
+          "max_ms": 0.139724
+        }
+      },
+      "optimized": {
+        "wall": {
+          "mean_ms": 0.116891735,
+          "p50_ms": 0.116327,
+          "max_ms": 0.125992
+        },
+        "cpu": {
+          "mean_ms": 0.11590431,
+          "p50_ms": 0.1153605,
+          "max_ms": 0.124501
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.07810195442198142
+    },
+    {
+      "depth": 4,
+      "case": "mamba_host_only",
+      "planned_extents": 1,
+      "iterations_per_variant": 200,
+      "baseline": {
+        "wall": {
+          "mean_ms": 0.11012578,
+          "p50_ms": 0.10984,
+          "max_ms": 0.118697
+        },
+        "cpu": {
+          "mean_ms": 0.109149355,
+          "p50_ms": 0.1088825,
+          "max_ms": 0.117662
+        }
+      },
+      "optimized": {
+        "wall": {
+          "mean_ms": 0.115935505,
+          "p50_ms": 0.11544,
+          "max_ms": 0.135441
+        },
+        "cpu": {
+          "mean_ms": 0.114957155,
+          "p50_ms": 0.114506,
+          "max_ms": 0.134197
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.053209659369952256
+    },
+    {
+      "depth": 4,
+      "case": "unknown_anchor",
+      "planned_extents": 0,
+      "iterations_per_variant": 200,
+      "baseline": {
+        "wall": {
+          "mean_ms": 0.061886825,
+          "p50_ms": 0.061609,
+          "max_ms": 0.068808
+        },
+        "cpu": {
+          "mean_ms": 0.06112299,
+          "p50_ms": 0.060912999999999995,
+          "max_ms": 0.067943
+        }
+      },
+      "optimized": {
+        "wall": {
+          "mean_ms": 0.063692365,
+          "p50_ms": 0.0631555,
+          "max_ms": 0.078445
+        },
+        "cpu": {
+          "mean_ms": 0.062920585,
+          "p50_ms": 0.062436,
+          "max_ms": 0.077046
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.0294094742420159
+    },
+    {
+      "depth": 24,
+      "case": "resident",
+      "planned_extents": 0,
+      "iterations_per_variant": 200,
+      "baseline": {
+        "wall": {
+          "mean_ms": 0.27883001,
+          "p50_ms": 0.27802099999999996,
+          "max_ms": 0.309026
+        },
+        "cpu": {
+          "mean_ms": 0.277812595,
+          "p50_ms": 0.27705250000000003,
+          "max_ms": 0.308037
+        }
+      },
+      "optimized": {
+        "wall": {
+          "mean_ms": 0.034913425,
+          "p50_ms": 0.0365715,
+          "max_ms": 0.044873
+        },
+        "cpu": {
+          "mean_ms": 0.034024,
+          "p50_ms": 0.0356325,
+          "max_ms": 0.043676
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.877528950766253
+    },
+    {
+      "depth": 24,
+      "case": "unbacked",
+      "planned_extents": 0,
+      "iterations_per_variant": 200,
+      "baseline": {
+        "wall": {
+          "mean_ms": 0.26347474,
+          "p50_ms": 0.26376449999999996,
+          "max_ms": 0.28244
+        },
+        "cpu": {
+          "mean_ms": 0.262490025,
+          "p50_ms": 0.26258250000000005,
+          "max_ms": 0.281471
+        }
+      },
+      "optimized": {
+        "wall": {
+          "mean_ms": 0.03491852,
+          "p50_ms": 0.036129499999999995,
+          "max_ms": 0.042556
+        },
+        "cpu": {
+          "mean_ms": 0.034056395,
+          "p50_ms": 0.035256499999999996,
+          "max_ms": 0.041355
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.8702564221249931
+    },
+    {
+      "depth": 24,
+      "case": "full_host_only",
+      "planned_extents": 1,
+      "iterations_per_variant": 200,
+      "baseline": {
+        "wall": {
+          "mean_ms": 0.28825744,
+          "p50_ms": 0.2878525,
+          "max_ms": 0.309869
+        },
+        "cpu": {
+          "mean_ms": 0.28726289,
+          "p50_ms": 0.28674350000000004,
+          "max_ms": 0.309017
+        }
+      },
+      "optimized": {
+        "wall": {
+          "mean_ms": 0.308132885,
+          "p50_ms": 0.3065165,
+          "max_ms": 0.449765
+        },
+        "cpu": {
+          "mean_ms": 0.30712763,
+          "p50_ms": 0.305515,
+          "max_ms": 0.448426
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.06915177940318018
+    },
+    {
+      "depth": 24,
+      "case": "mamba_host_only",
+      "planned_extents": 1,
+      "iterations_per_variant": 200,
+      "baseline": {
+        "wall": {
+          "mean_ms": 0.29095741,
+          "p50_ms": 0.2906795,
+          "max_ms": 0.30389
+        },
+        "cpu": {
+          "mean_ms": 0.289948145,
+          "p50_ms": 0.289597,
+          "max_ms": 0.302999
+        }
+      },
+      "optimized": {
+        "wall": {
+          "mean_ms": 0.296867115,
+          "p50_ms": 0.2964365,
+          "max_ms": 0.315116
+        },
+        "cpu": {
+          "mean_ms": 0.295871295,
+          "p50_ms": 0.29549499999999995,
+          "max_ms": 0.314191
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.020428307965205228
+    },
+    {
+      "depth": 24,
+      "case": "unknown_anchor",
+      "planned_extents": 0,
+      "iterations_per_variant": 200,
+      "baseline": {
+        "wall": {
+          "mean_ms": 0.20889561,
+          "p50_ms": 0.2085375,
+          "max_ms": 0.222147
+        },
+        "cpu": {
+          "mean_ms": 0.20808597,
+          "p50_ms": 0.207683,
+          "max_ms": 0.22133
+        }
+      },
+      "optimized": {
+        "wall": {
+          "mean_ms": 0.21052792,
+          "p50_ms": 0.2104625,
+          "max_ms": 0.228335
+        },
+        "cpu": {
+          "mean_ms": 0.209698675,
+          "p50_ms": 0.209587,
+          "max_ms": 0.223195
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.007750186137008619
+    },
+    {
+      "depth": 64,
+      "case": "resident",
+      "planned_extents": 0,
+      "iterations_per_variant": 200,
+      "baseline": {
+        "wall": {
+          "mean_ms": 0.613276925,
+          "p50_ms": 0.6129135,
+          "max_ms": 0.637673
+        },
+        "cpu": {
+          "mean_ms": 0.6122098,
+          "p50_ms": 0.6119615,
+          "max_ms": 0.63639
+        }
+      },
+      "optimized": {
+        "wall": {
+          "mean_ms": 0.054329525000000004,
+          "p50_ms": 0.055938,
+          "max_ms": 0.06715
+        },
+        "cpu": {
+          "mean_ms": 0.053415385,
+          "p50_ms": 0.055053500000000005,
+          "max_ms": 0.0662
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.9127498694075136
+    },
+    {
+      "depth": 64,
+      "case": "unbacked",
+      "planned_extents": 0,
+      "iterations_per_variant": 200,
+      "baseline": {
+        "wall": {
+          "mean_ms": 0.581055745,
+          "p50_ms": 0.580813,
+          "max_ms": 0.605964
+        },
+        "cpu": {
+          "mean_ms": 0.580050715,
+          "p50_ms": 0.5797865,
+          "max_ms": 0.604913
+        }
+      },
+      "optimized": {
+        "wall": {
+          "mean_ms": 0.05429883,
+          "p50_ms": 0.0561385,
+          "max_ms": 0.063507
+        },
+        "cpu": {
+          "mean_ms": 0.05344061,
+          "p50_ms": 0.0552545,
+          "max_ms": 0.062523
+        }
+      },
+      "thread_cpu_reduction_fraction": 0.9078690731378549
+    },
+    {
+      "depth": 64,
+      "case": "full_host_only",
+      "planned_extents": 1,
+      "iterations_per_variant": 200,
+      "baseline": {
+        "wall": {
+          "mean_ms": 0.62215801,
+          "p50_ms": 0.6218945,
+          "max_ms": 0.650213
+        },
+        "cpu": {
+          "mean_ms": 0.621091015,
+          "p50_ms": 0.6208480000000001,
+          "max_ms": 0.648992
+        }
+      },
+      "optimized": {
+        "wall": {
+          "mean_ms": 0.659881575,
+          "p50_ms": 0.6603905,
+          "max_ms": 0.677125
+        },
+        "cpu": {
+          "mean_ms": 0.658772635,
+          "p50_ms": 0.6592709999999999,
+          "max_ms": 0.676138
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.06067004527508746
+    },
+    {
+      "depth": 64,
+      "case": "mamba_host_only",
+      "planned_extents": 1,
+      "iterations_per_variant": 200,
+      "baseline": {
+        "wall": {
+          "mean_ms": 0.630306635,
+          "p50_ms": 0.629928,
+          "max_ms": 0.657313
+        },
+        "cpu": {
+          "mean_ms": 0.629233595,
+          "p50_ms": 0.6287484999999999,
+          "max_ms": 0.656339
+        }
+      },
+      "optimized": {
+        "wall": {
+          "mean_ms": 0.636666525,
+          "p50_ms": 0.6355415,
+          "max_ms": 0.733852
+        },
+        "cpu": {
+          "mean_ms": 0.6356329,
+          "p50_ms": 0.634546,
+          "max_ms": 0.732673
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.010169998949277392
+    },
+    {
+      "depth": 64,
+      "case": "unknown_anchor",
+      "planned_extents": 0,
+      "iterations_per_variant": 200,
+      "baseline": {
+        "wall": {
+          "mean_ms": 0.48193109,
+          "p50_ms": 0.481593,
+          "max_ms": 0.572904
+        },
+        "cpu": {
+          "mean_ms": 0.481074705,
+          "p50_ms": 0.48073049999999995,
+          "max_ms": 0.571898
+        }
+      },
+      "optimized": {
+        "wall": {
+          "mean_ms": 0.48711542,
+          "p50_ms": 0.4857765,
+          "max_ms": 0.640763
+        },
+        "cpu": {
+          "mean_ms": 0.486224335,
+          "p50_ms": 0.48493949999999997,
+          "max_ms": 0.639575
+        }
+      },
+      "thread_cpu_reduction_fraction": -0.010704428951424427
+    }
+  ],
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_physical.py": "f0627bb4592a88ab6c4937c6f5e0f85419d1236566cc2c3e94ffdcc1f869e23b",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "18ef36d362c1de34039476365629ce9601873646271e36d032b5296bcc52ef8c",
+    "scripts/benchmark_empty_restore_hint.py": "715c109ac0b8591f0a1ff6c2c94277623f2da078f2ddd2d06a35fdfac9b7b736"
+  },
+  "semantics": [
+    "Alternating measurement order; live host/device fields read on every call.",
+    "A positive hint and unknown provenance retain complete planning and validation.",
+    "A negative hint leaves unbacked-node diagnostics unknown; detailed audit still uses the complete path.",
+    "No extrapolation to GPU execution, short-prefill forward time or end-to-end JCT."
+  ]
+}

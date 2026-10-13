@@ -1338,6 +1338,7 @@ class NativeAdmissionRuntime:
             return cached[1]
         observation = self.inspect_context_h2d_opportunity(
             context_id=key.context_id, context_epoch=key.context_epoch,
+            skip_empty_restore=True,
         )
         ready = observation is not None and observation.step is not None
         self._semantic_target_cache[key] = (now_ms + 100., ready)
@@ -3613,6 +3614,7 @@ class NativeAdmissionRuntime:
         admission_candidate: bool = False,
         max_steps: int = 1,
         fit_current_capacity: bool = False,
+        skip_empty_restore: bool = False,
     ) -> SessionH2DOpportunity | None:
         """Read action-local session/allocator evidence; never dispatch H2D."""
         cache = self._native_cache
@@ -3643,6 +3645,7 @@ class NativeAdmissionRuntime:
             inspect_session_h2d_opportunity(
                 cache, anchors, max_steps=max_steps,
                 fit_current_capacity=fit_current_capacity,
+                skip_empty_restore=skip_empty_restore,
             )
             if anchors is not None else None
         )
@@ -3663,7 +3666,10 @@ class NativeAdmissionRuntime:
             # Apply both pool budgets together below; a missing state slot
             # need not discard an otherwise fitting FULL checkpoint extent.
             fit_current_capacity=False,
+            skip_empty_restore=True,
         )
+        if getattr(opportunity, "no_step_reason", None) == "no_host_backed_missing_copy":
+            self.counts["wait_prefetch_empty_restore_shortcut"] += 1
         if opportunity is None or opportunity.step is None:
             return opportunity
         candidate = getattr(opportunity, "candidate", None)

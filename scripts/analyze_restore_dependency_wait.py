@@ -99,6 +99,7 @@ def analyze(report_path: Path, arm: str) -> dict:
             "sampled_max_layer_dependency_wait_ms": probe["gpu_layer_dependency_wait_max_ms"],
             "gpu_observed_layer_span_ms": probe.get("gpu_observed_layer_span_ms"),
             "cpu_observed_layer_span_ms": probe.get("cpu_observed_layer_span_ms"),
+            "thread_cpu_observed_layer_span_ms": probe.get("thread_cpu_observed_layer_span_ms"),
             "cpu_layer_wait_enqueue_ms": probe.get("cpu_layer_wait_enqueue_ms"),
         })
     short = [
@@ -137,6 +138,7 @@ def analyze(report_path: Path, arm: str) -> dict:
                 ])
                 for field in (
                     "gpu_observed_layer_span_ms", "cpu_observed_layer_span_ms",
+                    "thread_cpu_observed_layer_span_ms",
                     "cpu_layer_wait_enqueue_ms",
                 )
             }
@@ -154,6 +156,7 @@ def analyze(report_path: Path, arm: str) -> dict:
             "Small sampled waits do not establish that every speculative dependency is correctly scoped.",
             "Missing span fields in older traces stay unknown, not zero.",
             "GPU observed-layer spans include kernels and CPU submission gaps between waits, not a full forward.",
+            "Thread CPU spans exclude other threads and unscheduled time; wall minus CPU is not a GIL attribution.",
         ],
     }
 

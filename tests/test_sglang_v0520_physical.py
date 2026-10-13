@@ -18,6 +18,7 @@ from beliefkv.runtime.sglang_v0520_physical import (
     PhysicalTransactionLedger,
     PrefetchLoadStep,
     capture_action_local_shadow,
+    has_host_backed_missing_copy,
     inspect_session_h2d_opportunity,
     missing_prepare_full_prefix_tokens,
     next_prefetch_gpu_step,
@@ -104,6 +105,80 @@ def test_unobservable_prepare_prefix_hint_retains_full_validation_path(change):
 def test_prepare_prefix_hint_respects_ancestry_bound():
     cache, anchors, _ = prepare_prefix_fixture()
     assert missing_prepare_full_prefix_tokens(cache, anchors, max_nodes=3) is None
+
+
+@pytest.mark.parametrize("node_id", (1, 2, 3))
+@pytest.mark.parametrize("pool", (0, 2))
+def test_missing_copy_hint_detects_live_host_only_extents_and_state(node_id, pool):
+    cache, anchors, nodes = prepare_prefix_fixture(backed=True)
+    assert has_host_backed_missing_copy(cache, anchors) is False
+    data = nodes[node_id].component_data[pool]
+    data.host_value = data.value
+    data.value = None
+    assert has_host_backed_missing_copy(cache, anchors) is True
+    data.value = data.host_value
+    assert has_host_backed_missing_copy(cache, anchors) is False
+    data.value = None
+    data.host_value = None
+    assert has_host_backed_missing_copy(cache, anchors) is False
+
+
+@pytest.mark.parametrize("second_leaf", (False, True))
+@pytest.mark.parametrize("input_tokens", (0, 2, 4, 8))
+@pytest.mark.parametrize("full_missing", (False, True))
+@pytest.mark.parametrize("mamba_missing", (False, True))
+def test_missing_copy_shortcut_never_skips_a_complete_restore_plan(
+    second_leaf, input_tokens, full_missing, mamba_missing,
+):
+    cache, anchors, nodes = prepare_prefix_fixture(
+        backed=True, second_leaf=second_leaf, input_tokens=input_tokens,
+    )
+    for node in nodes.values():
+        for pool, missing in ((0, full_missing), (2, mamba_missing)):
+            data = node.component_data[pool]
+            data.host_value = data.value
+            if missing:
+                data.value = None
+    normal = inspect_session_h2d_opportunity(cache, anchors, max_steps=8)
+    optimized = inspect_session_h2d_opportunity(
+        cache, anchors, max_steps=8, skip_empty_restore=True,
+    )
+    assert optimized.steps == normal.steps
+    if normal.step is not None:
+        assert optimized == normal
+        assert has_host_backed_missing_copy(cache, anchors) is True
+
+
+@pytest.mark.parametrize("change", (
+    lambda anchors, nodes: replace(anchors, component_leaves=((0, ((3, 5.),)), (2, ((3, 5.),)))),
+    lambda anchors, nodes: (setattr(nodes[1], "parent", nodes[3]), anchors)[1],
+    lambda anchors, nodes: (setattr(nodes[2], "component_data", {}), anchors)[1],
+    lambda anchors, nodes: replace(anchors, component_leaves=((0, ()), (2, ((3, 4.),)))),
+))
+def test_unknown_missing_copy_hint_uses_authoritative_snapshot(change):
+    cache, anchors, nodes = prepare_prefix_fixture(backed=True)
+    anchors = change(anchors, nodes)
+    assert has_host_backed_missing_copy(cache, anchors) is None
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.capture_action_local_shadow",
+        return_value=None,
+    ) as capture:
+        result = inspect_session_h2d_opportunity(cache, anchors, skip_empty_restore=True)
+    capture.assert_called_once()
+    assert result.no_step_reason == "closure_unobservable"
+
+
+def test_empty_restore_shortcut_skips_summary_allocation_without_hiding_unknown_detail():
+    cache, anchors, _ = prepare_prefix_fixture(backed=True, second_leaf=True)
+    with patch(
+        "beliefkv.runtime.sglang_v0520_physical.capture_action_local_shadow",
+        side_effect=AssertionError("empty restore should not allocate a detailed closure"),
+    ):
+        result = inspect_session_h2d_opportunity(cache, anchors, skip_empty_restore=True)
+    assert result.no_step_reason == "no_host_backed_missing_copy"
+    assert result.host_backed_full_missing_device_tokens == 0
+    assert result.unbacked_full_nodes is None
+    assert result.candidate is None
 
 
 @pytest.mark.parametrize("enum_pool_name", (False, True))

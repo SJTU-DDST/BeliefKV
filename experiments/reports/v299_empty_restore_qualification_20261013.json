@@ -1,0 +1,52 @@
+{
+  "qualified_at_local": "2026-10-13T18:49:57.743093+08:00",
+  "status": "qualified_for_cold_development",
+  "base_revision": "a904c8f6d431252c93db3772d8711ff97f83d9bf",
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_physical.py": "f0627bb4592a88ab6c4937c6f5e0f85419d1236566cc2c3e94ffdcc1f869e23b",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "18ef36d362c1de34039476365629ce9601873646271e36d032b5296bcc52ef8c",
+    "beliefkv/runtime/restore_wait_probe.py": "baaa1ba9eb273d31fdeef7a8fdadd60cff9d6c2bcbd73c49fed145517d26a6fb",
+    "scripts/benchmark_empty_restore_hint.py": "715c109ac0b8591f0a1ff6c2c94277623f2da078f2ddd2d06a35fdfac9b7b736",
+    "scripts/analyze_restore_dependency_wait.py": "91046c2a32f40a3f486348f78263716b02730b65538905110e4a552cf7d42430",
+    "tests/test_sglang_v0520_physical.py": "13e9075c510df08efdc3d787e1d3816fd0505e33b16392a0ab3ce87846813afd",
+    "tests/test_sglang_v0520_runtime.py": "7b45b039a49effe7e279c09c4a9ebfe7fe02b84b1fc52d32b4c2e532e99a58da",
+    "tests/test_restore_wait_probe.py": "1dd1e766baf6c508377fe5a305628337cf3df37b976df93d4c4d34d54edfdbe7"
+  },
+  "canonical_patch_sha256": "6938bd10ff393dc89c9aeb5ed14da2385d5d95e00529113e12eced93cca5fff0",
+  "engine_delta": "none; runtime and sampled CPU observation only",
+  "checks": [
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v299_empty_restore_runtime_junit_initial_20261013.xml",
+      "sha256": "4791eea68dbf68857a74ef09da8b97517b832c12e6d211880fbaa077a8567431",
+      "tests": "445",
+      "failures": "12",
+      "errors": "0",
+      "skipped": "0",
+      "time": "4.831"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v299_empty_restore_runtime_junit_20261013.xml",
+      "sha256": "5d5d043e819ad2b19aaac9e248d3095a88e36c72d6972e1d091ca29d505d2bb5",
+      "tests": "662",
+      "failures": "0",
+      "errors": "0",
+      "skipped": "0",
+      "time": "3.607"
+    }
+  ],
+  "initial_failures": "Eleven duck-typed fixture observations omitted the optional no_step_reason field; runtime now treats absent detail as unknown. One exact mock-call contract was updated for skip_empty_restore=True. Initial evidence is retained.",
+  "cpu_benchmark": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v299_empty_restore_cpu_20261013.json",
+    "sha256": "0015c90e4819f8959f5ef1677593032293111f8ff3112cad5617e4f0100bf221"
+  },
+  "constraints": [
+    "Every empty hint reads live native fields and proves absence of host-backed missing copies.",
+    "Positive or unknown hints still require complete planning and native enqueue validation.",
+    "Detailed opportunity audit remains unchanged; unbacked diagnostics stay unknown in compact evidence.",
+    "No new guard, canary, output/token limit or workload configuration.",
+    "Thread CPU spans use existing low-frequency layer probes; no added CUDA event or synchronization.",
+    "CPU reductions are not short-prefill forward, throughput or JCT gains; V53 must validate them."
+  ],
+  "helper_sha256": "2ce6b8ddfbda1e20741ce5d7e4e9ff2e14a98ea377daa1a74b88e02fb98c6a7c",
+  "helper_utf8_source": "\"\"\"Seal the empty-restore candidate's correctness and bounded CPU evidence.\"\"\"\n\nfrom datetime import datetime\nimport hashlib\nimport json\nfrom pathlib import Path\nimport subprocess\nimport xml.etree.ElementTree as ET\n\n\nROOT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nOUTPUT = ROOT / \"experiments/reports/v299_empty_restore_qualification_20261013.json\"\nif OUTPUT.exists():\n    raise ValueError(\"preserve qualification\")\nfiles = (\n    \"beliefkv/runtime/sglang_v0520_physical.py\",\n    \"beliefkv/runtime/sglang_v0520_runtime.py\",\n    \"beliefkv/runtime/restore_wait_probe.py\",\n    \"scripts/benchmark_empty_restore_hint.py\",\n    \"scripts/analyze_restore_dependency_wait.py\",\n    \"tests/test_sglang_v0520_physical.py\",\n    \"tests/test_sglang_v0520_runtime.py\",\n    \"tests/test_restore_wait_probe.py\",\n)\ntests = []\nfor name in (\n    \"v299_empty_restore_runtime_junit_initial_20261013.xml\",\n    \"v299_empty_restore_runtime_junit_20261013.xml\",\n):\n    path = ROOT / \"experiments/reports\" / name\n    suite, = ET.parse(path).getroot().findall(\"testsuite\")\n    tests.append({\n        \"path\": str(path), \"sha256\": hashlib.sha256(path.read_bytes()).hexdigest(),\n        **{key: suite.get(key) for key in (\"tests\", \"failures\", \"errors\", \"skipped\", \"time\")},\n    })\nif tests[-1][\"tests\"] != \"662\" or tests[-1][\"failures\"] != \"0\" or tests[-1][\"errors\"] != \"0\":\n    raise ValueError(\"candidate checks differ\")\nbenchmark = ROOT / \"experiments/reports/v299_empty_restore_cpu_20261013.json\"\nevidence = json.loads(benchmark.read_bytes())\nfor name, expected in evidence[\"source_sha256\"].items():\n    if hashlib.sha256((ROOT / name).read_bytes()).hexdigest() != expected:\n        raise ValueError(f\"benchmark source changed: {name}\")\npatch = ROOT / \"patches/sglang-v0.5.20-beliefkv-staging.patch\"\nrow = {\n    \"qualified_at_local\": datetime.now().astimezone().isoformat(),\n    \"status\": \"qualified_for_cold_development\",\n    \"base_revision\": subprocess.check_output([\"git\", \"rev-parse\", \"HEAD\"], cwd=ROOT, text=True).strip(),\n    \"source_sha256\": {name: hashlib.sha256((ROOT / name).read_bytes()).hexdigest() for name in files},\n    \"canonical_patch_sha256\": hashlib.sha256(patch.read_bytes()).hexdigest(),\n    \"engine_delta\": \"none; runtime and sampled CPU observation only\",\n    \"checks\": tests,\n    \"initial_failures\": (\n        \"Eleven duck-typed fixture observations omitted the optional no_step_reason field; \"\n        \"runtime now treats absent detail as unknown. One exact mock-call contract was \"\n        \"updated for skip_empty_restore=True. Initial evidence is retained.\"\n    ),\n    \"cpu_benchmark\": {\"path\": str(benchmark), \"sha256\": hashlib.sha256(benchmark.read_bytes()).hexdigest()},\n    \"constraints\": [\n        \"Every empty hint reads live native fields and proves absence of host-backed missing copies.\",\n        \"Positive or unknown hints still require complete planning and native enqueue validation.\",\n        \"Detailed opportunity audit remains unchanged; unbacked diagnostics stay unknown in compact evidence.\",\n        \"No new guard, canary, output/token limit or workload configuration.\",\n        \"Thread CPU spans use existing low-frequency layer probes; no added CUDA event or synchronization.\",\n        \"CPU reductions are not short-prefill forward, throughput or JCT gains; V53 must validate them.\",\n    ],\n    \"helper_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n    \"helper_utf8_source\": Path(__file__).read_text(),\n}\nOUTPUT.write_text(json.dumps(row, indent=2, allow_nan=False) + \"\\n\")\nprint(json.dumps({key: row[key] for key in (\"status\", \"checks\", \"canonical_patch_sha256\")}, indent=2))\n"
+}
