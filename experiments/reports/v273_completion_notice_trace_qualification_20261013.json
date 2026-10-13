@@ -1,0 +1,92 @@
+{
+  "created_at": "2026-10-13T14:26:02.547712+08:00",
+  "scope": "CPU identity/trace behavior only; no GPU/JCT benefit inferred.",
+  "baseline_commit": "02fd87c764d8f66997e02e5fe517e36874d770ce",
+  "baseline_source_sha256": "a4ee3adddcd3df466b40be8d0818dce1a282958eae8d15f78d893ed5c89d48c2",
+  "source_sha256": "a00d2d41ab7d58e5b29c6f972a146f41aedb210a130724fdff116423d727916a",
+  "test_sha256": "5376b8915593a69001544f4bf2e96a89899c35fe106b1715c33731b7c30f89db",
+  "helper_path": "scripts/qualify_completion_notice_trace.py",
+  "helper_sha256": "7f6a96d048f6092b807efc179c42ce275e585d3998d7d9ab3b1c40d26aa471e3",
+  "junit_sha256": "f4beda1389ca78dcc7668825471a0bd4bcbdf6056ee54df722754a68faac975d",
+  "test_suites": [
+    {
+      "name": "pytest",
+      "errors": "0",
+      "failures": "0",
+      "skipped": "0",
+      "tests": "58",
+      "time": "2.765",
+      "timestamp": "2026-10-13T14:19:48.484816+08:00",
+      "hostname": "ddst-12"
+    }
+  ],
+  "cases": {
+    "queued": {
+      "baseline": {
+        "test_failure": null,
+        "trace_stage_events": 1,
+        "control_stage_events": 1,
+        "recorded_estimates": [
+          256
+        ]
+      },
+      "current": {
+        "test_failure": null,
+        "trace_stage_events": 1,
+        "control_stage_events": 1,
+        "recorded_estimates": [
+          256
+        ]
+      }
+    },
+    "trace_only": {
+      "baseline": {
+        "test_failure": "AssertionError",
+        "trace_stage_events": 0,
+        "control_stage_events": 0,
+        "recorded_estimates": []
+      },
+      "current": {
+        "test_failure": null,
+        "trace_stage_events": 1,
+        "control_stage_events": 0,
+        "recorded_estimates": [
+          256
+        ]
+      }
+    },
+    "same_sink": {
+      "baseline": {
+        "test_failure": "AssertionError",
+        "trace_stage_events": 0,
+        "control_stage_events": 0,
+        "recorded_estimates": []
+      },
+      "current": {
+        "test_failure": null,
+        "trace_stage_events": 1,
+        "control_stage_events": 0,
+        "recorded_estimates": [
+          256
+        ]
+      }
+    },
+    "direct": {
+      "baseline": {
+        "test_failure": "AssertionError",
+        "trace_stage_events": 0,
+        "control_stage_events": 0,
+        "recorded_estimates": []
+      },
+      "current": {
+        "test_failure": null,
+        "trace_stage_events": 1,
+        "control_stage_events": 0,
+        "recorded_estimates": [
+          256
+        ]
+      }
+    }
+  },
+  "safety_scope": "One local valid-stage trace event for a successful bound child announcement. Only the existing queued sink receives asynchronous control; direct/trace-only modes gain no scheduling authorization. No agent prompt, completion guard, token budget, model invocation or high-frequency semantic telemetry is changed."
+}

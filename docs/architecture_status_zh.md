@@ -9,10 +9,11 @@
 成立的前提。开发阶段只跑predictive并复用固定V29 native，最终
 再做同版本重复对照及策略消融。完整目标与验收见
 `beliefkv_design.md`第1.1节和`implementation_plan.md`开头。
-目标未达成，V49继续完整采集；按最新用户要求，V50冷启动改用
-包含全部已提交优化的最新代码。
+目标未达成。V49已完成全156任务采集和HTML/workspace收尾；
+V50于2026-10-13 14:20:50 CST以最新冻结代码02fd87c冷启动，
+同时验证Host回收减负和收尾准入修复，目前只运行predictive。
 
-v271已完成关键JOIN child准入候选修复，尚未部署到运行轮次。
+v271已完成关键JOIN child准入候选修复，现已部署到V50。
 通知epoch N和报告请求epoch N+1同批到达时，图会先应用全批，
 此前可能留下通知历史却漏掉收尾阶段。现在仅为同批新通知绑定的
 确切下一请求补建仍有效的最后child阶段；后续工具或RETURN仍
@@ -30,8 +31,8 @@ v271已完成关键JOIN child准入候选修复，尚未部署到运行轮次。
 约束，所有用例没有物理动作。复现脚本为
 `scripts/qualify_final_report_admission.py`，源码、测试与JUnit哈希
 绑定在`experiments/reports/v271_final_admission_qualification_20261013.json`。
-这是CPU行为证据，未证明GPU吞吐或JCT改善。V49源码保持；
-最新用户要求V50直接验证最新代码，因此V50同时包含82b42d5
+这是CPU行为证据，未证明GPU吞吐或JCT改善。V49以冻结源码
+完成；最新用户要求V50直接验证最新代码，因此V50同时包含82b42d5
 Host回收减负和3b66033收尾绑定/剩余工作排序。它不再是单独
 隔离Host回收的实验，需用计数和完整JCT评估组合效果。
 
@@ -40,13 +41,56 @@ Host回收减负和3b66033收尾绑定/剩余工作排序。它不再是单独
 V50尚未创建、V49仍在执行。旧回执和日志保留为
 `v50_launch_after_v49_20261013.superseded_host_only.*`。
 V50新冻结工作树为`beliefkv-v271-v50-latest-20261013`，包含
-3b66033及其文档修订；仍等待V49完整结果、HTML/workspace收尾
-和旧进程退出后冷部署，只运行predictive。未热改V49源码，
-V50尚无性能结果。108+48、Host80:20、工具180秒及固定V29
-native开发参考保持，实际新revision以启动回执为准。
+3b66033及其文档修订；V49完整结果和收尾后于14:20:50冷部署，
+实际revision为02fd87c，只运行predictive。108+48、Host80:20、
+工具180秒及固定V29 native开发参考保持，V50尚无完整性能结果。
 v268在与canonical逐树一致的新引擎上通过113项检查，并复现旧
 实现三个无效扫描回归；启动状态位于Main的
 `experiments/reports/v50_launch_after_v49_20261013.json`。
+
+v274于14:44:10 CST独立核验V50：Main和冻结工作树均与02fd87c
+执行源码一致，canonical patch10ea49f7和引擎tree58e2f487匹配
+v268资格；相对V49只有revision/patch变化，另82项计划字段、
+27项配置和实际池容量保持。HTTP200，尾部有494个真实GPU服务
+样本，运行态为`final_admission_policy=remaining_report_work`、
+handoff=false，JOIN/tool、PREPARE、resident-first和收尾优先均
+启用；已记录语义/原生遥测无drop或writer失败。FULL Host回收
+调用仍为0，尚未实测扫描跳过收益。
+
+容量预算存在间歇不可观测：这次30秒尾部30个运行态中10个为
+真实下一批预算、20个为`legacy_capacity_unavailable`，最新快照
+属于后者。回执独立保留真实预算时间戳（4,145 FULL token/
+1个Mamba名额）和全部不可观测计数；不能用旧预算冒充持续可用，
+也不把回退快照认作容量授权。继续调查原生分配中间态与预取
+机会损失，不热改V50或删除完整依赖检查。部署回执为
+`experiments/reports/v274_v50_deployment_validation_20261013.json`。
+
+V49完整结果为155 completed、1 incomplete，采集9662.691秒；
+完成吞吐57.748 workflow/h，相对固定V29 native61.074低5.45%。
+155个共同完成任务平均2962.757/3039.510秒，76更快、79更慢；
+P95为8097.639/7342.445秒。该均值排除了一个incomplete，
+不能作为全任务达标证据。提前且下一请求消费FULL为JOIN67个/
+1.237GB、tool182个/12.073GB，需求handoff为0；原生H2D3.099TB。
+明确Host驱逐关联重算62791/15879 token，未证明重算改善。
+完整比较位于V49 raw目录的`native_reference_comparison.json`。
+
+v272进一步对齐V29两侧全部94,892个请求与原v270输入哈希。
+首次服务时已是唯一未返回child的关键排队均值为每workflow
+413.311→211.632秒；仍有多个child时493.145→500.390秒。
+predictive唯一child中，无有效收尾通知请求15425个，贡献
+208.456秒/workflow；已通知报告162个，仅贡献3.177秒。
+关键排队秒数约84.07%来自等待至少10秒的请求。因此下一步
+重点是广泛的工具返回/唯一child准入，不只优化最终报告。
+这些角色来自客户端已观测历史，不证明实际control到达或rank，
+也不能从描述统计断言老化导致了排队。
+
+native成功执行通知工具301次却没有stage事件，predictive为
+317/317；旧native报告阶段保留未知。v273已修复trace-only、
+同sink和direct模式的通知遗漏，queued predictive行为不变，
+只补一次有效本地stage记录，不新增控制授权或模型调用。
+58项检查通过，原02fd87c复现三个遗漏模式；已提交fe7b54b，
+仅在开发工作树，未热部署V50。脚本、请求CSV及资格回执保存在
+v272/v273报告；后续正式native需采用该修复收集可比通知数据。
 
 当前瓶颈诊断与修复（v265–v268）：V49完整600–900秒的已埋点
 Python独占墙钟从V48的55.537降到39.679秒，但decode request
@@ -66,7 +110,7 @@ CPU对照中，4,096/32,768个合成候选的已满足分支P50从
 回收结果相同。这不是GPU/JCT收益。独立引擎绑定完整canonical
 patch；旧开发引擎落后于当前补丁，已保留，不能直接作为部署来源。
 
-V49保留冻结代码继续完成JCT采集，修复通过后供下一轮冷启动。
+V49已以冻结代码完成JCT采集，修复已在V50冷启动。
 共享native路径的优化也可能惠及native；V29只作为快速开发参考，
 最终归因需同版本对照。JOIN/tool提前复用、完整JCT、尾部、公平性、
 原生残余恢复和重算继续验收，未宣称目标已达成。
