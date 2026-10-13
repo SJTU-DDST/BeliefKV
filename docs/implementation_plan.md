@@ -2,6 +2,37 @@
 
 Status date: 2026-10-14.
 
+V344 exactly replays all 18 recorded V54 tail curves using linked roles,
+commands, elapsed time and effective counts inferred from all curve points.
+The timing export uses calls active within the target invocation; runtime
+uses the global WAIT_TOOL invocation census. Effective counts are 1-6 although
+each selected invocation has one active call. Correcting this mismatch alone
+predicts earlier in 16 cases: residual P50 changes from 1.022s to 0.665s
+against actual 152.462s. Do not deploy a count-only timing change as a tail fix.
+The operational head uses coarse tool names, not observed command class,
+shape or completed history. Fitted leads are 50ms-5s and curve knots extend
+to131.072s; these selected forecasts are within5s, so horizon extrapolation
+does not by itself explain their errors. Exact input replay also means the
+0481982 metadata fix does not fully explain this selected cohort.
+
+V345 audits all23995 sealed tool rounds, retaining one unknown completion.
+22183 have pre-completion forecasts;22099 have last-second forecasts with
+round-weighted absolute-error P50/P90 of73.55/586.58ms. These are conditional
+last-second development errors, not initial-window or unseen-project accuracy.
+Of17302 first predicted500ms entries,14923 actually lie within500ms and2379
+are early. In7397 rounds with common supported generic-curve/residual-quantile
+snapshots, median absolute error is451.31/232.78ms. The quantile alternative,
+however, has134 first500ms entries over10s early versus22 for the curve, and
+980 curve-supported snapshots lack unexpired quantiles. Do not swap heads
+based only on the median or fill missing timing support with zero.
+Among569 positive-FULL rounds missing recorded windows, only7 recorded
+snapshots also have free capacity. Snapshot categories overlap and share pages.
+Keep V55 execution frozen and prioritize its phase/admission/consumption
+measurements. A future timing candidate must separate local parallelism from
+global pressure, evaluate causal command structure and surviving-history
+features, and test tail/coverage alongside median errors. Offline scripts run
+nice19 with idle I/O and CUDA hidden; no runtime policy or model flag changed.
+
 V339 separates the latest V54 tail by independent waits. Among 84 early FULL
 JOINs, latest ACK to completion P50 is 2.448s; among 189 tools it is 0.235s.
 For tool tails above the existing 10s maximum lease, 18 are dominated by

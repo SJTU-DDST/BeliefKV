@@ -1,0 +1,288 @@
+{
+  "scope": "Fixed-trace diagnostic at forecast acceptance and recorded FULL-plan times. Uses the runtime's surviving residual mass/CDF/quantile logic and proven whole-tool-round completion as evaluation labels only. Single-call rounds are reported separately from sequential/parallel multi-call rounds. Plan samples are selected by the recorded runtime, not continuous coverage. A timely candidate means both leads are inside the upper start window; the service categories separately compare actual lead with recorded H2D P90. This estimate excludes planning/enqueue time and is not actual transfer completion or proof of feasible restoration. Missing service estimates remain unknown, not zero. Categories overlap across snapshots of one round. Per-round maximum FULL bytes may share pages and do not establish achievable unique bytes, actual transfers, residence, admission, hidden stalls, heldout accuracy or speedup.",
+  "counts": {
+    "tool_wait_forecast_records": 96669,
+    "wait_prefetch_plan_records": 46115,
+    "plans_without_positive_full_bytes": 38468,
+    "tool_wait_forecast_at_or_after_completion": 2144,
+    "forecasts_without_surviving_timing_support": 729,
+    "wait_prefetch_plan_at_or_after_completion": 2930,
+    "records_without_round_label": 3284,
+    "positive_full_plans_without_timing": 359,
+    "records_with_unproven_completion": 30
+  },
+  "scheduler_wall_minus_monotonic_ms": 1785829736899.4338,
+  "forecast_timing": {
+    "independent_tool_rounds": 23995,
+    "rounds_with_pre_completion_forecasts": 22183,
+    "rounds_with_last_second_forecasts": 22099,
+    "tool_weighted_last_second_signed_error_ms": {
+      "count": 22099,
+      "p50": 24.220074079035733,
+      "p90": 574.262183751606,
+      "min": -724.551011978336,
+      "max": 83300.17182254791
+    },
+    "tool_weighted_last_second_absolute_error_ms": {
+      "count": 22099,
+      "p50": 73.55102729797363,
+      "p90": 586.5836873385399,
+      "min": 0.0004213356441766791,
+      "max": 83300.17182254791
+    },
+    "first_500ms_window_lead_ms": {
+      "count": 17302,
+      "p50": 229.1441650390625,
+      "p90": 597.948876953125,
+      "min": 0.004638671875,
+      "max": 347524.0158691406
+    },
+    "first_500ms_window_in_actual_0_to_500ms": 14923,
+    "first_500ms_window_more_than_500ms_early": 2379
+  },
+  "single_tool_round_forecast_timing": {
+    "independent_tool_rounds": 23680,
+    "rounds_with_pre_completion_forecasts": 21883,
+    "rounds_with_last_second_forecasts": 21811,
+    "tool_weighted_last_second_signed_error_ms": {
+      "count": 21811,
+      "p50": 23.67937481406262,
+      "p90": 568.618756898853,
+      "min": -724.551011978336,
+      "max": 83300.17182254791
+    },
+    "tool_weighted_last_second_absolute_error_ms": {
+      "count": 21811,
+      "p50": 72.13594722747803,
+      "p90": 582.8260212565187,
+      "min": 0.0004213356441766791,
+      "max": 83300.17182254791
+    },
+    "first_500ms_window_lead_ms": {
+      "count": 17142,
+      "p50": 229.1441650390625,
+      "p90": 591.9412597656249,
+      "min": 0.004638671875,
+      "max": 347524.0158691406
+    },
+    "first_500ms_window_in_actual_0_to_500ms": 14823,
+    "first_500ms_window_more_than_500ms_early": 2319
+  },
+  "multi_tool_round_forecast_timing": {
+    "independent_tool_rounds": 315,
+    "rounds_with_pre_completion_forecasts": 300,
+    "rounds_with_last_second_forecasts": 288,
+    "tool_weighted_last_second_signed_error_ms": {
+      "count": 288,
+      "p50": 284.28289352887725,
+      "p90": 811.8849428702549,
+      "min": -573.3581295543904,
+      "max": 6917.654909233043
+    },
+    "tool_weighted_last_second_absolute_error_ms": {
+      "count": 288,
+      "p50": 380.0635146040901,
+      "p90": 811.8849428702549,
+      "min": 0.4081611633300781,
+      "max": 6917.654909233043
+    },
+    "first_500ms_window_lead_ms": {
+      "count": 160,
+      "p50": 220.8101806640625,
+      "p90": 2534.8266601562495,
+      "min": 0.61669921875,
+      "max": 20247.42236328125
+    },
+    "first_500ms_window_in_actual_0_to_500ms": 100,
+    "first_500ms_window_more_than_500ms_early": 60
+  },
+  "positive_full_plan_window_categories": {
+    "timely_candidate": {
+      "snapshots": 127,
+      "independent_tool_rounds": 126,
+      "sum_per_round_max_observed_full_bytes": 8734801920
+    },
+    "timely_candidate_with_observed_free_capacity": {
+      "snapshots": 127,
+      "independent_tool_rounds": 126,
+      "sum_per_round_max_observed_full_bytes": 8734801920
+    },
+    "predicted_too_early": {
+      "snapshots": 72,
+      "independent_tool_rounds": 69,
+      "sum_per_round_max_observed_full_bytes": 6026240000
+    },
+    "predicted_too_early_with_observed_free_capacity": {
+      "snapshots": 72,
+      "independent_tool_rounds": 69,
+      "sum_per_round_max_observed_full_bytes": 6026240000
+    },
+    "missed_recorded_window": {
+      "snapshots": 776,
+      "independent_tool_rounds": 569,
+      "sum_per_round_max_observed_full_bytes": 64798085120
+    },
+    "missed_recorded_window_with_observed_free_capacity": {
+      "snapshots": 8,
+      "independent_tool_rounds": 7,
+      "sum_per_round_max_observed_full_bytes": 639733760
+    },
+    "not_yet_due": {
+      "snapshots": 3383,
+      "independent_tool_rounds": 1762,
+      "sum_per_round_max_observed_full_bytes": 164955668480
+    },
+    "not_yet_due_with_observed_free_capacity": {
+      "snapshots": 45,
+      "independent_tool_rounds": 40,
+      "sum_per_round_max_observed_full_bytes": 1621565440
+    }
+  },
+  "timely_full_plan_service_categories": {
+    "actual_lead_at_least_recorded_h2d_p90": {
+      "snapshots": 85,
+      "independent_tool_rounds": 84,
+      "sum_per_round_max_observed_full_bytes": 6246727680
+    },
+    "actual_lead_at_least_recorded_h2d_p90_with_observed_free_capacity": {
+      "snapshots": 85,
+      "independent_tool_rounds": 84,
+      "sum_per_round_max_observed_full_bytes": 6246727680
+    },
+    "actual_lead_below_recorded_h2d_p90": {
+      "snapshots": 42,
+      "independent_tool_rounds": 42,
+      "sum_per_round_max_observed_full_bytes": 2488074240
+    },
+    "actual_lead_below_recorded_h2d_p90_with_observed_free_capacity": {
+      "snapshots": 42,
+      "independent_tool_rounds": 42,
+      "sum_per_round_max_observed_full_bytes": 2488074240
+    },
+    "recorded_h2d_p90_unavailable": {
+      "snapshots": 0,
+      "independent_tool_rounds": 0,
+      "sum_per_round_max_observed_full_bytes": 0
+    },
+    "recorded_h2d_p90_unavailable_with_observed_free_capacity": {
+      "snapshots": 0,
+      "independent_tool_rounds": 0,
+      "sum_per_round_max_observed_full_bytes": 0
+    }
+  },
+  "observed_at_local": "2026-10-14T03:30:17.335633+08:00",
+  "status": "sealed_v54_development_diagnostic_not_heldout_or_action_qualification",
+  "counterfactual_curve_vs_recorded_residual_quantiles": {
+    "counts": {
+      "cold_or_generic_curve_forecasts": 46099,
+      "common_supported_forecast_pairs": 44390,
+      "history_or_mass_forecasts_not_in_curve_quantile_pair": 45112,
+      "pair_unavailable:curve:False:quantile:True": 980,
+      "pair_unavailable:curve:True:quantile:False": 726,
+      "pair_unavailable:curve:True:quantile:True": 3,
+      "valid_pre_completion_forecasts": 91211
+    },
+    "independent_rounds_with_common_supported_forecasts": 7397,
+    "curve_round_weighted_signed_error_ms": {
+      "count": 7397,
+      "p50": 321.0594336087554,
+      "p90": 646.6558366169105,
+      "min": -198705.63978137446,
+      "max": 104978.26887596965
+    },
+    "curve_round_weighted_absolute_error_ms": {
+      "count": 7397,
+      "p50": 451.3136026034397,
+      "p90": 829.4595932208717,
+      "min": 0.03665488455001409,
+      "max": 198705.63978137446
+    },
+    "near_curve_round_weighted_signed_error_ms": {
+      "count": 7326,
+      "p50": 424.4606794737183,
+      "p90": 761.4284024654494,
+      "min": -724.551011978336,
+      "max": 104978.26887596965
+    },
+    "near_curve_round_weighted_absolute_error_ms": {
+      "count": 7326,
+      "p50": 430.4894201282394,
+      "p90": 761.4284024654494,
+      "min": 0.03665488455001409,
+      "max": 104978.26887596965
+    },
+    "curve_first_500ms_actual_lead_ms": {
+      "count": 2946,
+      "p50": 118.366455078125,
+      "p90": 1113.528564453125,
+      "min": 0.041748046875,
+      "max": 179966.48559570312
+    },
+    "curve_first_500ms_more_than_10000ms_early": 22,
+    "quantile_round_weighted_signed_error_ms": {
+      "count": 7397,
+      "p50": 80.68164587020874,
+      "p90": 364.5222566259768,
+      "min": -124913.11779383253,
+      "max": 606854.3923475235
+    },
+    "quantile_round_weighted_absolute_error_ms": {
+      "count": 7397,
+      "p50": 232.77673886499025,
+      "p90": 688.64282245636,
+      "min": 0.007789797912597152,
+      "max": 606854.3923475235
+    },
+    "near_quantile_round_weighted_signed_error_ms": {
+      "count": 7326,
+      "p50": 135.81848061712648,
+      "p90": 473.8109005238343,
+      "min": -839.3598714750366,
+      "max": 623049.5581666916
+    },
+    "near_quantile_round_weighted_absolute_error_ms": {
+      "count": 7326,
+      "p50": 210.89177740280152,
+      "p90": 619.8699933224487,
+      "min": 0.007789797912597152,
+      "max": 623049.5581666916
+    },
+    "quantile_first_500ms_actual_lead_ms": {
+      "count": 7018,
+      "p50": 200.790771484375,
+      "p90": 2146.635546875001,
+      "min": 0.041748046875,
+      "max": 344030.48046875
+    },
+    "quantile_first_500ms_more_than_10000ms_early": 134
+  },
+  "sources": {
+    "lifecycle": "/home/longhao/experiment/BeliefKV/experiments/reports/v334_v54_final_wait_prefetch_20261014.json.gz",
+    "lifecycle_sha256": "7f4ae2960aa5fa4c6b787667fb32bb36e1227128ce06b6b326001f5a85918d3d",
+    "linked": "/home/longhao/experiment/BeliefKV/experiments/reports/v341_v54_tool_forecast_linked_inputs_20261014.json",
+    "linked_sha256": "5861ffcf720e7b5148d6ecdb5533a5378c685dced78bec6f10aa47a8361917ad",
+    "opportunity": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v54/predictive_h2d/opportunities/admission_opportunities.jsonl",
+    "sealed_prefix": {
+      "complete_prefix_bytes": 1407203063,
+      "complete_prefix_sha256": "135612bc86373bc643e9a90d861bfcd8132be8b5fb9381d474fa87a226a1fc37",
+      "first_read_limit_bytes": 1407203063
+    },
+    "helper_sha256": "dcab7f458a5d9c222d72bd93e4e60114e5a79a1cb32e36a009990b8435fc8f5a",
+    "evaluator_sha256": "97c564d94421777315f4303f6da3b93353d6045dd89df6370d02c3de5f25f8f0"
+  },
+  "counterfactual_scope": [
+    "No predictor refit, scheduler action, workload, deadline or artifact flag changed.",
+    "History/mass forecasts excluded from paired comparison; preserve existing overrun behavior.",
+    "Compare the same accepted snapshots only when both heads retain timing support.",
+    "Expired quantiles remain unsupported, not zero; report coverage losses explicitly.",
+    "Errors aggregate per independent tool round before population percentiles.",
+    "The paired cohort is support-selected and not a random heldout population.",
+    "Administrative/unknown completions remain excluded from accuracy, never fabricated.",
+    "Window membership alone does not prove capacity, completion, consumption or JCT benefit."
+  ],
+  "detailed_evidence": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v345_v54_tool_forecast_windows_20261014.json.gz",
+    "sha256": "065d409bd6d2e1822398bc7463588df9a6bdf48112512a35bfad47d1010c4e78",
+    "independent_tool_rounds": 23995
+  }
+}
