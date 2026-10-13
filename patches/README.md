@@ -1,6 +1,21 @@
 # SGLang Runtime Patches
 
-Updated: 2026-10-12.
+Updated: 2026-10-13.
+
+The V267 followup stops FULL Host eviction before building the leaf heap
+when write-back duplicate reclamation has already met the requested capacity.
+Unsatisfied calls retain native session priority, locks, heap ordering and
+frees. Four cumulative counters are copied into existing one-second Host
+telemetry; no per-call I/O is added. The canonical patch SHA256 is
+`10ea49f7513ff1c0eaa2f065cc69036e127452f1b627c962ddbf10d41d6d16a9`,
+with exact expected/actual tree
+`58e2f487320f6b8f0d32f75d89b4240224df86f9`. The engine delta contains only
+`components/full.py` and `test_beliefkv_full_host_eviction.py`.
+Qualification uses a new engine reconstructed from the entire current patch;
+the older followup engine is preserved and must not replace the canonical
+source. V49 keeps its frozen engine; deploy this change cold after collection.
+CPU branch savings do not establish GPU/JCT benefit, and this shared native
+optimization must also be included in a final same-version native comparison.
 
 The V129 followup decouples a FULL-only opportunistic capacity
 shortfall from backup of live unbacked Mamba. On an eligible backed

@@ -10193,3 +10193,153 @@ index 0000000..6320bf9
 +
 +if __name__ == "__main__":
 +    unittest.main()
+diff --git a/python/sglang/srt/mem_cache/unified_cache/components/full.py b/python/sglang/srt/mem_cache/unified_cache/components/full.py
+index 1d4b255..ae376f1 100644
+--- a/python/sglang/srt/mem_cache/unified_cache/components/full.py
++++ b/python/sglang/srt/mem_cache/unified_cache/components/full.py
+@@ -53,6 +53,9 @@ class FullComponent(TreeComponent):
+             if cache.enable_session_radix_cache
+             else None
+         )
++        self.host_eviction_counts = {
++            "calls": 0, "already_satisfied": 0, "heap_builds": 0, "heap_candidates": 0,
++        }
+ 
+     def _ensure_eviction_strategy(self) -> None:
+         if self.session_ref_eviction_strategy is None:
+@@ -239,13 +242,22 @@ class FullComponent(TreeComponent):
+         host_frees: dict[ComponentType, list[torch.Tensor]],
+     ) -> None:
+         """Evict host leaves to free KV host pool space."""
++        ct = self.component_type
++        counts = self.host_eviction_counts
++        counts["calls"] += 1
++        # Write-back duplicate reclamation may have already met this request.
++        # Avoid ranking the entire host cache when no leaf will be evicted.
++        if tracker[ct] >= num_tokens:
++            counts["already_satisfied"] += 1
++            return
+         self._ensure_eviction_strategy()
+         heap = [
+             (self.session_ref_eviction_strategy(n), n)
+             for n in self.tree_core.evictable_host_leaves
+         ]
+         heapq.heapify(heap)
+-        ct = self.component_type
++        counts["heap_builds"] += 1
++        counts["heap_candidates"] += len(heap)
+         while tracker[ct] < num_tokens and heap:
+             _, x = heapq.heappop(heap)
+             if x not in self.tree_core.evictable_host_leaves:
+diff --git a/test/srt/test_beliefkv_full_host_eviction.py b/test/srt/test_beliefkv_full_host_eviction.py
+new file mode 100644
+index 0000000..ed83480
+--- /dev/null
++++ b/test/srt/test_beliefkv_full_host_eviction.py
+@@ -0,0 +1,106 @@
++"""CPU regressions for FULL eviction after write-back duplicate reclamation."""
++
++from array import array
++from unittest.mock import Mock
++
++import pytest
++import torch
++
++from sglang.srt.mem_cache.allocator import TokenToKVPoolAllocator
++from sglang.srt.mem_cache.base_prefix_cache import InsertParams
++from sglang.srt.mem_cache.cache_init_params import CacheInitParams
++from sglang.srt.mem_cache.memory_pool import MHATokenToKVPool, ReqToTokenPool
++from sglang.srt.mem_cache.radix_cache import RadixKey
++from sglang.srt.mem_cache.unified_cache.component_type import ComponentType
++from sglang.srt.mem_cache.unified_radix_cache import UnifiedRadixCache
++
++
++@pytest.fixture
++def cache():
++    pool = MHATokenToKVPool(
++        size=64, page_size=1, dtype=torch.float16, head_num=2, head_dim=8,
++        layer_num=1, device="cpu", enable_memory_saver=False,
++    )
++    allocator = TokenToKVPoolAllocator(
++        size=64, dtype=torch.float16, device="cpu", kvcache=pool, need_sort=False,
++    )
++    result = UnifiedRadixCache(CacheInitParams(
++        disable=False,
++        req_to_token_pool=ReqToTokenPool(
++            size=8, max_context_len=128, device="cpu", enable_memory_saver=False,
++        ),
++        token_to_kv_pool_allocator=allocator, page_size=1, eviction_policy="lru",
++        enable_session_radix_cache=True, tree_components=(ComponentType.FULL,),
++    ))
++    result.tree_core.is_write_back = True
++    return result
++
++
++def backed_leaf(cache, tokens, *, device=True):
++    allocator = cache.token_to_kv_pool_allocator
++    node_id = cache.insert(InsertParams(
++        key=RadixKey(array("q", tokens)), value=allocator.alloc(len(tokens)),
++    )).last_device_node
++    tree = cache.tree_core
++    node = tree.node_by_id(node_id)
++    node.component_data[ComponentType.FULL].host_value = torch.arange(len(tokens))
++    if not device:
++        allocator.free(node.component_data[ComponentType.FULL].value)
++        node.component_data[ComponentType.FULL].value = None
++        tree.component_evictable_size_[ComponentType.FULL] -= len(tokens)
++    tree._update_evictable_leaf_sets(node)
++    tree._update_duplicate_tracking(node)
++    return node
++
++
++def release_result(result):
++    result.device_frees.clear()
++    result.host_frees.clear()
++
++
++@pytest.mark.parametrize("requested", (0, 1, 2))
++def test_satisfied_duplicate_reclaim_does_not_rank_or_remove_host_only_data(cache, requested):
++    duplicate = backed_leaf(cache, [1, 2])
++    sole_copy = backed_leaf(cache, [9, 10], device=False)
++    full = cache.components[ComponentType.FULL]
++    full.session_ref_eviction_strategy = Mock(
++        wraps=full.session_ref_eviction_strategy,
++    )
++    device_value = duplicate.component_data[ComponentType.FULL].value
++    host_value = sole_copy.component_data[ComponentType.FULL].host_value
++    result = cache.tree_core.drive_host_eviction(ComponentType.FULL, requested)
++    try:
++        assert result.tracker[ComponentType.FULL] == (2 if requested else 0)
++        assert duplicate.component_data[ComponentType.FULL].value is device_value
++        assert sole_copy.component_data[ComponentType.FULL].host_value is host_value
++        assert sole_copy in cache.tree_core.evictable_host_leaves
++        full.session_ref_eviction_strategy.assert_not_called()
++        assert full.host_eviction_counts == {
++            "calls": 1, "already_satisfied": 1, "heap_builds": 0, "heap_candidates": 0,
++        }
++    finally:
++        release_result(result)
++
++
++@pytest.mark.parametrize("protected", (False, True))
++def test_unsatisfied_reclaim_keeps_native_session_priority_and_lock_exclusion(cache, protected):
++    duplicate = backed_leaf(cache, [1, 2])
++    older = backed_leaf(cache, [3, 4], device=False)
++    referenced = backed_leaf(cache, [5, 6], device=False)
++    referenced.component_data[ComponentType.FULL].session_ref = 1
++    referenced.last_access_time = older.last_access_time - 1
++    if protected:
++        duplicate.component_data[ComponentType.FULL].host_lock_ref = 1
++    requested = 2 if protected else 3
++    result = cache.tree_core.drive_host_eviction(ComponentType.FULL, requested)
++    try:
++        assert result.tracker[ComponentType.FULL] == (2 if protected else 4)
++        assert older.component_data[ComponentType.FULL].host_value is None
++        assert referenced.component_data[ComponentType.FULL].host_value is not None
++        assert duplicate.component_data[ComponentType.FULL].value is not None
++        assert (duplicate.component_data[ComponentType.FULL].host_value is not None) == protected
++        assert cache.components[ComponentType.FULL].host_eviction_counts == {
++            "calls": 1, "already_satisfied": 0, "heap_builds": 1, "heap_candidates": 2,
++        }
++    finally:
++        release_result(result)

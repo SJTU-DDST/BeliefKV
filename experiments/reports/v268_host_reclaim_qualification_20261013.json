@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "started_at_local": "2026-10-13T12:54:34.607219+08:00",
+  "completed_at_local": "2026-10-13T12:54:58.729132+08:00",
+  "qualified_engine": "/home/longhao/experiment/.worktrees/beliefkv-v267-host-reclaim-engine-20261013",
+  "engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "10ea49f7513ff1c0eaa2f065cc69036e127452f1b627c962ddbf10d41d6d16a9",
+    "expected_tree": "58e2f487320f6b8f0d32f75d89b4240224df86f9",
+    "actual_tree": "58e2f487320f6b8f0d32f75d89b4240224df86f9",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_execution_handoff.py",
+      "test/srt/test_beliefkv_host_eviction_observer.py",
+      "test/srt/test_beliefkv_latest_mamba_state.py",
+      "test/srt/test_beliefkv_layer_wait_probe.py",
+      "test/srt/test_beliefkv_lifecycle.py",
+      "test/srt/test_beliefkv_metadata.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_scheduler_hook.py",
+      "test/srt/test_beliefkv_session_anchors.py",
+      "test/srt/test_beliefkv_shadow_dispatch.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py",
+      "test/srt/test_beliefkv_transfer_receipts.py",
+      "test/srt/test_beliefkv_unified_ack.py"
+    ]
+  },
+  "main_execution_verification": {
+    "collection_code_commit": "69beb35cdb7eafa6e6c8399bff4484222ec8c189",
+    "verification_code_commit": "5aeeb0593aafcbd224987f84da358ad010ad9bf4",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ],
+    "changed_committed_paths": [
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/archive/README.md",
+      "experiments/reports/v261_v48_development_stop_20261013.json",
+      "experiments/reports/v261_v48_final_wait_prefetch_20261013.json.gz",
+      "experiments/reports/v261_v48_final_wait_prefetch_20261013_summary.json",
+      "experiments/reports/v261_v48_workspace_archive_20261013.json",
+      "experiments/reports/v262_v49_deployment_validation_20261013.json",
+      "experiments/reports/v263_v48_cutoff_qualification_20261013.json",
+      "experiments/reports/v264_v29_complete_jct_recheck_20261013.json"
+    ]
+  },
+  "baseline_regression_returncode": 1,
+  "baseline_regression_output": "/home/longhao/experiment/.worktrees/beliefkv-v267-host-reclaim-engine-20261013/python/sglang/srt/layers/quantization/awq/awq.py:53: UserWarning: Only CUDA, HIP and XPU support AWQ currently.\n  warnings.warn(f\"Only CUDA, HIP and XPU support AWQ currently.\")\n/home/longhao/experiment/.worktrees/beliefkv-v267-host-reclaim-engine-20261013/python/sglang/srt/layers/quantization/gguf.py:69: UserWarning: Only CUDA, MUSA and NPU support GGUF quantization currently.\n  warnings.warn(f\"Only CUDA, MUSA and NPU support GGUF quantization currently.\")\nFFF                                                                      [100%]\n=================================== FAILURES ===================================\n__ test_satisfied_duplicate_reclaim_does_not_rank_or_remove_host_only_data[0] __\ntest/srt/test_beliefkv_full_host_eviction.py:77: in test_satisfied_duplicate_reclaim_does_not_rank_or_remove_host_only_data\n    full.session_ref_eviction_strategy.assert_not_called()\n../../../miniconda3/envs/beliefkv-next/lib/python3.11/unittest/mock.py:900: in assert_not_called\n    raise AssertionError(msg)\nE   AssertionError: Expected 'mock' to not have been called. Called 1 times.\nE   Calls: [call(<sglang.srt.mem_cache.unified_cache.unified_tree_core.UnifiedTreeNode object at 0x7c4e4496c690>)].\n__ test_satisfied_duplicate_reclaim_does_not_rank_or_remove_host_only_data[1] __\ntest/srt/test_beliefkv_full_host_eviction.py:77: in test_satisfied_duplicate_reclaim_does_not_rank_or_remove_host_only_data\n    full.session_ref_eviction_strategy.assert_not_called()\n../../../miniconda3/envs/beliefkv-next/lib/python3.11/unittest/mock.py:900: in assert_not_called\n    raise AssertionError(msg)\nE   AssertionError: Expected 'mock' to not have been called. Called 1 times.\nE   Calls: [call(<sglang.srt.mem_cache.unified_cache.unified_tree_core.UnifiedTreeNode object at 0x7c4e449acdd0>)].\n__ test_satisfied_duplicate_reclaim_does_not_rank_or_remove_host_only_data[2] __\ntest/srt/test_beliefkv_full_host_eviction.py:77: in test_satisfied_duplicate_reclaim_does_not_rank_or_remove_host_only_data\n    full.session_ref_eviction_strategy.assert_not_called()\n../../../miniconda3/envs/beliefkv-next/lib/python3.11/unittest/mock.py:900: in assert_not_called\n    raise AssertionError(msg)\nE   AssertionError: Expected 'mock' to not have been called. Called 1 times.\nE   Calls: [call(<sglang.srt.mem_cache.unified_cache.unified_tree_core.UnifiedTreeNode object at 0x7c4e449b82d0>)].\n=============================== warnings summary ===============================\n../../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/_pytest/config/__init__.py:1345\n  /home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/_pytest/config/__init__.py:1345: PytestAssertRewriteWarning: Module already imported so cannot be rewritten; anyio\n    self._mark_plugins_for_rewrite(hook, disable_autoload)\n\n../../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/_pytest/config/__init__.py:1464\n  /home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/_pytest/config/__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_mode\n  \n    self._warn_or_fail_if_strict(f\"Unknown config option: {key}\\n\")\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n=========================== short test summary info ============================\nFAILED test/srt/test_beliefkv_full_host_eviction.py::test_satisfied_duplicate_reclaim_does_not_rank_or_remove_host_only_data[0]\nFAILED test/srt/test_beliefkv_full_host_eviction.py::test_satisfied_duplicate_reclaim_does_not_rank_or_remove_host_only_data[1]\nFAILED test/srt/test_beliefkv_full_host_eviction.py::test_satisfied_duplicate_reclaim_does_not_rank_or_remove_host_only_data[2]\n3 failed, 2 deselected, 2 warnings in 0.46s\n",
+  "qualification_command": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "-m",
+    "pytest",
+    "-q",
+    "/home/longhao/experiment/.worktrees/beliefkv-v267-host-reclaim-engine-20261013/test/srt/test_beliefkv_full_host_eviction.py",
+    "/home/longhao/experiment/.worktrees/beliefkv-v267-host-reclaim-engine-20261013/test/srt/test_beliefkv_host_eviction_observer.py",
+    "tests/test_v0520_native_telemetry.py"
+  ],
+  "qualification_output": "........................................................................ [ 63%]\n.........................................                                [100%]\n=============================== warnings summary ===============================\n../../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/_pytest/config/__init__.py:1464\n  /home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/_pytest/config/__init__.py:1464: PytestConfigWarning: Unknown config option: asyncio_mode\n  \n    self._warn_or_fail_if_strict(f\"Unknown config option: {key}\\n\")\n\n../../../miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/jit/_script.py:365: 14 warnings\n  /home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.\n    warnings.warn(\n\n../beliefkv-v267-host-reclaim-engine-20261013/python/sglang/srt/layers/quantization/awq/awq.py:53\n  /home/longhao/experiment/.worktrees/beliefkv-v267-host-reclaim-engine-20261013/python/sglang/srt/layers/quantization/awq/awq.py:53: UserWarning: Only CUDA, HIP and XPU support AWQ currently.\n    warnings.warn(f\"Only CUDA, HIP and XPU support AWQ currently.\")\n\n../beliefkv-v267-host-reclaim-engine-20261013/python/sglang/srt/layers/quantization/gguf.py:69\n  /home/longhao/experiment/.worktrees/beliefkv-v267-host-reclaim-engine-20261013/python/sglang/srt/layers/quantization/gguf.py:69: UserWarning: Only CUDA, MUSA and NPU support GGUF quantization currently.\n    warnings.warn(f\"Only CUDA, MUSA and NPU support GGUF quantization currently.\")\n\n-- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html\n113 passed, 17 warnings in 10.32s\n",
+  "qualification_returncode": 0,
+  "passed": 113,
+  "engine_delta_files": [
+    "diff --git a/python/sglang/srt/mem_cache/unified_cache/components/full.py b/python/sglang/srt/mem_cache/unified_cache/components/full.py",
+    "diff --git a/test/srt/test_beliefkv_full_host_eviction.py b/test/srt/test_beliefkv_full_host_eviction.py"
+  ],
+  "engine_delta_sha256": "95756167c97ff7fecf3023c1432569c7016e40edd24d56d88884092a94e49c13",
+  "qualified_paths_sha256": {
+    "patches/sglang-v0.5.20-beliefkv-staging.patch": "10ea49f7513ff1c0eaa2f065cc69036e127452f1b627c962ddbf10d41d6d16a9",
+    "beliefkv/runtime/v0520_native_telemetry.py": "1dd32bfd7efd8f12a4dcc243e4061c66dc4aac0757763ad76af4c227ac7e89a6",
+    "tests/test_v0520_native_telemetry.py": "80f251a003405aa6be00ef3b7f4f261143392051a2b76ff1bd4bdc4f7bc4e21c"
+  },
+  "scope": "Stop scanning only when earlier duplicate reclamation already satisfies FULL capacity. Necessary native eviction order, locks, frees, H2D dependencies and policy remain. Four integer counters are copied into the existing once-per-second Host sample.",
+  "limits": [
+    "Existing followup engine was older than the canonical patch in five files. Preserved it and rebuilt a new isolated engine from the complete current patch.",
+    "These CPU/telemetry checks and microbenchmarks do not establish GPU/JCT benefit.",
+    "This is a shared native-path optimization. Historical V29 native remains a development reference, not a same-version evaluation of this patch."
+  ],
+  "helper_sha256": "33d500f2eb038a8f91119c940c5e98fbfa65634829cf6eca97e56ff488af6704",
+  "helper_utf8_source": "\"\"\"Qualify the exact cold-deployment patch, separate from stale development trees.\"\"\"\n\nfrom datetime import datetime\nimport hashlib\nimport json\nimport os\nfrom pathlib import Path\nimport subprocess\nimport sys\n\nROOT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nENGINE = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v267-host-reclaim-engine-20261013\")\nMAIN = Path(\"/home/longhao/experiment/BeliefKV\")\nPATCH = ROOT / \"patches/sglang-v0.5.20-beliefkv-staging.patch\"\nOUTPUT = ROOT / \"experiments/reports/v268_host_reclaim_qualification_20261013.json\"\nsys.path.insert(0, str(ROOT))\nfrom beliefkv.experiments.source_provenance import git_source_state\nfrom scripts.resume_predictive_after_native import engine_delta\nfrom scripts.summarize_semantic_h2d_ab import verify_frozen_execution_source\n\nif OUTPUT.exists():\n    raise ValueError(\"preserve prior evidence\")\nstarted = datetime.now().astimezone().isoformat()\nenvironment = {\n    **os.environ, \"PYTHONPATH\": f\"{ENGINE / 'python'}:{ROOT}\", \"CUDA_VISIBLE_DEVICES\": \"\",\n}\nbaseline_check = \"\"\"\nimport ast, subprocess\nfrom sglang.srt.mem_cache.unified_cache.components import full\nimport pytest\nsrc = subprocess.check_output(['git','show','HEAD:python/sglang/srt/mem_cache/unified_cache/components/full.py'], text=True)\ncls = next(n for n in ast.parse(src).body if isinstance(n, ast.ClassDef) and n.name == 'FullComponent')\nfn = next(n for n in cls.body if isinstance(n, ast.FunctionDef) and n.name == 'drive_host_eviction')\nunit = ast.Module(body=[ast.ImportFrom(module='__future__', names=[ast.alias(name='annotations')], level=0), fn], type_ignores=[])\nns = dict(vars(full))\nexec(compile(ast.fix_missing_locations(unit), '<upstream-full-eviction>', 'exec'), ns)\nfull.FullComponent.drive_host_eviction = ns['drive_host_eviction']\nraise SystemExit(pytest.main(['-q','test/srt/test_beliefkv_full_host_eviction.py',\n                            '-k','satisfied_duplicate','--tb=short']))\n\"\"\"\nbefore = subprocess.run(\n    [sys.executable, \"-c\", baseline_check], cwd=ENGINE, env=environment,\n    text=True, stdout=subprocess.PIPE, stderr=subprocess.STDOUT, timeout=60,\n)\nif before.returncode != 1 or \"3 failed, 2 deselected\" not in before.stdout:\n    raise ValueError(\"original implementation did not reproduce all three regressions\")\ncommand = [sys.executable, \"-m\", \"pytest\", \"-q\",\n           str(ENGINE / \"test/srt/test_beliefkv_full_host_eviction.py\"),\n           str(ENGINE / \"test/srt/test_beliefkv_host_eviction_observer.py\"),\n           \"tests/test_v0520_native_telemetry.py\"]\nafter = subprocess.run(\n    command, cwd=ROOT, env=environment, text=True, stdout=subprocess.PIPE,\n    stderr=subprocess.STDOUT, timeout=60,\n)\nif after.returncode or \"113 passed\" not in after.stdout:\n    print(after.stdout)\n    raise ValueError(\"candidate qualification failed\")\nengine = git_source_state(ENGINE, canonical_patch=PATCH)[\"canonical_patch\"]\nsubprocess.run([\"git\", \"apply\", \"--reverse\", \"--check\", str(PATCH)], cwd=ENGINE, check=True)\ndelta = engine_delta(\n    ENGINE, MAIN / \"patches/sglang-v0.5.20-beliefkv-staging.patch\", PATCH,\n)\ndelta_files = [line for line in delta.decode().splitlines() if line.startswith(\"diff --git \")]\nif len(delta_files) != 2 or not all(\n    any(path in line for path in (\"components/full.py\", \"test_beliefkv_full_host_eviction.py\"))\n    for line in delta_files\n):\n    raise ValueError(\"unexpected engine deployment scope\")\npaths = [\n    \"patches/sglang-v0.5.20-beliefkv-staging.patch\",\n    \"beliefkv/runtime/v0520_native_telemetry.py\",\n    \"tests/test_v0520_native_telemetry.py\",\n]\nreport = {\n    \"schema_version\": 1, \"started_at_local\": started,\n    \"completed_at_local\": datetime.now().astimezone().isoformat(),\n    \"qualified_engine\": str(ENGINE), \"engine\": engine,\n    \"main_execution_verification\": verify_frozen_execution_source(\n        MAIN, \"69beb35cdb7eafa6e6c8399bff4484222ec8c189\",\n    ),\n    \"baseline_regression_returncode\": before.returncode,\n    \"baseline_regression_output\": before.stdout,\n    \"qualification_command\": command, \"qualification_output\": after.stdout,\n    \"qualification_returncode\": after.returncode, \"passed\": 113,\n    \"engine_delta_files\": delta_files,\n    \"engine_delta_sha256\": hashlib.sha256(delta).hexdigest(),\n    \"qualified_paths_sha256\": {\n        path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths\n    },\n    \"scope\": (\n        \"Stop scanning only when earlier duplicate reclamation already satisfies FULL capacity. \"\n        \"Necessary native eviction order, locks, frees, H2D dependencies and policy remain. \"\n        \"Four integer counters are copied into the existing once-per-second Host sample.\"\n    ),\n    \"limits\": [\n        \"Existing followup engine was older than the canonical patch in five files. \"\n        \"Preserved it and rebuilt a new isolated engine from the complete current patch.\",\n        \"These CPU/telemetry checks and microbenchmarks do not establish GPU/JCT benefit.\",\n        \"This is a shared native-path optimization. Historical V29 native remains a \"\n        \"development reference, not a same-version evaluation of this patch.\",\n    ],\n    \"helper_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n    \"helper_utf8_source\": Path(__file__).read_text(),\n}\nOUTPUT.write_text(json.dumps(report, indent=2) + \"\\n\")\nprint(json.dumps({\n    \"output\": str(OUTPUT), \"passed\": 113,\n    \"original_regressions_reproduced\": 3, \"engine\": engine,\n}, indent=2))\n"
+}

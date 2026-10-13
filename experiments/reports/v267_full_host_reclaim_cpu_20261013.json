@@ -1,0 +1,206 @@
+{
+  "scope": "Alternating native baseline/current FULL eviction methods; real session-aware priority, synthetic host-leaf sets, no DMA or GPU. Real tree/allocator and lock regressions run separately. CPU savings are not JCT or throughput gains.",
+  "baseline_source_sha256": "6380586e6d84ef37c2e2244c807a1c7b5a2e84cb78d0a473f3d34cadd6c673bf",
+  "optimized_source_sha256": "20b574e42f709bb92e0851164bfe528d6ebc263dbc55981a1a9605aad28df582",
+  "cases": [
+    {
+      "host_leaf_candidates": 0,
+      "already_satisfied": true,
+      "iterations": 30,
+      "identical_eviction_result": true,
+      "costs_ms": {
+        "baseline": {
+          "cpu": {
+            "p50": 0.0013319999999999999,
+            "mean": 0.0015249333333333334
+          },
+          "wall": {
+            "p50": 0.0007999999999999999,
+            "mean": 0.0009671666666666666
+          }
+        },
+        "optimized": {
+          "cpu": {
+            "p50": 0.001066,
+            "mean": 0.0012082333333333333
+          },
+          "wall": {
+            "p50": 0.0005300000000000001,
+            "mean": 0.0006590666666666667
+          }
+        }
+      }
+    },
+    {
+      "host_leaf_candidates": 256,
+      "already_satisfied": true,
+      "iterations": 30,
+      "identical_eviction_result": true,
+      "costs_ms": {
+        "baseline": {
+          "cpu": {
+            "p50": 0.1073255,
+            "mean": 0.10896716666666667
+          },
+          "wall": {
+            "p50": 0.10658899999999999,
+            "mean": 0.1082058
+          }
+        },
+        "optimized": {
+          "cpu": {
+            "p50": 0.001446,
+            "mean": 0.0017208666666666667
+          },
+          "wall": {
+            "p50": 0.000784,
+            "mean": 0.0010137333333333333
+          }
+        }
+      }
+    },
+    {
+      "host_leaf_candidates": 256,
+      "already_satisfied": false,
+      "iterations": 30,
+      "identical_eviction_result": true,
+      "costs_ms": {
+        "baseline": {
+          "cpu": {
+            "p50": 0.109936,
+            "mean": 0.11001716666666667
+          },
+          "wall": {
+            "p50": 0.10917750000000001,
+            "mean": 0.10926583333333334
+          }
+        },
+        "optimized": {
+          "cpu": {
+            "p50": 0.10968,
+            "mean": 0.11015306666666667
+          },
+          "wall": {
+            "p50": 0.108968,
+            "mean": 0.1094241
+          }
+        }
+      }
+    },
+    {
+      "host_leaf_candidates": 4096,
+      "already_satisfied": true,
+      "iterations": 30,
+      "identical_eviction_result": true,
+      "costs_ms": {
+        "baseline": {
+          "cpu": {
+            "p50": 2.3635764999999997,
+            "mean": 22.150623133333333
+          },
+          "wall": {
+            "p50": 2.362155,
+            "mean": 22.148338066666668
+          }
+        },
+        "optimized": {
+          "cpu": {
+            "p50": 0.0028894999999999997,
+            "mean": 0.0029698
+          },
+          "wall": {
+            "p50": 0.0017375,
+            "mean": 0.0018899666666666666
+          }
+        }
+      }
+    },
+    {
+      "host_leaf_candidates": 4096,
+      "already_satisfied": false,
+      "iterations": 30,
+      "identical_eviction_result": true,
+      "costs_ms": {
+        "baseline": {
+          "cpu": {
+            "p50": 2.3754855,
+            "mean": 9.318692433333332
+          },
+          "wall": {
+            "p50": 2.374021,
+            "mean": 9.316740933333334
+          }
+        },
+        "optimized": {
+          "cpu": {
+            "p50": 2.396573,
+            "mean": 2.366598333333333
+          },
+          "wall": {
+            "p50": 2.3948825,
+            "mean": 2.3648072
+          }
+        }
+      }
+    },
+    {
+      "host_leaf_candidates": 32768,
+      "already_satisfied": true,
+      "iterations": 30,
+      "identical_eviction_result": true,
+      "costs_ms": {
+        "baseline": {
+          "cpu": {
+            "p50": 17.771444,
+            "mean": 54.327487966666666
+          },
+          "wall": {
+            "p50": 17.7671295,
+            "mean": 54.32562506666667
+          }
+        },
+        "optimized": {
+          "cpu": {
+            "p50": 0.005417,
+            "mean": 0.0061962
+          },
+          "wall": {
+            "p50": 0.0034005,
+            "mean": 0.0038788666666666667
+          }
+        }
+      }
+    },
+    {
+      "host_leaf_candidates": 32768,
+      "already_satisfied": false,
+      "iterations": 30,
+      "identical_eviction_result": true,
+      "costs_ms": {
+        "baseline": {
+          "cpu": {
+            "p50": 18.738846,
+            "mean": 40.9339643
+          },
+          "wall": {
+            "p50": 18.734578,
+            "mean": 40.933177666666666
+          }
+        },
+        "optimized": {
+          "cpu": {
+            "p50": 19.215117,
+            "mean": 56.97662783333333
+          },
+          "wall": {
+            "p50": 19.2214265,
+            "mean": 56.977777700000004
+          }
+        }
+      }
+    }
+  ],
+  "deployed": false,
+  "helper_sha256": "632fbc460825b7ac7e046dc1719f4639eef92d0b5992e9899a81ecc5d2977f95",
+  "helper_utf8_source": "\"\"\"Compare native FULL host eviction methods on identical CPU candidates.\"\"\"\n\nimport ast\nfrom collections import defaultdict\nimport hashlib\nimport json\nfrom pathlib import Path\nimport statistics\nimport subprocess\nimport time\nfrom types import MethodType, SimpleNamespace as NS\n\nfrom sglang.srt.mem_cache.unified_cache.components import full as module\nfrom sglang.srt.mem_cache.evict_policy import LRUStrategy\n\nROOT = Path(\"/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011\")\nENGINE = ROOT / \"third_party/sglang-v0.5.20\"\nSOURCE = Path(\"python/sglang/srt/mem_cache/unified_cache/components/full.py\")\nOUTPUT = ROOT / \"experiments/reports/v267_full_host_reclaim_cpu_20261013.json\"\nif OUTPUT.exists():\n    raise ValueError(\"preserve prior evidence\")\nbaseline = subprocess.check_output([\"git\", \"show\", f\"HEAD:{SOURCE}\"], cwd=ENGINE, text=True)\ncurrent = (ENGINE / SOURCE).read_text()\n\n\ndef method(source):\n    tree = ast.parse(source)\n    cls = next(node for node in tree.body if isinstance(node, ast.ClassDef)\n               and node.name == \"FullComponent\")\n    function = next(node for node in cls.body if isinstance(node, ast.FunctionDef)\n                    and node.name == \"drive_host_eviction\")\n    code = ast.Module(body=[\n        ast.ImportFrom(module=\"__future__\", names=[ast.alias(name=\"annotations\")], level=0),\n        function,\n    ], type_ignores=[])\n    namespace = dict(vars(module))\n    exec(compile(ast.fix_missing_locations(code), \"<full-host-eviction>\", \"exec\"), namespace)\n    return namespace[\"drive_host_eviction\"]\n\n\nclass Node(NS):\n    __hash__ = object.__hash__\n\n    def __lt__(self, other):\n        return self.id < other.id\n\n\ndef fixture(count, selected):\n    component = module.FullComponent(NS(enable_session_radix_cache=True), None)\n    nodes = {\n        Node(id=i, parent=None, component_data={0: NS(session_ref=i % 3)},\n             last_access_time=float(i)) for i in range(count)\n    }\n\n    def evict(node, tracker, device_frees, host_frees):\n        nodes.remove(node)\n        tracker[0] += 1\n        selected.append(node.id)\n\n    component.tree_core = NS(\n        evictable_host_leaves=nodes, eviction_strategy=LRUStrategy(),\n        _evict_host_leaf=evict,\n    )\n    return component\n\n\nmethods = {\"baseline\": method(baseline), \"optimized\": method(current)}\ncases = []\nfor candidates in (0, 256, 4096, 32768):\n    for satisfied in (True, False):\n        if not candidates and not satisfied:\n            continue\n        clocks = {name: {\"cpu\": [], \"wall\": []} for name in methods}\n        for iteration in range(33):\n            outcomes = {}\n            names = list(methods)\n            if iteration % 2:\n                names.reverse()\n            for name in names:\n                selected = []\n                component = fixture(candidates, selected)\n                component.drive_host_eviction = MethodType(methods[name], component)\n                tracker = defaultdict(int, {0: 2 if satisfied else 0})\n                device_frees, host_frees = defaultdict(list), defaultdict(list)\n                cpu, wall = time.thread_time_ns(), time.perf_counter_ns()\n                component.drive_host_eviction(1, tracker, device_frees, host_frees)\n                elapsed_wall = (time.perf_counter_ns() - wall) / 1e6\n                elapsed_cpu = (time.thread_time_ns() - cpu) / 1e6\n                outcomes[name] = (dict(tracker), tuple(selected), len(component.tree_core.evictable_host_leaves))\n                if iteration >= 3:\n                    clocks[name][\"cpu\"].append(elapsed_cpu)\n                    clocks[name][\"wall\"].append(elapsed_wall)\n            assert outcomes[\"baseline\"] == outcomes[\"optimized\"]\n        cases.append({\n            \"host_leaf_candidates\": candidates, \"already_satisfied\": satisfied,\n            \"iterations\": 30, \"identical_eviction_result\": True,\n            \"costs_ms\": {name: {\n                clock: {\"p50\": statistics.median(values), \"mean\": statistics.mean(values)}\n                for clock, values in costs.items()\n            } for name, costs in clocks.items()},\n        })\nreport = {\n    \"scope\": (\n        \"Alternating native baseline/current FULL eviction methods; real session-aware \"\n        \"priority, synthetic host-leaf sets, no DMA or GPU. Real tree/allocator and \"\n        \"lock regressions run separately. CPU savings are not JCT or throughput gains.\"\n    ),\n    \"baseline_source_sha256\": hashlib.sha256(baseline.encode()).hexdigest(),\n    \"optimized_source_sha256\": hashlib.sha256(current.encode()).hexdigest(),\n    \"cases\": cases, \"deployed\": False,\n    \"helper_sha256\": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),\n    \"helper_utf8_source\": Path(__file__).read_text(),\n}\nOUTPUT.write_text(json.dumps(report, indent=2) + \"\\n\")\nprint(json.dumps({\"output\": str(OUTPUT), \"cases\": cases}, indent=2))\n"
+}

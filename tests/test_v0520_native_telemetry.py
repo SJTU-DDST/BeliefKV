@@ -1446,8 +1446,9 @@ def test_prefill_uses_native_chunk_lengths_without_reading_device_tensors(
         )
 
 
+@pytest.mark.parametrize("with_scan_counts", (False, True))
 def test_host_pool_usage_and_evictions_are_persisted_by_pool(
-    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch, with_scan_counts: bool,
 ) -> None:
     from beliefkv.runtime import sglang_v0520_observer
 
@@ -1461,6 +1462,11 @@ def test_host_pool_usage_and_evictions_are_persisted_by_pool(
             }
         )
     )
+    scan_counts = {
+        "calls": 5, "already_satisfied": 3, "heap_builds": 2, "heap_candidates": 24,
+    }
+    if with_scan_counts:
+        cache.components = {0: SimpleNamespace(host_eviction_counts=scan_counts)}
     monkeypatch.setattr(
         sglang_v0520_observer,
         "observe_static_full_mamba_host_usage",
@@ -1483,6 +1489,7 @@ def test_host_pool_usage_and_evictions_are_persisted_by_pool(
         for pool in ("full", "mamba")
     }
     audit.record_host_pool_usage(cache)
+    scan_counts["calls"] = 6
 
     from sglang.srt.mem_cache.unified_cache.component_type import ComponentType
 
@@ -1500,6 +1507,9 @@ def test_host_pool_usage_and_evictions_are_persisted_by_pool(
     usage = next(row for row in rows if row["event"] == "host_pool_usage")
     assert usage["pools"]["full"]["used_bytes"] == 640
     assert usage["pools"]["mamba"]["used_fraction"] == 0.2
+    assert usage["full_host_eviction_scans"] == ({
+        **scan_counts, "calls": 5,
+    } if with_scan_counts else {})
     eviction = next(row for row in rows if row["event"] == "host_pool_eviction")
     assert eviction["pools"] == {
         "full": {"evicted_units": 12, "evicted_bytes": 192},

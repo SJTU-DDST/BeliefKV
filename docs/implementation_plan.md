@@ -2,6 +2,33 @@
 
 Status date: 2026-10-13.
 
+Current bottleneck work (V265-V268): disabling demand handoff reduced
+instrumented exclusive Python wall from 55.537 to 39.679s in the complete
+600-900s window, but V49 still produced 318714/380722 decode request steps.
+Matched full-48 consecutive decode is close to native; short single-request
+prefill remains about 2.25-2.43x. Investigate batch turnover and cache
+maintenance outside the existing runtime scopes; do not equate worker
+intervals with kernels or removed CPU time with JCT improvement.
+
+A later 24s GIL profile retains 2355 samples and all 520 errors. FULL Host
+eviction appears in 381 samples. Write-back duplicate reclaim can satisfy
+the request before FullComponent still builds a heap over every Host leaf.
+The fix skips that heap only when the existing tracker already meets the
+target; otherwise preserve native ordering, locks and frees. Four cumulative
+counters enter the existing once-per-second Host record, not per-call logs.
+The old trace cannot identify the already-satisfied fraction of those samples.
+CPU cases with 4096/32768 synthetic leaves reduce that branch's P50 from
+2.508/19.647ms to 0.0037/0.0057ms, with GC disabled only during timed calls.
+Necessary eviction outputs match; this is not GPU/JCT evidence.
+
+Keep V49 frozen through complete JCT collection and cold-deploy the qualified
+fix afterward. The old followup engine lagged the canonical patch; preserve
+it and qualify against a new engine rebuilt from the complete current patch.
+This shared cache optimization can help native too: fixed V29 remains a
+development reference, while final attribution needs same-version evaluation.
+Continue evaluating early FULL consumption, service waiting, complete JCT,
+tail/fairness and recomputation. The performance goal remains unmet.
+
 Retain V29 as a positive complete JCT observation. Both same-version arms
 completed all 156 workflows: mean JCT 3039.851 -> 2648.654s (-12.869%),
 P50 2531.277 -> 2191.880s (-13.408%), P95 7334.121 -> 6490.692s

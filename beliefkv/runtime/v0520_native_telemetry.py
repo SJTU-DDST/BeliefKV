@@ -260,6 +260,10 @@ class NativeReactiveTelemetry:
                 "reentry_pressure_backups": dict(
                     getattr(cache, "beliefkv_reentry_backup_counts", {}) or {}
                 ),
+                "full_host_eviction_scans": dict(getattr(
+                    getattr(cache, "components", {}).get(0),
+                    "host_eviction_counts", {},
+                )),
             }
         self._emit("host_pool", record)
         self._last_host_snapshot_ms = now_ms
