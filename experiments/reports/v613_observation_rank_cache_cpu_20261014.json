@@ -1,0 +1,466 @@
+{
+  "status": "cpu_observation_cache_comparison_not_online_acceptance",
+  "created_at_local": "2026-10-14T15:29:52.836453-07:00",
+  "cases": [
+    {
+      "scope": "Identical event+maintenance+admission CPU fixture; no native page inspection, GPU or JCT proof.",
+      "kind": "structured_action",
+      "workflows": 108,
+      "join_rounds_per_workflow": 1,
+      "iterations": 300,
+      "profiling_enabled_in_both_variants": true,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 1.0073141133333334,
+            "p50_ms": 0.999218,
+            "p99_ms": 1.63534,
+            "max_ms": 1.699044
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 1.0088327833333333,
+            "p50_ms": 1.000654,
+            "p99_ms": 1.637838,
+            "max_ms": 1.701527
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.46833444,
+            "p50_ms": 0.462585,
+            "p99_ms": 0.79933,
+            "max_ms": 0.820949
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.4698657766666667,
+            "p50_ms": 0.464131,
+            "p99_ms": 0.801607,
+            "max_ms": 0.82294
+          }
+        }
+      },
+      "rank_calls": {
+        "baseline": 32508,
+        "candidate": 108
+      },
+      "classification_preserved": 300,
+      "thread_cpu_mean_reduction_fraction": 0.5350661389522078,
+      "baseline_revision": "7270ca1",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "fe04ad26466bb22456df2cf813843053a66d410693c4d7acc31baa2095406041"
+      },
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "scope": "Identical event+maintenance+admission CPU fixture; no native page inspection, GPU or JCT proof.",
+      "kind": "tool_wait_observation",
+      "workflows": 108,
+      "join_rounds_per_workflow": 1,
+      "iterations": 300,
+      "profiling_enabled_in_both_variants": true,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.8063982533333334,
+            "p50_ms": 0.79701,
+            "p99_ms": 1.288912,
+            "max_ms": 1.3126
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.80788827,
+            "p50_ms": 0.798289,
+            "p99_ms": 1.2909,
+            "max_ms": 1.314819
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.3822832566666667,
+            "p50_ms": 0.374971,
+            "p99_ms": 0.647736,
+            "max_ms": 0.702034
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.38358383,
+            "p50_ms": 0.376116,
+            "p99_ms": 0.649645,
+            "max_ms": 0.70411
+          }
+        }
+      },
+      "rank_calls": {
+        "baseline": 32508,
+        "candidate": 108
+      },
+      "classification_preserved": 300,
+      "thread_cpu_mean_reduction_fraction": 0.5259373949702173,
+      "baseline_revision": "7270ca1",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "fe04ad26466bb22456df2cf813843053a66d410693c4d7acc31baa2095406041"
+      },
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "scope": "Identical event+maintenance+admission CPU fixture; no native page inspection, GPU or JCT proof.",
+      "kind": "call_censored",
+      "workflows": 108,
+      "join_rounds_per_workflow": 1,
+      "iterations": 300,
+      "profiling_enabled_in_both_variants": true,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.8128427333333333,
+            "p50_ms": 0.801896,
+            "p99_ms": 1.32412,
+            "max_ms": 1.337858
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.81420774,
+            "p50_ms": 0.803369,
+            "p99_ms": 1.326257,
+            "max_ms": 1.339802
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.38780539333333336,
+            "p50_ms": 0.381573,
+            "p99_ms": 0.641503,
+            "max_ms": 0.652607
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.3891455933333333,
+            "p50_ms": 0.382884,
+            "p99_ms": 0.643409,
+            "max_ms": 0.655166
+          }
+        }
+      },
+      "rank_calls": {
+        "baseline": 32508,
+        "candidate": 108
+      },
+      "classification_preserved": 300,
+      "thread_cpu_mean_reduction_fraction": 0.5229023063994093,
+      "baseline_revision": "7270ca1",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "fe04ad26466bb22456df2cf813843053a66d410693c4d7acc31baa2095406041"
+      },
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "scope": "Identical event+maintenance+admission CPU fixture; no native page inspection, GPU or JCT proof.",
+      "kind": "tool_round",
+      "workflows": 108,
+      "join_rounds_per_workflow": 1,
+      "iterations": 300,
+      "profiling_enabled_in_both_variants": true,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 1.05978553,
+            "p50_ms": 1.064347,
+            "p99_ms": 1.143509,
+            "max_ms": 1.184168
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 1.0614087166666666,
+            "p50_ms": 1.065726,
+            "p99_ms": 1.145142,
+            "max_ms": 1.187272
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 1.0643951866666668,
+            "p50_ms": 1.068573,
+            "p99_ms": 1.140397,
+            "max_ms": 1.157935
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 1.0661568066666667,
+            "p50_ms": 1.070399,
+            "p99_ms": 1.143714,
+            "max_ms": 1.168622
+          }
+        }
+      },
+      "rank_calls": {
+        "baseline": 32508,
+        "candidate": 32508
+      },
+      "classification_preserved": 0,
+      "thread_cpu_mean_reduction_fraction": -0.004349612762373445,
+      "baseline_revision": "7270ca1",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "fe04ad26466bb22456df2cf813843053a66d410693c4d7acc31baa2095406041"
+      },
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "scope": "Identical event+maintenance+admission CPU fixture; no native page inspection, GPU or JCT proof.",
+      "kind": "structured_action",
+      "workflows": 156,
+      "join_rounds_per_workflow": 2,
+      "iterations": 300,
+      "profiling_enabled_in_both_variants": true,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 1.35031879,
+            "p50_ms": 1.252397,
+            "p99_ms": 1.65764,
+            "max_ms": 1.909117
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 1.35228612,
+            "p50_ms": 1.254376,
+            "p99_ms": 1.660867,
+            "max_ms": 1.911236
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.6056545966666667,
+            "p50_ms": 0.573799,
+            "p99_ms": 0.753529,
+            "max_ms": 0.775862
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.6073640766666667,
+            "p50_ms": 0.575625,
+            "p99_ms": 0.755432,
+            "max_ms": 0.777746
+          }
+        }
+      },
+      "rank_calls": {
+        "baseline": 46956,
+        "candidate": 156
+      },
+      "classification_preserved": 300,
+      "thread_cpu_mean_reduction_fraction": 0.5514728809582317,
+      "baseline_revision": "7270ca1",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "fe04ad26466bb22456df2cf813843053a66d410693c4d7acc31baa2095406041"
+      },
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "scope": "Identical event+maintenance+admission CPU fixture; no native page inspection, GPU or JCT proof.",
+      "kind": "tool_wait_observation",
+      "workflows": 156,
+      "join_rounds_per_workflow": 2,
+      "iterations": 300,
+      "profiling_enabled_in_both_variants": true,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 1.22880681,
+            "p50_ms": 1.221323,
+            "p99_ms": 1.351589,
+            "max_ms": 1.987213
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 1.2304289966666666,
+            "p50_ms": 1.223047,
+            "p99_ms": 1.353415,
+            "max_ms": 1.989439
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.5485383933333333,
+            "p50_ms": 0.54148,
+            "p99_ms": 0.619289,
+            "max_ms": 0.638094
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.5501836166666667,
+            "p50_ms": 0.543146,
+            "p99_ms": 0.620905,
+            "max_ms": 0.639587
+          }
+        }
+      },
+      "rank_calls": {
+        "baseline": 46956,
+        "candidate": 156
+      },
+      "classification_preserved": 300,
+      "thread_cpu_mean_reduction_fraction": 0.5536007866579667,
+      "baseline_revision": "7270ca1",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "fe04ad26466bb22456df2cf813843053a66d410693c4d7acc31baa2095406041"
+      },
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "scope": "Identical event+maintenance+admission CPU fixture; no native page inspection, GPU or JCT proof.",
+      "kind": "call_censored",
+      "workflows": 156,
+      "join_rounds_per_workflow": 2,
+      "iterations": 300,
+      "profiling_enabled_in_both_variants": true,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 1.22506024,
+            "p50_ms": 1.217814,
+            "p99_ms": 1.406033,
+            "max_ms": 1.905025
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 1.22669157,
+            "p50_ms": 1.219314,
+            "p99_ms": 1.407892,
+            "max_ms": 1.907085
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.5628378866666667,
+            "p50_ms": 0.556664,
+            "p99_ms": 0.633167,
+            "max_ms": 0.64132
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.5644295233333333,
+            "p50_ms": 0.558463,
+            "p99_ms": 0.634684,
+            "max_ms": 0.642946
+          }
+        }
+      },
+      "rank_calls": {
+        "baseline": 46956,
+        "candidate": 156
+      },
+      "classification_preserved": 300,
+      "thread_cpu_mean_reduction_fraction": 0.5405630937245447,
+      "baseline_revision": "7270ca1",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "fe04ad26466bb22456df2cf813843053a66d410693c4d7acc31baa2095406041"
+      },
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "scope": "Identical event+maintenance+admission CPU fixture; no native page inspection, GPU or JCT proof.",
+      "kind": "tool_round",
+      "workflows": 156,
+      "join_rounds_per_workflow": 2,
+      "iterations": 300,
+      "profiling_enabled_in_both_variants": true,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 1.25319357,
+            "p50_ms": 1.25031,
+            "p99_ms": 1.350272,
+            "max_ms": 1.547095
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 1.25482913,
+            "p50_ms": 1.251996,
+            "p99_ms": 1.352343,
+            "max_ms": 1.548391
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 1.2449494666666667,
+            "p50_ms": 1.238935,
+            "p99_ms": 1.340965,
+            "max_ms": 1.703841
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 1.2467279066666666,
+            "p50_ms": 1.240396,
+            "p99_ms": 1.343133,
+            "max_ms": 1.706454
+          }
+        }
+      },
+      "rank_calls": {
+        "baseline": 46956,
+        "candidate": 46956
+      },
+      "classification_preserved": 0,
+      "thread_cpu_mean_reduction_fraction": 0.006578475608786771,
+      "baseline_revision": "7270ca1",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "fe04ad26466bb22456df2cf813843053a66d410693c4d7acc31baa2095406041"
+      },
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0
+    }
+  ],
+  "candidate_sources": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "526af6f635b8bc3ae393dc8f14b8c3d5b199946bcdb57a427e4585213891abf2",
+    "beliefkv/policy/causal_frontier.py": "c0d7f40db9ed29ee3c1d209281fba9fccac733da3ef432a6918394224f44fd81",
+    "scripts/benchmark_observation_rank_cache.py": "4be528523a5c690c9f7b24935943410e4e7db6a2c91d28d8a5a3ed290067fe7a"
+  },
+  "limitations": [
+    "Synthetic queue/graph sizes are scenarios, not captured V59 phase frequencies.",
+    "Current and baseline receive the same events and use the same timing profiler.",
+    "The tool-round negative control changes executable state and must retain full invalidation.",
+    "Resident-first and physical cache probes are disabled in both CPU variants; live physical checks are unchanged by the candidate.",
+    "No workload, timing model, weights, eligibility, eviction, priority or native dependency changes."
+  ]
+}

@@ -1,0 +1,428 @@
+{
+  "status": "four_complete_development_windows_not_goal_acceptance",
+  "observed_at_local": "2026-10-14T15:36:16.255710-07:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59",
+  "scheduler": {
+    "pid": 1519312,
+    "state": "S",
+    "ppid": 1518922,
+    "start_ticks": "618165558",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "frozen_execution": {
+    "collection_code_commit": "d1c3f1407d8841bde1e3aff3d4fc37559bcc8247",
+    "verification_code_commit": "0105f8b411c0cd7915a007f94bced357a76ca6da",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": [
+      "docs/README_zh.md",
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/reports/v597_v59_post_sampling_frozen_20261014.json",
+      "experiments/reports/v598_v59_post_sampling_registration_20261014.json",
+      "experiments/reports/v599_v59_predictive_numa_placement_20261014.json",
+      "experiments/reports/v59_v58_native_reference_tz_busy_120_300_20261014.json",
+      "experiments/reports/v59_v58_native_reference_tz_busy_1800_2100_20261014.json",
+      "experiments/reports/v59_v58_native_reference_tz_busy_600_900_20261014.json",
+      "experiments/reports/v59_v58_native_reference_tz_prefill_phases_120_300_20261014.json",
+      "experiments/reports/v59_v58_native_reference_tz_prefill_phases_1800_2100_20261014.json",
+      "experiments/reports/v59_v58_native_reference_tz_prefill_phases_600_900_20261014.json",
+      "experiments/reports/v600_v59_live_startup_validation_20261014.json",
+      "experiments/reports/v601_v59_window_observer_registration_20261014.json",
+      "experiments/reports/v602_v59_wall_clock_alignment_20261014.json",
+      "experiments/reports/v603_v59_corrected_window_observer_registration_20261014.json",
+      "experiments/reports/v604_v59_first_corrected_windows_20261014.json",
+      "experiments/reports/v606_v59_three_corrected_windows_20261014.json"
+    ]
+  },
+  "sources": [
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v600_v59_live_startup_validation_20261014.json",
+      "sha256": "78f1c09f85ee5b8f86599c460020be3ed0351823e8a2fd035db9f883923fd058"
+    },
+    {
+      "path": "/home/longhao/experiment/ops/v59_v58_native_reference_tz_window_observer_20261014.state.json",
+      "sha256": "52cb25f0d639525faed9da9b6d9af38bf56bd988151cd12818e07a3573761e6a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_busy_120_300_20261014.json",
+      "sha256": "fd64ab25f5fc96401164a0700547874e4b96b51d81fb6e795a85a36ac1a84fed"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_prefill_phases_120_300_20261014.json",
+      "sha256": "883419d0d4a052e0c56ac2dd57559e06da2feec109ff7440c696ac5926769f98"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_busy_600_900_20261014.json",
+      "sha256": "e9420f815d2de015b64eb9e63a13eabc1e3315ad5d639f920fd2f40fcb66b003"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_prefill_phases_600_900_20261014.json",
+      "sha256": "8fffbb42387efcecd2aa62f34a063bbd3dfbe637472b9db03217285e2dacae21"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_busy_1800_2100_20261014.json",
+      "sha256": "7f158d09594fb029822fcf6b8da9102ed43fc31997de90d033774b0ece0b63a6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_prefill_phases_1800_2100_20261014.json",
+      "sha256": "d3e34ff7c153cccde43ca79627b02dbf358a938b72c358ac7afdc18731f71f1d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_busy_3600_3900_20261014.json",
+      "sha256": "4ea693fc20285d8f6dfc283531e704e34d05bcce08b2686a85593b2ea5131346"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_prefill_phases_3600_3900_20261014.json",
+      "sha256": "55ff831d004a45126635356125217e3eb013061d3b021a502a2331d6eeb15500"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v616_v59_shape_survival_final_source_replay_20261014.json.gz",
+      "sha256": "e5383048820a6409a89a778d9e35193992b26b76d50fb2174a6ea39c75c037ee"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v612_v59_overrun_shape_survival_20261014.json.gz",
+      "sha256": "0d3d66b74cf61ff9ba4cc6c58494032c2e9747a643cc43355f4d14b940c37545"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v608_v59_wait_prefetch_before_second_wave_20261014.json.gz",
+      "sha256": "f60ba114586c6334e2a99e5d75d7867dceb2fe4ec28fd92e8fed00107fb1e5dc"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v609_v59_wait_prefetch_tails_before_second_wave_20261014.json",
+      "sha256": "d95a4d7e4ea4a956603cb746b6df979874c5028a81bf488a983f0cab8d46c9d9"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v610_v59_restore_protection_before_second_wave_20261014.json",
+      "sha256": "98e748d28f7164e099224ba8a9396eb3e4eaa3b04999d5b722c099faa9e5e402"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v611_v59_causal_shape_survival_20261014.json.gz",
+      "sha256": "61b9af7d4d53117b36378ac26b3ac10c1df9c49276f7db6b57b1d929861aa1a6"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v613_observation_rank_cache_cpu_20261014.json",
+      "sha256": "86c01c17edd827c6a7c95e22525a9c9cdcd6244d1f3b4b08d1f36f4d8f7dd058"
+    }
+  ],
+  "windows": [
+    {
+      "begin_seconds": 120,
+      "end_seconds": 300,
+      "arms": {
+        "predictive_h2d": {
+          "short_samples": 44,
+          "turnover_p50_ms": 43.907649993896484,
+          "selection_p50_ms": 4.493347,
+          "return_to_result_start_p50_ms": 6.665341377258301,
+          "decode_request_steps": 237671
+        },
+        "native": {
+          "short_samples": 51,
+          "turnover_p50_ms": 40.154643058776855,
+          "selection_p50_ms": 1.6591,
+          "return_to_result_start_p50_ms": 3.8599748611450195,
+          "decode_request_steps": 246021
+        }
+      },
+      "turnover_relative_gap": 0.09346383504458289,
+      "decode_service_relative_gap": -0.033940192097422606,
+      "instrumented_self_wall_seconds": 15.966519717
+    },
+    {
+      "begin_seconds": 600,
+      "end_seconds": 900,
+      "arms": {
+        "predictive_h2d": {
+          "short_samples": 66,
+          "turnover_p50_ms": 47.722588539123535,
+          "selection_p50_ms": 17.213608999999998,
+          "return_to_result_start_p50_ms": 7.456474304199219,
+          "decode_request_steps": 372581
+        },
+        "native": {
+          "short_samples": 62,
+          "turnover_p50_ms": 44.35922050476074,
+          "selection_p50_ms": 15.992223500000001,
+          "return_to_result_start_p50_ms": 4.146250247955322,
+          "decode_request_steps": 386707
+        }
+      },
+      "turnover_relative_gap": 0.0758211707981169,
+      "decode_service_relative_gap": -0.03652894827349906,
+      "instrumented_self_wall_seconds": 30.872384587
+    },
+    {
+      "begin_seconds": 1800,
+      "end_seconds": 2100,
+      "arms": {
+        "predictive_h2d": {
+          "short_samples": 69,
+          "turnover_p50_ms": 50.93492317199707,
+          "selection_p50_ms": 6.046979,
+          "return_to_result_start_p50_ms": 6.353811264038086,
+          "decode_request_steps": 384610
+        },
+        "native": {
+          "short_samples": 64,
+          "turnover_p50_ms": 51.787667751312256,
+          "selection_p50_ms": 2.7438184999999997,
+          "return_to_result_start_p50_ms": 3.8858437538146973,
+          "decode_request_steps": 381775
+        }
+      },
+      "turnover_relative_gap": -0.01646617073798573,
+      "decode_service_relative_gap": 0.007425839827123415,
+      "instrumented_self_wall_seconds": 26.370353798000004
+    },
+    {
+      "begin_seconds": 3600,
+      "end_seconds": 3900,
+      "arms": {
+        "predictive_h2d": {
+          "short_samples": 56,
+          "turnover_p50_ms": 52.81800079345703,
+          "selection_p50_ms": 5.0301795,
+          "return_to_result_start_p50_ms": 6.87018346786499,
+          "decode_request_steps": 364026
+        },
+        "native": {
+          "short_samples": 75,
+          "turnover_p50_ms": 43.777530670166016,
+          "selection_p50_ms": 2.11794,
+          "return_to_result_start_p50_ms": 3.9959278106689453,
+          "decode_request_steps": 388781
+        }
+      },
+      "turnover_relative_gap": 0.20650936644656426,
+      "decode_service_relative_gap": -0.06367337910031612,
+      "instrumented_self_wall_seconds": 20.464887829000006
+    }
+  ],
+  "timing_candidates": {
+    "unconditional_shape_history": {
+      "summary": {
+        "independent_single_execute_child_waits": 6607,
+        "waits_with_empirical_support": 6420,
+        "waits_with_last_second_empirical_support": 6388,
+        "recorded": {
+          "tool_weighted_last_second_absolute_error_ms": {
+            "count": 6601,
+            "p50": 44.99965476989746,
+            "p90": 499.0723433682473,
+            "min": 0.0017185211181640625,
+            "max": 2420.8972225661455
+          },
+          "first_1s_window_actual_lead_ms": {
+            "count": 6520,
+            "p50": 212.1545286178589,
+            "p90": 846.6360928535468,
+            "min": 0.057013511657714844,
+            "max": 180032.01263046265
+          },
+          "first_1s_window_too_early_over_10s": 25,
+          "first_1s_window_within_actual_last_second": 6107,
+          "no_pre_completion_1s_window": 87
+        },
+        "candidate": {
+          "tool_weighted_last_second_absolute_error_ms": {
+            "count": 6601,
+            "p50": 43.70894956588745,
+            "p90": 344.8954954147339,
+            "min": 0.0017213821411132812,
+            "max": 170923.27428913116
+          },
+          "first_1s_window_actual_lead_ms": {
+            "count": 6463,
+            "p50": 203.88922595977783,
+            "p90": 826.8107383728028,
+            "min": 0.057013511657714844,
+            "max": 180018.67357254028
+          },
+          "first_1s_window_too_early_over_10s": 21,
+          "first_1s_window_within_actual_last_second": 6056,
+          "no_pre_completion_1s_window": 144
+        },
+        "recorded_early_full_bytes": 8116572160,
+        "semantics": "Same recorded forecast acceptance times and completed tool boundaries; unsupported empirical queries fall back to the recorded forecast. A timing window is not a simulated H2D action, feasible capacity or causal benefit."
+      },
+      "positive_full_plan_summary": {
+        "independent_single_execute_child_waits": 1701,
+        "waits_with_empirical_support": 1674,
+        "waits_with_last_second_empirical_support": 1654,
+        "recorded": {
+          "tool_weighted_last_second_absolute_error_ms": {
+            "count": 1695,
+            "p50": 83.88232898712158,
+            "p90": 540.9983958705209,
+            "min": 0.0017185211181640625,
+            "max": 2223.541734258675
+          },
+          "first_1s_window_actual_lead_ms": {
+            "count": 1659,
+            "p50": 491.3883399963379,
+            "p90": 1254.1311183929447,
+            "min": 5.0410966873168945,
+            "max": 180032.01263046265
+          },
+          "first_1s_window_too_early_over_10s": 22,
+          "first_1s_window_within_actual_last_second": 1414,
+          "no_pre_completion_1s_window": 42
+        },
+        "candidate": {
+          "tool_weighted_last_second_absolute_error_ms": {
+            "count": 1695,
+            "p50": 71.9200348854065,
+            "p90": 485.0330089569092,
+            "min": 0.04989433288574219,
+            "max": 170923.27428913116
+          },
+          "first_1s_window_actual_lead_ms": {
+            "count": 1616,
+            "p50": 454.0560064315796,
+            "p90": 1229.3238248825073,
+            "min": 5.0410966873168945,
+            "max": 180018.67357254028
+          },
+          "first_1s_window_too_early_over_10s": 18,
+          "first_1s_window_within_actual_last_second": 1377,
+          "no_pre_completion_1s_window": 85
+        },
+        "recorded_early_full_bytes": 8116572160,
+        "semantics": "Same recorded forecast acceptance times and completed tool boundaries; unsupported empirical queries fall back to the recorded forecast. A timing window is not a simulated H2D action, feasible capacity or causal benefit."
+      },
+      "history_activation": "every_supported_forecast",
+      "online_qualification": "rejected_large_new_overestimation"
+    },
+    "initial_p90_overrun_shape_history": {
+      "summary": {
+        "independent_single_execute_child_waits": 6607,
+        "waits_with_empirical_support": 109,
+        "waits_with_last_second_empirical_support": 96,
+        "recorded": {
+          "tool_weighted_last_second_absolute_error_ms": {
+            "count": 6601,
+            "p50": 44.99965476989746,
+            "p90": 499.0723433682473,
+            "min": 0.0017185211181640625,
+            "max": 2420.8972225661455
+          },
+          "first_1s_window_actual_lead_ms": {
+            "count": 6520,
+            "p50": 212.1545286178589,
+            "p90": 846.6360928535468,
+            "min": 0.057013511657714844,
+            "max": 180032.01263046265
+          },
+          "first_1s_window_too_early_over_10s": 25,
+          "first_1s_window_within_actual_last_second": 6107,
+          "no_pre_completion_1s_window": 87
+        },
+        "candidate": {
+          "tool_weighted_last_second_absolute_error_ms": {
+            "count": 6601,
+            "p50": 44.24949836730957,
+            "p90": 494.5826578140259,
+            "min": 0.0017185211181640625,
+            "max": 142169.85330867767
+          },
+          "first_1s_window_actual_lead_ms": {
+            "count": 6520,
+            "p50": 212.1545286178589,
+            "p90": 846.6360928535468,
+            "min": 0.057013511657714844,
+            "max": 180032.01263046265
+          },
+          "first_1s_window_too_early_over_10s": 25,
+          "first_1s_window_within_actual_last_second": 6107,
+          "no_pre_completion_1s_window": 87
+        },
+        "recorded_early_full_bytes": 8116572160,
+        "semantics": "Same recorded forecast acceptance times and completed tool boundaries; unsupported empirical queries fall back to the recorded forecast. A timing window is not a simulated H2D action, feasible capacity or causal benefit."
+      },
+      "positive_full_plan_summary": {
+        "independent_single_execute_child_waits": 1701,
+        "waits_with_empirical_support": 48,
+        "waits_with_last_second_empirical_support": 41,
+        "recorded": {
+          "tool_weighted_last_second_absolute_error_ms": {
+            "count": 1695,
+            "p50": 83.88232898712158,
+            "p90": 540.9983958705209,
+            "min": 0.0017185211181640625,
+            "max": 2223.541734258675
+          },
+          "first_1s_window_actual_lead_ms": {
+            "count": 1659,
+            "p50": 491.3883399963379,
+            "p90": 1254.1311183929447,
+            "min": 5.0410966873168945,
+            "max": 180032.01263046265
+          },
+          "first_1s_window_too_early_over_10s": 22,
+          "first_1s_window_within_actual_last_second": 1414,
+          "no_pre_completion_1s_window": 42
+        },
+        "candidate": {
+          "tool_weighted_last_second_absolute_error_ms": {
+            "count": 1695,
+            "p50": 81.49468898773193,
+            "p90": 527.3922254414458,
+            "min": 0.0017185211181640625,
+            "max": 142169.85330867767
+          },
+          "first_1s_window_actual_lead_ms": {
+            "count": 1659,
+            "p50": 491.3883399963379,
+            "p90": 1254.1311183929447,
+            "min": 5.0410966873168945,
+            "max": 180032.01263046265
+          },
+          "first_1s_window_too_early_over_10s": 22,
+          "first_1s_window_within_actual_last_second": 1414,
+          "no_pre_completion_1s_window": 42
+        },
+        "recorded_early_full_bytes": 8116572160,
+        "semantics": "Same recorded forecast acceptance times and completed tool boundaries; unsupported empirical queries fall back to the recorded forecast. A timing window is not a simulated H2D action, feasible capacity or causal benefit."
+      },
+      "history_activation": "after_the_first_accepted_forecast_p90_deadline",
+      "online_qualification": "rejected_large_new_overestimation"
+    }
+  },
+  "current_source_reproduces_initial_shape_history_summary": true,
+  "collection": {
+    "predictive_h2d": {
+      "outcomes": {
+        "completed": 130
+      },
+      "arrived": 156,
+      "without_terminal_result": 26,
+      "unreadable_results": []
+    }
+  },
+  "conclusions": [
+    "The replenished 3600-3900s window is still outside the stage ranges; three earlier windows are insufficient acceptance.",
+    "Command-shape histories improve central timing errors but introduce very large new overestimation; both candidates remain offline.",
+    "The observation-only rank cache is a separate CPU candidate; its fixture reduction does not establish live scheduling, GPU or JCT gain.",
+    "Keep V59 running unless a material qualified fix or a verified runtime failure justifies a cold restart.",
+    "The original mean-JCT/completion-throughput, quality, fairness/recompute and same-version repeated-control goal remains active."
+  ],
+  "helper_sha256": "070faf6572de4ccbb2b2f39eadd516cccbafa5b28b5ddeb2f8853aa7743c5588"
+}
