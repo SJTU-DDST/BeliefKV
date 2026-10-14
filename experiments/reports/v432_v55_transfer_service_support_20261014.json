@@ -1,0 +1,1757 @@
+{
+  "status": "sealed_receipt_support_diagnostic_not_runtime_replay_or_estimator_change",
+  "observed_at_local": "2026-10-14T08:58:12.365882+08:00",
+  "counts": {
+    "rejection_snapshots": 68,
+    "shape:full": 68,
+    "bounded_receipt_replay_supported": 0,
+    "all_prior_typed_receipts_supported": 31,
+    "support_absent_after_bounded_history": 31
+  },
+  "independent_selected_waits": 47,
+  "independent_observed_rejection_waits": 47,
+  "collection_history_bounds": {
+    "_h2d_samples": 64,
+    "_native_service_samples": 256
+  },
+  "collection_runtime_sha256": "1b84dc20056d59e323eca6eb2b528edd1114eea964f7a60074e3b5517d88a635",
+  "rows": [
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-14631:2f18f23667cc",
+      "context_id": "deepagents-context:582f6748459bf605",
+      "context_epoch": 11,
+      "join_id": null,
+      "ts_ms": 1791933449836.9849,
+      "planned_pool_bytes": {
+        "kv": 19107840,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 155.41650390625,
+      "global_fifo_pool_direction_census": {
+        "d2h:full": 75,
+        "h2d:hybrid": 62,
+        "d2h:hybrid": 119
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:mwaskom__seaborn-3187:b49fcc2a0fb8",
+      "context_id": "deepagents-context:fd1aa2b8c7e6b1d8",
+      "context_epoch": 22,
+      "join_id": null,
+      "ts_ms": 1791933449840.8706,
+      "planned_pool_bytes": {
+        "kv": 19107840,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 15.28857421875,
+      "global_fifo_pool_direction_census": {
+        "d2h:full": 75,
+        "h2d:hybrid": 62,
+        "d2h:hybrid": 119
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-6992:70d940bd9758",
+      "context_id": "deepagents-context:0ee824c233e0b7a6",
+      "context_epoch": 16,
+      "join_id": null,
+      "ts_ms": 1791933449970.311,
+      "planned_pool_bytes": {
+        "kv": 3932160,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 205.639404296875,
+      "global_fifo_pool_direction_census": {
+        "h2d:hybrid": 63,
+        "d2h:hybrid": 119,
+        "d2h:full": 74
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-4604:5e4de9858f1d",
+      "context_id": "deepagents-context:a9f03417d3973917",
+      "context_epoch": 16,
+      "join_id": null,
+      "ts_ms": 1791933449971.9595,
+      "planned_pool_bytes": {
+        "kv": 3932160,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 43.9404296875,
+      "global_fifo_pool_direction_census": {
+        "h2d:hybrid": 63,
+        "d2h:hybrid": 119,
+        "d2h:full": 74
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-14631:2f18f23667cc",
+      "context_id": "deepagents-context:582f6748459bf605",
+      "context_epoch": 11,
+      "join_id": null,
+      "ts_ms": 1791933449977.2744,
+      "planned_pool_bytes": {
+        "kv": 3932160,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 15.126953125,
+      "global_fifo_pool_direction_census": {
+        "h2d:hybrid": 63,
+        "d2h:hybrid": 119,
+        "d2h:full": 74
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-10356:8f4d35e3c180",
+      "context_id": "deepagents-context:6b111406254b0379",
+      "context_epoch": 19,
+      "join_id": null,
+      "ts_ms": 1791933471151.702,
+      "planned_pool_bytes": {
+        "kv": 29409280,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 66.404541015625,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 159,
+        "h2d:hybrid": 95,
+        "d2h:full": 2
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9",
+      "context_id": "deepagents-context:acea554057764ee9",
+      "context_epoch": 25,
+      "join_id": null,
+      "ts_ms": 1791933579568.0234,
+      "planned_pool_bytes": {
+        "kv": 4874240,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 1.60400390625,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 145,
+        "h2d:hybrid": 88,
+        "d2h:full": 23
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11734:08aaffab09f0",
+      "context_id": "deepagents-context:099f55e9505fc625",
+      "context_epoch": 24,
+      "join_id": null,
+      "ts_ms": 1791933588143.008,
+      "planned_pool_bytes": {
+        "kv": 18821120,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 1,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": 92815.75268554688,
+      "remaining_to_completion_ms_label": 67.351318359375,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 159,
+        "h2d:hybrid": 92,
+        "d2h:full": 5
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-16502:bc51eaebfdea",
+      "context_id": "deepagents-context:d3d4e42e1d3776db",
+      "context_epoch": 25,
+      "join_id": null,
+      "ts_ms": 1791933614217.5244,
+      "planned_pool_bytes": {
+        "kv": 1413120,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 8.59716796875,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 158,
+        "h2d:hybrid": 87,
+        "d2h:full": 11
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-10081:c3a4d77d4e00",
+      "context_id": "deepagents-context:517729d19206d7b4",
+      "context_epoch": 26,
+      "join_id": null,
+      "ts_ms": 1791933614219.7622,
+      "planned_pool_bytes": {
+        "kv": 1413120,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 793.24951171875,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 158,
+        "h2d:hybrid": 87,
+        "d2h:full": 11
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31",
+      "context_id": "deepagents-context:9e1860337977bf2c",
+      "context_epoch": 23,
+      "join_id": null,
+      "ts_ms": 1791933614222.2214,
+      "planned_pool_bytes": {
+        "kv": 1413120,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 45.670654296875,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 158,
+        "h2d:hybrid": 87,
+        "d2h:full": 11
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3993:e66bd1ac565f",
+      "context_id": "deepagents-context:2de2cc37715886eb",
+      "context_epoch": 25,
+      "join_id": null,
+      "ts_ms": 1791933614224.3926,
+      "planned_pool_bytes": {
+        "kv": 1413120,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 2876.576904296875,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 158,
+        "h2d:hybrid": 87,
+        "d2h:full": 11
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-10081:c3a4d77d4e00",
+      "context_id": "deepagents-context:517729d19206d7b4",
+      "context_epoch": 26,
+      "join_id": null,
+      "ts_ms": 1791933614237.023,
+      "planned_pool_bytes": {
+        "kv": 430080,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 775.98876953125,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 158,
+        "h2d:hybrid": 87,
+        "d2h:full": 11
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-6386:8d9749b1be31",
+      "context_id": "deepagents-context:9e1860337977bf2c",
+      "context_epoch": 23,
+      "join_id": null,
+      "ts_ms": 1791933614238.6702,
+      "planned_pool_bytes": {
+        "kv": 430080,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 29.221923828125,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 158,
+        "h2d:hybrid": 87,
+        "d2h:full": 11
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9",
+      "context_id": "deepagents-context:bf8d7abab058e171",
+      "context_epoch": 28,
+      "join_id": null,
+      "ts_ms": 1791933640031.0874,
+      "planned_pool_bytes": {
+        "kv": 37314560,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 3,
+      "third_most_recent_matching_receipt_age_ms": 144703.83203125,
+      "latest_compatible_prior_receipt_age_ms": 51609.960693359375,
+      "remaining_to_completion_ms_label": 398.031982421875,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 142,
+        "h2d:hybrid": 79,
+        "d2h:full": 35
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-7393:6f40fcc1312b",
+      "context_id": "deepagents-context:a7aa6f6661abe373",
+      "context_epoch": 32,
+      "join_id": null,
+      "ts_ms": 1791933775959.217,
+      "planned_pool_bytes": {
+        "kv": 30474240,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 3,
+      "third_most_recent_matching_receipt_age_ms": 280631.9616699219,
+      "latest_compatible_prior_receipt_age_ms": 187538.09033203125,
+      "remaining_to_completion_ms_label": 77.578125,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 161,
+        "h2d:hybrid": 95
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7236:ff63795bc147",
+      "context_id": "deepagents-context:d6e671350e86ac53",
+      "context_epoch": 44,
+      "join_id": null,
+      "ts_ms": 1791933849859.6106,
+      "planned_pool_bytes": {
+        "kv": 18309120,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 3,
+      "third_most_recent_matching_receipt_age_ms": 354532.3552246094,
+      "latest_compatible_prior_receipt_age_ms": 17866.334228515625,
+      "remaining_to_completion_ms_label": 12.720703125,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 149,
+        "h2d:hybrid": 90,
+        "d2h:full": 17
+      }
+    },
+    {
+      "source": "join_ticket",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72",
+      "context_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72:context:root",
+      "context_epoch": 0,
+      "join_id": "deepagents-join:f1259c3d8e9677bb",
+      "ts_ms": 1791933868510.004,
+      "planned_pool_bytes": {
+        "kv": 5816320,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 5541.94921875,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 154,
+        "h2d:hybrid": 87,
+        "d2h:full": 15
+      }
+    },
+    {
+      "source": "join_ticket",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72",
+      "context_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72:context:root",
+      "context_epoch": 0,
+      "join_id": "deepagents-join:f1259c3d8e9677bb",
+      "ts_ms": 1791933868520.7764,
+      "planned_pool_bytes": {
+        "kv": 4751360,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 5531.1767578125,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 153,
+        "h2d:hybrid": 88,
+        "d2h:full": 15
+      }
+    },
+    {
+      "source": "join_ticket",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72",
+      "context_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72:context:root",
+      "context_epoch": 0,
+      "join_id": "deepagents-join:f1259c3d8e9677bb",
+      "ts_ms": 1791933868539.7314,
+      "planned_pool_bytes": {
+        "kv": 3768320,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 5512.2216796875,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 153,
+        "h2d:hybrid": 88,
+        "d2h:full": 15
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11179:0c9bffcebd6e",
+      "context_id": "deepagents:autonomous:django__django-11179:0c9bffcebd6e:context:root",
+      "context_epoch": 5,
+      "join_id": null,
+      "ts_ms": 1791933868542.2515,
+      "planned_pool_bytes": {
+        "kv": 3768320,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 262.4072265625,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 153,
+        "h2d:hybrid": 88,
+        "d2h:full": 15
+      }
+    },
+    {
+      "source": "join_ticket",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72",
+      "context_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72:context:root",
+      "context_epoch": 0,
+      "join_id": "deepagents-join:f1259c3d8e9677bb",
+      "ts_ms": 1791933868554.1655,
+      "planned_pool_bytes": {
+        "kv": 2785280,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 5497.78759765625,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 153,
+        "h2d:hybrid": 88,
+        "d2h:full": 15
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11179:0c9bffcebd6e",
+      "context_id": "deepagents:autonomous:django__django-11179:0c9bffcebd6e:context:root",
+      "context_epoch": 5,
+      "join_id": null,
+      "ts_ms": 1791933868555.3296,
+      "planned_pool_bytes": {
+        "kv": 2785280,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 249.3291015625,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 153,
+        "h2d:hybrid": 88,
+        "d2h:full": 15
+      }
+    },
+    {
+      "source": "join_ticket",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72",
+      "context_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72:context:root",
+      "context_epoch": 0,
+      "join_id": "deepagents-join:f1259c3d8e9677bb",
+      "ts_ms": 1791933868576.8882,
+      "planned_pool_bytes": {
+        "kv": 1802240,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 5475.06494140625,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 153,
+        "h2d:hybrid": 88,
+        "d2h:full": 15
+      }
+    },
+    {
+      "source": "join_ticket",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72",
+      "context_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72:context:root",
+      "context_epoch": 0,
+      "join_id": "deepagents-join:f1259c3d8e9677bb",
+      "ts_ms": 1791933868599.445,
+      "planned_pool_bytes": {
+        "kv": 819200,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 5452.508056640625,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 153,
+        "h2d:hybrid": 88,
+        "d2h:full": 15
+      }
+    },
+    {
+      "source": "join_ticket",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72",
+      "context_id": "deepagents:autonomous:pydata__xarray-3677:a44209827d72:context:root",
+      "context_epoch": 0,
+      "join_id": "deepagents-join:f1259c3d8e9677bb",
+      "ts_ms": 1791933868645.5828,
+      "planned_pool_bytes": {
+        "kv": 2293760,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 5406.370361328125,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 153,
+        "h2d:hybrid": 88,
+        "d2h:full": 15
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-3993:e66bd1ac565f",
+      "context_id": "deepagents:autonomous:pydata__xarray-3993:e66bd1ac565f:context:root",
+      "context_epoch": 11,
+      "join_id": null,
+      "ts_ms": 1791933996344.0012,
+      "planned_pool_bytes": {
+        "kv": 29184000,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 7,
+      "third_most_recent_matching_receipt_age_ms": 164350.72485351562,
+      "latest_compatible_prior_receipt_age_ms": 29285.825439453125,
+      "remaining_to_completion_ms_label": 2148.42724609375,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 161,
+        "h2d:hybrid": 89,
+        "d2h:full": 6
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11206:2d80ef444f55",
+      "context_id": "deepagents-context:3e16bf7c52277493",
+      "context_epoch": 33,
+      "join_id": null,
+      "ts_ms": 1791933997898.1882,
+      "planned_pool_bytes": {
+        "kv": 34488320,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 9,
+      "third_most_recent_matching_receipt_age_ms": 106460.8896484375,
+      "latest_compatible_prior_receipt_age_ms": 30840.012451171875,
+      "remaining_to_completion_ms_label": 136.680908203125,
+      "global_fifo_pool_direction_census": {
+        "h2d:hybrid": 90,
+        "d2h:hybrid": 160,
+        "d2h:full": 6
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-6197:85f8e156c71f",
+      "context_id": "deepagents-context:c21d5da65c0b7581",
+      "context_epoch": 47,
+      "join_id": null,
+      "ts_ms": 1791933997901.75,
+      "planned_pool_bytes": {
+        "kv": 34488320,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 9,
+      "third_most_recent_matching_receipt_age_ms": 106464.45141601562,
+      "latest_compatible_prior_receipt_age_ms": 30843.57421875,
+      "remaining_to_completion_ms_label": 75.76708984375,
+      "global_fifo_pool_direction_census": {
+        "h2d:hybrid": 90,
+        "d2h:hybrid": 160,
+        "d2h:full": 6
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-5787:d7623016e855",
+      "context_id": "deepagents-context:498252fc728e22fe",
+      "context_epoch": 41,
+      "join_id": null,
+      "ts_ms": 1791933997903.8435,
+      "planned_pool_bytes": {
+        "kv": 34488320,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 9,
+      "third_most_recent_matching_receipt_age_ms": 106466.544921875,
+      "latest_compatible_prior_receipt_age_ms": 30845.667724609375,
+      "remaining_to_completion_ms_label": 125.07763671875,
+      "global_fifo_pool_direction_census": {
+        "h2d:hybrid": 90,
+        "d2h:hybrid": 160,
+        "d2h:full": 6
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pallets__flask-5014:7d2b18204aa2",
+      "context_id": "deepagents:autonomous:pallets__flask-5014:7d2b18204aa2:context:root",
+      "context_epoch": 12,
+      "join_id": null,
+      "ts_ms": 1791934040825.7864,
+      "planned_pool_bytes": {
+        "kv": 10567680,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 474.15771484375,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 158,
+        "h2d:hybrid": 91,
+        "d2h:full": 7
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-2905:2bab764734a6",
+      "context_id": "deepagents:autonomous:pydata__xarray-2905:2bab764734a6:context:root",
+      "context_epoch": 14,
+      "join_id": null,
+      "ts_ms": 1791934042189.018,
+      "planned_pool_bytes": {
+        "kv": 16117760,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 4,
+      "third_most_recent_matching_receipt_age_ms": 261260.83642578125,
+      "latest_compatible_prior_receipt_age_ms": 150751.71948242188,
+      "remaining_to_completion_ms_label": 18394.2314453125,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 158,
+        "h2d:hybrid": 91,
+        "d2h:full": 7
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-10356:8f4d35e3c180",
+      "context_id": "deepagents-context:21cfe03cae797636",
+      "context_epoch": 48,
+      "join_id": null,
+      "ts_ms": 1791934042196.0283,
+      "planned_pool_bytes": {
+        "kv": 15134720,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 4,
+      "third_most_recent_matching_receipt_age_ms": 261267.8466796875,
+      "latest_compatible_prior_receipt_age_ms": 150758.72973632812,
+      "remaining_to_completion_ms_label": 205.757080078125,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 158,
+        "h2d:hybrid": 91,
+        "d2h:full": 7
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:mwaskom__seaborn-3069:78c3db8f4fc5",
+      "context_id": "deepagents-context:7a35b63df5dfd8cb",
+      "context_epoch": 36,
+      "join_id": null,
+      "ts_ms": 1791934042197.5056,
+      "planned_pool_bytes": {
+        "kv": 15134720,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 4,
+      "third_most_recent_matching_receipt_age_ms": 261269.32397460938,
+      "latest_compatible_prior_receipt_age_ms": 150760.20703125,
+      "remaining_to_completion_ms_label": 3057.291259765625,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 158,
+        "h2d:hybrid": 91,
+        "d2h:full": 7
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-2905:2bab764734a6",
+      "context_id": "deepagents:autonomous:pydata__xarray-2905:2bab764734a6:context:root",
+      "context_epoch": 14,
+      "join_id": null,
+      "ts_ms": 1791934042198.7905,
+      "planned_pool_bytes": {
+        "kv": 15134720,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 4,
+      "third_most_recent_matching_receipt_age_ms": 261270.60888671875,
+      "latest_compatible_prior_receipt_age_ms": 150761.49194335938,
+      "remaining_to_completion_ms_label": 18384.458984375,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 158,
+        "h2d:hybrid": 91,
+        "d2h:full": 7
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pallets__flask-5014:7d2b18204aa2",
+      "context_id": "deepagents:autonomous:pallets__flask-5014:7d2b18204aa2:context:root",
+      "context_epoch": 13,
+      "join_id": null,
+      "ts_ms": 1791934059402.4556,
+      "planned_pool_bytes": {
+        "kv": 19517440,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 6,
+      "third_most_recent_matching_receipt_age_ms": 227409.17919921875,
+      "latest_compatible_prior_receipt_age_ms": 1395.8408203125,
+      "remaining_to_completion_ms_label": 248.795166015625,
+      "global_fifo_pool_direction_census": {
+        "h2d:hybrid": 71,
+        "d2h:hybrid": 124,
+        "d2h:full": 60,
+        "h2d:full": 1
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "context_epoch": 26,
+      "join_id": null,
+      "ts_ms": 1791934088442.4827,
+      "planned_pool_bytes": {
+        "kv": 225280,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 654.462158203125,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 165,
+        "h2d:hybrid": 83,
+        "d2h:full": 8
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167",
+      "context_id": "deepagents:autonomous:pylint-dev__pylint-8898:e7f3072b1167:context:root",
+      "context_epoch": 26,
+      "join_id": null,
+      "ts_ms": 1791934088465.2698,
+      "planned_pool_bytes": {
+        "kv": 2211840,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 631.675048828125,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 165,
+        "h2d:hybrid": 83,
+        "d2h:full": 8
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11433:8d519930d2f1",
+      "context_id": "deepagents-context:020310c61bcf7129",
+      "context_epoch": 50,
+      "join_id": null,
+      "ts_ms": 1791934088468.19,
+      "planned_pool_bytes": {
+        "kv": 2211840,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 704.37744140625,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 165,
+        "h2d:hybrid": 83,
+        "d2h:full": 8
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11141:93106db8a8ab",
+      "context_id": "deepagents-context:3aeff6ca2f7dddc9",
+      "context_epoch": 52,
+      "join_id": null,
+      "ts_ms": 1791934095805.6138,
+      "planned_pool_bytes": {
+        "kv": 37642240,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 12,
+      "third_most_recent_matching_receipt_age_ms": 50010.904541015625,
+      "latest_compatible_prior_receipt_age_ms": 30262.82958984375,
+      "remaining_to_completion_ms_label": 53.10693359375,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 166,
+        "h2d:hybrid": 87,
+        "d2h:full": 3
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-6721:9efc8a1d5ea5",
+      "context_id": "deepagents-context:311327cfd801191a",
+      "context_epoch": 49,
+      "join_id": null,
+      "ts_ms": 1791934121051.2476,
+      "planned_pool_bytes": {
+        "kv": 28364800,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 11,
+      "third_most_recent_matching_receipt_age_ms": 63044.6328125,
+      "latest_compatible_prior_receipt_age_ms": 15747.036376953125,
+      "remaining_to_completion_ms_label": 4396.031982421875,
+      "global_fifo_pool_direction_census": {
+        "h2d:hybrid": 95,
+        "d2h:hybrid": 161
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11119:7ad073658ab1",
+      "context_id": "deepagents:autonomous:django__django-11119:7ad073658ab1:context:root",
+      "context_epoch": 6,
+      "join_id": null,
+      "ts_ms": 1791934121053.1362,
+      "planned_pool_bytes": {
+        "kv": 28364800,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 11,
+      "third_most_recent_matching_receipt_age_ms": 63046.521484375,
+      "latest_compatible_prior_receipt_age_ms": 15748.925048828125,
+      "remaining_to_completion_ms_label": 38.88232421875,
+      "global_fifo_pool_direction_census": {
+        "h2d:hybrid": 95,
+        "d2h:hybrid": 161
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-6721:9efc8a1d5ea5",
+      "context_id": "deepagents-context:311327cfd801191a",
+      "context_epoch": 49,
+      "join_id": null,
+      "ts_ms": 1791934121404.7068,
+      "planned_pool_bytes": {
+        "kv": 1146880,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 4042.57275390625,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 162,
+        "h2d:hybrid": 94
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-12754:bf286e722ba0",
+      "context_id": "deepagents-context:d1a7343d05ed9000",
+      "context_epoch": 64,
+      "join_id": null,
+      "ts_ms": 1791934140239.3374,
+      "planned_pool_bytes": {
+        "kv": 44298240,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 14,
+      "third_most_recent_matching_receipt_age_ms": 82232.72265625,
+      "latest_compatible_prior_receipt_age_ms": 34935.126220703125,
+      "remaining_to_completion_ms_label": 22.313720703125,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 145,
+        "h2d:hybrid": 78,
+        "d2h:full": 33
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-4661:52eff856c28a",
+      "context_id": "deepagents-context:5c33bdf7956fc7ae",
+      "context_epoch": 55,
+      "join_id": null,
+      "ts_ms": 1791934140243.404,
+      "planned_pool_bytes": {
+        "kv": 44298240,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 14,
+      "third_most_recent_matching_receipt_age_ms": 82236.78930664062,
+      "latest_compatible_prior_receipt_age_ms": 34939.19287109375,
+      "remaining_to_completion_ms_label": 1.16943359375,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 145,
+        "h2d:hybrid": 78,
+        "d2h:full": 33
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-14500:ad07c81188ab",
+      "context_id": "deepagents-context:07a3a4e3ad296f47",
+      "context_epoch": 48,
+      "join_id": null,
+      "ts_ms": 1791934147428.8406,
+      "planned_pool_bytes": {
+        "kv": 19251200,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 7,
+      "third_most_recent_matching_receipt_age_ms": 89422.22583007812,
+      "latest_compatible_prior_receipt_age_ms": 42124.62939453125,
+      "remaining_to_completion_ms_label": 216.469482421875,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 163,
+        "h2d:hybrid": 87,
+        "d2h:full": 5,
+        "h2d:full": 1
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-14500:ad07c81188ab",
+      "context_id": "deepagents-context:07a3a4e3ad296f47",
+      "context_epoch": 48,
+      "join_id": null,
+      "ts_ms": 1791934147456.383,
+      "planned_pool_bytes": {
+        "kv": 21729280,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 9,
+      "third_most_recent_matching_receipt_age_ms": 89449.76831054688,
+      "latest_compatible_prior_receipt_age_ms": 42152.171875,
+      "remaining_to_completion_ms_label": 188.927001953125,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 163,
+        "h2d:hybrid": 87,
+        "d2h:full": 5,
+        "h2d:full": 1
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-6197:85f8e156c71f",
+      "context_id": "deepagents-context:c21d5da65c0b7581",
+      "context_epoch": 54,
+      "join_id": null,
+      "ts_ms": 1791934153475.067,
+      "planned_pool_bytes": {
+        "kv": 16035840,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 7,
+      "third_most_recent_matching_receipt_age_ms": 95468.4521484375,
+      "latest_compatible_prior_receipt_age_ms": 48170.855712890625,
+      "remaining_to_completion_ms_label": 128.830322265625,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 144,
+        "h2d:hybrid": 85,
+        "d2h:full": 26,
+        "h2d:full": 1
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-7080:6a2c45052f84",
+      "context_id": "deepagents-context:ff6b5ef3a69127ad",
+      "context_epoch": 41,
+      "join_id": null,
+      "ts_ms": 1791934153478.5984,
+      "planned_pool_bytes": {
+        "kv": 16035840,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 7,
+      "third_most_recent_matching_receipt_age_ms": 95471.98364257812,
+      "latest_compatible_prior_receipt_age_ms": 48174.38720703125,
+      "remaining_to_completion_ms_label": 162.331787109375,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 144,
+        "h2d:hybrid": 85,
+        "d2h:full": 26,
+        "h2d:full": 1
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-6197:85f8e156c71f",
+      "context_id": "deepagents-context:c21d5da65c0b7581",
+      "context_epoch": 54,
+      "join_id": null,
+      "ts_ms": 1791934153491.6404,
+      "planned_pool_bytes": {
+        "kv": 15052800,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 7,
+      "third_most_recent_matching_receipt_age_ms": 95485.02563476562,
+      "latest_compatible_prior_receipt_age_ms": 48187.42919921875,
+      "remaining_to_completion_ms_label": 112.2568359375,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 144,
+        "h2d:hybrid": 85,
+        "d2h:full": 26,
+        "h2d:full": 1
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-7080:6a2c45052f84",
+      "context_id": "deepagents-context:ff6b5ef3a69127ad",
+      "context_epoch": 41,
+      "join_id": null,
+      "ts_ms": 1791934153494.5327,
+      "planned_pool_bytes": {
+        "kv": 15052800,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 7,
+      "third_most_recent_matching_receipt_age_ms": 95487.91796875,
+      "latest_compatible_prior_receipt_age_ms": 48190.321533203125,
+      "remaining_to_completion_ms_label": 146.3974609375,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 144,
+        "h2d:hybrid": 85,
+        "d2h:full": 26,
+        "h2d:full": 1
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-6202:31098ed45ef5",
+      "context_id": "deepagents-context:d0ebf0cb42fd6d3d",
+      "context_epoch": 60,
+      "join_id": null,
+      "ts_ms": 1791934186865.0876,
+      "planned_pool_bytes": {
+        "kv": 13107200,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 4,
+      "third_most_recent_matching_receipt_age_ms": 405936.9060058594,
+      "latest_compatible_prior_receipt_age_ms": 121322.30346679688,
+      "remaining_to_completion_ms_label": 10.088134765625,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 159,
+        "h2d:hybrid": 81,
+        "d2h:full": 16
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-7080:6a2c45052f84",
+      "context_id": "deepagents-context:ff6b5ef3a69127ad",
+      "context_epoch": 43,
+      "join_id": null,
+      "ts_ms": 1791934186868.5144,
+      "planned_pool_bytes": {
+        "kv": 13107200,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 4,
+      "third_most_recent_matching_receipt_age_ms": 405940.3327636719,
+      "latest_compatible_prior_receipt_age_ms": 121325.73022460938,
+      "remaining_to_completion_ms_label": 109.405517578125,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 159,
+        "h2d:hybrid": 81,
+        "d2h:full": 16
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+      "context_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:context:root",
+      "context_epoch": 15,
+      "join_id": null,
+      "ts_ms": 1791934186870.3296,
+      "planned_pool_bytes": {
+        "kv": 13107200,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 4,
+      "third_most_recent_matching_receipt_age_ms": 405942.14794921875,
+      "latest_compatible_prior_receipt_age_ms": 121327.54541015625,
+      "remaining_to_completion_ms_label": 143.635009765625,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 159,
+        "h2d:hybrid": 81,
+        "d2h:full": 16
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-7080:6a2c45052f84",
+      "context_id": "deepagents-context:ff6b5ef3a69127ad",
+      "context_epoch": 43,
+      "join_id": null,
+      "ts_ms": 1791934186881.6587,
+      "planned_pool_bytes": {
+        "kv": 12124160,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 4,
+      "third_most_recent_matching_receipt_age_ms": 405953.47705078125,
+      "latest_compatible_prior_receipt_age_ms": 121338.87451171875,
+      "remaining_to_completion_ms_label": 96.26123046875,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 159,
+        "h2d:hybrid": 81,
+        "d2h:full": 16
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+      "context_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:context:root",
+      "context_epoch": 15,
+      "join_id": null,
+      "ts_ms": 1791934186883.0469,
+      "planned_pool_bytes": {
+        "kv": 12124160,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 4,
+      "third_most_recent_matching_receipt_age_ms": 405954.865234375,
+      "latest_compatible_prior_receipt_age_ms": 121340.2626953125,
+      "remaining_to_completion_ms_label": 130.917724609375,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 159,
+        "h2d:hybrid": 81,
+        "d2h:full": 16
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pylint-dev__pylint-7080:6a2c45052f84",
+      "context_id": "deepagents-context:ff6b5ef3a69127ad",
+      "context_epoch": 43,
+      "join_id": null,
+      "ts_ms": 1791934186912.2043,
+      "planned_pool_bytes": {
+        "kv": 10158080,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 2,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": 121369.42016601562,
+      "remaining_to_completion_ms_label": 65.715576171875,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 159,
+        "h2d:hybrid": 81,
+        "d2h:full": 16
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+      "context_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:context:root",
+      "context_epoch": 15,
+      "join_id": null,
+      "ts_ms": 1791934186913.5535,
+      "planned_pool_bytes": {
+        "kv": 10158080,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 2,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": 121370.76928710938,
+      "remaining_to_completion_ms_label": 100.4111328125,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 159,
+        "h2d:hybrid": 81,
+        "d2h:full": 16
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-2905:2bab764734a6",
+      "context_id": "deepagents:autonomous:pydata__xarray-2905:2bab764734a6:context:root",
+      "context_epoch": 22,
+      "join_id": null,
+      "ts_ms": 1791934208424.9233,
+      "planned_pool_bytes": {
+        "kv": 2744320,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 3445.590576171875,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 156,
+        "h2d:hybrid": 82,
+        "d2h:full": 18
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-6992:70d940bd9758",
+      "context_id": "deepagents-context:0ee824c233e0b7a6",
+      "context_epoch": 63,
+      "join_id": null,
+      "ts_ms": 1791934238156.7446,
+      "planned_pool_bytes": {
+        "kv": 327680,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 34.952880859375,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 148,
+        "h2d:hybrid": 90,
+        "h2d:full": 2,
+        "d2h:full": 16
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-7233:5875d36e871e",
+      "context_id": "deepagents:autonomous:pydata__xarray-7233:5875d36e871e:context:root",
+      "context_epoch": 13,
+      "join_id": null,
+      "ts_ms": 1791934238158.6582,
+      "planned_pool_bytes": {
+        "kv": 327680,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 5704.298583984375,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 148,
+        "h2d:hybrid": 90,
+        "h2d:full": 2,
+        "d2h:full": 16
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7205:c503ff72f7b8",
+      "context_id": "deepagents-context:ea87777efbbddcd2",
+      "context_epoch": 63,
+      "join_id": null,
+      "ts_ms": 1791934296297.5972,
+      "planned_pool_bytes": {
+        "kv": 102400,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 63.27587890625,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 166,
+        "h2d:hybrid": 90
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-6461:ba706c945707",
+      "context_id": "deepagents-context:4aa5c2b022fa30cf",
+      "context_epoch": 48,
+      "join_id": null,
+      "ts_ms": 1791934296306.8943,
+      "planned_pool_bytes": {
+        "kv": 102400,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 168.985107421875,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 166,
+        "h2d:hybrid": 90
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-10051:ce010bfbbfdd",
+      "context_id": "deepagents:autonomous:pytest-dev__pytest-10051:ce010bfbbfdd:context:root",
+      "context_epoch": 18,
+      "join_id": null,
+      "ts_ms": 1791934344719.5825,
+      "planned_pool_bytes": {
+        "kv": 3543040,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 0,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": null,
+      "remaining_to_completion_ms_label": 54466.21826171875,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 153,
+        "h2d:hybrid": 97,
+        "d2h:full": 5,
+        "d2h:mamba": 1
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9",
+      "context_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9:context:root",
+      "context_epoch": 28,
+      "join_id": null,
+      "ts_ms": 1791934542365.471,
+      "planned_pool_bytes": {
+        "kv": 12492800,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 5,
+      "third_most_recent_matching_receipt_age_ms": 484358.8562011719,
+      "latest_compatible_prior_receipt_age_ms": 37964.37841796875,
+      "remaining_to_completion_ms_label": 3995.62158203125,
+      "global_fifo_pool_direction_census": {
+        "h2d:hybrid": 86,
+        "d2h:hybrid": 153,
+        "d2h:full": 16,
+        "d2h:mamba": 1
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9",
+      "context_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9:context:root",
+      "context_epoch": 28,
+      "join_id": null,
+      "ts_ms": 1791934542385.5352,
+      "planned_pool_bytes": {
+        "kv": 11509760,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 3,
+      "third_most_recent_matching_receipt_age_ms": 1047058.2797851562,
+      "latest_compatible_prior_receipt_age_ms": 476842.7509765625,
+      "remaining_to_completion_ms_label": 3975.557373046875,
+      "global_fifo_pool_direction_census": {
+        "h2d:hybrid": 86,
+        "d2h:hybrid": 153,
+        "d2h:full": 16,
+        "d2h:mamba": 1
+      }
+    },
+    {
+      "source": "tool_wait",
+      "workflow_id": "deepagents:autonomous:django__django-11292:be64dc14b282",
+      "context_id": "deepagents:autonomous:django__django-11292:be64dc14b282:context:root",
+      "context_epoch": 51,
+      "join_id": null,
+      "ts_ms": 1791934614456.9116,
+      "planned_pool_bytes": {
+        "kv": 8376320,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": false,
+      "compatible_prior_typed_receipts": 1,
+      "third_most_recent_matching_receipt_age_ms": null,
+      "latest_compatible_prior_receipt_age_ms": 556450.296875,
+      "remaining_to_completion_ms_label": 20162.792236328125,
+      "global_fifo_pool_direction_census": {
+        "d2h:hybrid": 183,
+        "h2d:hybrid": 42,
+        "h2d:full": 1,
+        "d2h:full": 29,
+        "d2h:mamba": 1
+      }
+    },
+    {
+      "source": "join_ticket",
+      "workflow_id": "deepagents:autonomous:pytest-dev__pytest-7521:243a2a0e112c",
+      "context_id": "deepagents:autonomous:pytest-dev__pytest-7521:243a2a0e112c:context:root",
+      "context_epoch": 0,
+      "join_id": "deepagents-join:401cbd68bf23ee53",
+      "ts_ms": 1791935142714.157,
+      "planned_pool_bytes": {
+        "kv": 8396800,
+        "mamba": 0
+      },
+      "shape": "full",
+      "fits_current_free_lists_at_rejection": true,
+      "bounded_receipt_replay_supported": false,
+      "all_prior_typed_receipts_supported": true,
+      "compatible_prior_typed_receipts": 3,
+      "third_most_recent_matching_receipt_age_ms": 1084707.5422363281,
+      "latest_compatible_prior_receipt_age_ms": 137414.93408203125,
+      "remaining_to_completion_ms_label": 28.595458984375,
+      "global_fifo_pool_direction_census": {
+        "d2h:full": 253,
+        "d2h:hybrid": 3
+      }
+    }
+  ],
+  "sealed_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v430_v55_wait_prefetch_live_20261014.json.gz",
+  "sealed_report_sha256": "d72c6f652e36319056cf4b94a9a48011f4b80f7e9fa45b7f0f99632efb6e7616",
+  "source_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+      "observed_at_local": "2026-10-14T08:45:32.110346+08:00",
+      "device": 66306,
+      "inode": 139863654,
+      "observed_bytes": 1083234088,
+      "complete_prefix_bytes": 1083234088,
+      "complete_prefix_sha256": "e9b563ea90c265557d12a33bff5ac2a2733ecb3499485f1433a21cd17ecdf48d"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55/predictive_h2d/server/transfer_telemetry.jsonl": {
+      "observed_at_local": "2026-10-14T08:45:44.200154+08:00",
+      "device": 66306,
+      "inode": 139863598,
+      "observed_bytes": 43290706,
+      "complete_prefix_bytes": 43290706,
+      "complete_prefix_sha256": "f62ad22a3996cbb6bae296ade080d9d47945dc9c3589f85af2a75e9f8dcbb3ab"
+    }
+  },
+  "helper_sha256": "8e21aa2fbf4fca20339b4193e87b8ff92a36f92dca10aed1977db91f1c317cdc",
+  "limitations": [
+    "Only native receipts completed before each rejection contribute timing support.",
+    "Replay uses receipt timestamps/order, not exact in-memory callback/ledger ordering or estimator-cache state.",
+    "All-prior support is diagnostic, unbounded and potentially stale; it is not an online estimator proposal.",
+    "Cold seeds contain no typed FULL-only H2D samples; legacy fallback and live typed samples stay separate.",
+    "Do not borrow D2H/foreign-shape timings or use future observations to fill missing support.",
+    "Freshness of compatible evidence is reported; no extrapolated time, transfer permit or GPU gain is inferred.",
+    "A wait's fitting observation may occur at a different timestamp from rejection; each rejection retains its own free-list status."
+  ]
+}

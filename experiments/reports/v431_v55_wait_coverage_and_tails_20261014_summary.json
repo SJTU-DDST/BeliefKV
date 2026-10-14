@@ -1,0 +1,234 @@
+{
+  "status": "sealed_observed_coverage_and_tail_diagnosis_not_counterfactual_gain",
+  "observed_at_local": "2026-10-14T08:50:22.018703+08:00",
+  "sealed_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v430_v55_wait_prefetch_live_20261014.json.gz",
+  "sealed_report_sha256": "d72c6f652e36319056cf4b94a9a48011f4b80f7e9fa45b7f0f99632efb6e7616",
+  "helper_sha256": "ca00bb60133c5beea6bb7e602e9ecba61145e9b873b62be57f2f4cbe3773bdcf",
+  "summary": {
+    "join_ticket": {
+      "observed_waits": 181,
+      "completion_unknown_waits": 12,
+      "plan_timing_categories": {
+        "completion_boundary_unknown": 12,
+        "positive_full_plan_before_completion": 146,
+        "only_zero_full_plan_before_completion": 23
+      },
+      "pre_completion_positive_plan_waits": 146,
+      "pre_completion_fitting_plan_waits": 146,
+      "actual_early_full_waits": 83,
+      "next_request_confirmed_early_full_waits": 73,
+      "next_request_confirmed_early_full_bytes": 1381007360,
+      "fitting_plan_without_early_full": {
+        "waits": 63,
+        "overlapping_pre_completion_reasons": {
+          "no_reusable_input_restore_step": 59,
+          "fits_current_free_lists": 63,
+          "insufficient_free_lists": 62,
+          "closure_unobservable": 6,
+          "admission_budget_busy": 14,
+          "start_window": 54,
+          "no_restore_plan": 53,
+          "before_start_window": 19,
+          "service_unsupported": 2,
+          "service_progress_unavailable": 17,
+          "enqueue_slot_changed": 1
+        },
+        "remaining_native_full_host_hit_bytes": 6288609280
+      },
+      "early_full_service_timing": {
+        "before_completion": {
+          "count": 83,
+          "p50": 1682.052490234375,
+          "p90": 6881.260498046874,
+          "max": 29618.375244140625
+        },
+        "completion_to_client_submit": {
+          "count": 83,
+          "p50": 23.780517578125,
+          "p90": 71.27099609375,
+          "max": 182.578857421875
+        },
+        "client_submit_to_native_arrival": {
+          "count": 83,
+          "p50": 96.44970703125,
+          "p90": 178.554736328125,
+          "max": 234.514892578125
+        },
+        "after_native_arrival": {
+          "count": 83,
+          "p50": 112.941650390625,
+          "p90": 511.953564453125,
+          "max": 17885.640625
+        }
+      },
+      "long_ack_to_service": {
+        "waits": 12,
+        "dominant_phase": {
+          "after_native_arrival": 6,
+          "before_completion": 6
+        },
+        "by_dominant_phase": {
+          "after_native_arrival": {
+            "waits": 6,
+            "early_full_bytes": 78233600,
+            "next_request_confirmed_early_full_bytes": 0,
+            "latest_ack_to_completion_ms": {
+              "count": 6,
+              "p50": 5390.7735595703125,
+              "p90": 6790.724609375,
+              "max": 6920.696044921875
+            },
+            "native_arrival_to_first_service_ms": {
+              "count": 6,
+              "p50": 13794.768188476562,
+              "p90": 15953.413452148438,
+              "max": 17885.640625
+            }
+          },
+          "before_completion": {
+            "waits": 6,
+            "early_full_bytes": 135495680,
+            "next_request_confirmed_early_full_bytes": 121282560,
+            "latest_ack_to_completion_ms": {
+              "count": 6,
+              "p50": 10692.368041992188,
+              "p90": 23143.726684570312,
+              "max": 29618.375244140625
+            },
+            "native_arrival_to_first_service_ms": {
+              "count": 6,
+              "p50": 165.8289794921875,
+              "p90": 6183.529541015625,
+              "max": 12103.80859375
+            }
+          }
+        }
+      }
+    },
+    "tool_wait": {
+      "observed_waits": 21133,
+      "completion_unknown_waits": 0,
+      "plan_timing_categories": {
+        "only_zero_full_plan_before_completion": 17150,
+        "no_plan_observation_before_completion": 2221,
+        "positive_full_plan_before_completion": 1729,
+        "positive_full_plan_only_at_or_after_completion": 33
+      },
+      "pre_completion_positive_plan_waits": 1729,
+      "pre_completion_fitting_plan_waits": 229,
+      "actual_early_full_waits": 147,
+      "next_request_confirmed_early_full_waits": 124,
+      "next_request_confirmed_early_full_bytes": 8680181760,
+      "fitting_plan_without_early_full": {
+        "waits": 82,
+        "overlapping_pre_completion_reasons": {
+          "fits_current_free_lists": 23,
+          "no_restore_plan": 51,
+          "before_start_window": 45,
+          "service_unsupported": 45,
+          "insufficient_free_lists": 13,
+          "no_reusable_input_restore_step": 1
+        },
+        "remaining_native_full_host_hit_bytes": 26817597440
+      },
+      "early_full_service_timing": {
+        "before_completion": {
+          "count": 147,
+          "p50": 281.674560546875,
+          "p90": 4564.003417968751,
+          "max": 123968.62939453125
+        },
+        "completion_to_client_submit": {
+          "count": 147,
+          "p50": 14.653076171875,
+          "p90": 69.60253906250001,
+          "max": 180085.3583984375
+        },
+        "client_submit_to_native_arrival": {
+          "count": 147,
+          "p50": 178.7705078125,
+          "p90": 325.38125,
+          "max": 622.066162109375
+        },
+        "after_native_arrival": {
+          "count": 147,
+          "p50": 154.1884765625,
+          "p90": 10351.397509765626,
+          "max": 17032.15234375
+        }
+      },
+      "long_ack_to_service": {
+        "waits": 25,
+        "dominant_phase": {
+          "before_completion": 11,
+          "completion_to_client_submit": 3,
+          "after_native_arrival": 11
+        },
+        "by_dominant_phase": {
+          "after_native_arrival": {
+            "waits": 11,
+            "early_full_bytes": 1097175040,
+            "next_request_confirmed_early_full_bytes": 0,
+            "latest_ack_to_completion_ms": {
+              "count": 11,
+              "p50": 3557.478759765625,
+              "p90": 5035.791259765625,
+              "max": 7900.021240234375
+            },
+            "native_arrival_to_first_service_ms": {
+              "count": 11,
+              "p50": 10377.04150390625,
+              "p90": 12804.693603515625,
+              "max": 13388.815673828125
+            }
+          },
+          "before_completion": {
+            "waits": 11,
+            "early_full_bytes": 1219092480,
+            "next_request_confirmed_early_full_bytes": 27299840,
+            "latest_ack_to_completion_ms": {
+              "count": 11,
+              "p50": 62620.108154296875,
+              "p90": 118812.65161132812,
+              "max": 123968.62939453125
+            },
+            "native_arrival_to_first_service_ms": {
+              "count": 11,
+              "p50": 10407.19091796875,
+              "p90": 12573.177978515625,
+              "max": 15605.24169921875
+            }
+          },
+          "completion_to_client_submit": {
+            "waits": 3,
+            "early_full_bytes": 268963840,
+            "next_request_confirmed_early_full_bytes": 0,
+            "latest_ack_to_completion_ms": {
+              "count": 3,
+              "p50": 88.889892578125,
+              "p90": 4077.952001953125,
+              "max": 5075.217529296875
+            },
+            "native_arrival_to_first_service_ms": {
+              "count": 3,
+              "p50": 11315.897705078125,
+              "p90": 15888.901416015626,
+              "max": 17032.15234375
+            }
+          }
+        }
+      }
+    }
+  },
+  "limitations": [
+    "One row per exact independent wait. Unknown completions/services stay unknown.",
+    "Positive/fitting snapshots do not establish timing feasibility, cold victims, reservations or eventual benefit.",
+    "Reason groups overlap; residual native Host hits are not a pre-boundary opportunity or oracle denominator.",
+    "Latest ACK is restricted to actual FULL transfers submitted before completion; after-boundary actions remain separate.",
+    "Ten seconds classifies existing service tails, not a new runtime gate or lease.",
+    "A long pre-completion phase can include sequential tools, not just one tool or model prediction error.",
+    "No residency, exclusive GPU stall, causal JCT savings or policy benefit is inferred from phase dominance.",
+    "Independent live file prefixes are not an atomic cross-file snapshot."
+  ],
+  "detailed_report": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v431_v55_wait_coverage_and_tails_20261014.json.gz"
+}

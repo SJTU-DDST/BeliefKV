@@ -2,6 +2,27 @@
 
 Status date: 2026-10-14.
 
+Latest V430 independently seals live V55 prefixes at08:45:32–08:46:22.
+Confirmed next-request early FULL reuse is73 JOIN waits/1.381GB and124
+tool waits/8.680GB;12 JOIN completions remain unknown. V431's observed
+pre-completion positive/fitting/actual-early/confirmed-reuse funnel is
+146/146/83/73 for JOIN and1729/229/147/124 for tools. Fitting snapshots
+are neither transfer reservations nor proven timing opportunities.
+Six JOIN and11 tool >10s tails are native-queue dominated with zero
+confirmed FULL reuse;11 other tool tails are completion dominated with
+62.62s median latest-ACK lead and0.0273/1.219GB reuse.
+
+V432 binds the collection's actual256 mixed/64 H2D histories. Among68
+FULL-only service rejections in47 selected waits,31 have enough earlier
+same-direction/shape receipt evidence, while bounded receipt replay has
+no support. Third-most-recent matching receipt ages span50–1085s.
+Next evaluate causal held-out transfer timing and bounded stratified
+history before proposing an online retention change; do not use unbounded
+old samples or foreign shapes as timing permits. Keep frozen V56 c319339
+and its predictive→native order. Develop and document here; Main must
+remain an ancestor of the pending frozen target until cold deployment.
+Final same-version JCT/throughput and quality/fairness acceptance is pending.
+
 The next V56 cold candidate adds a shared single-request Mamba mapping
 fast path to the qualified JOIN refresh. V418/V421 identify316 main-thread
 samples at the original ping-pong mapping assignment, but retain196 read
