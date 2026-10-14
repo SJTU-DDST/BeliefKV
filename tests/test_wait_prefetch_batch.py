@@ -249,6 +249,121 @@ def test_join_work_uncertainty_is_rechecked_after_causal_drain(change):
         runtime.close()
 
 
+def test_join_enqueue_uses_new_forecast_after_decode_passes_selected_endpoint():
+    runtime, _, opportunity, cache, _ = semantic_join_batch_fixture(center_tokens=8.)
+    forecast = runtime._semantic_forecasts["child"]
+    now = forecast.observation.observed_ts_ms / 1000.
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+
+    def drain(**kwargs):
+        runtime._semantic_progress["child"] = ((now * 1000., 129),)
+        runtime._semantic_forecasts["child"] = replace(
+            forecast,
+            observation=replace(forecast.observation, observed_output_tokens=124),
+            middle_tokens=16., lower_tokens=2.,
+        )
+
+    runtime.event_server = NS(drain=drain, close=lambda: None)
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=now), \
+            patch.object(runtime, "_semantic_rate", return_value=40.), \
+            patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity):
+            runtime.dispatch_join_prefetch()
+        selected = next(row for row in records if row["event"] == "final_stage_latest_start")
+        assert selected["generated_tokens"] + selected["projected_remaining_tokens"] == 128.
+        assert runtime._join_ticket.work_endpoint_tokens == 140.
+        assert runtime.counts["join_work_endpoint_refreshed"] == 1
+        cache.prefetch_gpu_session_nodes.assert_called_once()
+        assert runtime.physical_ledger.pending_count == 4
+        assert not runtime.graph.joins["join"].satisfied
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("change", [
+    "stale", "future", "low_score", "wrong_request", "wrong_epoch", "no_notice",
+    "tool_eos", "work_exhausted", "later_completion", "narrowed_interval",
+])
+def test_selected_join_cannot_keep_old_endpoint_when_latest_forecast_invalidates_it(change):
+    runtime, _, opportunity, cache, _ = semantic_join_batch_fixture(center_tokens=8.)
+    forecast = runtime._semantic_forecasts["child"]
+    now = forecast.observation.observed_ts_ms / 1000.
+
+    def drain(**kwargs):
+        observation = forecast.observation
+        updates = {}
+        if change == "stale":
+            observation = replace(observation, observed_ts_ms=now * 1000. - 1501.)
+        elif change == "future":
+            observation = replace(observation, observed_ts_ms=now * 1000. + 1.)
+        elif change == "low_score":
+            updates["final_score"] = 0.
+        elif change == "wrong_request":
+            observation = replace(
+                observation, key=replace(observation.key, request_id="other"),
+            )
+        elif change == "wrong_epoch":
+            observation = replace(
+                observation, key=replace(observation.key, context_epoch=2),
+            )
+        elif change == "no_notice":
+            observation = replace(observation, notice_active=False)
+        elif change == "tool_eos":
+            runtime._semantic_eos_proofs["child"] = False
+        elif change == "work_exhausted":
+            updates.update(middle_tokens=0., upper_tokens=0.)
+        elif change == "later_completion":
+            updates.update(middle_tokens=200., upper_tokens=300.)
+        else:
+            updates.update(lower_tokens=40., middle_tokens=40.)
+        runtime._semantic_forecasts["child"] = replace(
+            forecast, observation=observation, **updates,
+        )
+
+    runtime.event_server = NS(drain=drain, close=lambda: None)
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=now), \
+            patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity):
+            runtime.dispatch_join_prefetch()
+        cache.prefetch_gpu_session_nodes.assert_not_called()
+        assert runtime.physical_ledger.pending_count == 0
+        assert runtime.counts["wait_prefetch_batch_timing_changed"] == 1
+        assert runtime._join_ticket is None
+        assert not runtime.physical_disabled
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("remaining,upper,generated,endpoint", [
+    (1., 2., 124, 125.), (4., 20., 129, 144.),
+])
+def test_join_latest_work_can_shorten_endpoint_or_use_live_upper_after_center_overrun(
+    remaining, upper, generated, endpoint,
+):
+    runtime, key, opportunity, cache, _ = semantic_join_batch_fixture(center_tokens=8.)
+    forecast = runtime._semantic_forecasts["child"]
+    now = forecast.observation.observed_ts_ms / 1000.
+    try:
+        with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=now), \
+            patch.object(runtime, "_semantic_rate", return_value=40.), \
+            patch.object(runtime, "inspect_context_h2d_opportunity", return_value=opportunity):
+            runtime._roll_final_stage()
+            assert runtime._join_ticket.work_endpoint_tokens == 128.
+            runtime._semantic_progress["child"] = ((now * 1000., generated),)
+            runtime._semantic_forecasts["child"] = replace(
+                forecast, observation=replace(forecast.observation, observed_output_tokens=124),
+                lower_tokens=0., middle_tokens=remaining, upper_tokens=upper,
+            )
+            assert runtime._wait_prefetch_timing_valid(key, opportunity, "join_ticket")
+            assert runtime._join_ticket.work_endpoint_tokens == endpoint
+            runtime.dispatch_join_prefetch()
+        cache.prefetch_gpu_session_nodes.assert_called_once()
+        assert runtime.physical_ledger.pending_count == 4
+    finally:
+        runtime.close()
+
+
 def test_provisional_join_dispatch_reuses_current_plan_and_rechecks_before_enqueue():
     runtime, key, opportunity, cache, _ = provisional_join_batch_fixture()
     try:
@@ -1187,6 +1302,7 @@ def test_join_batch_window_rechecks_live_work_progress_and_service_availability(
     assert runtime._join_ticket is not None
     runtime._semantic_eos_proofs.clear()
     runtime._semantic_finished.clear()
+    runtime._semantic_worker = None
     runtime._join_ticket.phase = "provisional"
     runtime._join_ticket.stage_bound = True
     runtime._join_ticket.work_endpoint_tokens = 128.

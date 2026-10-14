@@ -2347,6 +2347,37 @@ class NativeAdmissionRuntime:
                 self._final_request_stages[stage.request_id] = stage
                 self.counts["final_request_bound"] += 1
 
+    def _live_final_stage_forecast(
+        self, stage: _ChildFinalStage, now_ms: float,
+    ) -> SemanticReportReply | None:
+        forecast = self._semantic_forecasts.get(stage.request_id)
+        if forecast is None:
+            return None
+        observation = forecast.observation
+        key = observation.key
+        if (
+            forecast.final_score < self._semantic_score_threshold
+            or not 0 <= now_ms - observation.observed_ts_ms <= 1_500.
+            or key.request_id != stage.request_id
+            or key.invocation_id != stage.child_id
+            or key.context_epoch != stage.child_epoch
+            or not self._semantic_key_live(key, now_ms)
+        ):
+            return None
+        return forecast
+
+    def _remaining_semantic_work(
+        self, forecast: SemanticReportReply, generated: int,
+    ) -> tuple[float, str] | None:
+        advanced = max(0, generated - forecast.observation.observed_output_tokens)
+        statistic = self.semantic_work_statistic
+        work = forecast.upper_tokens if statistic == "upper" else forecast.middle_tokens
+        if work <= advanced:
+            if statistic != "center" or forecast.upper_tokens <= advanced:
+                return None
+            work, statistic = forecast.upper_tokens, "upper_after_center_overrun"
+        return work - advanced, statistic
+
     def _roll_final_stage(self) -> SessionH2DOpportunity | None:
         if not (
             self.enable_final_stage_prefetch or self.enable_admission_prefetch
@@ -2409,13 +2440,9 @@ class NativeAdmissionRuntime:
                 if self._semantic_eos_proofs.get(stage.request_id) is False:
                     self.counts["semantic_finish_without_valid_body_skipped"] += 1
                     continue
-                forecast = self._semantic_forecasts.get(stage.request_id)
                 now_ms = time.monotonic() * 1000
-                if (
-                    forecast is None or forecast.final_score < self._semantic_score_threshold
-                    or now_ms - forecast.observation.observed_ts_ms > 1_500
-                    or not self._semantic_key_live(forecast.observation.key, now_ms)
-                ):
+                forecast = self._live_final_stage_forecast(stage, now_ms)
+                if forecast is None:
                     self.counts["semantic_latest_start_no_live_forecast"] += 1
                     continue
                 progress = self._semantic_progress.get(stage.request_id, ())
@@ -2430,25 +2457,15 @@ class NativeAdmissionRuntime:
                     if not forecast.observation.notice_active:
                         self.counts["semantic_pre_eos_phase_unconfirmed"] += 1
                         continue
-                    work_tokens = (
-                        forecast.upper_tokens if self.semantic_work_statistic == "upper"
-                        else forecast.middle_tokens
-                    )
-                    advanced = max(0, generated - forecast.observation.observed_output_tokens)
-                    if work_tokens <= advanced:
+                    projection = self._remaining_semantic_work(forecast, generated)
+                    if projection is None or projection[1] != self.semantic_work_statistic:
                         self.counts["semantic_work_forecast_overtaken"] += 1
-                        if (
-                            self.semantic_work_statistic == "center"
-                            and forecast.upper_tokens > advanced
-                        ):
-                            work_tokens = forecast.upper_tokens
-                            effective_work_statistic = "upper_after_center_overrun"
-                            self.counts["semantic_work_overrun_uses_live_upper"] += 1
-                        else:
-                            # Passing a predicted endpoint proves an
-                            # underestimate, not that only one token remains.
-                            continue
-                    remaining = max(1., work_tokens - advanced)
+                    if projection is None:
+                        continue
+                    remaining, effective_work_statistic = projection
+                    if effective_work_statistic == "upper_after_center_overrun":
+                        self.counts["semantic_work_overrun_uses_live_upper"] += 1
+                    remaining = max(1., remaining)
                     self.counts[
                         "semantic_pre_eos_uses_work_upper_bound"
                         if effective_work_statistic != "center"
@@ -4071,6 +4088,27 @@ class NativeAdmissionRuntime:
                     generated = progress[-1][1] if progress else stage.generated_tokens
                     rate = self._semantic_rate(rid) if progress else stage.tokens_per_second
                     endpoint = ticket.work_endpoint_tokens
+                    if self._semantic_worker is not None:
+                        forecast = self._live_final_stage_forecast(
+                            stage, time.monotonic() * 1000.,
+                        )
+                        projection = (
+                            self._remaining_semantic_work(forecast, generated)
+                            if forecast is not None and forecast.observation.notice_active
+                            and self._semantic_eos_proofs.get(rid) is not False else None
+                        )
+                        # The selected endpoint is provisional: delivered forecasts
+                        # may move it in either direction before a physical enqueue.
+                        endpoint = (
+                            generated + max(1., projection[0])
+                            if projection is not None else None
+                        )
+                        if endpoint != ticket.work_endpoint_tokens:
+                            self.counts[
+                                "join_work_endpoint_refreshed" if endpoint is not None
+                                else "join_work_endpoint_invalidated"
+                            ] += 1
+                            ticket.work_endpoint_tokens = endpoint
                     if endpoint is not None and endpoint > generated and rate is not None and rate > 0:
                         remaining = (endpoint - generated) * 1000. / rate
             else:
@@ -5395,14 +5433,13 @@ class NativeAdmissionRuntime:
         if stage is None or stage.key != key or self._semantic_worker is None:
             return 0.
         rid = stage.request_id
-        forecast = self._semantic_forecasts.get(rid)
         now_ms = time.monotonic() * 1000.
+        forecast = self._live_final_stage_forecast(stage, now_ms)
         if (
-            forecast is None or forecast.final_score < self._semantic_score_threshold
+            forecast is None
             or not forecast.observation.notice_active
-            or not 0 <= now_ms - forecast.observation.observed_ts_ms <= 1_500.
-            or not self._semantic_key_live(forecast.observation.key, now_ms)
             or rid in self._semantic_finished
+            or self._semantic_eos_proofs.get(rid) is False
         ):
             return 0.
         progress = self._semantic_progress.get(rid, ())
@@ -5410,21 +5447,12 @@ class NativeAdmissionRuntime:
         rate = self._semantic_rate(rid) if progress else stage.tokens_per_second
         if rate is None or rate <= 0:
             return 0.
+        projection = self._remaining_semantic_work(forecast, generated)
+        if projection is None:
+            return 0.
         advanced = max(0., generated - forecast.observation.observed_output_tokens)
-        work = (
-            forecast.upper_tokens if self.semantic_work_statistic == "upper"
-            else forecast.middle_tokens
-        )
-        if work <= advanced:
-            if self.semantic_work_statistic != "center" or forecast.upper_tokens <= advanced:
-                return 0.
-            work = forecast.upper_tokens
-        ticket = self._join_ticket
-        if ticket is not None and ticket.stage_bound and ticket.key == key:
-            endpoint = ticket.work_endpoint_tokens
-            if endpoint is not None:
-                work = endpoint - forecast.observation.observed_output_tokens
-        return max(0., work - max(advanced, forecast.lower_tokens)) * 1000. / rate
+        lower = max(0., forecast.lower_tokens - advanced)
+        return max(0., projection[0] - lower) * 1000. / rate
 
     @timed_runtime("tool_prefetch")
     def dispatch_tool_prefetch(self) -> None:
@@ -5847,6 +5875,8 @@ class NativeAdmissionRuntime:
                 deferred_mamba_slots=fresh.deferred_mamba_slots + dropped_mamba,
             )
         if not self._wait_prefetch_timing_valid(key, fresh, source):
+            if source == "join_ticket":
+                self._discard_join_ticket("enqueue_start_window_changed")
             return ()
         issue_budget = self._current_residency_budget(include_evictable=True)
         if not self._prefetch_slot_available(key, budget=issue_budget):
