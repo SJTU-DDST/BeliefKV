@@ -2,6 +2,32 @@
 
 Status date: 2026-10-14.
 
+Current next cold candidate fixes provisional JOIN endpoints becoming
+detached from accepted rolling forecasts. V408/V409 associate55 timing
+rejections across16 independent waits:49 already had newer fresh,
+high-score, announced forecasts and48 had higher center endpoints.
+Association does not reconstruct runtime state or prove physical capacity.
+Selection, uncertainty and final enqueue now share the latest causal
+request/epoch-bound work projection; retain live upper fallback and reject
+stale, weak, unannounced, tool or unavailable-service evidence.
+Post-drain timing failure immediately clears the JOIN ticket.
+950 tests plus2 subtests pass; V412 binds43 sources and the unchanged
+engine. Equal four-node simulated dispatch costs0.789→0.833ms mean
+thread CPU, about44us more; this correctness fix is not a CPU speedup.
+
+Finish frozen V55, then cold-deploy the qualified candidate. Do not hot-edit
+V55 or enable new prefill delay/batching. V413's complete2100–2400s window
+observes380533 versus historical native374684 decode request steps(+1.56%)
+and2.115M versus2.206M prefill tokens. Instrumented self-wall is19.150s;
+short-prefill clipped worker ratios still range1.19–1.57. V415's80 phase
+samples show selection/run/result wall medians4.283/50.355/3.525ms;
+launch telemetry is only0.072ms and native equivalent phases remain unknown.
+Workload/topology/
+version confounding remains. At08:03 all77 recorded first-wave results
+were completed, with the second wave pending. Continue admission/consumption
+and short-prefill investigation; mean JCT and completion-throughput
+acceptance still requires matching controls.
+
 Latest V407 uses V55's complete600–900s window:384119 versus historical
 native380722 decode request steps(+0.89%), with1.588M versus1.891M
 realized prefill extend tokens. Version/topology and demand differences

@@ -1,0 +1,3703 @@
+{
+  "observed_at_local": "2026-10-14T08:01:49.000231+08:00",
+  "status": "cpu_fixture_not_gpu_performance_evidence",
+  "baseline_revision": "0f2a992448812d28d5362e2b97de1aab66e35630",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "1b84dc20056d59e323eca6eb2b528edd1114eea964f7a60074e3b5517d88a635",
+    "beliefkv/runtime/sglang_v0520_observer.py": "7820de3e7555a6e73f6929dfca430fd5cba6c5c6519823e7b63661a04c601d41",
+    "beliefkv/runtime/sglang_v0520_physical.py": "f53b15523badf3f31123f14300b3fda60a503d3c0cf1cfbf71df19713e112ec5"
+  },
+  "candidate_runtime_sha256": "d9e158bb1a7c926f9076e24e7e5deb7ec4f4032514ad84195fb231a7bfc61956",
+  "iterations_per_variant": 200,
+  "costs": {
+    "baseline": {
+      "wall_ms": {
+        "count": 200,
+        "mean_ms": 0.79059541,
+        "p50_ms": 0.753683,
+        "p99_ms": 1.862916,
+        "max_ms": 1.866811
+      },
+      "thread_cpu_ms": {
+        "count": 200,
+        "mean_ms": 0.789145325,
+        "p50_ms": 0.75222,
+        "p99_ms": 1.861123,
+        "max_ms": 1.864968
+      }
+    },
+    "candidate": {
+      "wall_ms": {
+        "count": 200,
+        "mean_ms": 0.835079855,
+        "p50_ms": 0.776985,
+        "p99_ms": 1.869913,
+        "max_ms": 1.909408
+      },
+      "thread_cpu_ms": {
+        "count": 200,
+        "mean_ms": 0.83319182,
+        "p50_ms": 0.775512,
+        "p99_ms": 1.868097,
+        "max_ms": 1.907665
+      }
+    }
+  },
+  "samples": {
+    "baseline": [
+      {
+        "wall_ms": 0.838485,
+        "thread_cpu_ms": 0.836993,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.745293,
+        "thread_cpu_ms": 0.743759,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.819118,
+        "thread_cpu_ms": 0.817733,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.819826,
+        "thread_cpu_ms": 0.818514,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.725525,
+        "thread_cpu_ms": 0.724259,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.726911,
+        "thread_cpu_ms": 0.725553,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.8348,
+        "thread_cpu_ms": 0.833426,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.730159,
+        "thread_cpu_ms": 0.728507,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.747737,
+        "thread_cpu_ms": 0.746331,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.828864,
+        "thread_cpu_ms": 0.827501,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.736274,
+        "thread_cpu_ms": 0.734864,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.748179,
+        "thread_cpu_ms": 0.746341,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.831939,
+        "thread_cpu_ms": 0.830288,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.807827,
+        "thread_cpu_ms": 0.806283,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.750251,
+        "thread_cpu_ms": 0.748937,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.740017,
+        "thread_cpu_ms": 0.738512,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.840094,
+        "thread_cpu_ms": 0.838705,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.735902,
+        "thread_cpu_ms": 0.734681,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.753873,
+        "thread_cpu_ms": 0.752402,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.831216,
+        "thread_cpu_ms": 0.829744,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.731681,
+        "thread_cpu_ms": 0.730329,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.711687,
+        "thread_cpu_ms": 0.710244,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.815411,
+        "thread_cpu_ms": 0.813863,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.821109,
+        "thread_cpu_ms": 0.819729,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.761176,
+        "thread_cpu_ms": 0.759764,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.786525,
+        "thread_cpu_ms": 0.784915,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.767978,
+        "thread_cpu_ms": 0.766668,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.749049,
+        "thread_cpu_ms": 0.747608,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.807762,
+        "thread_cpu_ms": 0.806355,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.855782,
+        "thread_cpu_ms": 0.854393,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.729548,
+        "thread_cpu_ms": 0.728202,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.745666,
+        "thread_cpu_ms": 0.74439,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.75001,
+        "thread_cpu_ms": 0.748305,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.753139,
+        "thread_cpu_ms": 0.751692,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.823041,
+        "thread_cpu_ms": 0.821656,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.821502,
+        "thread_cpu_ms": 0.820007,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.745391,
+        "thread_cpu_ms": 0.744091,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.748677,
+        "thread_cpu_ms": 0.747294,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.835484,
+        "thread_cpu_ms": 0.834022,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.711061,
+        "thread_cpu_ms": 0.709564,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.739157,
+        "thread_cpu_ms": 0.737736,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.839064,
+        "thread_cpu_ms": 0.837528,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.729681,
+        "thread_cpu_ms": 0.728317,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.704388,
+        "thread_cpu_ms": 0.702656,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.834849,
+        "thread_cpu_ms": 0.833422,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.862802,
+        "thread_cpu_ms": 0.861468,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.774531,
+        "thread_cpu_ms": 0.772999,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.751978,
+        "thread_cpu_ms": 0.750621,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.809143,
+        "thread_cpu_ms": 0.807641,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.709122,
+        "thread_cpu_ms": 0.707732,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.746337,
+        "thread_cpu_ms": 0.744948,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.807196,
+        "thread_cpu_ms": 0.805766,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.750589,
+        "thread_cpu_ms": 0.749141,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.740494,
+        "thread_cpu_ms": 0.739157,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.836898,
+        "thread_cpu_ms": 0.83537,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.751046,
+        "thread_cpu_ms": 0.74959,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.744484,
+        "thread_cpu_ms": 0.74301,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.81901,
+        "thread_cpu_ms": 0.817624,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.734074,
+        "thread_cpu_ms": 0.732617,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.751166,
+        "thread_cpu_ms": 0.749741,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 1.866811,
+        "thread_cpu_ms": 1.864968,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.84326,
+        "thread_cpu_ms": 0.841866,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.748029,
+        "thread_cpu_ms": 0.74658,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.730877,
+        "thread_cpu_ms": 0.729464,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.830775,
+        "thread_cpu_ms": 0.829323,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.735713,
+        "thread_cpu_ms": 0.734349,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.71518,
+        "thread_cpu_ms": 0.713688,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.831916,
+        "thread_cpu_ms": 0.830513,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.743185,
+        "thread_cpu_ms": 0.741884,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.726498,
+        "thread_cpu_ms": 0.72511,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.822632,
+        "thread_cpu_ms": 0.821271,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.715516,
+        "thread_cpu_ms": 0.714237,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.756877,
+        "thread_cpu_ms": 0.755459,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.835328,
+        "thread_cpu_ms": 0.833983,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.752915,
+        "thread_cpu_ms": 0.751641,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.753223,
+        "thread_cpu_ms": 0.751582,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.823316,
+        "thread_cpu_ms": 0.821925,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.825621,
+        "thread_cpu_ms": 0.824099,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.740399,
+        "thread_cpu_ms": 0.738961,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.752604,
+        "thread_cpu_ms": 0.751083,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.818721,
+        "thread_cpu_ms": 0.817366,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.736856,
+        "thread_cpu_ms": 0.735438,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.747349,
+        "thread_cpu_ms": 0.745928,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.831812,
+        "thread_cpu_ms": 0.830354,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.742097,
+        "thread_cpu_ms": 0.740719,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.718908,
+        "thread_cpu_ms": 0.717387,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.840537,
+        "thread_cpu_ms": 0.839244,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.847005,
+        "thread_cpu_ms": 0.845554,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.731177,
+        "thread_cpu_ms": 0.729882,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.770511,
+        "thread_cpu_ms": 0.768814,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.724003,
+        "thread_cpu_ms": 0.72259,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.740446,
+        "thread_cpu_ms": 0.739094,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.831058,
+        "thread_cpu_ms": 0.829753,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.859464,
+        "thread_cpu_ms": 0.857985,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.735075,
+        "thread_cpu_ms": 0.733758,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.74449,
+        "thread_cpu_ms": 0.743175,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.764407,
+        "thread_cpu_ms": 0.762941,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.747833,
+        "thread_cpu_ms": 0.74628,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.820356,
+        "thread_cpu_ms": 0.818951,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.826213,
+        "thread_cpu_ms": 0.824861,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.745599,
+        "thread_cpu_ms": 0.744214,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.730174,
+        "thread_cpu_ms": 0.728619,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.826389,
+        "thread_cpu_ms": 0.824956,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.72761,
+        "thread_cpu_ms": 0.726185,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.746487,
+        "thread_cpu_ms": 0.744752,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.814506,
+        "thread_cpu_ms": 0.813032,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.730681,
+        "thread_cpu_ms": 0.729211,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.745328,
+        "thread_cpu_ms": 0.74385,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.845267,
+        "thread_cpu_ms": 0.843581,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.853455,
+        "thread_cpu_ms": 0.85178,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.778878,
+        "thread_cpu_ms": 0.777078,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.764222,
+        "thread_cpu_ms": 0.762704,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.82525,
+        "thread_cpu_ms": 0.823879,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.74353,
+        "thread_cpu_ms": 0.742218,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.751462,
+        "thread_cpu_ms": 0.750193,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.839379,
+        "thread_cpu_ms": 0.837919,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.732965,
+        "thread_cpu_ms": 0.731612,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.725387,
+        "thread_cpu_ms": 0.724022,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.842893,
+        "thread_cpu_ms": 0.84136,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.734318,
+        "thread_cpu_ms": 0.732917,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.729249,
+        "thread_cpu_ms": 0.727844,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.817171,
+        "thread_cpu_ms": 0.815551,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.749316,
+        "thread_cpu_ms": 0.747881,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.738842,
+        "thread_cpu_ms": 0.737441,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 1.862916,
+        "thread_cpu_ms": 1.861123,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.842844,
+        "thread_cpu_ms": 0.841312,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.742962,
+        "thread_cpu_ms": 0.741447,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.744336,
+        "thread_cpu_ms": 0.742802,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.828609,
+        "thread_cpu_ms": 0.82709,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.738211,
+        "thread_cpu_ms": 0.736794,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.735593,
+        "thread_cpu_ms": 0.734303,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.834421,
+        "thread_cpu_ms": 0.833082,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.758354,
+        "thread_cpu_ms": 0.756408,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.746197,
+        "thread_cpu_ms": 0.74417,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.835029,
+        "thread_cpu_ms": 0.833665,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.735419,
+        "thread_cpu_ms": 0.734097,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.768621,
+        "thread_cpu_ms": 0.767124,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.828547,
+        "thread_cpu_ms": 0.827182,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.759413,
+        "thread_cpu_ms": 0.758132,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.751203,
+        "thread_cpu_ms": 0.749555,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.817331,
+        "thread_cpu_ms": 0.815858,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.830014,
+        "thread_cpu_ms": 0.828675,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.756872,
+        "thread_cpu_ms": 0.755396,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.736498,
+        "thread_cpu_ms": 0.735207,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.830946,
+        "thread_cpu_ms": 0.829625,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.745346,
+        "thread_cpu_ms": 0.744072,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.760047,
+        "thread_cpu_ms": 0.758625,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.830501,
+        "thread_cpu_ms": 0.829112,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.725769,
+        "thread_cpu_ms": 0.724395,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.733486,
+        "thread_cpu_ms": 0.731991,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.858628,
+        "thread_cpu_ms": 0.857252,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.854489,
+        "thread_cpu_ms": 0.853013,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.753683,
+        "thread_cpu_ms": 0.75222,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.781504,
+        "thread_cpu_ms": 0.779726,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.732177,
+        "thread_cpu_ms": 0.73077,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.71845,
+        "thread_cpu_ms": 0.716972,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.81322,
+        "thread_cpu_ms": 0.811765,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.849918,
+        "thread_cpu_ms": 0.848516,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.758308,
+        "thread_cpu_ms": 0.75687,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.745649,
+        "thread_cpu_ms": 0.744232,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.766511,
+        "thread_cpu_ms": 0.764944,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.77288,
+        "thread_cpu_ms": 0.771002,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.710082,
+        "thread_cpu_ms": 0.708727,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.732643,
+        "thread_cpu_ms": 0.731131,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.836996,
+        "thread_cpu_ms": 0.835524,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.821214,
+        "thread_cpu_ms": 0.81982,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.81326,
+        "thread_cpu_ms": 0.811697,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 1.797741,
+        "thread_cpu_ms": 1.796011,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.753564,
+        "thread_cpu_ms": 0.752213,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.738948,
+        "thread_cpu_ms": 0.737724,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.721377,
+        "thread_cpu_ms": 0.720049,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.71638,
+        "thread_cpu_ms": 0.71495,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.81225,
+        "thread_cpu_ms": 0.810932,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.827942,
+        "thread_cpu_ms": 0.826551,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.766674,
+        "thread_cpu_ms": 0.764884,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.757885,
+        "thread_cpu_ms": 0.756328,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.812479,
+        "thread_cpu_ms": 0.811034,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.721047,
+        "thread_cpu_ms": 0.71963,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.734981,
+        "thread_cpu_ms": 0.733514,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.812579,
+        "thread_cpu_ms": 0.811123,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.743202,
+        "thread_cpu_ms": 0.741781,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.72641,
+        "thread_cpu_ms": 0.725067,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.805484,
+        "thread_cpu_ms": 0.804103,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.868197,
+        "thread_cpu_ms": 0.866866,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.723269,
+        "thread_cpu_ms": 0.721915,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.713525,
+        "thread_cpu_ms": 0.712288,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.83433,
+        "thread_cpu_ms": 0.832933,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.721488,
+        "thread_cpu_ms": 0.720096,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.789297,
+        "thread_cpu_ms": 0.78755,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.834045,
+        "thread_cpu_ms": 0.832595,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.73897,
+        "thread_cpu_ms": 0.73749,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.692461,
+        "thread_cpu_ms": 0.69101,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.836486,
+        "thread_cpu_ms": 0.835037,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.752487,
+        "thread_cpu_ms": 0.751006,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.742312,
+        "thread_cpu_ms": 0.740945,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.808762,
+        "thread_cpu_ms": 0.807389,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.742385,
+        "thread_cpu_ms": 0.740784,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.756342,
+        "thread_cpu_ms": 0.754909,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.820835,
+        "thread_cpu_ms": 0.81944,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.728522,
+        "thread_cpu_ms": 0.727128,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      }
+    ],
+    "candidate": [
+      {
+        "wall_ms": 0.864106,
+        "thread_cpu_ms": 0.862751,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.776985,
+        "thread_cpu_ms": 0.775512,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.822964,
+        "thread_cpu_ms": 0.821656,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 1.701263,
+        "thread_cpu_ms": 1.699659,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.76656,
+        "thread_cpu_ms": 0.765078,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.859011,
+        "thread_cpu_ms": 0.857589,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.862718,
+        "thread_cpu_ms": 0.861266,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.760278,
+        "thread_cpu_ms": 0.758991,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.754978,
+        "thread_cpu_ms": 0.753595,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.858028,
+        "thread_cpu_ms": 0.856489,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.853552,
+        "thread_cpu_ms": 0.852243,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.761711,
+        "thread_cpu_ms": 0.760409,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.742219,
+        "thread_cpu_ms": 0.740823,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.774685,
+        "thread_cpu_ms": 0.773292,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.753913,
+        "thread_cpu_ms": 0.752528,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.823561,
+        "thread_cpu_ms": 0.822128,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.87212,
+        "thread_cpu_ms": 0.870688,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.749633,
+        "thread_cpu_ms": 0.748345,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.807132,
+        "thread_cpu_ms": 0.805183,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.842285,
+        "thread_cpu_ms": 0.840907,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.761617,
+        "thread_cpu_ms": 0.76022,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.756543,
+        "thread_cpu_ms": 0.755151,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.825044,
+        "thread_cpu_ms": 0.823594,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.776453,
+        "thread_cpu_ms": 0.775112,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.767398,
+        "thread_cpu_ms": 0.766052,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.865787,
+        "thread_cpu_ms": 0.864362,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.863224,
+        "thread_cpu_ms": 0.861795,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.775192,
+        "thread_cpu_ms": 0.773769,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.754493,
+        "thread_cpu_ms": 0.753133,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.75765,
+        "thread_cpu_ms": 0.756262,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.739927,
+        "thread_cpu_ms": 0.738469,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.842643,
+        "thread_cpu_ms": 0.841385,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 1.817235,
+        "thread_cpu_ms": 1.815626,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.757508,
+        "thread_cpu_ms": 0.755997,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.766629,
+        "thread_cpu_ms": 0.765233,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.761103,
+        "thread_cpu_ms": 0.759298,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.767046,
+        "thread_cpu_ms": 0.765733,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.86979,
+        "thread_cpu_ms": 0.868452,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.863306,
+        "thread_cpu_ms": 0.861909,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.776111,
+        "thread_cpu_ms": 0.774361,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.75305,
+        "thread_cpu_ms": 0.7516,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.861466,
+        "thread_cpu_ms": 0.859975,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.842118,
+        "thread_cpu_ms": 0.840699,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.76947,
+        "thread_cpu_ms": 0.768014,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.77638,
+        "thread_cpu_ms": 0.775043,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.76789,
+        "thread_cpu_ms": 0.766571,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.770723,
+        "thread_cpu_ms": 0.769364,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.842034,
+        "thread_cpu_ms": 0.840629,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.824961,
+        "thread_cpu_ms": 0.823559,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.758349,
+        "thread_cpu_ms": 0.756974,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.764718,
+        "thread_cpu_ms": 0.763403,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.916184,
+        "thread_cpu_ms": 0.914754,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.781036,
+        "thread_cpu_ms": 0.779541,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.816391,
+        "thread_cpu_ms": 0.814364,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.858018,
+        "thread_cpu_ms": 0.8564,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.757764,
+        "thread_cpu_ms": 0.756396,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.754856,
+        "thread_cpu_ms": 0.753278,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.8441,
+        "thread_cpu_ms": 0.842781,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.830056,
+        "thread_cpu_ms": 0.828698,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.770668,
+        "thread_cpu_ms": 0.76924,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.775719,
+        "thread_cpu_ms": 0.774377,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.768099,
+        "thread_cpu_ms": 0.766655,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.771709,
+        "thread_cpu_ms": 0.77026,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.847021,
+        "thread_cpu_ms": 0.845654,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.85089,
+        "thread_cpu_ms": 0.849515,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.738672,
+        "thread_cpu_ms": 0.737366,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.744595,
+        "thread_cpu_ms": 0.743205,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 1.832779,
+        "thread_cpu_ms": 1.831224,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.766381,
+        "thread_cpu_ms": 0.764828,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.852903,
+        "thread_cpu_ms": 0.851416,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.851608,
+        "thread_cpu_ms": 0.850078,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.75493,
+        "thread_cpu_ms": 0.75361,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.775446,
+        "thread_cpu_ms": 0.774026,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.858967,
+        "thread_cpu_ms": 0.857617,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.876391,
+        "thread_cpu_ms": 0.875016,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.746411,
+        "thread_cpu_ms": 0.744974,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.75526,
+        "thread_cpu_ms": 0.753901,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.759332,
+        "thread_cpu_ms": 0.757845,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.764765,
+        "thread_cpu_ms": 0.763374,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.865276,
+        "thread_cpu_ms": 0.863647,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.853065,
+        "thread_cpu_ms": 0.851626,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.792636,
+        "thread_cpu_ms": 0.791068,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.815938,
+        "thread_cpu_ms": 0.814206,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.864654,
+        "thread_cpu_ms": 0.863143,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.757571,
+        "thread_cpu_ms": 0.756191,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.768919,
+        "thread_cpu_ms": 0.767518,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.833107,
+        "thread_cpu_ms": 0.831828,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.782158,
+        "thread_cpu_ms": 0.780845,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.778656,
+        "thread_cpu_ms": 0.777271,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.852951,
+        "thread_cpu_ms": 0.851531,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.841245,
+        "thread_cpu_ms": 0.839805,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.760639,
+        "thread_cpu_ms": 0.759261,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.771457,
+        "thread_cpu_ms": 0.77012,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.759541,
+        "thread_cpu_ms": 0.758253,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.751636,
+        "thread_cpu_ms": 0.750325,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.840228,
+        "thread_cpu_ms": 0.838959,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 1.85655,
+        "thread_cpu_ms": 1.854887,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.766322,
+        "thread_cpu_ms": 0.765102,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.763728,
+        "thread_cpu_ms": 0.76245,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.772771,
+        "thread_cpu_ms": 0.771475,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.776233,
+        "thread_cpu_ms": 0.77487,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.831649,
+        "thread_cpu_ms": 0.830296,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.837862,
+        "thread_cpu_ms": 0.836616,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.781246,
+        "thread_cpu_ms": 0.779562,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.763611,
+        "thread_cpu_ms": 0.762143,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.856493,
+        "thread_cpu_ms": 0.855052,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.834936,
+        "thread_cpu_ms": 0.833541,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.774555,
+        "thread_cpu_ms": 0.773237,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.774326,
+        "thread_cpu_ms": 0.77281,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.761676,
+        "thread_cpu_ms": 0.760401,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.760016,
+        "thread_cpu_ms": 0.758645,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.842578,
+        "thread_cpu_ms": 0.841239,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.847286,
+        "thread_cpu_ms": 0.845836,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.759585,
+        "thread_cpu_ms": 0.758192,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.765653,
+        "thread_cpu_ms": 0.764457,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.872201,
+        "thread_cpu_ms": 0.870966,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.761594,
+        "thread_cpu_ms": 0.760345,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.802909,
+        "thread_cpu_ms": 0.800878,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.870697,
+        "thread_cpu_ms": 0.869362,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.762017,
+        "thread_cpu_ms": 0.760574,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.732853,
+        "thread_cpu_ms": 0.731424,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.840622,
+        "thread_cpu_ms": 0.839393,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.88148,
+        "thread_cpu_ms": 0.880076,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.761606,
+        "thread_cpu_ms": 0.759968,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.764029,
+        "thread_cpu_ms": 0.762546,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.775667,
+        "thread_cpu_ms": 0.774208,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.774753,
+        "thread_cpu_ms": 0.773405,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.865331,
+        "thread_cpu_ms": 0.863825,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.977941,
+        "thread_cpu_ms": 0.885772,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.756295,
+        "thread_cpu_ms": 0.75496,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.749416,
+        "thread_cpu_ms": 0.74786,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 1.909408,
+        "thread_cpu_ms": 1.907665,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.772317,
+        "thread_cpu_ms": 0.770548,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.866804,
+        "thread_cpu_ms": 0.865445,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.834815,
+        "thread_cpu_ms": 0.833103,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.770024,
+        "thread_cpu_ms": 0.768582,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.774848,
+        "thread_cpu_ms": 0.773555,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.872678,
+        "thread_cpu_ms": 0.871231,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.870487,
+        "thread_cpu_ms": 0.869095,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.784249,
+        "thread_cpu_ms": 0.782822,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.756625,
+        "thread_cpu_ms": 0.755256,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.766731,
+        "thread_cpu_ms": 0.765369,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.767877,
+        "thread_cpu_ms": 0.766292,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.871135,
+        "thread_cpu_ms": 0.869676,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.868098,
+        "thread_cpu_ms": 0.8667,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.76947,
+        "thread_cpu_ms": 0.768063,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.814346,
+        "thread_cpu_ms": 0.81249,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.853367,
+        "thread_cpu_ms": 0.851768,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.755024,
+        "thread_cpu_ms": 0.753652,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.777291,
+        "thread_cpu_ms": 0.775908,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.856984,
+        "thread_cpu_ms": 0.855537,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.78181,
+        "thread_cpu_ms": 0.780533,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.752412,
+        "thread_cpu_ms": 0.750959,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.878232,
+        "thread_cpu_ms": 0.876885,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.854381,
+        "thread_cpu_ms": 0.853021,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.752584,
+        "thread_cpu_ms": 0.751214,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.747914,
+        "thread_cpu_ms": 0.746546,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.77757,
+        "thread_cpu_ms": 0.775987,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.785415,
+        "thread_cpu_ms": 0.784072,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.861353,
+        "thread_cpu_ms": 0.859848,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 1.869913,
+        "thread_cpu_ms": 1.868097,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.752452,
+        "thread_cpu_ms": 0.750974,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.738265,
+        "thread_cpu_ms": 0.736763,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.766248,
+        "thread_cpu_ms": 0.764866,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.846808,
+        "thread_cpu_ms": 0.845534,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.828683,
+        "thread_cpu_ms": 0.827388,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.834885,
+        "thread_cpu_ms": 0.833423,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.77435,
+        "thread_cpu_ms": 0.772803,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.768303,
+        "thread_cpu_ms": 0.766921,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.845863,
+        "thread_cpu_ms": 0.844444,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.837568,
+        "thread_cpu_ms": 0.836193,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.742404,
+        "thread_cpu_ms": 0.741042,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.757961,
+        "thread_cpu_ms": 0.756603,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.831596,
+        "thread_cpu_ms": 0.830309,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.73234,
+        "thread_cpu_ms": 0.731007,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.796881,
+        "thread_cpu_ms": 0.795579,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.852869,
+        "thread_cpu_ms": 0.851501,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.754037,
+        "thread_cpu_ms": 0.752563,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.741244,
+        "thread_cpu_ms": 0.739914,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.845725,
+        "thread_cpu_ms": 0.843984,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.840343,
+        "thread_cpu_ms": 0.838921,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.789893,
+        "thread_cpu_ms": 0.787907,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.756807,
+        "thread_cpu_ms": 0.755367,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.743629,
+        "thread_cpu_ms": 0.742355,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.730264,
+        "thread_cpu_ms": 0.728995,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.844978,
+        "thread_cpu_ms": 0.843715,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.824102,
+        "thread_cpu_ms": 0.82287,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.751775,
+        "thread_cpu_ms": 0.750361,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.736901,
+        "thread_cpu_ms": 0.735488,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.867603,
+        "thread_cpu_ms": 0.866119,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.761043,
+        "thread_cpu_ms": 0.759655,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.774153,
+        "thread_cpu_ms": 0.772698,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.837903,
+        "thread_cpu_ms": 0.836167,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.774434,
+        "thread_cpu_ms": 0.772907,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.749009,
+        "thread_cpu_ms": 0.747648,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 1.834093,
+        "thread_cpu_ms": 1.832135,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.780768,
+        "thread_cpu_ms": 0.779236,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.79056,
+        "thread_cpu_ms": 0.789057,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.843792,
+        "thread_cpu_ms": 0.842476,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      {
+        "wall_ms": 0.770602,
+        "thread_cpu_ms": 0.769318,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      }
+    ]
+  },
+  "reproduction": {
+    "live_refresh": {
+      "baseline": {
+        "wall_ms": 0.352427,
+        "thread_cpu_ms": 0.351001,
+        "native_enqueue_calls": 0,
+        "pending_commands": 0,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      "candidate": {
+        "wall_ms": 0.973203,
+        "thread_cpu_ms": 0.971656,
+        "native_enqueue_calls": 1,
+        "pending_commands": 4,
+        "selected_endpoint": 140.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      }
+    },
+    "later_completion": {
+      "baseline": {
+        "wall_ms": 0.35572,
+        "thread_cpu_ms": 0.354179,
+        "native_enqueue_calls": 0,
+        "pending_commands": 0,
+        "selected_endpoint": 128.0,
+        "join_satisfied": false,
+        "physical_disabled": false
+      },
+      "candidate": {
+        "wall_ms": 0.375102,
+        "thread_cpu_ms": 0.373736,
+        "native_enqueue_calls": 0,
+        "pending_commands": 0,
+        "selected_endpoint": null,
+        "join_satisfied": false,
+        "physical_disabled": false
+      }
+    }
+  },
+  "helper_sha256": "bc981c880a18ba154a04debfeadbcec018a7c7d07cf345195d4133e91712f8ca",
+  "limitations": [
+    "Complete JOIN selection/revalidation/enqueue callback, with real RCCG and fake physical cache.",
+    "No CUDA, actual cache ancestry/capacity scan, transfer, native request queue, model inference or logging I/O.",
+    "Fixture construction/cleanup and deterministic clocks are outside the timed interval.",
+    "Alternating execution order; all 200 raw samples and unfavorable costs retained.",
+    "Reproduction variants have deliberately different actions; do not compare their CPU as equal work.",
+    "No online frequency, GPU, prefill or JCT gain is inferred from these synthetic callbacks."
+  ]
+}
