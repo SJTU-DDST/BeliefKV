@@ -1,0 +1,248 @@
+{
+  "status": "live_cold_phase_pair_verified_not_performance_acceptance",
+  "observed_at_local": "2026-10-14T13:18:38.917399+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56",
+  "plan_sha256": "70d74e0dc47608bc8d627af009ca1eaf14e0eba33befa9d40c190c8ce2ab5d26",
+  "arm": "native",
+  "execution": {
+    "collection_code_commit": "661ed45906a203ae87a9cb52b23542059e5085a8",
+    "verification_code_commit": "c42ecfd832d106fc36adc5b0e94cd68872c21d6f",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": [
+      "docs/README_zh.md",
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/reports/v450_v56_prefill_track_pair_registration_20261014.json",
+      "experiments/reports/v451_v56_prefill_track_pair_registration_20261014.json",
+      "experiments/reports/v452_v56_numa_placement_20261014.json",
+      "experiments/reports/v453_v56_live_startup_validation_20261014.json",
+      "experiments/reports/v454_v56_prior_predictive_phases_120_300_20261014.json",
+      "experiments/reports/v455_v56_prior_predictive_phases_600_900_20261014.json",
+      "experiments/reports/v456_v56_busy_600_900_20261014.json",
+      "experiments/reports/v459_v56_stack_diagnosis_20261014.json",
+      "experiments/reports/v459_v56_stack_diagnosis_20261014.raw.gz",
+      "experiments/reports/v460_prefill_track_slots_checks_20261014.raw.gz",
+      "experiments/reports/v461_prefill_track_slots_native_checks_20261014.raw.gz",
+      "experiments/reports/v462_prefill_track_slots_cpu_20261014.json",
+      "experiments/reports/v463_prefill_track_slots_development_20261014.json",
+      "experiments/reports/v464_daily_experiment_restriction_removed_20261014.json",
+      "experiments/reports/v465_v56_after_rule_removal_validation_20261014.json",
+      "experiments/reports/v466_prefill_track_slots_patch_export_20261014.json",
+      "experiments/reports/v467_prefill_track_slots_qualification_20261014.json",
+      "experiments/reports/v468_v56_host_numa_headroom_20261014.json",
+      "experiments/reports/v469_v56_busy_3600_3900_20261014.json",
+      "experiments/reports/v470_v56_prior_predictive_phases_3600_3900_20261014.json",
+      "experiments/reports/v471_v56_wait_prefetch_live_20261014.json.gz",
+      "experiments/reports/v471_v56_wait_prefetch_live_20261014_summary.json",
+      "experiments/reports/v472_v56_prefetch_coverage_and_tails_20261014.json.gz",
+      "experiments/reports/v473_v56_join_timing_rejections_20261014.json",
+      "experiments/reports/v474_v56_terminal_progress_20261014.json",
+      "experiments/reports/v56_native_phase_pair_watch_registration_20261014.json",
+      "scripts/launch_semantic_h2d_after_pair.py"
+    ]
+  },
+  "qualification": "/home/longhao/experiment/BeliefKV/experiments/reports/v448_prefill_track_qualification_20261014.json",
+  "qualification_sha256": "090cff3730e5bf06fc642fa1da4ca286c3e4f150bd581e912af72ae652c80f84",
+  "qualified_source_count": 50,
+  "all_qualified_hashes_match": false,
+  "matching_qualified_source_count": 49,
+  "non_execution_source_updates": {
+    "scripts/launch_semantic_h2d_after_pair.py": {
+      "qualified_sha256": "1ef774f2671dd6609807bb0d4b3f21a8c7d393aa1bc800dcb9a752764b4fccc3",
+      "current_sha256": "6a95df89610aa583c666ccfc0abcea76bb5f546f02e94220ed1f06fd3a8772bb"
+    }
+  },
+  "engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "b8e7942ca67d5a58d30eae3380e090da87eb73eaf16cff31c90d4668537912e1",
+    "expected_tree": "c916d585f8bed188d3b90ace4a1fde5fecdab3b1",
+    "actual_tree": "c916d585f8bed188d3b90ace4a1fde5fecdab3b1",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_mamba_request_mapping.py",
+      "test/srt/test_beliefkv_prefill_track_metadata.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "scheduler_identity": {
+    "pid": 1616628,
+    "state": "R",
+    "ppid": 1616263,
+    "start_ticks": "612522920",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "placement": "/home/longhao/experiment/BeliefKV/experiments/reports/v56_native_numa_placement_20261014.json",
+  "placement_sha256": "f7a75876446b9760224baf1f1ba9c9794875d8974b644376e4ff6dc68b8725c3",
+  "capacity_census": {
+    "capacity": {
+      "device_full_bytes": 36843376640,
+      "device_full_tokens": 1798992,
+      "device_mamba_bytes": 33096007680,
+      "device_mamba_slots": 513,
+      "device_total_bytes": 69939384320,
+      "host_full_bytes": 160000020480,
+      "host_full_tokens": 7812501,
+      "host_mamba_bytes": 40050032640,
+      "host_mamba_slots": 622,
+      "host_total_bytes": 200050053120,
+      "pool_layout": "static_separate_full_mamba"
+    },
+    "collection_mode": "native_reactive",
+    "scheduler_pid": 1616628,
+    "schema_version": 1,
+    "source": "native_sglang_v0520"
+  },
+  "get_server_info_status": 200,
+  "selected_server_info": {
+    "status": "ready",
+    "version": "0.5.20",
+    "max_running_requests": 48,
+    "context_length": 131072,
+    "chunked_prefill_size": 4096,
+    "prefill_decode_interval": 0,
+    "enable_mixed_chunk": false,
+    "enable_prefill_delayer": false,
+    "min_free_slots_delay": null,
+    "numa_node": null
+  },
+  "telemetry_status": {
+    "background_writer_timing": {
+      "categories": {
+        "audit:prefill_turnover_sample": {
+          "max_sample_cpu_ms": 0.074755,
+          "max_sample_wall_ms": 0.073669,
+          "mean_sample_cpu_ms": 0.074755,
+          "mean_sample_wall_ms": 0.073669,
+          "records_seen": 1,
+          "sampled_cpu_ms": 0.074755,
+          "sampled_wall_ms": 0.073669,
+          "samples": 1
+        }
+      },
+      "cpu_clock": "thread_time_ns",
+      "sample_every": 64,
+      "schema_version": 1,
+      "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+      "snapshot_ts_ms": 1791955118363.1616,
+      "wall_clock": "perf_counter_ns"
+    },
+    "collection_mode": "native_reactive",
+    "context_prefix_reuse_evidence": {
+      "counts": {},
+      "semantics": "Previously served same-session input-prefix loss, not newly appended input or a per-layer FULL/Mamba recomputation count.",
+      "tracked_context_count": 0,
+      "tracking_limit": 1024
+    },
+    "dropped_records": 0,
+    "failed_records": 0,
+    "gpu_restore_wait_probe": {
+      "counts": {},
+      "pending_samples": 0,
+      "queue_limit": 32,
+      "sampling_interval": 16
+    },
+    "host_block_eviction_attribution": {
+      "available": true,
+      "counts": {},
+      "evicted_units_by_pool": {},
+      "full_reaccess_semantics": "exact prefix match plus request device/host cached-token intervals; remaining evicted FULL interval is attributed to recomputation",
+      "identity_semantics": "run-keyed HMAC over exact cache namespace and radix token prefix; raw token IDs are not written",
+      "mamba_reaccess_semantics": "exact prefix revisit is observable, but native telemetry does not expose the Mamba hit location per node",
+      "pending_blocks_by_pool": {},
+      "pending_latest_evicted_units_by_pool": {},
+      "probe_prefix_length_overflow": 0,
+      "recomputed_full_units": 0,
+      "reused_full_units": 0
+    },
+    "host_pool_evidence": {
+      "full": {
+        "bytes_per_unit": 20480,
+        "capacity_units": 7812501,
+        "d2h_ack_units": 0,
+        "evicted_bytes": 0,
+        "evicted_units": 0,
+        "eviction_calls": 0,
+        "h2d_ack_units": 0,
+        "h2d_units_after_first_host_eviction": 0,
+        "high_water": {
+          "used_bytes": 0,
+          "used_units": 0
+        }
+      },
+      "mamba": {
+        "bytes_per_unit": 64389120,
+        "capacity_units": 622,
+        "d2h_ack_units": 0,
+        "evicted_bytes": 0,
+        "evicted_units": 0,
+        "eviction_calls": 0,
+        "h2d_ack_units": 0,
+        "h2d_units_after_first_host_eviction": 0,
+        "high_water": {
+          "used_bytes": 0,
+          "used_units": 0
+        }
+      }
+    },
+    "pending_batch_count": 0,
+    "pending_request_count": 0,
+    "prefill_turnover_probe": {
+      "counts": {
+        "completed_samples": 1,
+        "eligible_prefills": 1,
+        "selected_samples": 1
+      },
+      "pending_samples": 0,
+      "queue_limit": 32,
+      "sampling_interval": 16
+    },
+    "record_counts": {
+      "audit": 8
+    },
+    "request_cache_evidence": {
+      "after_first_full_host_eviction": {},
+      "after_first_host_eviction": {},
+      "after_first_mamba_host_eviction": {},
+      "all": {}
+    },
+    "request_cache_evidence_semantics": {
+      "after_eviction": "pool-level request hits and uncached prompt tokens after the first eviction; use eviction_attribution.jsonl for node-level FULL reaccess attribution",
+      "full_host_hit": "cached_tokens_host input-token count",
+      "mamba_host_hit": "mamba_host_hit_length checkpoint-slot count; not tokens"
+    },
+    "schema_version": 1,
+    "snapshot_ts_ms": 1791955118363.1553,
+    "source": "native_sglang_v0520",
+    "writer_error": null,
+    "writer_queue_depth": 0
+  },
+  "arrived_workspace_directories": 108,
+  "outcomes": {},
+  "helper_sha256": "c94e8ad039831c84a304a87133b28b23d4afef6e4ea584620bd5ba848e219379",
+  "limitations": [
+    "Live startup/source/pool verification; arrival directories are not admitted requests or completed workflows.",
+    "Resident NUMA pages are not exact pool attribution, pinned-memory proof or bandwidth.",
+    "The new metadata path's actual frequency, CUDA time saved and relative JCT/throughput remain unproven."
+  ]
+}

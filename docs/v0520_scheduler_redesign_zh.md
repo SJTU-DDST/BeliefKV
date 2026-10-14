@@ -4,8 +4,9 @@
 停止及旧06:00恢复已停用，冷启动器不再按时段等待。当前V56
 继续，以下旧预约和截止记录仅作历史证据，不约束后续实验。
 
-V56当前运行661ed45/b8e7942c/c916d585，10:33:21冷启动，
-predictive→同版本native，v451/v453分别绑定登记与启动核验。
+V56保持661ed45/b8e7942c/c916d585，predictive最终155 completed、
+1 incomplete；同版本native于13:18:38核验启动，scheduler1616628。
+两侧运行配置保持，v451/v453绑定原登记与predictive启动核验。
 V55最终154 completed/2 incomplete，于10:20:55完成后处理。
 V455的600–900s短单请求run_batch P50为42.163ms，对V55
 predictive40.815ms尚无稳定改善；同版本native完整相位待观测。
@@ -21,6 +22,15 @@ tool_prefetch为1.327s；不沿用首波控制成本排序。v471/v472的
 仍须以实时request/epoch、运行批次、容量和依赖确认是否可提交。
 v474记录153 completed、1 incomplete、2未知；root8192-token
 截断与更早test-analyst图硬预算分别保留，不改冻结上限。
+
+v482最终封存提前且下一请求复用FULL为JOIN69事件/1.502GB、
+工具171事件/10.881GB。新隔离候选保留较大已支持payload的当前
+耗时预算，供同key/checkpoint、逐池严格缩小后的计划使用；
+直接估计优先，原生身份/前缀/容量/事务和最新预测检查不变。
+v479/v484的617条成本查询补上支持，但leaf代际缺失，不能算
+真实动作资格。v480通过781项检查，v481普通窗口中位CPU多
+0.162us、新回退多7.306us。旧等待V57必须在派发前保留替换，
+当前native源码及引擎保持冻结，GPU/端到端收益仍未验收。
 
 v448已部署优化减少Mamba prefill元数据回读。独立CPU快照与
 decode完成mask分离，只在正常EXTEND且形状一致时使用；物理

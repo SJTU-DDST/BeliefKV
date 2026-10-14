@@ -7,13 +7,16 @@ v464记录移除23:59自动停止cron、关闭旧06:00恢复登记；冷启动�
 的时段等待亦删除。V56继续运行，历史截止和行政删失凭证保留，
 下文旧时段约定不再生效。
 
-当前运行V56：冻结661ed45、patch b8e7942c、引擎树c916d585。
+当前V56 predictive已自然结束，native运行中；两侧冻结661ed45、
+patch b8e7942c、引擎树c916d585。
 v451登记的launcher为3891419，scheduler为3892057，10:33:21
 启动，监控起点10:36:01.117。v453核验HTTP200、50份合格源码、
 实际池与running48/context131072；新增delayer/mixed/间隔均关闭。
-v474观测154个终态：153 completed、1 incomplete，django-10554和
-django-11749仍未终态；第二波已到达。predictive之后继续同版本
-native，运行树不热改。
+最终predictive为155 completed、1 incomplete，156条终态完整，
+客户端duration为9325.121s，29个workflow有多轮spawn，191次JOIN、
+361个child。HTML已生成，native服务于13:18:38完成启动核验。
+native scheduler1616628，running48/context131072和关闭的新凑批
+配置保持。当前运行树不热改。
 v450是arm-order参数传递错误，在argparse退出且无workflow派发；
 保留该原件，不能用作实际启动登记。V55已于10:20:55完整结束，
 最终154 completed、2 incomplete，后处理/HTML齐全，两个root的
@@ -87,8 +90,24 @@ native只读观测已独立登记，等既有native arm启动后记录源码、
 先获得这项同引擎参考，再决定下一冷候选；小幅噪声不足以中断
 当前匹配实验。最终目标仍未验收，既有PrefillAdder保留。
 
-已验证的设备槽候选安排在V56两侧和后处理完整结束后冷观察，
-启动登记以对应V57 launch state为准；当前引擎不得提前替换。
+v482最终封存确认上述提前FULL复用仍为JOIN69事件/1.502GB、
+工具171事件/10.881GB。开发侧补上容量回收后缩小payload的时机
+断点：FULL+Mamba计划已获耗时支持，缩成较小FULL-only后却因
+新形态/大小没有历史而放弃。新候选只在同key、同checkpoint且
+逐池payload严格缩小时，重新查询原较大计划的当前耗时，作为
+时机预算；不按字节缩放固定ACK开销。原直接估计优先，最新预测、
+EOS/tool、原生身份/前缀/容量/事务检查保持。
+v479/v484成本回放保留708个原直接估计，617条缩小后的查询补上
+支持，涉及16 JOIN/5工具等待；服务预算P90约85.6ms。日志缺少
+原生leaf代际，回放仅证明成本支持，不能计成新动作或误差达标。
+v480的781项检查通过，v481普通已支持窗口CPU中位增加0.162us，
+新回退约增加7.306us；初次fixture失败、最终检查及成本均保留。
+v483/v485资格绑定开发候选，GPU/JCT效果仍未知。
+
+已登记的V57旧0bd5664设备槽候选仅在等待；新增缩小payload修复
+完成资格后须保留替换该等待登记，不能改已排队checkout或提前
+替换当前native参考。部署仍在V56两侧和后处理完整结束后进行。
+新冷启动状态以V57对应launch state为准。
 后续predictive可用V56 native作开发参考，但新公共引擎优化的
 正式收益仍需同版本对照。v468记录本次大映射约141.10GiB在
 NUMA1、45.21GiB在NUMA0；GPU本地节点保守余量不足以支持整池

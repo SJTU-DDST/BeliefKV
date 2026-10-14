@@ -9,7 +9,9 @@
 当前运行V56，冻结代码661ed45、patch b8e7942c、引擎树c916d585。
 2026-10-14 10:33:21启动，GPU监控起点10:36:01.117，顺序为
 predictive→同版本native；v451登记、v453核验50份源码与服务。
-v474观测153 completed、1 incomplete、2未终态，第二波已到达。
+predictive最终155 completed、1 incomplete，全部156条终态齐全；
+客户端duration9325.121s、29个workflow多轮spawn，HTML已生成。
+同版本native于13:18:38完成启动核验，保持冻结代码与配置。
 该incomplete是root最后8192-token length截断，child先前图预算事件
 另计。V55已于10:20:55完成后处理，最终154
 completed、2 incomplete，HTML齐全；两例root输出截断保留。
@@ -35,8 +37,14 @@ v466/v467已导出并资格绑定3c13ad50/572109fe，尚未部署且不宣称
 GPU收益。V56继续冻结，native自动只读观测已登记，
 待补齐同引擎、同配置的完整相位与NUMA记录。既有PrefillAdder保留，
 新延迟凑批、mixed chunk和间隔调整仍关闭。
-该已验证候选安排在V56全部收尾后冷观察，登记状态以V57 launch
-state为准；不能提前替换当前native参考。v468的本地Host容量
+旧设备槽候选0bd5664/3c13ad50仅在等待，尚无V57 run目录。
+新增修复补齐“回收后payload缩小、因耗时支持缺失而停止”的断点；
+同key/checkpoint的缩小payload可用原较大计划的当前耗时预算，
+仍重查最新预测和全部原生物理条件。781项检查通过，成本回放
+涉及16 JOIN/5工具等待，不能计作已执行动作。v482封存的最终
+提前FULL复用仍为1.502GB/10.881GB。完成资格后保留替换旧等待
+登记，再于V56全部收尾后冷观察，不能提前替换native参考。
+v468的本地Host容量
 审计不支持整worker强制NUMA绑定，本轮继续preferred。
 
 以下为先前阶段的证据与背景，不覆盖以上当前运行状态。
