@@ -1,0 +1,174 @@
+{
+  "status": "bounded_source_and_live_prefix_assessment_not_zero_copy_benchmark",
+  "started_at_local": "2026-10-14T16:35:14.153588+08:00",
+  "finished_at_local": "2026-10-14T16:35:17.212112+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v57",
+  "collection_code_commit": "0fd9d1304d1e371fd211e643a7dc666b3cb3216e",
+  "patch_sha256": "3c13ad50342d6a6e1b6e9c9c9f91edde322398d7cdee8bc4ea26be6e802ecfd5",
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v57/predictive_h2d/server/transfer_telemetry.jsonl": {
+      "observed_at_local": "2026-10-14T16:35:14.153794+08:00",
+      "device": 66306,
+      "inode": 140019042,
+      "observed_bytes": 14863807,
+      "complete_prefix_bytes": 14863807,
+      "complete_prefix_sha256": "8adf36fd414b2c579a054ec962126d2993a74bd1dafea7b6a2c39d4f91162514"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v57/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+      "observed_at_local": "2026-10-14T16:35:14.436458+08:00",
+      "device": 66306,
+      "inode": 140019048,
+      "observed_bytes": 280146067,
+      "complete_prefix_bytes": 280146067,
+      "complete_prefix_sha256": "f0228368ed25583bbde1b11b2b6f5676d68ba7c8c2d87bbaea2a3741d7895b4c"
+    }
+  },
+  "transfer_evidence": {
+    "d2h": {
+      "completed_batches": 13998,
+      "actual_bytes": 880523939840,
+      "first_submit_ts_ms": 1791965714634.5168,
+      "last_complete_ts_ms": 1791966913066.5024,
+      "transfer_stream_elapsed_ms": {
+        "count": 13998,
+        "sum_ms": 69400.52847737446,
+        "p50_ms": 3.216207981109619,
+        "max_ms": 102.40835571289062
+      },
+      "submit_to_ack_ms": {
+        "count": 13998,
+        "sum_ms": 79434.24260988832,
+        "p50_ms": 3.656749613583088,
+        "max_ms": 118.99966280907393
+      },
+      "enqueue_to_submit_ms": {
+        "count": 13998,
+        "sum_ms": 375.75120665133,
+        "p50_ms": 0.016849953681230545,
+        "max_ms": 2.6701604947447777
+      }
+    },
+    "h2d": {
+      "completed_batches": 6279,
+      "actual_bytes": 2072318197760,
+      "first_submit_ts_ms": 1791965830681.1396,
+      "last_complete_ts_ms": 1791966912980.262,
+      "transfer_stream_elapsed_ms": {
+        "count": 6279,
+        "sum_ms": 73673.76532520726,
+        "p50_ms": 10.836480140686035,
+        "max_ms": 52.5366096496582
+      },
+      "submit_to_ack_ms": {
+        "count": 6279,
+        "sum_ms": 355225.1789662987,
+        "p50_ms": 53.02585568279028,
+        "max_ms": 311.7387564852834
+      },
+      "enqueue_to_submit_ms": {
+        "count": 6279,
+        "sum_ms": 16471.32926248014,
+        "p50_ms": 1.2597674503922462,
+        "max_ms": 88.41557335108519
+      }
+    }
+  },
+  "runtime_state_ts_ms": 1791966913701.0918,
+  "logical_cache_counts": {
+    "wait_context_groups_built": 6762,
+    "wait_context_groups_invalidated": 6735,
+    "wait_context_cache_retained": 57185,
+    "h2d_service_cache_retained_after_d2h": 4126,
+    "d2h_service_cache_retained_after_h2d": 11
+  },
+  "runtime_state_keys": [
+    "control_timing_sample_every",
+    "counts",
+    "eos_prefetch_evidence_window_ms",
+    "eos_protocol_window_ms",
+    "event",
+    "execution_handoff",
+    "execution_handoff_request_id",
+    "final",
+    "final_admission_policy",
+    "final_stage_prefetch",
+    "final_stage_priority",
+    "h2d_seed_samples",
+    "h2d_service_samples",
+    "opportunity_writer_timing",
+    "overlap_prefetch_supported",
+    "physical_disabled",
+    "prefetch_lead_ms",
+    "prefetch_locked_contexts_by_role",
+    "prefetch_locked_count",
+    "prefetch_protected_bytes",
+    "prefetch_residency_budget",
+    "prefetch_residency_headroom",
+    "prepare_host",
+    "prepare_pool_scope",
+    "resident_first",
+    "semantic_work_statistic",
+    "semantic_worker_configured",
+    "semantic_worker_error",
+    "shared_path_timing",
+    "terminal_cache_diagnostics",
+    "tool_predictor_configured",
+    "tool_predictor_disabled",
+    "tool_prefetch",
+    "tool_timing_only",
+    "ts_ms"
+  ],
+  "qualified_source_count": 58,
+  "all_qualified_hashes_match": true,
+  "engine_source_sha256": {
+    "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/l2_transfer.py": "d78f93396f2798dac12dc42e977592f24326c3445f253c671fa64e84137193f0",
+    "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/pool_host/mha.py": "1c4d38700c7b5bd0a50842f9d16410f9ab7992ea81cea20650468cdbd9728212",
+    "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/pool_host/mamba.py": "5a59b4ac72494bd222309fc91aa0d6ff52a5a10711e182025ee2d410be4c908f",
+    "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/pool_host/common.py": "7b05da6ae2453c0af8dc040d12ffa84043d0e087c9ad52cec0063f9f42daa303",
+    "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/cache_controller.py": "304a789de188f5535156c831e54609ce90a13b61618018ec1a9de542c59ab740"
+  },
+  "telemetry_health": {
+    "snapshot_ts_ms": 1791966916247.3237,
+    "failed_records": 0,
+    "dropped_records": 0,
+    "writer_error": null,
+    "writer_queue_depth": 2
+  },
+  "directions": {
+    "mapped_host_kv_for_attention": {
+      "decision": "defer",
+      "reason": "Repeated decode reuse differs from one-pass host reads; no local net-benefit measurement."
+    },
+    "avoid_intermediate_kv_buffers": {
+      "decision": "retain_existing_native_direct_pool_path",
+      "reason": "Native registered Host buffers and layer-aware async transfers already avoid Python KV staging on the configured path."
+    },
+    "shared_prefix_handle_transfer": {
+      "decision": "retain_native_radix_sharing",
+      "reason": "Avoiding branch duplication and host/device migration are distinct; a handle does not make host-only bytes resident."
+    },
+    "event_driven_logical_maintenance": {
+      "decision": "continue_bounded_measured_optimizations",
+      "reason": "Wait-membership and directional service-cache maintenance are deployed; physical state still requires current native checks."
+    },
+    "general_operator_framework": {
+      "decision": "defer",
+      "reason": "No demonstrated remaining cost requires replacing the native allocation/transfer lifecycle."
+    }
+  },
+  "research_sources": [
+    "https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#zero-copy",
+    "https://docs.sglang.ai/advanced_features/hicache_design.html",
+    "https://arxiv.org/abs/2607.10987"
+  ],
+  "helper_sha256": "18eefc874c6bcc78419f7187f8a29c14a89162a13a74a94d047aee4299c9bd68",
+  "limitations": [
+    "Independent complete-line file prefixes are not an atomic cross-file snapshot.",
+    "Transfer records include native and controlled sources; whole-batch times are not attributed by byte share.",
+    "CUDA stream sums include stream work/dependencies and concurrent intervals; they are not pure copy-engine or removable JCT time.",
+    "Submit-to-ACK includes completion observation; it is not an isolated CPU cost.",
+    "Logical counters do not count wait queries or prove speedup, saved CPU, cache hit rates or physical readiness.",
+    "No mapped-host attention experiment, new GPU workload, native policy change or runtime hot edit was performed.",
+    "AAFLOW+ stateful algebra and analytical examples do not establish measured BeliefKV gains."
+  ]
+}

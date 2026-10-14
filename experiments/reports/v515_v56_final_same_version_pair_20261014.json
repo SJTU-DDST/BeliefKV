@@ -1,0 +1,101 @@
+{
+  "status": "completed_single_pair_observation_not_isolated_policy_acceptance",
+  "observed_at_local": "2026-10-14T16:20:57.300733+08:00",
+  "comparison": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/comparison.json",
+    "sha256": "cd9bd14686ac4ba86470505b90714ac283b547e5b9025d30d4686b4f91816d2f"
+  },
+  "policy_comparison": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/native_policy_comparison.json",
+    "sha256": "495e8ba85549dcaa36cd62217a0dc7440f75fb2cda2d7a3b4d230f379a50f449"
+  },
+  "arms": {
+    "predictive_h2d": {
+      "duration_seconds": 9325.12113424018,
+      "completed_workflows_per_hour": 59.83836477481495,
+      "completed_jct_mean_seconds": 2471.8817187375,
+      "completed_jct_p50_seconds": 2299.7340661538765,
+      "completed_request_output_tokens": 8450701,
+      "completed_request_output_tokens_per_second": 906.229621937085,
+      "submitted_input_tokens": 960197476,
+      "completed_workflows": 155,
+      "workflow_count": 156
+    },
+    "native": {
+      "duration_seconds": 9544.041854777373,
+      "completed_workflows_per_hour": 58.465795570739985,
+      "completed_jct_mean_seconds": 2671.8706763638365,
+      "completed_jct_p50_seconds": 2238.3749426389113,
+      "completed_request_output_tokens": 9216444,
+      "completed_request_output_tokens_per_second": 965.6751447906329,
+      "submitted_input_tokens": 1035596613,
+      "completed_workflows": 155,
+      "workflow_count": 156
+    }
+  },
+  "paired_completed": {
+    "left_arm": "predictive_h2d",
+    "right_arm": "native",
+    "shared_instances": 156,
+    "shared_outcome_pairs": {
+      "completed/completed": 154,
+      "completed/incomplete": 1,
+      "incomplete/completed": 1
+    },
+    "paired_completed_workflows": 154,
+    "paired_completed_with_explicit_jct_eligibility": 154,
+    "unpaired_completed_instances": {
+      "left": [
+        "django__django-12273"
+      ],
+      "right": [
+        "django__django-11138"
+      ]
+    },
+    "duration_seconds": {
+      "left": {
+        "mean": 2468.8473673855838,
+        "p50": 2248.5794990570284,
+        "p95": 5250.095951640276
+      },
+      "right": {
+        "mean": 2667.416518961412,
+        "p50": 2228.8370420336723,
+        "p95": 6445.034166790123
+      }
+    },
+    "mean_delta_seconds": -198.56915157582827,
+    "p50_delta_seconds": -30.112702498212457,
+    "p95_delta_seconds": 2321.639727785715,
+    "left_shorter_workflows": 78,
+    "right_shorter_workflows": 76,
+    "tied_workflows": 0,
+    "semantics": "The same instances completed in both arms; negative deltas favor left. Unpaired completions and shared outcome differences remain explicit. Eligibility flags are reported without silently changing this outcome-based cohort. Request, tool and delegation counts describe realized demand; matching tasks does not match execution traces or establish causal speedup."
+  },
+  "paired_mean_jct_relative_change": -0.0744424990114192,
+  "completed_throughput_relative_change": 0.02347644790729375,
+  "output_token_rate_relative_change": -0.06155850978895827,
+  "workload_balance": {
+    "scope": "realized live demand; not a correction for counterfactual work",
+    "same_logical_trajectory_verified": false,
+    "matched_seed_guarantees_identical_trajectory": false,
+    "baseline": "native",
+    "relative_changes_predictive_vs_native": {
+      "llm_request_count": -0.05611422267481325,
+      "tool_call_count": -0.054695518303113255,
+      "submitted_input_tokens": -0.0728074387782881,
+      "completed_request_output_tokens": -0.08308443039419544
+    },
+    "performance_claim": "single live pair only; trace drift and run-level variation must be reported; no isolated KV-policy throughput claim"
+  },
+  "isolated_policy_effect_verified": false,
+  "degraded_runtime_arms": [],
+  "helper_sha256": "8c42bdf8ca9f9d7e27c693ba3369b31cce57b7aa2ecb9e8d98e8841f7681ae27",
+  "limitations": [
+    "Both arms retain155 completed and1 incomplete; incomplete task identities differ and remain explicit.",
+    "Paired mean JCT uses154 shared completions, not all156 outcomes or a quality-adjusted score.",
+    "Lower realized requests, tool calls and output work confound the observed mean JCT and completion-rate gain.",
+    "The newly deployed V57 has later runtime/public-engine changes and is not a replication of this same-version pair.",
+    "Repeated matched controls, ablations, quality, starvation and useful recomputation remain unverified."
+  ]
+}

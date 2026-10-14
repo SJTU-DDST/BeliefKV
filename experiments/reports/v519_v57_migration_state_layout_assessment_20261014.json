@@ -1,0 +1,226 @@
+{
+  "status": "bounded_source_and_live_prefix_assessment_not_zero_copy_benchmark",
+  "started_at_local": "2026-10-14T16:43:58.384237+08:00",
+  "finished_at_local": "2026-10-14T16:44:03.697847+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v57",
+  "collection_code_commit": "0fd9d1304d1e371fd211e643a7dc666b3cb3216e",
+  "patch_sha256": "3c13ad50342d6a6e1b6e9c9c9f91edde322398d7cdee8bc4ea26be6e802ecfd5",
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v57/predictive_h2d/server/transfer_telemetry.jsonl": {
+      "observed_at_local": "2026-10-14T16:43:58.516789+08:00",
+      "device": 66306,
+      "inode": 140019042,
+      "observed_bytes": 18718089,
+      "complete_prefix_bytes": 18718089,
+      "complete_prefix_sha256": "042d00c785e84710749c266ba969a05b9dafa9064a340945753d086074f74c72"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v57/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+      "observed_at_local": "2026-10-14T16:43:58.903724+08:00",
+      "device": 66306,
+      "inode": 140019048,
+      "observed_bytes": 389444891,
+      "complete_prefix_bytes": 389444891,
+      "complete_prefix_sha256": "4ae969479b885f2dada190034c5b7679f4f03a9ec4be356b99b45a1d2dff96d6"
+    }
+  },
+  "transfer_evidence": {
+    "d2h": {
+      "completed_batches": 17724,
+      "actual_bytes": 1103045427200,
+      "first_submit_ts_ms": 1791965714634.5168,
+      "last_complete_ts_ms": 1791967437952.9841,
+      "transfer_stream_elapsed_ms": {
+        "count": 17724,
+        "sum_ms": 86436.69061466306,
+        "p50_ms": 3.183791995048523,
+        "max_ms": 102.40835571289062
+      },
+      "submit_to_ack_ms": {
+        "count": 17724,
+        "sum_ms": 102689.56932984293,
+        "p50_ms": 3.6255554296076298,
+        "max_ms": 118.99966280907393
+      },
+      "enqueue_to_submit_ms": {
+        "count": 17724,
+        "sum_ms": 465.54286405444145,
+        "p50_ms": 0.016780570149421692,
+        "max_ms": 2.6701604947447777
+      }
+    },
+    "h2d": {
+      "completed_batches": 7834,
+      "actual_bytes": 2471114301440,
+      "first_submit_ts_ms": 1791965830681.1396,
+      "last_complete_ts_ms": 1791967433605.769,
+      "transfer_stream_elapsed_ms": {
+        "count": 7834,
+        "sum_ms": 89430.11761117354,
+        "p50_ms": 10.58137559890747,
+        "max_ms": 52.5366096496582
+      },
+      "submit_to_ack_ms": {
+        "count": 7834,
+        "sum_ms": 445806.7769864574,
+        "p50_ms": 53.281343542039394,
+        "max_ms": 311.7387564852834
+      },
+      "enqueue_to_submit_ms": {
+        "count": 7834,
+        "sum_ms": 20182.78045579791,
+        "p50_ms": 1.2265564873814583,
+        "max_ms": 88.41557335108519
+      }
+    }
+  },
+  "runtime_state_ts_ms": 1791967438070.9314,
+  "logical_cache_counts": {
+    "wait_context_groups_built": 9524,
+    "wait_context_groups_invalidated": 9473,
+    "wait_context_cache_retained": 76766,
+    "h2d_service_cache_retained_after_d2h": 5368,
+    "d2h_service_cache_retained_after_h2d": 15
+  },
+  "runtime_state_keys": [
+    "control_timing_sample_every",
+    "counts",
+    "eos_prefetch_evidence_window_ms",
+    "eos_protocol_window_ms",
+    "event",
+    "execution_handoff",
+    "execution_handoff_request_id",
+    "final",
+    "final_admission_policy",
+    "final_stage_prefetch",
+    "final_stage_priority",
+    "h2d_seed_samples",
+    "h2d_service_samples",
+    "opportunity_writer_timing",
+    "overlap_prefetch_supported",
+    "physical_disabled",
+    "prefetch_lead_ms",
+    "prefetch_locked_contexts_by_role",
+    "prefetch_locked_count",
+    "prefetch_protected_bytes",
+    "prefetch_residency_budget",
+    "prefetch_residency_headroom",
+    "prepare_host",
+    "prepare_pool_scope",
+    "resident_first",
+    "semantic_work_statistic",
+    "semantic_worker_configured",
+    "semantic_worker_error",
+    "shared_path_timing",
+    "terminal_cache_diagnostics",
+    "tool_predictor_configured",
+    "tool_predictor_disabled",
+    "tool_prefetch",
+    "tool_timing_only",
+    "ts_ms"
+  ],
+  "live_configuration": {
+    "status": "ready",
+    "hicache_io_backend": "kernel",
+    "hicache_mem_layout": "page_first",
+    "hicache_storage_backend": null,
+    "max_running_requests": 48,
+    "enable_prefill_delayer": false,
+    "enable_mixed_chunk": false,
+    "min_free_slots_delay": null,
+    "prefill_decode_interval": 0
+  },
+  "qualified_source_count": 58,
+  "all_qualified_hashes_match": true,
+  "engine_source_sha256": {
+    "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/l2_transfer.py": "d78f93396f2798dac12dc42e977592f24326c3445f253c671fa64e84137193f0",
+    "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/pool_host/mha.py": "1c4d38700c7b5bd0a50842f9d16410f9ab7992ea81cea20650468cdbd9728212",
+    "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/pool_host/mamba.py": "5a59b4ac72494bd222309fc91aa0d6ff52a5a10711e182025ee2d410be4c908f",
+    "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/pool_host/common.py": "7b05da6ae2453c0af8dc040d12ffa84043d0e087c9ad52cec0063f9f42daa303",
+    "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/cache_controller.py": "304a789de188f5535156c831e54609ce90a13b61618018ec1a9de542c59ab740"
+  },
+  "complete_600_900_window": {
+    "busy_report": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v516_v57_busy_600_900_20261014.json",
+      "sha256": "d7562b0880763708837c7acbdc01360ee65be9237b3dd6981303a871d32c9535"
+    },
+    "phase_report": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v517_v57_prefill_phases_600_900_20261014.json",
+      "sha256": "25a95f90db96b55ea41b5ba63136b446af11d8ed3442adb57923c5f42ae65420"
+    },
+    "same_version": false,
+    "native_reference": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56",
+    "short_prefill": {
+      "predictive_h2d": {
+        "sample_count": 56,
+        "selection_wall_p50_ms": 19.6458805,
+        "run_batch_wall_p50_ms": 44.5224465,
+        "post_launch_physical_wall_p50_ms": 2.300544,
+        "run_return_to_result_start_p50_ms": 9.756952285766602,
+        "launch_to_processed_completion_p50_ms": 56.8959321975708,
+        "decode_request_steps": 351776
+      },
+      "native": {
+        "sample_count": 65,
+        "selection_wall_p50_ms": 15.982452,
+        "run_batch_wall_p50_ms": 42.150101,
+        "post_launch_physical_wall_p50_ms": 0.002491,
+        "run_return_to_result_start_p50_ms": 4.27305793762207,
+        "launch_to_processed_completion_p50_ms": 50.29092502593994,
+        "decode_request_steps": 377059
+      }
+    },
+    "predictive_python_self_ms": 36918.497510000016,
+    "scope": "Closed development window with a prior engine's native arm; medians describe different realized populations and are not causal accounting."
+  },
+  "telemetry_health": {
+    "snapshot_ts_ms": 1791967443134.545,
+    "failed_records": 0,
+    "dropped_records": 0,
+    "writer_error": null,
+    "writer_queue_depth": 2
+  },
+  "directions": {
+    "mapped_host_kv_for_attention": {
+      "decision": "defer",
+      "reason": "Repeated decode reuse differs from one-pass host reads; no local net-benefit measurement."
+    },
+    "avoid_intermediate_kv_buffers": {
+      "decision": "retain_existing_native_direct_pool_path",
+      "reason": "Native registered Host buffers and layer-aware async transfers already avoid Python KV staging on the configured path."
+    },
+    "page_first_writeback_packing": {
+      "decision": "retain_as_conditional_local_layout_candidate",
+      "reason": "Configured page_first FULL writeback can use GPU staging for coalesced copies. Removing packing or changing layout needs complete-path measurement; it is not automatically faster.",
+      "native_benefit_scope": "A shared I/O improvement may benefit native too; it is not isolated predictive policy evidence."
+    },
+    "shared_prefix_handle_transfer": {
+      "decision": "retain_native_radix_sharing",
+      "reason": "Avoiding branch duplication and host/device migration are distinct; a handle does not make host-only bytes resident."
+    },
+    "event_driven_logical_maintenance": {
+      "decision": "continue_bounded_measured_optimizations",
+      "reason": "Wait-membership and directional service-cache maintenance are deployed; physical state still requires current native checks."
+    },
+    "general_operator_framework": {
+      "decision": "defer",
+      "reason": "No demonstrated remaining cost requires replacing the native allocation/transfer lifecycle."
+    }
+  },
+  "research_sources": [
+    "https://docs.nvidia.com/cuda/cuda-c-best-practices-guide/index.html#zero-copy",
+    "https://docs.sglang.ai/advanced_features/hicache_design.html",
+    "https://arxiv.org/abs/2607.10987"
+  ],
+  "helper_sha256": "d2ce42de7bd56e8d91a74da04e2d649a08f4280256020a7031ba591329cab5ff",
+  "limitations": [
+    "Independent complete-line file prefixes are not an atomic cross-file snapshot.",
+    "Transfer records include native and controlled sources; whole-batch times are not attributed by byte share.",
+    "CUDA stream sums include stream work/dependencies and concurrent intervals; they are not pure copy-engine or removable JCT time.",
+    "Submit-to-ACK includes completion observation; it is not an isolated CPU cost.",
+    "Logical counters do not count wait queries or prove speedup, saved CPU, cache hit rates or physical readiness.",
+    "Source predicates describe conditional GPU staging; no live allocation introspection or comparison of transfer kernel alternatives was performed.",
+    "The page_first layout differs from the layer_first default; v518 did not bind the live layout and is superseded for layout decisions.",
+    "No mapped-host attention experiment, new GPU workload, native policy change or runtime hot edit was performed.",
+    "AAFLOW+ stateful algebra and analytical examples do not establish measured BeliefKV gains."
+  ]
+}

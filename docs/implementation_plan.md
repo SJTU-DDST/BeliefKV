@@ -2,7 +2,39 @@
 
 Status date: 2026-10-14.
 
-The latest cold candidate updates wait membership from tracked graph deltas,
+V57 predictive cold-started at2026-10-14 16:10:41 CST on frozen0fd9d13,
+patch3c13ad50 and engine572109fe. V511/V512 bind the actual target and
+launch; V513/V514 verify NUMA, all58 qualified sources and healthy service.
+Launcher3811053 and scheduler3811711 are live. Preserve existing PrefillAdder;
+new delay, minimum-slot delay, mixed chunk and interval changes stay disabled.
+
+V56 completed both arms and postprocessing naturally at16:01:22.
+V515 retains155 completed/1 incomplete per arm and154 shared completions.
+Paired mean JCT is2468.847/2667.417s (-7.44%) and completion rate+2.35%;
+predictive realized output work is8.31% lower and output-token rate6.16%
+lower. These observations do not isolate migration-policy gains. Retain
+different incomplete identities, quality/fairness/recomputation outcomes
+and pending repeated matched controls. V56 native is a development reference.
+
+V516/V517 bind the newest complete V57 600–900s development window.
+Across56/65 short samples, run_batch P50 is44.522/42.150ms,
+launch-to-result56.896/50.291ms and run-return-to-result-start9.757/
+4.273ms. Tool-prefetch self-wall is7.327s and all instrumented self-wall
+36.918s/300s; decode request steps are351776/377059. Actual prefill work
+and the public engine differ; separate medians are not causal accounting.
+Prioritize remaining control work and consumption rather than assuming
+the qualified logical caches have already improved online throughput.
+
+V518/V519 assess zero-copy and stateful/finite-state operator ideas against
+the deployed kernel/page_first path without L3 storage. Native registered
+Host pools, async streams and layer dependencies are already present.
+FULL page_first writeback can still use GPU packing buffers; eliminating
+packing needs complete-path measurement and may benefit native equally.
+Defer mapped-host attention and a general operator framework. Continue
+bounded event-driven logical maintenance, retaining current physical checks,
+prediction refresh, timers and admission constraints.
+
+The deployed candidate updates wait membership from tracked graph deltas,
 invalidating only changed member groups and native bindings. Tool insertion
 order and JOIN sorting remain unchanged; external graph changes, bulk end
 and mirror failure retain complete rebuilding. Reuse the tool census's
@@ -14,8 +46,12 @@ Proxy generation, message boundaries and per-event query frequency are not
 native delivery or JCT evidence. V508 preserves18.4%/24.5% slower full-rebuild
 fixtures at156/512 workflows. V502's empty-binding initial replay is invalid
 evidence and retained. V509 passes841 checks; V510 binds58 source files.
-Include the change with all earlier qualified fixes in the unstarted V57,
-usingV511/V512 for replacement. Keep V56 frozen and final acceptance open.
+The change is deployed with all earlier qualified fixes in V57.
+Keep final acceptance open.
+
+The records below preserve earlier qualification and observation states;
+older unstarted-V57 and running-V56 descriptions do not override the current
+deployment and completed-pair evidence above.
 
 The latest cold candidate invalidates service caches only for the ACK's
 direction and any direction actually evicted from the shared 256-row FIFO.
