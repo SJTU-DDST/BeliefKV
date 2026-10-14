@@ -1,0 +1,28 @@
+{
+  "status": "exact_development_evidence_packed_raw_sources_retained",
+  "observed_at_local": "2026-10-15T01:09:15.577998+08:00",
+  "rows": [
+    {
+      "source": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v568_v58_restore_protection_20261015.json",
+      "source_sha256": "a5a6afc51177049fba35cf1b74fe34d950e8278b3d6d01df85e4978ebfc30521",
+      "source_bytes": 2058781,
+      "archive": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v568_v58_restore_protection_20261015.json.gz",
+      "archive_sha256": "07d1f4d071957198ae59b179f019ad442b0910462a8bd583e752b58b3f584eca",
+      "archive_bytes": 132497,
+      "raw_source_retained": true,
+      "decompressed_bytes_verified_equal": true
+    },
+    {
+      "source": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v569_v58_latest_coverage_and_tails_20261015.json",
+      "source_sha256": "0e26b49a9c594131225768d552c0aaae2d14c24587706b58e0e4ba554ea6b24e",
+      "source_bytes": 32704414,
+      "archive": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v569_v58_latest_coverage_and_tails_20261015.json.gz",
+      "archive_sha256": "48c590490eb1f332a33c9355d7c1e70b2aa32ac50c756d3fd222965569fb41e0",
+      "archive_bytes": 2308265,
+      "raw_source_retained": true,
+      "decompressed_bytes_verified_equal": true
+    }
+  ],
+  "helper_sha256": "94de916819b594532add690a85cfcba213833acfa25e1dbfedd61912101368c3",
+  "scope": "Generated diagnostic reports only; no raw experimental trace or live source mutation."
+}
