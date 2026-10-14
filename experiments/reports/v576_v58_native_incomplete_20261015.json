@@ -1,0 +1,172 @@
+{
+  "status": "native_incomplete_output_limit_evidence_preserved_no_budget_change",
+  "observed_at_local": "2026-10-14T10:28:57.143696-07:00",
+  "instance_id": "pytest-dev__pytest-10051",
+  "workflow_id": "deepagents:autonomous:pytest-dev__pytest-10051:ce010bfbbfdd",
+  "result": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/client_156/workflows/pytest-dev__pytest-10051/result.json",
+    "sha256": "6ed59d203eb2133a1dca211247af2f1ea8dad76c3ccecb21a4de70689b8d1854"
+  },
+  "client_length_completions": [
+    {
+      "ts_ms": 6167238773.257694,
+      "context_epoch": 20,
+      "request_id": "beliefkv:01a13b52-f8b4-7eb2-a7dd-3a586871171c",
+      "finish_reason": "length"
+    },
+    {
+      "ts_ms": 6167579952.474853,
+      "context_epoch": 21,
+      "request_id": "beliefkv:01a13b57-da48-7622-9915-63c79066a85a",
+      "finish_reason": "length"
+    }
+  ],
+  "native_output_completions": [
+    {
+      "ts_ms": 1791996975576.1677,
+      "context_epoch": 20,
+      "request_id": "beliefkv:01a13b52-f8b4-7eb2-a7dd-3a586871171c",
+      "output_tokens": 8192
+    },
+    {
+      "ts_ms": 1791997316609.6006,
+      "context_epoch": 21,
+      "request_id": "beliefkv:01a13b57-da48-7622-9915-63c79066a85a",
+      "output_tokens": 8192
+    }
+  ],
+  "workflow_deadline": {
+    "abort_requested_count": 0,
+    "active_command_cancel_count": 0,
+    "cleanup_complete": false,
+    "enabled": true,
+    "expired": false,
+    "pending_task_cancel_count": 0,
+    "server_terminal": false,
+    "server_terminal_latency_ms": null
+  },
+  "agent_control": {
+    "duplicate_tool_calls_suppressed": 0,
+    "event_counts": {
+      "agent_empty_reasoning_retry": 1,
+      "agent_empty_reasoning_retry_result": 1,
+      "agent_natural_return": 3
+    },
+    "forced_semantic_completions": 0,
+    "guard_intervened_completions": 0,
+    "natural_language_return_count": 3,
+    "natural_semantic_completions": 0,
+    "protocol_normalized_completions": 0,
+    "protocol_repair_failures": 0,
+    "protocol_repaired_completions": 0,
+    "semantic_completions": 0,
+    "stuck_reasons": {}
+  },
+  "trace": {
+    "all_joins_satisfied": true,
+    "all_subagents_returned": true,
+    "child_cancel_count": 0,
+    "child_return_rate_by_role": {
+      "repository-explorer": {
+        "cancelled": 0,
+        "return_rate": 1.0,
+        "returned": 1,
+        "spawned": 1
+      },
+      "test-analyst": {
+        "cancelled": 0,
+        "return_rate": 1.0,
+        "returned": 1,
+        "spawned": 1
+      }
+    },
+    "child_return_span_ms": 331413.63345336914,
+    "children_per_parent": {
+      "deepagents:autonomous:pytest-dev__pytest-10051:ce010bfbbfdd:root": 2
+    },
+    "delegation_round_count": 1,
+    "dynamic_subagent_count": 2,
+    "event_count": 331,
+    "event_counts": {
+      "invocation_create": 3,
+      "join_create": 1,
+      "join_satisfied": 1,
+      "join_wait": 1,
+      "llm_result": 66,
+      "llm_submit": 66,
+      "return": 3,
+      "spawn": 2,
+      "structured_action": 66,
+      "tool_end": 60,
+      "tool_start": 60,
+      "workflow_end": 1,
+      "workflow_start": 1
+    },
+    "fanout_by_parent": {
+      "deepagents:autonomous:pytest-dev__pytest-10051:ce010bfbbfdd:root": 2
+    },
+    "fanout_parent_count": 1,
+    "fanout_per_round": [
+      2
+    ],
+    "join_satisfied_count": 1,
+    "join_timeout_count": 0,
+    "join_to_next_spawn_ms": [],
+    "join_type_counts": {
+      "all": 1
+    },
+    "llm_pairing_valid": true,
+    "llm_request_count": 66,
+    "llm_result_count": 66,
+    "mutating_tool_end_count": 8,
+    "natural_child_return_count": 2,
+    "peak_concurrent_children": 2,
+    "post_join_spawn_count": 0,
+    "root_return_count": 1,
+    "tool_call_count": 60,
+    "tool_pairing_valid": true,
+    "tool_result_count": 60,
+    "tool_status_coverage": 1.0,
+    "workflow_lifecycle_valid": true,
+    "workspace_digest_coverage": 1.0,
+    "workspace_digest_observation_count": 8
+  },
+  "natural_terminal": false,
+  "native_agent_jct_exclusion_reasons": [
+    "outcome:incomplete",
+    "missing_semantic_completion"
+  ],
+  "duration_seconds": 1731.8331426791847,
+  "source_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/client_156/workflows/pytest-dev__pytest-10051/runtime_events.deepagents.jsonl": {
+      "observed_at_local": "2026-10-14T10:28:56.169558-07:00",
+      "device": 66306,
+      "inode": 140286459,
+      "observed_bytes": 402183,
+      "complete_prefix_bytes": 402183,
+      "complete_prefix_sha256": "abf352f8ac62f8d777ba35b2e78c7a3e432c3a1b7da8ab73f9a2b159ead0e5c0"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/server/runtime_events.sglang.jsonl": {
+      "observed_at_local": "2026-10-14T10:28:56.174087-07:00",
+      "device": 66306,
+      "inode": 140023383,
+      "observed_bytes": 66758211,
+      "complete_prefix_bytes": 66758211,
+      "complete_prefix_sha256": "0a06bac2ae9b2d0de64a61b386e13682f65787bd8b766dd4a58acd6dc312f34d"
+    }
+  },
+  "helper_sha256": "3ade3ca568538209b0bd33af98854acdcca0680b59a143a38d2c1ad48ebc4d79",
+  "conclusions": [
+    "Both final root model requests report finish_reason=length and exactly8192 native output tokens.",
+    "The first truncated response caused one existing empty-reasoning retry; the retry also reached the same ceiling.",
+    "The observed deadline did not expire; both children returned, JOIN is satisfied, child cancellations are zero.",
+    "No guard-intervened or forced semantic completion is recorded; incomplete is retained rather than marked completed.",
+    "Preserve the user's existing output ceiling and the incomplete workspace/trace for final quality and JCT accounting."
+  ],
+  "limitations": [
+    "This identifies the observed terminal cause, not all1731.8 seconds of runtime or why the model kept generating.",
+    "A longer output limit is not validated as a solution and is not changed.",
+    "No GPU/runtime failure or predictive policy effect is inferred from this native model-length event.",
+    "Matched completed-only JCT comparisons must be accompanied by all-workflow completion/quality counts."
+  ]
+}
