@@ -4233,6 +4233,12 @@ def summarize_agent_control(path: Path) -> dict[str, Any]:
     semantic = [
         item for item in control if item.get("event") == "agent_semantic_completion"
     ]
+    natural_returns = [
+        item for item in control if item.get("event") == "agent_natural_return"
+    ]
+    intervened_returns = sum(
+        bool(item.get("guard_intervened", False)) for item in natural_returns
+    )
     return {
         "event_counts": dict(sorted(event_counts.items())),
         "stuck_reasons": dict(sorted(stuck_reasons.items())),
@@ -4245,12 +4251,16 @@ def summarize_agent_control(path: Path) -> dict[str, Any]:
             for item in semantic
         ),
         "natural_language_return_count": event_counts["agent_natural_return"],
+        "natural_language_return_without_intervention_count": (
+            len(natural_returns) - intervened_returns
+        ),
+        "guard_intervened_natural_language_returns": intervened_returns,
         "forced_semantic_completions": sum(
             bool(item.get("forced", False)) for item in semantic
         ),
         "guard_intervened_completions": sum(
             bool(item.get("guard_intervened", False)) for item in semantic
-        ),
+        ) + intervened_returns,
         "protocol_repaired_completions": sum(
             bool(item.get("protocol_repaired", False)) for item in semantic
         ),
@@ -4497,11 +4507,16 @@ def _run_workflow(
     control_delivery = adapter.control_delivery_summary()
     agent_control = summarize_agent_control(sandbox_audit_path)
     trace = _trace_summary(trace_path)
+    natural_terminal = (
+        completion is None and outcome == "completed"
+        and not result.get("guard_ever_intervened", False)
+        and not result.get("guard_forcing_completion", False)
+    )
     eligibility = classify_workflow_measurement(
         outcome=outcome,
         error=error_text,
         semantic_completion=semantic_completion,
-        natural_terminal=completion is None and outcome == "completed",
+        natural_terminal=natural_terminal,
         agent_control=agent_control,
         control_delivery=control_delivery,
         trace=trace,
@@ -4531,7 +4546,7 @@ def _run_workflow(
         "final_status": final_status,
         "artifact_collection": artifact_collection,
         "semantic_completion": semantic_completion,
-        "natural_terminal": completion is None and outcome == "completed",
+        "natural_terminal": natural_terminal,
         "correctness_gate": correctness_gate,
         "task_correctness_valid": task_correctness_valid,
         "measurement_valid": bool(eligibility["system_jct_eligible"]),
@@ -4940,6 +4955,22 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
                 int(
                     item.get("agent_control", {}).get(
                         "natural_language_return_count", 0
+                    )
+                )
+                for item in results
+            ),
+            "natural_language_return_without_intervention_count": sum(
+                int(
+                    item.get("agent_control", {}).get(
+                        "natural_language_return_without_intervention_count", 0
+                    )
+                )
+                for item in results
+            ),
+            "guard_intervened_natural_language_returns": sum(
+                int(
+                    item.get("agent_control", {}).get(
+                        "guard_intervened_natural_language_returns", 0
                     )
                 )
                 for item in results

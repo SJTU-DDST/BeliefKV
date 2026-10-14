@@ -291,9 +291,70 @@ def test_native_child_natural_language_is_a_terminal_return(
     )
     summary = summarize_agent_control(audit_path)
     assert summary["natural_language_return_count"] == 1
+    assert summary["natural_language_return_without_intervention_count"] == 1
+    assert summary["guard_intervened_natural_language_returns"] == 0
     assert summary["protocol_repaired_completions"] == 0
     assert summary["event_counts"].get("agent_unstructured_stop_detected", 0) == 0
     assert summary["event_counts"].get("agent_protocol_repair_attempt", 0) == 0
+
+
+@pytest.mark.parametrize("flag", ["guard_ever_intervened", "guard_forcing_completion"])
+def test_intervened_natural_return_retains_system_jct_and_excludes_native_jct(
+    tmp_path: Path, flag: str,
+) -> None:
+    audit_path = tmp_path / "intervened-return.jsonl"
+    audit = JsonlAudit(audit_path)
+    guard = AgentLoopGuardMiddleware(
+        policy=LoopGuardPolicy(),
+        completion_schema=WorkflowCompletion,
+        completion_instruction="Return the result.",
+        audit=audit,
+        scope="autonomous:supervisor",
+        accept_natural_completion=True,
+    )
+    update = guard.after_model(
+        {"messages": [AIMessage(content="The report is ready.")], flag: True},
+        runtime=None,
+    )
+    audit.close()
+    assert update == {"jump_to": "end"}
+    summary = summarize_agent_control(audit_path)
+    assert summary["semantic_completions"] == 0
+    assert summary["natural_language_return_count"] == 1
+    assert summary["natural_language_return_without_intervention_count"] == 0
+    assert summary["guard_intervened_natural_language_returns"] == 1
+    assert summary["guard_intervened_completions"] == 1
+    measurement = classify_workflow_measurement(
+        outcome="completed", error=None, semantic_completion=None,
+        natural_terminal=False, agent_control=summary,
+        control_delivery={"degraded": False},
+        trace={
+            "workflow_lifecycle_valid": True, "llm_pairing_valid": True,
+            "tool_pairing_valid": True, "tool_status_coverage": 1.0,
+            "workspace_digest_coverage": 1.0, "dynamic_subagent_count": 0,
+        },
+    )
+    assert measurement["system_jct_eligible"]
+    assert not measurement["native_agent_jct_eligible"]
+    assert "guard_intervened_completion" in measurement["native_agent_jct_exclusion_reasons"]
+
+
+def test_agent_control_summary_retains_mixed_completion_interventions(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "mixed-return.jsonl"
+    rows = [
+        {"event": "agent_semantic_completion", "guard_intervened": True},
+        {"event": "agent_natural_return", "guard_intervened": True},
+        {"event": "agent_natural_return", "guard_intervened": False},
+    ]
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows), encoding="utf-8")
+    summary = summarize_agent_control(path)
+    assert summary["semantic_completions"] == 1
+    assert summary["natural_language_return_count"] == 2
+    assert summary["natural_language_return_without_intervention_count"] == 1
+    assert summary["guard_intervened_natural_language_returns"] == 1
+    assert summary["guard_intervened_completions"] == 2
 
 
 @pytest.mark.parametrize("content", ["", "\n\n"])

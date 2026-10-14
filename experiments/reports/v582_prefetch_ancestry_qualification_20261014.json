@@ -1,0 +1,643 @@
+{
+  "status": "qualified_for_cold_observation_not_online_jct_or_throughput_gain",
+  "started_at_local": "2026-10-14T11:40:13.157411-07:00",
+  "finished_at_local": "2026-10-14T11:40:30.764762-07:00",
+  "source_sha256": {
+    "tests/test_wait_prefetch_partial_extent.py": "d5a0eb9c6866093df5bca5f9268d828a9e1ef039441e532201728a39360f3a62",
+    "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+    "tests/test_h2d_service_estimate_cache.py": "1b0c69a48780d2cc988d783650aa1bf73ce7df1fad864f1e69cf2d68a9539488",
+    "tests/test_sglang_v0520_physical.py": "17a7d6a60e7e9fea19f4e36a6b8695a8d9278a003d7cdef478af5a414eae89ed",
+    "scripts/run_deepagents_swebench.py": "a076e2c41db3d318ea1c8a188aaf475a169b432c09985edca0a7814204ee0754",
+    "tests/test_deepagents_swebench.py": "25bb90cf6c2a76792fab0fd6b59cf5874d496b0197fbefb13e4a0d707d36519e",
+    "scripts/seal_reservation_cutoff.py": "f0d341a2fcf1007e0c13aca7e31595cfbb8d339d5ea89febdeac3ebeaef8d9a7",
+    "tests/test_qwen35_host_pool.py": "9c2cbc679fee256d71eaf0191b979096f92770efa6a4c80d0ec9ab30b1ed55f2",
+    "beliefkv/runtime/native_transfer_policy.py": "3dd8ebfcace6e3b4a1cee0abf68f8ea8baa9f7fc7d82cb6b142a34b7b24c5ff3",
+    "tests/test_native_service_cache_invalidation.py": "19952d6f3d421c30c695ebe3656a48bf5c093c1d052665750bb3adca3388ed17",
+    "tests/test_analyze_prefill_turnover.py": "0d7663ed67738868c5aa177e7a82fd1ca5948d3aab3ffa24471e8ff04301615b",
+    "tests/test_native_wait_candidates.py": "8cc0c31f0be3028b81c322565b0456d09f8f23fa947e3118e485c5a716e14813",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "fe04ad26466bb22456df2cf813843053a66d410693c4d7acc31baa2095406041",
+    "scripts/preflight_qwen35_host_pool.py": "ce8286e4e0c7a012faf5a7289c44893239982b64a0be56f47abdb99e5904ae30",
+    "scripts/run_qwen35_semantic_h2d_ab.sh": "fe020ee50755c9d4c17ccd8e60493bee5f13c014f5932cf0eae16da7e25c93a7",
+    "tests/test_summarize_semantic_h2d_ab.py": "9aa1faa63f44271170d7ed45fe15eb7256af60765c35f501517e2ac2a2efbb28",
+    "beliefkv/runtime/langchain_tool_safety.py": "ec38c5f5b2937feecc2a759c1fe4945d8c0bd1db08915a3eac2808d5d9ec71be",
+    "scripts/run_qwen35_native_regime_probe.sh": "bbd2d112b0225c380335438591c33cf342c23370f994bebd6874cc5648ce9d57",
+    "tests/test_tool_census.py": "56dcc241e53b60c0163dadf6aa574ac20cde4dfc5a4bb9476011c18edabcfa3c",
+    "scripts/launch_qwen35_native_v0520.sh": "0d166fa03c0ab82c95cd80c816301a7ad9edf3f16d3a85626d0d131191446cb4",
+    "tests/test_native_transfer_policy.py": "4af4e89a1b35f45c8e2a9265c94d0863775f79e4be8f6979703f706677ee9414",
+    "tests/test_terminal_child_capacity.py": "eb7e28ab7a3fc7ceada661662047354a96468d08baaa152355935b10d5f9e2e0",
+    "beliefkv/runtime/v0520_native_telemetry.py": "60d65ccd5d1450555e6dec2ef6fdcbea9e10563da06c2d75fa9cdb45fc586bd8",
+    "scripts/benchmark_full_h2d_service_history.py": "146c43e8cc7614aad999a1d8556171d21f868bb13e1c758e88b13456c1db2429",
+    "scripts/benchmark_native_prepare_path.py": "3ccb01eb8778c1fa11f5a6cdd67c03c300998085b0846a44eec76323c7e2e6a3",
+    "scripts/summarize_semantic_h2d_ab.py": "77a4f1babbeebbbd57fbc1fb1e0350383f723cfb1633316e849f52b34c8d0480",
+    "beliefkv/experiments/deepagents_swebench.py": "916d4a5cbfb0d42eb76b9f5a5a061dd3e5852aa78d438f258786e141247a6fde",
+    "tests/test_h2d_full_service_history.py": "31ee2db9e1028817aba07e06a845414ba56dff4ce5af14ed34074e9d907b85b2",
+    "tests/test_sglang_v0520_observer.py": "689615c9a418a5537c794b2a4c7c8111da1ea39211117bde9d0ccce8e47ea3d7",
+    "tests/test_sglang_v0520_runtime.py": "d8a88f0ccf4be8b2f7a112acb5ad4f38f0378f235b720859961c33cbd324e4b2",
+    "scripts/benchmark_native_shared_path.py": "5105c132fa8ad4be3074019f9567b4c9800dd12960a2c44d1c2342875aa7f75c",
+    "tests/test_prefill_turnover_probe.py": "f1ae46016e063991149ba6548565640a07cfca1ad00247a453de4bd2f2095155",
+    "tests/test_tool_predictive_transfers.py": "e89eeb469c157e0554631c2979fcef8a652680b9ecd834fe7853e559fc7bc4c2",
+    "tests/test_wait_prefetch_batch.py": "9765927f9adb36962c5603a3796bcf3bb8b529844da5f3bb07bc67c5be7928f1",
+    "scripts/replay_h2d_full_service_history.py": "71770530ce977544bb3f192ddb118d01ce82d006643308205662f93ff9d1aa4b",
+    "beliefkv/runtime/prefill_turnover_probe.py": "15201e06bae952c303405b647ac9ca069070fd86b3853e642c687ae172fadf54",
+    "scripts/compare_native_policy_runs.py": "5d8b927a10b0d308fabaabe4e97397d8d34a0b040378f55441778985bf2322f7",
+    "scripts/benchmark_prefill_turnover_probe.py": "ca820778c724f1e87e7e5560213a1893bc4d34956a2bb7cb999cc289bddcd448",
+    "tests/test_wait_prefetch_service_subset.py": "2db8c283d4976c07d25c7a35aeaf6baa962760e283baa7de7c5957ff7b7ca079",
+    "beliefkv/control/causal_graph.py": "2b5070822d2dba1cc994b94e40245430de18edd12b2fd1dceed76e9a88d3f657",
+    "scripts/analyze_prefill_turnover.py": "4becc5d75d7be52a85848241cc8792c1153cd5fa85833766b3f486dcd1f06a7d",
+    "tests/test_causal_graph.py": "8c0d0e199dad4b6b82fea193980bc7d9a2bc619d875ddebb7d9c971038e1dad7",
+    "scripts/replay_wait_context_delta.py": "e4f72b1ea4cd08edf45ca97fd268dcb7b81b212e802e054d0a45ebc6aa2099b8",
+    "tests/test_launch_semantic_h2d_after_pair.py": "2b518b3c2ede2086d7c41c7d9c617ff2a52ecf6d1f12a32c9f02490a11594a4f",
+    "scripts/evaluate_transfer_service_history.py": "2b73a5a2d352bfbc504b35b4f2079d7d9744ac1c6e68a219bf6d6fdd5108614d",
+    "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+    "scripts/seal_prefill_turnover_qualification.py": "25cd4d00157dd3bef2538f332ace1716f3fc1e57d587f169a95ec40a8ee410b6",
+    "scripts/replay_native_service_cache.py": "82f062e2c997daf45fbbc85ae91d4386dad1f05daee021ad89796d65a13dc196",
+    "beliefkv/experiments/agent_protocol.py": "89fb79de0f4d19a1de1714e736f3d57b6f26f72f1741196e500999e2b3c1ffe1",
+    "tests/test_resume_semantic_h2d_ab.py": "b1d8d2cc9c330db9723a85ba35c376662debe2b55c91cedfd37814330e39b54a",
+    "scripts/launch_semantic_h2d_after_pair.py": "a3a5ef89af51a9bd21d7e29560ce3d37d7a50912362573121142c1e4608345d1",
+    "tests/test_qwen35_native_regime_probe.py": "0a2c6e96b5fbee949bc18800d8848a26b6f1321000d9eb409a45481bb81c67d6",
+    "scripts/benchmark_wait_context_delta.py": "8168a6fdf30ab225258c1729e5dee4654693038eacda83cc5df205d08cc62235",
+    "beliefkv/runtime/semantic_report_worker.py": "36dfc62ec362ab2020695ff6c10b3cca09e9ff64681e8c0ac20082847afcd0ee",
+    "scripts/replay_wait_prefetch_subset_service.py": "eff08432ab92be55e9319d78eedcccc1e2d00fc201a3166de321fa562483c736",
+    "scripts/resume_semantic_h2d_ab.py": "271dccc313016ae3878fd75d33ca30b7fc254b32b26736e17fc8ebe7dc0a4036",
+    "tests/test_v0520_native_telemetry.py": "969e3eb73a6d6075418fe95d6a5663e55d66d4a096e726c65825bfe4ce6056d7",
+    "beliefkv/runtime/native_transfer_service.py": "7bd8f754f6aba88360afa33d2d33625f572142d8233feaa242d8060ff925525f",
+    "tests/test_restore_wait_probe.py": "1dd1e766baf6c508377fe5a305628337cf3df37b976df93d4c4d34d54edfdbe7",
+    "scripts/benchmark_native_reentry_cpu.py": "1df92051adfec888ea779a5080d67471f11c6247ea148eb64833c1a0fcf17299",
+    "scripts/benchmark_join_parent_projection.py": "887aef440732c57dafb1fc2b8385b5dd1105b5082d2043c57f01f7558b57125f",
+    "tests/test_session_residency_hint.py": "5381604fe714c574668f5fa4a2d8afd40b61adea969d8b0d69e0019a577b0d61",
+    "tests/test_compare_native_policy_runs.py": "61a5bb61058af569fd1a951d8531257c085e8851795925c13f46affe498753bf",
+    "scripts/benchmark_wait_prefetch_subset_service.py": "0c7378eb310820b08924f974c1006783fd3c06e5fccff9c32918626e57aa9835"
+  },
+  "prior_qualification": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v565_prefetch_checkpoint_scan_qualification_20261014.json",
+    "sha256": "98a0742bf2ea610af743a02bd97e7cb882e0b9ffdac4a481aa5338e8e2001399"
+  },
+  "cpu_evidence": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v581_prefetch_ancestry_cpu_20261014.json",
+    "sha256": "351b0f01bc22e9cfa6d61724202608d80e877c7489f5fdaf57716984fe419ad7"
+  },
+  "changed_prior_qualified_paths": [
+    "beliefkv/runtime/sglang_v0520_physical.py"
+  ],
+  "changed_definitions": {
+    "beliefkv/runtime/sglang_v0520_observer.py": [
+      "observe_unified_node_closure"
+    ],
+    "beliefkv/runtime/sglang_v0520_physical.py": [
+      "capture_action_local_shadow",
+      "plan_prefetch_gpu_steps"
+    ],
+    "beliefkv/experiments/deepagents_swebench.py": [
+      "_run_workflow",
+      "run_experiment",
+      "summarize_agent_control"
+    ]
+  },
+  "newly_bound_paths": [
+    "beliefkv/experiments/agent_protocol.py",
+    "beliefkv/experiments/deepagents_swebench.py",
+    "beliefkv/runtime/langchain_tool_safety.py",
+    "beliefkv/runtime/sglang_v0520_observer.py",
+    "scripts/run_deepagents_swebench.py",
+    "tests/test_deepagents_swebench.py"
+  ],
+  "runtime_checks": {
+    "tests": 1403,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 1,
+    "modules": [
+      "tests/test_analyze_prefill_turnover.py",
+      "tests/test_causal_graph.py",
+      "tests/test_compare_native_policy_runs.py",
+      "tests/test_deepagents_swebench.py",
+      "tests/test_h2d_full_service_history.py",
+      "tests/test_h2d_service_estimate_cache.py",
+      "tests/test_launch_semantic_h2d_after_pair.py",
+      "tests/test_native_service_cache_invalidation.py",
+      "tests/test_native_transfer_policy.py",
+      "tests/test_native_wait_candidates.py",
+      "tests/test_prefill_turnover_probe.py",
+      "tests/test_qwen35_host_pool.py",
+      "tests/test_qwen35_native_regime_probe.py",
+      "tests/test_restore_wait_probe.py",
+      "tests/test_resume_semantic_h2d_ab.py",
+      "tests/test_session_residency_hint.py",
+      "tests/test_sglang_v0520_observer.py",
+      "tests/test_sglang_v0520_physical.py",
+      "tests/test_sglang_v0520_runtime.py",
+      "tests/test_summarize_semantic_h2d_ab.py",
+      "tests/test_terminal_child_capacity.py",
+      "tests/test_tool_census.py",
+      "tests/test_tool_predictive_transfers.py",
+      "tests/test_v0520_native_telemetry.py",
+      "tests/test_wait_prefetch_batch.py",
+      "tests/test_wait_prefetch_partial_extent.py",
+      "tests/test_wait_prefetch_service_subset.py"
+    ],
+    "receipt": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v582_prefetch_ancestry_checks_20261014.raw.gz",
+      "sha256": "dc6d6a740fc02fe8104afed0c540158d6eff724ebd5acb7fcacd98daf159ef57"
+    },
+    "original_xml_sha256": "c2c9f7b4480d0dbb5044c3a1a8c19af677da605e046142ca5f8338828bc6cd49",
+    "skips": [
+      {
+        "type": "pytest.skip",
+        "message": "requires explicitly selected cached SWE-bench Docker image"
+      }
+    ]
+  },
+  "terminal_accounting_replay": {
+    "old_summary": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/summary.json",
+      "sha256": "e9c0d4d9ec0c584c68a3360cfeb412906e3cb736685bb965307c18374103f45e"
+    },
+    "raw_results_preserved": true,
+    "intervened_workflows": 24,
+    "intervened_returns": 26,
+    "workflows": [
+      {
+        "instance_id": "django__django-11138",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11138/sandbox_audit.jsonl",
+          "sha256": "6b51db882ecf13aa981e116b4a89d9acf1563066f2e46329f2ad72b32ece2df4"
+        }
+      },
+      {
+        "instance_id": "django__django-11141",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11141/sandbox_audit.jsonl",
+          "sha256": "9fe48d55c21514188da622396033ab448300804d9d3dcda2a597b0291e123721"
+        }
+      },
+      {
+        "instance_id": "django__django-11292",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11292/sandbox_audit.jsonl",
+          "sha256": "82123b4ebb4ce904e8dea4f17e0e35b1f178a166850b653108a532b9e14b68b0"
+        }
+      },
+      {
+        "instance_id": "django__django-11477",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11477/sandbox_audit.jsonl",
+          "sha256": "f06198e1be78eeff39384da2088ce1f85af72ee9259bcd408a2dc17421c4a665"
+        }
+      },
+      {
+        "instance_id": "django__django-11490",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11490/sandbox_audit.jsonl",
+          "sha256": "441e33674bcda02a165bcdf97c0d9b4f06fa690be2f18146826e3efcd65ec4f8"
+        }
+      },
+      {
+        "instance_id": "django__django-11532",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11532/sandbox_audit.jsonl",
+          "sha256": "3c048f92d904569cea84d97828c57c71ec70bfeb2068e6e36f873baaba4e61c3"
+        }
+      },
+      {
+        "instance_id": "django__django-11740",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11740/sandbox_audit.jsonl",
+          "sha256": "3aa996935db386d140d8df1a9593de111d2221e395b823f333eca6bbd91ac434"
+        }
+      },
+      {
+        "instance_id": "django__django-11820",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11820/sandbox_audit.jsonl",
+          "sha256": "e470257b603232d2d19ff4decc3a2f85aa1438cf7d7823b5f4683fb8f6d78f4a"
+        }
+      },
+      {
+        "instance_id": "django__django-11885",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11885/sandbox_audit.jsonl",
+          "sha256": "b4a2a005a0e948c651c16058927937b22a2e63bfe6518c799bc84ddb81539d12"
+        }
+      },
+      {
+        "instance_id": "django__django-12193",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12193/sandbox_audit.jsonl",
+          "sha256": "00f6fffad085e15cd9599ed086787a742070997cdac4427aaafecc727a55c34d"
+        }
+      },
+      {
+        "instance_id": "django__django-12209",
+        "guard_intervened_natural_language_returns": 2,
+        "guard_intervened_completions": 2,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12209/sandbox_audit.jsonl",
+          "sha256": "2a368ee79fbcab9fcd35e8d627403ae1bfca8d40228ebfb492a64f31a2dd8733"
+        }
+      },
+      {
+        "instance_id": "django__django-12708",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12708/sandbox_audit.jsonl",
+          "sha256": "c1998e1a8797ea5a1616e9a5a7072edc640f2156d0150ac818b5ab6f0f9dcc63"
+        }
+      },
+      {
+        "instance_id": "django__django-12754",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12754/sandbox_audit.jsonl",
+          "sha256": "7906b816a0d7942c4ffa4f21700722baf133212ecdb484007674f9616f4f3f20"
+        }
+      },
+      {
+        "instance_id": "django__django-13033",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13033/sandbox_audit.jsonl",
+          "sha256": "312f7e88cc1bfd481f082c86a01d0f5de39ac237e14de3a532e88e4fdf6ace2f"
+        }
+      },
+      {
+        "instance_id": "django__django-13112",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13112/sandbox_audit.jsonl",
+          "sha256": "91c3f3fc87c80d48562d0afc19d7dfa5b4dcfbb075052342c9019240a96cb0f6"
+        }
+      },
+      {
+        "instance_id": "django__django-13121",
+        "guard_intervened_natural_language_returns": 2,
+        "guard_intervened_completions": 2,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13121/sandbox_audit.jsonl",
+          "sha256": "946d4419af218c930b0951bbad62d1f1cdf8e3c8929bfe0c72d8993d30265eae"
+        }
+      },
+      {
+        "instance_id": "django__django-13128",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13128/sandbox_audit.jsonl",
+          "sha256": "fe3f0460e9644fde4e6a3d1960e2e32848e347241df6878a378132466922b7c3"
+        }
+      },
+      {
+        "instance_id": "django__django-14500",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-14500/sandbox_audit.jsonl",
+          "sha256": "1f0be61bac7a87640965fdc63ac847cbaf347ac98fd5a20a6e0399fee4586f93"
+        }
+      },
+      {
+        "instance_id": "django__django-16938",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-16938/sandbox_audit.jsonl",
+          "sha256": "fd37390cd65fbe839f3531ee4f4236e241b3024589fc865200e0cab8295b4bab"
+        }
+      },
+      {
+        "instance_id": "mwaskom__seaborn-3187",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/sandbox_audit.jsonl",
+          "sha256": "2858903e67eac858a38c34baefafc2eb4ee5866db084fb4c8c4c3b1c0392d44a"
+        }
+      },
+      {
+        "instance_id": "psf__requests-5414",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/psf__requests-5414/sandbox_audit.jsonl",
+          "sha256": "8f6a9f86415d44b5dcaca846f77def81b18165509be8665423c8d8bfb6d03757"
+        }
+      },
+      {
+        "instance_id": "pylint-dev__pylint-7080",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pylint-dev__pylint-7080/sandbox_audit.jsonl",
+          "sha256": "11cb844991198b7e756821a4812444c690b5e83ecf98420a6ff211a41d84f741"
+        }
+      },
+      {
+        "instance_id": "pytest-dev__pytest-10356",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-10356/sandbox_audit.jsonl",
+          "sha256": "5aec1a9eaa4eae3d8b723a7149ea724f443c64ed8c7797fe18bec2b7b35c6392"
+        }
+      },
+      {
+        "instance_id": "pytest-dev__pytest-5840",
+        "guard_intervened_natural_language_returns": 1,
+        "guard_intervened_completions": 1,
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-5840/sandbox_audit.jsonl",
+          "sha256": "c5b98aaf98f21bfac14af569d7b9db9a837384ae24f5ec996fd0d3ef2bb22129"
+        }
+      }
+    ]
+  },
+  "active_v58_execution_before": {
+    "collection_code_commit": "9a54233c3d1d18c12bfc202f61e2ec36a911e46f",
+    "verification_code_commit": "ffa509951cfff41cc1d520ad410b32d0988015f2",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": [
+      "docs/README_zh.md",
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/figures/generate_monthly_paper_figures.py",
+      "docs/implementation_plan.md",
+      "docs/reports/2026-10/assets/01_system_overview_en.pdf",
+      "docs/reports/2026-10/assets/01_system_overview_en.png",
+      "docs/reports/2026-10/assets/01_system_overview_en.svg",
+      "docs/reports/2026-10/assets/01_system_overview_zh.pdf",
+      "docs/reports/2026-10/assets/01_system_overview_zh.png",
+      "docs/reports/2026-10/assets/01_system_overview_zh.svg",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_en.pdf",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_en.png",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_en.svg",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_zh.pdf",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_zh.png",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_zh.svg",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_en.pdf",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_en.png",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_en.svg",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_zh.pdf",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_zh.png",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_zh.svg",
+      "docs/reports/2026-10/assets/README.md",
+      "docs/reports/2026-10/assets/beliefkv_architecture_editable_en.pptx",
+      "docs/reports/2026-10/assets/beliefkv_architecture_editable_zh.pptx",
+      "docs/reports/2026-10/assets/beliefkv_figures_bilingual.pdf",
+      "docs/reports/2026-10/assets/manifest.json",
+      "docs/reports/2026-10/assets/powerpoint_validation.json",
+      "docs/reports/2026-10/assets/pptx_preview_en.png",
+      "docs/reports/2026-10/assets/pptx_preview_zh.png",
+      "docs/reports/2026-10/assets/preview.png",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/archive/README.md",
+      "experiments/reports/v536_v58_gdn_prefill_frozen_20261014.json",
+      "experiments/reports/v537_v58_gdn_prefill_resource_registration_20261014.json",
+      "experiments/reports/v538_v58_startup_observer_registration_20261014.json",
+      "experiments/reports/v539_v58_live_startup_validation_20261014.json",
+      "experiments/reports/v540_single_path_restore_checks_20261014.raw.gz",
+      "experiments/reports/v541_prefetch_single_path_cpu_20261014.json",
+      "experiments/reports/v542_v58_user_hold_until_20261014_2130.json",
+      "experiments/reports/v543_prefetch_single_path_development_20261014.json",
+      "experiments/reports/v544_v58_temporary_hold_release_retry_20261014.json",
+      "experiments/reports/v545_v58_predictive_numa_placement_20261014.json",
+      "experiments/reports/v546_single_path_runtime_qualification_checks_20261014.raw.gz",
+      "experiments/reports/v547_prefetch_single_path_qualification_20261014.json",
+      "experiments/reports/v548_v50_v52_server_trace_archive_20261014.json",
+      "experiments/reports/v549_v58_busy_120_300_20261014.json",
+      "experiments/reports/v550_v58_prefill_phases_120_300_20261014.json",
+      "experiments/reports/v551_v58_pair_phase_observer_registration_20261014.json",
+      "experiments/reports/v552_v58_active_stack_20261014.speedscope.json",
+      "experiments/reports/v553_v58_active_stack_attribution_20261014.json",
+      "experiments/reports/v554_v58_reviewed_documentation_sync_20261014.json",
+      "experiments/reports/v555_v58_wait_prefetch_live_20261014.json.gz",
+      "experiments/reports/v555_v58_wait_prefetch_live_20261014_summary.json",
+      "experiments/reports/v556_v58_latest_development_checkpoint_20261014.json",
+      "experiments/reports/v557_v58_latest_documentation_sync_20261014.json",
+      "experiments/reports/v558_old_server_snapshot_archive_20261014.json",
+      "experiments/reports/v559_old_server_snapshot_archive_20261014.json",
+      "experiments/reports/v560_v58_second_wave_documentation_sync_20261014.json",
+      "experiments/reports/v561_v58_wait_prefetch_coverage_and_tails_20261014.json.gz",
+      "experiments/reports/v562_v58_join_dispatch_capacity_gaps_20261014.json",
+      "experiments/reports/v563_checkpoint_scan_runtime_checks_20261014.raw.gz",
+      "experiments/reports/v564_prefetch_checkpoint_scan_cpu_20261014.json",
+      "experiments/reports/v565_prefetch_checkpoint_scan_qualification_20261014.json",
+      "experiments/reports/v566_v58_checkpoint_scan_documentation_sync_20261014.json",
+      "experiments/reports/v567_v58_wait_prefetch_latest_20261015.json.gz",
+      "experiments/reports/v567_v58_wait_prefetch_latest_20261015_summary.json",
+      "experiments/reports/v568_v58_restore_protection_20261015.json.gz",
+      "experiments/reports/v569_v58_latest_coverage_and_tails_20261015.json.gz",
+      "experiments/reports/v570_v58_latest_join_capacity_gaps_20261015.json",
+      "experiments/reports/v571_v58_join_work_and_rate_errors_20261015.json",
+      "experiments/reports/v572_v58_causal_work_bias_replay_20261015.json",
+      "experiments/reports/v573_v58_consumption_development_checkpoint_20261015.json",
+      "experiments/reports/v574_v58_development_evidence_packing_20261015.json",
+      "experiments/reports/v575_v58_native_consumption_documentation_sync_20261015.json",
+      "experiments/reports/v576_v58_native_incomplete_20261015.json",
+      "experiments/reports/v577_v58_latest_matched_phase_checkpoint_20261015.json",
+      "experiments/reports/v578_v58_latest_native_phase_documentation_sync_20261015.json",
+      "experiments/reports/v579_v58_complete_matched_windows_checkpoint_20261015.json",
+      "experiments/reports/v580_v58_all_matched_windows_documentation_sync_20261015.json",
+      "experiments/reports/v58_historical_native_busy_1800_2100_20261014.json",
+      "experiments/reports/v58_historical_native_busy_3600_3900_20261014.json",
+      "experiments/reports/v58_historical_native_busy_600_900_20261014.json",
+      "experiments/reports/v58_historical_native_prefill_phases_1800_2100_20261014.json",
+      "experiments/reports/v58_historical_native_prefill_phases_3600_3900_20261014.json",
+      "experiments/reports/v58_historical_native_prefill_phases_600_900_20261014.json",
+      "experiments/reports/v58_native_numa_placement_20261014.json",
+      "experiments/reports/v58_native_startup_validation_20261014.json",
+      "experiments/reports/v58_same_version_pair_busy_120_300_20261014.json",
+      "experiments/reports/v58_same_version_pair_busy_1800_2100_20261014.json",
+      "experiments/reports/v58_same_version_pair_busy_3600_3900_20261014.json",
+      "experiments/reports/v58_same_version_pair_busy_600_900_20261014.json",
+      "experiments/reports/v58_same_version_pair_prefill_phases_120_300_20261014.json",
+      "experiments/reports/v58_same_version_pair_prefill_phases_1800_2100_20261014.json",
+      "experiments/reports/v58_same_version_pair_prefill_phases_3600_3900_20261014.json",
+      "experiments/reports/v58_same_version_pair_prefill_phases_600_900_20261014.json",
+      "experiments/reports/v58_tail_diagnosis_20261014.json",
+      "experiments/reports/v58_tail_repetition_and_terminal_20261014.json"
+    ]
+  },
+  "active_v58_execution_after": {
+    "collection_code_commit": "9a54233c3d1d18c12bfc202f61e2ec36a911e46f",
+    "verification_code_commit": "ffa509951cfff41cc1d520ad410b32d0988015f2",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": [
+      "docs/README_zh.md",
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/figures/generate_monthly_paper_figures.py",
+      "docs/implementation_plan.md",
+      "docs/reports/2026-10/assets/01_system_overview_en.pdf",
+      "docs/reports/2026-10/assets/01_system_overview_en.png",
+      "docs/reports/2026-10/assets/01_system_overview_en.svg",
+      "docs/reports/2026-10/assets/01_system_overview_zh.pdf",
+      "docs/reports/2026-10/assets/01_system_overview_zh.png",
+      "docs/reports/2026-10/assets/01_system_overview_zh.svg",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_en.pdf",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_en.png",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_en.svg",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_zh.pdf",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_zh.png",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_zh.svg",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_en.pdf",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_en.png",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_en.svg",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_zh.pdf",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_zh.png",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_zh.svg",
+      "docs/reports/2026-10/assets/README.md",
+      "docs/reports/2026-10/assets/beliefkv_architecture_editable_en.pptx",
+      "docs/reports/2026-10/assets/beliefkv_architecture_editable_zh.pptx",
+      "docs/reports/2026-10/assets/beliefkv_figures_bilingual.pdf",
+      "docs/reports/2026-10/assets/manifest.json",
+      "docs/reports/2026-10/assets/powerpoint_validation.json",
+      "docs/reports/2026-10/assets/pptx_preview_en.png",
+      "docs/reports/2026-10/assets/pptx_preview_zh.png",
+      "docs/reports/2026-10/assets/preview.png",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/archive/README.md",
+      "experiments/reports/v536_v58_gdn_prefill_frozen_20261014.json",
+      "experiments/reports/v537_v58_gdn_prefill_resource_registration_20261014.json",
+      "experiments/reports/v538_v58_startup_observer_registration_20261014.json",
+      "experiments/reports/v539_v58_live_startup_validation_20261014.json",
+      "experiments/reports/v540_single_path_restore_checks_20261014.raw.gz",
+      "experiments/reports/v541_prefetch_single_path_cpu_20261014.json",
+      "experiments/reports/v542_v58_user_hold_until_20261014_2130.json",
+      "experiments/reports/v543_prefetch_single_path_development_20261014.json",
+      "experiments/reports/v544_v58_temporary_hold_release_retry_20261014.json",
+      "experiments/reports/v545_v58_predictive_numa_placement_20261014.json",
+      "experiments/reports/v546_single_path_runtime_qualification_checks_20261014.raw.gz",
+      "experiments/reports/v547_prefetch_single_path_qualification_20261014.json",
+      "experiments/reports/v548_v50_v52_server_trace_archive_20261014.json",
+      "experiments/reports/v549_v58_busy_120_300_20261014.json",
+      "experiments/reports/v550_v58_prefill_phases_120_300_20261014.json",
+      "experiments/reports/v551_v58_pair_phase_observer_registration_20261014.json",
+      "experiments/reports/v552_v58_active_stack_20261014.speedscope.json",
+      "experiments/reports/v553_v58_active_stack_attribution_20261014.json",
+      "experiments/reports/v554_v58_reviewed_documentation_sync_20261014.json",
+      "experiments/reports/v555_v58_wait_prefetch_live_20261014.json.gz",
+      "experiments/reports/v555_v58_wait_prefetch_live_20261014_summary.json",
+      "experiments/reports/v556_v58_latest_development_checkpoint_20261014.json",
+      "experiments/reports/v557_v58_latest_documentation_sync_20261014.json",
+      "experiments/reports/v558_old_server_snapshot_archive_20261014.json",
+      "experiments/reports/v559_old_server_snapshot_archive_20261014.json",
+      "experiments/reports/v560_v58_second_wave_documentation_sync_20261014.json",
+      "experiments/reports/v561_v58_wait_prefetch_coverage_and_tails_20261014.json.gz",
+      "experiments/reports/v562_v58_join_dispatch_capacity_gaps_20261014.json",
+      "experiments/reports/v563_checkpoint_scan_runtime_checks_20261014.raw.gz",
+      "experiments/reports/v564_prefetch_checkpoint_scan_cpu_20261014.json",
+      "experiments/reports/v565_prefetch_checkpoint_scan_qualification_20261014.json",
+      "experiments/reports/v566_v58_checkpoint_scan_documentation_sync_20261014.json",
+      "experiments/reports/v567_v58_wait_prefetch_latest_20261015.json.gz",
+      "experiments/reports/v567_v58_wait_prefetch_latest_20261015_summary.json",
+      "experiments/reports/v568_v58_restore_protection_20261015.json.gz",
+      "experiments/reports/v569_v58_latest_coverage_and_tails_20261015.json.gz",
+      "experiments/reports/v570_v58_latest_join_capacity_gaps_20261015.json",
+      "experiments/reports/v571_v58_join_work_and_rate_errors_20261015.json",
+      "experiments/reports/v572_v58_causal_work_bias_replay_20261015.json",
+      "experiments/reports/v573_v58_consumption_development_checkpoint_20261015.json",
+      "experiments/reports/v574_v58_development_evidence_packing_20261015.json",
+      "experiments/reports/v575_v58_native_consumption_documentation_sync_20261015.json",
+      "experiments/reports/v576_v58_native_incomplete_20261015.json",
+      "experiments/reports/v577_v58_latest_matched_phase_checkpoint_20261015.json",
+      "experiments/reports/v578_v58_latest_native_phase_documentation_sync_20261015.json",
+      "experiments/reports/v579_v58_complete_matched_windows_checkpoint_20261015.json",
+      "experiments/reports/v580_v58_all_matched_windows_documentation_sync_20261015.json",
+      "experiments/reports/v58_historical_native_busy_1800_2100_20261014.json",
+      "experiments/reports/v58_historical_native_busy_3600_3900_20261014.json",
+      "experiments/reports/v58_historical_native_busy_600_900_20261014.json",
+      "experiments/reports/v58_historical_native_prefill_phases_1800_2100_20261014.json",
+      "experiments/reports/v58_historical_native_prefill_phases_3600_3900_20261014.json",
+      "experiments/reports/v58_historical_native_prefill_phases_600_900_20261014.json",
+      "experiments/reports/v58_native_numa_placement_20261014.json",
+      "experiments/reports/v58_native_startup_validation_20261014.json",
+      "experiments/reports/v58_same_version_pair_busy_120_300_20261014.json",
+      "experiments/reports/v58_same_version_pair_busy_1800_2100_20261014.json",
+      "experiments/reports/v58_same_version_pair_busy_3600_3900_20261014.json",
+      "experiments/reports/v58_same_version_pair_busy_600_900_20261014.json",
+      "experiments/reports/v58_same_version_pair_prefill_phases_120_300_20261014.json",
+      "experiments/reports/v58_same_version_pair_prefill_phases_1800_2100_20261014.json",
+      "experiments/reports/v58_same_version_pair_prefill_phases_3600_3900_20261014.json",
+      "experiments/reports/v58_same_version_pair_prefill_phases_600_900_20261014.json",
+      "experiments/reports/v58_tail_diagnosis_20261014.json",
+      "experiments/reports/v58_tail_repetition_and_terminal_20261014.json"
+    ]
+  },
+  "native_identity_before": {
+    "pid": 3865597,
+    "state": "R",
+    "ppid": 3865217,
+    "start_ticks": "616567785",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "native_identity_after": {
+    "pid": 3865597,
+    "state": "R",
+    "ppid": 3865217,
+    "start_ticks": "616567785",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "helper_sha256": "5f3b7dc5394ae7dd4e8def0d3f00e86d8f6cab4fde3ea6625241eefb898ec88c",
+  "limitations": [
+    "Qualified CPU equivalence and unit checks do not prove online GPU, JCT or completion-throughput gains.",
+    "No completion guard, tool/output/deadline budget, frozen workload or prefetch timing was changed.",
+    "Old raw outcomes remain intact; corrected intervention accounting accompanies rather than replaces all-workflow counts.",
+    "Checks and CPU measurement ran after selected V58 phase windows while the native baseline was live.",
+    "Stage and final acceptance still require matched online turnover, useful reuse, quality and repeated comparisons."
+  ]
+}

@@ -630,10 +630,13 @@ def observe_unified_node_closure(
                 if type(value) is not int or not 0 <= value <= 2**31 - 1:
                     raise ValueError("invalid session reference count")
             full_session_refs, mamba_session_refs = references
-            session_leaves = []
-            for item in (full, mamba):
-                ids = item.session_ids
-                if ids is not None:
+            full_ids, mamba_ids = full.session_ids, mamba.session_ids
+            if full_ids is None and mamba_ids is None:
+                full_session_leaves = mamba_session_leaves = 0
+            else:
+                for ids in (full_ids, mamba_ids):
+                    if ids is None:
+                        continue
                     if type(ids) is not set or not ids:
                         raise ValueError("invalid session leaf identities")
                     if any(
@@ -641,9 +644,8 @@ def observe_unified_node_closure(
                         for session_id in ids
                     ):
                         raise ValueError("invalid session leaf identities")
-                session_leaves.append(
-                    0 if ids is None else len(ids)
-                )
+                full_session_leaves = 0 if full_ids is None else len(full_ids)
+                mamba_session_leaves = 0 if mamba_ids is None else len(mamba_ids)
             pending_write = node.write_through_pending_id
             pending_load = node.load_back_pending_id
             for pending in (pending_write, pending_load):
@@ -664,8 +666,8 @@ def observe_unified_node_closure(
                     mamba_host_locks=mamba_host_locks,
                     full_session_refs=full_session_refs,
                     mamba_session_refs=mamba_session_refs,
-                    full_session_leaf_count=session_leaves[0],
-                    mamba_session_leaf_count=session_leaves[1],
+                    full_session_leaf_count=full_session_leaves,
+                    mamba_session_leaf_count=mamba_session_leaves,
                     pending_write_id=pending_write,
                     pending_load_id=pending_load,
                     key_tokens=(

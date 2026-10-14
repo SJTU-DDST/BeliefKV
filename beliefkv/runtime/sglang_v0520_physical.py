@@ -592,25 +592,27 @@ def plan_prefetch_gpu_steps(
         return ()
     if len(by_component) != len(anchors.component_leaves) or set(by_component) != {0, 2}:
         return ()
-    if len(nodes) != len(candidate.nodes) or any(
-        type(node.node_id) is not int
-        or node.node_id < 0
-        or (
-            node.parent_id is not None
-            and (type(node.parent_id) is not int or node.parent_id < 0)
-        )
-        or type(node.creation_time) not in (int, float)
-        or node.creation_time < 0
-        or (type(node.creation_time) is float and not isfinite(node.creation_time))
-        or type(node.full_device_tokens) is not int
-        or node.full_device_tokens < 0
-        or type(node.full_host_tokens) is not int
-        or node.full_host_tokens < 0
-        or type(node.mamba_device_present) is not bool
-        or type(node.mamba_host_present) is not bool
-        for node in nodes.values()
-    ):
+    if len(nodes) != len(candidate.nodes):
         return ()
+    for node in nodes.values():
+        if (
+            type(node.node_id) is not int
+            or node.node_id < 0
+            or (
+                node.parent_id is not None
+                and (type(node.parent_id) is not int or node.parent_id < 0)
+            )
+            or type(node.creation_time) not in (int, float)
+            or node.creation_time < 0
+            or (type(node.creation_time) is float and not isfinite(node.creation_time))
+            or type(node.full_device_tokens) is not int
+            or node.full_device_tokens < 0
+            or type(node.full_host_tokens) is not int
+            or node.full_host_tokens < 0
+            or type(node.mamba_device_present) is not bool
+            or type(node.mamba_host_present) is not bool
+        ):
+            return ()
     if (
         not full_leaves
         or not mamba_leaves
@@ -882,6 +884,7 @@ def capture_action_local_shadow(
                 nodes[node.node_id] = node
                 if max_nodes is not None and len(nodes) > max_nodes:
                     return _capture_rejected("combined_node_closure_exceeds_bound", on_failure)
+    missing_full = missing_mamba = 0
     for node in nodes.values():
         if node.parent_id is not None and node.parent_id not in nodes:
             return _capture_rejected("node_parent_outside_closure", on_failure)
@@ -889,17 +892,18 @@ def capture_action_local_shadow(
             return _capture_rejected("pending_write_transfer", on_failure)
         if node.pending_load_id is not None:
             return _capture_rejected("pending_load_transfer", on_failure)
+        if for_prefetch:
+            if node.full_device_tokens == 0 and node.full_host_tokens > 0:
+                missing_full += node.full_host_tokens
+            if (
+                node.full_device_tokens > 0
+                and node.mamba_host_present and not node.mamba_device_present
+            ):
+                missing_mamba += 1
+        else:
+            missing_full += max(node.full_device_tokens - node.full_host_tokens, 0)
+            missing_mamba += node.mamba_device_present and not node.mamba_host_present
     if for_prefetch:
-        missing_full = sum(
-            node.full_host_tokens
-            for node in nodes.values()
-            if node.full_device_tokens == 0 and node.full_host_tokens > 0
-        )
-        missing_mamba = sum(
-            node.full_device_tokens > 0
-            and node.mamba_host_present and not node.mamba_device_present
-            for node in nodes.values()
-        )
         if not missing_full and not missing_mamba and not include_non_actionable:
             return _capture_rejected("no_missing_device_copy", on_failure)
         candidate = ActionLocalPrefetchCandidate(
@@ -911,14 +915,6 @@ def capture_action_local_shadow(
         if not include_non_actionable and next_prefetch_gpu_step(candidate) is None:
             return _capture_rejected("no_eligible_prefetch_step", on_failure)
         return candidate
-    missing_full = sum(
-        max(node.full_device_tokens - node.full_host_tokens, 0)
-        for node in nodes.values()
-    )
-    missing_mamba = sum(
-        node.mamba_device_present and not node.mamba_host_present
-        for node in nodes.values()
-    )
     if not missing_full and not include_non_actionable:
         return _capture_rejected("no_missing_full_host_copy", on_failure)
     return ActionLocalShadowCandidate(
