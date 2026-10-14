@@ -1297,6 +1297,63 @@ def test_cross_iteration_causal_cache_invalidates_on_graph_event(monkeypatch):
     runtime.close()
 
 
+@pytest.mark.parametrize("kind", (
+    RuntimeEventKind.STRUCTURED_ACTION,
+    RuntimeEventKind.TOOL_WAIT_OBSERVATION,
+    RuntimeEventKind.CALL_CENSORED,
+))
+def test_observation_only_event_keeps_ranks_but_reads_current_residency(monkeypatch, kind):
+    runtime, (cold, warm, _), cache = runtime_with_requests(monkeypatch)
+    clock = [time.monotonic()]
+    monkeypatch.setattr(time, "monotonic", lambda: clock[0])
+    with patch.object(runtime.frontier, "admission_rank", wraps=runtime.frontier.admission_rank) as rank:
+        runtime.scheduler_step([cold, warm])
+        assert select(runtime, [cold, warm]).candidates == (warm, cold)
+        version, revision = runtime.graph.graph_version, runtime.semantic_revision
+        assert rank.call_count == 2
+        runtime.on_events((RuntimeEvent(
+            "observation", 10., kind, "wf",
+            invocation_id=cold.rid, context_id="ctx-cold", context_epoch=0,
+        ),))
+        assert runtime.graph.graph_version == version + 1
+        assert runtime.semantic_revision == revision + 1
+        cache.inspect_beliefkv_reentry.side_effect = lambda request: {
+            "checkpoint_tokens": 2,
+            "device_checkpoint_tokens": 2 if request is cold else 0,
+            "missing_full_tokens": 0 if request is cold else 2,
+            "missing_mamba_slots": int(request is not cold),
+        }
+        clock[0] += .06
+        runtime.scheduler_step([cold, warm])
+        assert select(runtime, [cold, warm]).candidates == (cold, warm)
+        assert rank.call_count == 2
+        assert cache.inspect_beliefkv_reentry.call_count == 4
+        assert runtime.counts["admission_causal_cache_preserved_observation"] == 1
+    runtime.close()
+
+
+def test_observation_mixed_with_cancellation_still_invalidates_classification(monkeypatch):
+    runtime, (cold, warm, _), _ = runtime_with_requests(monkeypatch)
+    with patch.object(runtime.frontier, "admission_rank", wraps=runtime.frontier.admission_rank) as rank:
+        runtime.scheduler_step([cold, warm])
+        assert select(runtime, [cold, warm]).candidates == (warm, cold)
+        runtime.on_events((
+            RuntimeEvent(
+                "observation", 10., RuntimeEventKind.STRUCTURED_ACTION, "wf",
+                invocation_id=warm.rid, context_id="ctx-warm", context_epoch=0,
+            ),
+            RuntimeEvent(
+                "cancel-cold", 11., RuntimeEventKind.INVOCATION_CANCEL, "wf",
+                invocation_id=cold.rid, context_id="ctx-cold", context_epoch=0,
+            ),
+        ))
+        runtime.scheduler_step([cold, warm])
+        assert select(runtime, [cold, warm]).candidates == (warm,)
+        assert rank.call_count == 3
+        assert runtime.counts["admission_causal_cache_preserved_observation"] == 0
+    runtime.close()
+
+
 def test_cross_iteration_causal_cache_does_not_preserve_expired_demand_order(monkeypatch):
     from beliefkv.runtime.sglang_v0520_prediction import NativeDemandHint
 

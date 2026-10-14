@@ -867,6 +867,8 @@ class NativeAdmissionRuntime:
                 raise ValueError("admission prediction has no matching live request")
             hints.append(hint)
         graph_version = self.graph.graph_version
+        semantic_revision = self.semantic_revision
+        sessions_revision = self._context_sessions_revision
         try:
             with self._hotpath_timing.measure("graph_apply"):
                 deltas = self.graph.apply_batch(events, atomic=False)
@@ -1203,6 +1205,34 @@ class NativeAdmissionRuntime:
                     and self.visible.get(rid) == hint.key
                 }
             self.semantic_revision += 1
+            if (
+                sessions_revision == self._context_sessions_revision
+                and all(event.kind in (
+                    RuntimeEventKind.STRUCTURED_ACTION,
+                    RuntimeEventKind.TOOL_WAIT_OBSERVATION,
+                    RuntimeEventKind.CALL_CENSORED,
+                ) for event in events)
+            ):
+                # These RCCG handlers only validate identities and record labels.
+                # Keep live timing, boundary inputs and residency checks separate.
+                self.frontier.retain_observed_state(previous_version=graph_version)
+                cached = self._prefill_causal_cache
+                if cached is not None and cached[0][:2] == (
+                    semantic_revision, graph_version,
+                ):
+                    signature = (
+                        self.semantic_revision, self.graph.graph_version,
+                        *cached[0][2:],
+                    )
+                    self._prefill_causal_cache = (signature, *cached[1:])
+                    self.counts["admission_causal_cache_preserved_observation"] += 1
+                parent_cache = self._join_parent_cache
+                if parent_cache is not None and parent_cache[0] == (
+                    graph_version, sessions_revision,
+                ):
+                    self._join_parent_cache = (
+                        (self.graph.graph_version, sessions_revision), parent_cache[1],
+                    )
 
     def _clear_semantic_invocation(self, invocation_id: str) -> None:
         for rid, key in tuple(self._semantic_keys.items()):

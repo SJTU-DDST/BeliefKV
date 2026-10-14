@@ -61,6 +61,14 @@ class CausalFrontierScheduler:
         )
         return class_rank, -depth
 
+    def retain_observed_state(self, *, previous_version: int) -> None:
+        """Advance cached classifications after a batch with no graph state changes."""
+        version = self.graph.graph_version
+        if self._join_waiter_cache_version == previous_version:
+            self._join_waiter_cache_version = version
+        if self._active_descendant_cache_version == previous_version:
+            self._active_descendant_cache_version = version
+
     def _candidate(
         self,
         invocation: InvocationRecord,
