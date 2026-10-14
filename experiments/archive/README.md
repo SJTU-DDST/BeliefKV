@@ -4,6 +4,29 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-10-14 V30-V39 server trace recovery
+
+Nine stopped superseded runs, V30/V31/V33-V39, retain their client traces,
+outcomes, frozen plans, manifests and administrative censoring. Their72
+server/opportunity JSONL files passed full GNU tar comparison before source
+cleanup:20,277,540,932 source bytes became635,875,172 archive bytes.
+V32 was already archived separately. V29 and current V49-V55 raw traces
+remain directly readable; no active resources or other users' files were removed.
+
+Archives are `experiments/archive/20261014/vN_superseded_server_traces.tar.zst`.
+Each source run has `SERVER_TRACES_ARCHIVED.md` with its exact SHA256 and
+restore command. Receipt:
+`experiments/reports/v419_v30_v39_server_trace_archive_20261014.json`.
+Available space at completion was83,629,572,096 bytes; concurrent V55 writes
+can change it. Compression used one worker, nice19 and idle I/O after the
+3600-3900s observation window.
+
+```bash
+tar --extract --use-compress-program='zstd --long=30' \
+  --file experiments/archive/20261014/v30_superseded_server_traces.tar.zst \
+  --directory experiments/raw
+```
+
 ## 2026-10-14 Early Child Workspace Recovery
 
 During V55 startup, disk space fell to about59GiB after live workspace

@@ -1,0 +1,713 @@
+{
+  "status": "verified_and_cleaned",
+  "started_at_local": "2026-10-14T08:19:17.484889+08:00",
+  "runs": [
+    {
+      "version": 30,
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v30",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261014/v30_superseded_server_traces.tar.zst",
+      "plan_sha256": "4130edecf8713c9b6d7de64188ee4f951a14926b917ed0d3bfe71929934d4fd2",
+      "file_inventory": {
+        "qwen35_native_predictive_replenished_108plus48_20261012_v30/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 718276683,
+          "allocated_bytes": 718282752,
+          "inode": 140026511,
+          "device": 66306,
+          "mtime_ns": 1791780561969526927
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v30/predictive_h2d/server/eviction_attribution.jsonl": {
+          "size_bytes": 43066073,
+          "allocated_bytes": 43073536,
+          "inode": 140026509,
+          "device": 66306,
+          "mtime_ns": 1791780561659530985
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v30/predictive_h2d/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 12770832,
+          "allocated_bytes": 12775424,
+          "inode": 140026507,
+          "device": 66306,
+          "mtime_ns": 1791780561659530985
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v30/predictive_h2d/server/physical_action_ack.jsonl": {
+          "size_bytes": 9766083,
+          "allocated_bytes": 9773056,
+          "inode": 140026504,
+          "device": 66306,
+          "mtime_ns": 1791780521010055398
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v30/predictive_h2d/server/physical_action_use.jsonl": {
+          "size_bytes": 25303826,
+          "allocated_bytes": 25309184,
+          "inode": 140026505,
+          "device": 66306,
+          "mtime_ns": 1791780521136053796
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v30/predictive_h2d/server/runtime_audit.jsonl": {
+          "size_bytes": 1875280186,
+          "allocated_bytes": 1875288064,
+          "inode": 140026499,
+          "device": 66306,
+          "mtime_ns": 1791780562069525618
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v30/predictive_h2d/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 66431659,
+          "allocated_bytes": 66437120,
+          "inode": 140026498,
+          "device": 66306,
+          "mtime_ns": 1791780561659530985
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v30/predictive_h2d/server/transfer_telemetry.jsonl": {
+          "size_bytes": 40133876,
+          "allocated_bytes": 40140800,
+          "inode": 140026502,
+          "device": 66306,
+          "mtime_ns": 1791780561659530985
+        }
+      },
+      "source_bytes": 2791029218,
+      "source_allocated_bytes": 2791079936,
+      "status": "verified_and_cleaned",
+      "started_at_local": "2026-10-14T08:19:18.412006+08:00",
+      "archive_bytes": 82678441,
+      "archive_sha256": "f4918c477ad27e11933b0cbd5b03715f20fcd57b7bd5e034b74b564357c51125",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "finished_at_local": "2026-10-14T08:19:36.999179+08:00",
+      "remaining_archived_raw_files": 0,
+      "restore_command": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261014/v30_superseded_server_traces.tar.zst --directory experiments/raw"
+    },
+    {
+      "version": 31,
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v31",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261014/v31_superseded_server_traces.tar.zst",
+      "plan_sha256": "d24f18e08909a5fc1b2c0610be135eba5a4c665ebdc2a579f7a363441ffdaa91",
+      "file_inventory": {
+        "qwen35_native_predictive_replenished_108plus48_20261012_v31/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 620063375,
+          "allocated_bytes": 620068864,
+          "inode": 139864138,
+          "device": 66306,
+          "mtime_ns": 1791784241824791435
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v31/predictive_h2d/server/eviction_attribution.jsonl": {
+          "size_bytes": 37874400,
+          "allocated_bytes": 37879808,
+          "inode": 139864107,
+          "device": 66306,
+          "mtime_ns": 1791784241176795555
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v31/predictive_h2d/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 11361075,
+          "allocated_bytes": 11366400,
+          "inode": 139864106,
+          "device": 66306,
+          "mtime_ns": 1791784241175795561
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v31/predictive_h2d/server/physical_action_ack.jsonl": {
+          "size_bytes": 8950035,
+          "allocated_bytes": 8957952,
+          "inode": 139864104,
+          "device": 66306,
+          "mtime_ns": 1791784196236060161
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v31/predictive_h2d/server/physical_action_use.jsonl": {
+          "size_bytes": 22960384,
+          "allocated_bytes": 22966272,
+          "inode": 139864105,
+          "device": 66306,
+          "mtime_ns": 1791784196340059597
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v31/predictive_h2d/server/runtime_audit.jsonl": {
+          "size_bytes": 1540938574,
+          "allocated_bytes": 1540943872,
+          "inode": 139864093,
+          "device": 66306,
+          "mtime_ns": 1791784241862791194
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v31/predictive_h2d/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 59776334,
+          "allocated_bytes": 59781120,
+          "inode": 139863968,
+          "device": 66306,
+          "mtime_ns": 1791784241079796172
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v31/predictive_h2d/server/transfer_telemetry.jsonl": {
+          "size_bytes": 35849946,
+          "allocated_bytes": 35856384,
+          "inode": 139864102,
+          "device": 66306,
+          "mtime_ns": 1791784230753860656
+        }
+      },
+      "source_bytes": 2337774123,
+      "source_allocated_bytes": 2337820672,
+      "status": "verified_and_cleaned",
+      "started_at_local": "2026-10-14T08:19:37.929079+08:00",
+      "archive_bytes": 71851754,
+      "archive_sha256": "a54c57ad7cd7338237d7288244246f8a048249fdb9dd5ef37cfa6b4d9e0f4a1c",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "finished_at_local": "2026-10-14T08:19:53.536496+08:00",
+      "remaining_archived_raw_files": 0,
+      "restore_command": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261014/v31_superseded_server_traces.tar.zst --directory experiments/raw"
+    },
+    {
+      "version": 33,
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v33",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261014/v33_superseded_server_traces.tar.zst",
+      "plan_sha256": "5058723243032a5cee0ac00dc479920b365fb15cf2a68e8626cc1987046a822c",
+      "file_inventory": {
+        "qwen35_native_predictive_replenished_108plus48_20261012_v33/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 1040804974,
+          "allocated_bytes": 1040809984,
+          "inode": 140300369,
+          "device": 66306,
+          "mtime_ns": 1791801660567852763
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v33/predictive_h2d/server/eviction_attribution.jsonl": {
+          "size_bytes": 65935034,
+          "allocated_bytes": 65941504,
+          "inode": 140300367,
+          "device": 66306,
+          "mtime_ns": 1791801660495854299
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v33/predictive_h2d/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 18458460,
+          "allocated_bytes": 18464768,
+          "inode": 140300366,
+          "device": 66306,
+          "mtime_ns": 1791801659631872733
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v33/predictive_h2d/server/physical_action_ack.jsonl": {
+          "size_bytes": 15268005,
+          "allocated_bytes": 15273984,
+          "inode": 140300364,
+          "device": 66306,
+          "mtime_ns": 1791801654263987413
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v33/predictive_h2d/server/physical_action_use.jsonl": {
+          "size_bytes": 40045770,
+          "allocated_bytes": 40050688,
+          "inode": 140300365,
+          "device": 66306,
+          "mtime_ns": 1791801655789954785
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v33/predictive_h2d/server/runtime_audit.jsonl": {
+          "size_bytes": 2513590787,
+          "allocated_bytes": 2513596416,
+          "inode": 140300362,
+          "device": 66306,
+          "mtime_ns": 1791801660555853020
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v33/predictive_h2d/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 84973452,
+          "allocated_bytes": 84979712,
+          "inode": 140285164,
+          "device": 66306,
+          "mtime_ns": 1791801660354857307
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v33/predictive_h2d/server/transfer_telemetry.jsonl": {
+          "size_bytes": 59803304,
+          "allocated_bytes": 59809792,
+          "inode": 140300363,
+          "device": 66306,
+          "mtime_ns": 1791801659631872733
+        }
+      },
+      "source_bytes": 3838879786,
+      "source_allocated_bytes": 3838926848,
+      "status": "verified_and_cleaned",
+      "started_at_local": "2026-10-14T08:19:54.417701+08:00",
+      "archive_bytes": 117446069,
+      "archive_sha256": "e0fd2f318469705ed39f1c16a8d5503a1dd4794a6277cdf1696ade5f5b3a76f1",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "finished_at_local": "2026-10-14T08:20:17.547864+08:00",
+      "remaining_archived_raw_files": 0,
+      "restore_command": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261014/v33_superseded_server_traces.tar.zst --directory experiments/raw"
+    },
+    {
+      "version": 34,
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v34",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261014/v34_superseded_server_traces.tar.zst",
+      "plan_sha256": "b7956df777fc77a812f2a91b766132bf62ba645512ed1a88ec6662a785745268",
+      "file_inventory": {
+        "qwen35_native_predictive_replenished_108plus48_20261012_v34/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 250137799,
+          "allocated_bytes": 250142720,
+          "inode": 140903031,
+          "device": 66306,
+          "mtime_ns": 1791807359393251019
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v34/predictive_h2d/server/eviction_attribution.jsonl": {
+          "size_bytes": 16100392,
+          "allocated_bytes": 16105472,
+          "inode": 140903021,
+          "device": 66306,
+          "mtime_ns": 1791807359546247271
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v34/predictive_h2d/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 4941137,
+          "allocated_bytes": 4947968,
+          "inode": 140903018,
+          "device": 66306,
+          "mtime_ns": 1791807359546247271
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v34/predictive_h2d/server/physical_action_ack.jsonl": {
+          "size_bytes": 4945176,
+          "allocated_bytes": 4952064,
+          "inode": 140903013,
+          "device": 66306,
+          "mtime_ns": 1791807359384251240
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v34/predictive_h2d/server/physical_action_use.jsonl": {
+          "size_bytes": 12654651,
+          "allocated_bytes": 12660736,
+          "inode": 140903015,
+          "device": 66306,
+          "mtime_ns": 1791807359421250333
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v34/predictive_h2d/server/runtime_audit.jsonl": {
+          "size_bytes": 488463750,
+          "allocated_bytes": 488468480,
+          "inode": 140903011,
+          "device": 66306,
+          "mtime_ns": 1791807359477248962
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v34/predictive_h2d/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 24680308,
+          "allocated_bytes": 24686592,
+          "inode": 140903003,
+          "device": 66306,
+          "mtime_ns": 1791807359546247271
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v34/predictive_h2d/server/transfer_telemetry.jsonl": {
+          "size_bytes": 16656914,
+          "allocated_bytes": 16662528,
+          "inode": 140903012,
+          "device": 66306,
+          "mtime_ns": 1791807359546247271
+        }
+      },
+      "source_bytes": 818580127,
+      "source_allocated_bytes": 818626560,
+      "status": "verified_and_cleaned",
+      "started_at_local": "2026-10-14T08:20:18.526759+08:00",
+      "archive_bytes": 27896371,
+      "archive_sha256": "9db53073a2ef3e950d41c3d98c426dd75f5adb29636e4c8ae6530917f2f061cd",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "finished_at_local": "2026-10-14T08:20:25.039997+08:00",
+      "remaining_archived_raw_files": 0,
+      "restore_command": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261014/v34_superseded_server_traces.tar.zst --directory experiments/raw"
+    },
+    {
+      "version": 35,
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v35",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261014/v35_superseded_server_traces.tar.zst",
+      "plan_sha256": "e4540173b69f8bf53c0e2d3219fb0144e783b52e0ec832fbaa3a43fe8d6899ac",
+      "file_inventory": {
+        "qwen35_native_predictive_replenished_108plus48_20261012_v35/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 589649969,
+          "allocated_bytes": 589656064,
+          "inode": 140910823,
+          "device": 66306,
+          "mtime_ns": 1791814875563456277
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v35/predictive_h2d/server/eviction_attribution.jsonl": {
+          "size_bytes": 37052107,
+          "allocated_bytes": 37056512,
+          "inode": 140910821,
+          "device": 66306,
+          "mtime_ns": 1791814875673454114
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v35/predictive_h2d/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 11437732,
+          "allocated_bytes": 11444224,
+          "inode": 140910820,
+          "device": 66306,
+          "mtime_ns": 1791814874774471794
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v35/predictive_h2d/server/physical_action_ack.jsonl": {
+          "size_bytes": 15607070,
+          "allocated_bytes": 15613952,
+          "inode": 140910818,
+          "device": 66306,
+          "mtime_ns": 1791814867394616954
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v35/predictive_h2d/server/physical_action_use.jsonl": {
+          "size_bytes": 41043365,
+          "allocated_bytes": 41050112,
+          "inode": 140910819,
+          "device": 66306,
+          "mtime_ns": 1791814874635474527
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v35/predictive_h2d/server/runtime_audit.jsonl": {
+          "size_bytes": 1209258688,
+          "allocated_bytes": 1209266176,
+          "inode": 140910816,
+          "device": 66306,
+          "mtime_ns": 1791814875662454330
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v35/predictive_h2d/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 59692283,
+          "allocated_bytes": 59699200,
+          "inode": 140910814,
+          "device": 66306,
+          "mtime_ns": 1791814875220463022
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v35/predictive_h2d/server/transfer_telemetry.jsonl": {
+          "size_bytes": 41560818,
+          "allocated_bytes": 41566208,
+          "inode": 140910817,
+          "device": 66306,
+          "mtime_ns": 1791814867573613433
+        }
+      },
+      "source_bytes": 2005302032,
+      "source_allocated_bytes": 2005352448,
+      "status": "verified_and_cleaned",
+      "started_at_local": "2026-10-14T08:20:25.993948+08:00",
+      "archive_bytes": 66895741,
+      "archive_sha256": "625b28af9b2e2831b2dc69cd2f5c701cba3e717066e70d07f470c7cedc0cc828",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "finished_at_local": "2026-10-14T08:20:40.445988+08:00",
+      "remaining_archived_raw_files": 0,
+      "restore_command": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261014/v35_superseded_server_traces.tar.zst --directory experiments/raw"
+    },
+    {
+      "version": 36,
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v36",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261014/v36_superseded_server_traces.tar.zst",
+      "plan_sha256": "dd470923f44e051e0630ebb36215c584ac9022fc5461ce66cc79e2113e934a7a",
+      "file_inventory": {
+        "qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 526920145,
+          "allocated_bytes": 526925824,
+          "inode": 140926583,
+          "device": 66306,
+          "mtime_ns": 1791817704545838396
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/server/eviction_attribution.jsonl": {
+          "size_bytes": 33865628,
+          "allocated_bytes": 33869824,
+          "inode": 140926581,
+          "device": 66306,
+          "mtime_ns": 1791817703830848272
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 10322696,
+          "allocated_bytes": 10330112,
+          "inode": 140926580,
+          "device": 66306,
+          "mtime_ns": 1791817703829848285
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/server/physical_action_ack.jsonl": {
+          "size_bytes": 12848304,
+          "allocated_bytes": 12853248,
+          "inode": 140926578,
+          "device": 66306,
+          "mtime_ns": 1791817697218939371
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/server/physical_action_use.jsonl": {
+          "size_bytes": 33819521,
+          "allocated_bytes": 33824768,
+          "inode": 140926579,
+          "device": 66306,
+          "mtime_ns": 1791817703398854236
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/server/runtime_audit.jsonl": {
+          "size_bytes": 1075336858,
+          "allocated_bytes": 1075343360,
+          "inode": 140926576,
+          "device": 66306,
+          "mtime_ns": 1791817704543838423
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 52794544,
+          "allocated_bytes": 52801536,
+          "inode": 140926574,
+          "device": 66306,
+          "mtime_ns": 1791817704411840247
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v36/predictive_h2d/server/transfer_telemetry.jsonl": {
+          "size_bytes": 36179994,
+          "allocated_bytes": 36188160,
+          "inode": 140926577,
+          "device": 66306,
+          "mtime_ns": 1791817697675933088
+        }
+      },
+      "source_bytes": 1782087690,
+      "source_allocated_bytes": 1782136832,
+      "status": "verified_and_cleaned",
+      "started_at_local": "2026-10-14T08:20:41.334662+08:00",
+      "archive_bytes": 59268442,
+      "archive_sha256": "d463608adbebf9b635342b64d91f2c28a5f785f118740105e30e336df76af118",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "finished_at_local": "2026-10-14T08:20:53.487152+08:00",
+      "remaining_archived_raw_files": 0,
+      "restore_command": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261014/v36_superseded_server_traces.tar.zst --directory experiments/raw"
+    },
+    {
+      "version": 37,
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v37",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261014/v37_superseded_server_traces.tar.zst",
+      "plan_sha256": "68aad543add079907429785aa08b8c6fc7ba52da362a4c21a1feb0480c2a1589",
+      "file_inventory": {
+        "qwen35_native_predictive_replenished_108plus48_20261012_v37/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 612036831,
+          "allocated_bytes": 612044800,
+          "inode": 141041114,
+          "device": 66306,
+          "mtime_ns": 1791820920815163823
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v37/predictive_h2d/server/eviction_attribution.jsonl": {
+          "size_bytes": 35711807,
+          "allocated_bytes": 35717120,
+          "inode": 141041112,
+          "device": 66306,
+          "mtime_ns": 1791820919947172206
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v37/predictive_h2d/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 10893497,
+          "allocated_bytes": 10899456,
+          "inode": 141041111,
+          "device": 66306,
+          "mtime_ns": 1791820919947172206
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v37/predictive_h2d/server/physical_action_ack.jsonl": {
+          "size_bytes": 12846541,
+          "allocated_bytes": 12853248,
+          "inode": 141041109,
+          "device": 66306,
+          "mtime_ns": 1791820903072334841
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v37/predictive_h2d/server/physical_action_use.jsonl": {
+          "size_bytes": 33823609,
+          "allocated_bytes": 33828864,
+          "inode": 141041110,
+          "device": 66306,
+          "mtime_ns": 1791820904503321075
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v37/predictive_h2d/server/runtime_audit.jsonl": {
+          "size_bytes": 1315024208,
+          "allocated_bytes": 1315028992,
+          "inode": 141041107,
+          "device": 66306,
+          "mtime_ns": 1791820920812163852
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v37/predictive_h2d/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 54276487,
+          "allocated_bytes": 54284288,
+          "inode": 141041105,
+          "device": 66306,
+          "mtime_ns": 1791820920742164528
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v37/predictive_h2d/server/transfer_telemetry.jsonl": {
+          "size_bytes": 37904406,
+          "allocated_bytes": 37912576,
+          "inode": 141041108,
+          "device": 66306,
+          "mtime_ns": 1791820920642165494
+        }
+      },
+      "source_bytes": 2112517386,
+      "source_allocated_bytes": 2112569344,
+      "status": "verified_and_cleaned",
+      "started_at_local": "2026-10-14T08:20:54.337588+08:00",
+      "archive_bytes": 68383990,
+      "archive_sha256": "56dd60a92a6c1450eabf334fbca4056734fbf39cd8d6e838d457120b9fd78c56",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "finished_at_local": "2026-10-14T08:21:08.723037+08:00",
+      "remaining_archived_raw_files": 0,
+      "restore_command": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261014/v37_superseded_server_traces.tar.zst --directory experiments/raw"
+    },
+    {
+      "version": 38,
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v38",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261014/v38_superseded_server_traces.tar.zst",
+      "plan_sha256": "f87391e55475530d6b19d92cd65ffdb7f18029f73aba2c6281a291808f77ad19",
+      "file_inventory": {
+        "qwen35_native_predictive_replenished_108plus48_20261013_v38/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 845549234,
+          "allocated_bytes": 845553664,
+          "inode": 140301922,
+          "device": 66306,
+          "mtime_ns": 1791825353130083672
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261013_v38/predictive_h2d/server/eviction_attribution.jsonl": {
+          "size_bytes": 45352545,
+          "allocated_bytes": 45359104,
+          "inode": 140027681,
+          "device": 66306,
+          "mtime_ns": 1791825352969078106
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261013_v38/predictive_h2d/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 13970919,
+          "allocated_bytes": 13975552,
+          "inode": 140027654,
+          "device": 66306,
+          "mtime_ns": 1791825352448060051
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261013_v38/predictive_h2d/server/physical_action_ack.jsonl": {
+          "size_bytes": 12317282,
+          "allocated_bytes": 12324864,
+          "inode": 140027648,
+          "device": 66306,
+          "mtime_ns": 1791825353026080079
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261013_v38/predictive_h2d/server/physical_action_use.jsonl": {
+          "size_bytes": 31792599,
+          "allocated_bytes": 31797248,
+          "inode": 140027649,
+          "device": 66306,
+          "mtime_ns": 1791825353130083672
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261013_v38/predictive_h2d/server/runtime_audit.jsonl": {
+          "size_bytes": 2051321135,
+          "allocated_bytes": 2051325952,
+          "inode": 140027482,
+          "device": 66306,
+          "mtime_ns": 1791825353118083257
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261013_v38/predictive_h2d/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 69411120,
+          "allocated_bytes": 69419008,
+          "inode": 140026355,
+          "device": 66306,
+          "mtime_ns": 1791825352842073705
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261013_v38/predictive_h2d/server/transfer_telemetry.jsonl": {
+          "size_bytes": 46813596,
+          "allocated_bytes": 46821376,
+          "inode": 140027550,
+          "device": 66306,
+          "mtime_ns": 1791825352447060016
+        }
+      },
+      "source_bytes": 3116528430,
+      "source_allocated_bytes": 3116576768,
+      "status": "verified_and_cleaned",
+      "started_at_local": "2026-10-14T08:21:09.648872+08:00",
+      "archive_bytes": 92530913,
+      "archive_sha256": "a23a0c4afa8b13ed722e19306b3a7c42107359761bd02f72513ce1e63c2ef761",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "finished_at_local": "2026-10-14T08:21:29.597983+08:00",
+      "remaining_archived_raw_files": 0,
+      "restore_command": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261014/v38_superseded_server_traces.tar.zst --directory experiments/raw"
+    },
+    {
+      "version": 39,
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261013_v39",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261014/v39_superseded_server_traces.tar.zst",
+      "plan_sha256": "c103db6cb06f09346689320b8c4b37d214d3a9d73106db8408df4e110b0cf582",
+      "file_inventory": {
+        "qwen35_native_predictive_replenished_108plus48_20261013_v39/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 438942894,
+          "allocated_bytes": 438947840,
+          "inode": 140927195,
+          "device": 66306,
+          "mtime_ns": 1791827633127409524
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261013_v39/predictive_h2d/server/eviction_attribution.jsonl": {
+          "size_bytes": 28627840,
+          "allocated_bytes": 28635136,
+          "inode": 140927193,
+          "device": 66306,
+          "mtime_ns": 1791827632880412552
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261013_v39/predictive_h2d/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 9004868,
+          "allocated_bytes": 9011200,
+          "inode": 140927192,
+          "device": 66306,
+          "mtime_ns": 1791827633056410395
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261013_v39/predictive_h2d/server/physical_action_ack.jsonl": {
+          "size_bytes": 10787094,
+          "allocated_bytes": 10792960,
+          "inode": 140927190,
+          "device": 66306,
+          "mtime_ns": 1791827631868424952
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261013_v39/predictive_h2d/server/physical_action_use.jsonl": {
+          "size_bytes": 28588971,
+          "allocated_bytes": 28594176,
+          "inode": 140927191,
+          "device": 66306,
+          "mtime_ns": 1791827622576538225
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261013_v39/predictive_h2d/server/runtime_audit.jsonl": {
+          "size_bytes": 884276063,
+          "allocated_bytes": 884281344,
+          "inode": 140927188,
+          "device": 66306,
+          "mtime_ns": 1791827633264407843
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261013_v39/predictive_h2d/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 43217078,
+          "allocated_bytes": 43225088,
+          "inode": 140927186,
+          "device": 66306,
+          "mtime_ns": 1791827633055410407
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261013_v39/predictive_h2d/server/transfer_telemetry.jsonl": {
+          "size_bytes": 31397332,
+          "allocated_bytes": 31404032,
+          "inode": 140927189,
+          "device": 66306,
+          "mtime_ns": 1791827631860425050
+        }
+      },
+      "source_bytes": 1474842140,
+      "source_allocated_bytes": 1474891776,
+      "status": "verified_and_cleaned",
+      "started_at_local": "2026-10-14T08:21:30.495188+08:00",
+      "archive_bytes": 48923451,
+      "archive_sha256": "ec1136340bff8e8ac029dcb3308d6d10087cd00163661c4e2a497afe7cd6ddb3",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "finished_at_local": "2026-10-14T08:21:41.422850+08:00",
+      "remaining_archived_raw_files": 0,
+      "restore_command": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261014/v39_superseded_server_traces.tar.zst --directory experiments/raw"
+    }
+  ],
+  "helper_sha256": "6b270c3933f030652f83d831b7682c5ccd958943c88387c8439d84f116c25ce2",
+  "process_verification_helper_sha256": "028aa1559ae78cbb0e41b9ed14878ed385be04aee98d5ac7a093d6fb2ac2f234",
+  "free_bytes_before": 64138706944,
+  "compression_policy": "zstd -T1 --long=30 -3; nice19; idle I/O",
+  "preserved": [
+    "V29 historical native and latest V49-V55 traces remain directly readable",
+    "Client traces, results, summaries, plans, manifests and original censoring receipts",
+    "Every archived server/opportunity JSONL byte after full GNU tar comparison"
+  ],
+  "wrapper_sha256": "4c095572046261810e5deb01c90c848338a9c5bbddc8ffb41f439f5fa30efeba",
+  "finished_at_local": "2026-10-14T08:21:41.424134+08:00",
+  "source_bytes": 20277540932,
+  "archive_bytes": 635875172,
+  "free_bytes_after": 83629572096
+}

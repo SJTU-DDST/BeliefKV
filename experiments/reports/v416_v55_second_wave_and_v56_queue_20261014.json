@@ -1,0 +1,69 @@
+{
+  "observed_at_local": "2026-10-14T08:12:47.161272+08:00",
+  "v55": {
+    "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55",
+    "arrived_workflow_directories": 156,
+    "recorded_results": 90,
+    "outcomes": {
+      "completed": 90
+    },
+    "errors": [],
+    "frozen_source_hashes_verified": 41,
+    "latest_runtime_state": {
+      "ts_ms": 1791936766856.917,
+      "physical_disabled": false,
+      "semantic_worker_configured": true,
+      "semantic_worker_error": ""
+    },
+    "scheduler_process": {
+      "pid": 1973136,
+      "state": "R",
+      "ppid": 1972772,
+      "start_ticks": "610318265",
+      "argv": [
+        "sglang::scheduler"
+      ]
+    }
+  },
+  "v56": {
+    "status": "waiting_for_previous_pair",
+    "target_revision": "da604f10416ef5d710b3f55677550b612e7fa38c",
+    "qualified_source_hashes_verified": 43,
+    "queued_process": {
+      "pid": 3107559,
+      "state": "R",
+      "ppid": 3107467,
+      "start_ticks": "610693157",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-v414-v56-join-forecast-20261014/scripts/launch_semantic_h2d_after_pair.py",
+        "--repo",
+        "/home/longhao/experiment/BeliefKV",
+        "--previous-run",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55",
+        "--target-checkout",
+        "/home/longhao/experiment/.worktrees/beliefkv-v414-v56-join-forecast-20261014",
+        "--run-root",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56",
+        "--state",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/v56_launch_after_v55_20261014.json",
+        "--wait-pid",
+        "1972494",
+        "--port",
+        "18460",
+        "--arm-order",
+        "predictive_h2d",
+        "--execution-handoff",
+        "0",
+        "--host-numa-memory-policy",
+        "preferred",
+        "--native-reference-run",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v29"
+      ]
+    },
+    "not_started": true,
+    "reservation_manager_recognizes_waiting_launcher": true
+  },
+  "main_execution_unchanged_from_v55": true,
+  "scope": "Live non-atomic status; pending workflows are unknown, and no final JCT or throughput gain is inferred."
+}

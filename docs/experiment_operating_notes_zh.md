@@ -4,6 +4,24 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+V56下一轮追加一次同版本native完整参考，顺序仍为predictive
+优先；两侧使用相同单请求Mamba映射优化、探针、池与冻结负载/
+预算。历史V29没有完整相位，不能用截断worker比例推forward
+差异。v418/v421的196次读取错误和3.85s采样滞后必须保留，
+active-stack不能换算CPU或可移除JCT。v423仅是CPU分配机制
+证据；v426记录363项native检查及29项子检查，GPU收益待冷测。
+v422首次CPU检查受上游test_utils对空CUDA_VISIBLE_DEVICES
+索引失败影响，38项通过、2项fixture导入错误原件保留；使用
+不存在GPU的99配置隐藏设备后96项检查、完整native套件均通过。
+不为此修改运行配置或上游测试工具。JUnit原件无损保存为
+v422/v424/v425的raw.gz，避免XML误计入冻结执行源码差异。
+
+旧predictive-only等待launcher在新run目录创建前被精确终止，
+v417记录这一待机配置替换，不计workflow失败或行政删失。
+v419仅归档停止且无进程/容器/开放引用的V30–V39旧server trace，
+每文件GNU tar比较通过才移除源；所有终态/删失、客户端、模型、
+V29与V49–V55继续保留，重跑旧审计前按archive索引恢复。
+
 滚动预测更新后，不能继续用旧JOIN票据的固定token终点决定
 入队，或将端点耗尽当作只剩零/一个token。新候选统一最新
 request/epoch预测与区间，并在post-drain时机失效时立即撤销。
