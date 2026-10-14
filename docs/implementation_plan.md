@@ -1,11 +1,36 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-15.
+Status date: 2026-10-14 (PDT).
 
 Continue the original mean-workflow-JCT and completion-throughput goal through
 short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
 and interval changes remain disabled.
+
+V58 has completed all collection and postprocessing. Its154 common completed
+workflows have mean JCT2912.078/2310.910s (+26.01% predictive). Native retains
+one output-limit incomplete and one14400s deadline error with an unsatisfied JOIN.
+Raw return interventions affect24 predictive/20 native workflows and7/9 roots;
+benchmark quality remains ungraded. V596 retains all outcomes and realized demand.
+The original performance, quality and repeated-control goal remains unachieved.
+
+The qualified V59 candidate inherits bff29cb and moves deferred JOIN/tool
+prefetch/PREPARE planning behind previous result processing and current sampling.
+WAR, native load fences, reference protection and normal-loop placement are retained.
+V594 binds65 sources and engine tree5262707a:725 CPU checks and12 subtests pass.
+V592 compares both loop ASTs with the same probe; CPU differences are approximately
+-0.08% to+0.25%, with unchanged dispatch counts. This establishes ordering and
+limited loop CPU compatibility, not GPU overlap, useful reuse or JCT benefit.
+Cold-observe predictive first with the frozen156-workflow/108+48 workload,
+running48 and all existing tool/output/deadline, Host, HBM and prefill settings.
+Use the completed V58 native only as a development reference; final acceptance
+still requires same-version repeated controls, quality/fairness/recompute checks.
+
+V593 archives24.012GB of stopped V32/V49 mirrors and V54/V55 logs into0.613GB
+after full comparison. V595's additional V56 mirror-prefix check failed before
+source removal; all its files are retained. Space was independently rechecked
+at roughly76GiB after V58 cleanup. Do not attribute all recovered space to archival.
+The entries below retain the diagnostic history; current candidate status is V594.
 
 Latest V585/V587 partitions handoff gaps with exact neighboring forward
 boundaries; all239/252 predictive/native short samples reconcile. At600-900s

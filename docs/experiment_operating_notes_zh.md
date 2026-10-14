@@ -1,8 +1,36 @@
 # BeliefKV 实验注意事项
 
-更新日期：2026-10-15。本文是当前实验的执行约束，不是新增 agent
+更新日期：2026-10-14（PDT）。本文是当前实验的执行约束，不是新增 agent
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
+
+下一轮按v594资格冻结V59代码与引擎：65份源码、patch f7b1942b、
+tree5262707a，725项CPU检查和12个子场景通过。只将overlap
+等待规划移到结果交付及采样发射之后，不删除WAR、load fence、
+引用或FULL/Mamba恢复依赖；normal路径不变。CPU检查使用
+无可见GPU的数值占位999，避免上游test_utils对空环境变量的
+端口索引错误；此设置仅限CPU检查，不能传给生产实验。
+
+V58已完整收尾，两个server/driver退出且最终HTML/对照存在。
+native的pylint-6528为既有14400s截止触发error、一个child
+取消且JOIN未完成；pytest-10051保留输出截断incomplete。
+共同completed均值2912.078/2310.910s，predictive高26.01%，
+不得用native工具长尾换算为预测迁移加速。两侧raw RETURN
+干预为24/20个workflow、26/22次RETURN、7/9个root；
+原始completed标记不等于自然完成或任务正确。
+
+V59先predictive，用V58 native作开发参考以加快迭代。正式
+结论仍要同版本重复对照。保持156任务、108+48在3600s到达、
+running48、131072/8192上下文/输出、工具180s、activation
+14400s、Host200GB的80:20、HBM0.9和已有prefill配置。
+冷启动前重新核对GPU进程、显存、磁盘和NUMA容量，不恢复
+已撤销的每日停实验规则，不新增guard、canary或 eligibility 修改。
+
+v593的旧日志归档通过完整tar比较后才移除源副本；v595的
+V56镜像前缀检查失败，未归档/移除任何源文件。保持该失败
+证据，不将它称为已确认冗余。磁盘可用空间在V58收尾后另有
+变化，必须独立测量，不能全归因到归档。当前原始V58、旧
+未完成案例及V53数据保留。下文保留阶段历史，不覆盖本段配置。
 
 v585/v587的交接区段按每个采样对账，不能相加独立中位数，
 也不能把前批native服务回调当GPU完成。root观测收窄候选

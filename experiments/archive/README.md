@@ -4,6 +4,31 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-10-14 Old Support Logs Before V59
+
+Twenty-five stopped log files from V32/V49 client mirrors and V54/V55 server,
+opportunity and mirror logs passed complete GNU tar comparison before source
+cleanup.24,012,134,274 source bytes became612,658,251 archive bytes.
+Client events, outcomes, frozen plans, HTML, administrative censoring and
+retained workspaces remain. V58 and the original V53/V56/V57 server evidence
+were not selected.
+
+Archives are under `experiments/archive/20261014/` with labels
+`v32_old_mirrors_before_v59`, `v49_old_mirrors_before_v59`,
+`v54_old_traces_before_v59` and `v55_old_traces_and_mirrors_before_v59`.
+Each source run retains `OLD_SUPPORT_LOGS_ARCHIVED.md` with the exact hash
+and restore command. Receipt:
+`experiments/reports/v593_old_support_log_archive_20261014.json`.
+One nice19 worker with idle I/O ran13:32:59-13:35:15 PDT, during V58's
+native deadline/postprocessing tail, outside the four selected busy windows.
+
+The additional V56 mirror-prefix check in V595 failed before archival and
+source removal. All six mirrors and original server files are retained; do
+not describe them as verified redundant copies. Receipt:
+`experiments/reports/v595_v56_client_mirror_archive_20261014.json`.
+Disk headroom changed again during V58 cleanup and was independently
+observed around76GiB; not all free-space growth is attributed to archival.
+
 ## 2026-10-14 V27 Snapshots And V28 Trace Recovery
 
 V27's six old client-side server snapshots and V28's eight stopped server/

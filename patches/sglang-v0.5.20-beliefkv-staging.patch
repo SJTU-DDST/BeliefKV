@@ -1084,7 +1084,7 @@ index 7811e44..5cf4df9 100755
          self.mamba_track_mask_next_cpu = None
          self.mamba_decode_batch_idx_cpu = None
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
-index 743c8af..f7aa105 100644
+index 743c8af..8ccba7d 100644
 --- a/python/sglang/srt/managers/scheduler.py
 +++ b/python/sglang/srt/managers/scheduler.py
 @@ -725,9 +725,152 @@ class Scheduler(
@@ -1319,7 +1319,7 @@ index 743c8af..f7aa105 100644
  
              # If we do not need to overlap the current batch with the last batch,
              # we can process the last batch immediately.
-@@ -1988,14 +2159,36 @@ class Scheduler(
+@@ -1988,10 +2159,24 @@ class Scheduler(
  
              # Launch the current batch
              if batch:
@@ -1344,7 +1344,21 @@ index 743c8af..f7aa105 100644
              else:
                  batch_result = None
                  self._sched_idled = True
+@@ -2000,15 +2185,26 @@ class Scheduler(
+             if self.last_batch:
+                 if not disable_overlap_for_batch:
+                     pop_and_process()
+-            elif batch is None:
+-                # When the server is idle, do self-check and re-init some states
+-                self.on_idle()
  
+             # Run sample of the current batch
+             # It depends on the result of the last batch (e.g., grammar), so we run it after the last batch is processed.
+             if self.is_generation:
+                 self.launch_batch_sample_if_needed(batch_result, batch)
+ 
++            # Keep waiting-context planning behind result delivery and sampling.
++            # The forward WAR barrier still precedes allocator/cache mutations.
 +            physical_span = (
 +                probe.begin_phase(batch, "post_launch_physical")
 +                if probe is not None and batch is not None else None
@@ -1353,10 +1367,14 @@ index 743c8af..f7aa105 100644
 +            if probe is not None:
 +                probe.end_phase(physical_span)
 +
-             # Process the last batch
-             if self.last_batch:
-                 if not disable_overlap_for_batch:
-@@ -2727,6 +2920,9 @@ class Scheduler(
++            if self.last_batch is None and batch is None:
++                # When the server is idle, do self-check and re-init some states
++                self.on_idle()
++
+             # Update last_batch
+             self.last_batch = batch
+ 
+@@ -2727,6 +2923,9 @@ class Scheduler(
          *,
          mm_input_error: Optional[str] = None,
      ):
@@ -1366,7 +1384,7 @@ index 743c8af..f7aa105 100644
          # Route: normal request / session request / session-not-found
          session_id = (
              recv_req.session_params.id if recv_req.session_params is not None else None
-@@ -2789,6 +2985,7 @@ class Scheduler(
+@@ -2789,6 +2988,7 @@ class Scheduler(
                  dllm_config=self.dllm_config,
                  time_stats=recv_req.time_stats,
                  multi_item_delimiter_indices=recv_req.multi_item_delimiter_indices,
@@ -1374,7 +1392,7 @@ index 743c8af..f7aa105 100644
              )
              req.tokenizer = self.tokenizer
  
-@@ -3190,6 +3387,33 @@ class Scheduler(
+@@ -3190,6 +3390,33 @@ class Scheduler(
          self._retry_storage_prefetch(req)
          return True
  
@@ -1408,7 +1426,7 @@ index 743c8af..f7aa105 100644
      def _add_request_to_queue(self, req: Req, is_retracted: bool = False):
          if not self._set_or_validate_priority(req):
              return
-@@ -3200,6 +3424,12 @@ class Scheduler(
+@@ -3200,6 +3427,12 @@ class Scheduler(
          if self.disaggregation_mode == DisaggregationMode.NULL:
              if self._abort_on_queued_limit(req):
                  return
@@ -1421,7 +1439,7 @@ index 743c8af..f7aa105 100644
              self._prefetch_kvcache(req)
              self.waiting_queue.append(req)
              req.time_stats.set_wait_queue_entry_time()
-@@ -3281,6 +3511,7 @@ class Scheduler(
+@@ -3281,6 +3514,7 @@ class Scheduler(
                  direction * recv_req.priority < direction * candidate_req.priority
              )
              if abort_existing_req:
@@ -1429,7 +1447,7 @@ index 743c8af..f7aa105 100644
                  self._release_aborted_request(candidate_req)
                  self.waiting_queue.pop(idx)
                  self.beam_coordinator.retire_group(candidate_req)
-@@ -3558,12 +3789,79 @@ class Scheduler(
+@@ -3558,12 +3792,79 @@ class Scheduler(
              if self.enable_hicache_storage:
                  self._process_storage_prefetch_retries()
  
@@ -1509,7 +1527,7 @@ index 743c8af..f7aa105 100644
  
          if self.enable_fpm:
              self._fpm_batch_t0 = time.monotonic()
-@@ -3647,6 +3945,37 @@ class Scheduler(
+@@ -3647,6 +3948,37 @@ class Scheduler(
              if running_batch.is_empty():
                  running_batch.batch_is_full = False
  
@@ -1547,7 +1565,7 @@ index 743c8af..f7aa105 100644
          if self.dllm_config is not None:
              new_batch = self.get_new_batch_dllm(running_batch)
          elif self._should_defer_prefill():
-@@ -3705,8 +4034,22 @@ class Scheduler(
+@@ -3705,8 +4037,22 @@ class Scheduler(
              if self.enable_fpm:
                  ret.fpm_start_time = self._fpm_batch_t0
  
@@ -1570,7 +1588,7 @@ index 743c8af..f7aa105 100644
      def get_num_allocatable_reqs(
          self,
          running_bs: int,
-@@ -3754,6 +4097,50 @@ class Scheduler(
+@@ -3754,6 +4100,50 @@ class Scheduler(
  
          return NextBatchPlan(batch_to_run=ret, running_batch=running_batch)
  
@@ -1621,7 +1639,7 @@ index 743c8af..f7aa105 100644
      def _get_new_batch_prefill_raw(
          self,
          prefill_delayer_single_pass: Optional[PrefillDelayerSinglePassExecutor],
-@@ -3871,7 +4258,8 @@ class Scheduler(
+@@ -3871,7 +4261,8 @@ class Scheduler(
              mamba_allocator.alloc_group_begin(len(self.waiting_queue))
          buffer_pipeline = self.tree_cache.buffer_pipeline
          # Get requests from the waiting queue to a new prefill batch
@@ -1631,7 +1649,7 @@ index 743c8af..f7aa105 100644
              if self.enable_lora and not self.can_schedule_lora_req(req, running_loras):
                  continue
  
-@@ -3897,6 +4285,12 @@ class Scheduler(
+@@ -3897,6 +4288,12 @@ class Scheduler(
                  ):
                      break
  
@@ -1644,7 +1662,7 @@ index 743c8af..f7aa105 100644
              if self.enable_hicache_storage:
                  prefetch_done = self.tree_cache.check_prefetch_progress(
                      req.cache_request_handle
-@@ -3932,6 +4326,10 @@ class Scheduler(
+@@ -3932,6 +4329,10 @@ class Scheduler(
                  has_chunked_req=(self.chunked_req is not None),
                  truncation_align_size=self.truncation_align_size,
              )
@@ -1655,7 +1673,7 @@ index 743c8af..f7aa105 100644
  
              if self.enable_lora:
                  running_loras.add(req.lora_id)
-@@ -3963,6 +4361,18 @@ class Scheduler(
+@@ -3963,6 +4364,18 @@ class Scheduler(
                              req.kv.mamba_pool_idx.unsqueeze(-1)
                          )
                          req.kv.mamba_pool_idx = None
@@ -1674,7 +1692,7 @@ index 743c8af..f7aa105 100644
                  break
  
          if mamba_allocator is not None:
-@@ -4254,6 +4664,9 @@ class Scheduler(
+@@ -4254,6 +4667,9 @@ class Scheduler(
          batch.launch_ts = time.monotonic()
          batch.after_idle_gap = self._sched_idled
          self._sched_idled = False
@@ -1684,7 +1702,7 @@ index 743c8af..f7aa105 100644
  
          # Accumulate the prefill-token counter used by the HRRN scheduling policy. Decode / prebuilt batches contribute 0.
          if batch.extend_num_tokens:
-@@ -4622,6 +5035,10 @@ class Scheduler(
+@@ -4622,6 +5038,10 @@ class Scheduler(
          elif batch.forward_mode.is_idle():
              self.batch_result_processor.process_batch_result_idle(batch, result)
  
@@ -1695,7 +1713,7 @@ index 743c8af..f7aa105 100644
          self._record_step_counters(batch, result)
  
          self.metrics_reporter.log_batch_result_stats(batch, result)
-@@ -4634,6 +5051,20 @@ class Scheduler(
+@@ -4634,6 +5054,20 @@ class Scheduler(
          self.maybe_send_health_check_signal()
          self.metrics_reporter.update_device_timer()
  
@@ -1716,7 +1734,7 @@ index 743c8af..f7aa105 100644
      def _record_step_counters(
          self, batch: ScheduleBatch, result: GenerationBatchResult
      ) -> None:
-@@ -5215,6 +5646,9 @@ class Scheduler(
+@@ -5215,6 +5649,9 @@ class Scheduler(
          }
  
      def abort_request(self, recv_req: AbortReq):
@@ -1726,7 +1744,7 @@ index 743c8af..f7aa105 100644
          if (chunked_req := self.chunked_req) is not None:
              if recv_req.abort_all or chunked_req.rid.startswith(recv_req.rid):
                  self._pending_chunked_abort_req = chunked_req
-@@ -5369,6 +5803,25 @@ class Scheduler(
+@@ -5369,6 +5806,25 @@ class Scheduler(
                  else:
                      req.to_finish = FINISH_ABORT()
  
@@ -1752,7 +1770,7 @@ index 743c8af..f7aa105 100644
      def _pause_engine(self) -> Tuple[List[Req], int]:
          raise NotImplementedError()
  
-@@ -5642,6 +6095,8 @@ class Scheduler(
+@@ -5642,6 +6098,8 @@ class Scheduler(
  
      def maybe_sleep_on_idle(self):
          if self.idle_sleeper is not None:
@@ -1761,7 +1779,7 @@ index 743c8af..f7aa105 100644
              self.idle_sleeper.maybe_sleep()
  
      def handle_freeze_gc(self, recv_req: FreezeGCReq):
-@@ -5652,6 +6107,17 @@ class Scheduler(
+@@ -5652,6 +6110,17 @@ class Scheduler(
  
      def handle_shutdown(self, recv_req: ShutdownReq):
          # Break the event loop; the finally in run_scheduler_process releases resources.
@@ -7420,10 +7438,10 @@ index 0000000..da0ca58
 +        left.is_prefix_at(other, 0)
 diff --git a/test/srt/test_beliefkv_scheduler_hook.py b/test/srt/test_beliefkv_scheduler_hook.py
 new file mode 100644
-index 0000000..6590860
+index 0000000..528ca28
 --- /dev/null
 +++ b/test/srt/test_beliefkv_scheduler_hook.py
-@@ -0,0 +1,933 @@
+@@ -0,0 +1,1036 @@
 +"""BeliefKV scheduler safe-point contract, without model/GPU dependencies."""
 +
 +import ast
@@ -7601,7 +7619,7 @@ index 0000000..6590860
 +                )
 +                scheduler.event_loop_overlap() if overlap else scheduler.event_loop_normal()
 +                self.assertEqual(
-+                    calls, ["forward", "war", "physical", "physical", "result"]
++                    calls, ["forward", "war", "physical", "result", "physical"]
 +                    if overlap else ["forward", "result"],
 +                )
 +                self.assertEqual(len(probe_records), 1)
@@ -7615,6 +7633,109 @@ index 0000000..6590860
 +                self.assertEqual(
 +                    "post_launch_physical" in observed["phases"], overlap
 +                )
++
++    def test_overlap_waiting_planning_follows_result_delivery_and_sampling(self):
++        scenarios = (
++            (False, True, False),
++            (True, True, False),
++            (True, True, True),
++            (True, False, False),
++            (False, False, False),
++        )
++        cases = (
++            (*scenario, enabled)
++            for scenario in scenarios
++            for enabled in (False, True)
++        )
++        for previous, current, disable_overlap, enabled in cases:
++            with self.subTest(
++                previous=previous, current=current, disable_overlap=disable_overlap,
++                enabled=enabled,
++            ):
++                scheduler, running, calls = idle_scheduler(overlap=True)
++                batch = SimpleNamespace(copy=lambda: "current-copy") if current else None
++                scheduler.running_batch = running
++                scheduler.last_batch = "previous" if previous else None
++                scheduler.gracefully_exit = False
++                scheduler._engine_paused = False
++                scheduler.ingest_requests = lambda: None
++                scheduler.is_disable_overlap_for_batch = (
++                    lambda *args, **kwargs: disable_overlap
++                )
++                scheduler.enable_unified_memory = False
++                scheduler.is_generation = True
++                released = not previous
++                sampled = not current
++                fenced = not current
++
++                def select(**kwargs):
++                    scheduler._beliefkv_physical_planning_deferred = True
++                    if previous:
++                        scheduler.result_queue.append(("previous-copy", "previous-result"))
++                    scheduler.gracefully_exit = True
++                    return PLAN(batch, running)
++
++                def process(selected, result):
++                    nonlocal released
++                    self.assertEqual((selected, result), ("previous-copy", "previous-result"))
++                    if not disable_overlap:
++                        self.assertTrue(fenced)
++                    released = True
++                    calls.append("result")
++
++                def sample(result, selected):
++                    nonlocal sampled
++                    if selected is None:
++                        self.assertIsNone(result)
++                        return
++                    self.assertTrue(released)
++                    self.assertTrue(fenced)
++                    self.assertEqual(result, "current-result")
++                    sampled = True
++                    calls.append("sample")
++
++                def war():
++                    nonlocal fenced
++                    fenced = True
++                    calls.append("war")
++
++                def physical(queue, **kwargs):
++                    self.assertTrue(released)
++                    self.assertTrue(sampled)
++                    self.assertTrue(fenced)
++                    self.assertIs(kwargs["running_batch"], running)
++                    self.assertEqual(
++                        tuple(scheduler.result_queue),
++                        (("current-copy", "current-result"),) if current else (),
++                    )
++                    calls.append("physical")
++
++                scheduler.get_next_batch_to_run = select
++                scheduler.run_batch = lambda selected: (
++                    calls.append("forward") or "current-result"
++                )
++                scheduler._apply_war_barrier = war
++                scheduler.process_batch_result = process
++                scheduler.launch_batch_sample_if_needed = sample
++                scheduler.beliefkv_runtime = (
++                    SimpleNamespace(dispatch_after_forward=physical) if enabled else None
++                )
++                scheduler.on_idle = lambda: calls.append("idle")
++                scheduler.event_loop_overlap()
++                expected = ["result"] if disable_overlap else []
++                if current:
++                    expected.extend(("forward", "war"))
++                if previous and not disable_overlap:
++                    expected.append("result")
++                if current:
++                    expected.append("sample")
++                if enabled:
++                    expected.append("physical")
++                if not previous and not current:
++                    expected.append("idle")
++                self.assertEqual(calls, expected)
++                self.assertIs(scheduler.last_batch, batch)
++                self.assertFalse(scheduler._beliefkv_physical_planning_deferred)
 +
 +    def test_waiting_migrations_run_once_after_forward_and_war_barrier(self):
 +        scheduler, running, calls = idle_scheduler(overlap=True)

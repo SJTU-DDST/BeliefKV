@@ -1,0 +1,112 @@
+{
+  "status": "failed_preserve_unverified_sources",
+  "started_at_local": "2026-10-14T13:44:19.180651-07:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56",
+  "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261014/qwen35_native_predictive_replenished_108plus48_20261014_v56_client_server_mirrors.tar.zst",
+  "plan_sha256": "70d74e0dc47608bc8d627af009ca1eaf14e0eba33befa9d40c190c8ce2ab5d26",
+  "summary_bindings": {
+    "predictive_h2d": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/summary.json",
+      "sha256": "949d268efb8a3b9f5adb9699d81863edc8f18b047f86940f2286b7b7859d41d0"
+    },
+    "native": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/native/client_156/summary.json",
+      "sha256": "599388632977a1528f21b0cdc9d9f70d598f0f936837ebbbaa49a8d3adc87b42"
+    }
+  },
+  "file_inventory": {
+    "qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/server/server.log": {
+      "size_bytes": 19506705,
+      "allocated_bytes": 19509248,
+      "inode": 139896801,
+      "device": 66306,
+      "mtime_ns": 1791954645631877978
+    },
+    "qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/server/runtime_audit.jsonl": {
+      "size_bytes": 4202301483,
+      "allocated_bytes": 4202307584,
+      "inode": 139865395,
+      "device": 66306,
+      "mtime_ns": 1791954641494165473
+    },
+    "qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/server/runtime_events.sglang.jsonl": {
+      "size_bytes": 105226163,
+      "allocated_bytes": 105226240,
+      "inode": 139896525,
+      "device": 66306,
+      "mtime_ns": 1791954645527885190
+    },
+    "qwen35_native_predictive_replenished_108plus48_20261014_v56/native/client_156/server/server.log": {
+      "size_bytes": 20202848,
+      "allocated_bytes": 20205568,
+      "inode": 140037067,
+      "device": 66306,
+      "mtime_ns": 1791964615107018912
+    },
+    "qwen35_native_predictive_replenished_108plus48_20261014_v56/native/client_156/server/runtime_audit.jsonl": {
+      "size_bytes": 4492410752,
+      "allocated_bytes": 4492414976,
+      "inode": 140037063,
+      "device": 66306,
+      "mtime_ns": 1791964610863739823
+    },
+    "qwen35_native_predictive_replenished_108plus48_20261014_v56/native/client_156/server/runtime_events.sglang.jsonl": {
+      "size_bytes": 120418975,
+      "allocated_bytes": 120422400,
+      "inode": 140037066,
+      "device": 66306,
+      "mtime_ns": 1791964614977010414
+    }
+  },
+  "original_server_inventory": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/server.log": {
+      "size_bytes": 19592681,
+      "allocated_bytes": 19599360,
+      "inode": 139863825,
+      "device": 66306,
+      "mtime_ns": 1791954703684963837
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/server/runtime_audit.jsonl": {
+      "size_bytes": 4202531542,
+      "allocated_bytes": 4202536960,
+      "inode": 139863828,
+      "device": 66306,
+      "mtime_ns": 1791954688845943760
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/server/runtime_events.sglang.jsonl": {
+      "size_bytes": 105226163,
+      "allocated_bytes": 105230336,
+      "inode": 139863826,
+      "device": 66306,
+      "mtime_ns": 1791954638206394751
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/native/server.log": {
+      "size_bytes": 20288801,
+      "allocated_bytes": 20295680,
+      "inode": 139863840,
+      "device": 66306,
+      "mtime_ns": 1791964675632672526
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/native/server/runtime_audit.jsonl": {
+      "size_bytes": 4492611540,
+      "allocated_bytes": 4492615680,
+      "inode": 139863855,
+      "device": 66306,
+      "mtime_ns": 1791964664493044424
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/native/server/runtime_events.sglang.jsonl": {
+      "size_bytes": 120418975,
+      "allocated_bytes": 120426496,
+      "inode": 139863849,
+      "device": 66306,
+      "mtime_ns": 1791964606178428008
+    }
+  },
+  "source_bytes": 8960066926,
+  "free_bytes_before": 80771080192,
+  "helper_sha256": "66599ee2913e0e83b7bfbb8266f4515bc0206c11718b3e7b8b9f9115110a86f3",
+  "compression_policy": "zstd -T1 --long=30 -3; nice19; idle I/O",
+  "scope": "Only finished client-side mirror copies; originals, client events, outcomes, HTML and retained workspaces remain directly readable.",
+  "verified_original_prefixes": {},
+  "error": "ValueError('mirror is not the captured prefix of its retained original')"
+}

@@ -1,10 +1,29 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-10-15。
+更新日期：2026-10-14（PDT）。
 
 当前继续以短prefill周转、控制成本、有效FULL预取及首次消费
 改善平均workflow JCT与完成吞吐；既有PrefillAdder保留，新增
 延迟凑批、mixed chunk、最小槽延迟和间隔调整仍关闭。
+
+V58已于2026-10-14 13:37 PDT完成收尾，原driver/scheduler均
+退出。native最终154 completed、1 incomplete、1 error；
+pylint-6528在既有14400s截止预算下结束为error、JOIN未满足，
+保留取消child和workspace。共同completed的154个任务平均
+JCT为predictive2912.078s/native2310.910s（+26.01%）。
+两侧原始RETURN干预分别24个workflow/26次、20个/22次，
+涉及root为7/9个。v596保留完整终态、需求差异和质量未知；
+当前仍未达到平均JCT/完成吞吐的最终目标。
+
+下一冷观察候选已通过v594资格：仅调整overlap中延后规划的
+位置，先处理前批结果及当前采样，再规划JOIN/tool预取与
+PREPARE。继承bff29cb祖先扫描与终态计数修复；WAR、共享读、
+原生H2D fence、FULL/Mamba引用和normal路径保持原约束。
+实际引擎差异仅scheduler及其顺序检查，patch f7b1942b/
+tree5262707a；65份源码绑定，725项CPU检查和12个子场景
+通过。v592相同埋点循环CPU差异约-0.08%至+0.25%，规划
+CPU没有被删除，GPU重叠与首次消费仍需V59冷观察验证。
+保留固定配置，以V58 native作开发参考，正式重复对照未验收。
 
 最新v585/v587按相邻forward的真实边界拆分短prefill返回间隔，
 239/252个predictive/native样本全部对账。600–900s平均间隔
@@ -15,10 +34,10 @@
 v586的root语义观测收窄候选完整回调测量失败：全child慢24.1%，
 全root才少7.0%；V58 predictive四窗root服务量占比仅0.3%、
 8.5%、20.9%、23.1%。候选与新增测试已撤回，64份v582合格
-源码逐一恢复一致，bff29cb仍是下一冷观察候选。下一步优先
+源码逐一恢复一致，bff29cb作为新顺序候选的已验证基础。继续
 核对overlap中物理规划、前批结果交付和当前采样的顺序，以及
 下一批启动前的维护/准入；原生读写/释放/H2D依赖必须保留。
-native仍154 completed、1 incomplete、1个未终态；最后
+以下为V58收尾前的历史快照，当时native有1个未终态；最后
 pylint-6528反复递归lint整个仓库。最新长尾快照为2026-10-14
 13:11:37 PDT，见`v589_v58_native_tail_current_20261014.json`；
 GPU CSV按Asia/Shanghai解析后再用服务时钟对齐，不把设备日期
@@ -32,7 +51,7 @@ JOIN，另一child已返回；长尾期间不是有模型请求积压却未准�
 重复CPU工具执行共同放大空闲尾部。保持工具、输出与截止预算，
 不新增重复调用guard；工具执行成功不证明任务或测试通过。
 
-最新开发候选为bff29cb：恢复闭包在验证祖先时同步统计FULL/
+已继承的开发修订bff29cb：恢复闭包在验证祖先时同步统计FULL/
 Mamba缺失量，内部无session leaf的节点省去临时列表；规划
 节点检查保留原拒绝条件。v581完成3456组捕获及14580组完整
 规划/错误对照，6种108-workflow扫描的决策、计数、原生读取

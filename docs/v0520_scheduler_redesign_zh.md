@@ -1,5 +1,22 @@
 # v0.5.20 调度适配边界
 
+当前v594候选将overlap中的延后等待规划放在前批结果处理及
+当前sampling发射之后。原生forward/WAR/result/sample顺序
+及forward/copy stream等待保持；物理规划仍执行原生load
+fence、引用、容量和checkpoint检查。NORMAL及不可安全
+overlap的路径不变，idle仍在规划后检查。仅两个引擎文件改变：
+scheduler及其顺序检查；tree5262707a与patch f7b1942b一致。
+725项CPU检查和12个子场景通过，包含5种native及5种predictive
+批次/同步/排空场景；65份应用与patch源码绑定。相同probe的
+循环CPU差异约-0.08%至+0.25%，不能当作GPU重叠或吞吐收益。
+V59冷观察重点核验实际短prefill周转和已恢复FULL首次消费。
+
+V58已经完整结束；154个共同completed任务的predictive
+平均JCT高26.01%，目标继续。native最后一项为既有deadline
+error，另一项为输出截断incomplete；两侧RETURN干预及未知
+任务质量保留。开发对照先复用V58 native，正式验收仍需同版本
+重复和消融；固定预算与prefill调优开关保持。以下是历史诊断。
+
 v585/v587按相邻forward分解239/252个短prefill采样的交接
 边界，600–900s均值差7.147ms，其中规划结束前和下一批启动
 前区段差3.012/1.812ms；这些区段包含依赖与框架处理。下一步
