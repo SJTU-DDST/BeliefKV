@@ -7,7 +7,20 @@ short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
 and interval changes remain disabled.
 
-Latest V556 binds the complete1800-2100s window:72/67 short samples,
+The newest complete3600-3900s window has56/65 short-single samples:
+run_batch P50 35.190/50.226ms, turnover46.489/58.199ms, return gap
+6.710/4.419ms and384729/373544 decode request steps. Instrumented
+self-wall19.733s/300s now ranks control-drain2.718s and opportunity
+sampling2.031s first. Keep the historical-reference/demand qualification;
+fresh V58 native is pending.
+V559 archives old V27 client-side server snapshots and V28 logs after complete
+comparison:11.997GB to287.790MB,23:17:19-23:18:29. Results/events,
+retained incomplete-workspace evidence and current V58 remain intact.
+V558 retains the initial overly strict workspace check without cleanup.
+Archival followed the second-wave window; lightweight disk inventories ran
+within it, so this is still development evidence, not uncontaminated causality.
+
+V556 retains the earlier complete1800-2100s window:72/67 short samples,
 run_batch P50 42.918/49.622ms, turnover55.449/58.001ms, return gap
 8.812/4.222ms and390566/357282 decode request steps. Instrumented
 self-wall29.432s/300s is led by tool-prefetch5.237s and residency3.331s.
