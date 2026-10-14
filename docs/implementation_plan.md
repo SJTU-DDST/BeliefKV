@@ -2,6 +2,30 @@
 
 Status date: 2026-10-14.
 
+The next V56 cold candidate adds a shared single-request Mamba mapping
+fast path to the qualified JOIN refresh. V418/V421 identify316 main-thread
+samples at the original ping-pong mapping assignment, but retain196 read
+errors and3.85s sampling lag; this is call-path evidence, not CPU accounting
+or native causality. A nonnegative integer singleton row now uses a
+shape-preserving slice for both mappings; other indices retain native
+advanced indexing. V423 verifies identical allocation, generations and
+mapping outputs across six CPU cases. Single-request mean thread CPU falls
+about3–7us; the actual CUDA synchronization/prefill effect is unverified.
+V426 binds43 prior sources and b1921753/c9d1fbd;363 native checks plus29
+subtests pass. The live V55 engine and runtime remain frozen.
+
+After V55 naturally finishes, run V56 predictive first, then one matching
+native arm to obtain the missing full short-prefill phase reference.
+The previous predictive-only waiter was superseded before experiment
+creation; V417 records no added workflow censoring. Preserve workload,
+budgets, existing phase probes and disabled new prefill delay/batching.
+V420/V427's complete3600–3900s window has347412 versus historical
+native353757 decode request steps(-1.79%), with different realized demand;
+53 short-prefill phase medians are4.356/46.756/2.609ms for selection/run/
+result. This does not establish same-version performance acceptance.
+V419 losslessly archives20.278GB of superseded server traces to0.636GB,
+preserving current V49–V55 and V29 sources and all outcomes/censoring.
+
 Current next cold candidate fixes provisional JOIN endpoints becoming
 detached from accepted rolling forecasts. V408/V409 associate55 timing
 rejections across16 independent waits:49 already had newer fresh,
