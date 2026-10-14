@@ -1,0 +1,150 @@
+{
+  "status": "handoff_gap_localized_scope_candidate_rejected_goal_active",
+  "observed_at_local": "2026-10-14T13:02:16.159733-07:00",
+  "handoff_evidence": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v585_v58_prefill_handoff_boundaries_20261014.json",
+    "sha256": "354f406c9ac3765c6a7480dc8e607c2b7e2466df75e3edc4124216bcd74b2ce7"
+  },
+  "rejected_scope_evidence": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v586_semantic_decode_scope_cpu_20261014.json",
+    "sha256": "b069ef061ada0fd994d65df5a0fd215afde61e9f35b4719b39892ec39f13adbe"
+  },
+  "preserved_qualification": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v582_prefetch_ancestry_qualification_20261014.json",
+    "sha256": "30cb0eb65f2ae81af650abb117953b5a899196731c55a90aadb19ecc89ca8c15"
+  },
+  "all_64_qualified_sources_restored": true,
+  "handoff_windows": {
+    "120_300": {
+      "predictive_native_samples": [
+        45,
+        51
+      ],
+      "mean_handoff_gap_ms": [
+        9.479410658942328,
+        6.013133142508712
+      ],
+      "mean_segment_differences_ms": {
+        "own_return_to_post_end": 1.5918715395958596,
+        "post_end_to_previous_completion": 0.1429979660931755,
+        "previous_completion_to_next_launch": 1.7730422873902163,
+        "next_launch_to_own_result_start": -0.04163427664563546
+      },
+      "observed_root_request_step_fractions": {
+        "predictive_h2d": 0.003431040135085978,
+        "native": 0.005601147869490816
+      }
+    },
+    "600_900": {
+      "predictive_native_samples": [
+        66,
+        62
+      ],
+      "mean_handoff_gap_ms": [
+        11.522768237374045,
+        4.375697443562169
+      ],
+      "mean_segment_differences_ms": {
+        "own_return_to_post_end": 3.0121065174263126,
+        "post_end_to_previous_completion": 0.9454381216539549,
+        "previous_completion_to_next_launch": 1.8117391077304514,
+        "next_launch_to_own_result_start": 1.377787047001157
+      },
+      "observed_root_request_step_fractions": {
+        "predictive_h2d": 0.08463305326730017,
+        "native": 0.13360502913058206
+      }
+    },
+    "1800_2100": {
+      "predictive_native_samples": [
+        72,
+        64
+      ],
+      "mean_handoff_gap_ms": [
+        10.281623072094387,
+        4.460641443729401
+      ],
+      "mean_segment_differences_ms": {
+        "own_return_to_post_end": 1.3629636052582,
+        "post_end_to_previous_completion": 1.6801100903087192,
+        "previous_completion_to_next_launch": 1.4810929199059806,
+        "next_launch_to_own_result_start": 1.2968150128920874
+      },
+      "observed_root_request_step_fractions": {
+        "predictive_h2d": 0.20940378834819212,
+        "native": 0.23215506515617837
+      }
+    },
+    "3600_3900": {
+      "predictive_native_samples": [
+        56,
+        75
+      ],
+      "mean_handoff_gap_ms": [
+        9.780430368014745,
+        4.853402620951335
+      ],
+      "mean_segment_differences_ms": {
+        "own_return_to_post_end": 0.9932822954087032,
+        "post_end_to_previous_completion": 1.0226384246917,
+        "previous_completion_to_next_launch": 2.318730104537238,
+        "next_launch_to_own_result_start": 0.5923769224257698
+      },
+      "observed_root_request_step_fractions": {
+        "predictive_h2d": 0.2310509475500937,
+        "native": 0.12508327310233783
+      }
+    }
+  },
+  "scope_candidate_decision": {
+    "decision": "rejected_and_removed_from_runtime_and_tests",
+    "all_child_callback_cpu_regression_fraction": 0.241218337288444,
+    "all_root_callback_cpu_reduction_fraction": 0.0704299529358201,
+    "reason": "Whole-callback overhead dominates at the observed0.3%-23.1% predictive root role mix; retain all original semantic monitoring."
+  },
+  "current_native": {
+    "identity": {
+      "pid": 3865597,
+      "state": "R",
+      "ppid": 3865217,
+      "start_ticks": "616567785",
+      "argv": [
+        "sglang::scheduler"
+      ]
+    },
+    "outcomes": {
+      "completed": 154,
+      "incomplete": 1
+    },
+    "without_result": 1,
+    "summary_exists": false,
+    "long_tail_workflow": "pylint-dev__pylint-6528",
+    "tool_audit_prefix": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/client_156/workflows/pylint-dev__pylint-6528/sandbox_audit.jsonl",
+      "bytes": 80364,
+      "sha256": "77fc6d8819bd6796e55121775b481af5aedbf5bb86fe3216a18577be7e13ef63"
+    },
+    "most_repeated_command": {
+      "sha256": "cc3b2bac81e14ca561ab7da2f263f9fa1ad3bd2aa5e8bed8657f8ab9d2208994",
+      "completed_executions": 64,
+      "duration_mean_ms": 155885.85580617655,
+      "output_sha256_counts": {
+        "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865": 64
+      },
+      "exit_codes": {
+        "0": 64
+      }
+    }
+  },
+  "next_work": [
+    "Inspect deferred physical planning relative to previous result processing and current sampling in the overlap loop, preserving native read/free and H2D dependencies.",
+    "Profile maintenance and native admission inside the previous-completion-to-next-launch segment; do not attribute this composite segment to one function without evidence.",
+    "Keep candidatebff29cb qualified but do not substitute CPU improvements for online useful reuse, task quality or repeated JCT/throughput acceptance."
+  ],
+  "limitations": [
+    "Segment partitions reconcile per sample, but the two arms still have different realized requests and sampled geometries.",
+    "Means describe these cohorts; boundary differences are not causal saved GPU or JCT time.",
+    "The rejected scope experiment never changed the live V58 source or engine.",
+    "Native is still live and all missing/incomplete outcomes are retained."
+  ]
+}

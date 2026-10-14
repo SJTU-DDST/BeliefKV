@@ -1,0 +1,228 @@
+{
+  "status": "completion_callback_cpu_and_child_state_equivalence_not_online_gain",
+  "started_at_local": "2026-10-14T12:42:13.951571-07:00",
+  "finished_at_local": "2026-10-14T12:42:16.084622-07:00",
+  "reference_revision": "0beab26",
+  "reference_source_sha256": "fe04ad26466bb22456df2cf813843053a66d410693c4d7acc31baa2095406041",
+  "candidate_source_sha256": "f978e855b40fc9d61460754c7321854cf175d41bd2a33c0d4c246ac7ab9f09e8",
+  "cases": [
+    {
+      "batch_size": 48,
+      "root_requests": 0,
+      "semantic_worker_enabled": true,
+      "compared_callback_rounds": 3500,
+      "child_and_cache_state_equal": true,
+      "costs_per_callback": {
+        "reference": {
+          "thread_cpu_ms": {
+            "count": 30,
+            "mean_ms": 0.05733650333333334,
+            "p50_ms": 0.06099987,
+            "p99_ms": 0.06214718,
+            "max_ms": 0.06214718
+          },
+          "wall_ms": {
+            "count": 30,
+            "mean_ms": 0.057323468,
+            "p50_ms": 0.060982659999999994,
+            "p99_ms": 0.06213529,
+            "max_ms": 0.06213529
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 30,
+            "mean_ms": 0.07116711933333333,
+            "p50_ms": 0.07577104,
+            "p99_ms": 0.07769416999999999,
+            "max_ms": 0.07769416999999999
+          },
+          "wall_ms": {
+            "count": 30,
+            "mean_ms": 0.07115362566666666,
+            "p50_ms": 0.07575905,
+            "p99_ms": 0.07767596,
+            "max_ms": 0.07767596
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.241218337288444
+    },
+    {
+      "batch_size": 48,
+      "root_requests": 16,
+      "semantic_worker_enabled": true,
+      "compared_callback_rounds": 3500,
+      "child_and_cache_state_equal": true,
+      "costs_per_callback": {
+        "reference": {
+          "thread_cpu_ms": {
+            "count": 30,
+            "mean_ms": 0.057442836,
+            "p50_ms": 0.05752171,
+            "p99_ms": 0.058430369999999995,
+            "max_ms": 0.058430369999999995
+          },
+          "wall_ms": {
+            "count": 30,
+            "mean_ms": 0.057431165666666666,
+            "p50_ms": 0.05750979,
+            "p99_ms": 0.05841865,
+            "max_ms": 0.05841865
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 30,
+            "mean_ms": 0.061601269,
+            "p50_ms": 0.06176918,
+            "p99_ms": 0.06262835,
+            "max_ms": 0.06262835
+          },
+          "wall_ms": {
+            "count": 30,
+            "mean_ms": 0.061592234,
+            "p50_ms": 0.06175544,
+            "p99_ms": 0.06261283,
+            "max_ms": 0.06261283
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.0723925434322219
+    },
+    {
+      "batch_size": 48,
+      "root_requests": 32,
+      "semantic_worker_enabled": true,
+      "compared_callback_rounds": 3500,
+      "child_and_cache_state_equal": true,
+      "costs_per_callback": {
+        "reference": {
+          "thread_cpu_ms": {
+            "count": 30,
+            "mean_ms": 0.06534040966666667,
+            "p50_ms": 0.06498913,
+            "p99_ms": 0.0707925,
+            "max_ms": 0.0707925
+          },
+          "wall_ms": {
+            "count": 30,
+            "mean_ms": 0.06535420466666667,
+            "p50_ms": 0.06503033,
+            "p99_ms": 0.07076847,
+            "max_ms": 0.07076847
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 30,
+            "mean_ms": 0.06580709233333333,
+            "p50_ms": 0.065309,
+            "p99_ms": 0.07982214,
+            "max_ms": 0.07982214
+          },
+          "wall_ms": {
+            "count": 30,
+            "mean_ms": 0.06582774233333333,
+            "p50_ms": 0.06537957,
+            "p99_ms": 0.0797948,
+            "max_ms": 0.0797948
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.0071423284464764425
+    },
+    {
+      "batch_size": 48,
+      "root_requests": 48,
+      "semantic_worker_enabled": true,
+      "compared_callback_rounds": 3500,
+      "child_and_cache_state_equal": true,
+      "costs_per_callback": {
+        "reference": {
+          "thread_cpu_ms": {
+            "count": 30,
+            "mean_ms": 0.06895867166666667,
+            "p50_ms": 0.0687752,
+            "p99_ms": 0.07166381999999999,
+            "max_ms": 0.07166381999999999
+          },
+          "wall_ms": {
+            "count": 30,
+            "mean_ms": 0.068971693,
+            "p50_ms": 0.0688771,
+            "p99_ms": 0.07165225,
+            "max_ms": 0.07165225
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 30,
+            "mean_ms": 0.06410191566666666,
+            "p50_ms": 0.06390818000000001,
+            "p99_ms": 0.07071969,
+            "max_ms": 0.07071969
+          },
+          "wall_ms": {
+            "count": 30,
+            "mean_ms": 0.06410097733333334,
+            "p50_ms": 0.06390059,
+            "p99_ms": 0.07070537,
+            "max_ms": 0.07070537
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.0704299529358201
+    },
+    {
+      "batch_size": 48,
+      "root_requests": 32,
+      "semantic_worker_enabled": false,
+      "compared_callback_rounds": 3500,
+      "child_and_cache_state_equal": true,
+      "costs_per_callback": {
+        "reference": {
+          "thread_cpu_ms": {
+            "count": 30,
+            "mean_ms": 0.025257555333333334,
+            "p50_ms": 0.025198230000000002,
+            "p99_ms": 0.02594846,
+            "max_ms": 0.02594846
+          },
+          "wall_ms": {
+            "count": 30,
+            "mean_ms": 0.025251154333333335,
+            "p50_ms": 0.02519213,
+            "p99_ms": 0.02593923,
+            "max_ms": 0.02593923
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 30,
+            "mean_ms": 0.02504837966666667,
+            "p50_ms": 0.024965989999999997,
+            "p99_ms": 0.02570608,
+            "max_ms": 0.02570608
+          },
+          "wall_ms": {
+            "count": 30,
+            "mean_ms": 0.025046493333333333,
+            "p50_ms": 0.024959639999999998,
+            "p99_ms": 0.025699450000000002,
+            "max_ms": 0.025699450000000002
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.008281706756892993
+    }
+  ],
+  "script_sha256": "f81cbcceaaf3890a6bd2b55083a5a0774c35aef54aac54175217f7f05da03fac",
+  "limitations": [
+    "CPU callback fixtures do not measure the entire SGLang result path, GPU synchronization or workflow JCT.",
+    "Root semantic dictionaries are intentionally omitted; child histories, tool invalidation, visible identities, context tokens and prefetch state are compared.",
+    "Worker-disabled and all-child cases remain in the report; regressions are retained.",
+    "Role mixtures are fixture parameters; use observed V58 roles before estimating relevance.",
+    "No running V58 source, engine, budget, workload or model artifact is changed."
+  ]
+}
