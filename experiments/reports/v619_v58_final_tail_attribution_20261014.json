@@ -1,0 +1,161 @@
+{
+  "status": "finished_v58_tail_attributed_without_budget_or_runtime_changes",
+  "observed_at_local": "2026-10-14T16:09:14.776563-07:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+  "sources": [
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/client_156/workflows/pylint-dev__pylint-6528/runtime_events.deepagents.jsonl",
+      "size_bytes": 1069870,
+      "sha256": "3c585f0998f57adcc2e536205efec929cea0b5c87e288cd5745a65cb1af95d67"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/client_156/workflows/django__django-11490/runtime_events.deepagents.jsonl",
+      "size_bytes": 3832282,
+      "sha256": "5f5e0c3e14d6d450cf7e3f2b367eacb04a4e8c414aed411b502a9c7c6ceeff22"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/client_156/sglang_metrics.jsonl",
+      "size_bytes": 3121189,
+      "sha256": "2d86270a4ae937da552606a5e33d2605458d8c295016f48bd9615b57bc4c9f71"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/client_156/gpu_samples.csv",
+      "complete_prefix_bytes": 3851409,
+      "complete_prefix_sha256": "1bc9bbee6ba3a7d07c4b55c1d8cdcf7b94e7a6692ae98f1421d542759f905ae5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/client_156/workflows/pylint-dev__pylint-6528/sandbox_audit.jsonl",
+      "size_bytes": 95430,
+      "sha256": "134535a150594bb1e1985fd5367188dc86fbbfb25e20c1269402ac8835573580"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/client_156/workflows/pylint-dev__pylint-6528/result.json",
+      "size_bytes": 4797,
+      "sha256": "d261f2d41dc332096dc779eef636013b8b0d0c363537326281abd0fc501013b2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/client_156/summary.json",
+      "size_bytes": 1017714,
+      "sha256": "db420cb965d2adacf471e31ede19bb70a26e03176c018eb8697c45d6b3a9db49"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v58_tail_diagnosis_20261014.json",
+      "size_bytes": 1260573,
+      "sha256": "e6b1c4ca6f55cc61bff0925e5adb49be837ef57900e872d8f42a5cbf556cd260"
+    }
+  ],
+  "native_clock_prefix": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/server/runtime_audit.jsonl",
+    "clock_record_prefix_bytes": 34326,
+    "clock_record_prefix_sha256": "118443cb03701f5fda127a97b7500857dd5b7fb7fdaddb7139b1f87cb6a3a4ce",
+    "clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec"
+  },
+  "script_sha256": "809cbb01f4a3ea1bbb5c7d88a757b4cb270a30d93549cdb085f595eba055f30e",
+  "native_single_workflow_tail": {
+    "instance_id": "pylint-dev__pylint-6528",
+    "begin_seconds": 8078.421719101906,
+    "end_seconds": 14429.466735165595,
+    "duration_seconds": 6351.04501606369,
+    "share_of_collection_duration": 0.43870866223032934,
+    "gpu": {
+      "covered_seconds": 6351.045016060781,
+      "gpu_utilization_percent_mean": 0.3324004292533896,
+      "gpu_utilization_percent_zero_fraction": 0.9957932842818971
+    },
+    "native_metrics": {
+      "covered_seconds": 6351.045016063679,
+      "num_running_reqs_mean": 0.003376540738257952,
+      "num_queue_reqs_mean": 0.0,
+      "num_running_reqs_zero_fraction": 0.9966234592617426,
+      "num_queue_reqs_zero_fraction": 1.0
+    },
+    "tool_seconds": 6322.522830142021,
+    "tool_fraction": 0.9955090562498726,
+    "client_llm_span_seconds": 27.590260317802436,
+    "other_seconds": 0.9319256038665706,
+    "overlapping_tools": 42,
+    "overlapping_llm_requests": 42,
+    "llm_span_p50_seconds": 0.6703735094070435
+  },
+  "repeated_command_final": {
+    "attempts": 77,
+    "exit_codes": {
+      "0": 76,
+      "137": 1
+    },
+    "successful_duration_sum_seconds": 11812.176551545039,
+    "successful_duration_p50_seconds": 154.12933453917503,
+    "successful_duration_min_seconds": 151.37599119264632,
+    "successful_duration_max_seconds": 166.52870632428676,
+    "successful_stdout_sha256": [
+      "4355a46b19d348dc2f57c046f8ef63d4538ebb936000f3c9ee954a27460dd865"
+    ],
+    "successful_stdout_chars": [
+      2
+    ],
+    "last_attempt": {
+      "duration_ms": 111831.7427970469,
+      "exit_code": 137,
+      "timeout_seconds": 180
+    }
+  },
+  "native_terminal": {
+    "outcome": "error",
+    "error": "ActivationDeadlineExceeded: workflow wall-clock deadline expired before model submission",
+    "duration_seconds": 14428.923691228032,
+    "workflow_deadline": {
+      "abort_requested_count": 0,
+      "active_command_cancel_count": 1,
+      "cleanup_complete": true,
+      "cleanup_errors": [],
+      "cleanup_latency_ms": 158.62012282013893,
+      "enabled": true,
+      "expired": true,
+      "pending_task_cancel_count": 1,
+      "server_terminal": true,
+      "server_terminal_latency_ms": 2.0938869565725327
+    },
+    "natural_terminal": false
+  },
+  "predictive_single_workflow_tail": {
+    "begin_seconds": 8134.040841635704,
+    "end_seconds": 8317.882896046638,
+    "gpu": {
+      "covered_seconds": 183.84205441093235,
+      "gpu_utilization_percent_mean": 46.80215880133576,
+      "gpu_utilization_percent_zero_fraction": 0.4986671863178925
+    },
+    "native_metrics": {
+      "covered_seconds": 183.8420544109344,
+      "num_running_reqs_mean": 0.42218406032107075,
+      "num_queue_reqs_mean": 0.0,
+      "num_running_reqs_zero_fraction": 0.5778159396789292,
+      "num_queue_reqs_zero_fraction": 1.0
+    },
+    "instance_id": "mwaskom__seaborn-3187",
+    "duration_seconds": 183.84205441093445,
+    "root_partition_seconds": {
+      "other": 5.792591056823733,
+      "root_llm": 87.72368533420565,
+      "root_tool": 90.32577801990507
+    },
+    "overlapping_requests": 49,
+    "request_output_tokens": 19574,
+    "whole_overlapping_request_ingress_sum_seconds": 5.015516416549682,
+    "whole_overlapping_request_queue_sum_seconds": 0.6589251403808596,
+    "whole_overlapping_request_queue_p50_seconds": 0.008386998176574708,
+    "whole_overlapping_request_queue_max_seconds": 0.06580436706542969,
+    "whole_overlapping_request_after_service_sum_seconds": 86.89968140697478,
+    "overlapping_tools": 47,
+    "tool_statuses": {
+      "success": 47
+    }
+  },
+  "limitations": [
+    "GPU samples are held and time weighted; they are not exclusive CUDA compute time.",
+    "Client LLM spans include ingress, service and transport; they are not kernel time.",
+    "Identical stdout and successful exits do not establish task correctness or justify a general skip rule.",
+    "Final collection makespan includes this tail; it is not a causal predictive migration gain.",
+    "Existing live-snapshot receipts remain unchanged, as do all budgets and original outcomes."
+  ]
+}
