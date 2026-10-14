@@ -1,0 +1,241 @@
+{
+  "status": "live_development_checkpoint_not_final_performance_acceptance",
+  "observed_at_local": "2026-10-14T22:55:27.313093+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+  "scheduler": {
+    "pid": 1630621,
+    "state": "R",
+    "ppid": 1630192,
+    "start_ticks": "615685363",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "frozen_plan": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/ab_plan.json",
+    "sha256": "9db6d01614a3e13d5b3ca0d0d1f557dc6fa5959b410b9c9efb3636e9c6315f50"
+  },
+  "execution": {
+    "collection_code_commit": "9a54233c3d1d18c12bfc202f61e2ec36a911e46f",
+    "verification_code_commit": "2603fc4bd39fb1fe719ad9054c9b33bf3e8a05ab",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": [
+      "docs/README_zh.md",
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/figures/generate_monthly_paper_figures.py",
+      "docs/implementation_plan.md",
+      "docs/reports/2026-10/assets/01_system_overview_en.pdf",
+      "docs/reports/2026-10/assets/01_system_overview_en.png",
+      "docs/reports/2026-10/assets/01_system_overview_en.svg",
+      "docs/reports/2026-10/assets/01_system_overview_zh.pdf",
+      "docs/reports/2026-10/assets/01_system_overview_zh.png",
+      "docs/reports/2026-10/assets/01_system_overview_zh.svg",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_en.pdf",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_en.png",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_en.svg",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_zh.pdf",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_zh.png",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_zh.svg",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_en.pdf",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_en.png",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_en.svg",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_zh.pdf",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_zh.png",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_zh.svg",
+      "docs/reports/2026-10/assets/README.md",
+      "docs/reports/2026-10/assets/beliefkv_architecture_editable_en.pptx",
+      "docs/reports/2026-10/assets/beliefkv_architecture_editable_zh.pptx",
+      "docs/reports/2026-10/assets/beliefkv_figures_bilingual.pdf",
+      "docs/reports/2026-10/assets/manifest.json",
+      "docs/reports/2026-10/assets/powerpoint_validation.json",
+      "docs/reports/2026-10/assets/pptx_preview_en.png",
+      "docs/reports/2026-10/assets/pptx_preview_zh.png",
+      "docs/reports/2026-10/assets/preview.png",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/archive/README.md",
+      "experiments/reports/v536_v58_gdn_prefill_frozen_20261014.json",
+      "experiments/reports/v537_v58_gdn_prefill_resource_registration_20261014.json",
+      "experiments/reports/v538_v58_startup_observer_registration_20261014.json",
+      "experiments/reports/v539_v58_live_startup_validation_20261014.json",
+      "experiments/reports/v540_single_path_restore_checks_20261014.raw.gz",
+      "experiments/reports/v541_prefetch_single_path_cpu_20261014.json",
+      "experiments/reports/v542_v58_user_hold_until_20261014_2130.json",
+      "experiments/reports/v543_prefetch_single_path_development_20261014.json",
+      "experiments/reports/v544_v58_temporary_hold_release_retry_20261014.json",
+      "experiments/reports/v545_v58_predictive_numa_placement_20261014.json",
+      "experiments/reports/v546_single_path_runtime_qualification_checks_20261014.raw.gz",
+      "experiments/reports/v547_prefetch_single_path_qualification_20261014.json",
+      "experiments/reports/v548_v50_v52_server_trace_archive_20261014.json",
+      "experiments/reports/v549_v58_busy_120_300_20261014.json",
+      "experiments/reports/v550_v58_prefill_phases_120_300_20261014.json",
+      "experiments/reports/v551_v58_pair_phase_observer_registration_20261014.json",
+      "experiments/reports/v552_v58_active_stack_20261014.speedscope.json",
+      "experiments/reports/v553_v58_active_stack_attribution_20261014.json"
+    ]
+  },
+  "latest_busy": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v58_historical_native_busy_1800_2100_20261014.json",
+    "sha256": "cf10245bf89f8167c12f0a4258681f23d9b60d3a952f342c8c1ce1e421e9cd99"
+  },
+  "latest_phases": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v58_historical_native_prefill_phases_1800_2100_20261014.json",
+    "sha256": "fcea24dc789019e0e805f98c52832f489558c1a222e6b4a356ac4270dec28f6e"
+  },
+  "sealed_wait_audit": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v555_v58_wait_prefetch_live_20261014.json.gz",
+    "sha256": "296d72226703642c2f5b5299b8cbfb967cac20f56f001e410de49c7de77d9f59"
+  },
+  "latest_complete_window_seconds": [
+    1800,
+    2100
+  ],
+  "phase_metrics": {
+    "predictive_h2d": {
+      "short_sample_count": 72,
+      "run_batch_p50_ms": 42.9177455,
+      "selection_p50_ms": 6.1162575,
+      "complete_turnover_p50_ms": 55.44884538650513,
+      "run_return_gap_p50_ms": 8.812294960021973,
+      "decode_request_steps": 390566
+    },
+    "native": {
+      "short_sample_count": 67,
+      "run_batch_p50_ms": 49.621717,
+      "selection_p50_ms": 4.074725,
+      "complete_turnover_p50_ms": 58.000779151916504,
+      "run_return_gap_p50_ms": 4.2216691970825195,
+      "decode_request_steps": 357282
+    }
+  },
+  "instrumented_self_wall_ms": 29431.927327999994,
+  "leading_control_scopes": [
+    [
+      "tool_prefetch",
+      {
+        "count": 10423,
+        "self_ms": 5236.660372000002,
+        "total_ms": 5266.713919000002
+      }
+    ],
+    [
+      "residency_hint",
+      {
+        "count": 18171,
+        "self_ms": 3331.1413809999995,
+        "total_ms": 3339.657873
+      }
+    ],
+    [
+      "control_drain",
+      {
+        "count": 10423,
+        "self_ms": 2534.491172000002,
+        "total_ms": 5415.187528999995
+      }
+    ],
+    [
+      "event_apply",
+      {
+        "count": 18594,
+        "self_ms": 2407.1928580000003,
+        "total_ms": 2850.7322760000006
+      }
+    ],
+    [
+      "opportunity_sampling",
+      {
+        "count": 294,
+        "self_ms": 2233.6892019999996,
+        "total_ms": 2233.6892019999996
+      }
+    ],
+    [
+      "join_prepare",
+      {
+        "count": 10423,
+        "self_ms": 1702.3587890000017,
+        "total_ms": 3426.079228999999
+      }
+    ]
+  ],
+  "latest_early_full_reuse": {
+    "join_ticket": {
+      "independent_events": 32,
+      "full_bytes": 689889280,
+      "last_ack_to_first_service_ms": {
+        "count": 44,
+        "p50": 2560.3524169921875,
+        "p90": 20575.33210449219,
+        "max": 30994.68603515625
+      },
+      "completion_unknown_events": 43
+    },
+    "tool_wait": {
+      "independent_events": 181,
+      "full_bytes": 10186362880,
+      "last_ack_to_first_service_ms": {
+        "count": 210,
+        "p50": 658.3154296875,
+        "p90": 13838.123217773436,
+        "max": 98992.27490234375
+      },
+      "completion_unknown_events": 1
+    }
+  },
+  "join_start_without_submit": {
+    "independent_closed_events": 28,
+    "events_with_each_precompletion_reason": {
+      "no_reusable_input_restore_step": 25,
+      "fits_current_free_lists": 25,
+      "insufficient_free_lists": 28,
+      "admission_budget_busy": 12,
+      "start_window": 28,
+      "no_restore_plan": 27,
+      "before_start_window": 12,
+      "enqueue_slot_changed": 1,
+      "service_progress_unavailable": 1,
+      "closure_unobservable": 2
+    },
+    "events_with_recorded_full_capacity_refusal": 27,
+    "events_with_positive_earlier_free_fit_snapshot": 25,
+    "scope": "An earlier fitting snapshot is not capacity at actual latest-start/enqueue. Reason memberships overlap and do not prove a unique refusal cause."
+  },
+  "collection_progress": {
+    "arrived_workspace_directories": 108,
+    "terminal_outcomes": {
+      "completed": 63
+    },
+    "full_summary_present": false,
+    "scope": "Completed outcomes are harness terminal states, not verified task correctness."
+  },
+  "next_work": [
+    "Continue reducing live physical closure/tool scan costs; the qualified single-path candidate has not been deployed in V58.",
+    "Audit the28 JOIN start-window episodes without precompletion submit against capacity at the actual dispatch, preserving current data checks.",
+    "Separate early placement from native queue delay in20.575s JOIN and13.838s tool ACK-to-service P90 tails.",
+    "Keep the existing V58 predictive-to-native pair frozen and collect matched-version phase/JCT/quality evidence."
+  ],
+  "limitations": [
+    "V56 historical native uses a different engine and realized demand; these phase medians do not establish causal gain.",
+    "Independent medians cannot be added or subtracted as a per-request cost decomposition.",
+    "Sealed inputs are independent complete-line prefixes, not an atomic cross-file snapshot.",
+    "Unknown completions remain censored; useful reuse is separate from transfer ACK count and bytes.",
+    "No administrative stopping or hot edits were used to improve the reported sample.",
+    "Final mean JCT, completion throughput, quality, fairness, recomputation and repeated controls are pending."
+  ],
+  "helper_sha256": "fe2a596d27471ae5118dd7441f0c099f295072eb74ba59828312fbd902915590"
+}
