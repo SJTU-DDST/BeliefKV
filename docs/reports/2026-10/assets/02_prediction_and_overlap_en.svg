@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="7.2in" height="5.050000in" viewBox="0 0 1440 1010" role="img" aria-labelledby="title">
-<title id="title">Prediction and Scheduling Coordination</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="7.2in" height="4.800000in" viewBox="0 0 1800 1200" role="img" aria-labelledby="title">
+<title id="title">Event and Content-driven Execution Demand</title>
 <rect width="100%" height="100%" fill="#ffffff"/>
 <defs>
 <marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#263746"/></marker>
@@ -10,87 +10,159 @@
 </defs>
 <style>text{font-family:"DejaVu Sans",Arial,sans-serif;font-style:normal}.hair{stroke:#d4dbe0;stroke-width:1}</style>
 <style>text{font-family:'DejaVu Sans';letter-spacing:0}path,line{stroke-linejoin:round;stroke-linecap:round}</style>
-<text x="40" y="49" font-size="34" fill="#263746" font-weight="700" text-anchor="start">From Completion Signals to Useful Prefetch</text>
-<text x="40" y="82" font-size="22" fill="#687680" font-weight="400" text-anchor="start">Separate remaining work, scheduling opportunity and physical data dependencies</text>
-<rect x="40" y="121" width="357" height="129" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
-<line x1="41" y1="122" x2="396" y2="122" stroke="#3d6f9f" stroke-width="3"/>
-<text x="62" y="161" font-size="26" fill="#3d6f9f" font-weight="700" text-anchor="start">Child observations</text>
-<text x="63" y="200" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Notice, text, decode progress</text>
-<text x="63" y="230" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Already delivered information</text>
-<rect x="473" y="121" width="379" height="129" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
-<line x1="474" y1="122" x2="851" y2="122" stroke="#a96f1f" stroke-width="3"/>
-<text x="495" y="161" font-size="26" fill="#a96f1f" font-weight="700" text-anchor="start">Phase / work model</text>
-<text x="496" y="200" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Final report or further tool use</text>
-<text x="496" y="230" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Conditional remaining work</text>
-<rect x="928" y="121" width="472" height="129" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
-<line x1="929" y1="122" x2="1399" y2="122" stroke="#a96f1f" stroke-width="3"/>
-<text x="950" y="161" font-size="26" fill="#a96f1f" font-weight="700" text-anchor="start">Advisory output</text>
-<text x="951" y="200" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Stage score + remaining-token bounds</text>
-<text x="951" y="230" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Observed EOS: separate signal</text>
-<path d="M397 200 L472 200" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
-<path d="M852 200 L927 200" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
-<path d="M1400 200 L1420 200 L1420 427 L1260 427 L1260 447" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
-<rect x="40" y="283" width="357" height="122" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
-<line x1="41" y1="284" x2="396" y2="284" stroke="#3d6f9f" stroke-width="3"/>
-<text x="62" y="323" font-size="26" fill="#3d6f9f" font-weight="700" text-anchor="start">Tool observations</text>
-<text x="63" y="356" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Type, elapsed time, history</text>
-<text x="63" y="386" font-size="21" fill="#263746" font-weight="400" text-anchor="start">History of completed calls</text>
-<rect x="473" y="283" width="379" height="122" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
-<line x1="474" y1="284" x2="851" y2="284" stroke="#a96f1f" stroke-width="3"/>
-<text x="495" y="323" font-size="26" fill="#a96f1f" font-weight="700" text-anchor="start">Residual-time model</text>
-<text x="496" y="356" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Given the tool is still running</text>
-<text x="496" y="386" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Update as observations arrive</text>
-<rect x="928" y="283" width="472" height="122" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
-<line x1="929" y1="284" x2="1399" y2="284" stroke="#a96f1f" stroke-width="3"/>
-<text x="950" y="323" font-size="26" fill="#a96f1f" font-weight="700" text-anchor="start">Advisory output</text>
-<text x="951" y="356" font-size="21" fill="#263746" font-weight="400" text-anchor="start">Residual CDF / timing bounds</text>
-<text x="951" y="386" font-size="21" fill="#263746" font-weight="400" text-anchor="start">No learned net-benefit decision</text>
-<path d="M397 356 L472 356" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
-<path d="M852 356 L927 356" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
-<path d="M1164 405 L1164 447" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
-<rect x="40" y="449" width="1360" height="138" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
-<line x1="41" y1="450" x2="1399" y2="450" stroke="#357b73" stroke-width="3"/>
-<text x="62" y="489" font-size="26" fill="#357b73" font-weight="700" text-anchor="start">(a) Runtime turns hints into bounded actions</text>
-<text x="63" y="531" font-size="23" fill="#357b73" font-weight="600" text-anchor="start">Causal readiness</text>
-<text x="63" y="563" font-size="20" fill="#687680" font-weight="400" text-anchor="start">JOIN / tool state</text>
-<text x="391" y="531" font-size="23" fill="#357b73" font-weight="600" text-anchor="start">Reusable checkpoint</text>
-<text x="391" y="563" font-size="20" fill="#687680" font-weight="400" text-anchor="start">Valid missing Host pages</text>
-<text x="732" y="531" font-size="23" fill="#357b73" font-weight="600" text-anchor="start">Capacity and cost</text>
-<text x="732" y="563" font-size="20" fill="#687680" font-weight="400" text-anchor="start">FULL / Mamba / H2D</text>
-<text x="1072" y="531" font-size="23" fill="#357b73" font-weight="600" text-anchor="start">Service opportunity</text>
-<text x="1072" y="563" font-size="20" fill="#687680" font-weight="400" text-anchor="start">Admission + residency</text>
-<text x="40" y="639" font-size="26" fill="#3d6f9f" font-weight="700" text-anchor="start">(b) Overlap with the observed wait or final-generation interval</text>
-<line x1="982" y1="674" x2="982" y2="936" stroke="#89959d" stroke-width="1.8" stroke-dasharray="7 6"/>
-<line x1="1050" y1="748" x2="1050" y2="850" stroke="#357b73" stroke-width="1.6" stroke-dasharray="4 5"/>
-<text x="982" y="669" font-size="20" fill="#263746" font-weight="700" text-anchor="middle">RETURN / TOOL_END</text>
-<text x="44" y="726" font-size="24" fill="#263746" font-weight="600" text-anchor="start">Child / tool</text>
-<text x="44" y="817" font-size="24" fill="#357b73" font-weight="600" text-anchor="start">Predictive path</text>
-<text x="44" y="908" font-size="24" fill="#89959d" font-weight="600" text-anchor="start">Demand path</text>
-<line x1="315" y1="713" x2="1380" y2="713" stroke="#d4dbe0" stroke-width="1.2"/>
-<line x1="315" y1="804" x2="1380" y2="804" stroke="#d4dbe0" stroke-width="1.2"/>
-<line x1="315" y1="895" x2="1380" y2="895" stroke="#d4dbe0" stroke-width="1.2"/>
-<rect x="315" y="688" width="667" height="43" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.7"/>
-<text x="648.5" y="716" font-size="22" fill="#3d6f9f" font-weight="400" text-anchor="middle">Final generation / external tool execution</text>
-<circle cx="382" cy="754" r="4.5" fill="#a96f1f" stroke="#a96f1f" stroke-width="1"/>
-<circle cx="465" cy="754" r="4.5" fill="#a96f1f" stroke="#a96f1f" stroke-width="1"/>
-<circle cx="548" cy="754" r="4.5" fill="#a96f1f" stroke="#a96f1f" stroke-width="1"/>
-<circle cx="631" cy="754" r="4.5" fill="#a96f1f" stroke="#a96f1f" stroke-width="1"/>
-<path d="M649 754 L704 754" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
-<text x="375" y="780" font-size="20" fill="#a96f1f" font-weight="400" text-anchor="start">Rolling observations</text>
-<rect x="720" y="780" width="330" height="50" rx="2" fill="#eaf3f1" stroke="#357b73" stroke-width="1.8"/>
-<text x="885.0" y="812" font-size="22" fill="#357b73" font-weight="400" text-anchor="middle">Missing-page H2D</text>
-<rect x="1050" y="780" width="100" height="50" rx="1" fill="#f2f4f5" stroke="#d4dbe0" stroke-width="1.4"/>
-<rect x="1150" y="780" width="230" height="50" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.8"/>
-<text x="1265.0" y="812" font-size="22" fill="#3d6f9f" font-weight="400" text-anchor="middle">GPU service</text>
-<text x="1050" y="857" font-size="19" fill="#357b73" font-weight="400" text-anchor="middle">ACK</text>
-<text x="1163" y="855" font-size="20" fill="#3d6f9f" font-weight="400" text-anchor="start">First reuse</text>
-<line x1="720" y1="760" x2="982" y2="760" stroke="#357b73" stroke-width="2"/>
-<line x1="720" y1="754" x2="720" y2="766" stroke="#357b73" stroke-width="2"/>
-<line x1="982" y1="754" x2="982" y2="766" stroke="#357b73" stroke-width="2"/>
-<text x="851.0" y="750" font-size="19" fill="#357b73" font-weight="400" text-anchor="middle">Advance</text>
-<rect x="982" y="871" width="313" height="50" rx="2" fill="#f2f4f5" stroke="#89959d" stroke-width="1.8"/>
-<text x="1138.5" y="904" font-size="22" fill="#687680" font-weight="400" text-anchor="middle">Demand H2D</text>
-<rect x="1295" y="871" width="85" height="50" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.8"/>
-<text x="1337.5" y="902" font-size="19" fill="#3d6f9f" font-weight="400" text-anchor="middle">Serve</text>
-<text x="40" y="970" font-size="22" fill="#263746" font-weight="400" text-anchor="start">Schematic, not measured speedup. Partial overlap is useful; native data dependencies govern execution.</text>
+<text x="40" y="51" font-size="36" fill="#263746" font-weight="700" text-anchor="start">Predicting the Next Execution Demand</text>
+<text x="40" y="88" font-size="25" fill="#687680" font-weight="400" text-anchor="start">Text + events + progress → stage / work → JOIN or tool reentry</text>
+<line x1="40" y1="105" x2="1760" y2="105" stroke="#d4dbe0" stroke-width="1.3"/>
+<rect x="40" y="132" width="1140" height="410" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="41" y1="133" x2="1179" y2="133" stroke="#3d6f9f" stroke-width="3"/>
+<text x="62" y="172" font-size="28" fill="#3d6f9f" font-weight="700" text-anchor="start">(a) Async child model</text>
+<text x="66" y="208" font-size="27" fill="#3d6f9f" font-weight="600" text-anchor="start">text[−k:]</text>
+<rect x="66" y="231" width="163" height="97" rx="2" fill="#ffffff" stroke="#3d6f9f" stroke-width="1.7"/>
+<line x1="79" y1="252" x2="210" y2="252" stroke="#3d6f9f" stroke-width="2"/>
+<line x1="79" y1="269" x2="193" y2="269" stroke="#3d6f9f" stroke-width="2"/>
+<line x1="79" y1="286" x2="217" y2="286" stroke="#3d6f9f" stroke-width="2"/>
+<line x1="79" y1="303" x2="168" y2="303" stroke="#3d6f9f" stroke-width="2"/>
+<path d="M230 278 L280 278" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<rect x="282" y="244" width="231" height="67" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.3"/>
+<text x="397.5" y="286.68" font-size="27" fill="#263746" font-weight="600" text-anchor="middle">Text encoder</text>
+<path d="M472.25 205.05 L472.25 195.7 L484.15 195.7 L484.15 205.05" fill="none" stroke="#3d6f9f" stroke-width="2"/>
+<rect x="468" y="205.05" width="20.4" height="17.0" rx="2" fill="#ffffff" stroke="#3d6f9f" stroke-width="1.8"/>
+<circle cx="478.2" cy="211.85" r="1.7" fill="#3d6f9f" stroke="#3d6f9f" stroke-width="1"/>
+<path d="M514 278 L557 278" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<rect x="564" y="263" width="10" height="43" rx="0" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.4"/>
+<rect x="579" y="239" width="10" height="67" rx="0" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.4"/>
+<rect x="594" y="274" width="10" height="32" rx="0" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.4"/>
+<rect x="609" y="253" width="10" height="53" rx="0" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.4"/>
+<rect x="624" y="232" width="10" height="74" rx="0" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.4"/>
+<text x="601" y="347" font-size="27" fill="#a96f1f" font-weight="400" text-anchor="middle">z(t)</text>
+<rect x="66" y="400" width="192" height="56" rx="2" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.3"/>
+<text x="162.0" y="437.18" font-size="27" fill="#263746" font-weight="600" text-anchor="middle">Notice</text>
+<rect x="293" y="400" width="226" height="56" rx="2" fill="#ffffff" stroke="#3d6f9f" stroke-width="1.3"/>
+<text x="406.0" y="436.5" font-size="25" fill="#263746" font-weight="600" text-anchor="middle">N(t), structure</text>
+<circle cx="680" cy="303" r="24" fill="#ffffff" stroke="#263746" stroke-width="1.8"/>
+<text x="680" y="313" font-size="32" fill="#263746" font-weight="700" text-anchor="middle">+</text>
+<path d="M640 278 L654 278 L665 285" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<path d="M260 428 L280 428" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<path d="M520 428 L680 428 L680 330" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<path d="M707 303 L725 303 L725 241 L747 241" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<path d="M725 303 L725 394 L747 394" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<rect x="749" y="212" width="191" height="59" rx="2" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.3"/>
+<text x="844.5" y="251.36" font-size="29" fill="#263746" font-weight="600" text-anchor="middle">Phase</text>
+<rect x="749" y="365" width="191" height="59" rx="2" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.3"/>
+<text x="844.5" y="404.36" font-size="29" fill="#263746" font-weight="600" text-anchor="middle">Work</text>
+<path d="M941 241 L977 241" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<path d="M941 394 L977 394" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<rect x="994" y="271" width="32" height="22" rx="0" fill="#f2f4f5" stroke="#89959d" stroke-width="1.5"/>
+<text x="1010" y="321" font-size="19" fill="#89959d" font-weight="400" text-anchor="middle">W</text>
+<rect x="1048" y="257" width="32" height="36" rx="0" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.5"/>
+<text x="1064" y="321" font-size="19" fill="#a96f1f" font-weight="400" text-anchor="middle">N</text>
+<rect x="1102" y="220" width="32" height="73" rx="0" fill="#eaf3f1" stroke="#357b73" stroke-width="1.5"/>
+<text x="1118" y="321" font-size="19" fill="#357b73" font-weight="400" text-anchor="middle">F</text>
+<text x="1064" y="195" font-size="25" fill="#a96f1f" font-weight="400" text-anchor="middle">p(phase)</text>
+<line x1="990" y1="394" x2="1143" y2="394" stroke="#357b73" stroke-width="2.5"/>
+<line x1="990" y1="385" x2="990" y2="403" stroke="#357b73" stroke-width="2"/>
+<line x1="1143" y1="385" x2="1143" y2="403" stroke="#357b73" stroke-width="2"/>
+<circle cx="1064" cy="394" r="5" fill="#357b73" stroke="#357b73" stroke-width="1"/>
+<text x="1066" y="435" font-size="24" fill="#357b73" font-weight="400" text-anchor="middle">[Wlo, Wc, Whi]</text>
+<text x="66" y="506" font-size="25" fill="#687680" font-weight="400" text-anchor="start">request / context / epoch</text>
+<path d="M500 489 L650 489 L650 446 L520 446" fill="none" stroke="#a96f1f" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#amber-arrow)"/>
+<text x="767" y="506" font-size="25" fill="#a96f1f" font-weight="400" text-anchor="start">t → t + Δt</text>
+<rect x="1225" y="132" width="535" height="410" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="1226" y1="133" x2="1759" y2="133" stroke="#357b73" stroke-width="3"/>
+<text x="1247" y="172" font-size="28" fill="#357b73" font-weight="700" text-anchor="start">(b) JOIN projection</text>
+<circle cx="1290" cy="293" r="27" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.4"/>
+<text x="1290" y="301.75" font-size="25" fill="#263746" font-weight="700" text-anchor="middle">P</text>
+<circle cx="1433" cy="235" r="27" fill="#eaf3f1" stroke="#357b73" stroke-width="1.4"/>
+<text x="1433" y="243.4" font-size="24" fill="#263746" font-weight="700" text-anchor="middle">C1</text>
+<circle cx="1433" cy="355" r="27" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.4"/>
+<text x="1433" y="363.4" font-size="24" fill="#263746" font-weight="700" text-anchor="middle">C2</text>
+<path d="M1472 221.0 L1479.0 231 L1492 211" fill="none" stroke="#357b73" stroke-width="2.8"/>
+<polygon points="1608,254.5 1665.0,293 1608,331.5 1551.0,293" fill="#eaf3f1" stroke="#357b73" stroke-width="1.5"/>
+<text x="1608" y="301" font-size="25" fill="#357b73" font-weight="700" text-anchor="middle">ALL</text>
+<circle cx="1707" cy="293" r="25" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.4"/>
+<text x="1707" y="301.4" font-size="24" fill="#263746" font-weight="700" text-anchor="middle">P</text>
+<path d="M1319 283 L1404 246" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<path d="M1319 307 L1404 344" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<path d="M1463 235 L1506 235 L1557 278" fill="none" stroke="#357b73" stroke-width="2.4" marker-end="url(#teal-arrow)"/>
+<path d="M1463 355 L1506 355 L1557 307" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<path d="M1666 293 L1679 293" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<text x="1260" y="422" font-size="27" fill="#357b73" font-weight="600" text-anchor="start">pending = {C2}</text>
+<rect x="1251" y="436" width="482" height="58" rx="2" fill="#ffffff" stroke="#357b73" stroke-width="1.3"/>
+<text x="1492.0" y="473.84" font-size="26" fill="#263746" font-weight="600" text-anchor="middle">τjoin = max(0, W − ΔN) / v(t)</text>
+<path d="M1180 394 L1202 394 L1202 465 L1250 465" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<path d="M1433 383 L1433 389 L1588 389 L1588 435" fill="none" stroke="#357b73" stroke-width="2.4" marker-end="url(#teal-arrow)"/>
+<path d="M1493 542 L1493 563 L1781 563 L1781 815 L1213 815 L1213 887" fill="none" stroke="#357b73" stroke-width="2.4" marker-end="url(#teal-arrow)"/>
+<rect x="40" y="592" width="1720" height="185" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="41" y1="593" x2="1759" y2="593" stroke="#a96f1f" stroke-width="3"/>
+<text x="62" y="632" font-size="28" fill="#a96f1f" font-weight="700" text-anchor="start">(c) Conditional tool timing</text>
+<circle cx="112" cy="682" r="27" fill="#ffffff" stroke="#3d6f9f" stroke-width="1.8"/>
+<path d="M112 657 L112 682 L130 694" fill="none" stroke="#3d6f9f" stroke-width="2.4"/>
+<text x="67" y="738" font-size="26" fill="#3d6f9f" font-weight="400" text-anchor="start">a(t)</text>
+<path d="M140 682 L177 682" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<rect x="179" y="653" width="222" height="58" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.3"/>
+<text x="290.0" y="690.5" font-size="25" fill="#263746" font-weight="600" text-anchor="middle">cmd / project</text>
+<path d="M402 682 L448 682" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<rect x="469" y="638" width="170" height="57" rx="2" fill="#eaf3f1" stroke="#357b73" stroke-width="1.5"/>
+<rect x="460" y="646" width="170" height="57" rx="2" fill="#eaf3f1" stroke="#357b73" stroke-width="1.5"/>
+<rect x="451" y="654" width="170" height="57" rx="2" fill="#eaf3f1" stroke="#357b73" stroke-width="1.5"/>
+<text x="536" y="692" font-size="26" fill="#357b73" font-weight="700" text-anchor="middle">History</text>
+<path d="M603 643.0 L609.3 652 L621 634" fill="none" stroke="#357b73" stroke-width="2.8"/>
+<path d="M641 682 L693 682" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<rect x="695" y="653" width="399" height="58" rx="2" fill="#fbf2e3" stroke="#a96f1f" stroke-width="1.3"/>
+<text x="894.5" y="691.52" font-size="28" fill="#263746" font-weight="600" text-anchor="middle">P(T ≤ a + τ | T &gt; a)</text>
+<path d="M1095 682 L1150 682" fill="none" stroke="#a96f1f" stroke-width="2.4" marker-end="url(#amber-arrow)"/>
+<line x1="1171" y1="682" x2="1420" y2="682" stroke="#357b73" stroke-width="2.5"/>
+<line x1="1171" y1="673" x2="1171" y2="691" stroke="#357b73" stroke-width="2"/>
+<line x1="1420" y1="673" x2="1420" y2="691" stroke="#357b73" stroke-width="2"/>
+<circle cx="1280" cy="682" r="5" fill="#357b73" stroke="#357b73" stroke-width="1"/>
+<text x="1171" y="735" font-size="25" fill="#357b73" font-weight="400" text-anchor="middle">q10</text>
+<text x="1280" y="735" font-size="25" fill="#357b73" font-weight="400" text-anchor="middle">q50</text>
+<text x="1420" y="735" font-size="25" fill="#357b73" font-weight="400" text-anchor="middle">q90</text>
+<path d="M1437 682 L1487 682" fill="none" stroke="#357b73" stroke-width="2.4" marker-end="url(#teal-arrow)"/>
+<rect x="1489" y="653" width="246" height="58" rx="2" fill="#ffffff" stroke="#357b73" stroke-width="1.3"/>
+<text x="1612.0" y="691.52" font-size="28" fill="#263746" font-weight="600" text-anchor="middle">τtool(t)</text>
+<path d="M1612 712 L1612 755 L637 755 L637 711" fill="none" stroke="#357b73" stroke-width="2.4" stroke-dasharray="8 6" marker-end="url(#teal-arrow)"/>
+<text x="746" y="751" font-size="23" fill="#357b73" font-weight="400" text-anchor="start">TOOL_END</text>
+<path d="M1612 777 L1612 798 L1257 798 L1257 887" fill="none" stroke="#357b73" stroke-width="2.4" marker-end="url(#teal-arrow)"/>
+<rect x="40" y="838" width="1720" height="129" rx="3" fill="#ffffff" stroke="#d4dbe0" stroke-width="1.7"/>
+<line x1="41" y1="839" x2="1759" y2="839" stroke="#357b73" stroke-width="3"/>
+<text x="62" y="878" font-size="28" fill="#357b73" font-weight="700" text-anchor="start">(d) Runtime start window</text>
+<rect x="64" y="896" width="241" height="52" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.3"/>
+<text x="184.5" y="931.18" font-size="27" fill="#263746" font-weight="600" text-anchor="middle">ACK history</text>
+<path d="M306 922 L349 922" fill="none" stroke="#3d6f9f" stroke-width="2.4" marker-end="url(#blue-arrow)"/>
+<rect x="351" y="891" width="691" height="62" rx="2" fill="#ffffff" stroke="#357b73" stroke-width="1.3"/>
+<text x="696.5" y="931.52" font-size="28" fill="#263746" font-weight="600" text-anchor="middle">H = min(L, S90 + Q90 + Δobs + εearly)</text>
+<path d="M1043 922 L1130 922" fill="none" stroke="#357b73" stroke-width="2.4" marker-end="url(#teal-arrow)"/>
+<polygon points="1235,883.0 1339.0,922 1235,961.0 1131.0,922" fill="#eaf3f1" stroke="#357b73" stroke-width="1.5"/>
+<text x="1235" y="931" font-size="31" fill="#357b73" font-weight="700" text-anchor="middle">τ ≤ H</text>
+<path d="M1341 922 L1441 922" fill="none" stroke="#357b73" stroke-width="2.4" marker-end="url(#teal-arrow)"/>
+<path d="M1379 902.0 L1385.3 911 L1397 893" fill="none" stroke="#357b73" stroke-width="2.8"/>
+<rect x="1443" y="891" width="292" height="62" rx="2" fill="#eaf3f1" stroke="#357b73" stroke-width="1.3"/>
+<text x="1589.0" y="931.18" font-size="27" fill="#263746" font-weight="600" text-anchor="middle">PREFETCH_GPU</text>
+<line x1="1210" y1="1005" x2="1210" y2="1178" stroke="#89959d" stroke-width="1.8" stroke-dasharray="7 6"/>
+<text x="1220" y="1007" font-size="25" fill="#263746" font-weight="600" text-anchor="start">RETURN / TOOL_END</text>
+<line x1="920" y1="1006" x2="1210" y2="1006" stroke="#357b73" stroke-width="2.5"/>
+<line x1="920" y1="997" x2="920" y2="1015" stroke="#357b73" stroke-width="2"/>
+<line x1="1210" y1="997" x2="1210" y2="1015" stroke="#357b73" stroke-width="2"/>
+<circle cx="1065.0" cy="1006" r="5" fill="#357b73" stroke="#357b73" stroke-width="1"/>
+<text x="1029" y="999" font-size="23" fill="#357b73" font-weight="400" text-anchor="start">Δt</text>
+<text x="67" y="1048" font-size="27" fill="#263746" font-weight="600" text-anchor="start">child / tool</text>
+<line x1="390" y1="1034" x2="1760" y2="1034" stroke="#d4dbe0" stroke-width="1.2"/>
+<text x="67" y="1109" font-size="27" fill="#263746" font-weight="600" text-anchor="start">prefetch</text>
+<line x1="390" y1="1095" x2="1760" y2="1095" stroke="#d4dbe0" stroke-width="1.2"/>
+<text x="67" y="1170" font-size="27" fill="#263746" font-weight="600" text-anchor="start">native</text>
+<line x1="390" y1="1156" x2="1760" y2="1156" stroke="#d4dbe0" stroke-width="1.2"/>
+<rect x="390" y="1020" width="820" height="38" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.7"/>
+<text x="770" y="1047" font-size="26" fill="#3d6f9f" font-weight="400" text-anchor="middle">decode / tool</text>
+<rect x="920" y="1081" width="400" height="38" rx="2" fill="#eaf3f1" stroke="#357b73" stroke-width="1.8"/>
+<text x="1120.0" y="1108" font-size="26" fill="#357b73" font-weight="400" text-anchor="middle">H2D</text>
+<rect x="1320" y="1081" width="160" height="38" rx="2" fill="#f2f4f5" stroke="#d4dbe0" stroke-width="1.5"/>
+<rect x="1480" y="1081" width="280" height="38" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.8"/>
+<text x="1620.0" y="1108" font-size="26" fill="#3d6f9f" font-weight="400" text-anchor="middle">GPU</text>
+<text x="1302" y="1074" font-size="23" fill="#357b73" font-weight="400" text-anchor="start">ACK</text>
+<text x="1488" y="1074" font-size="23" fill="#3d6f9f" font-weight="400" text-anchor="start">First use</text>
+<rect x="1210" y="1142" width="420" height="38" rx="2" fill="#f2f4f5" stroke="#89959d" stroke-width="1.7"/>
+<text x="1420.0" y="1169" font-size="26" fill="#687680" font-weight="400" text-anchor="middle">H2D</text>
+<rect x="1630" y="1142" width="130" height="38" rx="2" fill="#edf3f8" stroke="#3d6f9f" stroke-width="1.7"/>
+<text x="1695.0" y="1169" font-size="26" fill="#3d6f9f" font-weight="400" text-anchor="middle">GPU</text>
 </svg>

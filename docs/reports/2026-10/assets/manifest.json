@@ -1,8 +1,22 @@
 {
-  "source_revision": "1f75f554a5d9cbafa6231f65aaf3c8b2f7544848",
-  "reported_period": "2026-08-15 through 2026-10-11",
-  "source_revision_scope": "architecture baseline; generator identity is recorded by SHA256",
-  "generator_sha256": "684baf64a75d2cdbf7347c895d15347819aad69e27ffeb5e4a9989195649677f",
+  "source_revision": "1e72ae0aeeedea7381bfae84d54994495574e544",
+  "architecture_date": "2026-10-14",
+  "source_revision_scope": "latest development implementation, not every frozen experiment; source files and drawing generator are individually fingerprinted",
+  "architecture_source_sha256": {
+    "beliefkv/control/causal_graph.py": "2b5070822d2dba1cc994b94e40245430de18edd12b2fd1dceed76e9a88d3f657",
+    "beliefkv/predictor/child_semantic_work.py": "9afa46e173e4b35c88e7c8f1137812e3535ec6649aa10846562845918bacefd0",
+    "beliefkv/predictor/conditional_work.py": "a334ccef94def2ce2efee22d34843a47d9cf1dd1646a7c053e558a7434e52ae9",
+    "beliefkv/predictor/project_tool_history.py": "b8bea4451e90ab04180acc8a72a043e091bb767d358a4133ec0da073aeaeee8b",
+    "beliefkv/runtime/semantic_report_worker.py": "36dfc62ec362ab2020695ff6c10b3cca09e9ff64681e8c0ac20082847afcd0ee",
+    "beliefkv/runtime/sglang_v0520_prediction.py": "d5df0cea204ed5d50c61427c551e4b670a1ad39fe431dacdfd288f24e2a79d07",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "fe04ad26466bb22456df2cf813843053a66d410693c4d7acc31baa2095406041",
+    "beliefkv/runtime/sglang_v0520_physical.py": "f53b15523badf3f31123f14300b3fda60a503d3c0cf1cfbf71df19713e112ec5",
+    "beliefkv/runtime/sglang_v0520_admission.py": "092d0f2814402e2a8a8211ba6afa6fad273b2c85323d73cc5bf8f89f29cc5ecd",
+    "beliefkv/runtime/native_transfer_policy.py": "3dd8ebfcace6e3b4a1cee0abf68f8ea8baa9f7fc7d82cb6b142a34b7b24c5ff3",
+    "beliefkv/runtime/native_transfer_service.py": "7bd8f754f6aba88360afa33d2d33625f572142d8233feaa242d8060ff925525f",
+    "patches/sglang-v0.5.20-beliefkv-staging.patch": "ebdbc183d95b925e40064c9d2ca4611f5f22c1797a3c926e994fcf4a90403417"
+  },
+  "generator_sha256": "755bacfdb365ea6837cfe206e889266a2cdf781c3903bfd859466d93c0232cd3",
   "drawing_helpers_sha256": "656ff099ec8617dde72d7b33122e136b073f5879bbecc81530b9d31917b6602b",
   "schematic_not_empirical_performance": true,
   "renderer": "CairoSVG / Pillow / python-pptx",
@@ -10,98 +24,98 @@
     {
       "stem": "01_system_overview_en",
       "language": "en",
-      "title": "BeliefKV System Architecture",
+      "title": "BeliefKV Execution and KV Coordination",
       "canvas": [
-        1440,
-        920
+        1800,
+        1200
       ],
       "png_pixels": [
         4320,
-        2760
+        2880
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 44
+      "text_objects": 65
     },
     {
       "stem": "01_system_overview_zh",
       "language": "zh",
-      "title": "BeliefKV System Architecture",
+      "title": "BeliefKV Execution and KV Coordination",
       "canvas": [
-        1440,
-        920
+        1800,
+        1200
       ],
       "png_pixels": [
         4320,
-        2760
+        2880
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 44
+      "text_objects": 65
     },
     {
       "stem": "02_prediction_and_overlap_en",
       "language": "en",
-      "title": "Prediction and Scheduling Coordination",
+      "title": "Event and Content-driven Execution Demand",
       "canvas": [
-        1440,
-        1010
+        1800,
+        1200
       ],
       "png_pixels": [
         4320,
-        3030
+        2880
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 44
+      "text_objects": 53
     },
     {
       "stem": "02_prediction_and_overlap_zh",
       "language": "zh",
-      "title": "Prediction and Scheduling Coordination",
+      "title": "Event and Content-driven Execution Demand",
       "canvas": [
-        1440,
-        1010
+        1800,
+        1200
       ],
       "png_pixels": [
         4320,
-        3030
+        2880
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 44
+      "text_objects": 53
     },
     {
       "stem": "03_pages_and_capacity_handoff_en",
       "language": "en",
-      "title": "Page Migration and Child-Parent Capacity Handoff",
+      "title": "Workflow-aware KV Lifecycle and Admission",
       "canvas": [
-        1440,
-        995
+        1800,
+        1200
       ],
       "png_pixels": [
         4320,
-        2985
+        2880
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 57
+      "text_objects": 91
     },
     {
       "stem": "03_pages_and_capacity_handoff_zh",
       "language": "zh",
-      "title": "Page Migration and Child-Parent Capacity Handoff",
+      "title": "Workflow-aware KV Lifecycle and Admission",
       "canvas": [
-        1440,
-        995
+        1800,
+        1200
       ],
       "png_pixels": [
         4320,
-        2985
+        2880
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 57
+      "text_objects": 91
     }
   ],
   "powerpoints": [
@@ -110,18 +124,18 @@
       "language": "zh",
       "slides": [
         {
-          "objects": 82,
-          "text_objects": 44,
+          "objects": 169,
+          "text_objects": 65,
           "picture_objects": 0
         },
         {
-          "objects": 83,
-          "text_objects": 44,
+          "objects": 155,
+          "text_objects": 53,
           "picture_objects": 0
         },
         {
-          "objects": 106,
-          "text_objects": 57,
+          "objects": 221,
+          "text_objects": 91,
           "picture_objects": 0
         }
       ]
@@ -131,18 +145,18 @@
       "language": "en",
       "slides": [
         {
-          "objects": 82,
-          "text_objects": 44,
+          "objects": 169,
+          "text_objects": 65,
           "picture_objects": 0
         },
         {
-          "objects": 83,
-          "text_objects": 44,
+          "objects": 155,
+          "text_objects": 53,
           "picture_objects": 0
         },
         {
-          "objects": 106,
-          "text_objects": 57,
+          "objects": 221,
+          "text_objects": 91,
           "picture_objects": 0
         }
       ]
