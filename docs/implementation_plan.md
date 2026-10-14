@@ -7,6 +7,12 @@ short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
 and interval changes remain disabled.
 
+The user reserves the server for others until2026-10-14 21:30 CST.
+Hold both unstarted V58 managers by verified process identity and defer
+experiments/performance benchmarks. At the deadline resume only the resource
+wait, still requiring available GPU capacity. V542 records this one-off hold;
+the revoked daily00:00-06:00 restriction is not reinstated.
+
 V57 naturally finished all156 workflows and postprocessing at2026-10-14
 18:47:37 CST:156 completed, zero incomplete. Frozen0fd9d13/
 3c13ad50/572109fe is retained; launcher3811053 and scheduler3811711
