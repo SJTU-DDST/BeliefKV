@@ -2,6 +2,12 @@
 
 更新日期：2026-10-15
 
+最新开发候选bff29cb及资格见v581/v582/v583：
+3456组捕获、14580组规划和6种完整扫描一致；有效扫描CPU
+少3.0%–4.7%。27模块1402通过、1项显式Docker测试跳过，
+绑定64份源码及不变引擎。RETURN干预计数和root自然终态已在
+开发分支修复；当前V58继续冻结，在线GPU/JCT/吞吐收益待验。
+
 最新尾部诊断：
 `../experiments/reports/v58_tail_diagnosis_20261014.json`及
 `../experiments/reports/v58_tail_repetition_and_terminal_20261014.json`。

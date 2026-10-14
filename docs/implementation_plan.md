@@ -7,6 +7,22 @@ short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
 and interval changes remain disabled.
 
+Latest development candidate bff29cb merges ancestry validation/missing-copy
+counting and avoids temporary leaf-count lists for internal nodes. V581 retains
+3456 capture and14580 ordered-plan/error comparisons; all six108-workflow
+scans preserve decisions, counters, native reads and observations. Effective
+scan CPU falls3.0%-4.7% relative to the prior candidate; unsupported service
+falls only0.3%. Resident negative controls bypass the change and are not attributed.
+V582 binds64 sources and27 modules:1402 pass, one explicit-Docker-image test
+is skipped. Observer and harness are newly included in the source inventory.
+Intervened natural returns are counted and root intervention no longer becomes
+natural_terminal; replay retains24 V58 workflows/26 returns without rewriting raw.
+V583 seals the committed candidate and unchanged ebdbc183/91daa419 engine.
+Keep it out of live V58; CPU/quality-accounting qualification does not satisfy
+online turnover, useful FULL, quality/JCT or repeated throughput acceptance.
+Native remains live: at2026-10-14 11:45 PDT,153 completed,1 incomplete,
+two not yet terminal. Continue the full goal and retain this observation condition.
+
 V58 tail audit separates shrinking batches from idle GPU time. At6000-8100s
 GPU sample means remain94.7%-96.4%; the last single workflow's183.842s
 averages46.8% with zero queued requests. Root LLM/tool/other partition
