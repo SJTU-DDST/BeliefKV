@@ -825,7 +825,7 @@ index d3f13eb..f44aa49 100644
      # LoRA related
      lora_id: Optional[str] = None  # None means just use the base model
 diff --git a/python/sglang/srt/managers/schedule_batch.py b/python/sglang/srt/managers/schedule_batch.py
-index 7811e44..7df3063 100755
+index 7811e44..5cf4df9 100755
 --- a/python/sglang/srt/managers/schedule_batch.py
 +++ b/python/sglang/srt/managers/schedule_batch.py
 @@ -978,6 +978,7 @@ class Req(ReqDllmMixin):
@@ -853,6 +853,15 @@ index 7811e44..7df3063 100755
              (
                  self.prefix_indices,
                  self.last_node,
+@@ -2104,7 +2108,7 @@ class Req(ReqDllmMixin):
+ 
+ class _MambaRadixCacheV2TrackEntry(NamedTuple):
+     track_mask: bool
+-    track_index: int
++    track_index: torch.Tensor
+     track_seqlen: int
+ 
+ 
 @@ -2359,6 +2363,9 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
      mamba_track_mask: torch.Tensor = None  # shape: [b], bool
      mamba_track_seqlens: torch.Tensor = None  # shape: [b], int64
@@ -863,26 +872,69 @@ index 7811e44..7df3063 100755
      mamba_track_mask_next_cpu: Optional[List[bool]] = None  # shape: [b]
      mamba_decode_batch_idx_cpu: Optional[List[int]] = None  # shape: [b]
      # Lazy + spec: this iteration's per-req scatter positions
-@@ -2690,6 +2697,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+@@ -2688,8 +2695,9 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+         extend_input_logprob_token_ids = []
+         multimodal_inputs = []
          mamba_track_mask_cpu = []
-         mamba_track_indices_cpu = []
+-        mamba_track_indices_cpu = []
++        mamba_track_indices = []
          mamba_track_seqlens_cpu = []
 +        self.mamba_extend_track_cpu = None
  
          for i, (req, seq_len, pre_len) in enumerate(zip(reqs, seq_lens, prefix_lens)):
              assert seq_len - pre_len == req.extend_range.length
-@@ -2861,6 +2869,10 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+@@ -2758,7 +2766,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+             if get_exec().mamba.enable_mamba_extra_buffer:
+                 track_entry = self._mamba_radix_cache_v2_req_prepare_for_extend(req)
+                 mamba_track_mask_cpu.append(track_entry.track_mask)
+-                mamba_track_indices_cpu.append(track_entry.track_index)
++                mamba_track_indices.append(track_entry.track_index)
+                 mamba_track_seqlens_cpu.append(track_entry.track_seqlen)
+ 
+             if self.return_logprob:
+@@ -2861,21 +2869,24 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
          self.extend_input_logprob_token_ids = extend_input_logprob_token_ids
  
          if get_exec().mamba.enable_mamba_extra_buffer:
+-            self.mamba_track_indices = torch.tensor(
+-                mamba_track_indices_cpu,
+-                dtype=torch.int64,
+-                device=self.device,
 +            self.mamba_extend_track_cpu = (
 +                tuple(mamba_track_mask_cpu),
 +                tuple(mamba_track_seqlens_cpu),
 +            )
-             self.mamba_track_indices = torch.tensor(
-                 mamba_track_indices_cpu,
++            # Keep virtual slots on device; scalar readback serializes prefill.
++            self.mamba_track_indices = torch.stack(mamba_track_indices).to(
++                device=self.device, dtype=torch.int64, non_blocking=True
+             )
+             self.mamba_track_mask = torch.tensor(
+                 mamba_track_mask_cpu,
+                 dtype=torch.bool,
+-                device=self.device,
+-            )
++                pin_memory=_pin,
++            ).to(self.device, non_blocking=True)
+             self.mamba_track_seqlens = torch.tensor(
+                 mamba_track_seqlens_cpu,
                  dtype=torch.int64,
-@@ -2978,6 +2990,21 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+-                device=self.device,
+-            )
++                pin_memory=_pin,
++            ).to(self.device, non_blocking=True)
+ 
+         # Collect mamba init info for deferred ops on forward stream
+         if any(req.kv.holds_mamba for req in reqs):
+@@ -2922,7 +2933,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+         mask = req.extend_range.length >= checkpoint_grid
+         track_index = req.kv.mamba_ping_pong_track_buffer[
+             req.kv.mamba_next_track_idx
+-        ].item()
++        ]
+         mamba_track_seqlen = -1
+         if mask:
+             # mamba_track_seqlen is used to calculate the indices to track in
+@@ -2978,6 +2989,21 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
                      # See _force_track_h() for more details.
                      mamba_track_seqlen = _force_track_h(req.mamba_branching_seqlen)
                      mamba_track_seqlen_aligned = req.mamba_branching_seqlen
@@ -904,7 +956,7 @@ index 7811e44..7df3063 100755
              req.kv.mamba_last_track_seqlen = mamba_track_seqlen_aligned
  
          return _MambaRadixCacheV2TrackEntry(
-@@ -2991,8 +3018,12 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+@@ -2991,8 +3017,12 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
          cow_src_tensors = []
          cow_dst_tensors = []
          clear_tensors = []
@@ -917,7 +969,7 @@ index 7811e44..7df3063 100755
                  cow_src_tensors.append(req.kv.mamba_cow_src_index)
                  cow_dst_tensors.append(req.kv.mamba_pool_idx.unsqueeze(0))
                  req.kv.mamba_cow_src_index = None
-@@ -3423,6 +3454,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+@@ -3423,6 +3453,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
  
      def prepare_for_decode(self):
          self.forward_mode = ForwardMode.DECODE
@@ -925,7 +977,7 @@ index 7811e44..7df3063 100755
          # Decode embeds the last output token via embed_tokens; clear the stale
          # prefill-time tensor so it doesn't leak into ForwardBatch.
          self.input_embeds = None
-@@ -3576,6 +3608,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+@@ -3576,6 +3607,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
          self.mamba_track_buffer_indices = None
          self.mamba_track_mask = None
          self.mamba_track_seqlens = None
@@ -933,7 +985,7 @@ index 7811e44..7df3063 100755
          self.mamba_track_mask_cpu = None
          self.mamba_track_mask_next_cpu = None
          self.mamba_decode_batch_idx_cpu = None
-@@ -3642,6 +3675,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+@@ -3642,6 +3674,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
          self.mamba_track_buffer_indices = None
          self.mamba_track_mask = None
          self.mamba_track_seqlens = None
@@ -6566,6 +6618,223 @@ index 0000000..e21d7b9
 +    original = batch(extend=[65], prefix=[4096], mask=[True], tracked=[64])
 +    original.forward_mode = mode
 +    assert hybrid.MambaAttnBackendBase._extend_track_cpu_metadata(original) is None
+diff --git a/test/srt/test_beliefkv_prefill_track_slots.py b/test/srt/test_beliefkv_prefill_track_slots.py
+new file mode 100644
+index 0000000..44c9c74
+--- /dev/null
++++ b/test/srt/test_beliefkv_prefill_track_slots.py
+@@ -0,0 +1,211 @@
++"""Check actual prefill preparation against the preceding qualified engine."""
++
++import ast
++from array import array
++from contextlib import ExitStack
++from pathlib import Path
++import subprocess
++from types import SimpleNamespace as NS
++from unittest.mock import patch
++
++import pytest
++import torch
++from torch.utils._python_dispatch import TorchDispatchMode
++
++from sglang.srt.managers import schedule_batch as schedule
++from sglang.srt.sampling.sampling_params import SamplingParams
++
++
++ENGINE = Path(__file__).resolve().parents[2]
++SOURCE = "python/sglang/srt/managers/schedule_batch.py"
++BASELINE_TREE = "c916d585f8bed188d3b90ace4a1fde5fecdab3b1"
++
++
++def reference_class():
++    source = subprocess.check_output(
++        ["git", "show", f"{BASELINE_TREE}:{SOURCE}"], cwd=ENGINE, text=True
++    )
++    cls = next(
++        node
++        for node in ast.parse(source).body
++        if isinstance(node, ast.ClassDef) and node.name == "ScheduleBatch"
++    )
++    namespace = dict(vars(schedule))
++    methods = [
++        node
++        for node in cls.body
++        if getattr(node, "name", None)
++        in {"prepare_for_extend", "_mamba_radix_cache_v2_req_prepare_for_extend"}
++    ]
++    exec(
++        compile(
++            ast.fix_missing_locations(
++                ast.Module(
++                    body=[
++                        ast.ImportFrom(
++                            module="__future__",
++                            names=[ast.alias(name="annotations")],
++                            level=0,
++                        ),
++                        *methods,
++                    ],
++                    type_ignores=[],
++                )
++            ),
++            f"{BASELINE_TREE}:{SOURCE}",
++            "exec",
++        ),
++        namespace,
++    )
++    return type(
++        "ReferenceScheduleBatch",
++        (schedule.ScheduleBatch,),
++        {node.name: namespace[node.name] for node in methods},
++    )
++
++
++ReferenceScheduleBatch = reference_class()
++
++
++def make_batch(*, reference, size, lazy, extra=True, ping_pong_size=2):
++    cls = ReferenceScheduleBatch if reference else schedule.ScheduleBatch
++    requests = []
++    for index in range(size):
++        prefix = (index % 3) * 64
++        length = (1, 63, 64, 65, 193)[index % 5]
++        ids = array("q", (n % 100 for n in range(prefix + length)))
++        req = schedule.Req(
++            rid=f"r{index}", origin_input_text="", origin_input_ids=ids,
++            sampling_params=SamplingParams(max_new_tokens=128),
++            beliefkv_metadata={} if index % 2 else None,
++        )
++        req.full_untruncated_fill_ids = array("q", ids)
++        req.extend_range = schedule.Range(prefix, prefix + length)
++        req.prefix_indices = torch.arange(prefix)
++        req.kv.mamba_next_track_idx = index % ping_pong_size
++        req.kv.mamba_last_track_idx = 1 - index % ping_pong_size
++        req.kv.mamba_last_track_seqlen = 17
++        slots = torch.tensor([11 + 3 * index, 12 + 3 * index])
++        if ping_pong_size == 1:
++            slots = slots[:1]
++        elif lazy:
++            slots[1 - req.kv.mamba_next_track_idx] = -1
++        req.kv.mamba_ping_pong_track_buffer = slots
++        req.mamba_branching_seqlen = prefix + 64 if length > 64 else None
++        requests.append(req)
++    batch = cls(
++        reqs=requests, device="cpu",
++        model_config=NS(
++            hf_text_config=NS(mamba_chunk_size=64),
++            is_encoder_decoder=False, vocab_size=128,
++        ),
++        req_to_token_pool=NS(
++            get_mamba_ping_pong_other_idx=(
++                (lambda index: 1 - index) if ping_pong_size == 2 else (lambda index: index)
++            )
++        ),
++        tree_cache=NS(page_size=64),
++    )
++    execution = NS(mamba=NS(
++        enable_mamba_extra_buffer=extra,
++        enable_mamba_extra_buffer_lazy=lazy,
++    ))
++
++    def allocate(state):
++        count = sum(req.extend_range.length for req in state.reqs)
++        return torch.arange(count), torch.arange(size), list(range(size))
++
++    overrides = {
++        "get_exec": lambda: execution,
++        "mamba_cache_chunk_size": lambda: 64,
++        "mamba_checkpoint_grid": lambda page: page,
++        "alloc_for_extend": allocate,
++        "SamplingBatchInfo": NS(from_schedule_batch=lambda *args: "sampling"),
++    }
++    return batch, overrides
++
++
++class ScalarReadbacks(TorchDispatchMode):
++    def __init__(self):
++        self.count = 0
++
++    def __torch_dispatch__(self, function, types, args=(), kwargs=None):
++        if function is torch.ops.aten._local_scalar_dense.default:
++            self.count += 1
++        return function(*args, **(kwargs or {}))
++
++
++def prepare(batch, overrides):
++    functions = (
++        batch.prepare_for_extend,
++        batch._mamba_radix_cache_v2_req_prepare_for_extend,
++    )
++    with ExitStack() as stack:
++        stack.enter_context(patch.multiple(schedule, **overrides))
++        for function in functions:
++            if function.__globals__ is not vars(schedule):
++                stack.enter_context(patch.dict(function.__globals__, overrides))
++        with ScalarReadbacks() as readbacks:
++            batch.prepare_for_extend()
++    return readbacks.count
++
++
++def assert_equal(left, right):
++    for name in (
++        "prefill_input_ids_cpu", "seq_lens", "seq_lens_cpu", "orig_seq_lens",
++        "req_pool_indices", "out_cache_loc", "mamba_track_mask",
++        "mamba_track_indices", "mamba_track_seqlens",
++    ):
++        a, b = getattr(left, name), getattr(right, name)
++        assert a.dtype == b.dtype and a.shape == b.shape, name
++        assert torch.equal(a, b), name
++    assert left.mamba_extend_track_cpu == right.mamba_extend_track_cpu
++    for a, b in zip(left.reqs, right.reqs):
++        for name in (
++            "mamba_next_track_idx", "mamba_last_track_idx",
++            "mamba_last_track_seqlen",
++        ):
++            assert getattr(a.kv, name) == getattr(b.kv, name), name
++        assert torch.equal(
++            a.kv.mamba_ping_pong_track_buffer, b.kv.mamba_ping_pong_track_buffer
++        )
++        assert getattr(a, "beliefkv_reentry_checkpoint_seqlen", None) == getattr(
++            b, "beliefkv_reentry_checkpoint_seqlen", None
++        )
++
++
++@pytest.mark.parametrize("size", [1, 2, 4, 16, 48])
++@pytest.mark.parametrize("lazy,ping_pong_size", [(False, 1), (False, 2), (True, 2)])
++def test_prefill_preserves_slots_masks_checkpoint_and_swaps_without_readback(
++    size, lazy, ping_pong_size,
++):
++    baseline, base_overrides = make_batch(
++        reference=True, size=size, lazy=lazy, ping_pong_size=ping_pong_size,
++    )
++    candidate, overrides = make_batch(
++        reference=False, size=size, lazy=lazy, ping_pong_size=ping_pong_size,
++    )
++    assert prepare(baseline, base_overrides) == size
++    assert prepare(candidate, overrides) == 0
++    assert_equal(baseline, candidate)
++    # A forward owns its selected slot tensor even after later slot reuse.
++    selected = candidate.mamba_track_indices.clone()
++    for req in candidate.reqs:
++        req.kv.mamba_ping_pong_track_buffer.fill_(99)
++    assert torch.equal(candidate.mamba_track_indices, selected)
++
++
++def test_empty_prefill_retains_existing_rejection():
++    for reference in (True, False):
++        batch, overrides = make_batch(reference=reference, size=0, lazy=False)
++        with pytest.raises(ValueError, match="need at least one array"):
++            prepare(batch, overrides)
++
++
++def test_prefill_without_extra_buffer_does_not_create_track_metadata():
++    candidate, overrides = make_batch(reference=False, size=2, lazy=False, extra=False)
++    assert prepare(candidate, overrides) == 0
++    assert candidate.mamba_track_indices is None
++    assert candidate.mamba_track_mask is None
++    assert candidate.mamba_track_seqlens is None
++    assert candidate.mamba_extend_track_cpu is None
 diff --git a/test/srt/test_beliefkv_radix_prefix.py b/test/srt/test_beliefkv_radix_prefix.py
 new file mode 100644
 index 0000000..da0ca58
