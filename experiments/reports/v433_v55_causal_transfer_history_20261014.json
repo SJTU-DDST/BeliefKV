@@ -1,0 +1,4119 @@
+{
+  "status": "causal_receipt_timing_evaluation_not_callback_replay_or_policy_gain",
+  "observed_at_local": "2026-10-14T09:11:22.567955+08:00",
+  "collection_code_commit": "0f2a992448812d28d5362e2b97de1aab66e35630",
+  "sealed_report": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v430_v55_wait_prefetch_live_20261014.json.gz",
+  "sealed_report_sha256": "d72c6f652e36319056cf4b94a9a48011f4b80f7e9fa45b7f0f99632efb6e7616",
+  "plan_sha256": "f09db2e9da1bf5255c19977cde9d61ddc94b0f0e4dfe74a89e1f85884e63d2e7",
+  "support_report": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v432_v55_transfer_service_support_20261014.json",
+  "support_report_sha256": "a592f070ed7fc6343ab9aa0e43b4a649cf8415e46737fe55ad18444ba12c8ceb",
+  "transfer_source": {
+    "observed_at_local": "2026-10-14T08:45:44.200154+08:00",
+    "device": 66306,
+    "inode": 139863598,
+    "observed_bytes": 43290706,
+    "complete_prefix_bytes": 43290706,
+    "complete_prefix_sha256": "f62ad22a3996cbb6bae296ade080d9d47945dc9c3589f85af2a75e9f8dcbb3ab",
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55/predictive_h2d/server/transfer_telemetry.jsonl"
+  },
+  "estimator_sha256": "7bd8f754f6aba88360afa33d2d33625f572142d8233feaa242d8060ff925525f",
+  "runtime_sha256": "1b84dc20056d59e323eca6eb2b528edd1114eea964f7a60074e3b5517d88a635",
+  "helper_sha256": "c913a4a9880232c988f7362fb91bff02bc58c9f4c0049948bb3b33a13529ba29",
+  "collection_history_bounds": {
+    "_h2d_samples": 64,
+    "_native_service_samples": 256
+  },
+  "policy_specs": {
+    "mixed_fifo": {
+      "stratified": false,
+      "max_age_ms": null
+    },
+    "direction_shape_32": {
+      "stratified": true,
+      "max_age_ms": null
+    },
+    "direction_shape_32_age120s": {
+      "stratified": true,
+      "max_age_ms": 120000.0
+    },
+    "direction_shape_32_age300s": {
+      "stratified": true,
+      "max_age_ms": 300000.0
+    }
+  },
+  "maximum_stored_samples": {
+    "mixed_fifo": 320,
+    "direction_shape_32": 256,
+    "direction_shape_32_age120s": 256,
+    "direction_shape_32_age300s": 256
+  },
+  "uncontrolled_thread_cpu_per_prediction_us": {
+    "mixed_fifo": {
+      "count": 61297,
+      "p50": 150.043,
+      "p90": 172.94920000000002,
+      "max": 1756.037
+    },
+    "direction_shape_32": {
+      "count": 61297,
+      "p50": 36.741,
+      "p90": 41.36,
+      "max": 75554.851
+    },
+    "direction_shape_32_age120s": {
+      "count": 61297,
+      "p50": 33.127,
+      "p90": 37.006,
+      "max": 468.431
+    },
+    "direction_shape_32_age300s": {
+      "count": 61297,
+      "p50": 32.136,
+      "p90": 36.08,
+      "max": 479.754
+    }
+  },
+  "split_time_ms": 1791935985034.2712,
+  "eligible_completed_receipts": 61229,
+  "skipped": {},
+  "metrics": {
+    "mixed_fifo": {
+      "all": {
+        "queries": 61229,
+        "supported": 60778,
+        "support_fraction": 0.9926342092799164,
+        "supported_byte_fraction": 0.9954999033063493,
+        "p50_absolute_error_ms": {
+          "count": 60778,
+          "p50": 0.3262711472278834,
+          "p90": 4.2914661606359505,
+          "max": 213.472876107651
+        },
+        "p50_signed_error_ms": {
+          "count": 60778,
+          "p50": 0.0009640695718924341,
+          "p90": 1.441212897831083,
+          "max": 75.37694135680795
+        },
+        "p90_empirical_coverage": 0.8542071144164006,
+        "selected_max_age_ms": {
+          "count": 60772,
+          "p50": 14981.300537109375,
+          "p90": 41500.695166015634,
+          "max": 1968350.2634277344
+        },
+        "support_paths": {
+          "typed": 60621,
+          "legacy_unknown_shape": 157
+        }
+      },
+      "d2h:full": {
+        "queries": 37959,
+        "supported": 37635,
+        "support_fraction": 0.991464474828104,
+        "supported_byte_fraction": 0.9699337819713006,
+        "p50_absolute_error_ms": {
+          "count": 37635,
+          "p50": 0.171908884951671,
+          "p90": 1.6257698344717013,
+          "max": 90.98422875115435
+        },
+        "p50_signed_error_ms": {
+          "count": 37635,
+          "p50": 0.005283858627080917,
+          "p90": 0.533008787690401,
+          "max": 26.191700715571642
+        },
+        "p90_empirical_coverage": 0.8537265842965325,
+        "selected_max_age_ms": {
+          "count": 37631,
+          "p50": 20183.446533203125,
+          "p90": 46393.962158203125,
+          "max": 112037.296875
+        },
+        "support_paths": {
+          "typed": 37635
+        }
+      },
+      "d2h:hybrid": {
+        "queries": 15193,
+        "supported": 15084,
+        "support_fraction": 0.9928256433884025,
+        "supported_byte_fraction": 0.9929195640768484,
+        "p50_absolute_error_ms": {
+          "count": 15084,
+          "p50": 0.46188943088054657,
+          "p90": 2.542675021387498,
+          "max": 80.25506239939769
+        },
+        "p50_signed_error_ms": {
+          "count": 15084,
+          "p50": -0.07465809255222489,
+          "p90": 1.2831345565090584,
+          "max": 62.67656711861491
+        },
+        "p90_empirical_coverage": 0.8524264120922832,
+        "selected_max_age_ms": {
+          "count": 15083,
+          "p50": 13663.40966796875,
+          "p90": 16547.992431640625,
+          "max": 138283.61206054688
+        },
+        "support_paths": {
+          "typed": 15084
+        }
+      },
+      "d2h:mamba": {
+        "queries": 113,
+        "supported": 95,
+        "support_fraction": 0.8407079646017699,
+        "supported_byte_fraction": 0.8407079646017699,
+        "p50_absolute_error_ms": {
+          "count": 95,
+          "p50": 1.0148133151233196,
+          "p90": 1.359896082431078,
+          "max": 2.368748653680086
+        },
+        "p50_signed_error_ms": {
+          "count": 95,
+          "p50": 1.002499833703041,
+          "p90": 1.3429372571408749,
+          "max": 1.3897162862122059
+        },
+        "p90_empirical_coverage": 0.9473684210526315,
+        "selected_max_age_ms": {
+          "count": 95,
+          "p50": 9494.441162109375,
+          "p90": 10425.533056640625,
+          "max": 10822.845703125
+        },
+        "support_paths": {
+          "typed": 95
+        }
+      },
+      "h2d:full": {
+        "queries": 71,
+        "supported": 71,
+        "support_fraction": 1.0,
+        "supported_byte_fraction": 1.0,
+        "p50_absolute_error_ms": {
+          "count": 71,
+          "p50": 24.108140729367733,
+          "p90": 50.12981267645955,
+          "max": 59.04994485899806
+        },
+        "p50_signed_error_ms": {
+          "count": 71,
+          "p50": 10.067458264529705,
+          "p90": 40.075426921248436,
+          "max": 55.48854824155569
+        },
+        "p90_empirical_coverage": 0.7464788732394366,
+        "selected_max_age_ms": {
+          "count": 71,
+          "p50": 72650.21606445312,
+          "p90": 1436298.0456542969,
+          "max": 1708859.6223144531
+        },
+        "support_paths": {
+          "legacy_unknown_shape": 69,
+          "typed": 2
+        }
+      },
+      "h2d:hybrid": {
+        "queries": 7862,
+        "supported": 7862,
+        "support_fraction": 1.0,
+        "supported_byte_fraction": 1.0,
+        "p50_absolute_error_ms": {
+          "count": 7862,
+          "p50": 4.687626613304019,
+          "p90": 13.962915526784933,
+          "max": 213.472876107651
+        },
+        "p50_signed_error_ms": {
+          "count": 7862,
+          "p50": 0.6872332508498431,
+          "p90": 9.75802585827947,
+          "max": 69.57251869689306
+        },
+        "p90_empirical_coverage": 0.8598321037903841,
+        "selected_max_age_ms": {
+          "count": 7861,
+          "p50": 13519.2314453125,
+          "p90": 15853.919189453125,
+          "max": 1968350.2634277344
+        },
+        "support_paths": {
+          "legacy_unknown_shape": 57,
+          "typed": 7805
+        }
+      },
+      "h2d:mamba": {
+        "queries": 31,
+        "supported": 31,
+        "support_fraction": 1.0,
+        "supported_byte_fraction": 1.0,
+        "p50_absolute_error_ms": {
+          "count": 31,
+          "p50": 13.417322654277086,
+          "p90": 37.942877504974604,
+          "max": 75.37694135680795
+        },
+        "p50_signed_error_ms": {
+          "count": 31,
+          "p50": 6.763088051229715,
+          "p90": 34.34256697073579,
+          "max": 75.37694135680795
+        },
+        "p90_empirical_coverage": 0.8387096774193549,
+        "selected_max_age_ms": {
+          "count": 31,
+          "p50": 1055584.0244140625,
+          "p90": 1531498.5979003906,
+          "max": 1681797.3562011719
+        },
+        "support_paths": {
+          "legacy_unknown_shape": 31
+        }
+      },
+      "earlier_time_half": {
+        "queries": 35162,
+        "supported": 34801,
+        "support_fraction": 0.9897332347420511,
+        "supported_byte_fraction": 0.9970692842016312,
+        "p50_absolute_error_ms": {
+          "count": 34801,
+          "p50": 0.49817762265404064,
+          "p90": 6.591930016169542,
+          "max": 213.472876107651
+        },
+        "p50_signed_error_ms": {
+          "count": 34801,
+          "p50": -0.0029155053198337555,
+          "p90": 2.7210301297211643,
+          "max": 75.37694135680795
+        },
+        "p90_empirical_coverage": 0.856699520128732,
+        "selected_max_age_ms": {
+          "count": 34795,
+          "p50": 13964.02685546875,
+          "p90": 31629.85922851563,
+          "max": 1093948.3583984375
+        },
+        "support_paths": {
+          "typed": 34707,
+          "legacy_unknown_shape": 94
+        }
+      },
+      "later_time_half": {
+        "queries": 26067,
+        "supported": 25977,
+        "support_fraction": 0.996547358729428,
+        "supported_byte_fraction": 0.9733949844219442,
+        "p50_absolute_error_ms": {
+          "count": 25977,
+          "p50": 0.1916504742995898,
+          "p90": 1.6912606970830761,
+          "max": 77.70358445122838
+        },
+        "p50_signed_error_ms": {
+          "count": 25977,
+          "p50": 0.0033956021070480347,
+          "p90": 0.5983728345104059,
+          "max": 67.25600780919194
+        },
+        "p90_empirical_coverage": 0.8508680756053432,
+        "selected_max_age_ms": {
+          "count": 25977,
+          "p50": 21140.81201171875,
+          "p90": 47271.90366210938,
+          "max": 1968350.2634277344
+        },
+        "support_paths": {
+          "typed": 25914,
+          "legacy_unknown_shape": 63
+        }
+      },
+      "earlier_time_half:h2d:full": {
+        "queries": 53,
+        "supported": 53,
+        "support_fraction": 1.0,
+        "supported_byte_fraction": 1.0,
+        "p50_absolute_error_ms": {
+          "count": 53,
+          "p50": 25.716126896440983,
+          "p90": 50.39625400677323,
+          "max": 59.04994485899806
+        },
+        "p50_signed_error_ms": {
+          "count": 53,
+          "p50": 12.523512348695597,
+          "p90": 41.1723304539919,
+          "max": 55.48854824155569
+        },
+        "p90_empirical_coverage": 0.7358490566037735,
+        "selected_max_age_ms": {
+          "count": 53,
+          "p50": 11382.923583984375,
+          "p90": 930155.7535644531,
+          "max": 1003979.9936523438
+        },
+        "support_paths": {
+          "legacy_unknown_shape": 51,
+          "typed": 2
+        }
+      },
+      "later_time_half:h2d:full": {
+        "queries": 18,
+        "supported": 18,
+        "support_fraction": 1.0,
+        "supported_byte_fraction": 1.0,
+        "p50_absolute_error_ms": {
+          "count": 18,
+          "p50": 18.539305543527007,
+          "p90": 37.27421909570694,
+          "max": 49.03892264518579
+        },
+        "p50_signed_error_ms": {
+          "count": 18,
+          "p50": 9.661825214017629,
+          "p90": 30.192796001210816,
+          "max": 49.03892264518579
+        },
+        "p90_empirical_coverage": 0.7777777777777778,
+        "selected_max_age_ms": {
+          "count": 18,
+          "p50": 1399010.1765136719,
+          "p90": 1626592.204296875,
+          "max": 1708859.6223144531
+        },
+        "support_paths": {
+          "legacy_unknown_shape": 18
+        }
+      }
+    },
+    "direction_shape_32": {
+      "all": {
+        "queries": 61229,
+        "supported": 59860,
+        "support_fraction": 0.9776413137565533,
+        "supported_byte_fraction": 0.9905437443636745,
+        "p50_absolute_error_ms": {
+          "count": 59860,
+          "p50": 0.41169824003994465,
+          "p90": 5.420804505114321,
+          "max": 213.97737227380276
+        },
+        "p50_signed_error_ms": {
+          "count": 59860,
+          "p50": -0.007167314144770287,
+          "p90": 1.2480362686638837,
+          "max": 75.37694135680795
+        },
+        "p90_empirical_coverage": 0.8684931506849315,
+        "selected_max_age_ms": {
+          "count": 59853,
+          "p50": 2688.118896484375,
+          "p90": 8603.174023437507,
+          "max": 4161508.3024902344
+        },
+        "support_paths": {
+          "typed": 59857,
+          "legacy_unknown_shape": 3
+        }
+      },
+      "d2h:full": {
+        "queries": 37959,
+        "supported": 36593,
+        "support_fraction": 0.9640138043678707,
+        "supported_byte_fraction": 0.8672524835226831,
+        "p50_absolute_error_ms": {
+          "count": 36593,
+          "p50": 0.1979085883919398,
+          "p90": 1.9503942997630441,
+          "max": 88.32292584702373
+        },
+        "p50_signed_error_ms": {
+          "count": 36593,
+          "p50": 0.010849907994270325,
+          "p90": 0.5212883060685815,
+          "max": 41.57549096271396
+        },
+        "p90_empirical_coverage": 0.8887765419615774,
+        "selected_max_age_ms": {
+          "count": 36592,
+          "p50": 1645.481201171875,
+          "p90": 10332.400561523438,
+          "max": 88199.3359375
+        },
+        "support_paths": {
+          "typed": 36593
+        }
+      },
+      "d2h:hybrid": {
+        "queries": 15193,
+        "supported": 15193,
+        "support_fraction": 1.0,
+        "supported_byte_fraction": 1.0,
+        "p50_absolute_error_ms": {
+          "count": 15193,
+          "p50": 0.6664050742983818,
+          "p90": 4.873609584829257,
+          "max": 77.5305117132934
+        },
+        "p50_signed_error_ms": {
+          "count": 15193,
+          "p50": -0.3470933414991695,
+          "p90": 0.6563686765730383,
+          "max": 24.044678109702268
+        },
+        "p90_empirical_coverage": 0.8161653393009939,
+        "selected_max_age_ms": {
+          "count": 15192,
+          "p50": 2810.7449951171875,
+          "p90": 4244.195043945312,
+          "max": 343045.46484375
+        },
+        "support_paths": {
+          "typed": 15193
+        }
+      },
+      "d2h:mamba": {
+        "queries": 113,
+        "supported": 110,
+        "support_fraction": 0.9734513274336283,
+        "supported_byte_fraction": 0.9734513274336283,
+        "p50_absolute_error_ms": {
+          "count": 110,
+          "p50": 0.1491124276071787,
+          "p90": 1.1616166681051254,
+          "max": 24.45137035101652
+        },
+        "p50_signed_error_ms": {
+          "count": 110,
+          "p50": 0.08799228817224503,
+          "p90": 1.1130649130791428,
+          "max": 1.3850140385329723
+        },
+        "p90_empirical_coverage": 0.8727272727272727,
+        "selected_max_age_ms": {
+          "count": 110,
+          "p50": 4650.1524658203125,
+          "p90": 978859.7540283203,
+          "max": 2025904.7348632812
+        },
+        "support_paths": {
+          "typed": 110
+        }
+      },
+      "h2d:full": {
+        "queries": 71,
+        "supported": 71,
+        "support_fraction": 1.0,
+        "supported_byte_fraction": 1.0,
+        "p50_absolute_error_ms": {
+          "count": 71,
+          "p50": 22.146222181618214,
+          "p90": 47.26338153705001,
+          "max": 64.87126774047255
+        },
+        "p50_signed_error_ms": {
+          "count": 71,
+          "p50": 3.9245286025106907,
+          "p90": 36.91130150791367,
+          "max": 54.12687522560478
+        },
+        "p90_empirical_coverage": 0.8732394366197183,
+        "selected_max_age_ms": {
+          "count": 71,
+          "p50": 1069347.5607910156,
+          "p90": 3115207.0234375,
+          "max": 3477445.4653320312
+        },
+        "support_paths": {
+          "legacy_unknown_shape": 3,
+          "typed": 68
+        }
+      },
+      "h2d:hybrid": {
+        "queries": 7862,
+        "supported": 7862,
+        "support_fraction": 1.0,
+        "supported_byte_fraction": 1.0,
+        "p50_absolute_error_ms": {
+          "count": 7862,
+          "p50": 4.7787500474117195,
+          "p90": 15.69720300639153,
+          "max": 213.97737227380276
+        },
+        "p50_signed_error_ms": {
+          "count": 7862,
+          "p50": 1.6813673016019663,
+          "p90": 11.193121511631364,
+          "max": 68.95149555127541
+        },
+        "p90_empirical_coverage": 0.8748410073772577,
+        "selected_max_age_ms": {
+          "count": 7861,
+          "p50": 5026.0712890625,
+          "p90": 6383.52490234375,
+          "max": 2197469.2700195312
+        },
+        "support_paths": {
+          "typed": 7862
+        }
+      },
+      "h2d:mamba": {
+        "queries": 31,
+        "supported": 31,
+        "support_fraction": 1.0,
+        "supported_byte_fraction": 1.0,
+        "p50_absolute_error_ms": {
+          "count": 31,
+          "p50": 15.751863364130259,
+          "p90": 37.699535489082336,
+          "max": 75.37694135680795
+        },
+        "p50_signed_error_ms": {
+          "count": 31,
+          "p50": 15.087384264916182,
+          "p90": 31.953613739460707,
+          "max": 75.37694135680795
+        },
+        "p90_empirical_coverage": 0.9354838709677419,
+        "selected_max_age_ms": {
+          "count": 27,
+          "p50": 1730724.64453125,
+          "p90": 3711190.705371094,
+          "max": 4161508.3024902344
+        },
+        "support_paths": {
+          "typed": 31
+        }
+      },
+      "earlier_time_half": {
+        "queries": 35162,
+        "supported": 34749,
+        "support_fraction": 0.9882543655082191,
+        "supported_byte_fraction": 0.9968364437008492,
+        "p50_absolute_error_ms": {
+          "count": 34749,
+          "p50": 0.6684411006625492,
+          "p90": 7.884800245341938,
+          "max": 213.97737227380276
+        },
+        "p50_signed_error_ms": {
+          "count": 34749,
+          "p50": -0.034715104923646045,
+          "p90": 2.914841002174694,
+          "max": 75.37694135680795
+        },
+        "p90_empirical_coverage": 0.8552476330254108,
+        "selected_max_age_ms": {
+          "count": 34742,
+          "p50": 3028.524658203125,
+          "p90": 7107.909765625005,
+          "max": 2025904.7348632812
+        },
+        "support_paths": {
+          "typed": 34746,
+          "legacy_unknown_shape": 3
+        }
+      },
+      "later_time_half": {
+        "queries": 26067,
+        "supported": 25111,
+        "support_fraction": 0.9633252771703686,
+        "supported_byte_fraction": 0.9019103164747694,
+        "p50_absolute_error_ms": {
+          "count": 25111,
+          "p50": 0.2220306913757324,
+          "p90": 2.0653395913541317,
+          "max": 77.01674057170749
+        },
+        "p50_signed_error_ms": {
+          "count": 25111,
+          "p50": 0.009556346053282372,
+          "p90": 0.5774954333901405,
+          "max": 62.65981774777174
+        },
+        "p90_empirical_coverage": 0.8868225080641949,
+        "selected_max_age_ms": {
+          "count": 25111,
+          "p50": 1685.410888671875,
+          "p90": 10631.47021484375,
+          "max": 4161508.3024902344
+        },
+        "support_paths": {
+          "typed": 25111
+        }
+      },
+      "earlier_time_half:h2d:full": {
+        "queries": 53,
+        "supported": 53,
+        "support_fraction": 1.0,
+        "supported_byte_fraction": 1.0,
+        "p50_absolute_error_ms": {
+          "count": 53,
+          "p50": 24.53566551234762,
+          "p90": 51.31544638425113,
+          "max": 64.87126774047255
+        },
+        "p50_signed_error_ms": {
+          "count": 53,
+          "p50": 2.349876333028078,
+          "p90": 40.41699673980476,
+          "max": 54.12687522560478
+        },
+        "p90_empirical_coverage": 0.8679245283018868,
+        "selected_max_age_ms": {
+          "count": 53,
+          "p50": 919364.5908203125,
+          "p90": 1365862.439453125,
+          "max": 1635969.1564941406
+        },
+        "support_paths": {
+          "legacy_unknown_shape": 3,
+          "typed": 50
+        }
+      },
+      "later_time_half:h2d:full": {
+        "queries": 18,
+        "supported": 18,
+        "support_fraction": 1.0,
+        "supported_byte_fraction": 1.0,
+        "p50_absolute_error_ms": {
+          "count": 18,
+          "p50": 11.152998011846144,
+          "p90": 33.49667733314864,
+          "max": 35.746351108230755
+        },
+        "p50_signed_error_ms": {
+          "count": 18,
+          "p50": 6.343121403038104,
+          "p90": 28.13581441359147,
+          "max": 35.746351108230755
+        },
+        "p90_empirical_coverage": 0.8888888888888888,
+        "selected_max_age_ms": {
+          "count": 18,
+          "p50": 2970707.2877197266,
+          "p90": 3348641.831665039,
+          "max": 3477445.4653320312
+        },
+        "support_paths": {
+          "typed": 18
+        }
+      }
+    },
+    "direction_shape_32_age120s": {
+      "all": {
+        "queries": 61229,
+        "supported": 59805,
+        "support_fraction": 0.9767430465955674,
+        "supported_byte_fraction": 0.9896035978768031,
+        "p50_absolute_error_ms": {
+          "count": 59805,
+          "p50": 0.4122508689761162,
+          "p90": 5.401212959257126,
+          "max": 213.97737227380276
+        },
+        "p50_signed_error_ms": {
+          "count": 59805,
+          "p50": -0.006933194809357335,
+          "p90": 1.2641460501964088,
+          "max": 96.65699851772467
+        },
+        "p90_empirical_coverage": 0.8683053256416687,
+        "selected_max_age_ms": {
+          "count": 59788,
+          "p50": 2685.9044189453125,
+          "p90": 8432.448315429696,
+          "max": 119992.15600585938
+        },
+        "support_paths": {
+          "typed": 59774,
+          "legacy_unknown_shape": 31
+        }
+      },
+      "d2h:full": {
+        "queries": 37959,
+        "supported": 36593,
+        "support_fraction": 0.9640138043678707,
+        "supported_byte_fraction": 0.8672524835226831,
+        "p50_absolute_error_ms": {
+          "count": 36593,
+          "p50": 0.1979085883919398,
+          "p90": 1.9503942997630441,
+          "max": 88.32292584702373
+        },
+        "p50_signed_error_ms": {
+          "count": 36593,
+          "p50": 0.010849907994270325,
+          "p90": 0.5212883060685815,
+          "max": 41.57549096271396
+        },
+        "p90_empirical_coverage": 0.8887765419615774,
+        "selected_max_age_ms": {
+          "count": 36592,
+          "p50": 1645.481201171875,
+          "p90": 10332.400561523438,
+          "max": 88199.3359375
+        },
+        "support_paths": {
+          "typed": 36593
+        }
+      },
+      "d2h:hybrid": {
+        "queries": 15193,
+        "supported": 15190,
+        "support_fraction": 0.9998025406437175,
+        "supported_byte_fraction": 0.9998158193012905,
+        "p50_absolute_error_ms": {
+          "count": 15190,
+          "p50": 0.673039229724606,
+          "p90": 4.892631421329103,
+          "max": 78.30692919810176
+        },
+        "p50_signed_error_ms": {
+          "count": 15190,
+          "p50": -0.3446694589910906,
+          "p90": 0.6701601329871817,
+          "max": 24.044678109702268
+        },
+        "p90_empirical_coverage": 0.8154048716260698,
+        "selected_max_age_ms": {
+          "count": 15188,
+          "p50": 2810.65576171875,
+          "p90": 4238.5740234375,
+          "max": 119990.57666015625
+        },
+        "support_paths": {
+          "typed": 15190
+        }
+      },
+      "d2h:mamba": {
+        "queries": 113,
+        "supported": 102,
+        "support_fraction": 0.9026548672566371,
+        "supported_byte_fraction": 0.9026548672566371,
+        "p50_absolute_error_ms": {
+          "count": 102,
+          "p50": 0.14666118659079075,
+          "p90": 1.1627484112977982,
+          "max": 24.48864094913006
+        },
+        "p50_signed_error_ms": {
+          "count": 102,
+          "p50": 0.09353202767670155,
+          "p90": 1.1329791974276306,
+          "max": 1.3850140385329723
+        },
+        "p90_empirical_coverage": 0.8921568627450981,
+        "selected_max_age_ms": {
+          "count": 102,
+          "p50": 4582.72900390625,
+          "p90": 7208.440551757813,
+          "max": 119815.900390625
+        },
+        "support_paths": {
+          "typed": 102
+        }
+      },
+      "h2d:full": {
+        "queries": 71,
+        "supported": 47,
+        "support_fraction": 0.6619718309859155,
+        "supported_byte_fraction": 0.929240207415342,
+        "p50_absolute_error_ms": {
+          "count": 47,
+          "p50": 20.604279823601246,
+          "p90": 76.24866887284277,
+          "max": 96.65699851772467
+        },
+        "p50_signed_error_ms": {
+          "count": 47,
+          "p50": 5.583527497947216,
+          "p90": 55.662404963098666,
+          "max": 96.65699851772467
+        },
+        "p90_empirical_coverage": 0.8085106382978723,
+        "selected_max_age_ms": {
+          "count": 47,
+          "p50": 98224.03369140625,
+          "p90": 112762.00297851562,
+          "max": 118483.77661132812
+        },
+        "support_paths": {
+          "legacy_unknown_shape": 21,
+          "typed": 26
+        }
+      },
+      "h2d:hybrid": {
+        "queries": 7862,
+        "supported": 7843,
+        "support_fraction": 0.997583312134317,
+        "supported_byte_fraction": 0.9989858372698011,
+        "p50_absolute_error_ms": {
+          "count": 7843,
+          "p50": 4.78036246780276,
+          "p90": 15.69413899493281,
+          "max": 213.97737227380276
+        },
+        "p50_signed_error_ms": {
+          "count": 7843,
+          "p50": 1.6652694862810762,
+          "p90": 11.183811715833986,
+          "max": 54.221042431890965
+        },
+        "p90_empirical_coverage": 0.8749203111054443,
+        "selected_max_age_ms": {
+          "count": 7842,
+          "p50": 5018.3050537109375,
+          "p90": 6351.149340820312,
+          "max": 119295.59301757812
+        },
+        "support_paths": {
+          "typed": 7833,
+          "legacy_unknown_shape": 10
+        }
+      },
+      "h2d:mamba": {
+        "queries": 31,
+        "supported": 30,
+        "support_fraction": 0.967741935483871,
+        "supported_byte_fraction": 0.9523809523809523,
+        "p50_absolute_error_ms": {
+          "count": 30,
+          "p50": 13.903178973123431,
+          "p90": 33.80416417494418,
+          "max": 68.51994711905718
+        },
+        "p50_signed_error_ms": {
+          "count": 30,
+          "p50": 13.040482997894287,
+          "p90": 30.863357754424218,
+          "max": 68.51994711905718
+        },
+        "p90_empirical_coverage": 0.9666666666666667,
+        "selected_max_age_ms": {
+          "count": 17,
+          "p50": 67288.25219726562,
+          "p90": 113358.84877929688,
+          "max": 119992.15600585938
+        },
+        "support_paths": {
+          "typed": 30
+        }
+      },
+      "earlier_time_half": {
+        "queries": 35162,
+        "supported": 34727,
+        "support_fraction": 0.9876286900631364,
+        "supported_byte_fraction": 0.9964604729178761,
+        "p50_absolute_error_ms": {
+          "count": 34727,
+          "p50": 0.6705749592296284,
+          "p90": 7.869927232697013,
+          "max": 213.97737227380276
+        },
+        "p50_signed_error_ms": {
+          "count": 34727,
+          "p50": -0.034687139975627224,
+          "p90": 2.9137034343611417,
+          "max": 96.65699851772467
+        },
+        "p90_empirical_coverage": 0.8550695424309614,
+        "selected_max_age_ms": {
+          "count": 34716,
+          "p50": 3027.2794189453125,
+          "p90": 7007.297119140625,
+          "max": 119990.57666015625
+        },
+        "support_paths": {
+          "typed": 34704,
+          "legacy_unknown_shape": 23
+        }
+      },
+      "later_time_half": {
+        "queries": 26067,
+        "supported": 25078,
+        "support_fraction": 0.9620593087044923,
+        "supported_byte_fraction": 0.8930236872642204,
+        "p50_absolute_error_ms": {
+          "count": 25078,
+          "p50": 0.2220126532955966,
+          "p90": 2.0808388462774747,
+          "max": 77.01674057170749
+        },
+        "p50_signed_error_ms": {
+          "count": 25078,
+          "p50": 0.009952345862984657,
+          "p90": 0.5853435024619102,
+          "max": 65.42862579226494
+        },
+        "p90_empirical_coverage": 0.886633702847117,
+        "selected_max_age_ms": {
+          "count": 25072,
+          "p50": 1681.4813232421875,
+          "p90": 10290.018457031252,
+          "max": 119992.15600585938
+        },
+        "support_paths": {
+          "typed": 25070,
+          "legacy_unknown_shape": 8
+        }
+      },
+      "earlier_time_half:h2d:full": {
+        "queries": 53,
+        "supported": 45,
+        "support_fraction": 0.8490566037735849,
+        "supported_byte_fraction": 0.9756656701621772,
+        "p50_absolute_error_ms": {
+          "count": 45,
+          "p50": 20.604279823601246,
+          "p90": 78.98657383589587,
+          "max": 96.65699851772467
+        },
+        "p50_signed_error_ms": {
+          "count": 45,
+          "p50": 7.146218791604042,
+          "p90": 58.28829980451276,
+          "max": 96.65699851772467
+        },
+        "p90_empirical_coverage": 0.8222222222222222,
+        "selected_max_age_ms": {
+          "count": 45,
+          "p50": 98224.03369140625,
+          "p90": 113365.4484375,
+          "max": 118483.77661132812
+        },
+        "support_paths": {
+          "legacy_unknown_shape": 20,
+          "typed": 25
+        }
+      },
+      "later_time_half:h2d:full": {
+        "queries": 18,
+        "supported": 2,
+        "support_fraction": 0.1111111111111111,
+        "supported_byte_fraction": 0.16125725999316706,
+        "p50_absolute_error_ms": {
+          "count": 2,
+          "p50": 13.315651100128889,
+          "p90": 21.802479680627584,
+          "max": 23.92418682575226
+        },
+        "p50_signed_error_ms": {
+          "count": 2,
+          "p50": -10.60853572562337,
+          "p90": 0.04398515447974205,
+          "max": 2.70711537450552
+        },
+        "p90_empirical_coverage": 0.5,
+        "selected_max_age_ms": {
+          "count": 2,
+          "p50": 101335.51196289062,
+          "p90": 106611.92661132812,
+          "max": 107931.0302734375
+        },
+        "support_paths": {
+          "legacy_unknown_shape": 1,
+          "typed": 1
+        }
+      }
+    },
+    "direction_shape_32_age300s": {
+      "all": {
+        "queries": 61229,
+        "supported": 59839,
+        "support_fraction": 0.9772983390223586,
+        "supported_byte_fraction": 0.9903338529234188,
+        "p50_absolute_error_ms": {
+          "count": 59839,
+          "p50": 0.4112822934985161,
+          "p90": 5.403008806780338,
+          "max": 213.97737227380276
+        },
+        "p50_signed_error_ms": {
+          "count": 59839,
+          "p50": -0.00716362495183942,
+          "p90": 1.2473594894568938,
+          "max": 73.41709267348051
+        },
+        "p90_empirical_coverage": 0.868480422466953,
+        "selected_max_age_ms": {
+          "count": 59830,
+          "p50": 2687.0845947265625,
+          "p90": 8494.501855468745,
+          "max": 299689.763671875
+        },
+        "support_paths": {
+          "typed": 59822,
+          "legacy_unknown_shape": 17
+        }
+      },
+      "d2h:full": {
+        "queries": 37959,
+        "supported": 36593,
+        "support_fraction": 0.9640138043678707,
+        "supported_byte_fraction": 0.8672524835226831,
+        "p50_absolute_error_ms": {
+          "count": 36593,
+          "p50": 0.1979085883919398,
+          "p90": 1.9503942997630441,
+          "max": 88.32292584702373
+        },
+        "p50_signed_error_ms": {
+          "count": 36593,
+          "p50": 0.010849907994270325,
+          "p90": 0.5212883060685815,
+          "max": 41.57549096271396
+        },
+        "p90_empirical_coverage": 0.8887765419615774,
+        "selected_max_age_ms": {
+          "count": 36592,
+          "p50": 1645.481201171875,
+          "p90": 10332.400561523438,
+          "max": 88199.3359375
+        },
+        "support_paths": {
+          "typed": 36593
+        }
+      },
+      "d2h:hybrid": {
+        "queries": 15193,
+        "supported": 15193,
+        "support_fraction": 1.0,
+        "supported_byte_fraction": 1.0,
+        "p50_absolute_error_ms": {
+          "count": 15193,
+          "p50": 0.6664193979016941,
+          "p90": 4.873609584829257,
+          "max": 77.5305117132934
+        },
+        "p50_signed_error_ms": {
+          "count": 15193,
+          "p50": -0.3470933414991695,
+          "p90": 0.6574329436376893,
+          "max": 24.044678109702268
+        },
+        "p90_empirical_coverage": 0.8160995195155664,
+        "selected_max_age_ms": {
+          "count": 15192,
+          "p50": 2810.7449951171875,
+          "p90": 4244.195043945312,
+          "max": 299475.6281738281
+        },
+        "support_paths": {
+          "typed": 15193
+        }
+      },
+      "d2h:mamba": {
+        "queries": 113,
+        "supported": 106,
+        "support_fraction": 0.9380530973451328,
+        "supported_byte_fraction": 0.9380530973451328,
+        "p50_absolute_error_ms": {
+          "count": 106,
+          "p50": 0.14666118659079075,
+          "p90": 1.1621825397014618,
+          "max": 24.53039912506938
+        },
+        "p50_signed_error_ms": {
+          "count": 106,
+          "p50": 0.08109933696687222,
+          "p90": 1.1230220552533865,
+          "max": 1.3850140385329723
+        },
+        "p90_empirical_coverage": 0.8867924528301887,
+        "selected_max_age_ms": {
+          "count": 106,
+          "p50": 4624.129150390625,
+          "p90": 15420.22900390625,
+          "max": 286722.4482421875
+        },
+        "support_paths": {
+          "typed": 106
+        }
+      },
+      "h2d:full": {
+        "queries": 71,
+        "supported": 57,
+        "support_fraction": 0.8028169014084507,
+        "supported_byte_fraction": 0.9644862088273243,
+        "p50_absolute_error_ms": {
+          "count": 57,
+          "p50": 23.39194156229496,
+          "p90": 52.32983460410197,
+          "max": 84.71190457446973
+        },
+        "p50_signed_error_ms": {
+          "count": 57,
+          "p50": 2.349876333028078,
+          "p90": 42.28199627250433,
+          "max": 62.1593170799315
+        },
+        "p90_empirical_coverage": 0.8421052631578947,
+        "selected_max_age_ms": {
+          "count": 57,
+          "p50": 265743.9187011719,
+          "p90": 293563.7256835938,
+          "max": 298586.0173339844
+        },
+        "support_paths": {
+          "legacy_unknown_shape": 10,
+          "typed": 47
+        }
+      },
+      "h2d:hybrid": {
+        "queries": 7862,
+        "supported": 7859,
+        "support_fraction": 0.9996184177054185,
+        "supported_byte_fraction": 0.9998351658511544,
+        "p50_absolute_error_ms": {
+          "count": 7859,
+          "p50": 4.782228985842863,
+          "p90": 15.707447100430723,
+          "max": 213.97737227380276
+        },
+        "p50_signed_error_ms": {
+          "count": 7859,
+          "p50": 1.6808464268477792,
+          "p90": 11.192042785831768,
+          "max": 54.221042431890965
+        },
+        "p90_empirical_coverage": 0.8747932306909276,
+        "selected_max_age_ms": {
+          "count": 7858,
+          "p50": 5021.0374755859375,
+          "p90": 6367.041918945313,
+          "max": 299689.763671875
+        },
+        "support_paths": {
+          "typed": 7853,
+          "legacy_unknown_shape": 6
+        }
+      },
+      "h2d:mamba": {
+        "queries": 31,
+        "supported": 31,
+        "support_fraction": 1.0,
+        "supported_byte_fraction": 1.0,
+        "p50_absolute_error_ms": {
+          "count": 31,
+          "p50": 13.293833937495947,
+          "p90": 30.313017312437296,
+          "max": 73.41709267348051
+        },
+        "p50_signed_error_ms": {
+          "count": 31,
+          "p50": 10.641959961503744,
+          "p90": 26.215948164463043,
+          "max": 73.41709267348051
+        },
+        "p90_empirical_coverage": 0.967741935483871,
+        "selected_max_age_ms": {
+          "count": 25,
+          "p50": 212962.3115234375,
+          "p90": 270965.34306640626,
+          "max": 297343.53662109375
+        },
+        "support_paths": {
+          "typed": 30,
+          "legacy_unknown_shape": 1
+        }
+      },
+      "earlier_time_half": {
+        "queries": 35162,
+        "supported": 34741,
+        "support_fraction": 0.9880268471645527,
+        "supported_byte_fraction": 0.996757163844937,
+        "p50_absolute_error_ms": {
+          "count": 34741,
+          "p50": 0.6681530715207202,
+          "p90": 7.871907539476155,
+          "max": 213.97737227380276
+        },
+        "p50_signed_error_ms": {
+          "count": 34741,
+          "p50": -0.03507115351279577,
+          "p90": 2.8914161521589747,
+          "max": 73.41709267348051
+        },
+        "p90_empirical_coverage": 0.855185515673124,
+        "selected_max_age_ms": {
+          "count": 34734,
+          "p50": 3028.259033203125,
+          "p90": 7082.996484375002,
+          "max": 299689.763671875
+        },
+        "support_paths": {
+          "typed": 34734,
+          "legacy_unknown_shape": 7
+        }
+      },
+      "later_time_half": {
+        "queries": 26067,
+        "supported": 25098,
+        "support_fraction": 0.9628265623201749,
+        "supported_byte_fraction": 0.8998607451416604,
+        "p50_absolute_error_ms": {
+          "count": 25098,
+          "p50": 0.22184831278045974,
+          "p90": 2.0609097903736027,
+          "max": 77.01674057170749
+        },
+        "p50_signed_error_ms": {
+          "count": 25098,
+          "p50": 0.00960319916526478,
+          "p90": 0.577225193179091,
+          "max": 65.42862579226494
+        },
+        "p90_empirical_coverage": 0.8868834170053391,
+        "selected_max_age_ms": {
+          "count": 25096,
+          "p50": 1683.796142578125,
+          "p90": 10410.672973632812,
+          "max": 299608.1064453125
+        },
+        "support_paths": {
+          "typed": 25088,
+          "legacy_unknown_shape": 10
+        }
+      },
+      "earlier_time_half:h2d:full": {
+        "queries": 53,
+        "supported": 49,
+        "support_fraction": 0.9245283018867925,
+        "supported_byte_fraction": 0.9929573465099109,
+        "p50_absolute_error_ms": {
+          "count": 49,
+          "p50": 24.562176316976547,
+          "p90": 55.38354619858187,
+          "max": 84.71190457446973
+        },
+        "p50_signed_error_ms": {
+          "count": 49,
+          "p50": 2.349876333028078,
+          "p90": 44.49972175061704,
+          "max": 62.1593170799315
+        },
+        "p90_empirical_coverage": 0.8367346938775511,
+        "selected_max_age_ms": {
+          "count": 49,
+          "p50": 268988.71142578125,
+          "p90": 293479.344921875,
+          "max": 298586.0173339844
+        },
+        "support_paths": {
+          "legacy_unknown_shape": 7,
+          "typed": 42
+        }
+      },
+      "later_time_half:h2d:full": {
+        "queries": 18,
+        "supported": 8,
+        "support_fraction": 0.4444444444444444,
+        "supported_byte_fraction": 0.49350871199180046,
+        "p50_absolute_error_ms": {
+          "count": 8,
+          "p50": 12.428887016913094,
+          "p90": 30.440934002399445,
+          "max": 37.397321313619614
+        },
+        "p50_signed_error_ms": {
+          "count": 8,
+          "p50": 2.2329381005895126,
+          "p90": 30.440934002399445,
+          "max": 37.397321313619614
+        },
+        "p90_empirical_coverage": 0.875,
+        "selected_max_age_ms": {
+          "count": 8,
+          "p50": 184301.41052246094,
+          "p90": 250738.1117675781,
+          "max": 293868.2111816406
+        },
+        "support_paths": {
+          "legacy_unknown_shape": 3,
+          "typed": 5
+        }
+      }
+    }
+  },
+  "paired_comparisons": {
+    "direction_shape_32": {
+      "all": {
+        "matched_current": {
+          "queries": 59501,
+          "supported": 59501,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 59501,
+            "p50": 0.3335069406549136,
+            "p90": 4.192631913285254,
+            "max": 213.472876107651
+          },
+          "p50_signed_error_ms": {
+            "count": 59501,
+            "p50": 0.001976732164621353,
+            "p90": 1.476829405874014,
+            "max": 75.37694135680795
+          },
+          "p90_empirical_coverage": 0.855968807246937,
+          "selected_max_age_ms": {
+            "count": 59497,
+            "p50": 14919.439208984375,
+            "p90": 41318.08115234376,
+            "max": 1968350.2634277344
+          },
+          "support_paths": {
+            "typed": 59344,
+            "legacy_unknown_shape": 157
+          }
+        },
+        "matched_candidate": {
+          "queries": 59501,
+          "supported": 59501,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 59501,
+            "p50": 0.41086552664637566,
+            "p90": 5.398851476254066,
+            "max": 213.97737227380276
+          },
+          "p50_signed_error_ms": {
+            "count": 59501,
+            "p50": -0.006637155158122354,
+            "p90": 1.2503461729296035,
+            "max": 75.37694135680795
+          },
+          "p90_empirical_coverage": 0.868657669618998,
+          "selected_max_age_ms": {
+            "count": 59494,
+            "p50": 2674.5367431640625,
+            "p90": 8157.141162109393,
+            "max": 4161508.3024902344
+          },
+          "support_paths": {
+            "typed": 59498,
+            "legacy_unknown_shape": 3
+          }
+        },
+        "newly_supported": {
+          "queries": 359,
+          "supported": 359,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 359,
+            "p50": 0.664993654936552,
+            "p90": 14.509287120027697,
+            "max": 76.59399079867323
+          },
+          "p50_signed_error_ms": {
+            "count": 359,
+            "p50": -0.13486482203006744,
+            "p90": 0.922138954316139,
+            "max": 15.377629548311234
+          },
+          "p90_empirical_coverage": 0.841225626740947,
+          "selected_max_age_ms": {
+            "count": 359,
+            "p50": 49444.681396484375,
+            "p90": 237191.79072265615,
+            "max": 2025904.7348632812
+          },
+          "support_paths": {
+            "typed": 359
+          }
+        },
+        "lost_current_support": 1277
+      },
+      "d2h:full": {
+        "matched_current": {
+          "queries": 36358,
+          "supported": 36358,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 36358,
+            "p50": 0.17608168477157754,
+            "p90": 1.5662031446812945,
+            "max": 90.98422875115435
+          },
+          "p50_signed_error_ms": {
+            "count": 36358,
+            "p50": 0.006600748747587204,
+            "p90": 0.551944907552441,
+            "max": 26.191700715571642
+          },
+          "p90_empirical_coverage": 0.8565927718796413,
+          "selected_max_age_ms": {
+            "count": 36356,
+            "p50": 20143.071411132812,
+            "p90": 46347.04650878906,
+            "max": 112037.296875
+          },
+          "support_paths": {
+            "typed": 36358
+          }
+        },
+        "matched_candidate": {
+          "queries": 36358,
+          "supported": 36358,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 36358,
+            "p50": 0.19738824980298675,
+            "p90": 1.923394042911886,
+            "max": 88.32292584702373
+          },
+          "p50_signed_error_ms": {
+            "count": 36358,
+            "p50": 0.011193351242343552,
+            "p90": 0.5205439797067243,
+            "max": 41.57549096271396
+          },
+          "p90_empirical_coverage": 0.8892128279883382,
+          "selected_max_age_ms": {
+            "count": 36357,
+            "p50": 1632.53076171875,
+            "p90": 10025.03544921875,
+            "max": 88199.3359375
+          },
+          "support_paths": {
+            "typed": 36358
+          }
+        },
+        "newly_supported": {
+          "queries": 235,
+          "supported": 235,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 235,
+            "p50": 0.3768075257539749,
+            "p90": 10.4152843213946,
+            "max": 76.59399079867323
+          },
+          "p50_signed_error_ms": {
+            "count": 235,
+            "p50": -0.07196515798568726,
+            "p90": 0.8028405725714365,
+            "max": 15.377629548311234
+          },
+          "p90_empirical_coverage": 0.8212765957446808,
+          "selected_max_age_ms": {
+            "count": 235,
+            "p50": 34756.453125,
+            "p90": 63922.772460937485,
+            "max": 88111.45092773438
+          },
+          "support_paths": {
+            "typed": 235
+          }
+        },
+        "lost_current_support": 1277
+      },
+      "d2h:hybrid": {
+        "matched_current": {
+          "queries": 15084,
+          "supported": 15084,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 15084,
+            "p50": 0.46188943088054657,
+            "p90": 2.542675021387498,
+            "max": 80.25506239939769
+          },
+          "p50_signed_error_ms": {
+            "count": 15084,
+            "p50": -0.07465809255222489,
+            "p90": 1.2831345565090584,
+            "max": 62.67656711861491
+          },
+          "p90_empirical_coverage": 0.8524264120922832,
+          "selected_max_age_ms": {
+            "count": 15083,
+            "p50": 13663.40966796875,
+            "p90": 16547.992431640625,
+            "max": 138283.61206054688
+          },
+          "support_paths": {
+            "typed": 15084
+          }
+        },
+        "matched_candidate": {
+          "queries": 15084,
+          "supported": 15084,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 15084,
+            "p50": 0.6643550762867929,
+            "p90": 4.843573061306399,
+            "max": 77.5305117132934
+          },
+          "p50_signed_error_ms": {
+            "count": 15084,
+            "p50": -0.34646135159552083,
+            "p90": 0.6541025359183552,
+            "max": 24.044678109702268
+          },
+          "p90_empirical_coverage": 0.8155661628215327,
+          "selected_max_age_ms": {
+            "count": 15083,
+            "p50": 2804.838623046875,
+            "p90": 4137.255908203126,
+            "max": 343045.46484375
+          },
+          "support_paths": {
+            "typed": 15084
+          }
+        },
+        "newly_supported": {
+          "queries": 109,
+          "supported": 109,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 109,
+            "p50": 0.9803444908877212,
+            "p90": 43.15758468583227,
+            "max": 65.29331149341346
+          },
+          "p50_signed_error_ms": {
+            "count": 109,
+            "p50": -0.505965845590433,
+            "p90": 0.9775212965905666,
+            "max": 1.9781949565275507
+          },
+          "p90_empirical_coverage": 0.8990825688073395,
+          "selected_max_age_ms": {
+            "count": 109,
+            "p50": 189659.708984375,
+            "p90": 274398.4805664063,
+            "max": 338439.3825683594
+          },
+          "support_paths": {
+            "typed": 109
+          }
+        },
+        "lost_current_support": 0
+      },
+      "d2h:mamba": {
+        "matched_current": {
+          "queries": 95,
+          "supported": 95,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 95,
+            "p50": 1.0148133151233196,
+            "p90": 1.359896082431078,
+            "max": 2.368748653680086
+          },
+          "p50_signed_error_ms": {
+            "count": 95,
+            "p50": 1.002499833703041,
+            "p90": 1.3429372571408749,
+            "max": 1.3897162862122059
+          },
+          "p90_empirical_coverage": 0.9473684210526315,
+          "selected_max_age_ms": {
+            "count": 95,
+            "p50": 9494.441162109375,
+            "p90": 10425.533056640625,
+            "max": 10822.845703125
+          },
+          "support_paths": {
+            "typed": 95
+          }
+        },
+        "matched_candidate": {
+          "queries": 95,
+          "supported": 95,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 95,
+            "p50": 0.1637074165046215,
+            "p90": 1.1623240076005459,
+            "max": 3.435710910707712
+          },
+          "p50_signed_error_ms": {
+            "count": 95,
+            "p50": 0.09974977001547813,
+            "p90": 1.1399153620004654,
+            "max": 1.3850140385329723
+          },
+          "p90_empirical_coverage": 0.8947368421052632,
+          "selected_max_age_ms": {
+            "count": 95,
+            "p50": 4558.581298828125,
+            "p90": 6046.726123046877,
+            "max": 8169.47216796875
+          },
+          "support_paths": {
+            "typed": 95
+          }
+        },
+        "newly_supported": {
+          "queries": 15,
+          "supported": 15,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 15,
+            "p50": 0.13817613944411278,
+            "p90": 0.6000834517180917,
+            "max": 24.45137035101652
+          },
+          "p50_signed_error_ms": {
+            "count": 15,
+            "p50": 0.02890452742576599,
+            "p90": 0.2286097966134548,
+            "max": 0.2979720011353493
+          },
+          "p90_empirical_coverage": 0.7333333333333333,
+          "selected_max_age_ms": {
+            "count": 15,
+            "p50": 1164011.2346191406,
+            "p90": 1358890.8852050782,
+            "max": 2025904.7348632812
+          },
+          "support_paths": {
+            "typed": 15
+          }
+        },
+        "lost_current_support": 0
+      },
+      "h2d:full": {
+        "matched_current": {
+          "queries": 71,
+          "supported": 71,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 71,
+            "p50": 24.108140729367733,
+            "p90": 50.12981267645955,
+            "max": 59.04994485899806
+          },
+          "p50_signed_error_ms": {
+            "count": 71,
+            "p50": 10.067458264529705,
+            "p90": 40.075426921248436,
+            "max": 55.48854824155569
+          },
+          "p90_empirical_coverage": 0.7464788732394366,
+          "selected_max_age_ms": {
+            "count": 71,
+            "p50": 72650.21606445312,
+            "p90": 1436298.0456542969,
+            "max": 1708859.6223144531
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 69,
+            "typed": 2
+          }
+        },
+        "matched_candidate": {
+          "queries": 71,
+          "supported": 71,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 71,
+            "p50": 22.146222181618214,
+            "p90": 47.26338153705001,
+            "max": 64.87126774047255
+          },
+          "p50_signed_error_ms": {
+            "count": 71,
+            "p50": 3.9245286025106907,
+            "p90": 36.91130150791367,
+            "max": 54.12687522560478
+          },
+          "p90_empirical_coverage": 0.8732394366197183,
+          "selected_max_age_ms": {
+            "count": 71,
+            "p50": 1069347.5607910156,
+            "p90": 3115207.0234375,
+            "max": 3477445.4653320312
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 3,
+            "typed": 68
+          }
+        },
+        "newly_supported": {
+          "queries": 0,
+          "supported": 0,
+          "support_fraction": null,
+          "supported_byte_fraction": null,
+          "p50_absolute_error_ms": {
+            "count": 0
+          },
+          "p50_signed_error_ms": {
+            "count": 0
+          },
+          "p90_empirical_coverage": null,
+          "selected_max_age_ms": {
+            "count": 0
+          },
+          "support_paths": {}
+        },
+        "lost_current_support": 0
+      },
+      "h2d:hybrid": {
+        "matched_current": {
+          "queries": 7862,
+          "supported": 7862,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 7862,
+            "p50": 4.687626613304019,
+            "p90": 13.962915526784933,
+            "max": 213.472876107651
+          },
+          "p50_signed_error_ms": {
+            "count": 7862,
+            "p50": 0.6872332508498431,
+            "p90": 9.75802585827947,
+            "max": 69.57251869689306
+          },
+          "p90_empirical_coverage": 0.8598321037903841,
+          "selected_max_age_ms": {
+            "count": 7861,
+            "p50": 13519.2314453125,
+            "p90": 15853.919189453125,
+            "max": 1968350.2634277344
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 57,
+            "typed": 7805
+          }
+        },
+        "matched_candidate": {
+          "queries": 7862,
+          "supported": 7862,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 7862,
+            "p50": 4.7787500474117195,
+            "p90": 15.69720300639153,
+            "max": 213.97737227380276
+          },
+          "p50_signed_error_ms": {
+            "count": 7862,
+            "p50": 1.6813673016019663,
+            "p90": 11.193121511631364,
+            "max": 68.95149555127541
+          },
+          "p90_empirical_coverage": 0.8748410073772577,
+          "selected_max_age_ms": {
+            "count": 7861,
+            "p50": 5026.0712890625,
+            "p90": 6383.52490234375,
+            "max": 2197469.2700195312
+          },
+          "support_paths": {
+            "typed": 7862
+          }
+        },
+        "newly_supported": {
+          "queries": 0,
+          "supported": 0,
+          "support_fraction": null,
+          "supported_byte_fraction": null,
+          "p50_absolute_error_ms": {
+            "count": 0
+          },
+          "p50_signed_error_ms": {
+            "count": 0
+          },
+          "p90_empirical_coverage": null,
+          "selected_max_age_ms": {
+            "count": 0
+          },
+          "support_paths": {}
+        },
+        "lost_current_support": 0
+      },
+      "h2d:mamba": {
+        "matched_current": {
+          "queries": 31,
+          "supported": 31,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 31,
+            "p50": 13.417322654277086,
+            "p90": 37.942877504974604,
+            "max": 75.37694135680795
+          },
+          "p50_signed_error_ms": {
+            "count": 31,
+            "p50": 6.763088051229715,
+            "p90": 34.34256697073579,
+            "max": 75.37694135680795
+          },
+          "p90_empirical_coverage": 0.8387096774193549,
+          "selected_max_age_ms": {
+            "count": 31,
+            "p50": 1055584.0244140625,
+            "p90": 1531498.5979003906,
+            "max": 1681797.3562011719
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 31
+          }
+        },
+        "matched_candidate": {
+          "queries": 31,
+          "supported": 31,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 31,
+            "p50": 15.751863364130259,
+            "p90": 37.699535489082336,
+            "max": 75.37694135680795
+          },
+          "p50_signed_error_ms": {
+            "count": 31,
+            "p50": 15.087384264916182,
+            "p90": 31.953613739460707,
+            "max": 75.37694135680795
+          },
+          "p90_empirical_coverage": 0.9354838709677419,
+          "selected_max_age_ms": {
+            "count": 27,
+            "p50": 1730724.64453125,
+            "p90": 3711190.705371094,
+            "max": 4161508.3024902344
+          },
+          "support_paths": {
+            "typed": 31
+          }
+        },
+        "newly_supported": {
+          "queries": 0,
+          "supported": 0,
+          "support_fraction": null,
+          "supported_byte_fraction": null,
+          "p50_absolute_error_ms": {
+            "count": 0
+          },
+          "p50_signed_error_ms": {
+            "count": 0
+          },
+          "p90_empirical_coverage": null,
+          "selected_max_age_ms": {
+            "count": 0
+          },
+          "support_paths": {}
+        },
+        "lost_current_support": 0
+      },
+      "earlier_time_half": {
+        "matched_current": {
+          "queries": 34456,
+          "supported": 34456,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 34456,
+            "p50": 0.5025522280198356,
+            "p90": 6.539058605293434,
+            "max": 213.472876107651
+          },
+          "p50_signed_error_ms": {
+            "count": 34456,
+            "p50": -0.001986860300898452,
+            "p90": 2.7616427987446386,
+            "max": 75.37694135680795
+          },
+          "p90_empirical_coverage": 0.8573833294636638,
+          "selected_max_age_ms": {
+            "count": 34452,
+            "p50": 13941.056396484375,
+            "p90": 31228.212573242192,
+            "max": 1093948.3583984375
+          },
+          "support_paths": {
+            "typed": 34362,
+            "legacy_unknown_shape": 94
+          }
+        },
+        "matched_candidate": {
+          "queries": 34456,
+          "supported": 34456,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 34456,
+            "p50": 0.6694637613872683,
+            "p90": 7.8735150369677935,
+            "max": 213.97737227380276
+          },
+          "p50_signed_error_ms": {
+            "count": 34456,
+            "p50": -0.03405046277503171,
+            "p90": 2.941527587058344,
+            "max": 75.37694135680795
+          },
+          "p90_empirical_coverage": 0.8554968655676806,
+          "selected_max_age_ms": {
+            "count": 34449,
+            "p50": 3011.51513671875,
+            "p90": 6655.767431640627,
+            "max": 1635969.1564941406
+          },
+          "support_paths": {
+            "typed": 34453,
+            "legacy_unknown_shape": 3
+          }
+        },
+        "newly_supported": {
+          "queries": 293,
+          "supported": 293,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 293,
+            "p50": 0.43109990656375885,
+            "p90": 11.260125949966989,
+            "max": 76.59399079867323
+          },
+          "p50_signed_error_ms": {
+            "count": 293,
+            "p50": -0.09240349754691124,
+            "p90": 0.8951764553785337,
+            "max": 15.377629548311234
+          },
+          "p90_empirical_coverage": 0.825938566552901,
+          "selected_max_age_ms": {
+            "count": 293,
+            "p50": 38912.273681640625,
+            "p90": 205591.54526367193,
+            "max": 2025904.7348632812
+          },
+          "support_paths": {
+            "typed": 293
+          }
+        },
+        "lost_current_support": 345
+      },
+      "later_time_half": {
+        "matched_current": {
+          "queries": 25045,
+          "supported": 25045,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 25045,
+            "p50": 0.19797587825020158,
+            "p90": 1.6343261757639254,
+            "max": 77.70358445122838
+          },
+          "p50_signed_error_ms": {
+            "count": 25045,
+            "p50": 0.004906104444265369,
+            "p90": 0.6173831280577193,
+            "max": 67.25600780919194
+          },
+          "p90_empirical_coverage": 0.8540227590337393,
+          "selected_max_age_ms": {
+            "count": 25045,
+            "p50": 21154.64111328125,
+            "p90": 47238.119140625,
+            "max": 1968350.2634277344
+          },
+          "support_paths": {
+            "typed": 24982,
+            "legacy_unknown_shape": 63
+          }
+        },
+        "matched_candidate": {
+          "queries": 25045,
+          "supported": 25045,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 25045,
+            "p50": 0.22085197269916534,
+            "p90": 2.056790045812134,
+            "max": 77.01674057170749
+          },
+          "p50_signed_error_ms": {
+            "count": 25045,
+            "p50": 0.009753275662660599,
+            "p90": 0.5758490413322449,
+            "max": 62.65981774777174
+          },
+          "p90_empirical_coverage": 0.8867638251147933,
+          "selected_max_age_ms": {
+            "count": 25045,
+            "p50": 1679.55419921875,
+            "p90": 10297.690722656254,
+            "max": 4161508.3024902344
+          },
+          "support_paths": {
+            "typed": 25045
+          }
+        },
+        "newly_supported": {
+          "queries": 66,
+          "supported": 66,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 66,
+            "p50": 0.9576623786534866,
+            "p90": 37.38849610090256,
+            "max": 61.83394277468324
+          },
+          "p50_signed_error_ms": {
+            "count": 66,
+            "p50": -0.5376932731080055,
+            "p90": 0.9151747515165807,
+            "max": 1.9781949565275507
+          },
+          "p90_empirical_coverage": 0.9090909090909091,
+          "selected_max_age_ms": {
+            "count": 66,
+            "p50": 193157.9200439453,
+            "p90": 272249.5666503906,
+            "max": 338439.3825683594
+          },
+          "support_paths": {
+            "typed": 66
+          }
+        },
+        "lost_current_support": 932
+      },
+      "earlier_time_half:h2d:full": {
+        "matched_current": {
+          "queries": 53,
+          "supported": 53,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 53,
+            "p50": 25.716126896440983,
+            "p90": 50.39625400677323,
+            "max": 59.04994485899806
+          },
+          "p50_signed_error_ms": {
+            "count": 53,
+            "p50": 12.523512348695597,
+            "p90": 41.1723304539919,
+            "max": 55.48854824155569
+          },
+          "p90_empirical_coverage": 0.7358490566037735,
+          "selected_max_age_ms": {
+            "count": 53,
+            "p50": 11382.923583984375,
+            "p90": 930155.7535644531,
+            "max": 1003979.9936523438
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 51,
+            "typed": 2
+          }
+        },
+        "matched_candidate": {
+          "queries": 53,
+          "supported": 53,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 53,
+            "p50": 24.53566551234762,
+            "p90": 51.31544638425113,
+            "max": 64.87126774047255
+          },
+          "p50_signed_error_ms": {
+            "count": 53,
+            "p50": 2.349876333028078,
+            "p90": 40.41699673980476,
+            "max": 54.12687522560478
+          },
+          "p90_empirical_coverage": 0.8679245283018868,
+          "selected_max_age_ms": {
+            "count": 53,
+            "p50": 919364.5908203125,
+            "p90": 1365862.439453125,
+            "max": 1635969.1564941406
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 3,
+            "typed": 50
+          }
+        },
+        "newly_supported": {
+          "queries": 0,
+          "supported": 0,
+          "support_fraction": null,
+          "supported_byte_fraction": null,
+          "p50_absolute_error_ms": {
+            "count": 0
+          },
+          "p50_signed_error_ms": {
+            "count": 0
+          },
+          "p90_empirical_coverage": null,
+          "selected_max_age_ms": {
+            "count": 0
+          },
+          "support_paths": {}
+        },
+        "lost_current_support": 0
+      },
+      "later_time_half:h2d:full": {
+        "matched_current": {
+          "queries": 18,
+          "supported": 18,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 18,
+            "p50": 18.539305543527007,
+            "p90": 37.27421909570694,
+            "max": 49.03892264518579
+          },
+          "p50_signed_error_ms": {
+            "count": 18,
+            "p50": 9.661825214017629,
+            "p90": 30.192796001210816,
+            "max": 49.03892264518579
+          },
+          "p90_empirical_coverage": 0.7777777777777778,
+          "selected_max_age_ms": {
+            "count": 18,
+            "p50": 1399010.1765136719,
+            "p90": 1626592.204296875,
+            "max": 1708859.6223144531
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 18
+          }
+        },
+        "matched_candidate": {
+          "queries": 18,
+          "supported": 18,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 18,
+            "p50": 11.152998011846144,
+            "p90": 33.49667733314864,
+            "max": 35.746351108230755
+          },
+          "p50_signed_error_ms": {
+            "count": 18,
+            "p50": 6.343121403038104,
+            "p90": 28.13581441359147,
+            "max": 35.746351108230755
+          },
+          "p90_empirical_coverage": 0.8888888888888888,
+          "selected_max_age_ms": {
+            "count": 18,
+            "p50": 2970707.2877197266,
+            "p90": 3348641.831665039,
+            "max": 3477445.4653320312
+          },
+          "support_paths": {
+            "typed": 18
+          }
+        },
+        "newly_supported": {
+          "queries": 0,
+          "supported": 0,
+          "support_fraction": null,
+          "supported_byte_fraction": null,
+          "p50_absolute_error_ms": {
+            "count": 0
+          },
+          "p50_signed_error_ms": {
+            "count": 0
+          },
+          "p90_empirical_coverage": null,
+          "selected_max_age_ms": {
+            "count": 0
+          },
+          "support_paths": {}
+        },
+        "lost_current_support": 0
+      }
+    },
+    "direction_shape_32_age120s": {
+      "all": {
+        "matched_current": {
+          "queries": 59457,
+          "supported": 59457,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 59457,
+            "p50": 0.3328809113979343,
+            "p90": 4.169700255712748,
+            "max": 213.472876107651
+          },
+          "p50_signed_error_ms": {
+            "count": 59457,
+            "p50": 0.001870759926637433,
+            "p90": 1.4663686044514188,
+            "max": 75.37694135680795
+          },
+          "p90_empirical_coverage": 0.8559799518980103,
+          "selected_max_age_ms": {
+            "count": 59453,
+            "p50": 14914.632568359375,
+            "p90": 41218.10966796877,
+            "max": 1739730.7106933594
+          },
+          "support_paths": {
+            "typed": 59344,
+            "legacy_unknown_shape": 113
+          }
+        },
+        "matched_candidate": {
+          "queries": 59457,
+          "supported": 59457,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 59457,
+            "p50": 0.4109888799635568,
+            "p90": 5.373947322368624,
+            "max": 213.97737227380276
+          },
+          "p50_signed_error_ms": {
+            "count": 59457,
+            "p50": -0.00660182626843453,
+            "p90": 1.261452321211339,
+            "max": 96.65699851772467
+          },
+          "p90_empirical_coverage": 0.868493196764048,
+          "selected_max_age_ms": {
+            "count": 59440,
+            "p50": 2671.4287109375,
+            "p90": 8022.428759765625,
+            "max": 119992.15600585938
+          },
+          "support_paths": {
+            "typed": 59426,
+            "legacy_unknown_shape": 31
+          }
+        },
+        "newly_supported": {
+          "queries": 348,
+          "supported": 348,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 348,
+            "p50": 0.8523182252422963,
+            "p90": 14.552865951446936,
+            "max": 76.59399079867323
+          },
+          "p50_signed_error_ms": {
+            "count": 348,
+            "p50": -0.06747106090188026,
+            "p90": 1.5863118693232543,
+            "max": 15.377629548311234
+          },
+          "p90_empirical_coverage": 0.8362068965517241,
+          "selected_max_age_ms": {
+            "count": 348,
+            "p50": 45545.13671875,
+            "p90": 116271.02563476562,
+            "max": 119973.89086914062
+          },
+          "support_paths": {
+            "typed": 348
+          }
+        },
+        "lost_current_support": 1321
+      },
+      "d2h:full": {
+        "matched_current": {
+          "queries": 36358,
+          "supported": 36358,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 36358,
+            "p50": 0.17608168477157754,
+            "p90": 1.5662031446812945,
+            "max": 90.98422875115435
+          },
+          "p50_signed_error_ms": {
+            "count": 36358,
+            "p50": 0.006600748747587204,
+            "p90": 0.551944907552441,
+            "max": 26.191700715571642
+          },
+          "p90_empirical_coverage": 0.8565927718796413,
+          "selected_max_age_ms": {
+            "count": 36356,
+            "p50": 20143.071411132812,
+            "p90": 46347.04650878906,
+            "max": 112037.296875
+          },
+          "support_paths": {
+            "typed": 36358
+          }
+        },
+        "matched_candidate": {
+          "queries": 36358,
+          "supported": 36358,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 36358,
+            "p50": 0.19738824980298675,
+            "p90": 1.923394042911886,
+            "max": 88.32292584702373
+          },
+          "p50_signed_error_ms": {
+            "count": 36358,
+            "p50": 0.011193351242343552,
+            "p90": 0.5205439797067243,
+            "max": 41.57549096271396
+          },
+          "p90_empirical_coverage": 0.8892128279883382,
+          "selected_max_age_ms": {
+            "count": 36357,
+            "p50": 1632.53076171875,
+            "p90": 10025.03544921875,
+            "max": 88199.3359375
+          },
+          "support_paths": {
+            "typed": 36358
+          }
+        },
+        "newly_supported": {
+          "queries": 235,
+          "supported": 235,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 235,
+            "p50": 0.3768075257539749,
+            "p90": 10.4152843213946,
+            "max": 76.59399079867323
+          },
+          "p50_signed_error_ms": {
+            "count": 235,
+            "p50": -0.07196515798568726,
+            "p90": 0.8028405725714365,
+            "max": 15.377629548311234
+          },
+          "p90_empirical_coverage": 0.8212765957446808,
+          "selected_max_age_ms": {
+            "count": 235,
+            "p50": 34756.453125,
+            "p90": 63922.772460937485,
+            "max": 88111.45092773438
+          },
+          "support_paths": {
+            "typed": 235
+          }
+        },
+        "lost_current_support": 1277
+      },
+      "d2h:hybrid": {
+        "matched_current": {
+          "queries": 15084,
+          "supported": 15084,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 15084,
+            "p50": 0.46188943088054657,
+            "p90": 2.542675021387498,
+            "max": 80.25506239939769
+          },
+          "p50_signed_error_ms": {
+            "count": 15084,
+            "p50": -0.07465809255222489,
+            "p90": 1.2831345565090584,
+            "max": 62.67656711861491
+          },
+          "p90_empirical_coverage": 0.8524264120922832,
+          "selected_max_age_ms": {
+            "count": 15083,
+            "p50": 13663.40966796875,
+            "p90": 16547.992431640625,
+            "max": 138283.61206054688
+          },
+          "support_paths": {
+            "typed": 15084
+          }
+        },
+        "matched_candidate": {
+          "queries": 15084,
+          "supported": 15084,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 15084,
+            "p50": 0.6704877578326065,
+            "p90": 4.844664951657613,
+            "max": 78.30692919810176
+          },
+          "p50_signed_error_ms": {
+            "count": 15084,
+            "p50": -0.34531407228449984,
+            "p90": 0.6654682839909795,
+            "max": 24.044678109702268
+          },
+          "p90_empirical_coverage": 0.815035799522673,
+          "selected_max_age_ms": {
+            "count": 15082,
+            "p50": 2804.80859375,
+            "p90": 4136.2630859375,
+            "max": 119990.57666015625
+          },
+          "support_paths": {
+            "typed": 15084
+          }
+        },
+        "newly_supported": {
+          "queries": 106,
+          "supported": 106,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 106,
+            "p50": 1.775376922902266,
+            "p90": 43.298576259985566,
+            "max": 65.77499274008831
+          },
+          "p50_signed_error_ms": {
+            "count": 106,
+            "p50": -0.055120326578617096,
+            "p90": 2.4906587786972523,
+            "max": 9.722626768052578
+          },
+          "p90_empirical_coverage": 0.8679245283018868,
+          "selected_max_age_ms": {
+            "count": 106,
+            "p50": 111832.13928222656,
+            "p90": 118991.83032226562,
+            "max": 119973.89086914062
+          },
+          "support_paths": {
+            "typed": 106
+          }
+        },
+        "lost_current_support": 0
+      },
+      "d2h:mamba": {
+        "matched_current": {
+          "queries": 95,
+          "supported": 95,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 95,
+            "p50": 1.0148133151233196,
+            "p90": 1.359896082431078,
+            "max": 2.368748653680086
+          },
+          "p50_signed_error_ms": {
+            "count": 95,
+            "p50": 1.002499833703041,
+            "p90": 1.3429372571408749,
+            "max": 1.3897162862122059
+          },
+          "p90_empirical_coverage": 0.9473684210526315,
+          "selected_max_age_ms": {
+            "count": 95,
+            "p50": 9494.441162109375,
+            "p90": 10425.533056640625,
+            "max": 10822.845703125
+          },
+          "support_paths": {
+            "typed": 95
+          }
+        },
+        "matched_candidate": {
+          "queries": 95,
+          "supported": 95,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 95,
+            "p50": 0.1637074165046215,
+            "p90": 1.1623240076005459,
+            "max": 3.435710910707712
+          },
+          "p50_signed_error_ms": {
+            "count": 95,
+            "p50": 0.09974977001547813,
+            "p90": 1.1399153620004654,
+            "max": 1.3850140385329723
+          },
+          "p90_empirical_coverage": 0.8947368421052632,
+          "selected_max_age_ms": {
+            "count": 95,
+            "p50": 4558.581298828125,
+            "p90": 6046.726123046877,
+            "max": 8169.47216796875
+          },
+          "support_paths": {
+            "typed": 95
+          }
+        },
+        "newly_supported": {
+          "queries": 7,
+          "supported": 7,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 7,
+            "p50": 0.12265890836715698,
+            "p90": 9.949349798262128,
+            "max": 24.48864094913006
+          },
+          "p50_signed_error_ms": {
+            "count": 7,
+            "p50": -0.022186897695064545,
+            "p90": 0.18312614411115652,
+            "max": 0.25648903101682663
+          },
+          "p90_empirical_coverage": 0.8571428571428571,
+          "selected_max_age_ms": {
+            "count": 7,
+            "p50": 108880.84155273438,
+            "p90": 116837.07250976562,
+            "max": 119815.900390625
+          },
+          "support_paths": {
+            "typed": 7
+          }
+        },
+        "lost_current_support": 0
+      },
+      "h2d:full": {
+        "matched_current": {
+          "queries": 47,
+          "supported": 47,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 47,
+            "p50": 26.837085373699665,
+            "p90": 50.459817716068585,
+            "max": 59.04994485899806
+          },
+          "p50_signed_error_ms": {
+            "count": 47,
+            "p50": 12.812540066852968,
+            "p90": 42.199173010885715,
+            "max": 55.48854824155569
+          },
+          "p90_empirical_coverage": 0.723404255319149,
+          "selected_max_age_ms": {
+            "count": 47,
+            "p50": 10874.0927734375,
+            "p90": 944003.0943847656,
+            "max": 1436298.0456542969
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 45,
+            "typed": 2
+          }
+        },
+        "matched_candidate": {
+          "queries": 47,
+          "supported": 47,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 47,
+            "p50": 20.604279823601246,
+            "p90": 76.24866887284277,
+            "max": 96.65699851772467
+          },
+          "p50_signed_error_ms": {
+            "count": 47,
+            "p50": 5.583527497947216,
+            "p90": 55.662404963098666,
+            "max": 96.65699851772467
+          },
+          "p90_empirical_coverage": 0.8085106382978723,
+          "selected_max_age_ms": {
+            "count": 47,
+            "p50": 98224.03369140625,
+            "p90": 112762.00297851562,
+            "max": 118483.77661132812
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 21,
+            "typed": 26
+          }
+        },
+        "newly_supported": {
+          "queries": 0,
+          "supported": 0,
+          "support_fraction": null,
+          "supported_byte_fraction": null,
+          "p50_absolute_error_ms": {
+            "count": 0
+          },
+          "p50_signed_error_ms": {
+            "count": 0
+          },
+          "p90_empirical_coverage": null,
+          "selected_max_age_ms": {
+            "count": 0
+          },
+          "support_paths": {}
+        },
+        "lost_current_support": 24
+      },
+      "h2d:hybrid": {
+        "matched_current": {
+          "queries": 7843,
+          "supported": 7843,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 7843,
+            "p50": 4.681059655539592,
+            "p90": 13.961757176816066,
+            "max": 213.472876107651
+          },
+          "p50_signed_error_ms": {
+            "count": 7843,
+            "p50": 0.6870101891513656,
+            "p90": 9.744852215814829,
+            "max": 54.64575346559286
+          },
+          "p90_empirical_coverage": 0.8597475455820477,
+          "selected_max_age_ms": {
+            "count": 7842,
+            "p50": 13510.434936523438,
+            "p90": 15833.709960937502,
+            "max": 1739730.7106933594
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 38,
+            "typed": 7805
+          }
+        },
+        "matched_candidate": {
+          "queries": 7843,
+          "supported": 7843,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 7843,
+            "p50": 4.78036246780276,
+            "p90": 15.69413899493281,
+            "max": 213.97737227380276
+          },
+          "p50_signed_error_ms": {
+            "count": 7843,
+            "p50": 1.6652694862810762,
+            "p90": 11.183811715833986,
+            "max": 54.221042431890965
+          },
+          "p90_empirical_coverage": 0.8749203111054443,
+          "selected_max_age_ms": {
+            "count": 7842,
+            "p50": 5018.3050537109375,
+            "p90": 6351.149340820312,
+            "max": 119295.59301757812
+          },
+          "support_paths": {
+            "typed": 7833,
+            "legacy_unknown_shape": 10
+          }
+        },
+        "newly_supported": {
+          "queries": 0,
+          "supported": 0,
+          "support_fraction": null,
+          "supported_byte_fraction": null,
+          "p50_absolute_error_ms": {
+            "count": 0
+          },
+          "p50_signed_error_ms": {
+            "count": 0
+          },
+          "p90_empirical_coverage": null,
+          "selected_max_age_ms": {
+            "count": 0
+          },
+          "support_paths": {}
+        },
+        "lost_current_support": 19
+      },
+      "h2d:mamba": {
+        "matched_current": {
+          "queries": 30,
+          "supported": 30,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 30,
+            "p50": 13.565439498052001,
+            "p90": 39.801554195582895,
+            "max": 75.37694135680795
+          },
+          "p50_signed_error_ms": {
+            "count": 30,
+            "p50": 6.819845177233219,
+            "p90": 34.70259802415968,
+            "max": 75.37694135680795
+          },
+          "p90_empirical_coverage": 0.8333333333333334,
+          "selected_max_age_ms": {
+            "count": 30,
+            "p50": 1046366.2154541016,
+            "p90": 1517066.8555419922,
+            "max": 1681797.3562011719
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 30
+          }
+        },
+        "matched_candidate": {
+          "queries": 30,
+          "supported": 30,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 30,
+            "p50": 13.903178973123431,
+            "p90": 33.80416417494418,
+            "max": 68.51994711905718
+          },
+          "p50_signed_error_ms": {
+            "count": 30,
+            "p50": 13.040482997894287,
+            "p90": 30.863357754424218,
+            "max": 68.51994711905718
+          },
+          "p90_empirical_coverage": 0.9666666666666667,
+          "selected_max_age_ms": {
+            "count": 17,
+            "p50": 67288.25219726562,
+            "p90": 113358.84877929688,
+            "max": 119992.15600585938
+          },
+          "support_paths": {
+            "typed": 30
+          }
+        },
+        "newly_supported": {
+          "queries": 0,
+          "supported": 0,
+          "support_fraction": null,
+          "supported_byte_fraction": null,
+          "p50_absolute_error_ms": {
+            "count": 0
+          },
+          "p50_signed_error_ms": {
+            "count": 0
+          },
+          "p90_empirical_coverage": null,
+          "selected_max_age_ms": {
+            "count": 0
+          },
+          "support_paths": {}
+        },
+        "lost_current_support": 1
+      },
+      "earlier_time_half": {
+        "matched_current": {
+          "queries": 34442,
+          "supported": 34442,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 34442,
+            "p50": 0.5021157337005933,
+            "p90": 6.529050241566464,
+            "max": 213.472876107651
+          },
+          "p50_signed_error_ms": {
+            "count": 34442,
+            "p50": -0.0022444874048233032,
+            "p90": 2.750256945282275,
+            "max": 75.37694135680795
+          },
+          "p90_empirical_coverage": 0.8573543928923988,
+          "selected_max_age_ms": {
+            "count": 34438,
+            "p50": 13939.9873046875,
+            "p90": 31121.42019042968,
+            "max": 1093948.3583984375
+          },
+          "support_paths": {
+            "typed": 34362,
+            "legacy_unknown_shape": 80
+          }
+        },
+        "matched_candidate": {
+          "queries": 34442,
+          "supported": 34442,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 34442,
+            "p50": 0.670986778874596,
+            "p90": 7.86091531862287,
+            "max": 213.97737227380276
+          },
+          "p50_signed_error_ms": {
+            "count": 34442,
+            "p50": -0.03417552441914884,
+            "p90": 2.935801153289921,
+            "max": 96.65699851772467
+          },
+          "p90_empirical_coverage": 0.8552929562743162,
+          "selected_max_age_ms": {
+            "count": 34431,
+            "p50": 3010.781005859375,
+            "p90": 6627.409423828125,
+            "max": 119990.57666015625
+          },
+          "support_paths": {
+            "typed": 34419,
+            "legacy_unknown_shape": 23
+          }
+        },
+        "newly_supported": {
+          "queries": 285,
+          "supported": 285,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 285,
+            "p50": 0.45214779675006866,
+            "p90": 11.60689563458657,
+            "max": 76.59399079867323
+          },
+          "p50_signed_error_ms": {
+            "count": 285,
+            "p50": -0.06436032257517177,
+            "p90": 1.4555201684983572,
+            "max": 15.377629548311234
+          },
+          "p90_empirical_coverage": 0.8280701754385965,
+          "selected_max_age_ms": {
+            "count": 285,
+            "p50": 37667.198974609375,
+            "p90": 112550.58701171874,
+            "max": 119973.89086914062
+          },
+          "support_paths": {
+            "typed": 285
+          }
+        },
+        "lost_current_support": 359
+      },
+      "later_time_half": {
+        "matched_current": {
+          "queries": 25015,
+          "supported": 25015,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 25015,
+            "p50": 0.1972514482633273,
+            "p90": 1.620855431512595,
+            "max": 77.70358445122838
+          },
+          "p50_signed_error_ms": {
+            "count": 25015,
+            "p50": 0.004871645509004596,
+            "p90": 0.6126442267101614,
+            "max": 67.25600780919194
+          },
+          "p90_empirical_coverage": 0.854087547471517,
+          "selected_max_age_ms": {
+            "count": 25015,
+            "p50": 21125.065673828125,
+            "p90": 47124.01474609377,
+            "max": 1739730.7106933594
+          },
+          "support_paths": {
+            "typed": 24982,
+            "legacy_unknown_shape": 33
+          }
+        },
+        "matched_candidate": {
+          "queries": 25015,
+          "supported": 25015,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 25015,
+            "p50": 0.2207476158380508,
+            "p90": 2.0611813526605784,
+            "max": 77.01674057170749
+          },
+          "p50_signed_error_ms": {
+            "count": 25015,
+            "p50": 0.009975861757993698,
+            "p90": 0.5796362913023637,
+            "max": 65.42862579226494
+          },
+          "p90_empirical_coverage": 0.8866679992004797,
+          "selected_max_age_ms": {
+            "count": 25009,
+            "p50": 1674.426025390625,
+            "p90": 10033.575097656252,
+            "max": 119992.15600585938
+          },
+          "support_paths": {
+            "typed": 25007,
+            "legacy_unknown_shape": 8
+          }
+        },
+        "newly_supported": {
+          "queries": 63,
+          "supported": 63,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 63,
+            "p50": 1.6218054094008605,
+            "p90": 40.56076379492883,
+            "max": 59.52211609110236
+          },
+          "p50_signed_error_ms": {
+            "count": 63,
+            "p50": -0.15333283678809817,
+            "p90": 1.8467819318175316,
+            "max": 3.968171775341034
+          },
+          "p90_empirical_coverage": 0.873015873015873,
+          "selected_max_age_ms": {
+            "count": 63,
+            "p50": 110791.64135742188,
+            "p90": 119041.05346679688,
+            "max": 119506.24658203125
+          },
+          "support_paths": {
+            "typed": 63
+          }
+        },
+        "lost_current_support": 962
+      },
+      "earlier_time_half:h2d:full": {
+        "matched_current": {
+          "queries": 45,
+          "supported": 45,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 45,
+            "p50": 30.54941212758422,
+            "p90": 50.48441893396759,
+            "max": 59.04994485899806
+          },
+          "p50_signed_error_ms": {
+            "count": 45,
+            "p50": 12.812540066852968,
+            "p90": 42.5754813477397,
+            "max": 55.48854824155569
+          },
+          "p90_empirical_coverage": 0.7111111111111111,
+          "selected_max_age_ms": {
+            "count": 45,
+            "p50": 10756.5947265625,
+            "p90": 678154.0314453128,
+            "max": 1003979.9936523438
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 43,
+            "typed": 2
+          }
+        },
+        "matched_candidate": {
+          "queries": 45,
+          "supported": 45,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 45,
+            "p50": 20.604279823601246,
+            "p90": 78.98657383589587,
+            "max": 96.65699851772467
+          },
+          "p50_signed_error_ms": {
+            "count": 45,
+            "p50": 7.146218791604042,
+            "p90": 58.28829980451276,
+            "max": 96.65699851772467
+          },
+          "p90_empirical_coverage": 0.8222222222222222,
+          "selected_max_age_ms": {
+            "count": 45,
+            "p50": 98224.03369140625,
+            "p90": 113365.4484375,
+            "max": 118483.77661132812
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 20,
+            "typed": 25
+          }
+        },
+        "newly_supported": {
+          "queries": 0,
+          "supported": 0,
+          "support_fraction": null,
+          "supported_byte_fraction": null,
+          "p50_absolute_error_ms": {
+            "count": 0
+          },
+          "p50_signed_error_ms": {
+            "count": 0
+          },
+          "p90_empirical_coverage": null,
+          "selected_max_age_ms": {
+            "count": 0
+          },
+          "support_paths": {}
+        },
+        "lost_current_support": 8
+      },
+      "later_time_half:h2d:full": {
+        "matched_current": {
+          "queries": 2,
+          "supported": 2,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 2,
+            "p50": 13.103921199217439,
+            "p90": 15.533091546967626,
+            "max": 16.140384133905172
+          },
+          "p50_signed_error_ms": {
+            "count": 2,
+            "p50": 13.103921199217439,
+            "p90": 15.533091546967626,
+            "max": 16.140384133905172
+          },
+          "p90_empirical_coverage": 1.0,
+          "selected_max_age_ms": {
+            "count": 2,
+            "p50": 1282982.5510253906,
+            "p90": 1405634.9467285157,
+            "max": 1436298.0456542969
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 2
+          }
+        },
+        "matched_candidate": {
+          "queries": 2,
+          "supported": 2,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 2,
+            "p50": 13.315651100128889,
+            "p90": 21.802479680627584,
+            "max": 23.92418682575226
+          },
+          "p50_signed_error_ms": {
+            "count": 2,
+            "p50": -10.60853572562337,
+            "p90": 0.04398515447974205,
+            "max": 2.70711537450552
+          },
+          "p90_empirical_coverage": 0.5,
+          "selected_max_age_ms": {
+            "count": 2,
+            "p50": 101335.51196289062,
+            "p90": 106611.92661132812,
+            "max": 107931.0302734375
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 1,
+            "typed": 1
+          }
+        },
+        "newly_supported": {
+          "queries": 0,
+          "supported": 0,
+          "support_fraction": null,
+          "supported_byte_fraction": null,
+          "p50_absolute_error_ms": {
+            "count": 0
+          },
+          "p50_signed_error_ms": {
+            "count": 0
+          },
+          "p90_empirical_coverage": null,
+          "selected_max_age_ms": {
+            "count": 0
+          },
+          "support_paths": {}
+        },
+        "lost_current_support": 16
+      }
+    },
+    "direction_shape_32_age300s": {
+      "all": {
+        "matched_current": {
+          "queries": 59484,
+          "supported": 59484,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 59484,
+            "p50": 0.333218602463603,
+            "p90": 4.183249632425398,
+            "max": 213.472876107651
+          },
+          "p50_signed_error_ms": {
+            "count": 59484,
+            "p50": 0.0019688159227371216,
+            "p90": 1.474075513167382,
+            "max": 75.37694135680795
+          },
+          "p90_empirical_coverage": 0.8560117006253782,
+          "selected_max_age_ms": {
+            "count": 59480,
+            "p50": 14917.595825195312,
+            "p90": 41282.95263671875,
+            "max": 1739730.7106933594
+          },
+          "support_paths": {
+            "typed": 59344,
+            "legacy_unknown_shape": 140
+          }
+        },
+        "matched_candidate": {
+          "queries": 59484,
+          "supported": 59484,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 59484,
+            "p50": 0.41054766409158705,
+            "p90": 5.385335348546513,
+            "max": 213.97737227380276
+          },
+          "p50_signed_error_ms": {
+            "count": 59484,
+            "p50": -0.006618063045342765,
+            "p90": 1.2496157549321705,
+            "max": 73.41709267348051
+          },
+          "p90_empirical_coverage": 0.8686201331450474,
+          "selected_max_age_ms": {
+            "count": 59475,
+            "p50": 2673.133056640625,
+            "p90": 8072.52788085937,
+            "max": 299689.763671875
+          },
+          "support_paths": {
+            "typed": 59467,
+            "legacy_unknown_shape": 17
+          }
+        },
+        "newly_supported": {
+          "queries": 355,
+          "supported": 355,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 355,
+            "p50": 0.665801191025575,
+            "p90": 14.68360244570463,
+            "max": 76.59399079867323
+          },
+          "p50_signed_error_ms": {
+            "count": 355,
+            "p50": -0.13486482203006744,
+            "p90": 0.9508341789038186,
+            "max": 15.377629548311234
+          },
+          "p90_empirical_coverage": 0.8450704225352113,
+          "selected_max_age_ms": {
+            "count": 355,
+            "p50": 48513.046630859375,
+            "p90": 217046.88642578127,
+            "max": 299157.8073730469
+          },
+          "support_paths": {
+            "typed": 355
+          }
+        },
+        "lost_current_support": 1294
+      },
+      "d2h:full": {
+        "matched_current": {
+          "queries": 36358,
+          "supported": 36358,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 36358,
+            "p50": 0.17608168477157754,
+            "p90": 1.5662031446812945,
+            "max": 90.98422875115435
+          },
+          "p50_signed_error_ms": {
+            "count": 36358,
+            "p50": 0.006600748747587204,
+            "p90": 0.551944907552441,
+            "max": 26.191700715571642
+          },
+          "p90_empirical_coverage": 0.8565927718796413,
+          "selected_max_age_ms": {
+            "count": 36356,
+            "p50": 20143.071411132812,
+            "p90": 46347.04650878906,
+            "max": 112037.296875
+          },
+          "support_paths": {
+            "typed": 36358
+          }
+        },
+        "matched_candidate": {
+          "queries": 36358,
+          "supported": 36358,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 36358,
+            "p50": 0.19738824980298675,
+            "p90": 1.923394042911886,
+            "max": 88.32292584702373
+          },
+          "p50_signed_error_ms": {
+            "count": 36358,
+            "p50": 0.011193351242343552,
+            "p90": 0.5205439797067243,
+            "max": 41.57549096271396
+          },
+          "p90_empirical_coverage": 0.8892128279883382,
+          "selected_max_age_ms": {
+            "count": 36357,
+            "p50": 1632.53076171875,
+            "p90": 10025.03544921875,
+            "max": 88199.3359375
+          },
+          "support_paths": {
+            "typed": 36358
+          }
+        },
+        "newly_supported": {
+          "queries": 235,
+          "supported": 235,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 235,
+            "p50": 0.3768075257539749,
+            "p90": 10.4152843213946,
+            "max": 76.59399079867323
+          },
+          "p50_signed_error_ms": {
+            "count": 235,
+            "p50": -0.07196515798568726,
+            "p90": 0.8028405725714365,
+            "max": 15.377629548311234
+          },
+          "p90_empirical_coverage": 0.8212765957446808,
+          "selected_max_age_ms": {
+            "count": 235,
+            "p50": 34756.453125,
+            "p90": 63922.772460937485,
+            "max": 88111.45092773438
+          },
+          "support_paths": {
+            "typed": 235
+          }
+        },
+        "lost_current_support": 1277
+      },
+      "d2h:hybrid": {
+        "matched_current": {
+          "queries": 15084,
+          "supported": 15084,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 15084,
+            "p50": 0.46188943088054657,
+            "p90": 2.542675021387498,
+            "max": 80.25506239939769
+          },
+          "p50_signed_error_ms": {
+            "count": 15084,
+            "p50": -0.07465809255222489,
+            "p90": 1.2831345565090584,
+            "max": 62.67656711861491
+          },
+          "p90_empirical_coverage": 0.8524264120922832,
+          "selected_max_age_ms": {
+            "count": 15083,
+            "p50": 13663.40966796875,
+            "p90": 16547.992431640625,
+            "max": 138283.61206054688
+          },
+          "support_paths": {
+            "typed": 15084
+          }
+        },
+        "matched_candidate": {
+          "queries": 15084,
+          "supported": 15084,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 15084,
+            "p50": 0.6644589313892524,
+            "p90": 4.843573061306399,
+            "max": 77.5305117132934
+          },
+          "p50_signed_error_ms": {
+            "count": 15084,
+            "p50": -0.34603284665008394,
+            "p90": 0.6545577674689297,
+            "max": 24.044678109702268
+          },
+          "p90_empirical_coverage": 0.8154998674091752,
+          "selected_max_age_ms": {
+            "count": 15083,
+            "p50": 2804.838623046875,
+            "p90": 4137.255908203126,
+            "max": 299475.6281738281
+          },
+          "support_paths": {
+            "typed": 15084
+          }
+        },
+        "newly_supported": {
+          "queries": 109,
+          "supported": 109,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 109,
+            "p50": 1.0353233196119467,
+            "p90": 43.15758468583227,
+            "max": 65.29331149341346
+          },
+          "p50_signed_error_ms": {
+            "count": 109,
+            "p50": -0.505965845590433,
+            "p90": 0.9956747293472292,
+            "max": 1.9781949565275507
+          },
+          "p90_empirical_coverage": 0.8990825688073395,
+          "selected_max_age_ms": {
+            "count": 109,
+            "p50": 189659.708984375,
+            "p90": 270005.32797851565,
+            "max": 299157.8073730469
+          },
+          "support_paths": {
+            "typed": 109
+          }
+        },
+        "lost_current_support": 0
+      },
+      "d2h:mamba": {
+        "matched_current": {
+          "queries": 95,
+          "supported": 95,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 95,
+            "p50": 1.0148133151233196,
+            "p90": 1.359896082431078,
+            "max": 2.368748653680086
+          },
+          "p50_signed_error_ms": {
+            "count": 95,
+            "p50": 1.002499833703041,
+            "p90": 1.3429372571408749,
+            "max": 1.3897162862122059
+          },
+          "p90_empirical_coverage": 0.9473684210526315,
+          "selected_max_age_ms": {
+            "count": 95,
+            "p50": 9494.441162109375,
+            "p90": 10425.533056640625,
+            "max": 10822.845703125
+          },
+          "support_paths": {
+            "typed": 95
+          }
+        },
+        "matched_candidate": {
+          "queries": 95,
+          "supported": 95,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 95,
+            "p50": 0.1637074165046215,
+            "p90": 1.1623240076005459,
+            "max": 3.435710910707712
+          },
+          "p50_signed_error_ms": {
+            "count": 95,
+            "p50": 0.09974977001547813,
+            "p90": 1.1399153620004654,
+            "max": 1.3850140385329723
+          },
+          "p90_empirical_coverage": 0.8947368421052632,
+          "selected_max_age_ms": {
+            "count": 95,
+            "p50": 4558.581298828125,
+            "p90": 6046.726123046877,
+            "max": 8169.47216796875
+          },
+          "support_paths": {
+            "typed": 95
+          }
+        },
+        "newly_supported": {
+          "queries": 11,
+          "supported": 11,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 11,
+            "p50": 0.09576696902513504,
+            "p90": 0.2837684005498886,
+            "max": 24.53039912506938
+          },
+          "p50_signed_error_ms": {
+            "count": 11,
+            "p50": 0.002851709723472595,
+            "p90": 0.16265641897916794,
+            "max": 0.25648903101682663
+          },
+          "p90_empirical_coverage": 0.8181818181818182,
+          "selected_max_age_ms": {
+            "count": 11,
+            "p50": 229243.60180664062,
+            "p90": 280296.47900390625,
+            "max": 286722.4482421875
+          },
+          "support_paths": {
+            "typed": 11
+          }
+        },
+        "lost_current_support": 0
+      },
+      "h2d:full": {
+        "matched_current": {
+          "queries": 57,
+          "supported": 57,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 57,
+            "p50": 26.837085373699665,
+            "p90": 50.36753145977855,
+            "max": 59.04994485899806
+          },
+          "p50_signed_error_ms": {
+            "count": 57,
+            "p50": 12.523512348695597,
+            "p90": 42.199173010885715,
+            "max": 55.48854824155569
+          },
+          "p90_empirical_coverage": 0.7368421052631579,
+          "selected_max_age_ms": {
+            "count": 57,
+            "p50": 11933.06494140625,
+            "p90": 1126984.490234375,
+            "max": 1535270.9360351562
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 55,
+            "typed": 2
+          }
+        },
+        "matched_candidate": {
+          "queries": 57,
+          "supported": 57,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 57,
+            "p50": 23.39194156229496,
+            "p90": 52.32983460410197,
+            "max": 84.71190457446973
+          },
+          "p50_signed_error_ms": {
+            "count": 57,
+            "p50": 2.349876333028078,
+            "p90": 42.28199627250433,
+            "max": 62.1593170799315
+          },
+          "p90_empirical_coverage": 0.8421052631578947,
+          "selected_max_age_ms": {
+            "count": 57,
+            "p50": 265743.9187011719,
+            "p90": 293563.7256835938,
+            "max": 298586.0173339844
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 10,
+            "typed": 47
+          }
+        },
+        "newly_supported": {
+          "queries": 0,
+          "supported": 0,
+          "support_fraction": null,
+          "supported_byte_fraction": null,
+          "p50_absolute_error_ms": {
+            "count": 0
+          },
+          "p50_signed_error_ms": {
+            "count": 0
+          },
+          "p90_empirical_coverage": null,
+          "selected_max_age_ms": {
+            "count": 0
+          },
+          "support_paths": {}
+        },
+        "lost_current_support": 14
+      },
+      "h2d:hybrid": {
+        "matched_current": {
+          "queries": 7859,
+          "supported": 7859,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 7859,
+            "p50": 4.68716025352478,
+            "p90": 13.962983150803405,
+            "max": 213.472876107651
+          },
+          "p50_signed_error_ms": {
+            "count": 7859,
+            "p50": 0.6893724058667772,
+            "p90": 9.758688596750659,
+            "max": 69.57251869689306
+          },
+          "p90_empirical_coverage": 0.8600330830894516,
+          "selected_max_age_ms": {
+            "count": 7858,
+            "p50": 13517.708374023438,
+            "p90": 15850.35302734375,
+            "max": 1739730.7106933594
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 54,
+            "typed": 7805
+          }
+        },
+        "matched_candidate": {
+          "queries": 7859,
+          "supported": 7859,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 7859,
+            "p50": 4.782228985842863,
+            "p90": 15.707447100430723,
+            "max": 213.97737227380276
+          },
+          "p50_signed_error_ms": {
+            "count": 7859,
+            "p50": 1.6808464268477792,
+            "p90": 11.192042785831768,
+            "max": 54.221042431890965
+          },
+          "p90_empirical_coverage": 0.8747932306909276,
+          "selected_max_age_ms": {
+            "count": 7858,
+            "p50": 5021.0374755859375,
+            "p90": 6367.041918945313,
+            "max": 299689.763671875
+          },
+          "support_paths": {
+            "typed": 7853,
+            "legacy_unknown_shape": 6
+          }
+        },
+        "newly_supported": {
+          "queries": 0,
+          "supported": 0,
+          "support_fraction": null,
+          "supported_byte_fraction": null,
+          "p50_absolute_error_ms": {
+            "count": 0
+          },
+          "p50_signed_error_ms": {
+            "count": 0
+          },
+          "p90_empirical_coverage": null,
+          "selected_max_age_ms": {
+            "count": 0
+          },
+          "support_paths": {}
+        },
+        "lost_current_support": 3
+      },
+      "h2d:mamba": {
+        "matched_current": {
+          "queries": 31,
+          "supported": 31,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 31,
+            "p50": 13.417322654277086,
+            "p90": 37.942877504974604,
+            "max": 75.37694135680795
+          },
+          "p50_signed_error_ms": {
+            "count": 31,
+            "p50": 6.763088051229715,
+            "p90": 34.34256697073579,
+            "max": 75.37694135680795
+          },
+          "p90_empirical_coverage": 0.8387096774193549,
+          "selected_max_age_ms": {
+            "count": 31,
+            "p50": 1055584.0244140625,
+            "p90": 1531498.5979003906,
+            "max": 1681797.3562011719
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 31
+          }
+        },
+        "matched_candidate": {
+          "queries": 31,
+          "supported": 31,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 31,
+            "p50": 13.293833937495947,
+            "p90": 30.313017312437296,
+            "max": 73.41709267348051
+          },
+          "p50_signed_error_ms": {
+            "count": 31,
+            "p50": 10.641959961503744,
+            "p90": 26.215948164463043,
+            "max": 73.41709267348051
+          },
+          "p90_empirical_coverage": 0.967741935483871,
+          "selected_max_age_ms": {
+            "count": 25,
+            "p50": 212962.3115234375,
+            "p90": 270965.34306640626,
+            "max": 297343.53662109375
+          },
+          "support_paths": {
+            "typed": 30,
+            "legacy_unknown_shape": 1
+          }
+        },
+        "newly_supported": {
+          "queries": 0,
+          "supported": 0,
+          "support_fraction": null,
+          "supported_byte_fraction": null,
+          "p50_absolute_error_ms": {
+            "count": 0
+          },
+          "p50_signed_error_ms": {
+            "count": 0
+          },
+          "p90_empirical_coverage": null,
+          "selected_max_age_ms": {
+            "count": 0
+          },
+          "support_paths": {}
+        },
+        "lost_current_support": 0
+      },
+      "earlier_time_half": {
+        "matched_current": {
+          "queries": 34452,
+          "supported": 34452,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 34452,
+            "p50": 0.5024363784921171,
+            "p90": 6.538429992379826,
+            "max": 213.472876107651
+          },
+          "p50_signed_error_ms": {
+            "count": 34452,
+            "p50": -0.0020651022237538896,
+            "p90": 2.7575127557403287,
+            "max": 75.37694135680795
+          },
+          "p90_empirical_coverage": 0.8573667711598746,
+          "selected_max_age_ms": {
+            "count": 34448,
+            "p50": 13940.687377929688,
+            "p90": 31200.922802734367,
+            "max": 1093948.3583984375
+          },
+          "support_paths": {
+            "typed": 34362,
+            "legacy_unknown_shape": 90
+          }
+        },
+        "matched_candidate": {
+          "queries": 34452,
+          "supported": 34452,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 34452,
+            "p50": 0.6690872120229403,
+            "p90": 7.862297529895268,
+            "max": 213.97737227380276
+          },
+          "p50_signed_error_ms": {
+            "count": 34452,
+            "p50": -0.03405046277503171,
+            "p90": 2.9300001395658315,
+            "max": 73.41709267348051
+          },
+          "p90_empirical_coverage": 0.8553930105654244,
+          "selected_max_age_ms": {
+            "count": 34445,
+            "p50": 3011.40234375,
+            "p90": 6653.343310546876,
+            "max": 299689.763671875
+          },
+          "support_paths": {
+            "typed": 34445,
+            "legacy_unknown_shape": 7
+          }
+        },
+        "newly_supported": {
+          "queries": 289,
+          "supported": 289,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 289,
+            "p50": 0.4334037603759766,
+            "p90": 11.833834392567127,
+            "max": 76.59399079867323
+          },
+          "p50_signed_error_ms": {
+            "count": 289,
+            "p50": -0.10134688174764317,
+            "p90": 0.9295453317463391,
+            "max": 15.377629548311234
+          },
+          "p90_empirical_coverage": 0.8304498269896193,
+          "selected_max_age_ms": {
+            "count": 289,
+            "p50": 38604.682373046875,
+            "p90": 184682.27451171874,
+            "max": 292661.5114746094
+          },
+          "support_paths": {
+            "typed": 289
+          }
+        },
+        "lost_current_support": 349
+      },
+      "later_time_half": {
+        "matched_current": {
+          "queries": 25032,
+          "supported": 25032,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 25032,
+            "p50": 0.1977034880634152,
+            "p90": 1.6284884300173528,
+            "max": 77.70358445122838
+          },
+          "p50_signed_error_ms": {
+            "count": 25032,
+            "p50": 0.004909648343324663,
+            "p90": 0.6160833322363299,
+            "max": 67.25600780919194
+          },
+          "p90_empirical_coverage": 0.8541466922339406,
+          "selected_max_age_ms": {
+            "count": 25032,
+            "p50": 21138.273681640625,
+            "p90": 47173.77355957031,
+            "max": 1739730.7106933594
+          },
+          "support_paths": {
+            "typed": 24982,
+            "legacy_unknown_shape": 50
+          }
+        },
+        "matched_candidate": {
+          "queries": 25032,
+          "supported": 25032,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 25032,
+            "p50": 0.22058478149016691,
+            "p90": 2.050011393021147,
+            "max": 77.01674057170749
+          },
+          "p50_signed_error_ms": {
+            "count": 25032,
+            "p50": 0.009803608592351298,
+            "p90": 0.5756167445849181,
+            "max": 65.42862579226494
+          },
+          "p90_empirical_coverage": 0.8868248641738574,
+          "selected_max_age_ms": {
+            "count": 25030,
+            "p50": 1677.44775390625,
+            "p90": 10124.419238281258,
+            "max": 299608.1064453125
+          },
+          "support_paths": {
+            "typed": 25022,
+            "legacy_unknown_shape": 10
+          }
+        },
+        "newly_supported": {
+          "queries": 66,
+          "supported": 66,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 66,
+            "p50": 0.9680758230388165,
+            "p90": 37.38849610090256,
+            "max": 61.83394277468324
+          },
+          "p50_signed_error_ms": {
+            "count": 66,
+            "p50": -0.5376932731080055,
+            "p90": 0.9490779200309516,
+            "max": 1.9781949565275507
+          },
+          "p90_empirical_coverage": 0.9090909090909091,
+          "selected_max_age_ms": {
+            "count": 66,
+            "p50": 193157.9200439453,
+            "p90": 261487.5203857422,
+            "max": 299157.8073730469
+          },
+          "support_paths": {
+            "typed": 66
+          }
+        },
+        "lost_current_support": 945
+      },
+      "earlier_time_half:h2d:full": {
+        "matched_current": {
+          "queries": 49,
+          "supported": 49,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 49,
+            "p50": 26.837085373699665,
+            "p90": 50.43521649816958,
+            "max": 59.04994485899806
+          },
+          "p50_signed_error_ms": {
+            "count": 49,
+            "p50": 12.523512348695597,
+            "p90": 41.82286467403174,
+            "max": 55.48854824155569
+          },
+          "p90_empirical_coverage": 0.7142857142857143,
+          "selected_max_age_ms": {
+            "count": 49,
+            "p50": 11230.855224609375,
+            "p90": 783824.0430175787,
+            "max": 1003979.9936523438
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 47,
+            "typed": 2
+          }
+        },
+        "matched_candidate": {
+          "queries": 49,
+          "supported": 49,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 49,
+            "p50": 24.562176316976547,
+            "p90": 55.38354619858187,
+            "max": 84.71190457446973
+          },
+          "p50_signed_error_ms": {
+            "count": 49,
+            "p50": 2.349876333028078,
+            "p90": 44.49972175061704,
+            "max": 62.1593170799315
+          },
+          "p90_empirical_coverage": 0.8367346938775511,
+          "selected_max_age_ms": {
+            "count": 49,
+            "p50": 268988.71142578125,
+            "p90": 293479.344921875,
+            "max": 298586.0173339844
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 7,
+            "typed": 42
+          }
+        },
+        "newly_supported": {
+          "queries": 0,
+          "supported": 0,
+          "support_fraction": null,
+          "supported_byte_fraction": null,
+          "p50_absolute_error_ms": {
+            "count": 0
+          },
+          "p50_signed_error_ms": {
+            "count": 0
+          },
+          "p90_empirical_coverage": null,
+          "selected_max_age_ms": {
+            "count": 0
+          },
+          "support_paths": {}
+        },
+        "lost_current_support": 4
+      },
+      "later_time_half:h2d:full": {
+        "matched_current": {
+          "queries": 8,
+          "supported": 8,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 8,
+            "p50": 21.898937644436955,
+            "p90": 39.98763190993202,
+            "max": 49.03892264518579
+          },
+          "p50_signed_error_ms": {
+            "count": 8,
+            "p50": 13.103921199217439,
+            "p90": 39.98763190993202,
+            "max": 49.03892264518579
+          },
+          "p90_empirical_coverage": 0.875,
+          "selected_max_age_ms": {
+            "count": 8,
+            "p50": 1292003.4327392578,
+            "p90": 1477909.8364501954,
+            "max": 1535270.9360351562
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 8
+          }
+        },
+        "matched_candidate": {
+          "queries": 8,
+          "supported": 8,
+          "support_fraction": 1.0,
+          "supported_byte_fraction": 1.0,
+          "p50_absolute_error_ms": {
+            "count": 8,
+            "p50": 12.428887016913094,
+            "p90": 30.440934002399445,
+            "max": 37.397321313619614
+          },
+          "p50_signed_error_ms": {
+            "count": 8,
+            "p50": 2.2329381005895126,
+            "p90": 30.440934002399445,
+            "max": 37.397321313619614
+          },
+          "p90_empirical_coverage": 0.875,
+          "selected_max_age_ms": {
+            "count": 8,
+            "p50": 184301.41052246094,
+            "p90": 250738.1117675781,
+            "max": 293868.2111816406
+          },
+          "support_paths": {
+            "legacy_unknown_shape": 3,
+            "typed": 5
+          }
+        },
+        "newly_supported": {
+          "queries": 0,
+          "supported": 0,
+          "support_fraction": null,
+          "supported_byte_fraction": null,
+          "p50_absolute_error_ms": {
+            "count": 0
+          },
+          "p50_signed_error_ms": {
+            "count": 0
+          },
+          "p90_empirical_coverage": null,
+          "selected_max_age_ms": {
+            "count": 0
+          },
+          "support_paths": {}
+        },
+        "lost_current_support": 10
+      }
+    }
+  },
+  "rejection_query_support": {
+    "mixed_fifo": 0,
+    "direction_shape_32": 31,
+    "direction_shape_32_age120s": 14,
+    "direction_shape_32_age300s": 22
+  },
+  "rejection_queries": 68,
+  "detailed_predictions": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v433_v55_causal_transfer_history_20261014.rows.json.gz",
+  "detailed_predictions_sha256": "f281c683f6e59a75c318246bbf1c4ab81f3028ec64ecd4679be6e4a173351417",
+  "limitations": [
+    "Each query uses only completed receipts strictly before submit/query; its own and in-flight labels are excluded.",
+    "Receipt wall timestamps approximate evidence availability, not exact scheduler callback/cache order.",
+    "Targets are controller submit-to-ACK, including polling; no GPU DMA or exposed service stall is inferred.",
+    "All policies retain at most 256 typed and 64 legacy samples. Strata reserve 32 per direction/shape.",
+    "Age policies filter timed live samples; physical seed age is unknown and remains separately identified.",
+    "Legacy fallback has unknown pool shape, as in the collection estimator; typed foreign shapes never contribute.",
+    "Both time halves and all policies were fixed before this run; no data-derived winner or online permit is selected.",
+    "Recovered transfer estimates are observational held-out labels, not outcomes of newly enabled prefetch actions.",
+    "Rejection queries have no executed-transfer label and establish support only, not timing accuracy or benefit.",
+    "CPU measurements are unpinned offline diagnostics, excluding cache reuse and scheduler integration.",
+    "The independently sealed live sources are not an atomic snapshot; later arrivals/outcomes are excluded."
+  ]
+}

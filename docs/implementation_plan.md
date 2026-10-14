@@ -12,16 +12,35 @@ Six JOIN and11 tool >10s tails are native-queue dominated with zero
 confirmed FULL reuse;11 other tool tails are completion dominated with
 62.62s median latest-ACK lead and0.0273/1.219GB reuse.
 
-V432 binds the collection's actual256 mixed/64 H2D histories. Among68
-FULL-only service rejections in47 selected waits,31 have enough earlier
-same-direction/shape receipt evidence, while bounded receipt replay has
-no support. Third-most-recent matching receipt ages span50–1085s.
-Next evaluate causal held-out transfer timing and bounded stratified
-history before proposing an online retention change; do not use unbounded
-old samples or foreign shapes as timing permits. Keep frozen V56 c319339
-and its predictive→native order. Develop and document here; Main must
-remain an ancestor of the pending frozen target until cold deployment.
-Final same-version JCT/throughput and quality/fairness acceptance is pending.
+V432 binds the collection's actual256 mixed/64 H2D histories. V433/V434
+evaluate61,229 transfers using only ACKs completed before each submit.
+Replacing the mixed history with32 samples per direction/shape reduces
+support from60,778 to59,860 and raises overall median absolute error from
+0.326 to0.412ms, so that replacement is rejected. The71 FULL-only H2Ds
+have24.11ms original median absolute error for controller submit-to-ACK;
+this is neither child RETURN nor exposed GPU-stall accuracy.
+
+The development candidate preserves existing typed/legacy estimates.
+Only unsupported FULL-only H2D queries may consult an additional32
+completed same-shape receipts aged at most300s, retaining minimum3 and
+the original4x size range. Expiry also invalidates cached fallback results.
+V435 exercises the actual receipt/estimator/cache path on61,297 queries:
+all60,778 previously supported estimates remain identical;18 independent
+tool waits/22 rejection records gain timing support. These are not newly
+executed actions or demonstrated scheduling gains. V434's supplementary
+policy is exploratory, not a separately held-out policy validation.
+474 focused plus319 cross-module checks pass. V436's cached prediction
+median CPU increment is about0.02–0.16us; GPU/JCT effects remain untested.
+
+At this check V55 has153 completed results and3 unknown terminal outcomes.
+Keep frozen V56 c319339 and its predictive→native order for complete phase
+comparison and JOIN forecast-refresh validation. Keep the new supplement
+in development; Main must remain an ancestor of the pending frozen target
+until cold deployment. Then decide a follow-up cold observation from the
+latest trace. Continue JOIN timing, native-queue/consumption and too-early
+tool investigations; do not enable new prefill batching/delay or infer net
+benefit from additional support. Final same-version repeated JCT/throughput
+and quality/fairness/recomputation acceptance remains pending.
 
 The next V56 cold candidate adds a shared single-request Mamba mapping
 fast path to the qualified JOIN refresh. V418/V421 identify316 main-thread

@@ -338,6 +338,9 @@ class NativeAdmissionRuntime:
         self._final_request_stages: dict[str, _ChildFinalStage] = {}
         self._h2d_samples: deque[tuple[int, float]] = deque(maxlen=64)
         self._native_service_samples: deque[NativeServiceSample] = deque(maxlen=256)
+        self._h2d_full_service_samples: deque[tuple[float, NativeServiceSample]] = deque(
+            maxlen=32,
+        )
         self._h2d_service_estimates: dict[tuple[int, str], NativeServiceEstimate | None] = {}
         self._d2h_service_estimates: dict[tuple[int, str], NativeServiceEstimate | None] = {}
         self._residency_ordering_hints: dict[PrefillCandidateKey, tuple[float, dict]] = {}
@@ -5376,8 +5379,18 @@ class NativeAdmissionRuntime:
     def _estimate_h2d_service(
         self, size_bytes: int, *, shape: str,
     ) -> NativeServiceEstimate | None:
-        # Both bounded histories change only on completed controller receipts.
-        # Reuse statistics until then; physical plans and timing stay live.
+        # Rare FULL-only H2D evidence must not disappear behind D2H/hybrid ACKs.
+        # Expire its cached fallback even if no further receipts arrive.
+        recent_full = self._h2d_full_service_samples
+        if shape == "full" and recent_full:
+            now = time.monotonic()
+            expired = 0
+            while recent_full and now - recent_full[0][0] > 300.:
+                recent_full.popleft()
+                expired += 1
+            if expired:
+                self._h2d_service_estimates.clear()
+                self.counts["h2d_full_service_samples_expired"] += expired
         identity = (size_bytes, shape)
         cache = self._h2d_service_estimates
         if identity in cache:
@@ -5386,6 +5399,13 @@ class NativeAdmissionRuntime:
         estimate = estimate_native_service(
             self._native_service_samples, size_bytes, shape=shape,
         ) or estimate_native_service(self._h2d_samples, size_bytes)
+        if estimate is None and shape == "full" and len(recent_full) >= 3:
+            estimate = estimate_native_service(
+                (sample for _, sample in recent_full), size_bytes, shape="full",
+            )
+            self.counts["h2d_full_service_fallback_computed"] += 1
+            if estimate is not None:
+                self.counts["h2d_full_service_fallback_supported"] += 1
         if len(cache) >= 256:
             cache.clear()
         cache[identity] = estimate
@@ -7263,10 +7283,13 @@ class NativeAdmissionRuntime:
             units = dict(getattr(commit, "num_tokens_by_pool", ()) or ())
             full = units.get("kv", units.get("full", 0))
             mamba = units.get("mamba", 0)
-            self._native_service_samples.append(NativeServiceSample(
+            sample = NativeServiceSample(
                 actual_bytes, float(ack_ms), getattr(commit, "direction"),
                 pool_shape(full, mamba), getattr(commit, "enqueue_to_submit_ms", None),
-            ))
+            )
+            self._native_service_samples.append(sample)
+            if sample.direction == "h2d" and sample.shape == "full":
+                self._h2d_full_service_samples.append((time.monotonic(), sample))
             # Either direction can evict opposite-direction evidence from the
             # shared bounded history, including an unsupported estimate.
             self._d2h_service_estimates.clear()

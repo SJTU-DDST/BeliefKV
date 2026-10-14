@@ -1,0 +1,77 @@
+{
+  "status": "cpu_cached_estimate_fixture_not_gpu_or_end_to_end_gain",
+  "baseline_revision": "c3193395432d53e5619ca2adf1b95ff42633b7df",
+  "baseline_sources": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "7820de3e7555a6e73f6929dfca430fd5cba6c5c6519823e7b63661a04c601d41",
+    "beliefkv/runtime/sglang_v0520_physical.py": "f53b15523badf3f31123f14300b3fda60a503d3c0cf1cfbf71df19713e112ec5",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "d9e158bb1a7c926f9076e24e7e5deb7ec4f4032514ad84195fb231a7bfc61956"
+  },
+  "candidate_runtime_sha256": "632dd5f40defe0980eb6e51cb8046b11f0831c4a6006c85d0152ae3b8f238c0f",
+  "helper_sha256": "146c43e8cc7614aad999a1d8556171d21f868bb13e1c758e88b13456c1db2429",
+  "blocks": 301,
+  "calls_per_block": 100,
+  "cases": [
+    {
+      "case": "empty",
+      "query_shape": "full",
+      "outputs_identical": true,
+      "mean_thread_cpu_us": {
+        "baseline": 0.24524734219269104,
+        "candidate": 0.2722824584717608
+      },
+      "p50_thread_cpu_us": {
+        "baseline": 0.24303999999999998,
+        "candidate": 0.27035000000000003
+      },
+      "p50_added_thread_cpu_us": 0.027310000000000056
+    },
+    {
+      "case": "legacy",
+      "query_shape": "full",
+      "outputs_identical": true,
+      "mean_thread_cpu_us": {
+        "baseline": 0.24511159468438537,
+        "candidate": 0.2711575747508306
+      },
+      "p50_thread_cpu_us": {
+        "baseline": 0.24264,
+        "candidate": 0.26971
+      },
+      "p50_added_thread_cpu_us": 0.02707000000000001
+    },
+    {
+      "case": "full",
+      "query_shape": "full",
+      "outputs_identical": true,
+      "mean_thread_cpu_us": {
+        "baseline": 0.24601318936877076,
+        "candidate": 0.4101124584717608
+      },
+      "p50_thread_cpu_us": {
+        "baseline": 0.24452000000000002,
+        "candidate": 0.40704
+      },
+      "p50_added_thread_cpu_us": 0.16252
+    },
+    {
+      "case": "hybrid",
+      "query_shape": "hybrid",
+      "outputs_identical": true,
+      "mean_thread_cpu_us": {
+        "baseline": 0.24397225913621262,
+        "candidate": 0.26321681063122926
+      },
+      "p50_thread_cpu_us": {
+        "baseline": 0.24224,
+        "candidate": 0.2617
+      },
+      "p50_added_thread_cpu_us": 0.019459999999999977
+    }
+  ],
+  "limitations": [
+    "CPU fixtures without event writer, native memory allocator or GPU.",
+    "Alternating order and real monotonic clock; unpinned and under concurrent workload.",
+    "Measures cached existing estimates; uncached supplemental computation is covered by runtime replay separately.",
+    "No scheduler call rate, exposed stall or workflow JCT benefit is inferred."
+  ]
+}

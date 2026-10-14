@@ -1,0 +1,50 @@
+{
+  "status": "exact_runtime_receipt_timing_replay_not_live_callback_order_or_policy_gain",
+  "counts": {
+    "supported_estimates_identical": 60778,
+    "queries": 61297,
+    "transfer": 61229,
+    "rejection_supported:mixed_fifo_plus_recent_full": 22,
+    "rejection_supported:mixed_fifo": 0,
+    "service_rejection": 68
+  },
+  "receipts_fed_per_runtime": 61228,
+  "baseline_revision": "0f2a992448812d28d5362e2b97de1aab66e35630",
+  "baseline_sources": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "7820de3e7555a6e73f6929dfca430fd5cba6c5c6519823e7b63661a04c601d41",
+    "beliefkv/runtime/sglang_v0520_physical.py": "f53b15523badf3f31123f14300b3fda60a503d3c0cf1cfbf71df19713e112ec5",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "1b84dc20056d59e323eca6eb2b528edd1114eea964f7a60074e3b5517d88a635"
+  },
+  "candidate_runtime_sha256": "632dd5f40defe0980eb6e51cb8046b11f0831c4a6006c85d0152ae3b8f238c0f",
+  "evaluation": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v434_v55_full_h2d_supplement_20261014.json",
+  "evaluation_sha256": "ffa309973b030a2cf471395cfbfb08ecadf135f273152e4c5938a2115e854ca4",
+  "helper_sha256": "71770530ce977544bb3f192ddb118d01ce82d006643308205662f93ff9d1aa4b",
+  "uncontrolled_runtime_prediction_thread_cpu_us": {
+    "mixed_fifo": {
+      "count": 61297,
+      "p50": 69.953,
+      "p90": 86.87540000000001,
+      "max": 4581.407
+    },
+    "mixed_fifo_plus_recent_full": {
+      "count": 61297,
+      "p50": 69.961,
+      "p90": 86.532,
+      "max": 4208.878
+    }
+  },
+  "candidate_fallback_counts": {
+    "h2d_full_service_fallback_computed": 41,
+    "h2d_full_service_fallback_supported": 14,
+    "h2d_full_service_samples_expired": 70
+  },
+  "maximum_supplement_samples": 32,
+  "limitations": [
+    "Completed receipts are fed at their recorded completion time, strictly before queries.",
+    "Local monotonic time is simulated from receipt wall time; actual callback/cache order is unknown.",
+    "Real runtime estimators, receipt validation and cache invalidation are exercised without a GPU.",
+    "Rejection queries have no executed-transfer labels; new support does not establish action benefit.",
+    "Previously supported estimates must remain exactly equal, including sample count/support/queue estimate.",
+    "CPU includes the offline patched clock and is unpinned; it is not scheduler or end-to-end speedup."
+  ]
+}
