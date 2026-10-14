@@ -17,8 +17,15 @@ FlashInfer checkpoint沿用同一CPU mask/长度/前缀输入。
 不改状态内容、allocator、引用或逐层数据依赖。v533/v534绑定
 437原生测试+53子检查、68启动检查，patch ebdbc183/
 树91daa419；CPU准备中位增加约20–37us保留，GPU收益待验证。
-下一V58冷启动先predictive后同版本native，新增延迟凑批、
-mixed chunk、最小槽延迟和间隔调整仍关闭。
+V58的v536/v537已登记冻结9a54233及58份合格源码，2026-10-14
+19:02登记时资源等待器1528612等待其他用户GPU任务释放容量，
+尚未派发workflow。
+资源可用后重新核验并冷启动predictive和同版本native；新增
+延迟凑批、mixed chunk、最小槽延迟和间隔调整仍关闭。
+后续控制减负继续针对v523定位的物理闭包和恢复计划构造；
+逻辑候选、物理状态、传输就绪和首次服务分别处理，不能将旧的
+物理快照当作恢复授权。原平均JCT与完成吞吐目标保持未验收。
+实际状态见`experiments/reports/v58_resource_wait_gdn_prefill_20261014.json`。
 
 最新V57的600–900s开发窗口见v516/v517：短prefill完整发射到
 结果P50为56.896ms，V56 native参考为50.291ms；返回后间隔

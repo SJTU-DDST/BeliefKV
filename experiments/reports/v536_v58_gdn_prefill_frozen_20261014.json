@@ -1,0 +1,97 @@
+{
+  "status": "qualified_frozen_target_waiting_for_resources_not_deployed",
+  "observed_at_local": "2026-10-14T19:02:00.535357+08:00",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v533-v58-gdn-prefill-20261014",
+  "target_revision": "9a54233c3d1d18c12bfc202f61e2ec36a911e46f",
+  "qualification": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v533-v58-gdn-prefill-20261014/experiments/reports/v533_gdn_prefill_mask_qualification_20261014.json",
+    "sha256": "a36fe2ce1cf9cef2a9c4a08743d491da05bfeab837d559bc1c58f403dea83244"
+  },
+  "qualified_source_count": 58,
+  "candidate_engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v533-v58-gdn-prefill-20261014/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "ebdbc183d95b925e40064c9d2ca4611f5f22c1797a3c926e994fcf4a90403417",
+    "expected_tree": "91daa419276fecd60398d056a316f567e096cfed",
+    "actual_tree": "91daa419276fecd60398d056a316f567e096cfed",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_execution_handoff.py",
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_gdn_prefill_mask.py",
+      "test/srt/test_beliefkv_host_eviction_observer.py",
+      "test/srt/test_beliefkv_latest_mamba_state.py",
+      "test/srt/test_beliefkv_layer_wait_probe.py",
+      "test/srt/test_beliefkv_lifecycle.py",
+      "test/srt/test_beliefkv_mamba_request_mapping.py",
+      "test/srt/test_beliefkv_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_slots.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_scheduler_hook.py",
+      "test/srt/test_beliefkv_session_anchors.py",
+      "test/srt/test_beliefkv_shadow_dispatch.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py",
+      "test/srt/test_beliefkv_transfer_receipts.py",
+      "test/srt/test_beliefkv_unified_ack.py"
+    ]
+  },
+  "live_engine_unchanged": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "3c13ad50342d6a6e1b6e9c9c9f91edde322398d7cdee8bc4ea26be6e802ecfd5",
+    "expected_tree": "572109fe8e4e301c395f218bf6b509afb0425ae7",
+    "actual_tree": "572109fe8e4e301c395f218bf6b509afb0425ae7",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_mamba_request_mapping.py",
+      "test/srt/test_beliefkv_prefill_track_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_slots.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "previous_plan": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v57/ab_plan.json",
+    "sha256": "7ed09aba0e9dce43371c47ae9ceb4e2aa70f5b4aa69669203dd82655c13ed81c"
+  },
+  "previous_postprocessing_complete": true,
+  "previous_execution": {
+    "collection_code_commit": "0fd9d1304d1e371fd211e643a7dc666b3cb3216e",
+    "verification_code_commit": "d62959d3a353bca5d92da7cd06a14c9478cc6455",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": [
+      "docs/README_zh.md",
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/reports/v511_v57_wait_context_delta_frozen_20261014.json",
+      "experiments/reports/v512_v57_wait_context_delta_after_v56_registration_20261014.json",
+      "experiments/reports/v513_v57_wait_context_numa_placement_20261014.json",
+      "experiments/reports/v514_v57_wait_context_startup_validation_20261014.json",
+      "experiments/reports/v515_v56_final_same_version_pair_20261014.json",
+      "experiments/reports/v516_v57_busy_600_900_20261014.json",
+      "experiments/reports/v517_v57_prefill_phases_600_900_20261014.json",
+      "experiments/reports/v518_v57_migration_state_assessment_20261014.json",
+      "experiments/reports/v519_v57_migration_state_layout_assessment_20261014.json"
+    ]
+  },
+  "main_revision_before_deployment": "d62959d3a353bca5d92da7cd06a14c9478cc6455",
+  "helper_sha256": "da58213ad5be28b94029160c187ef523a94c5ab555cc364184edc9e7d90d9043"
+}

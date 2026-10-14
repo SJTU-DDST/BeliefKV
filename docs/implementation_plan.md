@@ -25,10 +25,21 @@ snapshots and other modes preserve the original fallback. V527 passes437
 native tests plus53 subtests; V532 passes68 launch checks. V533/V534 bind
 patch ebdbc183 and engine91daa419. V529 preserves complete CPU metadata
 equality and about20–37us added short-single CPU preparation, not GPU gain.
-Cold V58 should run predictive first, then native on this same shared engine.
+V536/V537 register frozen9a54233 for V58 with58 qualified source hashes
+and resource watcher1528612. At registration on2026-10-14 19:02 CST,
+another user's compute job occupied the GPU; no V58 directory or workflow
+had been created. After exclusive GPU
+capacity returns, revalidate V57 completion, sources and engine, then cold
+run predictive first and native on the same shared engine.
 Do not change workload, tool180s, output/deadline budgets or deferred batching.
 The launcher permits tracked/untracked docs edits while rejecting execution
 source changes; retain the user's working documentation.
+Continue bounded CPU diagnosis of physical closure and restore-plan construction
+identified in V523, without caching stale physical state or dropping enqueue
+validation. Actual first consumption, useful FULL coverage and recomputation
+remain open; a registered watcher is not an initialized or accepted experiment.
+Actual wait/launch status is recorded in
+`experiments/reports/v58_resource_wait_gdn_prefill_20261014.json`.
 
 V56 completed both arms and postprocessing naturally at16:01:22.
 V515 retains155 completed/1 incomplete per arm and154 shared completions.

@@ -11,9 +11,15 @@ V57已于2026-10-14 18:47:37 CST自然结束全部后处理：
 
 新GDN候选v533/v534已通过437原生测试+53子检查和68启动检查，
 消除普通prefill mask.nonzero和四份checkpoint元数据回读；
-CPU约多20–37us，GPU/JCT效果待验证。下一V58冷启动先predictive
-再同引擎native。保持既有PrefillAdder，新延迟凑批、最小槽延迟、
-mixed chunk、间隔调整及工具180s/输出/截止预算均不改动。
+CPU约多20–37us，GPU/JCT效果待验证。v536/v537已登记V58冻结
+9a54233与58份合格源码；2026-10-14 19:02登记时等待器1528612
+等待其他用户GPU任务释放容量，尚未创建实验目录或派发workflow。
+资源可用后冷启动
+先predictive、再同引擎native。保持既有PrefillAdder，新延迟凑批、
+最小槽延迟、mixed chunk、间隔调整及工具180s/输出/截止预算不变。
+后续仍查v523定位的物理闭包/恢复计划控制成本、首次服务长尾及
+有用FULL预取消费；资格与登记不等于最终性能验收。
+实际状态见`experiments/reports/v58_resource_wait_gdn_prefill_20261014.json`。
 
 V56完整同版本两侧及后处理已于16:01:22自然结束。v515保留
 两侧155 completed/1 incomplete；共同完成任务平均JCT约

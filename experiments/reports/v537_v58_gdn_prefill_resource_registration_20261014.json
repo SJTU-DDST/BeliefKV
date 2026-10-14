@@ -1,0 +1,55 @@
+{
+  "status": "registered_resource_wait_not_experiment_start",
+  "registered_at_local": "2026-10-14T19:02:00.556778+08:00",
+  "watcher": {
+    "pid": 1528612,
+    "state": "R",
+    "ppid": 1528399,
+    "start_ticks": "614598365",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/ops/register_v58_gdn_prefill.py",
+      "--watch"
+    ]
+  },
+  "frozen": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v536_v58_gdn_prefill_frozen_20261014.json",
+    "sha256": "7e6749e21466289aef1fb07eb274f136d3c652a8a082f6db3a50fdea11076cf0"
+  },
+  "target_revision": "9a54233c3d1d18c12bfc202f61e2ec36a911e46f",
+  "resource_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v58_resource_wait_gdn_prefill_20261014.json",
+  "watch_log": "/home/longhao/experiment/ops/v58_gdn_prefill_resource_wait_20261014.log",
+  "launch_arguments": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/.worktrees/beliefkv-v533-v58-gdn-prefill-20261014/scripts/launch_semantic_h2d_after_pair.py",
+    "--repo",
+    "/home/longhao/experiment/BeliefKV",
+    "--previous-run",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v57",
+    "--target-checkout",
+    "/home/longhao/experiment/.worktrees/beliefkv-v533-v58-gdn-prefill-20261014",
+    "--run-root",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+    "--state",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v58_launch_after_v57_gdn_prefill_20261014.json",
+    "--wait-pid",
+    "3811053",
+    "--port",
+    "18462",
+    "--arm-order",
+    "predictive_h2d native",
+    "--execution-handoff",
+    "0",
+    "--host-numa-memory-policy",
+    "preferred"
+  ],
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+  "helper_sha256": "da58213ad5be28b94029160c187ef523a94c5ab555cc364184edc9e7d90d9043",
+  "constraints": [
+    "Do not stop, signal or alter another user's GPU processes or shared-memory files.",
+    "Wait for exclusive GPU capacity, then use the existing cold predictive-then-native driver.",
+    "Revalidate qualification, previous postprocessing, execution source and exact engine before deployment.",
+    "Preserve workload, all budgets, pools, NUMA policy and disabled new delay/batching options.",
+    "Registration and resource observations do not demonstrate initialized service or performance gains."
+  ]
+}
