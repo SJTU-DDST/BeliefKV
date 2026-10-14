@@ -35,8 +35,9 @@ v466/v467已导出并资格绑定3c13ad50/572109fe，尚未部署且不宣称
 GPU收益。V56继续冻结，native自动只读观测已登记，
 待补齐同引擎、同配置的完整相位与NUMA记录。既有PrefillAdder保留，
 新延迟凑批、mixed chunk和间隔调整仍关闭。
-该已验证候选安排在V56全部收尾后冷观察，登记状态以V57 launch
-state为准；不能提前替换当前native参考。v468的本地Host容量
+v475/v476已登记该候选0bd5664/3c13ad50，在V56全部收尾后冷观察，
+当前仅有等待launcher、尚无V57 run目录；状态以V57 launch state
+为准，不能提前替换native参考。v468的本地Host容量
 审计不支持整worker强制NUMA绑定，本轮继续preferred。
 
 以下为先前阶段的证据与背景，不覆盖以上当前运行状态。

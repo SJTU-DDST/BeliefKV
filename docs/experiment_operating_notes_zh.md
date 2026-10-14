@@ -42,7 +42,8 @@ root最后请求由原生证据确认输出8192 token、以length结束；
 test-analyst更早的step2017图硬预算收尾单列。不能因而增加本轮
 上限、把incomplete移出统计或声称child均未经guard自然结束。
 新设备槽候选只可在V56 predictive/native和后处理全部完成后
-冷部署，V57状态文件登记前不能写成已运行。新公共路径的正式
+冷部署。v475/v476登记0bd5664/3c13ad50及等待launcher1578177，
+尚无V57 run目录，登记不等于已运行。新公共路径的正式
 性能对照仍须匹配引擎，V56 native可作后续开发参考。
 
 NUMA策略本轮保持preferred。v468的大映射按大小推断对应Host池，

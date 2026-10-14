@@ -72,9 +72,10 @@ Next actions:
    plus29 subtests pass, with both the initial empty-fixture rejection
    and final checks retained. V462's CPU medians improve1–7us, but the
    48-request lazy mean regresses19.1us. Cold GPU benefit is unknown.
-   Arrange predictive-first cold observation after the complete V56 pair
-   and postprocessing; deployment must not alter either existing V56 arm.
-   The corresponding V57 launch state is authoritative for registration.
+   V475/V476 register frozen0bd5664/3c13ad50/572109fe, launcher1578177,
+   for predictive-first cold observation after the complete V56 pair and
+   postprocessing. No V57 run directory exists at registration. Deployment
+   must not alter either V56 arm; the V57 launch state is authoritative.
    V465 separately records the revoked non-execution launch wait; all49
    other prior qualified sources and the live V56 engine remain unchanged.
 3. Use the same-version phases to select the next bottleneck. V459's
