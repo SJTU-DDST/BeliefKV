@@ -6,6 +6,22 @@
 改善平均workflow JCT与完成吞吐；既有PrefillAdder保留，新增
 延迟凑批、mixed chunk、最小槽延迟和间隔调整仍关闭。
 
+V59已冷启动d1c3f14/5262707a。v600在2026-10-14 14:03 PDT
+核验实际GPU服务、65份源码、running48及固定prefill配置，
+首波108个workspace到达。v604的120–300/600–900s短周转
+P50为43.908/47.723ms，V58 native为40.155/44.359ms，
+差9.35%/7.58%；decode服务量237671/246021、372581/
+386707，差-3.39%/-3.65%。仍为跨版本、不同需求的开发参考，
+仅早期范围接近目标，后续窗口、FULL消费和完整JCT/质量待验。
+残余返回到结果处理P50仍6.665/7.456ms，参考为3.860/4.146ms。
+
+v601观察器错误沿用共享Asia/Shanghai时区，V59 GPU日志实际
+为PDT，窗口错15小时；三次明确分析失败后退出，workload未改。
+v602以native wall/monotonic加首条client metric核验，正确
+GPU监控起点残差16.681/17.760ms。离线分析新增逐arm时区，
+22项检查通过；v603新观察器正确覆盖两窗且无错误。保留旧
+状态与原始观察器源码哈希，不因观测失败重启实验或改写trace。
+
 V58已于2026-10-14 13:37 PDT完成收尾，原driver/scheduler均
 退出。native最终154 completed、1 incomplete、1 error；
 pylint-6528在既有14400s截止预算下结束为error、JOIN未满足，
@@ -15,7 +31,7 @@ JCT为predictive2912.078s/native2310.910s（+26.01%）。
 涉及root为7/9个。v596保留完整终态、需求差异和质量未知；
 当前仍未达到平均JCT/完成吞吐的最终目标。
 
-下一冷观察候选已通过v594资格：仅调整overlap中延后规划的
+当前冷观察版本已通过v594资格：仅调整overlap中延后规划的
 位置，先处理前批结果及当前采样，再规划JOIN/tool预取与
 PREPARE。继承bff29cb祖先扫描与终态计数修复；WAR、共享读、
 原生H2D fence、FULL/Mamba引用和normal路径保持原约束。

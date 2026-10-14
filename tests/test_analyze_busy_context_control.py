@@ -1,6 +1,7 @@
 import hashlib
 import json
-from datetime import datetime
+from datetime import datetime, timedelta
+import sys
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -294,3 +295,72 @@ def test_incomplete_graph_log_does_not_claim_full_window_coverage(tmp_path):
     assert not result["window_fully_observed"]
     assert result["batch_sizes"] == {"48": {"true": 1, "false": 0, "unknown": 0}}
     assert result["read_prefix_sha256"] == hashlib.sha256(prefix).hexdigest()
+
+
+@pytest.mark.parametrize("mixed_timezones", (False, True))
+def test_cli_aligns_each_arm_wall_timezone_without_changing_legacy_default(
+    tmp_path, monkeypatch, mixed_timezones,
+):
+    from scripts import analyze_busy_context_control as analyzer
+
+    origin = datetime(2026, 10, 14, 20, 58, 57, tzinfo=ZoneInfo("UTC"))
+    run, reference = tmp_path / "predictive-run", tmp_path / "native-run"
+    plan = {"code_commit": "code", "sglang_patch_sha256": "patch"}
+    zones = {
+        "predictive_h2d": "America/Los_Angeles" if mixed_timezones else "Asia/Shanghai",
+        "native": "Asia/Shanghai",
+    }
+    for name, root in (("predictive_h2d", run), ("native", reference)):
+        arm = root / name
+        client = arm / "client_156"
+        client.mkdir(parents=True)
+        (root / "ab_plan.json").write_text(json.dumps(plan))
+        zone = ZoneInfo(zones[name])
+        stamps = [
+            (origin + timedelta(seconds=seconds)).astimezone(zone)
+            for seconds in (0, 3)
+        ]
+        (client / "gpu_samples.csv").write_text(
+            "timestamp,gpu_utilization_percent\n"
+            + "".join(f"{stamp:%Y/%m/%d %H:%M:%S.%f},50\n" for stamp in stamps)
+        )
+        (arm / "server.log").write_text("".join(
+            f"[{(origin + timedelta(seconds=seconds)).astimezone(zone):%Y-%m-%d %H:%M:%S}] "
+            "Decode batch, #running-req: 48, cuda graph: True\n"
+            for seconds in (1, 4)
+        ))
+    observed = {}
+
+    def geometry(arm, begin, end):
+        observed[arm.name] = begin, end
+        return {
+            "cohorts": {}, "cuda_graph_cohorts": {},
+            "prefill_geometry": {"cohorts": {}}, "worker_interval_neighbors": {},
+            "decode_batches": 1, "sequence_tokens_per_request_mean": 100.,
+            "worker_decode_duration_mean_ms": 10.,
+        }
+
+    monkeypatch.setattr(analyzer, "decode_geometry", geometry)
+    monkeypatch.setattr(analyzer, "host_match_path_geometry", lambda *args: {})
+    monkeypatch.setattr(analyzer, "control_profile", lambda *args: {})
+    output = tmp_path / "result.json"
+    arguments = [
+        "analyze", "--run-root", str(run), "--native-run-root", str(reference),
+        "--start-seconds", ".5", "--end-seconds", "2.5", "--output", str(output),
+    ]
+    if mixed_timezones:
+        arguments += [
+            "--predictive-timezone", zones["predictive_h2d"],
+            "--native-timezone", zones["native"],
+        ]
+    monkeypatch.setattr(sys, "argv", arguments)
+    analyzer.main()
+    bounds = origin.timestamp() * 1000. + 500., origin.timestamp() * 1000. + 2500.
+    assert observed == {"predictive_h2d": bounds, "native": bounds}
+    report = json.loads(output.read_text())
+    assert report["arm_wall_timezones"] == zones
+    for name in zones:
+        assert report["arms"][name]["monitor_window"]["timezone"] == zones[name]
+        graph = report["arms"][name]["periodic_decode_graph_log"]
+        assert graph["samples"] == 1
+        assert graph["batch_sizes"]["48"] == {"true": 1, "false": 0, "unknown": 0}

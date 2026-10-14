@@ -1,0 +1,44 @@
+{
+  "status": "cold_predictive_driver_registered",
+  "registered_at_local": "2026-10-14T13:56:18.177459-07:00",
+  "driver": {
+    "pid": 1518675,
+    "state": "R",
+    "ppid": 1518520,
+    "start_ticks": "618164127",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-v597-v59-post-sampling-20261014/scripts/launch_semantic_h2d_after_pair.py",
+      "--repo",
+      "/home/longhao/experiment/BeliefKV",
+      "--previous-run",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+      "--target-checkout",
+      "/home/longhao/experiment/.worktrees/beliefkv-v597-v59-post-sampling-20261014",
+      "--run-root",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59",
+      "--state",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/v59_launch_after_v58_post_sampling_20261014.json",
+      "--wait-pid",
+      "1629938",
+      "--port",
+      "18463",
+      "--arm-order",
+      "predictive_h2d",
+      "--native-reference-run",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+      "--execution-handoff",
+      "0",
+      "--host-numa-memory-policy",
+      "preferred"
+    ]
+  },
+  "frozen": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v597_v59_post_sampling_frozen_20261014.json",
+    "sha256": "757f6a84f4b9e0b3a2df539ecc2782422d641b90827c0a7dd98e46b8cdd1d692"
+  },
+  "launch_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_launch_after_v58_post_sampling_20261014.json",
+  "driver_log": "/home/longhao/experiment/ops/v59_post_sampling_after_v58_20261014.log",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59",
+  "workflows_dispatched_at_registration": 0
+}

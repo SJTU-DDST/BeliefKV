@@ -1,0 +1,98 @@
+{
+  "status": "registered_read_only_development_window_observer",
+  "registered_at_local": "2026-10-14T14:07:59.856255-07:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59",
+  "native_reference": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+  "launch_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_launch_after_v58_post_sampling_20261014.json",
+  "driver": {
+    "pid": 1518675,
+    "state": "S",
+    "ppid": 1,
+    "start_ticks": "618164127",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-v597-v59-post-sampling-20261014/scripts/launch_semantic_h2d_after_pair.py",
+      "--repo",
+      "/home/longhao/experiment/BeliefKV",
+      "--previous-run",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+      "--target-checkout",
+      "/home/longhao/experiment/.worktrees/beliefkv-v597-v59-post-sampling-20261014",
+      "--run-root",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59",
+      "--state",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/v59_launch_after_v58_post_sampling_20261014.json",
+      "--wait-pid",
+      "1629938",
+      "--port",
+      "18463",
+      "--arm-order",
+      "predictive_h2d",
+      "--native-reference-run",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+      "--execution-handoff",
+      "0",
+      "--host-numa-memory-policy",
+      "preferred"
+    ]
+  },
+  "scheduler": {
+    "pid": 1519312,
+    "state": "R",
+    "ppid": 1518922,
+    "start_ticks": "618165558",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "plan_sha256": "ed7b32abf59c0535ee7a07a0b7f78e7ef6bfff5e8e8a5a6c07e6f34e3af5a4e8",
+  "windows_seconds": [
+    [
+      120,
+      300
+    ],
+    [
+      600,
+      900
+    ],
+    [
+      1800,
+      2100
+    ],
+    [
+      3600,
+      3900
+    ]
+  ],
+  "state": "/home/longhao/experiment/ops/v59_v58_native_reference_window_observer_20261014.state.json",
+  "log": "/home/longhao/experiment/ops/v59_v58_native_reference_window_observer_20261014.log",
+  "helper_sha256": "647b8014855c1cd5756fd68dcfc427de3df18441552e58817b2c4297e51ee5ab",
+  "analysis_sources_sha256": {
+    "scripts/analyze_busy_context_control.py": "711d5494c6a6a5be8a163a1907450873b7367f5544bfd0714cfc66771824b7d9",
+    "scripts/analyze_prefill_turnover.py": "4becc5d75d7be52a85848241cc8792c1153cd5fa85833766b3f486dcd1f06a7d"
+  },
+  "scope": "Existing workloads only; historical native is a development reference, not causal/repeated acceptance.",
+  "observer": {
+    "pid": 1661337,
+    "state": "R",
+    "ppid": 1661158,
+    "start_ticks": "618234295",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/ops/observe_predictive_windows.py",
+      "--label",
+      "v59_v58_native_reference",
+      "--run-name",
+      "qwen35_native_predictive_replenished_108plus48_20261014_v59",
+      "--native-reference-name",
+      "qwen35_native_predictive_replenished_108plus48_20261014_v58",
+      "--launch-state-name",
+      "v59_launch_after_v58_post_sampling_20261014.json",
+      "--driver-registration-name",
+      "v598_v59_post_sampling_registration_20261014.json",
+      "--registration-name",
+      "v601_v59_window_observer_registration_20261014.json",
+      "--watch"
+    ]
+  }
+}
