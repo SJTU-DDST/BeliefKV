@@ -1,0 +1,33 @@
+{
+  "status": "registered_readonly_observer_not_new_experiment",
+  "registered_at_local": "2026-10-14T11:13:21.480184+08:00",
+  "observer_identity": {
+    "pid": 464845,
+    "state": "R",
+    "ppid": 464798,
+    "start_ticks": "611786457",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/ops/observe_v56_phase_pair.py"
+    ]
+  },
+  "existing_predictive_scheduler": {
+    "pid": 3892057,
+    "state": "R",
+    "ppid": 3891677,
+    "start_ticks": "611547724",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56",
+  "frozen_plan_sha256": "70d74e0dc47608bc8d627af009ca1eaf14e0eba33befa9d40c190c8ce2ab5d26",
+  "helper_sha256": "90b8d05e48c10378f0871488b1b3b69bdf2fe1bf59e446a8aedb0439cc88d9ad",
+  "state": "/home/longhao/experiment/ops/v56_native_phase_pair_watch_20261014.state.json",
+  "log": "/home/longhao/experiment/ops/v56_native_phase_pair_watch_20261014.log",
+  "planned_native_placement": "/home/longhao/experiment/BeliefKV/experiments/reports/v56_native_numa_placement_20261014.json",
+  "planned_native_startup": "/home/longhao/experiment/BeliefKV/experiments/reports/v56_native_startup_validation_20261014.json",
+  "planned_same_version_busy": "/home/longhao/experiment/BeliefKV/experiments/reports/v56_same_version_busy_600_900_20261014.json",
+  "planned_same_version_phases": "/home/longhao/experiment/BeliefKV/experiments/reports/v56_same_version_prefill_phases_600_900_20261014.json",
+  "scope": "Observe the existing predictive-to-native pair. No workload launch, GPU profiling, process stopping, budget/configuration/source mutation."
+}

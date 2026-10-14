@@ -2,27 +2,52 @@
 
 更新日期：2026-10-14。
 
-当前下一冷候选v448直接处理短prefill forward元数据往返。
-v421在原生_forward_metadata第151行观测到119个active-stack
-样本，仍保留196次读取错误和3.85s采样滞后；这些不是CPU时间。
-新独立prefill CPU快照与decode终态mask分离，正常EXTEND且形状
-匹配时，省去设备mask any及6次Tensor.cpu调用。物理槽号仍由
-当前GPU翻译结果gather；行号在CPU构造后显式non_blocking H2D。
-未知快照、变形批次和非普通prefill沿用回退，decode/filter/merge
-清理快照，不改变状态内容、边界、引用或stream barrier。
+当前运行V56：冻结661ed45、patch b8e7942c、引擎树c916d585。
+v451登记的launcher为3891419，scheduler为3892057，10:33:21
+启动，监控起点10:36:01.117。v453核验HTTP200、50份合格源码、
+实际池与running48/context131072；新增delayer/mixed/间隔均关闭。
+11:14首波108个workflow中48个completed、未见其他终态；第二波
+按一小时到达。predictive之后继续同版本native，运行树不热改。
+v450是arm-order参数传递错误，在argparse退出且无workflow派发；
+保留该原件，不能用作实际启动登记。V55已于10:20:55完整结束，
+最终154 completed、2 incomplete，后处理/HTML齐全，两个root的
+8192-token截断保留。完成子集JCT不替代全体质量与完成吞吐结果。
 
-v447/v448覆盖176组GDN/Mamba2完整元数据等价、失配和模式回退；
-383项native测试及29项子检查通过，793项runtime检查原50份
-源码保持。v445的12组CPU比较中，快照路径中位多约5.6–9.2us，
-GPU等待节省仍未知。最终patch b8e7942c、树c916d585；v442/v443
-是异步行号构造修正前的中间证据，不能代替最终绑定。
-v449已在V56目录不存在、旧等待器仍待V55时，保存其登记并精确
-退出PID3529595；V55未停、没有新增workflow删失。准备冻结新
-候选并恢复V56 predictive→native队列，两侧共用新引擎/相位探针；
-Main仍保持f50bede直到V55自然结束及后处理完成。
-V55随后于10:20:55完整退出，最终154 completed、2 incomplete；
-后处理/HTML齐全且GPU无计算进程，允许新候选冷部署。两个失败
-及其8192-token截断保留，不以完成子集替代全体质量/吞吐结果。
+V56已部署的独立prefill CPU快照只减少正常EXTEND的逻辑元数据
+回读，物理槽值仍GPU翻译；缺失/失配/其他模式保留原回退。
+v447/v448覆盖176组GDN/Mamba2完整等价、383测试+29子检查；
+793项runtime检查的50份源码保持。v445的CPU路径中位多约
+5.6–9.2us，实际GPU收益未证明。v452的大映射驻留为NUMA0
+48.914GB/NUMA1 153.071GB，不是精确池身份或pinned带宽证明。
+
+v455的完整600–900s窗口，短单请求run_batch墙钟/线程CPU
+P50为42.163/41.480ms；V55 predictive参考为40.815/40.223ms。
+15个匹配小组多数仅1–2样本，尚无稳定改善。v456相对旧V29
+native的decode request steps为368701/380722（-3.16%），实际
+prefill工作1.725M/1.891M token，版本和NUMA落点也不同。
+连续满48请求decode接近参考，短prefill截断worker仍约1.40–1.54倍；
+不能将它当完整forward差距。埋点self-wall为34.305s/300s，
+tool_prefetch占7.166s，既不是纯CPU，也不是可直接扣除的JCT。
+
+v459封存894个active-stack样本和85次读取错误；主线程859样本
+中32个位于prefill Mamba槽号.item，307个位于synchronize，
+其中275个为decode结果等待。该等待可能是正常数据依赖，
+不能删除同步或据采样比例推CPU/GPU收益，未报告滞后保持未知。
+新隔离候选v463直接stack本次设备虚拟槽值，再由原路径翻译物理
+槽号；mask/长度采用原生pin判断和显式异步H2D，不缓存物理槽值，
+不改分配/引用、checkpoint、状态内容或stream barrier。
+400项native测试+29子检查通过，含既有176组完整元数据等价。
+首轮三个空批fixture失败与修正原件均保留：原生flatten本就拒绝
+空输入，最终检查分别验证该拒绝，没有改变生产路径支持范围。
+v462六组CPU比较中位少约1–7us，48请求lazy均值反而多19.1us；
+尚未导出最终canonical patch、未部署、未测GPU/JCT收益。
+
+native只读观测已独立登记，等既有native arm启动后记录源码、
+服务、NUMA及完整600–900s两侧相位；它不派发新实验或占用GPU。
+先获得这项同引擎参考，再决定下一冷候选；小幅噪声不足以中断
+当前匹配实验。最终目标仍未验收，既有PrefillAdder保留。
+
+以下为历史证据；其中旧运行状态不覆盖以上当前状态。
 
 开发审计v430独立封存08:45:32–08:46:22各文件完整行前缀，
 不是原子快照。完成前启动并由下一请求确认复用的FULL为JOIN

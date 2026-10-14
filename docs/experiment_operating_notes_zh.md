@@ -4,6 +4,30 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+当前V56已冷部署661ed45、patch b8e7942c、引擎树c916d585。
+以v451登记、v453启动核验为准；v450的arm-order参数错误在
+argparse退出，零workflow派发，原件保留。V55于10:20:55完成
+全部后处理与HTML，154 completed/2 incomplete完整保留。
+V56顺序为predictive→同版本native，运行源码/工作负载/预算冻结。
+新增prefill延迟凑批、mixed chunk及间隔调整保持关闭。
+
+V455是V56 predictive对V55 predictive，不是native对照。
+600–900s短单请求run_batch墙钟P50为42.163/40.815ms，
+匹配小组稀疏；V456对旧V29的worker口径也不能证明完整forward
+差距。native只读观测已登记，须记录其实际NUMA落点、源码/服务，
+再以同引擎完整相位比较。观测器不启动实验或占用GPU计算。
+每日00:00–06:00预约仍有效；23:59只释放本项目进程和容器。
+
+V459保留894个active样本、85个读取错误；日志未报告采样滞后，
+保持未知，不写成零。32个主线程槽号.item命中只是调用路径线索；
+307个同步样本中275个是decode结果依赖，不能直接移除。
+V463隔离候选改为device stack虚拟槽及显式异步mask/长度，
+不热改V56或其冻结checkout。400测试+29子检查通过，初轮三个
+空批fixture失败原件亦保留：原生已有拒绝，不扩展空批支持。
+CPU中位少1–7us不证明GPU收益，48请求lazy均值退化须一并报告。
+新候选须独立导出/资格绑定后冷测；当前两侧引擎保持相同。
+
+以下为历史资格和操作证据，不覆盖以上当前状态。
 V448以新prefill CPU快照省去已知小型元数据的GPU查询/回读，
 不能复用参与decode终态处理的mamba_track_mask_cpu，也不能
 缓存物理Mamba槽号。CPU行号必须显式non_blocking H2D，直接
@@ -13,8 +37,8 @@ V442/V443是此修正前的中间版本；最终以v445/v447/v448及
 b8e7942c/c916d585绑定为准。383测试+29子检查通过，原runtime
 793项检查的50份源码不变，不重复宣称为新GPU验证。
 V449仅在新run目录未创建、原等待器暂停后再次核验登记/Main，
-才终止精确PID3529595，保留完整原登记及资格。V55继续自然
-收尾，没有新增workflow删失。随后冻结新checkout并重挂V56
+才终止精确PID3529595，保留完整原登记及资格。V55随后自然
+收尾，没有新增workflow删失。之后冻结新checkout并启动V56
 predictive→native；禁止改运行树或偷偷修改既有排队checkout。
 新launcher仍受每日00:00–06:00资源预约约束。
 V55已于10:20:55结束并完成后处理/HTML，154 completed与2

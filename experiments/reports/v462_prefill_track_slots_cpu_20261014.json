@@ -1,0 +1,137 @@
+{
+  "status": "cpu_preparation_and_readback_evidence_not_cuda_or_jct_gain",
+  "observed_at_local": "2026-10-14T11:11:17.303993+08:00",
+  "baseline_tree": "c916d585f8bed188d3b90ace4a1fde5fecdab3b1",
+  "baseline_source_sha256": "7498f0785f02dde454884b878915b5b72451189d41509311d50b2b01f9daa3e3",
+  "candidate_engine": "/home/longhao/experiment/.worktrees/sglang-v460-prefill-track-slots-20261014",
+  "source": "python/sglang/srt/managers/schedule_batch.py",
+  "source_sha256": "13b5e7f7b495e743f6e5614ab33a645210d63affb9010b0c4c81b3181f2148c3",
+  "fixture": "/home/longhao/experiment/.worktrees/sglang-v460-prefill-track-slots-20261014/test/srt/test_beliefkv_prefill_track_slots.py",
+  "fixture_sha256": "31916d17ec57ed1c2a300275c3aa5dde13e319dbbdb891b9f5a1a1ca44ee4f81",
+  "iterations_per_case_and_variant": 100,
+  "cases": [
+    {
+      "batch_size": 1,
+      "lazy": false,
+      "equal_outputs_and_checkpoint_state": true,
+      "scalar_readback_calls": {
+        "baseline": 1,
+        "candidate": 0
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 57.4275,
+          "p50": 57.13549999999999
+        },
+        "candidate": {
+          "mean": 56.57163,
+          "p50": 56.1605
+        }
+      }
+    },
+    {
+      "batch_size": 1,
+      "lazy": true,
+      "equal_outputs_and_checkpoint_state": true,
+      "scalar_readback_calls": {
+        "baseline": 1,
+        "candidate": 0
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 57.58731,
+          "p50": 57.397999999999996
+        },
+        "candidate": {
+          "mean": 56.59782,
+          "p50": 56.4845
+        }
+      }
+    },
+    {
+      "batch_size": 4,
+      "lazy": false,
+      "equal_outputs_and_checkpoint_state": true,
+      "scalar_readback_calls": {
+        "baseline": 4,
+        "candidate": 0
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 102.37859,
+          "p50": 102.265
+        },
+        "candidate": {
+          "mean": 100.94103,
+          "p50": 100.497
+        }
+      }
+    },
+    {
+      "batch_size": 4,
+      "lazy": true,
+      "equal_outputs_and_checkpoint_state": true,
+      "scalar_readback_calls": {
+        "baseline": 4,
+        "candidate": 0
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 101.81559,
+          "p50": 101.695
+        },
+        "candidate": {
+          "mean": 101.17628,
+          "p50": 100.928
+        }
+      }
+    },
+    {
+      "batch_size": 48,
+      "lazy": false,
+      "equal_outputs_and_checkpoint_state": true,
+      "scalar_readback_calls": {
+        "baseline": 48,
+        "candidate": 0
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 609.7908,
+          "p50": 609.3225
+        },
+        "candidate": {
+          "mean": 603.09319,
+          "p50": 602.1345
+        }
+      }
+    },
+    {
+      "batch_size": 48,
+      "lazy": true,
+      "equal_outputs_and_checkpoint_state": true,
+      "scalar_readback_calls": {
+        "baseline": 48,
+        "candidate": 0
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 607.08505,
+          "p50": 606.6985
+        },
+        "candidate": {
+          "mean": 626.19828,
+          "p50": 599.462
+        }
+      }
+    }
+  ],
+  "helper_sha256": "da86749745f5d1f3ffb05fd54765bcc0442d765d045222940c66e71282c39c84",
+  "limitations": [
+    "Actual prepare_for_extend runs on CPU tensors; the allocator and sampler are fixtures.",
+    "The baseline is compiled from the preceding qualified engine, not a rewritten formula.",
+    "CPU scalar-readback call counts do not measure GPU stalls or DMA time.",
+    "Pinning/H2D ordering and complete prefill/throughput/JCT effects need cold serving observation.",
+    "Alternating order excludes fixture setup, patching and equality checks from thread CPU cost.",
+    "The unpinned CPU benchmark runs alongside the live frozen V56; no GPU work is launched."
+  ]
+}

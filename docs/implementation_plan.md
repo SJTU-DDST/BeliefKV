@@ -2,31 +2,63 @@
 
 Status date: 2026-10-14.
 
-Current V448 qualifies shared prefill metadata preparation for the next cold
-pair. Preserve an immutable prefill-only CPU mask/seqlen snapshot, separate
-from decode completion metadata. Use it only for normal EXTEND with matching
-shapes; retain device-translated physical slot values and gather by CPU-known
-rows. Row selectors use explicit nonblocking H2D. Unknown snapshots, changed
-shapes and other modes keep the fallback; decode/filter/merge invalidate it.
-The change removes six Tensor.cpu and one Tensor.any calls from the known
-metadata path, not KV migration bytes or measured CUDA time.
+V56 is running on frozen661ed45, patchb8e7942c, enginec916d585, with
+predictive first and one same-version native reference next. V451 is the
+actual registration; V450 is a preserved argparse failure before dispatch.
+V453 validates all50 source hashes, HTTP service and fixed capacities.
+At11:14,48 of the first108 workflows have completed, with no other terminal
+outcomes observed. Preserve the second wave, workload and budgets. V55
+finished postprocessing at10:20:55 with154 completed and2 incomplete;
+retain the two root output truncations and all156 terminal records.
 
-V447 passes383 native tests plus29 subtests, including176 complete GDN/
-Mamba2 geometry comparisons and fallback/mode cases. The793 runtime checks
-retain all50 source hashes. V445's12 CPU comparisons show about5.6–9.2us
-median added CPU on snapshot paths; actual GPU/phase/JCT benefit remains
-unknown. Final engine is b8e7942c/c916d585. V442/V443 precede the explicit
-nonblocking row-construction correction and are not final qualification.
-V449 preserves and stops only the verified old V56 waiter before experiment
-creation; V55 remains live and no workflow censoring is added. Freeze this
-qualified replacement and requeue predictive first, then matching native.
-Main remainsf50bede until V55 naturally completes and postprocessing exits.
-V55 has now completed at10:20:55:154 completed,2 incomplete, all156
-terminal results, postprocessing/HTML present and no GPU compute process.
-Proceed with the qualified replacement cold deployment; retain both failures.
-Keep the workload, budgets, existing PrefillAdder and disabled new prefill
-delay/batching fixed. Acceptance still needs matched phases and service,
-then repeated JCT/throughput, quality, fairness and recomputation evidence.
+The deployed immutable prefill-only CPU mask/seqlen snapshot is distinct
+from decode completion metadata. Normal EXTEND with matching shapes uses
+CPU-known logical rows and current device-translated physical slots.
+Fallbacks and stream/state boundaries remain intact. V447/V448 qualify
+176 complete geometries,383 tests plus29 subtests and unchanged50 runtime
+sources/793 prior checks. V445 measures5.6–9.2us added median CPU;
+GPU/phase/JCT gains remain unproven.
+
+V455 does not show a stable improvement:600–900s short-single run_batch
+wall/thread-CPU P50 is42.163/41.480ms against V55 predictive40.815/
+40.223ms. Most of15 matched cohorts have only1–2 samples. V456 compares
+368701 versus historical-native380722 decode steps with different prefill
+work and topology/version; it is diagnosis, not native acceptance.
+Measured Python self-wall is34.305s/300s, including7.166s tool_prefetch.
+Keep complete forward phases, clipped worker intervals and pure kernel
+time separate.
+
+Next actions:
+
+1. Finish the existing V56 predictive→native pair with identical engine,
+   probes and configuration. The registered read-only observer captures
+   native placement/startup and the complete600–900s phase comparison.
+   It neither launches a workload nor profiles GPU execution.
+2. Export and qualify isolated candidateV463 after retaining current
+   observation evidence. It removes prefill per-request slot.item by
+   stacking current device virtual slots; mask/seqlen use explicit
+   nonblocking uploads. Physical translation, allocation/references,
+   checkpoint/state and stream barriers stay unchanged.400 native tests
+   plus29 subtests pass, with both the initial empty-fixture rejection
+   and final checks retained. V462's CPU medians improve1–7us, but the
+   48-request lazy mean regresses19.1us. Cold GPU benefit is unknown.
+3. Use the same-version phases to select the next bottleneck. V459's
+   894 active samples/85 read errors locate32 prefill scalar-readback
+   leaves and275 decode-result synchronization leaves; these are call
+   paths, not removable CPU or justification to delete data dependencies.
+4. Continue tool/JOIN coverage, prepare consumption and admission/residency
+   analysis without counting ACKs or demand handoff as early useful FULL.
+   Preserve repeated matching controls for final JCT/throughput attribution.
+
+Existing PrefillAdder stays enabled as before. New PrefillDelayer,
+minimum-slot delays, mixed chunk and interval changes stay disabled.
+No canary, new completion guard, hot source edit or budget change.
+Daily00:00–06:00 Asia/Shanghai remains reserved for others, with owned
+resources released from23:59. Final quality/fairness/recomputation and
+mean-JCT/completion-throughput acceptance remains pending.
+
+The following paragraphs retain earlier evidence; their collection-time
+running states do not override the status and next actions above.
 
 Earlier V430 independently seals live V55 prefixes at08:45:32–08:46:22.
 Confirmed next-request early FULL reuse is73 JOIN waits/1.381GB and124

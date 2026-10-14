@@ -1,0 +1,91 @@
+{
+  "status": "isolated_candidate_checked_not_deployed_or_gpu_accepted",
+  "observed_at_local": "2026-10-14T11:14:29.387923+08:00",
+  "baseline_engine_tree": "c916d585f8bed188d3b90ace4a1fde5fecdab3b1",
+  "candidate_engine": "/home/longhao/experiment/.worktrees/sglang-v460-prefill-track-slots-20261014",
+  "source_sha256": {
+    "python/sglang/srt/managers/schedule_batch.py": "13b5e7f7b495e743f6e5614ab33a645210d63affb9010b0c4c81b3181f2148c3",
+    "test/srt/test_beliefkv_prefill_track_slots.py": "31916d17ec57ed1c2a300275c3aa5dde13e319dbbdb891b9f5a1a1ca44ee4f81"
+  },
+  "native_checks": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v461_prefill_track_slots_native_checks_20261014.xml",
+    "sha256": "67595cfe660bd01efa0be15a55bfb12325ae5d0fbd0f7d222d848ac28ac36266",
+    "compressed_path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v461_prefill_track_slots_native_checks_20261014.raw.gz",
+    "compressed_sha256": "8ffdce76c8a7466934004170b5c49182347aa3a9d8c917f07ea3da651721d12e",
+    "tests": 429,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "native_test_cases": 400,
+  "native_subtests": 29,
+  "initial_check": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v460_prefill_track_slots_checks_20261014.xml",
+    "sha256": "9fb88a67eb1d18e4819910edf96589ed2ba6e35001ea85d554cf595d4e0af23e",
+    "compressed_path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v460_prefill_track_slots_checks_20261014.raw.gz",
+    "compressed_sha256": "9fae7cc04b9c1605b854ce98ddd36424ef45bf95be622741eff7b4354b5db90d",
+    "tests": 19,
+    "failures": 3,
+    "errors": 0,
+    "skipped": 0,
+    "cause": "Three zero-request fixtures reached the unchanged native flatten helper, which rejects empty input. No production defect or workload failure. The final fixture separately preserves that rejection on both versions."
+  },
+  "cpu_evidence": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v462_prefill_track_slots_cpu_20261014.json",
+    "sha256": "ade2d64e70eacec01dbd1e61dabb1eb5e07d81945268c2b8f057ea970ee43f1e"
+  },
+  "copied_observations": [
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v450_v56_prefill_track_pair_registration_20261014.json",
+      "sha256": "3a27f5de76aa5c18a877f7602ba36db2425a99067e4575767ef68c0966084249"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v451_v56_prefill_track_pair_registration_20261014.json",
+      "sha256": "052fe5fd4105e4a2d6e8f7bd3bb260f6417c7fa76716643706bcb85f387e1c9e"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v452_v56_numa_placement_20261014.json",
+      "sha256": "26001495df2ef154bbe8d48928bfc67bacef2536fc31c1c111981435d574ed73"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v453_v56_live_startup_validation_20261014.json",
+      "sha256": "94cd76f0b313582eece2f59378ef79df77ea1208662d47e42eb1dfee3dcc11c3"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v454_v56_prior_predictive_phases_120_300_20261014.json",
+      "sha256": "d45cdc767ce895662dc81f30bbedf7a11ed0bb6c23b8515f667e8fbce437c23b"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v455_v56_prior_predictive_phases_600_900_20261014.json",
+      "sha256": "ee905ad29e4a91f72c281991e4ad6adb0c082089b374b7fec7f24d296aa834ae"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v456_v56_busy_600_900_20261014.json",
+      "sha256": "6a7c42db628002c5cbfb41c7f7a35c6422256201f5f9d6c63026d5c1a2d739ab"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v459_v56_stack_diagnosis_20261014.json",
+      "sha256": "d263d454b455ea836b92fe60012fb06d6d419ca1a9b8fb218732465f5f0bea41"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v459_v56_stack_diagnosis_20261014.raw.gz",
+      "sha256": "5ddb5e5705a6da263477c7a676a41bc5c2b6009bf5d6d1947329ac963e158635"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v56_native_phase_pair_watch_registration_20261014.json",
+      "sha256": "c7bc7b0e42dc0a40598833a9fec0d3c6234e9e6f608c58a0b5b03ca6cd866b63"
+    }
+  ],
+  "helper_sha256": "e9caf63539be2b6520a28cf195f17ec04cf59e3b4443552bf369c29e2d189259",
+  "constraints": [
+    "V56 remains frozen on661ed45, patchb8e7942c and engine treec916d585.",
+    "Only the isolated schedule_batch and new fixture differ; no live runtime edit or restart.",
+    "Prefill virtual slot selection stays on device and is stacked before later buffer reuse.",
+    "Mask/seqlen uploads use native pin availability and explicit nonblocking H2D.",
+    "Physical translation, slot lifecycle, allocator/references, state contents and stream barriers stay unchanged.",
+    "400 tests plus29 subtests include176 full GDN/Mamba2 metadata geometries.",
+    "CPU cost is diagnostic:48-request lazy mean regresses despite lower median; no GPU/JCT gain is claimed.",
+    "Canonical patch export and cold qualification remain separate next steps.",
+    "No new prefill delay/batching, cap, guard or GPU experiment is introduced."
+  ]
+}

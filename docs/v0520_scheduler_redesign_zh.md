@@ -1,16 +1,31 @@
 # v0.5.20 调度适配边界
 
-v448下一冷候选减少Mamba prefill元数据回读。独立CPU快照与
+V56当前运行661ed45/b8e7942c/c916d585，10:33:21冷启动，
+predictive→同版本native，v451/v453分别绑定登记与启动核验。
+V55最终154 completed/2 incomplete，于10:20:55完成后处理。
+V455的600–900s短单请求run_batch P50为42.163ms，对V55
+predictive40.815ms尚无稳定改善；同版本native完整相位待观测。
+旧V29和截断worker区间仅供开发诊断，不能代替完整forward。
+
+v448已部署优化减少Mamba prefill元数据回读。独立CPU快照与
 decode完成mask分离，只在正常EXTEND且形状一致时使用；物理
 slot值继续由GPU翻译，CPU仅规划行号，异步H2D后integer gather。
 decode/filter/merge清理快照，缺失或失配走原回退，原有stream
 barrier/状态边界不改。176组完整元数据相同，383测试+29子检查
 通过；12组CPU比较多5.6–9.2us，不代表已证明GPU周转改善。
 最终patch b8e7942c/树c916d585；v449保留并退出尚未派发的旧
-V56等待器，准备冻结替换候选后继续predictive→native。V55自然
-收尾，Main仍f50bede，既有Adder保留，新delayer/mixed/间隔不改。
-V55最终154 completed/2 incomplete，于10:20:55完成后处理并释放
-GPU；下一步为合格替换候选的冷部署及同引擎相位对照。
+V56等待器，v450参数失败保留，v451为实际替换启动。当前运行
+源码保持冻结，既有Adder保留，新delayer/mixed/间隔不改。
+
+V459的894个active样本和85读取错误发现另一个prefill同步点：
+逐请求读取虚拟跟踪槽.item。隔离v463将本次槽值留在设备上stack，
+mask/长度按原生pin可用性异步H2D；不改变物理翻译、分配/引用、
+checkpoint/状态内容或stream barrier。400测试+29子检查通过，
+CPU局部中位少1–7us、48请求lazy均值退化保留；未部署、GPU
+收益未知。307个同步命中中的275个来自decode结果依赖，不能
+据此删除同步。native观测器只读已有arm，补齐NUMA与完整相位。
+
+以下为历史证据，不覆盖以上当前状态。
 
 V55首个完整600–900s已由v407归纳：连续满批decode接近历史
 native，短prefill截断worker比仍1.350–1.497。64个新相位样本
