@@ -7,6 +7,23 @@ short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
 and interval changes remain disabled.
 
+V59 is now executing the frozen d1c3f14/5262707a candidate. V600 verifies
+actual GPU service,65 source hashes and fixed scheduling settings;108 first-wave
+workspaces arrived. V604 retains complete120-300/600-900s development windows:
+short-prefill P50 gaps+9.35%/+7.58%, decode service gaps-3.39%/-3.65%.
+These early ranges are close to the stage targets but compare different revisions
+and realized requests; later windows, useful FULL consumption, quality and full/
+repeated JCT-throughput acceptance remain open. Residual handoff P50 gaps
+are approximately2.8-3.3ms; inspect maintenance/admission before the next launch.
+
+V601's observer failed because it interpreted V59's PDT wall strings as Shanghai.
+It exited after three explicit failures; the live workload was not restarted.
+V602 binds per-arm wall interpretation to native wall/monotonic and client metric
+anchors, with16.681/17.760ms first-monitor residuals. The offline analyzer now
+supports independent arm timezones;22 checks pass. V603 observes the corrected
+windows from the development checkout with exact source hashes. Retain the
+original observer source and failure state; never rewrite raw timestamps to fit.
+
 V58 has completed all collection and postprocessing. Its154 common completed
 workflows have mean JCT2912.078/2310.910s (+26.01% predictive). Native retains
 one output-limit incomplete and one14400s deadline error with an unsatisfied JOIN.

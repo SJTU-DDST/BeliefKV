@@ -4,7 +4,20 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
-下一轮按v594资格冻结V59代码与引擎：65份源码、patch f7b1942b、
+当前V59已冷部署d1c3f14，v600验证实际GPU服务和65份绑定；
+driver1518675、scheduler1519312/start_ticks618165558保持
+原运行，不能因旧观察器退出而重启。v604两窗为开发对照，
+尚不构成全部阶段或JCT/质量/重复验收。
+
+GPU日志时区必须逐arm核对：V59为America/Los_Angeles，
+V58 native参考为Asia/Shanghai。v602用服务墙钟/monotonic
+加首条client metric核验残差约17ms；共享默认会错15小时。
+当前离线分析使用`--predictive-timezone America/Los_Angeles`
+和`--native-timezone Asia/Shanghai`，保留v601失败状态及原
+源码，v603按新哈希观察。原始CSV/事件不改；重新读取历史
+比较/图表前也要核对墙钟解释，不能直接沿用当前进程本地时区。
+
+按v594资格冻结V59代码与引擎：65份源码、patch f7b1942b、
 tree5262707a，725项CPU检查和12个子场景通过。只将overlap
 等待规划移到结果交付及采样发射之后，不删除WAR、load fence、
 引用或FULL/Mamba恢复依赖；normal路径不变。CPU检查使用

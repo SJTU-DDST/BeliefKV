@@ -1,0 +1,67 @@
+{
+  "observed_at_local": "2026-10-14T14:23:57.808514-07:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59",
+  "arm_clock_checks": [
+    {
+      "arm": "predictive_h2d",
+      "declared_wall_timezone": "America/Los_Angeles",
+      "gpu_first_timestamp": "2026/10/14 13:58:57.253",
+      "gpu_first_epoch_ms": 1792011537253.0,
+      "metrics_first_epoch_ms_from_native_clock": 1792011537236.3193,
+      "first_monitor_difference_ms": 16.6806640625,
+      "gpu_prefix": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/client_156/gpu_samples.csv",
+        "bytes": 157,
+        "sha256": "2eb3bc04f63c1bd1b8c898bc49ad750a67e132719f230ec30bff60e11812938f"
+      },
+      "metrics_first_line": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/client_156/sglang_metrics.jsonl",
+        "bytes": 218,
+        "sha256": "02e18e53f9ca2bee5d98071c97369ed34ec87c4f3b1606e41e8f71e5fc72f726"
+      },
+      "native_clock_prefix": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/server/runtime_audit.jsonl",
+        "bytes": 33279,
+        "sha256": "a9894be46a4dc6b9ad531b53818db2597be4992a779922506f95c0c4e9a70262",
+        "wall_minus_monotonic_ms": 1785829736899.4219
+      }
+    },
+    {
+      "arm": "native",
+      "declared_wall_timezone": "Asia/Shanghai",
+      "gpu_first_timestamp": "2026/10/15 00:33:05.173",
+      "gpu_first_epoch_ms": 1791995585173.0,
+      "metrics_first_epoch_ms_from_native_clock": 1791995585155.24,
+      "first_monitor_difference_ms": 17.760009765625,
+      "gpu_prefix": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/client_156/gpu_samples.csv",
+        "bytes": 157,
+        "sha256": "6585331da92a0b51867bffd3a432ffa0e3fa04660455211f2f06428e122e38f9"
+      },
+      "metrics_first_line": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/client_156/sglang_metrics.jsonl",
+        "bytes": 218,
+        "sha256": "d7d339bde0acd4d1c230ed76a827b408bf13467cce3dc5d8d569d3ef383d2260"
+      },
+      "native_clock_prefix": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/server/runtime_audit.jsonl",
+        "bytes": 34326,
+        "sha256": "118443cb03701f5fda127a97b7500857dd5b7fb7fdaddb7139b1f87cb6a3a4ce",
+        "wall_minus_monotonic_ms": 1785829736899.4219
+      }
+    }
+  ],
+  "incorrect_shared_timezone_shift_ms": -54000000,
+  "failed_observer": {
+    "path": "/home/longhao/experiment/ops/v59_v58_native_reference_window_observer_20261014.state.json",
+    "sha256": "7c779ce5682d2108e6b544d6defbbc6673ad15ec426812387c4e6c71957dc54a",
+    "current_process": null
+  },
+  "original_observer_source": {
+    "path": "/home/longhao/experiment/ops/observe_predictive_windows_v601_original.py",
+    "sha256": "647b8014855c1cd5756fd68dcfc427de3df18441552e58817b2c4297e51ee5ab"
+  },
+  "corrected_analyzer_sha256": "032b6c61d41c29692c7ba474882aa46ce149373142838c63d33c5123519cc789",
+  "runtime_and_raw_timestamps_unchanged": true,
+  "scope": "Offline wall-string interpretation verified against native wall/monotonic and client monitor anchors; no model/service timestamp was changed."
+}

@@ -2,6 +2,15 @@
 
 更新日期：2026-10-14（PDT）
 
+V59已于13:56 PDT冷启动d1c3f14，14:03实际服务、65份源码及
+固定配置核验通过，首波108个workspace已到达。v604的两个
+完整开发窗口120–300/600–900s，短prefill周转P50为43.908/
+47.723ms，对V58 native多9.35%/7.58%；decode服务量少
+3.39%/3.65%。早期接近阶段范围，完整JCT/质量/重复验收未完成。
+V59 GPU日志为PDT、V58参考为Asia/Shanghai；v602用native
+时钟核验首条监控差约17ms。v601旧观察器因共享时区错误退出，
+原始日志与失败证据保留；v603使用修正的逐arm离线分析继续观察。
+
 当前V58已完整收尾：predictive客户端156 completed，native
 154 completed、1 incomplete、1 error。共同completed的154个
 任务平均JCT为2912.078/2310.910s，predictive高26.01%；工具
@@ -9,7 +18,7 @@
 为predictive24个workflow/26次RETURN、native20个/22次，
 涉及root分别7/9个；任务质量尚未评分。见v596最终开发对照。
 
-下一轮V59使用v594资格候选：继承bff29cb的祖先扫描和终态
+当前V59使用v594资格候选：继承bff29cb的祖先扫描和终态
 计数修复，将overlap的等待上下文规划移到前批结果交付及当前
 采样发射之后。WAR、引用及原生load fence保留；65份源码绑定，
 725项CPU检查及12个子场景通过。相同埋点循环CPU差异约
