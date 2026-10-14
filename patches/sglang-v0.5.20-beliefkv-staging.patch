@@ -1661,6 +1661,32 @@ index 006b52a..83c96cf 100644
          )
      kv_host_pool = build_kv_host_pool(
          kv_pool=kv_pool,
+diff --git a/python/sglang/srt/mem_cache/memory_pool.py b/python/sglang/srt/mem_cache/memory_pool.py
+index 28333df..3c05cf9 100644
+--- a/python/sglang/srt/mem_cache/memory_pool.py
++++ b/python/sglang/srt/mem_cache/memory_pool.py
+@@ -1467,11 +1467,19 @@ class HybridReqToTokenPool(ReqToTokenPool):
+             assert len(select_index) == len(mamba_ping_pong_track_buffers), (
+                 "Not enough space for mamba ping pong idx, try to increase --mamba-full-memory-ratio."
+             )
++        # A single row can use a view without materializing an index tensor.
++        mapping_rows = (
++            slice(select_index[0], select_index[0] + 1)
++            if len(select_index) == 1
++            and type(select_index[0]) is int
++            and select_index[0] >= 0
++            else select_index
++        )
+         mamba_index_tensor = torch.stack(mamba_indices).to(dtype=torch.int32)
+-        self.req_index_to_mamba_index_mapping[select_index] = mamba_index_tensor
++        self.req_index_to_mamba_index_mapping[mapping_rows] = mamba_index_tensor
+         if self.enable_mamba_extra_buffer:
+             ping_pong_tensor = torch.stack(mamba_ping_pong_track_buffers)
+-            self.req_index_to_mamba_ping_pong_track_buffer_mapping[select_index] = (
++            self.req_index_to_mamba_ping_pong_track_buffer_mapping[mapping_rows] = (
+                 ping_pong_tensor
+             )
+         return select_index
 diff --git a/python/sglang/srt/mem_cache/radix_cache.py b/python/sglang/srt/mem_cache/radix_cache.py
 index e7bee63..41abf6b 100644
 --- a/python/sglang/srt/mem_cache/radix_cache.py
@@ -5593,6 +5619,164 @@ index 0000000..88361ff
 +
 +if __name__ == "__main__":
 +    unittest.main()
+diff --git a/test/srt/test_beliefkv_mamba_request_mapping.py b/test/srt/test_beliefkv_mamba_request_mapping.py
+new file mode 100644
+index 0000000..ddb06dd
+--- /dev/null
++++ b/test/srt/test_beliefkv_mamba_request_mapping.py
+@@ -0,0 +1,152 @@
++"""Exercise actual request-slot allocation and mapping updates on CPU."""
++
++from types import SimpleNamespace as NS
++
++import pytest
++import torch
++from torch.utils._python_dispatch import TorchDispatchMode
++
++from sglang.srt.mem_cache.memory_pool import HybridReqToTokenPool
++
++
++class Slots:
++    def __init__(self):
++        self.next = 1
++        self.calls = []
++
++    def alloc(self, count):
++        self.calls.append(count)
++        values = torch.arange(self.next, self.next + count, dtype=torch.int64)
++        self.next += count
++        return values
++
++
++class MappingOperations(TorchDispatchMode):
++    def __init__(self, pool):
++        self.mapping_storage = {
++            value.untyped_storage().data_ptr()
++            for name, value in vars(pool).items()
++            if name.startswith("req_index_to_mamba") and isinstance(value, torch.Tensor)
++        }
++        self.operations = []
++
++    def __torch_dispatch__(self, function, types, args=(), kwargs=None):
++        if (
++            args and isinstance(args[0], torch.Tensor)
++            and args[0].untyped_storage().data_ptr() in self.mapping_storage
++        ):
++            self.operations.append(str(function))
++        return function(*args, **(kwargs or {}))
++
++
++def pool(*, extra, lazy, spec):
++    result = HybridReqToTokenPool.__new__(HybridReqToTokenPool)
++    result.free_slots = list(range(1, 9))
++    result.req_generation = torch.zeros(9, dtype=torch.int64)
++    result._on_alloc_rows = None
++    result.enable_mamba_extra_buffer = extra
++    result.enable_mamba_extra_buffer_lazy = lazy
++    result.mamba_ping_pong_track_buffer_size = 2
++    result.mamba_allocator = Slots()
++    result.mamba_pool = NS(
++        replayssm_spec_write_pos=torch.full((9,), 9) if spec else None,
++        replayssm_cache_base=torch.full((9,), 9) if spec else None,
++        replayssm_is_flush=torch.full((9,), 9) if spec else None,
++        replayssm_write_pos=torch.full((32,), 9) if spec else None,
++    )
++    result.req_index_to_mamba_index_mapping = torch.full((9,), -7, dtype=torch.int32)
++    if extra:
++        result.req_index_to_mamba_ping_pong_track_buffer_mapping = torch.full(
++            (9, 2), -7, dtype=torch.int64,
++        )
++    return result
++
++
++def request(*, row=None, mamba=None, buffer=None):
++    return NS(kv=NS(
++        holds_kv=row is not None, req_pool_idx=row,
++        kv_allocated_len=4 if row is not None else 0,
++        holds_mamba=mamba is not None,
++        mamba_pool_idx=torch.tensor(mamba) if mamba is not None else None,
++        mamba_needs_clear=False,
++        mamba_ping_pong_track_buffer=(
++            torch.tensor(buffer) if buffer is not None else None
++        ),
++    ))
++
++
++@pytest.mark.parametrize("extra,lazy,spec", [
++    (False, False, False), (True, False, False),
++    (True, True, False), (True, False, True),
++])
++@pytest.mark.parametrize("reuse", [False, True])
++def test_single_request_mapping_preserves_slots_state_and_untouched_rows(
++    extra, lazy, spec, reuse,
++):
++    state = pool(extra=extra, lazy=lazy, spec=spec)
++    req = request(
++        row=3 if reuse else None, mamba=11 if reuse else None,
++        buffer=[12, 13] if reuse and extra else None,
++    )
++    with MappingOperations(state) as operations:
++        selected = state.alloc([req])
++    row = 3 if reuse else 8
++    assert selected == [row]
++    assert state.req_index_to_mamba_index_mapping[row] == req.kv.mamba_pool_idx
++    untouched = [index for index in range(9) if index != row]
++    assert torch.all(state.req_index_to_mamba_index_mapping[untouched] == -7)
++    assert state.req_generation[row] == (0 if reuse else 1)
++    assert req.kv.mamba_needs_clear is (not reuse)
++    assert state.mamba_allocator.calls == (
++        [] if reuse else [1] + ([1 if lazy else 2] if extra else [])
++    )
++    if extra:
++        assert torch.equal(
++            state.req_index_to_mamba_ping_pong_track_buffer_mapping[row],
++            req.kv.mamba_ping_pong_track_buffer,
++        )
++        assert torch.all(
++            state.req_index_to_mamba_ping_pong_track_buffer_mapping[untouched] == -7
++        )
++        if lazy and not reuse:
++            assert req.kv.mamba_ping_pong_track_buffer[1] == -1
++    if spec:
++        assert state.mamba_pool.replayssm_spec_write_pos[row] == (9 if reuse else 0)
++        assert state.mamba_pool.replayssm_write_pos[req.kv.mamba_pool_idx] == (
++            9 if reuse else 0
++        )
++    assert "aten.index_put_.default" not in operations.operations
++    assert operations.operations.count("aten.copy_.default") == (2 if extra else 1)
++
++
++@pytest.mark.parametrize("extra", [False, True])
++def test_multiple_requests_keep_exact_noncontiguous_order(extra):
++    state = pool(extra=extra, lazy=False, spec=False)
++    requests = [
++        request(row=5, mamba=14, buffer=[15, 16] if extra else None),
++        request(),
++        request(row=2, mamba=20, buffer=[21, 22] if extra else None),
++    ]
++    with MappingOperations(state) as operations:
++        selected = state.alloc(requests)
++    assert selected == [5, 8, 2]
++    for row, req in zip(selected, requests):
++        assert state.req_index_to_mamba_index_mapping[row] == req.kv.mamba_pool_idx
++        if extra:
++            assert torch.equal(
++                state.req_index_to_mamba_ping_pong_track_buffer_mapping[row],
++                req.kv.mamba_ping_pong_track_buffer,
++            )
++    assert operations.operations.count("aten.index_put_.default") == (
++        2 if extra else 1
++    )
++
++
++def test_failed_request_row_allocation_does_not_allocate_mamba_or_change_mappings():
++    state = pool(extra=True, lazy=False, spec=False)
++    state.free_slots.clear()
++    with MappingOperations(state) as operations:
++        assert state.alloc([request()]) is None
++    assert not state.mamba_allocator.calls
++    assert not operations.operations
++    assert torch.all(state.req_index_to_mamba_index_mapping == -7)
 diff --git a/test/srt/test_beliefkv_metadata.py b/test/srt/test_beliefkv_metadata.py
 new file mode 100644
 index 0000000..0f6eaa2
