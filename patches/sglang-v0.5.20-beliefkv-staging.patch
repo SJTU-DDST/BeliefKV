@@ -342,6 +342,214 @@ index 89cac80..a5277b8 100644
      def _process_reasoning_stream(
          self,
          index: int,
+diff --git a/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py b/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py
+index b1e4ac8..7e29076 100644
+--- a/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py
++++ b/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py
+@@ -118,6 +118,28 @@ class MambaAttnBackendBase(AttentionBackend):
+         state ops, incl. the cuda-graph replay-prep copy into ``state_indices_list``."""
+         return self.req_to_token_pool.translate_mamba_indices(mamba_indices)
+ 
++    @staticmethod
++    def _extend_track_cpu_metadata(forward_batch: ForwardBatch):
++        cached = getattr(forward_batch, "mamba_extend_track_cpu", None)
++        if cached is None or forward_batch.forward_mode != ForwardMode.EXTEND:
++            return None
++        mask, seqlens = cached
++        extend = forward_batch.extend_seq_lens_cpu
++        prefix = forward_batch.extend_prefix_lens_cpu
++        if (
++            forward_batch.mamba_track_mask is None
++            or forward_batch.mamba_track_seqlens is None
++            or extend is None
++            or prefix is None
++            or len(mask) != forward_batch.mamba_track_mask.numel()
++            or len(seqlens) != forward_batch.mamba_track_seqlens.numel()
++            or len(mask) != len(seqlens)
++            or len(mask) != len(extend)
++            or len(mask) != len(prefix)
++        ):
++            return None
++        return mask, seqlens, extend, prefix
++
+     def _forward_metadata(self, forward_batch: ForwardBatch):
+         bs = forward_batch.batch_size
+ 
+@@ -146,9 +168,14 @@ class MambaAttnBackendBase(AttentionBackend):
+                 forward_batch.mamba_track_indices
+             )
+         # Resolve the tracked-row selection once per forward
+-        has_mamba_track_mask = bool(
+-            forward_batch.mamba_track_mask is not None
+-            and forward_batch.mamba_track_mask.any()
++        track_cpu = self._extend_track_cpu_metadata(forward_batch)
++        has_mamba_track_mask = (
++            any(track_cpu[0])
++            if track_cpu is not None
++            else bool(
++                forward_batch.mamba_track_mask is not None
++                and forward_batch.mamba_track_mask.any()
++            )
+         )
+         _real_bs = forward_batch._original_batch_size
+         if _real_bs is not None and _real_bs < mamba_cache_indices.shape[0]:
+@@ -259,8 +286,22 @@ class MambaAttnBackendBase(AttentionBackend):
+                     + forward_batch.extend_seq_lens[-1]
+                 )
+                 if has_mamba_track_mask:
++                    track_rows = (
++                        torch.tensor(
++                            [i for i, tracked in enumerate(track_cpu[0]) if tracked],
++                            dtype=torch.int64,
++                            device="cpu",
++                        ).to(self.device, non_blocking=True)
++                        if track_cpu is not None
++                        else None
++                    )
+                     track_conv_indices = self._init_track_conv_indices(
+-                        query_start_loc, forward_batch
++                        query_start_loc,
++                        forward_batch,
++                        track_rows=track_rows,
++                        max_position=(
++                            sum(track_cpu[2]) - 1 if track_cpu is not None else None
++                        ),
+                     )
+ 
+                     (
+@@ -273,7 +314,9 @@ class MambaAttnBackendBase(AttentionBackend):
+                         track_ssm_seq_idx,
+                         track_ssm_end_locs,
+                         track_ssm_recompute_dst,
+-                    ) = self._init_track_ssm_indices(mamba_cache_indices, forward_batch)
++                    ) = self._init_track_ssm_indices(
++                        mamba_cache_indices, forward_batch, cpu_metadata=track_cpu
++                    )
+         else:
+             raise ValueError(f"Invalid forward mode: {forward_batch.forward_mode=}")
+ 
+@@ -347,7 +390,12 @@ class MambaAttnBackendBase(AttentionBackend):
+         )
+ 
+     def _init_track_conv_indices(
+-        self, query_start_loc: torch.Tensor, forward_batch: ForwardBatch
++        self,
++        query_start_loc: torch.Tensor,
++        forward_batch: ForwardBatch,
++        *,
++        track_rows: Optional[torch.Tensor] = None,
++        max_position: Optional[int] = None,
+     ):
+         """Flattened input positions of conv states to track during extend (up to
+         the last complete chunk boundary, mamba_track_mask rows only)."""
+@@ -361,7 +409,11 @@ class MambaAttnBackendBase(AttentionBackend):
+             "this path should only run when the track mask is set on an extend batch"
+         )
+         start_indices = query_start_loc[:-1] + aligned_len - conv_state_len
+-        start_indices = start_indices[forward_batch.mamba_track_mask]
++        start_indices = (
++            start_indices.index_select(0, track_rows)
++            if track_rows is not None
++            else start_indices[forward_batch.mamba_track_mask]
++        )
+ 
+         indices = start_indices.unsqueeze(-1) + torch.arange(
+             conv_state_len,
+@@ -369,10 +421,15 @@ class MambaAttnBackendBase(AttentionBackend):
+             dtype=start_indices.dtype,
+         )
+ 
+-        return indices.clamp(0, query_start_loc[-1] - 1)
++        maximum = query_start_loc[-1] - 1 if max_position is None else max_position
++        return indices.clamp(0, maximum)
+ 
+     def _init_track_ssm_indices(
+-        self, mamba_cache_indices: torch.Tensor, forward_batch: ForwardBatch
++        self,
++        mamba_cache_indices: torch.Tensor,
++        forward_batch: ForwardBatch,
++        *,
++        cpu_metadata=None,
+     ):
+         """src/dst indices to track SSM states for prefix caching: aligned seqs
+         cache last_recurrent_state, unaligned cache intermediate `h` at the last
+@@ -380,27 +437,47 @@ class MambaAttnBackendBase(AttentionBackend):
+         the unaligned tracked seqs, used to integer-index the fp32 snapshot
+         buffer on the KDA path so the copy stays free of GPU syncs."""
+         state_chunk_size = self.mamba_chunk_size
+-        # CPU to avoid kernel launches for the masking ops
+-        mamba_track_mask = forward_batch.mamba_track_mask.cpu()
+-        extend_seq_lens = forward_batch.extend_seq_lens.cpu()
+-        mamba_track_indices = forward_batch.mamba_track_indices.cpu()
+-        mamba_cache_indices = mamba_cache_indices.cpu()
+-        mamba_track_seqlens = forward_batch.mamba_track_seqlens.cpu()
+-        prefix_lens = forward_batch.extend_prefix_lens.cpu()
++        if cpu_metadata is None:
++            mamba_track_mask = forward_batch.mamba_track_mask.cpu()
++            extend_seq_lens = forward_batch.extend_seq_lens.cpu()
++            mamba_track_indices = forward_batch.mamba_track_indices.cpu()
++            mamba_cache_indices = mamba_cache_indices.cpu()
++            mamba_track_seqlens = forward_batch.mamba_track_seqlens.cpu()
++            prefix_lens = forward_batch.extend_prefix_lens.cpu()
++        else:
++            mask, seqlens, extend, prefix = cpu_metadata
++            mamba_track_mask = torch.tensor(mask, dtype=torch.bool, device="cpu")
++            extend_seq_lens = torch.tensor(
++                extend, dtype=forward_batch.extend_seq_lens.dtype, device="cpu"
++            )
++            mamba_track_seqlens = torch.tensor(
++                seqlens, dtype=forward_batch.mamba_track_seqlens.dtype, device="cpu"
++            )
++            prefix_lens = torch.tensor(
++                prefix, dtype=forward_batch.extend_prefix_lens.dtype, device="cpu"
++            )
++            # Only row selection is derived on CPU. The slot values below have
++            # already been translated to physical ids and must stay on device.
++            mamba_track_indices = forward_batch.mamba_track_indices
+ 
+         lens_to_track = mamba_track_seqlens - prefix_lens
+         lens_masked = lens_to_track[mamba_track_mask]
+-        dst_masked = mamba_track_indices[mamba_track_mask]
++        tracked_rows = mamba_track_mask.nonzero(as_tuple=True)[0]
+ 
+         is_aligned = (lens_masked % state_chunk_size) == 0
+ 
++        def slots_at(values, rows):
++            return values.index_select(0, rows.to(values.device, non_blocking=True))
++
+         # Aligned: last_recurrent_state from ssm_states.
+-        track_ssm_final_src = mamba_cache_indices[mamba_track_mask][is_aligned]
+-        track_ssm_final_dst = dst_masked[is_aligned]
++        aligned_rows = tracked_rows[is_aligned]
++        track_ssm_final_src = slots_at(mamba_cache_indices, aligned_rows)
++        track_ssm_final_dst = slots_at(mamba_track_indices, aligned_rows)
+ 
+         # Unaligned: intermediate state from h.
+         not_aligned = ~is_aligned
+-        track_ssm_h_dst = dst_masked[not_aligned]
++        unaligned_rows = tracked_rows[not_aligned]
++        track_ssm_h_dst = None
+         track_ssm_seq_idx = None
+         track_ssm_end_locs = None
+         track_ssm_recompute_dst = None
+@@ -420,12 +497,15 @@ class MambaAttnBackendBase(AttentionBackend):
+             on_grid = (end_locs % state_chunk_size) == 0
+ 
+             track_ssm_h_src = end_locs[on_grid] // state_chunk_size
+-            track_ssm_h_dst = track_ssm_h_dst[on_grid]
++            track_ssm_h_dst = slots_at(mamba_track_indices, unaligned_rows[on_grid])
+ 
+             track_ssm_seq_idx = seq_idx_unaligned[~on_grid]
+             track_ssm_end_locs = end_locs[~on_grid]
+-            track_ssm_recompute_dst = dst_masked[not_aligned][~on_grid]
++            track_ssm_recompute_dst = slots_at(
++                mamba_track_indices, unaligned_rows[~on_grid]
++            )
+         else:
++            track_ssm_h_dst = slots_at(mamba_track_indices, unaligned_rows)
+             num_h_states = (extend_seq_lens - 1) // state_chunk_size + 1
+             track_ssm_src_offset = torch.zeros_like(num_h_states)
+             track_ssm_src_offset[1:] = torch.cumsum(num_h_states[:-1], dim=0)
 diff --git a/python/sglang/srt/managers/cache_controller.py b/python/sglang/srt/managers/cache_controller.py
 index b9a134e..d0dd6eb 100644
 --- a/python/sglang/srt/managers/cache_controller.py
@@ -617,7 +825,7 @@ index d3f13eb..f44aa49 100644
      # LoRA related
      lora_id: Optional[str] = None  # None means just use the base model
 diff --git a/python/sglang/srt/managers/schedule_batch.py b/python/sglang/srt/managers/schedule_batch.py
-index 7811e44..cd7aea5 100755
+index 7811e44..7df3063 100755
 --- a/python/sglang/srt/managers/schedule_batch.py
 +++ b/python/sglang/srt/managers/schedule_batch.py
 @@ -978,6 +978,7 @@ class Req(ReqDllmMixin):
@@ -645,7 +853,36 @@ index 7811e44..cd7aea5 100755
              (
                  self.prefix_indices,
                  self.last_node,
-@@ -2978,6 +2982,21 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+@@ -2359,6 +2363,9 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+     mamba_track_mask: torch.Tensor = None  # shape: [b], bool
+     mamba_track_seqlens: torch.Tensor = None  # shape: [b], int64
+     mamba_track_mask_cpu: Optional[List[bool]] = None  # shape: [b]
++    mamba_extend_track_cpu: Optional[
++        Tuple[Tuple[bool, ...], Tuple[int, ...]]
++    ] = None
+     mamba_track_mask_next_cpu: Optional[List[bool]] = None  # shape: [b]
+     mamba_decode_batch_idx_cpu: Optional[List[int]] = None  # shape: [b]
+     # Lazy + spec: this iteration's per-req scatter positions
+@@ -2690,6 +2697,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+         mamba_track_mask_cpu = []
+         mamba_track_indices_cpu = []
+         mamba_track_seqlens_cpu = []
++        self.mamba_extend_track_cpu = None
+ 
+         for i, (req, seq_len, pre_len) in enumerate(zip(reqs, seq_lens, prefix_lens)):
+             assert seq_len - pre_len == req.extend_range.length
+@@ -2861,6 +2869,10 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+         self.extend_input_logprob_token_ids = extend_input_logprob_token_ids
+ 
+         if get_exec().mamba.enable_mamba_extra_buffer:
++            self.mamba_extend_track_cpu = (
++                tuple(mamba_track_mask_cpu),
++                tuple(mamba_track_seqlens_cpu),
++            )
+             self.mamba_track_indices = torch.tensor(
+                 mamba_track_indices_cpu,
+                 dtype=torch.int64,
+@@ -2978,6 +2990,21 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
                      # See _force_track_h() for more details.
                      mamba_track_seqlen = _force_track_h(req.mamba_branching_seqlen)
                      mamba_track_seqlen_aligned = req.mamba_branching_seqlen
@@ -667,7 +904,7 @@ index 7811e44..cd7aea5 100755
              req.kv.mamba_last_track_seqlen = mamba_track_seqlen_aligned
  
          return _MambaRadixCacheV2TrackEntry(
-@@ -2991,8 +3010,12 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+@@ -2991,8 +3018,12 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
          cow_src_tensors = []
          cow_dst_tensors = []
          clear_tensors = []
@@ -680,6 +917,30 @@ index 7811e44..cd7aea5 100755
                  cow_src_tensors.append(req.kv.mamba_cow_src_index)
                  cow_dst_tensors.append(req.kv.mamba_pool_idx.unsqueeze(0))
                  req.kv.mamba_cow_src_index = None
+@@ -3423,6 +3454,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+ 
+     def prepare_for_decode(self):
+         self.forward_mode = ForwardMode.DECODE
++        self.mamba_extend_track_cpu = None
+         # Decode embeds the last output token via embed_tokens; clear the stale
+         # prefill-time tensor so it doesn't leak into ForwardBatch.
+         self.input_embeds = None
+@@ -3576,6 +3608,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+         self.mamba_track_buffer_indices = None
+         self.mamba_track_mask = None
+         self.mamba_track_seqlens = None
++        self.mamba_extend_track_cpu = None
+         self.mamba_track_mask_cpu = None
+         self.mamba_track_mask_next_cpu = None
+         self.mamba_decode_batch_idx_cpu = None
+@@ -3642,6 +3675,7 @@ class ScheduleBatch(ScheduleBatchDisaggregationDecodeMixin):
+         self.mamba_track_buffer_indices = None
+         self.mamba_track_mask = None
+         self.mamba_track_seqlens = None
++        self.mamba_extend_track_cpu = None
+         self.mamba_track_mask_cpu = None
+         self.mamba_track_mask_next_cpu = None
+         self.mamba_decode_batch_idx_cpu = None
 diff --git a/python/sglang/srt/managers/scheduler.py b/python/sglang/srt/managers/scheduler.py
 index 743c8af..f7aa105 100644
 --- a/python/sglang/srt/managers/scheduler.py
@@ -4020,6 +4281,28 @@ index d417d7d..ade72f1 100644
      def is_load_back_event_done(self, consumer_index: int) -> bool:
          """Return True after the local load-back event is complete.
  
+diff --git a/python/sglang/srt/model_executor/forward_batch_info.py b/python/sglang/srt/model_executor/forward_batch_info.py
+index 04b28b8..2c9324f 100644
+--- a/python/sglang/srt/model_executor/forward_batch_info.py
++++ b/python/sglang/srt/model_executor/forward_batch_info.py
+@@ -476,6 +476,9 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+     # === Borrowed from ScheduleBatch: host metadata (CPU lists / mirrors) ===
+     # Optional seq_lens on cpu (CPU mirror of seq_lens)
+     seq_lens_cpu: Optional[torch.Tensor] = None
++    mamba_extend_track_cpu: Optional[
++        Tuple[Tuple[bool, ...], Tuple[int, ...]]
++    ] = None
+ 
+     # For logprob
+     top_logprobs_nums: Optional[List[int]] = None
+@@ -822,6 +825,7 @@ class ForwardBatch(ForwardBatchDeepSeekMHAMixin):
+             seq_lens_sum=batch.seq_lens_sum,
+             # Inputs aliased by reference from ScheduleBatch
+             seq_lens_cpu=seq_lens_cpu,
++            mamba_extend_track_cpu=getattr(batch, "mamba_extend_track_cpu", None),
+             orig_seq_lens=batch.orig_seq_lens,
+             out_cache_loc_dsv4=batch.out_cache_loc_dsv4,
+             mamba_track_indices=batch.mamba_track_indices,
 diff --git a/python/sglang/srt/observability/req_time_stats.py b/python/sglang/srt/observability/req_time_stats.py
 index 4c17495..634ac87 100644
 --- a/python/sglang/srt/observability/req_time_stats.py
@@ -6063,6 +6346,226 @@ index 0000000..0f6eaa2
 +
 +if __name__ == "__main__":
 +    unittest.main()
+diff --git a/test/srt/test_beliefkv_prefill_track_metadata.py b/test/srt/test_beliefkv_prefill_track_metadata.py
+new file mode 100644
+index 0000000..e21d7b9
+--- /dev/null
++++ b/test/srt/test_beliefkv_prefill_track_metadata.py
+@@ -0,0 +1,214 @@
++"""Compare complete Mamba prefill metadata with the pinned upstream methods."""
++
++import ast
++import copy
++from dataclasses import fields
++from pathlib import Path
++import random
++import subprocess
++from types import SimpleNamespace as NS
++from unittest.mock import patch
++
++import pytest
++import torch
++
++from sglang.srt.layers.attention import hybrid_linear_attn_backend as hybrid
++from sglang.srt.model_executor.forward_batch_info import ForwardBatch, ForwardMode
++
++
++SOURCE = "python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py"
++ENGINE = Path(__file__).resolve().parents[2]
++
++
++def reference_methods():
++    source = subprocess.check_output(
++        ["git", "show", f"94602c9:{SOURCE}"], cwd=ENGINE, text=True
++    )
++    cls = next(
++        node
++        for node in ast.parse(source).body
++        if isinstance(node, ast.ClassDef) and node.name == "MambaAttnBackendBase"
++    )
++    names = {
++        "_forward_metadata",
++        "_init_track_conv_indices",
++        "_init_track_ssm_indices",
++    }
++    namespace = dict(vars(hybrid))
++    methods = [node for node in cls.body if getattr(node, "name", None) in names]
++    exec(
++        compile(
++            ast.fix_missing_locations(
++                ast.Module(
++                    body=[
++                        ast.ImportFrom(
++                            module="__future__",
++                            names=[ast.alias(name="annotations")],
++                            level=0,
++                        ),
++                        *methods,
++                    ],
++                    type_ignores=[],
++                )
++            ),
++            f"94602c9:{SOURCE}",
++            "exec",
++        ),
++        namespace,
++    )
++    return {name: namespace[name] for name in names}
++
++
++REFERENCE = reference_methods()
++
++
++def backend(kind, *, reference, size, chunk):
++    parent = (
++        hybrid.Mamba2AttnBackend if kind == "mamba2" else hybrid.MambaAttnBackendBase
++    )
++    cls = type("ReferenceBackend" if reference else "CandidateBackend", (parent,), {})
++    if reference:
++        for name, function in REFERENCE.items():
++            setattr(cls, name, function)
++    result = cls.__new__(cls)
++    result.device = "cpu"
++    result._mamba_chunk_size = chunk
++    result.conv_states_shape = (16, 4)
++    mapping = torch.randperm(256, generator=torch.Generator().manual_seed(83))
++    cache_slots = torch.arange(10, 10 + size, dtype=torch.int32)
++    result.req_to_token_pool = NS(
++        get_mamba_indices=lambda rows: cache_slots[rows],
++        translate_mamba_indices=lambda slots: mapping[slots.long()].to(slots.dtype),
++    )
++    return result
++
++
++def batch(*, extend, prefix, mask, tracked, cached=True):
++    size = len(extend)
++    result = ForwardBatch(
++        forward_mode=ForwardMode.EXTEND,
++        batch_size=size,
++        input_ids=torch.arange(sum(extend), dtype=torch.int64),
++        req_pool_indices=torch.arange(size),
++        seq_lens=torch.tensor([a + b for a, b in zip(extend, prefix)]),
++        out_cache_loc=torch.arange(sum(extend)),
++        seq_lens_sum=sum(extend) + sum(prefix),
++    )
++    result.extend_seq_lens = torch.tensor(extend, dtype=torch.int32)
++    result.extend_seq_lens_cpu = list(extend)
++    result.extend_prefix_lens = torch.tensor(prefix, dtype=torch.int32)
++    result.extend_prefix_lens_cpu = list(prefix)
++    starts = [0]
++    for length in extend[:-1]:
++        starts.append(starts[-1] + length)
++    result.extend_start_loc = torch.tensor(starts, dtype=torch.int32)
++    result.mamba_track_mask = torch.tensor(mask, dtype=torch.bool)
++    result.mamba_track_indices = torch.arange(80, 80 + size, dtype=torch.int64)
++    seqlens = [a + b for a, b in zip(prefix, tracked)]
++    result.mamba_track_seqlens = torch.tensor(seqlens, dtype=torch.int64)
++    result.mamba_extend_track_cpu = (
++        (tuple(mask), tuple(seqlens)) if cached else None
++    )
++    return result
++
++
++def equal_metadata(left, right):
++    for field in fields(left):
++        a, b = getattr(left, field.name), getattr(right, field.name)
++        if isinstance(a, torch.Tensor):
++            assert isinstance(b, torch.Tensor), field.name
++            assert a.dtype == b.dtype, field.name
++            assert a.shape == b.shape, field.name
++            assert torch.equal(a, b), field.name
++        else:
++            assert a == b, field.name
++
++
++def cases(chunk):
++    yield dict(extend=[1], prefix=[32768], mask=[True], tracked=[1])
++    yield dict(extend=[chunk], prefix=[0], mask=[True], tracked=[chunk])
++    yield dict(
++        extend=[chunk + 1], prefix=[17], mask=[True], tracked=[chunk + 1]
++    )
++    yield dict(extend=[9, 71], prefix=[0, 4096], mask=[False, False], tracked=[0, 0])
++    generator = random.Random(449)
++    for size in (1, 2, 4, 16, 48):
++        for _ in range(8):
++            extend = [generator.randrange(1, 513) for _ in range(size)]
++            prefix = [generator.randrange(0, 32769) for _ in range(size)]
++            mask = [generator.choice((False, True)) for _ in range(size)]
++            tracked = [generator.randrange(1, length + 1) for length in extend]
++            yield dict(extend=extend, prefix=prefix, mask=mask, tracked=tracked)
++
++
++@pytest.mark.parametrize("kind", ("gdn", "mamba2"))
++@pytest.mark.parametrize("chunk", (8, 64))
++def test_complete_prefill_metadata_matches_pinned_upstream_with_physical_remapping(
++    kind, chunk
++):
++    with patch(
++        "sglang.srt.model_executor.forward_batch_info.mamba_cache_chunk_size",
++        return_value=chunk,
++    ):
++        for configuration in cases(chunk):
++            original = batch(**configuration)
++            native = backend(
++                kind, reference=True, size=original.batch_size, chunk=chunk
++            )
++            candidate = backend(
++                kind, reference=False, size=original.batch_size, chunk=chunk
++            )
++            expected = native._forward_metadata(copy.deepcopy(original))
++            candidate_batch = copy.deepcopy(original)
++            with patch.object(
++                torch.Tensor, "cpu", side_effect=AssertionError("device readback")
++            ), patch.object(
++                torch.Tensor, "any", side_effect=AssertionError("device mask query")
++            ):
++                actual = candidate._forward_metadata(candidate_batch)
++            equal_metadata(expected, actual)
++
++
++@pytest.mark.parametrize("missing", ("absent", "mask_size", "seq_size", "extend", "prefix"))
++@pytest.mark.parametrize("kind", ("gdn", "mamba2"))
++def test_missing_or_reshaped_cpu_snapshot_uses_original_metadata_path(missing, kind):
++    original = batch(
++        extend=[71, 129], prefix=[1024, 4096], mask=[True, True], tracked=[64, 128]
++    )
++    if missing == "absent":
++        original.mamba_extend_track_cpu = None
++    elif missing == "mask_size":
++        original.mamba_extend_track_cpu = ((True,), (1088, 4224))
++    elif missing == "seq_size":
++        original.mamba_extend_track_cpu = ((True, True), (1088,))
++    elif missing == "extend":
++        original.extend_seq_lens_cpu = None
++    else:
++        original.extend_prefix_lens_cpu = None
++    native = backend(kind, reference=True, size=2, chunk=64)
++    candidate = backend(kind, reference=False, size=2, chunk=64)
++    assert candidate._extend_track_cpu_metadata(original) is None
++    with patch(
++        "sglang.srt.model_executor.forward_batch_info.mamba_cache_chunk_size",
++        return_value=64,
++    ):
++        expected = native._forward_metadata(copy.deepcopy(original))
++        actual = candidate._forward_metadata(copy.deepcopy(original))
++    equal_metadata(expected, actual)
++
++
++@pytest.mark.parametrize(
++    "mode",
++    (
++        ForwardMode.DECODE,
++        ForwardMode.MIXED,
++        ForwardMode.TARGET_VERIFY,
++        ForwardMode.DRAFT_EXTEND_V2,
++        ForwardMode.SPLIT_PREFILL,
++        ForwardMode.DLLM_EXTEND,
++    ),
++)
++def test_only_normal_prefill_consumes_the_new_cpu_snapshot(mode):
++    original = batch(extend=[65], prefix=[4096], mask=[True], tracked=[64])
++    original.forward_mode = mode
++    assert hybrid.MambaAttnBackendBase._extend_track_cpu_metadata(original) is None
 diff --git a/test/srt/test_beliefkv_radix_prefix.py b/test/srt/test_beliefkv_radix_prefix.py
 new file mode 100644
 index 0000000..da0ca58

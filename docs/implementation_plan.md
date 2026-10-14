@@ -2,7 +2,33 @@
 
 Status date: 2026-10-14.
 
-Latest V430 independently seals live V55 prefixes at08:45:32–08:46:22.
+Current V448 qualifies shared prefill metadata preparation for the next cold
+pair. Preserve an immutable prefill-only CPU mask/seqlen snapshot, separate
+from decode completion metadata. Use it only for normal EXTEND with matching
+shapes; retain device-translated physical slot values and gather by CPU-known
+rows. Row selectors use explicit nonblocking H2D. Unknown snapshots, changed
+shapes and other modes keep the fallback; decode/filter/merge invalidate it.
+The change removes six Tensor.cpu and one Tensor.any calls from the known
+metadata path, not KV migration bytes or measured CUDA time.
+
+V447 passes383 native tests plus29 subtests, including176 complete GDN/
+Mamba2 geometry comparisons and fallback/mode cases. The793 runtime checks
+retain all50 source hashes. V445's12 CPU comparisons show about5.6–9.2us
+median added CPU on snapshot paths; actual GPU/phase/JCT benefit remains
+unknown. Final engine is b8e7942c/c916d585. V442/V443 precede the explicit
+nonblocking row-construction correction and are not final qualification.
+V449 preserves and stops only the verified old V56 waiter before experiment
+creation; V55 remains live and no workflow censoring is added. Freeze this
+qualified replacement and requeue predictive first, then matching native.
+Main remainsf50bede until V55 naturally completes and postprocessing exits.
+V55 has now completed at10:20:55:154 completed,2 incomplete, all156
+terminal results, postprocessing/HTML present and no GPU compute process.
+Proceed with the qualified replacement cold deployment; retain both failures.
+Keep the workload, budgets, existing PrefillAdder and disabled new prefill
+delay/batching fixed. Acceptance still needs matched phases and service,
+then repeated JCT/throughput, quality, fairness and recomputation evidence.
+
+Earlier V430 independently seals live V55 prefixes at08:45:32–08:46:22.
 Confirmed next-request early FULL reuse is73 JOIN waits/1.381GB and124
 tool waits/8.680GB;12 JOIN completions remain unknown. V431's observed
 pre-completion positive/fitting/actual-early/confirmed-reuse funnel is
@@ -41,16 +67,16 @@ Preserve these distinct facts and
 the failure; do not change frozen caps or attribute this to H2D. Stratify
 future child timing labels with the guard audit, since a RETURN count alone
 does not establish an unguarded natural terminal.
-Keep frozen V56 c319339 and its predictive→native order for complete phase
-comparison and JOIN forecast-refresh validation. Keep the new supplement
-in development; Main must remain an ancestor of the pending frozen target
-until cold deployment. Then decide a follow-up cold observation from the
-latest trace. Continue JOIN timing, native-queue/consumption and too-early
+V449 supersedes the earlier unstarted V56 c319339 registration. The next
+frozen replacement includes this supplement and prefill metadata preparation
+with the existing predictive→native order. Main must remain an ancestor of
+the new frozen target until cold deployment. Continue JOIN timing,
+native-queue/consumption and too-early
 tool investigations; do not enable new prefill batching/delay or infer net
 benefit from additional support. Final same-version repeated JCT/throughput
 and quality/fairness/recomputation acceptance remains pending.
 
-The next V56 cold candidate adds a shared single-request Mamba mapping
+The earlier V56 candidate added a shared single-request Mamba mapping
 fast path to the qualified JOIN refresh. V418/V421 identify316 main-thread
 samples at the original ping-pong mapping assignment, but retain196 read
 errors and3.85s sampling lag; this is call-path evidence, not CPU accounting
@@ -62,7 +88,7 @@ about3–7us; the actual CUDA synchronization/prefill effect is unverified.
 V426 binds43 prior sources and b1921753/c9d1fbd;363 native checks plus29
 subtests pass. The live V55 engine and runtime remain frozen.
 
-After V55 naturally finishes, run V56 predictive first, then one matching
+After V55 naturally finishes, run the updated V56 predictive first, then one matching
 native arm to obtain the missing full short-prefill phase reference.
 The previous predictive-only waiter was superseded before experiment
 creation; V417 records no added workflow censoring. Preserve workload,

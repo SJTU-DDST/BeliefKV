@@ -1,5 +1,17 @@
 # v0.5.20 调度适配边界
 
+v448下一冷候选减少Mamba prefill元数据回读。独立CPU快照与
+decode完成mask分离，只在正常EXTEND且形状一致时使用；物理
+slot值继续由GPU翻译，CPU仅规划行号，异步H2D后integer gather。
+decode/filter/merge清理快照，缺失或失配走原回退，原有stream
+barrier/状态边界不改。176组完整元数据相同，383测试+29子检查
+通过；12组CPU比较多5.6–9.2us，不代表已证明GPU周转改善。
+最终patch b8e7942c/树c916d585；v449保留并退出尚未派发的旧
+V56等待器，准备冻结替换候选后继续predictive→native。V55自然
+收尾，Main仍f50bede，既有Adder保留，新delayer/mixed/间隔不改。
+V55最终154 completed/2 incomplete，于10:20:55完成后处理并释放
+GPU；下一步为合格替换候选的冷部署及同引擎相位对照。
+
 V55首个完整600–900s已由v407归纳：连续满批decode接近历史
 native，短prefill截断worker比仍1.350–1.497。64个新相位样本
 覆盖选择/发射/结果及compute-stream跨度；旧native缺相同埋点，

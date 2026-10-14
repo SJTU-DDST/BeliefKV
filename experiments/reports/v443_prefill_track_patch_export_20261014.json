@@ -1,0 +1,47 @@
+{
+  "status": "canonical_patch_matches_isolated_tested_engine",
+  "observed_at_local": "2026-10-14T10:06:56.236578+08:00",
+  "old_patch_sha256": "b1921753ccd3a5c99c4f66c0f3ee9a96b12e4dd10757119c732ee70d99dbdda4",
+  "old_tree": "c9d1fbdbee088261b68c186736390cc780da3c85",
+  "new_tree": "d80f14b4dba7f36ce65cf9c361853385d1418940",
+  "canonical_patch": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "4cd1a2c072db50352312f76f72bd44b087ce805ef8e7ed8a464f099934a8718d",
+    "expected_tree": "d80f14b4dba7f36ce65cf9c361853385d1418940",
+    "actual_tree": "d80f14b4dba7f36ce65cf9c361853385d1418940",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_execution_handoff.py",
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_host_eviction_observer.py",
+      "test/srt/test_beliefkv_latest_mamba_state.py",
+      "test/srt/test_beliefkv_layer_wait_probe.py",
+      "test/srt/test_beliefkv_lifecycle.py",
+      "test/srt/test_beliefkv_mamba_request_mapping.py",
+      "test/srt/test_beliefkv_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_metadata.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_scheduler_hook.py",
+      "test/srt/test_beliefkv_session_anchors.py",
+      "test/srt/test_beliefkv_shadow_dispatch.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py",
+      "test/srt/test_beliefkv_transfer_receipts.py",
+      "test/srt/test_beliefkv_unified_ack.py"
+    ]
+  },
+  "changed_engine_paths": [
+    "python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py",
+    "python/sglang/srt/managers/schedule_batch.py",
+    "python/sglang/srt/model_executor/forward_batch_info.py",
+    "test/srt/test_beliefkv_prefill_track_metadata.py"
+  ],
+  "changed_engine_sha256": {
+    "python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py": "de3bcec9f4539961aa719cf1f5cf13230410bcb7502c7e7c065301d27592c038",
+    "python/sglang/srt/managers/schedule_batch.py": "7498f0785f02dde454884b878915b5b72451189d41509311d50b2b01f9daa3e3",
+    "python/sglang/srt/model_executor/forward_batch_info.py": "9c905befcdd694d6e186eade5d1092bfac2c91fea6223ac524730373af909a9a",
+    "test/srt/test_beliefkv_prefill_track_metadata.py": "4623b664ba814367e5f9b92f56cd9ca13a78f256232580f6cc78f0d684647a9d"
+  },
+  "helper_sha256": "db554d09530419fc398f6b210869af10d1d2571c508572011e66455132e0ca4f",
+  "running_v55_and_frozen_v56_modified": false
+}

@@ -2,6 +2,28 @@
 
 更新日期：2026-10-14。
 
+当前下一冷候选v448直接处理短prefill forward元数据往返。
+v421在原生_forward_metadata第151行观测到119个active-stack
+样本，仍保留196次读取错误和3.85s采样滞后；这些不是CPU时间。
+新独立prefill CPU快照与decode终态mask分离，正常EXTEND且形状
+匹配时，省去设备mask any及6次Tensor.cpu调用。物理槽号仍由
+当前GPU翻译结果gather；行号在CPU构造后显式non_blocking H2D。
+未知快照、变形批次和非普通prefill沿用回退，decode/filter/merge
+清理快照，不改变状态内容、边界、引用或stream barrier。
+
+v447/v448覆盖176组GDN/Mamba2完整元数据等价、失配和模式回退；
+383项native测试及29项子检查通过，793项runtime检查原50份
+源码保持。v445的12组CPU比较中，快照路径中位多约5.6–9.2us，
+GPU等待节省仍未知。最终patch b8e7942c、树c916d585；v442/v443
+是异步行号构造修正前的中间证据，不能代替最终绑定。
+v449已在V56目录不存在、旧等待器仍待V55时，保存其登记并精确
+退出PID3529595；V55未停、没有新增workflow删失。准备冻结新
+候选并恢复V56 predictive→native队列，两侧共用新引擎/相位探针；
+Main仍保持f50bede直到V55自然结束及后处理完成。
+V55随后于10:20:55完整退出，最终154 completed、2 incomplete；
+后处理/HTML齐全且GPU无计算进程，允许新候选冷部署。两个失败
+及其8192-token截断保留，不以完成子集替代全体质量/吞吐结果。
+
 开发审计v430独立封存08:45:32–08:46:22各文件完整行前缀，
 不是原子快照。完成前启动并由下一请求确认复用的FULL为JOIN
 73事件/1.381GB、工具124事件/8.680GB；12个JOIN完成仍未知。
@@ -38,13 +60,13 @@ v438/v439随后确认django-11740、django-12273为incomplete，
 未过期。各有更早的child在step2017触发既有2048图硬预算，
 分别为test-analyst及implementation-agent，需与root原因分开。
 宽松guard profile已启用；保留失败，不修改冻结预算或重启。
-V56仍冻结c319339，等待V55自然完成和后处理再冷启。
+原V56 c319339登记随后由v449在派发前保留替换。
 为保留快进关系，新候选、文档和证据只在开发分支；Main保持
-f50bede，运行及排队候选不热改。下一步先检查V56匹配短prefill
-完整相位和JOIN滚动端点修复，再决定新补充路径的冷验证安排；
+f50bede，运行源码不热改。新冷候选同时验证匹配短prefill完整
+相位、JOIN滚动端点及FULL服务历史补充，不把CPU等价当GPU收益；
 剩余JOIN时机、长native队列及提前过早工具预取问题仍待解决。
 
-下一冷候选同时包含JOIN滚动端点修复及单请求Mamba槽映射减负。
+新候选亦保留此前JOIN滚动端点修复及单请求Mamba槽映射减负。
 v418/v421的3875条active-stack采样中，主线程316条命中原生
 ping-pong映射赋值；另有196次读取错误及最多3.85s采样滞后，
 不能按样本比例推CPU/JCT或证明与native的差异。候选对单个

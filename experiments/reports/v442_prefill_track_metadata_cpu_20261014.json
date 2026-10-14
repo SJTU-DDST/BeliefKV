@@ -1,0 +1,350 @@
+{
+  "status": "cpu_metadata_and_api_call_evidence_not_cuda_or_jct_gain",
+  "observed_at_local": "2026-10-14T10:04:48.762251+08:00",
+  "baseline_commit": "94602c9",
+  "baseline_source_sha256": "59c07e19bc63f7300f5aea03cef348ad956cfa24cbcb79a7e274c479384e6e13",
+  "candidate_engine": "/home/longhao/experiment/.worktrees/sglang-v440-prefill-track-metadata-20261014",
+  "iterations_per_case_and_variant": 200,
+  "cases": [
+    {
+      "kind": "gdn",
+      "cpu_snapshot_available": true,
+      "batch_size": 1,
+      "extend_tokens": 1,
+      "outputs_equal": true,
+      "call_counts": {
+        "baseline": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        },
+        "candidate": {
+          "tensor_cpu_calls": 0,
+          "tensor_any_calls": 0
+        }
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 221.81179,
+          "p50": 220.827
+        },
+        "candidate": {
+          "mean": 227.76732,
+          "p50": 227.1805
+        }
+      }
+    },
+    {
+      "kind": "gdn",
+      "cpu_snapshot_available": true,
+      "batch_size": 1,
+      "extend_tokens": 65,
+      "outputs_equal": true,
+      "call_counts": {
+        "baseline": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        },
+        "candidate": {
+          "tensor_cpu_calls": 0,
+          "tensor_any_calls": 0
+        }
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 217.604785,
+          "p50": 217.01
+        },
+        "candidate": {
+          "mean": 223.718835,
+          "p50": 222.974
+        }
+      }
+    },
+    {
+      "kind": "gdn",
+      "cpu_snapshot_available": true,
+      "batch_size": 4,
+      "extend_tokens": 337,
+      "outputs_equal": true,
+      "call_counts": {
+        "baseline": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        },
+        "candidate": {
+          "tensor_cpu_calls": 0,
+          "tensor_any_calls": 0
+        }
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 231.81388,
+          "p50": 229.171
+        },
+        "candidate": {
+          "mean": 241.164595,
+          "p50": 235.7855
+        }
+      }
+    },
+    {
+      "kind": "gdn",
+      "cpu_snapshot_available": false,
+      "batch_size": 1,
+      "extend_tokens": 1,
+      "outputs_equal": true,
+      "call_counts": {
+        "baseline": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        },
+        "candidate": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        }
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 224.011415,
+          "p50": 220.78699999999998
+        },
+        "candidate": {
+          "mean": 223.44012,
+          "p50": 220.005
+        }
+      }
+    },
+    {
+      "kind": "gdn",
+      "cpu_snapshot_available": false,
+      "batch_size": 1,
+      "extend_tokens": 65,
+      "outputs_equal": true,
+      "call_counts": {
+        "baseline": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        },
+        "candidate": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        }
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 220.560755,
+          "p50": 217.5785
+        },
+        "candidate": {
+          "mean": 219.946655,
+          "p50": 216.7855
+        }
+      }
+    },
+    {
+      "kind": "gdn",
+      "cpu_snapshot_available": false,
+      "batch_size": 4,
+      "extend_tokens": 337,
+      "outputs_equal": true,
+      "call_counts": {
+        "baseline": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        },
+        "candidate": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        }
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 230.372525,
+          "p50": 227.4255
+        },
+        "candidate": {
+          "mean": 232.68351,
+          "p50": 227.466
+        }
+      }
+    },
+    {
+      "kind": "mamba2",
+      "cpu_snapshot_available": true,
+      "batch_size": 1,
+      "extend_tokens": 1,
+      "outputs_equal": true,
+      "call_counts": {
+        "baseline": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        },
+        "candidate": {
+          "tensor_cpu_calls": 0,
+          "tensor_any_calls": 0
+        }
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 264.52216,
+          "p50": 261.0555
+        },
+        "candidate": {
+          "mean": 269.085345,
+          "p50": 264.58799999999997
+        }
+      }
+    },
+    {
+      "kind": "mamba2",
+      "cpu_snapshot_available": true,
+      "batch_size": 1,
+      "extend_tokens": 65,
+      "outputs_equal": true,
+      "call_counts": {
+        "baseline": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        },
+        "candidate": {
+          "tensor_cpu_calls": 0,
+          "tensor_any_calls": 0
+        }
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 255.948855,
+          "p50": 251.873
+        },
+        "candidate": {
+          "mean": 260.095135,
+          "p50": 256.63599999999997
+        }
+      }
+    },
+    {
+      "kind": "mamba2",
+      "cpu_snapshot_available": true,
+      "batch_size": 4,
+      "extend_tokens": 337,
+      "outputs_equal": true,
+      "call_counts": {
+        "baseline": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        },
+        "candidate": {
+          "tensor_cpu_calls": 0,
+          "tensor_any_calls": 0
+        }
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 272.258885,
+          "p50": 269.41549999999995
+        },
+        "candidate": {
+          "mean": 280.364175,
+          "p50": 273.673
+        }
+      }
+    },
+    {
+      "kind": "mamba2",
+      "cpu_snapshot_available": false,
+      "batch_size": 1,
+      "extend_tokens": 1,
+      "outputs_equal": true,
+      "call_counts": {
+        "baseline": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        },
+        "candidate": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        }
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 261.63889,
+          "p50": 258.35900000000004
+        },
+        "candidate": {
+          "mean": 263.075145,
+          "p50": 256.3005
+        }
+      }
+    },
+    {
+      "kind": "mamba2",
+      "cpu_snapshot_available": false,
+      "batch_size": 1,
+      "extend_tokens": 65,
+      "outputs_equal": true,
+      "call_counts": {
+        "baseline": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        },
+        "candidate": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        }
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 254.18106,
+          "p50": 250.442
+        },
+        "candidate": {
+          "mean": 251.78814,
+          "p50": 248.3425
+        }
+      }
+    },
+    {
+      "kind": "mamba2",
+      "cpu_snapshot_available": false,
+      "batch_size": 4,
+      "extend_tokens": 337,
+      "outputs_equal": true,
+      "call_counts": {
+        "baseline": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        },
+        "candidate": {
+          "tensor_cpu_calls": 6,
+          "tensor_any_calls": 1
+        }
+      },
+      "thread_cpu_us": {
+        "baseline": {
+          "mean": 270.19143,
+          "p50": 267.4405
+        },
+        "candidate": {
+          "mean": 267.766205,
+          "p50": 264.568
+        }
+      }
+    }
+  ],
+  "fixture_sha256": "4623b664ba814367e5f9b92f56cd9ca13a78f256232580f6cc78f0d684647a9d",
+  "source_sha256": {
+    "python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py": "de3bcec9f4539961aa719cf1f5cf13230410bcb7502c7e7c065301d27592c038",
+    "python/sglang/srt/managers/schedule_batch.py": "7498f0785f02dde454884b878915b5b72451189d41509311d50b2b01f9daa3e3",
+    "python/sglang/srt/model_executor/forward_batch_info.py": "9c905befcdd694d6e186eade5d1092bfac2c91fea6223ac524730373af909a9a"
+  },
+  "helper_sha256": "cb13914a8fe23b5155964231c29f879cef1c0ba6a445f60b59231a546dbe3be8",
+  "limitations": [
+    "CPU tensors exercise actual metadata methods; no GPU work or synchronization duration is measured.",
+    "Reference methods are compiled from pinned upstream94602c9, not rewritten test formulas.",
+    "All metadata fields, dtypes, shapes and values match under nonidentity physical slot translation.",
+    "Tensor.cpu/any counts are API calls on CPU fixtures; they are not measured DMA bytes, stalls or CUDA time.",
+    "Snapshot-unavailable paths remain supported; CPU/shape changes do not authorize cached physical slot ids.",
+    "CPU timing excludes fixture setup and equality checks; alternating order, unpinned and concurrent with a live run.",
+    "No forecast accuracy, prefill throughput, native/predictive relative gain or JCT acceptance is inferred."
+  ]
+}
