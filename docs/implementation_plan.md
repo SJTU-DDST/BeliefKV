@@ -7,6 +7,12 @@ short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
 and interval changes remain disabled.
 
+Latest V606 adds the complete1800-2100s window:69/64 short samples,
+turnover P50 50.935/51.788ms (-1.65%) and decode384610/381775
+(+0.74%). All three development windows are close to the stage ranges.
+Keep the live run; inspect remaining selection/handoff costs, FULL consumption,
+restore waits and the replenished-load window before full quality/JCT acceptance.
+
 V59 is now executing the frozen d1c3f14/5262707a candidate. V600 verifies
 actual GPU service,65 source hashes and fixed scheduling settings;108 first-wave
 workspaces arrived. V604 retains complete120-300/600-900s development windows:

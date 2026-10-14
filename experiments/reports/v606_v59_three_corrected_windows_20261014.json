@@ -1,0 +1,222 @@
+{
+  "observed_at_local": "2026-10-14T14:39:38.009571-07:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59",
+  "scheduler": {
+    "pid": 1519312,
+    "state": "R",
+    "ppid": 1518922,
+    "start_ticks": "618165558",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "driver": {
+    "pid": 1518675,
+    "state": "S",
+    "ppid": 1,
+    "start_ticks": "618164127",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-v597-v59-post-sampling-20261014/scripts/launch_semantic_h2d_after_pair.py",
+      "--repo",
+      "/home/longhao/experiment/BeliefKV",
+      "--previous-run",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+      "--target-checkout",
+      "/home/longhao/experiment/.worktrees/beliefkv-v597-v59-post-sampling-20261014",
+      "--run-root",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59",
+      "--state",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/v59_launch_after_v58_post_sampling_20261014.json",
+      "--wait-pid",
+      "1629938",
+      "--port",
+      "18463",
+      "--arm-order",
+      "predictive_h2d",
+      "--native-reference-run",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+      "--execution-handoff",
+      "0",
+      "--host-numa-memory-policy",
+      "preferred"
+    ]
+  },
+  "observer": {
+    "pid": 1833965,
+    "state": "S",
+    "ppid": 1,
+    "start_ticks": "618288733",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/ops/observe_predictive_windows.py",
+      "--label",
+      "v59_v58_native_reference_tz",
+      "--run-name",
+      "qwen35_native_predictive_replenished_108plus48_20261014_v59",
+      "--native-reference-name",
+      "qwen35_native_predictive_replenished_108plus48_20261014_v58",
+      "--launch-state-name",
+      "v59_launch_after_v58_post_sampling_20261014.json",
+      "--driver-registration-name",
+      "v598_v59_post_sampling_registration_20261014.json",
+      "--registration-name",
+      "v603_v59_corrected_window_observer_registration_20261014.json",
+      "--analysis-checkout",
+      "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011",
+      "--predictive-timezone",
+      "America/Los_Angeles",
+      "--native-timezone",
+      "Asia/Shanghai",
+      "--watch"
+    ]
+  },
+  "windows": [
+    {
+      "window_seconds": [
+        120,
+        300
+      ],
+      "values": {
+        "predictive_h2d": {
+          "samples": 44,
+          "turnover_p50_ms": 43.907649993896484,
+          "run_batch_p50_ms": 34.4059695,
+          "selection_p50_ms": 4.493347,
+          "handoff_p50_ms": 6.665341377258301,
+          "planning_p50_ms": 0.33785849999999995,
+          "decode_service_steps": 237671,
+          "mean_decode_context": 12621.923705458386
+        },
+        "native": {
+          "samples": 51,
+          "turnover_p50_ms": 40.154643058776855,
+          "run_batch_p50_ms": 33.907041,
+          "selection_p50_ms": 1.6591,
+          "handoff_p50_ms": 3.8599748611450195,
+          "planning_p50_ms": 0.002309,
+          "decode_service_steps": 246021,
+          "mean_decode_context": 11841.65675287882
+        }
+      },
+      "turnover_p50_relative_gap": 0.09346383504458289,
+      "decode_service_relative_gap": -0.033940192097422606,
+      "same_version": false,
+      "arm_wall_timezones": {
+        "predictive_h2d": "America/Los_Angeles",
+        "native": "Asia/Shanghai"
+      },
+      "sources": [
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_busy_120_300_20261014.json",
+          "sha256": "fd64ab25f5fc96401164a0700547874e4b96b51d81fb6e795a85a36ac1a84fed"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_prefill_phases_120_300_20261014.json",
+          "sha256": "883419d0d4a052e0c56ac2dd57559e06da2feec109ff7440c696ac5926769f98"
+        }
+      ]
+    },
+    {
+      "window_seconds": [
+        600,
+        900
+      ],
+      "values": {
+        "predictive_h2d": {
+          "samples": 66,
+          "turnover_p50_ms": 47.722588539123535,
+          "run_batch_p50_ms": 36.462177999999994,
+          "selection_p50_ms": 17.213608999999998,
+          "handoff_p50_ms": 7.456474304199219,
+          "planning_p50_ms": 1.6015804999999999,
+          "decode_service_steps": 372581,
+          "mean_decode_context": 23973.063100372805
+        },
+        "native": {
+          "samples": 62,
+          "turnover_p50_ms": 44.35922050476074,
+          "run_batch_p50_ms": 36.1954355,
+          "selection_p50_ms": 15.992223500000001,
+          "handoff_p50_ms": 4.146250247955322,
+          "planning_p50_ms": 0.0022685,
+          "decode_service_steps": 386707,
+          "mean_decode_context": 23674.07097104526
+        }
+      },
+      "turnover_p50_relative_gap": 0.0758211707981169,
+      "decode_service_relative_gap": -0.03652894827349906,
+      "same_version": false,
+      "arm_wall_timezones": {
+        "predictive_h2d": "America/Los_Angeles",
+        "native": "Asia/Shanghai"
+      },
+      "sources": [
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_busy_600_900_20261014.json",
+          "sha256": "e9420f815d2de015b64eb9e63a13eabc1e3315ad5d639f920fd2f40fcb66b003"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_prefill_phases_600_900_20261014.json",
+          "sha256": "8fffbb42387efcecd2aa62f34a063bbd3dfbe637472b9db03217285e2dacae21"
+        }
+      ]
+    },
+    {
+      "window_seconds": [
+        1800,
+        2100
+      ],
+      "values": {
+        "predictive_h2d": {
+          "samples": 69,
+          "turnover_p50_ms": 50.93492317199707,
+          "run_batch_p50_ms": 36.861656,
+          "selection_p50_ms": 6.046979,
+          "handoff_p50_ms": 6.353811264038086,
+          "planning_p50_ms": 0.689985,
+          "decode_service_steps": 384610,
+          "mean_decode_context": 23861.324201138817
+        },
+        "native": {
+          "samples": 64,
+          "turnover_p50_ms": 51.787667751312256,
+          "run_batch_p50_ms": 36.780317499999995,
+          "selection_p50_ms": 2.7438184999999997,
+          "handoff_p50_ms": 3.8858437538146973,
+          "planning_p50_ms": 0.0024254999999999997,
+          "decode_service_steps": 381775,
+          "mean_decode_context": 23252.009319625435
+        }
+      },
+      "turnover_p50_relative_gap": -0.01646617073798573,
+      "decode_service_relative_gap": 0.007425839827123415,
+      "same_version": false,
+      "arm_wall_timezones": {
+        "predictive_h2d": "America/Los_Angeles",
+        "native": "Asia/Shanghai"
+      },
+      "sources": [
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_busy_1800_2100_20261014.json",
+          "sha256": "7f158d09594fb029822fcf6b8da9102ed43fc31997de90d033774b0ece0b63a6"
+        },
+        {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_prefill_phases_1800_2100_20261014.json",
+          "sha256": "d3e34ff7c153cccde43ca79627b02dbf358a938b72c358ac7afdc18731f71f1d"
+        }
+      ]
+    }
+  ],
+  "previous_checkpoint": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v604_v59_first_corrected_windows_20261014.json",
+    "sha256": "91a58b31740f5df4bef7529f473a14bc97238c3368dd2e4cb13ec2c7bc343cd5"
+  },
+  "scope": "Latest three complete development windows; different revisions and realized demand, not repeated/causal or full JCT acceptance.",
+  "remaining": [
+    "3600-3900s replenished-load window",
+    "early FULL reuse and restore-to-first-service",
+    "full outcome/intervention/task-quality accounting",
+    "matched repeated mean JCT and completion throughput with fairness/recompute acceptance"
+  ]
+}
