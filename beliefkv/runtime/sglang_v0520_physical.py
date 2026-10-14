@@ -271,6 +271,26 @@ def _checkpoint_paths(
         return set(nodes), set(dict(dict(anchors.component_leaves).get(2, ())))
     if type(input_limit) is not int or input_limit < 0:
         return None
+    if len(leaves) == 1 and ordered_nodes is not None:
+        # The caller already validated this complete root-first ancestry.
+        prefix = 0
+        checkpoint_position = None
+        for position, node_id in enumerate(ordered_nodes):
+            node = nodes[node_id]
+            if type(node.key_tokens) is not int or node.key_tokens < 0:
+                return None
+            prefix += node.key_tokens
+            if (
+                node.parent_id is not None and prefix <= input_limit
+                and (node.mamba_device_present or node.mamba_host_present)
+            ):
+                checkpoint_position = position
+        if checkpoint_position is None:
+            return set(), set()
+        return (
+            set(ordered_nodes[:checkpoint_position + 1]),
+            {ordered_nodes[checkpoint_position]},
+        )
     prefix_lengths: dict[int, int] = {}
     if ordered_nodes is None:
         ordered_nodes = sorted(nodes, key=lambda value: (depth[value], value))

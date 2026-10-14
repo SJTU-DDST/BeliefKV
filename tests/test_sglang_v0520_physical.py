@@ -1044,6 +1044,20 @@ def test_prefetch_uses_input_checkpoint_instead_of_generated_output_leaf():
     assert next_prefetch_gpu_step(candidate) is None
 
 
+@pytest.mark.parametrize("tail_key_tokens", (-1, True, 1.5, None))
+def test_prefetch_rejects_invalid_suffix_length_after_reusable_checkpoint(tail_key_tokens):
+    anchors = replace(prefetch_anchors(), reusable_input_tokens=8)
+    root = prefetch_node(0, None, 1, key_tokens=0)
+    checkpoint = prefetch_node(
+        11, 0, 4, full_host=8, mamba_host=True, key_tokens=8,
+    )
+    output = prefetch_node(
+        12, 11, 5, full_host=4, mamba_host=True, key_tokens=tail_key_tokens,
+    )
+    candidate = ActionLocalPrefetchCandidate(anchors, (output, root, checkpoint), 12, 0)
+    assert plan_prefetch_gpu_steps(candidate) == ()
+
+
 def test_prefetch_does_not_restore_full_beyond_the_only_reusable_mamba_boundary():
     anchors = replace(prefetch_anchors(), reusable_input_tokens=10)
     root = prefetch_node(0, None, 1, key_tokens=0)
