@@ -612,6 +612,8 @@ def plan_prefetch_gpu_steps(
     provenance: dict[int, int] = {}
     depth: dict[int, int] = {}
     roots: set[int] = set()
+    single_leaf = next(iter(full_leaves)) if len(full_leaves) == 1 else None
+    ordered_nodes = None
     for leaf, created in sorted(full_leaves.items()):
         if leaf not in nodes or nodes[leaf].creation_time != created:
             return ()
@@ -625,10 +627,15 @@ def plan_prefetch_gpu_steps(
             chain.append(current)
             current = nodes[current].parent_id
         roots.add(chain[-1])
-        for distance, node_id in enumerate(reversed(chain)):
-            paths.add(node_id)
-            provenance.setdefault(node_id, leaf)
-            depth[node_id] = distance
+        if single_leaf is not None:
+            # One validated ancestry already has the required root-first order.
+            paths = seen
+            ordered_nodes = chain[::-1]
+        else:
+            for distance, node_id in enumerate(reversed(chain)):
+                paths.add(node_id)
+                provenance.setdefault(node_id, leaf)
+                depth[node_id] = distance
     if (
         len(roots) != 1
         or set(nodes) != paths
@@ -642,7 +649,8 @@ def plan_prefetch_gpu_steps(
         )
     ):
         return ()
-    ordered_nodes = sorted(paths, key=lambda value: (depth[value], value))
+    if ordered_nodes is None:
+        ordered_nodes = sorted(paths, key=lambda value: (depth[value], value))
     selected = _checkpoint_paths(
         anchors, nodes, full_leaves, depth, ordered_nodes=ordered_nodes,
     )
@@ -672,10 +680,11 @@ def plan_prefetch_gpu_steps(
             and node_id in checkpoint_nodes
             and node.mamba_host_present and not node.mamba_device_present
         ):
+            source_leaf = single_leaf if single_leaf is not None else provenance[node_id]
             steps.append(PrefetchLoadStep(
                 key=anchors.key,
-                leaf_node_id=provenance[node_id],
-                leaf_creation_time=full_leaves[provenance[node_id]],
+                leaf_node_id=source_leaf,
+                leaf_creation_time=full_leaves[source_leaf],
                 node_id=node_id,
                 creation_time=node.creation_time,
                 include_mamba=node_id in checkpoint_nodes,

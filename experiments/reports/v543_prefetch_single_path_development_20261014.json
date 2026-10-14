@@ -1,0 +1,72 @@
+{
+  "status": "focused_checks_retained_cpu_equivalence_and_cost_pending_not_qualified_for_deployment",
+  "sealed_at_local": "2026-10-14T19:26:31.378389+08:00",
+  "development_base_revision": "79d872a1cdc3a53baee93677ce947ad82a328e15",
+  "changed_qualified_sources": [
+    "beliefkv/runtime/sglang_v0520_physical.py",
+    "tests/test_sglang_v0520_physical.py"
+  ],
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_physical.py": "397d870ff988453d8b98ba6b70d3f10942286f210cd3e7fef53c1747fc2bae53",
+    "tests/test_sglang_v0520_physical.py": "1d8a052c8b29a276d3d4f23d14b15b07177d42700dcbd98e2478b4f32556c239"
+  },
+  "frozen_v58_revision": "9a54233c3d1d18c12bfc202f61e2ec36a911e46f",
+  "frozen_v58_physical_sha256": "f53b15523badf3f31123f14300b3fda60a503d3c0cf1cfbf71df19713e112ec5",
+  "canonical_patch_unchanged": true,
+  "existing_focused_checks": {
+    "raw_path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v540_single_path_restore_checks_20261014.raw.gz",
+    "raw_sha256": "56fe2b1048b9bd8c67dbab21bf052c5a645990e83b3b1f794ad5fabc73749375",
+    "original_xml_sha256": "027d38551f271bb4262590246d34b2b0e0cb1081231452bfc2ed7ec772bac90c",
+    "tests": 448,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "receipt_mtime_local": "2026-10-14T19:12:32.494547+08:00",
+    "executed_before_temporary_user_hold": true,
+    "scope": [
+      "physical receipts and session/checkpoint selection",
+      "wait-prefetch batch, partial extent and subset service",
+      "tool predictive transfers, including native enqueue rechecks"
+    ],
+    "source_binding": "Fingerprints captured at sealing; code review retained the same two-file change since the focused check invocation. No new check run during the hold."
+  },
+  "static_reasoning": [
+    "A single validated leaf ancestry has exactly one node at each depth.",
+    "Reversing that chain equals sorting the original path by depth and then node ID.",
+    "The visited set is the original complete path membership; duplicate/cycle/extra-node rejection is retained.",
+    "Every node in a single path has that same FULL leaf provenance, including leaf ID zero.",
+    "Multiple FULL leaves retain the original depth/provenance maps and deterministic ordering.",
+    "Checkpoint helper/data-class ASTs are unchanged; selection, bounds and native enqueue checks remain.",
+    "No cross-call physical snapshot or allocator-capacity cache is introduced."
+  ],
+  "unchanged_reference_dependencies": [
+    "ContextSessionAnchors",
+    "ActionLocalPrefetchCandidate",
+    "PrefetchLoadStep",
+    "_checkpoint_paths"
+  ],
+  "deferred_benchmark": {
+    "path": "/home/longhao/experiment/ops/benchmark_prefetch_single_path.py",
+    "sha256": "8a31789708b527826b3830d8c7b3c8b7f8d54fcf99c50e8dede0ec6123b9f401",
+    "intended_report": "experiments/reports/v541_prefetch_single_path_cpu_20261014.json",
+    "status": "not_executed_during_user_server_hold",
+    "not_before_local": "2026-10-14T21:30:00+08:00"
+  },
+  "temporary_hold": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v542_v58_user_hold_until_20261014_2130.json",
+    "sha256": "4f145154895e5c598ebc0e686133d812c9b1197c5dd937f552a0498c6708a4a3"
+  },
+  "helper_sha256": "31ad3e695203d4d9ade0b43f73867bb5ac537a8265180d49d6921b38ed4b2819",
+  "remaining_work": [
+    "Compare complete ordered plans and rejection/error outcomes with the frozen V58 planner.",
+    "Measure paired planner CPU costs and complete scan decisions, including regressions.",
+    "Qualify affected shared runtime contracts before any subsequent cold deployment.",
+    "Observe actual CUDA/turnover, useful FULL consumption, quality/JCT and completion throughput."
+  ],
+  "constraints": [
+    "No experiment, performance benchmark, new test invocation or source deployment was performed by this helper.",
+    "Keep V58 frozen at9a54233 and its existing engine; this pending candidate is development-only.",
+    "No new prefill delay/batching, workload/budget change, canary or completion guard.",
+    "The full JCT/throughput objective remains unachieved."
+  ]
+}

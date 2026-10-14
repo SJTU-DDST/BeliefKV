@@ -13,6 +13,15 @@ experiments/performance benchmarks. At the deadline resume only the resource
 wait, still requiring available GPU capacity. V542 records this one-off hold;
 the revoked daily00:00-06:00 restriction is not reinstated.
 
+The development candidate reuses the validated single-FULL-leaf ancestry
+order instead of rebuilding per-node depth/provenance maps and sorting it.
+Multiple leaves, validation and native enqueue checks remain unchanged.
+V543 retains the448 checks completed at19:12 before the user hold and the
+unchanged-reference AST review. V541 full-plan equivalence and paired CPU
+cost measurement are deferred, not passed. Keep V58 frozen at9a54233;
+qualify this development candidate after resource release before a later
+cold deployment. No speedup or final acceptance is established.
+
 V57 naturally finished all156 workflows and postprocessing at2026-10-14
 18:47:37 CST:156 completed, zero incomplete. Frozen0fd9d13/
 3c13ad50/572109fe is retained; launcher3811053 and scheduler3811711

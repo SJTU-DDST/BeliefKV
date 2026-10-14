@@ -1081,6 +1081,44 @@ def test_prefetch_burst_plans_full_ancestors_and_only_reusable_state():
     assert plan_prefetch_gpu_steps(candidate) == ()
 
 
+@pytest.mark.parametrize("max_steps", (None, 1, 2, 8))
+@pytest.mark.parametrize("extra_leaf", (False, True))
+def test_prefetch_nonmonotonic_node_ids_preserve_ancestry_and_leaf_provenance(
+    max_steps, extra_leaf,
+):
+    root = prefetch_node(20, None, 120, key_tokens=0)
+    ancestor = prefetch_node(3, 20, 103, full_host=4, key_tokens=4)
+    checkpoint = prefetch_node(
+        11, 3, 111, full_host=4, mamba_host=True, key_tokens=4,
+    )
+    output = prefetch_node(
+        2, 11, 102, full_host=4, mamba_host=True, key_tokens=4,
+    )
+    nodes = (output, checkpoint, root, ancestor)
+    full_leaves, mamba_leaves = ((2, 102),), ((11, 111),)
+    expected = [(3, False, 2, 102), (11, True, 2, 102)]
+    if extra_leaf:
+        sibling = prefetch_node(
+            5, 3, 105, full_host=4, mamba_host=True, key_tokens=4,
+        )
+        nodes += (sibling,)
+        full_leaves += ((5, 105),)
+        mamba_leaves += ((5, 105),)
+        expected.insert(1, (5, True, 5, 105))
+    anchors = replace(
+        prefetch_anchors(), reusable_input_tokens=8,
+        component_leaves=((0, full_leaves), (2, mamba_leaves)),
+    )
+    candidate = ActionLocalPrefetchCandidate(anchors, nodes, 12 + 4 * extra_leaf, 0)
+    steps = plan_prefetch_gpu_steps(candidate, max_steps=max_steps)
+    assert [
+        (step.node_id, step.include_mamba, step.leaf_node_id, step.leaf_creation_time)
+        for step in steps
+    ] == expected[:max_steps]
+    assert all(step.key == anchors.key for step in steps)
+    assert all(step.creation_time == 100 + step.node_id for step in steps)
+
+
 def test_prefetch_burst_capacity_counts_all_extents_and_selected_state():
     anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
     nodes = (
