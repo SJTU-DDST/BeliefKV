@@ -7,6 +7,20 @@ short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
 and interval changes remain disabled.
 
+Latest V556 binds the complete1800-2100s window:72/67 short samples,
+run_batch P50 42.918/49.622ms, turnover55.449/58.001ms, return gap
+8.812/4.222ms and390566/357282 decode request steps. Instrumented
+self-wall29.432s/300s is led by tool-prefetch5.237s and residency3.331s.
+The V56 historical reference and differing demand do not isolate policy gain.
+V555 seals223 complete-line prefixes from22:41:53 to22:42:22. Early
+next-request FULL reuse is32 JOIN events/0.690GB and181 tool events/
+10.186GB.72 JOIN episodes enter a start window,44 submit before completion;
+of28 without submit,27 record a FULL capacity refusal and25 had an earlier
+free-fit snapshot. Memberships overlap; old snapshots are not current capacity.
+Prioritize actual dispatch capacity/reclaim and consumption tails: JOIN/tool
+last-ACK-to-service P90 is20.575/13.838s.43 JOIN and one tool boundary
+remain unknown, not failed predictions. Full JCT/quality acceptance is pending.
+
 V58 cold-deployed9a54233/ebdbc183/91daa419 at2026-10-14 22:02:57 CST.
 V539 verified58 qualified sources and ready service at22:06:10; scheduler
 1630621 has served full48-request decode batches. Predictive runs first,
