@@ -7,8 +7,8 @@
 可用的近期FULL-only H2D补充历史，最多32条、年龄不超过300s。
 真实runtime回放保持60,778个已有支持的估计完全一致，为18个
 独立工具等待的22条拒绝记录补上支持；793项检查通过。这不证明
-新增动作、child RETURN精度或吞吐收益。V55随后新增1个root
-输出截断incomplete，当前153个completed、2个仍未终态；V56
+新增动作、child RETURN精度或吞吐收益。V438/V439随后记录2个
+root输出截断incomplete，当前153个completed、1个仍未终态；V56
 仍冻结c319339并按predictive→native等待冷启动。
 新候选只在开发分支，详见状态和执行计划。
 

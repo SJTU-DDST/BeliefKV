@@ -31,11 +31,12 @@ v435真实runtime回放61,297个查询，60,778个原有支持估计完全
 474项定向及319项跨模块检查通过。v436缓存查询CPU中位增量
 约0.02–0.16us，尚无GPU收益证据，300s也不是已证明最优的期限。
 
-v438随后确认django-11740为incomplete，当前153个completed、
-1个incomplete、2个未终态。直接原因是root最后请求输出8192
-token并以length结束，正文反复重述同一问题；4个child与2次
-JOIN均已返回/满足，deadline未过期。另一个更早的test-analyst
-在step2017触发既有2048图硬预算，不能当成root截断的直接原因。
+v438/v439随后确认django-11740、django-12273为incomplete，
+截至09:37:44为153个completed、2个incomplete、1个未终态。
+两者直接原因均是root最后请求输出8192 token并以length结束，
+正文反复重述问题；各4个child与2次JOIN均已返回/满足，deadline
+未过期。各有更早的child在step2017触发既有2048图硬预算，
+分别为test-analyst及implementation-agent，需与root原因分开。
 宽松guard profile已启用；保留失败，不修改冻结预算或重启。
 V56仍冻结c319339，等待V55自然完成和后处理再冷启。
 为保留快进关系，新候选、文档和证据只在开发分支；Main保持

@@ -22,9 +22,10 @@ V435以实际runtime回放验证缓存与接收路径，18个独立工具等待/
 保持c319339，直到待部署快进完成。不要把本次新候选混入排队
 V56，不热改或无故重启V55，仍遵守00:00–06:00资源预约。
 
-V438的django-11740直接因root输出8192 token、finish_reason=length
-而incomplete；重复推理不支持简单上调输出上限。另记录早期
-child的既有图硬预算收尾，不能与root原因、deadline或H2D错误
+V438/V439的django-11740及django-12273均直接因root输出8192
+token、finish_reason=length而incomplete；重复推理不支持简单上调
+输出上限。两者另有早期child的既有图硬预算收尾，不能与root
+原因、deadline或H2D错误
 混为一谈。现有guard profile开启且软预算未执行；不临时修改
 冻结预算，不把child RETURN计数当作无guard证明，保留失败率。
 
