@@ -7,7 +7,15 @@ short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
 and interval changes remain disabled.
 
-Latest V577 adds the matched1800-2100s window:72/64 short samples,
+Latest V579 binds all four complete matched windows. The phase observer
+finished normally; the verified driver/native scheduler remain live.
+Turnover P50 gaps are+9.06%,+16.11%,+7.07%,+6.19%; decode service
+gaps are-9.49%,-5.54%,+2.30%,-1.04%. The last window is46.489/
+43.778ms and384729/388781 decode steps. Retain realized-demand and
+observation qualifications; final quality/JCT/recompute and repetitions
+are pending. Do not restart the completed observer or mark the goal done.
+
+V577 retains the matched1800-2100s window:72/64 short samples,
 turnover P50 55.449/51.788ms (+7.07%), decode390566/381775 (+2.30%).
 Run_batch42.918/36.780ms still requires shape-matched CPU/GPU attribution;
 do not extend the first two windows' close launch spans to all phases.
