@@ -14,10 +14,23 @@ frequency, GPU gain or JCT savings. V493 passes803 checks; V492 preserves
 one initial old-test assertion requiring unconditional invalidation.
 V494 binds56 source files and the unchanged400+29 native qualification.
 Include this bounded change with the device-slot and subset-timing fixes
-in the unstarted V57; useV495/V496 for the replacement registration.
+in the unstarted V57. V495/V496 now register frozen d58e982 and live
+waiter2985446; the old waiter1922608 and docs observer2133577 were
+verified and terminated before dispatch, with their records preserved.
 Do not hot-edit V56, launch an extra experiment for this small change, or
 enable deferred batching. Post-launch turnover and final acceptance remain
 unproven. Broad zero-copy and a general operator framework are deferred.
+
+V497–V499 add the complete same-version3600–3900s second-wave reference.
+Across57/65 short samples, run_batch P50 is46.018/50.226ms and complete
+launch-to-result55.051/58.199ms. Run-return-to-result-start remains
+6.017/4.419ms, selection4.646/2.334ms and post-launch planning0.364/
+0.002ms. Decode service is355734/373544 (-4.77%) with2.363M/2.270M
+prefill tokens. Twelve matched groups remain sparse; these frozen V56
+results do not evaluate d58e982 or prove GPU/JCT gains. Prioritize the
+remaining selection/maintenance and useful-service differences rather
+than treating the earlier5.18ms gap as universal. Older V57 registrations
+below are superseded byV495/V496.
 
 The user revoked the daily00:00–06:00 experiment restriction on2026-10-14.
 Remove23:59 automatic stopping and the old06:00 resume registration.
