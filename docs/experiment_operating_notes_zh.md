@@ -4,7 +4,12 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
-最新v577纳入同版本1800–2100s：周转P50多7.07%、decode服务
+最新v579纳入全部四窗，v551正常完成观察；原driver/native
+scheduler仍在运行。不因已完成observer的PID消失重启实验或
+观测器。最后3600–3900s周转P50多6.19%、decode服务少1.04%；
+保留各阶段差异与观察条件，全程质量/JCT及重复验收仍待完成。
+
+v577纳入同版本1800–2100s：周转P50多7.07%、decode服务
 量多2.30%；发射区间依旧不是GPU时间。v576核验native的
 pytest-dev__pytest-10051最后两次root输出均8192且length结束，
 既有reasoning重试未完成；deadline未过期、两child返回、零
