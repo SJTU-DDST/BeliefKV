@@ -4,6 +4,11 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-14用户撤销每日00:00–06:00停实验规则。v464记录实际
+移除23:59自动停止cron，并关闭旧06:00恢复登记；冷启动器的
+时段等待也已删除。运行及新实验均无固定夜间限制。以下历史
+预约文字不再生效，其已发生的截止、trace和行政删失继续保留。
+
 当前V56已冷部署661ed45、patch b8e7942c、引擎树c916d585。
 以v451登记、v453启动核验为准；v450的arm-order参数错误在
 argparse退出，零workflow派发，原件保留。V55于10:20:55完成
@@ -16,7 +21,7 @@ V455是V56 predictive对V55 predictive，不是native对照。
 匹配小组稀疏；V456对旧V29的worker口径也不能证明完整forward
 差距。native只读观测已登记，须记录其实际NUMA落点、源码/服务，
 再以同引擎完整相位比较。观测器不启动实验或占用GPU计算。
-每日00:00–06:00预约仍有效；23:59只释放本项目进程和容器。
+当前不再按时钟停止实验；启动仍核验实际资源可用性。
 
 V459保留894个active样本、85个读取错误；日志未报告采样滞后，
 保持未知，不写成零。32个主线程槽号.item命中只是调用路径线索；
@@ -40,7 +45,7 @@ V449仅在新run目录未创建、原等待器暂停后再次核验登记/Main�
 才终止精确PID3529595，保留完整原登记及资格。V55随后自然
 收尾，没有新增workflow删失。之后冻结新checkout并启动V56
 predictive→native；禁止改运行树或偷偷修改既有排队checkout。
-新launcher仍受每日00:00–06:00资源预约约束。
+当时launcher的每日预约约束现已撤销。
 V55已于10:20:55结束并完成后处理/HTML，154 completed与2
 incomplete完整保留；GPU已空闲，允许冻结替换候选后冷部署。
 
@@ -281,19 +286,14 @@ free-list不足，后续94条FULL/Mamba预算拒绝。未修改该验证条件�
 旧CPU微基准不含本次失败观测成本，不能据此承诺零扰动。
 V55按06:00后的资源检查冷启动，运行后优先核对拒绝与阶段计时。
 
-服务器使用时间：每天Asia/Shanghai 00:00–06:00留给其他人。
-23:59开始收尾，午夜前释放GPU、客户端及本轮所属容器；不重置
-GPU、不按宽泛进程名终止任务、不处理其他使用者的进程或容器。
-独立cron每分钟检查`/home/longhao/experiment/ops/server_reservation.py`，
-夜间写入现有启动脚本支持的`/tmp/beliefkv-experiments.paused`标记，
-仅删除管理脚本自身创建的标记。06:00后先确认GPU空闲，再冷启动
-已冻结的V55；若仍被占用则继续等待，不抢占。冻结版本/日志/启动
-状态见同目录的`server_reservation.json`和`server_reservation_state.json`。
-V54未自然结束时，在raw下保存`server_reservation_cutoff.json`，
-包含PID及启动ticks、真实已存结果和未有终态的任务，后者保留行政
-删失；不能伪造summary或将其改成自然incomplete/error，也不能
-跨过中断把整个实验当完整JCT。恢复不是进程原地续跑，而是V55冷测。
-服务器预约不是新增agent guard；/goal继续active，夜间不启动实验。
+历史服务器预约（2026-10-14已撤销）：00:00–06:00限制、23:59
+停止cron和旧06:00恢复登记均已关闭。管理器不再按时钟停止/启动，
+只清除自身的旧预约暂停标记，其他手动暂停仍独立。只读审计cron
+保留；状态见`/home/longhao/experiment/ops/server_reservation.json`
+及`server_reservation_state.json`。启动按实际可用资源执行。
+V54当时产生的`server_reservation_cutoff.json`、PID及启动ticks、
+真实结果与行政删失继续保留；不能伪造summary或将其改成自然
+incomplete/error，也不能跨过中断当作完整JCT。/goal继续active。
 
 V54已于2026-10-13 23:59:09释放所属进程和容器，GPU复核14MiB、
 0%。v326封存155 completed与1个行政删失django-11211。共同完成

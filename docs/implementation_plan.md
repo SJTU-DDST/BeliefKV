@@ -2,6 +2,11 @@
 
 Status date: 2026-10-14.
 
+The user revoked the daily00:00–06:00 experiment restriction on2026-10-14.
+Remove23:59 automatic stopping and the old06:00 resume registration.
+Cold launches and existing runs now depend on actual resource availability,
+without a daily blocked interval. Historical cutoff evidence stays intact.
+
 V56 is running on frozen661ed45, patchb8e7942c, enginec916d585, with
 predictive first and one same-version native reference next. V451 is the
 actual registration; V450 is a preserved argparse failure before dispatch.
@@ -53,8 +58,8 @@ Next actions:
 Existing PrefillAdder stays enabled as before. New PrefillDelayer,
 minimum-slot delays, mixed chunk and interval changes stay disabled.
 No canary, new completion guard, hot source edit or budget change.
-Daily00:00–06:00 Asia/Shanghai remains reserved for others, with owned
-resources released from23:59. Final quality/fairness/recomputation and
+The revoked daily reservation imposes no stopping or launch delay.
+Final quality/fairness/recomputation and
 mean-JCT/completion-throughput acceptance remains pending.
 
 The following paragraphs retain earlier evidence; their collection-time
@@ -493,17 +498,13 @@ complete 600-900s windows and actual useful FULL consumption. Historical V29
 has no new phase counterparts; full acceptance still needs same-version
 repeated controls. Keep workload, budgets and disabled batching unchanged.
 
-Server reservation, effective 2026-10-13: no experiments during the daily
-00:00-06:00 Asia/Shanghai interval. Release our experiment processes and
-verified owned containers starting at 23:59; never reset the GPU or stop
-another user's workload. Preserve raw traces and administrative censoring
-for any unfinished collection. V55 may cold-start no earlier than
-2026-10-14 06:00, after GPU availability is checked; keep waiting if occupied.
-The independent cron controller lives in /home/longhao/experiment/ops.
-Natural V54 completion uses the existing complete-postprocessing validation;
-an actual reservation cutoff uses the development-restart path and retained
-execution checkout. This supersedes the old immediate-after-V54 launch.
-The goal stays active; workload, model budgets and disabled batching stay fixed.
+Historical server reservation, introduced2026-10-13 and revoked2026-10-14:
+its00:00-06:00 block,23:59 cutoff and06:00 resume are no longer active.
+The reservation cron is removed and the old morning resume disarmed.
+Preserve raw traces and administrative censoring from its actual V54 cutoff.
+Cold launches still require available resources and frozen source; they have
+no fixed clock restriction. The goal stays active and workload, model budgets
+and disabled batching stay fixed.
 
 Latest V321 covers V54's post-replenishment 3600-3900s window:
 350521/353757 decode steps (-0.91%), contexts 18109/18077 tokens,

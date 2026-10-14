@@ -1,0 +1,22 @@
+{
+  "status": "daily_experiment_restriction_removed",
+  "revoked_at_local": "2026-10-14T11:22:30.598487+08:00",
+  "crontab_before": "# BeliefKV daily reservation; all times are checked in Asia/Shanghai by the script.\n* * * * * /usr/bin/python3 /home/longhao/experiment/ops/server_reservation.py tick >> /home/longhao/experiment/ops/server_reservation.log 2>&1\n* * * * * /usr/bin/nice -n 19 /usr/bin/ionice -c 3 /usr/bin/python3 /home/longhao/experiment/ops/v55_readonly_audit.py tick >> /home/longhao/experiment/ops/v55_readonly_audit.log 2>&1\n",
+  "crontab_before_sha256": "cb14284e6d20e1420aa64b8dc1f8b3069e19f5c950535a7515df79db8332a376",
+  "crontab_after": "* * * * * /usr/bin/nice -n 19 /usr/bin/ionice -c 3 /usr/bin/python3 /home/longhao/experiment/ops/v55_readonly_audit.py tick >> /home/longhao/experiment/ops/v55_readonly_audit.log 2>&1\n",
+  "crontab_after_sha256": "1dd9e5cda8f7399df0a2b2060eda1ae78fb49f25769ab47e7ad1aca74efef7ad",
+  "removed_cron_lines": [
+    "* * * * * /usr/bin/python3 /home/longhao/experiment/ops/server_reservation.py tick >> /home/longhao/experiment/ops/server_reservation.log 2>&1\n"
+  ],
+  "reservation_enabled": false,
+  "old_morning_resume_armed": false,
+  "reservation_status": "disabled_by_user",
+  "manager_owned_pause_marker_present": false,
+  "script_sha256": {
+    "server_reservation.json": "b93dae7fec6d2032e00422a9d11caeec0845d2893055b0cc61ae5ccfb91ee014",
+    "server_reservation.py": "234b8d5e54cc1fd67b2a542d091d212ad7baeff40b479493fdbab2e43b81e33c",
+    "server_reservation.cron": "5bf723129d21dc749ad1945881648230d176abc6138500e390a1fcf9fce87570",
+    "remove_daily_experiment_restriction.py": "51ea6068a6db41795602e2bb0053b1e97b8f5baee45e007183125f3c99d8fde2"
+  },
+  "scope": "Remove the daily midnight restriction,23:59 owned-resource cutoff, and old06:00 resume. Keep the read-only audit cron and live V56 intact. Historical experiment plans, cutoff receipts and censoring are preserved."
+}
