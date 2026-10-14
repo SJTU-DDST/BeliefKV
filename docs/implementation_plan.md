@@ -11,8 +11,8 @@ V56 is running on frozen661ed45, patchb8e7942c, enginec916d585, with
 predictive first and one same-version native reference next. V451 is the
 actual registration; V450 is a preserved argparse failure before dispatch.
 V453 validates all50 source hashes, HTTP service and fixed capacities.
-At11:14,48 of the first108 workflows have completed, with no other terminal
-outcomes observed. Preserve the second wave, workload and budgets. V55
+V474 observes153 completed,1 incomplete and2 unknown live workflows;
+the second wave has arrived. Preserve the workload and budgets. V55
 finished postprocessing at10:20:55 with154 completed and2 incomplete;
 retain the two root output truncations and all156 terminal records.
 
@@ -33,6 +33,30 @@ Measured Python self-wall is34.305s/300s, including7.166s tool_prefetch.
 Keep complete forward phases, clipped worker intervals and pure kernel
 time separate.
 
+Latest complete second-wave evidence isV469/V470,3600–3900s. Decode
+request steps are355734 versus historical-native353757, with different
+prefill work and topology/version. Short-single run_batch wall/thread-CPU
+P50 is46.018/45.010ms versus V55 predictive46.756/45.799ms; the matched
+cohorts remain sparse. Python self-wall is16.520s/300s; control_drain,
+opportunity_sampling,event_apply andjoin_prepare lead the current costs.
+Do not continue ranking tool_prefetch first from the earlier window.
+
+V471/V472 seal independent live prefixes and report the positive-plan/
+free-list-fitting/actual-early-FULL/confirmed-reuse funnel as161/161/78/69
+for JOIN and1993/277/191/171 for tools. Confirmed early FULL is1.502GB/
+10.881GB;3 JOIN completions stay unknown. Nine JOIN and8 tool >10s tails
+are dominated by post-native-arrival waiting, with only20KB/zero confirmed
+reuse. Three JOIN and8 tool tails instead precede completion;4 tool tails
+are client-submit dominated. A shared ETA shift or global lease extension
+does not address these distinct paths. V473's15 service-progress
+rejections across14 JOINs have observed service ages262–395ms, with no
+already-overtaken selected endpoint; this association is not runtime replay.
+
+V474 binds the incomplete Django-11138 root's8192-token length truncation,
+repeated prose, returned children, satisfied JOIN and unexpired deadline.
+Its earlier test-analyst graph hard-budget finalization is a separate event.
+Retain both facts and frozen caps.
+
 Next actions:
 
 1. Finish the existing V56 predictive→native pair with identical engine,
@@ -48,14 +72,19 @@ Next actions:
    plus29 subtests pass, with both the initial empty-fixture rejection
    and final checks retained. V462's CPU medians improve1–7us, but the
    48-request lazy mean regresses19.1us. Cold GPU benefit is unknown.
+   Arrange predictive-first cold observation after the complete V56 pair
+   and postprocessing; deployment must not alter either existing V56 arm.
+   The corresponding V57 launch state is authoritative for registration.
    V465 separately records the revoked non-execution launch wait; all49
    other prior qualified sources and the live V56 engine remain unchanged.
 3. Use the same-version phases to select the next bottleneck. V459's
    894 active samples/85 read errors locate32 prefill scalar-readback
    leaves and275 decode-result synchronization leaves; these are call
    paths, not removable CPU or justification to delete data dependencies.
-4. Continue tool/JOIN coverage, prepare consumption and admission/residency
-   analysis without counting ACKs or demand handoff as early useful FULL.
+4. Prioritize the161-to78 JOIN submission gap and post-arrival tails using
+   exact request/checkpoint and timing evidence. Continue tool/JOIN
+   coverage, prepare consumption and admission/residency analysis without
+   counting ACKs or demand handoff as early useful FULL.
    Preserve repeated matching controls for final JCT/throughput attribution.
 
 Existing PrefillAdder stays enabled as before. New PrefillDelayer,

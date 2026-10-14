@@ -1,0 +1,149 @@
+{
+  "status": "readonly_host_numa_capacity_diagnosis_no_configuration_change",
+  "observed_at_local": "2026-10-14T11:37:26.622235+08:00",
+  "scheduler_identity": {
+    "pid": 3892057,
+    "state": "R",
+    "ppid": 3891677,
+    "start_ticks": "611547724",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "nodes": {
+    "0": {
+      "source": "/sys/devices/system/node/node0/meminfo",
+      "source_sha256": "8fdaca46eb1a94c50d64f29f7d0b04f19e484f8676de15513f058d0a7ef1e6df",
+      "metrics_bytes": {
+        "MemTotal": 270246846464,
+        "MemFree": 22295314432,
+        "MemUsed": 247951532032,
+        "SwapCached": 13799424,
+        "Active": 131130056704,
+        "Inactive": 92430544896,
+        "Active(anon)": 61046239232,
+        "Inactive(anon)": 78528512,
+        "Active(file)": 70083817472,
+        "Inactive(file)": 92352016384,
+        "Unevictable": 3162112,
+        "Mlocked": 0,
+        "Dirty": 1077248,
+        "Writeback": 0,
+        "FilePages": 214422351872,
+        "Mapped": 50175864832,
+        "AnonPages": 9141608448,
+        "Shmem": 51976310784,
+        "KernelStack": 115892224,
+        "PageTables": 238538752,
+        "SecPageTables": 0,
+        "NFS_Unstable": 0,
+        "Bounce": 0,
+        "WritebackTmp": 0,
+        "KReclaimable": 11544293376,
+        "Slab": 17828978688,
+        "SReclaimable": 11544293376,
+        "SUnreclaim": 6284685312,
+        "AnonHugePages": 0,
+        "ShmemHugePages": 0,
+        "ShmemPmdMapped": 0,
+        "FileHugePages": 0,
+        "FilePmdMapped": 0,
+        "Unaccepted": 0
+      },
+      "conservative_reclaimable_bytes": 137940431872,
+      "clean_file_upper_bound_bytes": 162444963840
+    },
+    "1": {
+      "source": "/sys/devices/system/node/node1/meminfo",
+      "source_sha256": "2693557787fef7d8ab8e0293ec3ae0d34debd95ad9e3a680b467aa9618b347a0",
+      "metrics_bytes": {
+        "MemTotal": 270552432640,
+        "MemFree": 323383296,
+        "MemUsed": 270229049344,
+        "SwapCached": 6520832,
+        "Active": 180781297664,
+        "Inactive": 72516964352,
+        "Active(anon)": 164420812800,
+        "Inactive(anon)": 37109137408,
+        "Active(file)": 16360484864,
+        "Inactive(file)": 35407826944,
+        "Unevictable": 0,
+        "Mlocked": 0,
+        "Dirty": 1024000,
+        "Writeback": 0,
+        "FilePages": 247311118336,
+        "Mapped": 151817826304,
+        "AnonPages": 5987483648,
+        "Shmem": 195536330752,
+        "KernelStack": 53698560,
+        "PageTables": 379502592,
+        "SecPageTables": 0,
+        "NFS_Unstable": 0,
+        "Bounce": 0,
+        "WritebackTmp": 0,
+        "KReclaimable": 8688402432,
+        "Slab": 11730702336,
+        "SReclaimable": 8688402432,
+        "SUnreclaim": 3042299904,
+        "AnonHugePages": 0,
+        "ShmemHugePages": 0,
+        "ShmemPmdMapped": 0,
+        "FileHugePages": 0,
+        "FilePmdMapped": 0,
+        "Unaccepted": 0
+      },
+      "conservative_reclaimable_bytes": 44165532672,
+      "clean_file_upper_bound_bytes": 51773763584
+    }
+  },
+  "gpu_topology": "\t\u001b[4mGPU0\tCPU Affinity\tNUMA Affinity\tGPU NUMA ID\u001b[0m\nGPU0\t X \t32-63,96-127\t1\t\tN/A\n\nLegend:\n\n  X    = Self\n  SYS  = Connection traversing PCIe as well as the SMP interconnect between NUMA nodes (e.g., QPI/UPI)\n  NODE = Connection traversing PCIe as well as the interconnect between PCIe Host Bridges within a NUMA node\n  PHB  = Connection traversing PCIe as well as a PCIe Host Bridge (typically the CPU)\n  PXB  = Connection traversing multiple PCIe bridges (without traversing the PCIe Host Bridge)\n  PIX  = Connection traversing at most a single PCIe bridge\n  NV#  = Connection traversing a bonded set of # NVLinks\n",
+  "capacity_census": {
+    "capacity": {
+      "device_full_bytes": 36843376640,
+      "device_full_tokens": 1798992,
+      "device_mamba_bytes": 33096007680,
+      "device_mamba_slots": 513,
+      "device_total_bytes": 69939384320,
+      "host_full_bytes": 160000020480,
+      "host_full_tokens": 7812501,
+      "host_mamba_bytes": 40050032640,
+      "host_mamba_slots": 622,
+      "host_total_bytes": 200050053120,
+      "pool_layout": "static_separate_full_mamba"
+    },
+    "collection_mode": "admission_observation",
+    "scheduler_pid": 3892057,
+    "schema_version": 1,
+    "source": "native_sglang_v0520"
+  },
+  "process_resident_bytes_by_node": {
+    "N1": 154087505920,
+    "N0": 50331103232
+  },
+  "large_shared_mapping_bytes_by_node": {
+    "N0": 48542945280,
+    "N1": 151507107840
+  },
+  "large_shared_mapping_lines": [
+    "7aab42167000 prefer:1 file=/dev/zero\\040(deleted) dirty=223920 active=0 N0=223920 kernelpagesize_kB=4",
+    "7aab78c17000 prefer:1 file=/dev/zero\\040(deleted) dirty=9553920 active=0 N0=9553920 kernelpagesize_kB=4",
+    "7ab495417000 prefer:1 file=/dev/zero\\040(deleted) dirty=39062505 active=0 N0=2073465 N1=36989040 kernelpagesize_kB=4"
+  ],
+  "numa_maps_sha256": "a45828484a49a46f3e27c63dddcdb89e29c93f694a4b8712aad7573610e68585",
+  "other_user_tmpfs_directory": {
+    "path": "/dev/shm/yunyi-escrow-baselines-20261014",
+    "owner": "yunyi",
+    "owned_by_current_user": false,
+    "observed_allocated_bytes": 52199727104
+  },
+  "preflight_source_sha256": "ce8286e4e0c7a012faf5a7289c44893239982b64a0be56f47abdb99e5904ae30",
+  "helper_sha256": "93e9a1a3ab014c67350e63dd72b17f9c29be745f8c46c6a30ab85793fe3994d4",
+  "limitations": [
+    "Independent live reads, not an atomic memory snapshot or successful bind allocation.",
+    "Large shared mapping sizes match the pool census, but allocator base pointers are not independently captured.",
+    "Clean file cache and slab are potential reclaim sources, not a reservation or guaranteed releasable total.",
+    "Current pool release must be counted for a future cold start; current low MemFree alone is insufficient.",
+    "The other user's directory was only stat/du observed; no files, processes or memory policies were changed.",
+    "No drop_caches, page migration, pinned allocation, transfer benchmark or GPU experiment was performed."
+  ]
+}

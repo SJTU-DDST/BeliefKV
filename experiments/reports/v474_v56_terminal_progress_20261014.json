@@ -1,0 +1,1600 @@
+{
+  "status": "live_terminal_progress_not_final_pair_or_performance_acceptance",
+  "started_at_local": "2026-10-14T12:48:13.172466+08:00",
+  "finished_at_local": "2026-10-14T12:48:13.724166+08:00",
+  "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d",
+  "terminal_counts": {
+    "completed": 153,
+    "incomplete": 1
+  },
+  "terminal_workflows": 154,
+  "unknown_live_workflows": 2,
+  "terminal_results": [
+    {
+      "instance_id": "django__django-10097",
+      "outcome": "completed",
+      "duration_seconds": 1975.9052774086595,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-10097/result.json",
+      "sha256": "3206b124b2ebf49d0b2e7fe845132bb68e207db61c68fadf1ce164f97d3f5830"
+    },
+    {
+      "instance_id": "django__django-10880",
+      "outcome": "completed",
+      "duration_seconds": 1821.4712771745399,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-10880/result.json",
+      "sha256": "10cb2367374ad75599d4cec0c17ce329804385906f897eb2f09f3a8c9f3f0df7"
+    },
+    {
+      "instance_id": "django__django-10914",
+      "outcome": "completed",
+      "duration_seconds": 1289.8134378902614,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-10914/result.json",
+      "sha256": "d891ed4d8cbed59330bb69b02141fcaeda7b72595f72449bd2c938860115e86e"
+    },
+    {
+      "instance_id": "django__django-10973",
+      "outcome": "completed",
+      "duration_seconds": 859.6798493275419,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-10973/result.json",
+      "sha256": "7782d76a2d45e7f080f2a08e0f68b0de65dde009c3a29c85b4d31916761ba809"
+    },
+    {
+      "instance_id": "django__django-10999",
+      "outcome": "completed",
+      "duration_seconds": 562.922634197399,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-10999/result.json",
+      "sha256": "cc86e419f081f4c871491dfd313cebcc4aaaa9f20dd4c44daa04f43a7c57f707"
+    },
+    {
+      "instance_id": "django__django-11066",
+      "outcome": "completed",
+      "duration_seconds": 4707.0232793027535,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11066/result.json",
+      "sha256": "2ed046035be74a1e64c7789437908ba1bc469b5ebf0d76375d30296e93eb13b2"
+    },
+    {
+      "instance_id": "django__django-11087",
+      "outcome": "completed",
+      "duration_seconds": 1564.5774954175577,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11087/result.json",
+      "sha256": "bb2d30795a703e09110577dbddd1786379ddb9b7541a55c962bf124b549211df"
+    },
+    {
+      "instance_id": "django__django-11095",
+      "outcome": "completed",
+      "duration_seconds": 1374.7582648200914,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11095/result.json",
+      "sha256": "63dc2587e3061c385c529a19db997592e40a1cde8f948478b2920e6c6163dc42"
+    },
+    {
+      "instance_id": "django__django-11099",
+      "outcome": "completed",
+      "duration_seconds": 784.8347577666864,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11099/result.json",
+      "sha256": "201a73a04bb22db7fc8ec7a779f70d7ccba90187f54d8dc7bea7cd585e66c83e"
+    },
+    {
+      "instance_id": "django__django-11119",
+      "outcome": "completed",
+      "duration_seconds": 1866.477447641082,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11119/result.json",
+      "sha256": "c8027806fd488a0506525188da6f4322b874550dd7f343f8957fea30391c352a"
+    },
+    {
+      "instance_id": "django__django-11133",
+      "outcome": "completed",
+      "duration_seconds": 851.2324263425544,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11133/result.json",
+      "sha256": "44be193403aeb4735b765d0f9a72baee6ac2d2efd9327c45f88962b2f6198ec5"
+    },
+    {
+      "instance_id": "django__django-11138",
+      "outcome": "incomplete",
+      "duration_seconds": 3977.507530162111,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11138/result.json",
+      "sha256": "3cc1e0c5fcdd3469e6fd767d69e9986737819f066ca2fc87ddd073e54151bb87"
+    },
+    {
+      "instance_id": "django__django-11141",
+      "outcome": "completed",
+      "duration_seconds": 2926.4571652207524,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11141/result.json",
+      "sha256": "9d4733faacc653485d8e597cc17f5645a620b3018d2184777e601666d110efa2"
+    },
+    {
+      "instance_id": "django__django-11149",
+      "outcome": "completed",
+      "duration_seconds": 1852.2843606239185,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11149/result.json",
+      "sha256": "9b55b7401b0b54a686b773b45d4858c3556c2abbf90b5b39365f58477a1a4f96"
+    },
+    {
+      "instance_id": "django__django-11163",
+      "outcome": "completed",
+      "duration_seconds": 1385.660978505388,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11163/result.json",
+      "sha256": "f0b669fb044c497f1a2698439102ad32bf789a36e407c7ed81baa18422e0b477"
+    },
+    {
+      "instance_id": "django__django-11179",
+      "outcome": "completed",
+      "duration_seconds": 1216.408000594005,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11179/result.json",
+      "sha256": "aad62da02b2c9e3822a293d584c4c437a2ef758f42a2472083fc098cc47fb8c7"
+    },
+    {
+      "instance_id": "django__django-11206",
+      "outcome": "completed",
+      "duration_seconds": 6680.483047100715,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11206/result.json",
+      "sha256": "8e1d1ae2c0f59d98ffabeb68dbd0c7e4534827db1b42ec49033bedc6975b56ff"
+    },
+    {
+      "instance_id": "django__django-11211",
+      "outcome": "completed",
+      "duration_seconds": 5811.8870719745755,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11211/result.json",
+      "sha256": "b06099483168759c536222d0e2d165108c0a388f4d680f6259ce54c027f89bdb"
+    },
+    {
+      "instance_id": "django__django-11239",
+      "outcome": "completed",
+      "duration_seconds": 1083.6732663949952,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11239/result.json",
+      "sha256": "af9244f46b43a11b3d827aafcf26785d5443d933de9589431ee2fd2aa83ded20"
+    },
+    {
+      "instance_id": "django__django-11265",
+      "outcome": "completed",
+      "duration_seconds": 6249.928624807857,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11265/result.json",
+      "sha256": "eb3cf3d72fe1a2dd15192f3992842be906ad3faa3f76e6d995266adbb7ecf0b9"
+    },
+    {
+      "instance_id": "django__django-11276",
+      "outcome": "completed",
+      "duration_seconds": 1469.0378008233383,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11276/result.json",
+      "sha256": "3d3eadcdbc60d5f645e642a0cf551a6bcbd75e45e829a7f4236976fd47f6ba4a"
+    },
+    {
+      "instance_id": "django__django-11292",
+      "outcome": "completed",
+      "duration_seconds": 1998.6996426787227,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11292/result.json",
+      "sha256": "0bdbe6d01ab29092abffdf836168194f664faceb0dee0b268daf29ecba4326e8"
+    },
+    {
+      "instance_id": "django__django-11299",
+      "outcome": "completed",
+      "duration_seconds": 3352.462845429778,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11299/result.json",
+      "sha256": "00933aea49c20f10c40506e33d434a070d76e70a30b22d9c3fd0b2d4d2ec82b5"
+    },
+    {
+      "instance_id": "django__django-11333",
+      "outcome": "completed",
+      "duration_seconds": 2985.142286589369,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11333/result.json",
+      "sha256": "8629338fcc5d0a32d85803920e2ff020a688c30c7a1a0b04b3c0d0f529cfff06"
+    },
+    {
+      "instance_id": "django__django-11400",
+      "outcome": "completed",
+      "duration_seconds": 2172.8377040699124,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11400/result.json",
+      "sha256": "3b4f5b2a27907cd07d580e2510cf35e30f6fb4cb3b61f74925bc8d063f2c63d1"
+    },
+    {
+      "instance_id": "django__django-11433",
+      "outcome": "completed",
+      "duration_seconds": 2497.9623328195885,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11433/result.json",
+      "sha256": "867e2ca553c64d44f1adb88de62d5292cdf620f69a90cf224dbea729c39dff5e"
+    },
+    {
+      "instance_id": "django__django-11451",
+      "outcome": "completed",
+      "duration_seconds": 1874.459508003667,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11451/result.json",
+      "sha256": "2c83301d652a3c9e9b1ea140438c19a74cf37ca91fc02fac879404ee2302b73f"
+    },
+    {
+      "instance_id": "django__django-11477",
+      "outcome": "completed",
+      "duration_seconds": 3255.3741631656885,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11477/result.json",
+      "sha256": "be71a3a7919d52d2c21752f92ac0519ef98ccf4671b9809ff1594439a26f2463"
+    },
+    {
+      "instance_id": "django__django-11490",
+      "outcome": "completed",
+      "duration_seconds": 2709.3334688665345,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11490/result.json",
+      "sha256": "54b969fdbcafa7e402fc07b198b7682402f1db9c90a89cf6e76b92510f11a7be"
+    },
+    {
+      "instance_id": "django__django-11532",
+      "outcome": "completed",
+      "duration_seconds": 3287.4930223273113,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11532/result.json",
+      "sha256": "30d1124bd81d030894ba36bc3ab54c730da9e1078ea08e37825857efe78a7da8"
+    },
+    {
+      "instance_id": "django__django-11551",
+      "outcome": "completed",
+      "duration_seconds": 2345.0824831547216,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11551/result.json",
+      "sha256": "000eda285f169da1d0b73c3f9dd8d016e7b5357f706b03a7f208159cae2ec453"
+    },
+    {
+      "instance_id": "django__django-11555",
+      "outcome": "completed",
+      "duration_seconds": 3611.8974346052855,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11555/result.json",
+      "sha256": "32ffca7e56eb86f33a347a03821dc529ce3a139858792a1bdc45eca2be709f2c"
+    },
+    {
+      "instance_id": "django__django-11603",
+      "outcome": "completed",
+      "duration_seconds": 1149.8518884694204,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11603/result.json",
+      "sha256": "7f11ce163d48daf8535f4779c4dd0ffb2a4265599a8cad62ad5fd370b76a1d82"
+    },
+    {
+      "instance_id": "django__django-11728",
+      "outcome": "completed",
+      "duration_seconds": 1763.317173796706,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11728/result.json",
+      "sha256": "d9ca68f651e271379957987a242381ad1a56844b434a186502fb304b1a309777"
+    },
+    {
+      "instance_id": "django__django-11734",
+      "outcome": "completed",
+      "duration_seconds": 6018.362246516161,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11734/result.json",
+      "sha256": "05c0e9adb584c43101003b73fb9f83345e5432c5365698201e378e8e41f3cd0c"
+    },
+    {
+      "instance_id": "django__django-11740",
+      "outcome": "completed",
+      "duration_seconds": 3084.4492767890915,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11740/result.json",
+      "sha256": "92ec9a13af7cb4663364bee9eaddc3c3c0f201697ddc9dedbc89640f10906faf"
+    },
+    {
+      "instance_id": "django__django-11790",
+      "outcome": "completed",
+      "duration_seconds": 1154.7972944322973,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11790/result.json",
+      "sha256": "966654bbe41161c93ee4e08bfdc6d9d0feba08a861cf173c531cf22c40bd4247"
+    },
+    {
+      "instance_id": "django__django-11815",
+      "outcome": "completed",
+      "duration_seconds": 1971.124896380119,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11815/result.json",
+      "sha256": "1f68352c0628f23df953741352c9c4bacda8378fce9949274639ba4eb38272c0"
+    },
+    {
+      "instance_id": "django__django-11820",
+      "outcome": "completed",
+      "duration_seconds": 3072.4879585430026,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11820/result.json",
+      "sha256": "bccd5f4aeef8edf391094b83f0ef3ca760cb0d0088229b9806e1b8229777198f"
+    },
+    {
+      "instance_id": "django__django-11848",
+      "outcome": "completed",
+      "duration_seconds": 853.1024739965796,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11848/result.json",
+      "sha256": "e1ae127c64fafce23810c7423c8bcbc37c1424a521bfadc0ab3bec4c99014c5d"
+    },
+    {
+      "instance_id": "django__django-11880",
+      "outcome": "completed",
+      "duration_seconds": 878.8983621755615,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11880/result.json",
+      "sha256": "2caf6151ee54a8f1ac70cdb5386be8443c9b59e631e4cd02366ab5b57710d26d"
+    },
+    {
+      "instance_id": "django__django-11885",
+      "outcome": "completed",
+      "duration_seconds": 4090.597987550311,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11885/result.json",
+      "sha256": "4b6bae866bda28151bb3ce948a34c3581cfece5d4db8d74cd55ae55f2b1650f7"
+    },
+    {
+      "instance_id": "django__django-11951",
+      "outcome": "completed",
+      "duration_seconds": 888.4782895874232,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11951/result.json",
+      "sha256": "775cee9965ef02408f39434e839825c6d4eefc70701bb680f24fc43a3408504e"
+    },
+    {
+      "instance_id": "django__django-11964",
+      "outcome": "completed",
+      "duration_seconds": 3081.246797514148,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11964/result.json",
+      "sha256": "a899e1b2704940438861e33990ab798db36fb8737e6d91c4b8878cf08aeb1605"
+    },
+    {
+      "instance_id": "django__django-11999",
+      "outcome": "completed",
+      "duration_seconds": 799.4216880667955,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11999/result.json",
+      "sha256": "231dcbd707a7b9b1d8fea296db175f3275b84d3a1140f26ec1480eb3bf2cf86f"
+    },
+    {
+      "instance_id": "django__django-12039",
+      "outcome": "completed",
+      "duration_seconds": 3062.2855200590566,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12039/result.json",
+      "sha256": "bd8faf0e4ee20b44214db3d08e824bde73e9a8114d55af9a43860194cc56ffee"
+    },
+    {
+      "instance_id": "django__django-12050",
+      "outcome": "completed",
+      "duration_seconds": 2012.904433050193,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12050/result.json",
+      "sha256": "b6a046fe9a23b32d1cfa042b0fca3861a33af9048e5979cd0a2b634a789b9dc1"
+    },
+    {
+      "instance_id": "django__django-12125",
+      "outcome": "completed",
+      "duration_seconds": 2338.5519923372194,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12125/result.json",
+      "sha256": "17a816b7e1bc1a98cae8647190ec6f253ebfbf6bcda45c87ea5620d54a3c7c07"
+    },
+    {
+      "instance_id": "django__django-12143",
+      "outcome": "completed",
+      "duration_seconds": 1426.7180220354348,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12143/result.json",
+      "sha256": "786eb479632e5f4d7b475baddfaa540d4796373bbecac318a373ffb669e2b6e5"
+    },
+    {
+      "instance_id": "django__django-12155",
+      "outcome": "completed",
+      "duration_seconds": 1502.0117525421083,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12155/result.json",
+      "sha256": "7d2797f8ee4c2751a4bfccbf245682d56f9655513e410964424bf264889e2e99"
+    },
+    {
+      "instance_id": "django__django-12193",
+      "outcome": "completed",
+      "duration_seconds": 1350.6061649108306,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12193/result.json",
+      "sha256": "fa15cfdf8d16882757ea6820e1e37aef5139400bd2e60ffa55bc208585e1e1ac"
+    },
+    {
+      "instance_id": "django__django-12209",
+      "outcome": "completed",
+      "duration_seconds": 2921.7626665756106,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12209/result.json",
+      "sha256": "8542eb2f753a691f3a27164168b6287f963baf7f83344411b6cfe2c372091ec4"
+    },
+    {
+      "instance_id": "django__django-12262",
+      "outcome": "completed",
+      "duration_seconds": 3077.1663270061836,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12262/result.json",
+      "sha256": "03af3553454d03bde08d22e6836363fafa73c75e36522f1ae65feb9d22d52c09"
+    },
+    {
+      "instance_id": "django__django-12273",
+      "outcome": "completed",
+      "duration_seconds": 2939.1718269325793,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12273/result.json",
+      "sha256": "4cc7789edcbff58350009920cb73ec3e41f0425634f223908ab3161b72b3dbc6"
+    },
+    {
+      "instance_id": "django__django-12276",
+      "outcome": "completed",
+      "duration_seconds": 1058.25632486213,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12276/result.json",
+      "sha256": "c69a0e3e5faf1ad722d207db71f63c2fb7b52679a19f68211096e0997de33f30"
+    },
+    {
+      "instance_id": "django__django-12304",
+      "outcome": "completed",
+      "duration_seconds": 767.1872291583568,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12304/result.json",
+      "sha256": "8df5a5bcc533f2df05d65ea4766596de049d97ff3ed86b3837198aed24702275"
+    },
+    {
+      "instance_id": "django__django-12308",
+      "outcome": "completed",
+      "duration_seconds": 1013.9262817213312,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12308/result.json",
+      "sha256": "cefc6d789406bc67ef5556bb276b6666526296222dea96b153494316a1f06cbf"
+    },
+    {
+      "instance_id": "django__django-12325",
+      "outcome": "completed",
+      "duration_seconds": 3418.4769463632256,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12325/result.json",
+      "sha256": "7042a6fbd9da8bcc8083adf98eb71ac5c0134c9fb01af9289783c2ee0c3f6e20"
+    },
+    {
+      "instance_id": "django__django-12406",
+      "outcome": "completed",
+      "duration_seconds": 2299.7340661538765,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12406/result.json",
+      "sha256": "5d50b754d6c2409ee6f83b3c2f0d41f6be4e7775f82b34bd4d872d4321d0fa13"
+    },
+    {
+      "instance_id": "django__django-12419",
+      "outcome": "completed",
+      "duration_seconds": 586.7405447391793,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12419/result.json",
+      "sha256": "6e8a5403dfac70133fecbd5a74f59bc110118c0dfdcf6889b859df68728c6bee"
+    },
+    {
+      "instance_id": "django__django-12663",
+      "outcome": "completed",
+      "duration_seconds": 1607.841151013039,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12663/result.json",
+      "sha256": "e89778b3c5970472c13ba5e6db503ad7783bb84ba38ea010a19dbd5fc820645a"
+    },
+    {
+      "instance_id": "django__django-12708",
+      "outcome": "completed",
+      "duration_seconds": 3459.0590827539563,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12708/result.json",
+      "sha256": "e6f2db86721aee1637393f81d27cddda31a2ca9bf227d38ba38ded7f0aff8d80"
+    },
+    {
+      "instance_id": "django__django-12713",
+      "outcome": "completed",
+      "duration_seconds": 1174.3502743551508,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12713/result.json",
+      "sha256": "365dd2dc01cdf161b005af85c969d5fbb484762cd37376728eaf26edd9932c30"
+    },
+    {
+      "instance_id": "django__django-12741",
+      "outcome": "completed",
+      "duration_seconds": 688.9042663509026,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12741/result.json",
+      "sha256": "4829751c6b613d5939f0475511588a2096ba2d67dc4ee2d74c6eecb8093a6054"
+    },
+    {
+      "instance_id": "django__django-12754",
+      "outcome": "completed",
+      "duration_seconds": 4604.883476738818,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12754/result.json",
+      "sha256": "ba5fec9fab7cbd970408f87ea6ed0d9eb96d40b1ce9e01e95b0042246bbeeb2c"
+    },
+    {
+      "instance_id": "django__django-12774",
+      "outcome": "completed",
+      "duration_seconds": 1552.4114516042173,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12774/result.json",
+      "sha256": "7378ab334d40c88d78011d2dcbcdf3405e5a864623c0462bcb8d7aef8cbf6044"
+    },
+    {
+      "instance_id": "django__django-12858",
+      "outcome": "completed",
+      "duration_seconds": 2432.779700522311,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12858/result.json",
+      "sha256": "3021487955aa189af6c92c8c473db3f283d52afc3cb4d645b2eb2ec674df4480"
+    },
+    {
+      "instance_id": "django__django-12965",
+      "outcome": "completed",
+      "duration_seconds": 1961.6870126938447,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-12965/result.json",
+      "sha256": "147be97c7cdef31fdb078f459e86394bee3669c551fc91bc28fd79c95d9c21e6"
+    },
+    {
+      "instance_id": "django__django-13012",
+      "outcome": "completed",
+      "duration_seconds": 1835.01065736264,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-13012/result.json",
+      "sha256": "92d99985a700b80027114f6c85a2f33068826df5c1ebbbcf5a3eefc82cdca573"
+    },
+    {
+      "instance_id": "django__django-13023",
+      "outcome": "completed",
+      "duration_seconds": 1689.0008977325633,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-13023/result.json",
+      "sha256": "4e3bee752795f0f94e7a26c873f36e9c3b6d79252926d1d9f4cd5c863d3289b7"
+    },
+    {
+      "instance_id": "django__django-13028",
+      "outcome": "completed",
+      "duration_seconds": 2652.273315688595,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-13028/result.json",
+      "sha256": "02e1d8e76f4d481cdfdf8ba4c3f5490a5f54e7d91c57ccb7a54daeba89a0cd11"
+    },
+    {
+      "instance_id": "django__django-13033",
+      "outcome": "completed",
+      "duration_seconds": 3203.839010776952,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-13033/result.json",
+      "sha256": "77b6c939500eaf8102d5a7e2745358ae4a34a16296a52cd346beb4b2a220d6a6"
+    },
+    {
+      "instance_id": "django__django-13089",
+      "outcome": "completed",
+      "duration_seconds": 981.7050862535834,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-13089/result.json",
+      "sha256": "48b9703f5993a307037e8d5e602baae6dd45bc8f54d218e150b4b3b9968af8fa"
+    },
+    {
+      "instance_id": "django__django-13109",
+      "outcome": "completed",
+      "duration_seconds": 1032.4672145033255,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-13109/result.json",
+      "sha256": "9fe53ff987ce7eff460cc5384baac4e22cf07e5d10526be065cfbd36e417881f"
+    },
+    {
+      "instance_id": "django__django-13112",
+      "outcome": "completed",
+      "duration_seconds": 2333.4953392399475,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-13112/result.json",
+      "sha256": "73db1c54fef4a319db3e5f764e1a18f9b7af3b1e7334371e1202a94bb4e3ed45"
+    },
+    {
+      "instance_id": "django__django-13121",
+      "outcome": "completed",
+      "duration_seconds": 2773.742321027443,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-13121/result.json",
+      "sha256": "48ec2d2b5d13c567e21295d4322e05133ae73b84f09ecaef94073de7e70700d3"
+    },
+    {
+      "instance_id": "django__django-13128",
+      "outcome": "completed",
+      "duration_seconds": 1993.5379232084379,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-13128/result.json",
+      "sha256": "2b50a4caa70c71e85794853a3d7b2febe6a672e0e8bfff704d0ce895f573ff64"
+    },
+    {
+      "instance_id": "django__django-13158",
+      "outcome": "completed",
+      "duration_seconds": 1697.00814836286,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-13158/result.json",
+      "sha256": "fa993974cd3eda51af989b9aaac7e34f72769872c63b96c7ea138902bf840668"
+    },
+    {
+      "instance_id": "django__django-13195",
+      "outcome": "completed",
+      "duration_seconds": 633.2502008499578,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-13195/result.json",
+      "sha256": "432070dcd234ab6757cde20dae4b5753f2a75032add1539ad6ffe05d2d573528"
+    },
+    {
+      "instance_id": "django__django-13212",
+      "outcome": "completed",
+      "duration_seconds": 1189.9212515270337,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-13212/result.json",
+      "sha256": "29ffa1c4537b2d32da636f320c81bd4f28e8bd9267054125b4370e0620255345"
+    },
+    {
+      "instance_id": "django__django-13279",
+      "outcome": "completed",
+      "duration_seconds": 790.4772908957675,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-13279/result.json",
+      "sha256": "2a6c8fb410ef7806d8efe8bc1e8f20f1489ca16de84a2a717e75eaf11ad28505"
+    },
+    {
+      "instance_id": "django__django-13964",
+      "outcome": "completed",
+      "duration_seconds": 3994.6777686383575,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-13964/result.json",
+      "sha256": "3cbf1faa71a202b7b3a8b20ff9e8575a9b9cd0c024ff0867dd95aee27c781cea"
+    },
+    {
+      "instance_id": "django__django-14349",
+      "outcome": "completed",
+      "duration_seconds": 1318.586442596279,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-14349/result.json",
+      "sha256": "22e5c2361a164604f144b7048ad6aee6436dd2ee45625656d1b52e6060aade7c"
+    },
+    {
+      "instance_id": "django__django-14500",
+      "outcome": "completed",
+      "duration_seconds": 5013.167294939049,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-14500/result.json",
+      "sha256": "cc7e7ceadc04b5587a1036b4dabd816750d31c1d2ebf595c29a3322cfb63e67d"
+    },
+    {
+      "instance_id": "django__django-14631",
+      "outcome": "completed",
+      "duration_seconds": 2038.0769002996385,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-14631/result.json",
+      "sha256": "9d859159d6308c2e93b1ca835cd6c52b3cbbe1b0509963fae553eb2c7d852059"
+    },
+    {
+      "instance_id": "django__django-15103",
+      "outcome": "completed",
+      "duration_seconds": 779.8601408721879,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-15103/result.json",
+      "sha256": "a045c73975730df2754ab4c43486e7c5396081376c5831998f556de7b95ea65d"
+    },
+    {
+      "instance_id": "django__django-15315",
+      "outcome": "completed",
+      "duration_seconds": 1308.892017497681,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-15315/result.json",
+      "sha256": "e20536d4d0688368cba88c2a01bcf2dff395f16f01965ac99de60c617f601251"
+    },
+    {
+      "instance_id": "django__django-15368",
+      "outcome": "completed",
+      "duration_seconds": 2685.4101315233856,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-15368/result.json",
+      "sha256": "016326044d1d328c113963897dba43734e2e14011d9645151762773ecde09489"
+    },
+    {
+      "instance_id": "django__django-16255",
+      "outcome": "completed",
+      "duration_seconds": 1310.935524508357,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-16255/result.json",
+      "sha256": "faabe531057f930965d2bdf386b05ad3c7166a158e169ed6ad242f71bea56661"
+    },
+    {
+      "instance_id": "django__django-16502",
+      "outcome": "completed",
+      "duration_seconds": 5809.105568261817,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-16502/result.json",
+      "sha256": "b3651eddde99793850f3056d164f7dd60de7f146a4cfc189e9c0f1477fbf88d0"
+    },
+    {
+      "instance_id": "django__django-16667",
+      "outcome": "completed",
+      "duration_seconds": 1035.8773214286193,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-16667/result.json",
+      "sha256": "8d4f083ef186286ef7ab54c7170ba36137192b066be272a6bdfdffb7ec587a5d"
+    },
+    {
+      "instance_id": "django__django-16877",
+      "outcome": "completed",
+      "duration_seconds": 1957.8218901949003,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-16877/result.json",
+      "sha256": "30f32ba1a8baaa0e845e009942596dc5ca2a1d59c8129e43b60be5df1e7848e4"
+    },
+    {
+      "instance_id": "django__django-16938",
+      "outcome": "completed",
+      "duration_seconds": 3665.691194451414,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-16938/result.json",
+      "sha256": "6830ecf6adeeb7a5e3eb5c23666c7a1fb0b44b876c1a054345b1dd976ef0dfb7"
+    },
+    {
+      "instance_id": "mwaskom__seaborn-3069",
+      "outcome": "completed",
+      "duration_seconds": 3416.750941119157,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/mwaskom__seaborn-3069/result.json",
+      "sha256": "52f88d7e935edd67a4ba7c34cd02ea1414edb1ffebeea8a262eef3a3f9d0741b"
+    },
+    {
+      "instance_id": "mwaskom__seaborn-3187",
+      "outcome": "completed",
+      "duration_seconds": 5690.106314085424,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/result.json",
+      "sha256": "7cceb908d870145324624dc90a9dbb50bcd1c556af9f47643d7f76a0cc477961"
+    },
+    {
+      "instance_id": "pallets__flask-5014",
+      "outcome": "completed",
+      "duration_seconds": 730.865902941674,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pallets__flask-5014/result.json",
+      "sha256": "9e93661ea02f050fe60d445dcff820aee6582a4882140ff3cb922145e4906198"
+    },
+    {
+      "instance_id": "psf__requests-1142",
+      "outcome": "completed",
+      "duration_seconds": 1902.0753798875958,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/psf__requests-1142/result.json",
+      "sha256": "8a328528462981c512e847c738060e9febf5f201c18fc69f1840a839548ad72e"
+    },
+    {
+      "instance_id": "psf__requests-1724",
+      "outcome": "completed",
+      "duration_seconds": 3028.317407846451,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/psf__requests-1724/result.json",
+      "sha256": "e07b4cad608099a367af57262d4cee61b297f212a2f6ddd43adbea9e4a26999e"
+    },
+    {
+      "instance_id": "psf__requests-1766",
+      "outcome": "completed",
+      "duration_seconds": 863.4242028705776,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/psf__requests-1766/result.json",
+      "sha256": "466bf0555bdfd743d72c7352a67534ddcbb2e922f9f754b694fd410d25ce2889"
+    },
+    {
+      "instance_id": "psf__requests-1921",
+      "outcome": "completed",
+      "duration_seconds": 3051.154159703292,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/psf__requests-1921/result.json",
+      "sha256": "5695d78c1d996fe47cc31c840a601915fa7c2dfd3a4255855aa959dbe244a5b6"
+    },
+    {
+      "instance_id": "psf__requests-2317",
+      "outcome": "completed",
+      "duration_seconds": 1264.1199229154736,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/psf__requests-2317/result.json",
+      "sha256": "4c0f4ff4029e55b511446ca535ef9d0d7c29fd4204767b1b543742a6b67e3934"
+    },
+    {
+      "instance_id": "psf__requests-2931",
+      "outcome": "completed",
+      "duration_seconds": 2880.4229019107297,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/psf__requests-2931/result.json",
+      "sha256": "1e8a5306f8230b7a6124e63391157271c336a35682b7d01c64f5136bdc76148f"
+    },
+    {
+      "instance_id": "psf__requests-5414",
+      "outcome": "completed",
+      "duration_seconds": 2590.4433403071016,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/psf__requests-5414/result.json",
+      "sha256": "3514a93aa272d9959b7861d95100d65bdc9fd16ddc271a4227184bde3c40e0c1"
+    },
+    {
+      "instance_id": "psf__requests-6028",
+      "outcome": "completed",
+      "duration_seconds": 2504.1407001977786,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/psf__requests-6028/result.json",
+      "sha256": "22f653ae30198ba74dbba6439f0048b194279d9c93220bce53595d1ad7896090"
+    },
+    {
+      "instance_id": "pydata__xarray-2905",
+      "outcome": "completed",
+      "duration_seconds": 2639.4768788963556,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-2905/result.json",
+      "sha256": "2a123d9a3589463010d5df7eef75de671406ef852b714ca9d104db973c9e2a71"
+    },
+    {
+      "instance_id": "pydata__xarray-3095",
+      "outcome": "completed",
+      "duration_seconds": 2426.0030163032934,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-3095/result.json",
+      "sha256": "37590936948502dda75eff6d13ac1629916491e665f7e5d642df924121e8c274"
+    },
+    {
+      "instance_id": "pydata__xarray-3151",
+      "outcome": "completed",
+      "duration_seconds": 1401.9161971425638,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-3151/result.json",
+      "sha256": "abc441c18ad457cfbbdbc60e656ef8dc682cef700aa2f8b64b3f83e9b7251311"
+    },
+    {
+      "instance_id": "pydata__xarray-3305",
+      "outcome": "completed",
+      "duration_seconds": 1152.0670010019094,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-3305/result.json",
+      "sha256": "679538bc674da90fdab803b8abcaf2428608db6926967c8293f370abccdf7152"
+    },
+    {
+      "instance_id": "pydata__xarray-3677",
+      "outcome": "completed",
+      "duration_seconds": 1126.0924252141267,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-3677/result.json",
+      "sha256": "4ad67e724d4a889fed3fba46f6fffe06b2494e7d8f7ce2aad9ec8080807dc42e"
+    },
+    {
+      "instance_id": "pydata__xarray-3993",
+      "outcome": "completed",
+      "duration_seconds": 2775.2106446921825,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-3993/result.json",
+      "sha256": "f10a501c0dd00bf7a346a8e72f0d9c1181a17a644e5653ae587c6151a42445fc"
+    },
+    {
+      "instance_id": "pydata__xarray-4075",
+      "outcome": "completed",
+      "duration_seconds": 924.2151669189334,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-4075/result.json",
+      "sha256": "84dd7399bb1aaac2d6e979c95dd0045dfe7160ec6014257a8e0524a5da48aae7"
+    },
+    {
+      "instance_id": "pydata__xarray-4094",
+      "outcome": "completed",
+      "duration_seconds": 2635.4788611400872,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-4094/result.json",
+      "sha256": "aba33d47e3d1f64a2dd14823fec555b7779e35c477f847e5478f7194f9ba0d2a"
+    },
+    {
+      "instance_id": "pydata__xarray-4356",
+      "outcome": "completed",
+      "duration_seconds": 2396.499596837908,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-4356/result.json",
+      "sha256": "06db84f621330820311638df9a00cfffd002f81bfb3013116f8397d92469aff1"
+    },
+    {
+      "instance_id": "pydata__xarray-4629",
+      "outcome": "completed",
+      "duration_seconds": 742.7735126586631,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-4629/result.json",
+      "sha256": "0e4e0b5c7f324fed19ce19c3d1221474b417421be3641e787de45b056ec3584b"
+    },
+    {
+      "instance_id": "pydata__xarray-4687",
+      "outcome": "completed",
+      "duration_seconds": 3912.2902010018006,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-4687/result.json",
+      "sha256": "4573a388a97e7018889cbf4da821a3ff827dd9208db219c6d12a017cd6b1d38a"
+    },
+    {
+      "instance_id": "pydata__xarray-4966",
+      "outcome": "completed",
+      "duration_seconds": 2916.288562987931,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-4966/result.json",
+      "sha256": "e379f490561bcb1104445d07382055de038baa94a875eefd7adfe0e6d43d8bd7"
+    },
+    {
+      "instance_id": "pydata__xarray-6461",
+      "outcome": "completed",
+      "duration_seconds": 2380.5166027415544,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-6461/result.json",
+      "sha256": "2ea8fabd8ccf5bf4248f0e94dda21db5c5b3666706860b5df59876151aff76b5"
+    },
+    {
+      "instance_id": "pydata__xarray-6599",
+      "outcome": "completed",
+      "duration_seconds": 4641.480662074871,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-6599/result.json",
+      "sha256": "291ccfb73b1622e5ebf613beabf12442fe168bb6b2a1f80c0471f588bf59c47c"
+    },
+    {
+      "instance_id": "pydata__xarray-6721",
+      "outcome": "completed",
+      "duration_seconds": 2859.7648388668895,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-6721/result.json",
+      "sha256": "500cf16ea0e7d52329c9b0d923401e181ff95a9179ecb2856b83cdc8460413b8"
+    },
+    {
+      "instance_id": "pydata__xarray-6744",
+      "outcome": "completed",
+      "duration_seconds": 1892.4388024406508,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-6744/result.json",
+      "sha256": "c4e4b38530fc21be5c1d06e9e33f96392bbfb08a23b95b5b2c7fdd8e23e29443"
+    },
+    {
+      "instance_id": "pydata__xarray-6938",
+      "outcome": "completed",
+      "duration_seconds": 2653.0083197923377,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-6938/result.json",
+      "sha256": "5d38adcba348a61c944919395a9776ccab918b210adcb2764c4eff5cb059c13e"
+    },
+    {
+      "instance_id": "pydata__xarray-6992",
+      "outcome": "completed",
+      "duration_seconds": 4748.795308222994,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-6992/result.json",
+      "sha256": "a1215cdd63effafc13a7b1022fccdc02fc8b186a24129b021e8b85a98a3514e7"
+    },
+    {
+      "instance_id": "pydata__xarray-7229",
+      "outcome": "completed",
+      "duration_seconds": 4063.088713919744,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-7229/result.json",
+      "sha256": "61858ca2ddfabe8b6f0fa92361c0b34f2016487ef57ac9657d565720654cab70"
+    },
+    {
+      "instance_id": "pydata__xarray-7233",
+      "outcome": "completed",
+      "duration_seconds": 1919.688774311915,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-7233/result.json",
+      "sha256": "8c890b2f33a1a0a9402b529ca3da77afbf469347e3daf40a65087b827137619f"
+    },
+    {
+      "instance_id": "pydata__xarray-7393",
+      "outcome": "completed",
+      "duration_seconds": 2788.664002100937,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pydata__xarray-7393/result.json",
+      "sha256": "bd6192443096d3f44bb945e994a391fc3dac18fc18c147bee340af8bc3cd5ce9"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4551",
+      "outcome": "completed",
+      "duration_seconds": 1924.4453793503344,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pylint-dev__pylint-4551/result.json",
+      "sha256": "c8155ae589822066040bd6c90702108860d59e2a665305fba481a941137629b2"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4604",
+      "outcome": "completed",
+      "duration_seconds": 2634.009228186682,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pylint-dev__pylint-4604/result.json",
+      "sha256": "6f1fc684d660cef88890dc6ce91d8b20be952e23be5e345d2453da91030b3991"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4661",
+      "outcome": "completed",
+      "duration_seconds": 2972.7218684479594,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pylint-dev__pylint-4661/result.json",
+      "sha256": "78d8e8abe55da1b95224b14b3e042435100620cb9e5e36a0a7a752a249839a9c"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4970",
+      "outcome": "completed",
+      "duration_seconds": 2679.40546993725,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/result.json",
+      "sha256": "dc141a4459117609824bcd7e4a2216cb0ff56683565916a2a6181a902b3781f6"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6386",
+      "outcome": "completed",
+      "duration_seconds": 2617.2173449480906,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pylint-dev__pylint-6386/result.json",
+      "sha256": "966cfaab2d205ba7d88c04fb2795145b331e2928c42af031087042a3569d1363"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6528",
+      "outcome": "completed",
+      "duration_seconds": 4243.347617242485,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/result.json",
+      "sha256": "5483a37532fe00bb63fd0ad988b420ebd70e1380c04a716eb8508b37f6ecafd8"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6903",
+      "outcome": "completed",
+      "duration_seconds": 2404.833213917911,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pylint-dev__pylint-6903/result.json",
+      "sha256": "ee610a46f3ae6cb051f1177ba428054ec1f400db0e813baa17480f9eca166a06"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-7080",
+      "outcome": "completed",
+      "duration_seconds": 2896.756633507088,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pylint-dev__pylint-7080/result.json",
+      "sha256": "ffd6d21b8d0420be28bcdad8b3e385f6cfd176cf7788de5b680757e2c3bf8c52"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-7277",
+      "outcome": "completed",
+      "duration_seconds": 1815.73455793038,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pylint-dev__pylint-7277/result.json",
+      "sha256": "6d10a50ec8782324f33d8feb6e90a3be3246626f4d839867b2ce54fd2aec5fe1"
+    },
+    {
+      "instance_id": "pylint-dev__pylint-8898",
+      "outcome": "completed",
+      "duration_seconds": 1969.465006233193,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pylint-dev__pylint-8898/result.json",
+      "sha256": "3a743acb8ae896fec347c6d7e7c17e01582b3688face81be6401412def4f6edf"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10051",
+      "outcome": "completed",
+      "duration_seconds": 1984.866414109245,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-10051/result.json",
+      "sha256": "22fb750a0eb019ca8f0cfe3975e7914b0ec77418bf486aa5a52878615baadc96"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10081",
+      "outcome": "completed",
+      "duration_seconds": 3681.9701772248372,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-10081/result.json",
+      "sha256": "a00e47016bf501d3deafb45647f3b7ba2e291e011169c0415ee757734a650658"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10356",
+      "outcome": "completed",
+      "duration_seconds": 4190.1160727078095,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-10356/result.json",
+      "sha256": "66f9716c52e442ad4409c1f16a1804638144d3d0dd4f8ca48f7f1dc8ba10bdce"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5262",
+      "outcome": "completed",
+      "duration_seconds": 2197.4249319601804,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-5262/result.json",
+      "sha256": "d1249dcff1d1d92a2209b5468b40b7a24f3c327a9a9973177d9bbc8c7ca910d8"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5631",
+      "outcome": "completed",
+      "duration_seconds": 4077.474060195498,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-5631/result.json",
+      "sha256": "7625682aca9778c3d11717c8e6e1f06e2517d25ff93b03dea426e83b5ba2376d"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5787",
+      "outcome": "completed",
+      "duration_seconds": 6065.18096544221,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-5787/result.json",
+      "sha256": "e76f5433558c7736c472fbb26cb75d874937433f51d13c8a35bac48cf497660a"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5809",
+      "outcome": "completed",
+      "duration_seconds": 831.9793215068057,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-5809/result.json",
+      "sha256": "c5ad60e8f60b6d5459659e11f1b20f9b7b0ac2f1b47d9d44c237dcc683d53a09"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5840",
+      "outcome": "completed",
+      "duration_seconds": 2765.268736537546,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-5840/result.json",
+      "sha256": "73ecf006b9350b02c07dd2d0625d8dc10f6335a5db34713f1093c17258cbb654"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-6197",
+      "outcome": "completed",
+      "duration_seconds": 2876.7814515270293,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-6197/result.json",
+      "sha256": "11eb4f896994aff4e1dc60eeb0bea7affb5dd7dc0a8cff18038ca9ff00f32d20"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-6202",
+      "outcome": "completed",
+      "duration_seconds": 2985.896259049885,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-6202/result.json",
+      "sha256": "55ce9b313544907c17a77a8ce1fbf04ba49d6d81fbafa577e347156116263bd5"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7205",
+      "outcome": "completed",
+      "duration_seconds": 2498.6339633148164,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-7205/result.json",
+      "sha256": "317d996ab77b8311b4f7590dabeb698c4631fc55b633755105c2246874e3449f"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7236",
+      "outcome": "completed",
+      "duration_seconds": 4588.24812807329,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-7236/result.json",
+      "sha256": "4af823958ad754950149aa0d92d6ab18c9268a04b297d4256d382d7f97feda9b"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7324",
+      "outcome": "completed",
+      "duration_seconds": 4803.997894988395,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-7324/result.json",
+      "sha256": "5334408fc86ab9d6bd54e03b532e5d25495198eb2928d8d2f654fdfb940e26c2"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7432",
+      "outcome": "completed",
+      "duration_seconds": 1601.0533232428133,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-7432/result.json",
+      "sha256": "749f302f15f4963787dbce6110d1484c4ec6e0443183212322258d543f13ba37"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7490",
+      "outcome": "completed",
+      "duration_seconds": 1782.3456909302622,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-7490/result.json",
+      "sha256": "844cf08ef3c64a9e6b5b3eb07f57ebb1e9e2da715589493c9792686a062917d2"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7521",
+      "outcome": "completed",
+      "duration_seconds": 4355.645427851006,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-7521/result.json",
+      "sha256": "a3dc96ef4a05aae1856e29e56dc3ee71729f89242672f4baebef42cfc59b8611"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7571",
+      "outcome": "completed",
+      "duration_seconds": 1521.5371597344056,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-7571/result.json",
+      "sha256": "c96f8a77e9141a99ff8ff6929dec7269432f08132ac2203395bb0e40a4fb562c"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7982",
+      "outcome": "completed",
+      "duration_seconds": 1403.5533699076623,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-7982/result.json",
+      "sha256": "c8c6fb6bc10d7e51db1096600347b6386f58f4acc07d455a33773a69cfa9b7ef"
+    },
+    {
+      "instance_id": "pytest-dev__pytest-8399",
+      "outcome": "completed",
+      "duration_seconds": 1985.5655833231285,
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/pytest-dev__pytest-8399/result.json",
+      "sha256": "e902e09cfc432819b8b756538fee2d352e8dd7f5cd3ed565ff7a14b89441fe9a"
+    }
+  ],
+  "non_completed": [
+    {
+      "instance_id": "django__django-11138",
+      "result": {
+        "workflow_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef",
+        "outcome": "incomplete",
+        "error": null,
+        "natural_terminal": false,
+        "measurement_valid": false,
+        "duration_seconds": 3977.507530162111,
+        "agent_control": {
+          "duplicate_tool_calls_suppressed": 0,
+          "event_counts": {
+            "agent_empty_reasoning_retry": 4,
+            "agent_empty_reasoning_retry_result": 4,
+            "agent_graph_budget_finalization": 1,
+            "agent_graph_step_soft_budget_observed": 1,
+            "agent_guard_finalization_attempt": 1,
+            "agent_guard_pattern_observed": 2,
+            "agent_natural_return": 3
+          },
+          "forced_semantic_completions": 0,
+          "guard_intervened_completions": 0,
+          "natural_language_return_count": 3,
+          "natural_semantic_completions": 0,
+          "protocol_normalized_completions": 0,
+          "protocol_repair_failures": 0,
+          "protocol_repaired_completions": 0,
+          "semantic_completions": 0,
+          "stuck_reasons": {}
+        },
+        "workflow_deadline": {
+          "abort_requested_count": 0,
+          "active_command_cancel_count": 0,
+          "cleanup_complete": false,
+          "enabled": true,
+          "expired": false,
+          "pending_task_cancel_count": 0,
+          "server_terminal": false,
+          "server_terminal_latency_ms": null
+        },
+        "trace": {
+          "all_joins_satisfied": true,
+          "all_subagents_returned": true,
+          "child_cancel_count": 0,
+          "child_return_rate_by_role": {
+            "repository-explorer": {
+              "cancelled": 0,
+              "return_rate": 1.0,
+              "returned": 1,
+              "spawned": 1
+            },
+            "test-analyst": {
+              "cancelled": 0,
+              "return_rate": 1.0,
+              "returned": 1,
+              "spawned": 1
+            }
+          },
+          "child_return_span_ms": 2142270.829158783,
+          "children_per_parent": {
+            "deepagents:autonomous:django__django-11138:3234f8cb87ef:root": 2
+          },
+          "delegation_round_count": 1,
+          "dynamic_subagent_count": 2,
+          "event_count": 3931,
+          "event_counts": {
+            "call": 4,
+            "context_compact": 4,
+            "invocation_create": 7,
+            "join_create": 1,
+            "join_satisfied": 1,
+            "join_wait": 1,
+            "llm_result": 492,
+            "llm_submit": 492,
+            "return": 7,
+            "spawn": 2,
+            "structured_action": 1938,
+            "tool_end": 490,
+            "tool_start": 490,
+            "workflow_end": 1,
+            "workflow_start": 1
+          },
+          "fanout_by_parent": {
+            "deepagents:autonomous:django__django-11138:3234f8cb87ef:root": 2
+          },
+          "fanout_parent_count": 1,
+          "fanout_per_round": [
+            2
+          ],
+          "join_satisfied_count": 1,
+          "join_timeout_count": 0,
+          "join_to_next_spawn_ms": [],
+          "join_type_counts": {
+            "all": 1
+          },
+          "llm_pairing_valid": true,
+          "llm_request_count": 488,
+          "llm_result_count": 488,
+          "mutating_tool_end_count": 4,
+          "natural_child_return_count": 2,
+          "peak_concurrent_children": 2,
+          "post_join_spawn_count": 0,
+          "root_return_count": 1,
+          "tool_call_count": 490,
+          "tool_pairing_valid": true,
+          "tool_result_count": 490,
+          "tool_status_coverage": 1.0,
+          "workflow_lifecycle_valid": true,
+          "workspace_digest_coverage": 1.0,
+          "workspace_digest_observation_count": 4
+        }
+      },
+      "trajectory": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11138/trajectory.json",
+        "sha256": "2bead025fdebe1ba57e3da34ed685b4a8cfbc50e35b78d368f82f6a44c1bca8f",
+        "message_count": 111,
+        "last_response": {
+          "additional_kwargs": {},
+          "content": "Now I understand the issue better. The `get_tzname()` method returns the **application's** timezone (the current timezone), not the database's timezone.\n\nThe issue is:\n1. When we do date lookups with timezone-aware datetimes, the datetimes are stored in the database in the database's timezone\n2. We need to convert FROM the database's timezone TO the application's timezone\n3. But the current code uses the application's timezone as the **target** timezone, which is correct\n4. However, the source timezone is hardcoded to 'UTC', which is wrong\n\nSo the fix should be:\n1. Pass the database's timezone (`connection.timezone_name`) as the **source** timezone\n2. The application's timezone should be the **target** timezone\n\nBut wait, the current code passes the application's timezone as the `tzname` parameter, and the backends use it as the **target** timezone. So the fix should be:\n1. Pass the database's timezone as the **source** timezone\n2. Pass the application's timezone as the **target** timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters: `source_tzname` and `target_tzname`.\n\nActually, let me re-read the issue description again:\n\n> The problem is that `CONVERT_TZ` and similar functions hardcode 'UTC' as the source timezone instead of using the database-specific `TIME_ZONE` setting.\n\nSo the fix should be:\n1. Change the source timezone from 'UTC' to the database's `TIME_ZONE` setting\n2. Keep the target timezone as the application's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think I'm overcomplicating this. Let me re-read the issue description one more time:\n\n> DATE lookups with timezone-aware datetimes should use the database-specific TIME_ZONE setting\n> When `tz1 == tz2` (app timezone equals database timezone), no timezone conversion should be needed\n\nSo the issue is:\n1. When the database's `TIME_ZONE` setting is different from UTC, the conversion is wrong\n2. When the app timezone equals the database timezone, no conversion should be needed\n\nThe fix should be:\n1. Use the database's `TIME_ZONE` setting as the source timezone\n2. Use the app's timezone as the target timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is simpler than I thought. Let me re-read the code:\n\n```python\ndef _convert_field_to_tz(self, field_name, tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, 'UTC', '%s')\" % (field_name, tzname)\n    return field_name\n```\n\nThis converts FROM UTC TO `tzname`. But the database stores datetimes in the database's `TIME_ZONE`, not in UTC. So the fix should be:\n\n```python\ndef _convert_field_to_tz(self, field_name, source_tzname, target_tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, '%s', '%s')\" % (field_name, source_tzname, target_tzname)\n    return field_name\n```\n\nBut this requires changing the API. Let me check if there's a simpler fix.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), not the **target** timezone. Let me check the code again:\n\n```python\ndef datetime_cast_date_sql(self, field_name, tzname):\n    field_name = self._convert_field_to_tz(field_name, tzname)\n    return \"DATE(%s)\" % field_name\n```\n\nSo `datetime_cast_date_sql` calls `_convert_field_to_tz` with `tzname`, and then casts to DATE. The purpose of `datetime_cast_date_sql` is to convert a datetime to a date in the specified timezone.\n\nSo the `tzname` parameter should be the **target** timezone (the timezone we want to convert to). But the current code assumes the source timezone is UTC, which is wrong.\n\nThe fix should be:\n1. Pass the database's timezone as the **source** timezone\n2. Pass the app's timezone as the **target** timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API.\n\nActually, I think I'm overcomplicating this. Let me re-read the issue description one more time:\n\n> The problem is that `CONVERT_TZ` and similar functions hardcode 'UTC' as the source timezone instead of using the database-specific `TIME_ZONE` setting.\n\nSo the fix should be:\n1. Change the source timezone from 'UTC' to the database's `TIME_ZONE` setting\n2. Keep the target timezone as the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nLet me check the code again:\n\n```python\ndef _convert_field_to_tz(self, field_name, tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, 'UTC', '%s')\" % (field_name, tzname)\n    return field_name\n```\n\nThis converts FROM UTC TO `tzname`. So `tzname` is the **target** timezone.\n\nBut the database stores datetimes in the database's `TIME_ZONE`, not in UTC. So the fix should be:\n\n```python\ndef _convert_field_to_tz(self, field_name, source_tzname, target_tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, '%s', '%s')\" % (field_name, source_tzname, target_tzname)\n    return field_name\n```\n\nBut this requires changing the API. Let me check if there's a simpler fix.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nWait, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is simpler. Let me re-read the code:\n\n```python\ndef _convert_field_to_tz(self, field_name, tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, 'UTC', '%s')\" % (field_name, tzname)\n    return field_name\n```\n\nThis converts FROM UTC TO `tzname`. But the database stores datetimes in the database's `TIME_ZONE`, not in UTC. So the fix should be:\n\n```python\ndef _convert_field_to_tz(self, field_name, source_tzname, target_tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, '%s', '%s')\" % (field_name, source_tzname, target_tzname)\n    return field_name\n```\n\nBut this requires changing the API. Let me check if there's a simpler fix.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nLet me think about this differently. The issue is that when the database's `TIME_ZONE` setting is different from UTC, the conversion is wrong. So the fix should be:\n\n1. Use the database's `TIME_ZONE` setting as the source timezone\n2. Use the app's timezone as the target timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is simpler. Let me re-read the code:\n\n```python\ndef _convert_field_to_tz(self, field_name, tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, 'UTC', '%s')\" % (field_name, tzname)\n    return field_name\n```\n\nThis converts FROM UTC TO `tzname`. But the database stores datetimes in the database's `TIME_ZONE`, not in UTC. So the fix should be:\n\n```python\ndef _convert_field_to_tz(self, field_name, source_tzname, target_tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, '%s', '%s')\" % (field_name, source_tzname, target_tzname)\n    return field_name\n```\n\nBut this requires changing the API. Let me check if there's a simpler fix.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nLet me re-read the issue description one more time:\n\n> The problem is that `CONVERT_TZ` and similar functions hardcode 'UTC' as the source timezone instead of using the database-specific `TIME_ZONE` setting.\n\nSo the fix should be:\n1. Change the source timezone from 'UTC' to the database's `TIME_ZONE` setting\n2. Keep the target timezone as the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is simpler. Let me re-read the code:\n\n```python\ndef _convert_field_to_tz(self, field_name, tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, 'UTC', '%s')\" % (field_name, tzname)\n    return field_name\n```\n\nThis converts FROM UTC TO `tzname`. But the database stores datetimes in the database's `TIME_ZONE`, not in UTC. So the fix should be:\n\n```python\ndef _convert_field_to_tz(self, field_name, source_tzname, target_tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, '%s', '%s')\" % (field_name, source_tzname, target_tzname)\n    return field_name\n```\n\nBut this requires changing the API. Let me check if there's a simpler fix.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nLet me re-read the issue description one more time:\n\n> The problem is that `CONVERT_TZ` and similar functions hardcode 'UTC' as the source timezone instead of using the database-specific `TIME_ZONE` setting.\n\nSo the fix should be:\n1. Change the source timezone from 'UTC' to the database's `TIME_ZONE` setting\n2. Keep the target timezone as the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is simpler. Let me re-read the code:\n\n```python\ndef _convert_field_to_tz(self, field_name, tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, 'UTC', '%s')\" % (field_name, tzname)\n    return field_name\n```\n\nThis converts FROM UTC TO `tzname`. But the database stores datetimes in the database's `TIME_ZONE`, not in UTC. So the fix should be:\n\n```python\ndef _convert_field_to_tz(self, field_name, source_tzname, target_tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, '%s', '%s')\" % (field_name, source_tzname, target_tzname)\n    return field_name\n```\n\nBut this requires changing the API. Let me check if there's a simpler fix.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nLet me re-read the issue description one more time:\n\n> The problem is that `CONVERT_TZ` and similar functions hardcode 'UTC' as the source timezone instead of using the database-specific `TIME_ZONE` setting.\n\nSo the fix should be:\n1. Change the source timezone from 'UTC' to the database's `TIME_ZONE` setting\n2. Keep the target timezone as the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is simpler. Let me re-read the code:\n\n```python\ndef _convert_field_to_tz(self, field_name, tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, 'UTC', '%s')\" % (field_name, tzname)\n    return field_name\n```\n\nThis converts FROM UTC TO `tzname`. But the database stores datetimes in the database's `TIME_ZONE`, not in UTC. So the fix should be:\n\n```python\ndef _convert_field_to_tz(self, field_name, source_tzname, target_tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, '%s', '%s')\" % (field_name, source_tzname, target_tzname)\n    return field_name\n```\n\nBut this requires changing the API. Let me check if there's a simpler fix.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nLet me re-read the issue description one more time:\n\n> The problem is that `CONVERT_TZ` and similar functions hardcode 'UTC' as the source timezone instead of using the database-specific `TIME_ZONE` setting.\n\nSo the fix should be:\n1. Change the source timezone from 'UTC' to the database's `TIME_ZONE` setting\n2. Keep the target timezone as the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is simpler. Let me re-read the code:\n\n```python\ndef _convert_field_to_tz(self, field_name, tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, 'UTC', '%s')\" % (field_name, tzname)\n    return field_name\n```\n\nThis converts FROM UTC TO `tzname`. But the database stores datetimes in the database's `TIME_ZONE`, not in UTC. So the fix should be:\n\n```python\ndef _convert_field_to_tz(self, field_name, source_tzname, target_tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, '%s', '%s')\" % (field_name, source_tzname, target_tzname)\n    return field_name\n```\n\nBut this requires changing the API. Let me check if there's a simpler fix.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nLet me re-read the issue description one more time:\n\n> The problem is that `CONVERT_TZ` and similar functions hardcode 'UTC' as the source timezone instead of using the database-specific `TIME_ZONE` setting.\n\nSo the fix should be:\n1. Change the source timezone from 'UTC' to the database's `TIME_ZONE` setting\n2. Keep the target timezone as the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is simpler. Let me re-read the code:\n\n```python\ndef _convert_field_to_tz(self, field_name, tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, 'UTC', '%s')\" % (field_name, tzname)\n    return field_name\n```\n\nThis converts FROM UTC TO `tzname`. But the database stores datetimes in the database's `TIME_ZONE`, not in UTC. So the fix should be:\n\n```python\ndef _convert_field_to_tz(self, field_name, source_tzname, target_tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, '%s', '%s')\" % (field_name, source_tzname, target_tzname)\n    return field_name\n```\n\nBut this requires changing the API. Let me check if there's a simpler fix.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nLet me re-read the issue description one more time:\n\n> The problem is that `CONVERT_TZ` and similar functions hardcode 'UTC' as the source timezone instead of using the database-specific `TIME_ZONE` setting.\n\nSo the fix should be:\n1. Change the source timezone from 'UTC' to the database's `TIME_ZONE` setting\n2. Keep the target timezone as the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is simpler. Let me re-read the code:\n\n```python\ndef _convert_field_to_tz(self, field_name, tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, 'UTC', '%s')\" % (field_name, tzname)\n    return field_name\n```\n\nThis converts FROM UTC TO `tzname`. But the database stores datetimes in the database's `TIME_ZONE`, not in UTC. So the fix should be:\n\n```python\ndef _convert_field_to_tz(self, field_name, source_tzname, target_tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, '%s', '%s')\" % (field_name, source_tzname, target_tzname)\n    return field_name\n```\n\nBut this requires changing the API. Let me check if there's a simpler fix.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nLet me re-read the issue description one more time:\n\n> The problem is that `CONVERT_TZ` and similar functions hardcode 'UTC' as the source timezone instead of using the database-specific `TIME_ZONE` setting.\n\nSo the fix should be:\n1. Change the source timezone from 'UTC' to the database's `TIME_ZONE` setting\n2. Keep the target timezone as the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is simpler. Let me re-read the code:\n\n```python\ndef _convert_field_to_tz(self, field_name, tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, 'UTC', '%s')\" % (field_name, tzname)\n    return field_name\n```\n\nThis converts FROM UTC TO `tzname`. But the database stores datetimes in the database's `TIME_ZONE`, not in UTC. So the fix should be:\n\n```python\ndef _convert_field_to_tz(self, field_name, source_tzname, target_tzname):\n    if settings.USE_TZ:\n        field_name = \"CONVERT_TZ(%s, '%s', '%s')\" % (field_name, source_tzname, target_tzname)\n    return field_name\n```\n\nBut this requires changing the API. Let me check if there's a simpler fix.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone, which is wrong\n\nSo the fix should be:\n1. Convert FROM the database's `TIME_ZONE` TO the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nLet me re-read the issue description one more time:\n\n> The problem is that `CONVERT_TZ` and similar functions hardcode 'UTC' as the source timezone instead of using the database-specific `TIME_ZONE` setting.\n\nSo the fix should be:\n1. Change the source timezone from 'UTC' to the database's `TIME_ZONE` setting\n2. Keep the target timezone as the app's timezone\n\nBut the current API only accepts one `tzname` parameter. So we need to change the API to accept two parameters.\n\nActually, I think the issue is that the `tzname` parameter should be the **source** timezone (the database's timezone), and the target timezone should be the app's timezone. But the current code uses the app's timezone as the target timezone.\n\nOK, I think I finally understand the issue. The problem is:\n\n1. The database stores datetimes in the database's `TIME_ZONE` (e.g., 'America/New_York')\n2. When we do date lookups, we want to convert the datetime to the app's timezone (e.g., 'America/Los_Angeles')\n3. But the current code converts FROM UTC TO the app's timezone",
+          "id": "lc_run--01a1387c-20c7-71b0-aa62-7d90693eb6ed",
+          "invalid_tool_calls": [],
+          "message_type": "ai",
+          "name": "beliefkv-swebench-supervisor",
+          "response_metadata": {
+            "finish_reason": "length",
+            "model_name": "Qwen3.5-35B-A3B",
+            "model_provider": "openai"
+          },
+          "tool_calls": [],
+          "type": "ai",
+          "usage_metadata": null
+        }
+      },
+      "last_client_llm_result": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "action_boundary_source": "runtime_structured_output",
+          "action_boundary_token_index": null,
+          "finish_reason": "length",
+          "invalid_tool_call_count": 0,
+          "output_chars": 32110,
+          "output_tokens": null,
+          "parser_reason": "Deep Agents exposed a complete AIMessage; incremental token boundary is unavailable",
+          "parser_status": "valid",
+          "rejected_task_call_count": 0,
+          "request_id": "beliefkv:01a1387c-20c7-71b0-aa62-7d90693eb6ed",
+          "runtime_internal": false,
+          "source": "deepagents_callback",
+          "stream_content_chunk_count": null,
+          "stream_content_counted_chars": null,
+          "stream_content_max_chunk_chars": null,
+          "stream_content_token_chars": null,
+          "structured_action_kinds": [
+            "final_answer"
+          ],
+          "structured_action_names": [],
+          "tool_call_count": 0
+        },
+        "confidence": "observed_exact",
+        "context_epoch": 54,
+        "context_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef:context:root",
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef:deepagents:000003929",
+        "execution_mode": null,
+        "invocation_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef:root",
+        "join_id": null,
+        "kind": "llm_result",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 3929,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 6119604511.241848,
+        "workflow_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef"
+      },
+      "earlier_budget_events": [
+        {
+          "agent_scope": "autonomous:test-analyst",
+          "enforced": false,
+          "event": "agent_graph_step_soft_budget_observed",
+          "graph_recursion_limit": 9999,
+          "graph_step": 387,
+          "graph_step_soft_budget": 384,
+          "schema_version": 1,
+          "sequence": 14,
+          "ts_ms": 6116908576.446741
+        },
+        {
+          "activation_elapsed_s": 2685.209031186998,
+          "activation_wall_clock_s": 14400.0,
+          "agent_scope": "autonomous:test-analyst",
+          "completed_tool_calls": 403,
+          "consecutive_errors": 0,
+          "consecutive_no_progress": 78,
+          "event": "agent_graph_budget_finalization",
+          "graph_recursion_limit": 9999,
+          "graph_step": 2017,
+          "graph_step_hard_limit": 2048,
+          "graph_step_reserve": 32,
+          "model_calls": 403,
+          "physical_failure_count": 0,
+          "progress_keys": [
+            "evidence:grep:15ebadf2d7aa72d1916886dcdcf4278bd7929a7f187a5e6e4f72e4460eded6a3:b8b00912e616c2f0416d41d596836679e73f6d8e20e3b80da598005402cdfe73",
+            "evidence:grep:18bbb62edb1c60c36a3c46d9e26ab82c04897049e6daea1392b6620fa517cae8:4b4d7ac22cee34f92cd16fbe4193b0eb106e185100ea38f72b0190e1affaf933",
+            "evidence:grep:295d54a75b120a7cacb5cbe8853f37fbd684242e00523137f4c9a9deb052483f:4b4d7ac22cee34f92cd16fbe4193b0eb106e185100ea38f72b0190e1affaf933",
+            "evidence:grep:3a9a315aa7f78c94b84d8e2fdfdde84f59afe3604d60e23f2f454aa75d6c7030:4b4d7ac22cee34f92cd16fbe4193b0eb106e185100ea38f72b0190e1affaf933",
+            "evidence:grep:542d9c5c0910610ba75699f0a1fdd6b2187f7ad013c9e5410222edd805d24d1f:4b4d7ac22cee34f92cd16fbe4193b0eb106e185100ea38f72b0190e1affaf933",
+            "evidence:grep:5c5138b925bdac4a8fedcfbc29dd98ac8d8c0e8291250c97a6dfd6492ff83509:18b45ef11f1733eede61320fa19b4099673ad4fd44b37501587692966cb2000e",
+            "evidence:grep:5c650f2d13a1ebcf3724c98887ab0960d114c69f95b68798f08b5a1a89611879:4b4d7ac22cee34f92cd16fbe4193b0eb106e185100ea38f72b0190e1affaf933",
+            "evidence:grep:5c977e41324ff82606b390eb4b838ff944133e0e21742492c1963987c4443f90:4b4d7ac22cee34f92cd16fbe4193b0eb106e185100ea38f72b0190e1affaf933",
+            "evidence:grep:5ccb7511478dba8ae1d37aaa43261888c4483d39bafee96303884aa740b774f1:4b4d7ac22cee34f92cd16fbe4193b0eb106e185100ea38f72b0190e1affaf933",
+            "evidence:grep:5ce7ecaa49b4f5769f74e1f100c7a4362983610e5bc2bb90be53cc829d036d0f:4b4d7ac22cee34f92cd16fbe4193b0eb106e185100ea38f72b0190e1affaf933",
+            "evidence:grep:615bc3f202e2a8f477660e7e175e63c76add48f134d4cdfc120df1fa0d55ce28:845d8169b36b7ed8f06e2d81fad29e7b4c5c9558d06acae68f4eaf53d4dfb974",
+            "evidence:grep:67b7a0ebff05aa7429e0ff959b208e0003beadb79af98e8d198f5a565498bc6e:763516f16690ca2b4aa216d7edae09c79d672ccf9116e9818f4ec4b6cd600d88",
+            "evidence:grep:7026b64b01405470a115b3aed251ed3dec0838c192107a968a176285702c83ee:9199fc51c199e292b249f6ff8b7dd18a6cbe3326f52771c2162b0be8ca49f03f",
+            "evidence:grep:71f314434d4f7a90ab5c0582111926fa2cf69f5fdc2c10992bd2ef26cdbd512b:6690a7040e8b4059bbfca132dbfee2d191aab095a2a6192385447212c4d34e10",
+            "evidence:grep:7394a3c75a63c3df850f9fabc9061931d91af39b96d5420bbb8f98605c287c12:18b45ef11f1733eede61320fa19b4099673ad4fd44b37501587692966cb2000e",
+            "evidence:grep:8041d3c9e908858b1648ae3002169cb4992373c67a8bee1afaf0d198d5e44a9e:581eefd6cadd537857419cf614d357b7edac80c8f29b6a9d822ee8bc412dabc8",
+            "evidence:grep:941be44ec796ec2a36899edcc874b673e7148cabbb406c5ffbba6c1472880524:359dcb7e2d60af1b8dc5d0fca1fcc1d43577e24b162ff77d2047c88eb9f52f00",
+            "evidence:grep:9608d766c697ba36f0b7f59258c1f4a5ed4f4bbd3840c5b7499d5ad9b0f57126:a190faa0a01be6142e5cd885f2241f0473ff60d6439df6144c46e1d6d2c04e43",
+            "evidence:grep:961fe9c058b29b2c0dbc330cd81d992e8d6c688850250ee75989d3192517b11d:84570765f22e4a91e5851d8de489af989961fbe32c1ee2eec0e0d9c3bfe4bc77",
+            "evidence:grep:f1557e5d9cbd242cf0ba99913b1181a14a597ee00edbd6e232b05ea728f34b72:200eac07f553ecf00dd34b019ba7e41e4a8f29c61879407a0d0c6061dd30badf",
+            "evidence:grep:f3100f8285154235052141219682cd1174d24185d029c88f8d1cec76c7a361f8:4b4d7ac22cee34f92cd16fbe4193b0eb106e185100ea38f72b0190e1affaf933",
+            "evidence:grep:f41ede4212f4f14c2a7f8493d013e1f8a31384dd0f95ba76a7071c5c1700dad4:0d1e0af19b3f3d41fab3b5f69cd9e0b0509da1865153550815a2113ff88e961c",
+            "evidence:ls:469709485e9ed029586c7640bfa1ff14282c998a407cb3b6c28194246d3152e4:3a2bd47e5ba0dc5d1811c0af85ded0323e88f66dcc017f658bf8a4c40fda128f",
+            "evidence:read_file:0da82ab24ea32b5afce90bb177177bd2675707fd36bc600dfbe980fc13511844:cd534fa93b487245c54e3e3786c4011acca95bf759ae4814861b8f06b4c35ed0",
+            "evidence:read_file:19b1c67787a31e09311189c1717e952d0ff7b069cc83dc398df61f7aa4d7fd37:2ad86249888b7d705832dc7b1001c89cf3c8e82ac2aaf8aec5860eccb730708f",
+            "evidence:read_file:1aa83b95f8c919d3577f56ff8863fe63b012f7176ef5a4deabb50017c006ff2b:8e2fc63b65716852c7027bdc7b01ef1fa676e5c7de5d924ed1e1e544e0876616",
+            "evidence:read_file:3ab269cc6316b4886f49e686959017dc690b01ee778ae2d9e02d11681e5baaa7:1174ada87d2ab2cfe056cf30c12021ecea387095aa875690448ee2a907821421",
+            "evidence:read_file:4477df15f5df51c09bb56ef32d01f5f3159594d5759316c1b16b0dfb7c9a68d7:75d70022bff2db3466d44a8d9cd959bf3bde923101d2ce192dc2cfd0b4c5797b",
+            "evidence:read_file:49b8a11ca9c36e7e347a174cf255afda1668e16c01f100bbd21658daf34dacc1:e5b9b02e9a0f310068b495fe2f5d0eb34c165934375d7fd7f0d6928001c2d9b8",
+            "evidence:read_file:525e9de40bdcc1e41ddbc54dcb31005aefd4fe1164d6c533af85f90b97a2a6be:8972addf29113fbe218457a1f00ebb777e8be2db30f782e44d107a8c23bde4fe",
+            "evidence:read_file:71e57297c98c3b376c1c782afcf95eae149343acdf102b84115fbd75ed5a00b0:e6b66575cdcd5084c8698f82306cc7c14bf18b3bf3f2ddf5d721f850ea3714fc",
+            "evidence:read_file:7dd25bef61b01d4d231cd62cdef2c6b85c35ecfb381a8044b8742908aee45a50:bb736522b5af9b5ba1d8835c787fa2328e96f9581ab90aa40f3a85b43536dba1",
+            "evidence:read_file:8c196fe22413b3b03bc4970a5db94e6639aa3efd25fb7fccc5a04eaba7024cbf:8972addf29113fbe218457a1f00ebb777e8be2db30f782e44d107a8c23bde4fe",
+            "evidence:read_file:8ea18b4a3594aaebc1157545a9bdbe35f1ba4950be576524d8a21078208483d7:5079ad16dc46e66d6c0307c051ee1a9d8a1b575cd19db8521a345afd20ad3463",
+            "evidence:read_file:a7122ec53f09f57f84223546e52a680f513ae27d31fcfe4ce8403c70204740da:7b9a0432bbf3272811473f373d9fb870cf112748dbe146e9060c7ae71cb46e0e",
+            "evidence:read_file:c10f62ea59169e1ae35d79d81baeca22ce3585026c9d1bc9c8070c9688759c28:b9d46ff631e2e4157e5340b30144de5b4a2fd1a503875dcd74701730a1f6f21d",
+            "evidence:read_file:e083e5ac101fee134b903d10de15c6f137d4b575096a008cb5203240b93c448d:d08c14f917b7042bd7939697c78ea6f1caf9fe2dd47d033cf51cb2b8d8be0736",
+            "evidence:read_file:ef20a4e6d0f51306a1dfd02fa09bbc049c3d2a94aa2db97f92de5d1dbcd4fe1c:f27240a5bbf0d5a6953c7b363ec984187df9ec76091d2bb525595721d8890323"
+          ],
+          "reason": "graph_step_hard_limit_low",
+          "recent_tool_names": [
+            "grep",
+            "grep",
+            "grep",
+            "grep",
+            "grep",
+            "grep",
+            "grep",
+            "grep"
+          ],
+          "repeated_failed_calls": 0,
+          "schema_version": 1,
+          "sequence": 24,
+          "suppressed_repeat_intent_count": 0,
+          "tool_calls": 403,
+          "ts_ms": 6118333954.526391
+        },
+        {
+          "agent_scope": "autonomous:test-analyst",
+          "attempt": 4,
+          "event": "agent_guard_finalization_attempt",
+          "failed_recovery": false,
+          "reason": "graph_step_hard_limit_low",
+          "recovery_active": false,
+          "recovery_stage": null,
+          "regular_tools_removed": 10,
+          "retained_tools": 0,
+          "schema_version": 1,
+          "sequence": 25,
+          "ts_ms": 6118333960.5867195
+        }
+      ],
+      "native_last_request_events": [
+        {
+          "kind": "llm_submit",
+          "ts_ms": 1791949021658.9285,
+          "workflow_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef",
+          "invocation_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef:root",
+          "context_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef:context:root",
+          "context_epoch": 54,
+          "attributes": {
+            "request_id": "beliefkv:01a1387c-20c7-71b0-aa62-7d90693eb6ed",
+            "native_ingress_timing_ms": {
+              "chat_conversion_started_ts_ms": 1791949021535.0002,
+              "chat_conversion_finished_ts_ms": 1791949021615.8896,
+              "api_received_ts_ms": 1791949021520.3062,
+              "api_tokenized_ts_ms": 1791949021616.841,
+              "api_dispatch_started_ts_ms": 1791949021616.846,
+              "scheduler_received_ts_ms": 1791949021658.8171,
+              "native_queue_registered_ts_ms": 1791949021658.9285
+            },
+            "prompt_tokens": 33476,
+            "cached_tokens_device": 33472,
+            "cached_tokens_host": 0,
+            "mamba_host_hit_slots": 0,
+            "native_full_kv_hit_length": 33473,
+            "native_mamba_branching_seqlen": null,
+            "reentry_checkpoint_seqlen": null,
+            "cache_hit_tokens": 33472,
+            "uncached_prompt_tokens": 4,
+            "context_tokens": 33476,
+            "expected_output_tokens": 8192
+          }
+        },
+        {
+          "kind": "llm_result",
+          "ts_ms": 1791949341001.2993,
+          "workflow_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef",
+          "invocation_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef:root",
+          "context_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef:context:root",
+          "context_epoch": 54,
+          "attributes": {
+            "request_id": "beliefkv:01a1387c-20c7-71b0-aa62-7d90693eb6ed",
+            "output_tokens": 8192,
+            "complete_monotonic_ms": 6119604101.877495,
+            "monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+            "reentry_checkpoint": {
+              "status": "observed",
+              "mamba_states": [
+                {
+                  "node_id": 47984,
+                  "prefix_tokens": 33472,
+                  "within_safe_input": true,
+                  "device_present": true,
+                  "host_present": false
+                }
+              ]
+            }
+          }
+        }
+      ]
+    }
+  ],
+  "active": [
+    {
+      "instance_id": "django__django-10554",
+      "last_observed_event": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "beliefkv_child_first_tool_chunk_shadow": true,
+          "diagnostic_only": true,
+          "request_id": "beliefkv:01a138bd-4be7-7311-b1d6-e49b0480dc4b",
+          "source": "deepagents_stream_shadow"
+        },
+        "confidence": "inferred",
+        "context_epoch": 387,
+        "context_id": "deepagents-context:c183b69b6936cca6",
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-10554:1e17758de0c7:deepagents:000007719",
+        "execution_mode": null,
+        "invocation_id": "deepagents-invocation:c183b69b6936cca6",
+        "join_id": "deepagents-join:d238e8d90b007374",
+        "kind": "structured_action",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 7719,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 6123555820.663558,
+        "workflow_id": "deepagents:autonomous:django__django-10554:1e17758de0c7"
+      },
+      "event_counts": {
+        "workflow_start": 1,
+        "invocation_create": 38,
+        "llm_submit": 763,
+        "llm_result": 762,
+        "spawn": 2,
+        "join_create": 1,
+        "join_wait": 1,
+        "structured_action": 4524,
+        "tool_start": 712,
+        "tool_end": 712,
+        "tool_wait_observation": 102,
+        "call": 35,
+        "return": 36,
+        "context_compact": 30
+      },
+      "outcome": "unknown_live_workflow"
+    },
+    {
+      "instance_id": "django__django-11749",
+      "last_observed_event": {
+        "agent_definition_id": null,
+        "agent_instance_id": null,
+        "attributes": {
+          "backend_class": "execute",
+          "input_chars": 81,
+          "input_sha256": "8bdb9774fc39af5ec2b35027abb13da6fe4c7f9cb602c9d8dfe0ee1861abf733",
+          "is_child": false,
+          "observed_command_class": "test_suite",
+          "observed_command_shape": "test_suite_full",
+          "parameter_signature": "8bdb9774fc39af5ec2b35027abb13da6fe4c7f9cb602c9d8dfe0ee1861abf733",
+          "source": "deepagents_callback",
+          "tool_call_id": "call_4ef65020aeb74b77afd644df",
+          "tool_family": "other",
+          "tool_name": "execute",
+          "tool_run_id": "01a138bb-3ce3-75d0-a084-cd3d86c057d9",
+          "workspace_digest_before": null
+        },
+        "confidence": "observed_exact",
+        "context_epoch": null,
+        "context_id": null,
+        "context_mode": null,
+        "event_id": "deepagents:autonomous:django__django-11749:42d6807ea478:deepagents:000005301",
+        "execution_mode": null,
+        "invocation_id": "deepagents:autonomous:django__django-11749:42d6807ea478:root",
+        "join_id": null,
+        "kind": "tool_start",
+        "member_invocation_ids": [],
+        "parent_context_id": null,
+        "parent_invocation_id": null,
+        "relation_type": null,
+        "return_target_id": null,
+        "schema_version": 1,
+        "sequence": 5301,
+        "target_context_id": null,
+        "target_invocation_id": null,
+        "ts_ms": 6123420448.516619,
+        "workflow_id": "deepagents:autonomous:django__django-11749:42d6807ea478"
+      },
+      "event_counts": {
+        "workflow_start": 1,
+        "invocation_create": 20,
+        "llm_submit": 543,
+        "llm_result": 543,
+        "spawn": 2,
+        "join_create": 1,
+        "join_wait": 1,
+        "structured_action": 3082,
+        "tool_start": 523,
+        "tool_end": 522,
+        "tool_wait_observation": 9,
+        "call": 17,
+        "return": 19,
+        "context_compact": 17,
+        "join_satisfied": 1
+      },
+      "outcome": "unknown_live_workflow"
+    }
+  ],
+  "live_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-10554/runtime_events.deepagents.jsonl": {
+      "observed_at_local": "2026-10-14T12:48:13.173537+08:00",
+      "device": 66306,
+      "inode": 140026807,
+      "observed_bytes": 9421639,
+      "complete_prefix_bytes": 9421639,
+      "complete_prefix_sha256": "d6f1aeeb0ea77a5399e244927226900b1f7c5d8339124f8546d6ad394c3913ce"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11138/runtime_events.deepagents.jsonl": {
+      "observed_at_local": "2026-10-14T12:48:13.273286+08:00",
+      "device": 66306,
+      "inode": 140402777,
+      "observed_bytes": 4891390,
+      "complete_prefix_bytes": 4891390,
+      "complete_prefix_sha256": "69c8c498221bf9077bcc902f2199a44d3530c47efd7f5fbe87c21269b39c8373"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11138/sandbox_audit.jsonl": {
+      "observed_at_local": "2026-10-14T12:48:13.323117+08:00",
+      "device": 66306,
+      "inode": 140402776,
+      "observed_bytes": 33197,
+      "complete_prefix_bytes": 33197,
+      "complete_prefix_sha256": "d3a201d6e5d7dd14f823b33cccb23dd2331f3602676d278f4110e43ab160c438"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/client_156/workflows/django__django-11749/runtime_events.deepagents.jsonl": {
+      "observed_at_local": "2026-10-14T12:48:13.326122+08:00",
+      "device": 66306,
+      "inode": 139868891,
+      "observed_bytes": 6451793,
+      "complete_prefix_bytes": 6451793,
+      "complete_prefix_sha256": "300d71680299e8eac902902b4ed0c30a2842272c6ab54b0c0d0feff728293ca7"
+    }
+  },
+  "native_event_prefix": {
+    "observed_at_local": "2026-10-14T12:41:48.588206+08:00",
+    "device": 66306,
+    "inode": 139863826,
+    "observed_bytes": 102987034,
+    "complete_prefix_bytes": 102987034,
+    "complete_prefix_sha256": "c1cf70ae6185775ffdb6bbe41f229877355b64b1e210fc6228ae7ce803512865"
+  },
+  "sealed_summary": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v471_v56_wait_prefetch_live_20261014_summary.json",
+    "sha256": "3a2acff64fe77732c7ecda9caa9d612961dae6b0b3a34a8e9d2087bc760d93ca"
+  },
+  "helper_sha256": "b2c59b32a815d3e7d26c4b175f6ae55a76b23cbf97021dd0530002849289cfc1",
+  "scope": [
+    "Each JSON result/trajectory binds the exact bytes read; live JSONL files bind complete-line prefixes.",
+    "Prefixes and result reads are independent, not an atomic cross-file snapshot.",
+    "Unknown active workflows are not failures or successful completions.",
+    "The last root length-truncated response is distinct from an earlier child's graph-budget finalization.",
+    "Natural RETURN counters alone do not establish an unguarded child terminal.",
+    "No budget, guard, workload, runtime source or process state is changed."
+  ]
+}

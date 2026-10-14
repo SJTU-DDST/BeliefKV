@@ -9,14 +9,22 @@
 当前运行V56，冻结代码661ed45、patch b8e7942c、引擎树c916d585。
 2026-10-14 10:33:21启动，GPU监控起点10:36:01.117，顺序为
 predictive→同版本native；v451登记、v453核验50份源码与服务。
-11:14观测首波108个workflow中48个completed，未见其他终态，
-第二波仍按一小时到达。V55已于10:20:55完成后处理，最终154
+v474观测153 completed、1 incomplete、2未终态，第二波已到达。
+该incomplete是root最后8192-token length截断，child先前图预算事件
+另计。V55已于10:20:55完成后处理，最终154
 completed、2 incomplete，HTML齐全；两例root输出截断保留。
 
 V56尚未证明短prefill或端到端改善。v455的600–900s中，短单请求
 run_batch墙钟P50为42.163ms，V55同为predictive的参考是40.815ms；
 15个匹配小组多为1–2个样本。v456对旧V29 native的decode服务量
 为368701/380722，prefill需求也不同，仍只是开发诊断。
+最新v469/v470的3600–3900s中，decode服务量对历史参考约+0.56%，
+短单请求run_batch墙钟P50为46.018ms，V55 predictive为46.756ms；
+匹配小组稀疏，尚无稳定改善。最新self-wall16.520s/300s，最大
+是control_drain，不能沿用首波tool_prefetch最大的成本排序。
+v471/v472封存的确认提前FULL复用为JOIN69事件/1.502GB、
+工具171事件/10.881GB；JOIN/工具长尾分别存在入队后等待、
+预取过早及客户端空档，需分开处理。
 v459保留894个active-stack样本与85个读取错误，32个主线程样本
 位于prefill逐请求Mamba槽号.item；采样不能换算CPU或可删JCT。
 
@@ -27,6 +35,9 @@ v466/v467已导出并资格绑定3c13ad50/572109fe，尚未部署且不宣称
 GPU收益。V56继续冻结，native自动只读观测已登记，
 待补齐同引擎、同配置的完整相位与NUMA记录。既有PrefillAdder保留，
 新延迟凑批、mixed chunk和间隔调整仍关闭。
+该已验证候选安排在V56全部收尾后冷观察，登记状态以V57 launch
+state为准；不能提前替换当前native参考。v468的本地Host容量
+审计不支持整worker强制NUMA绑定，本轮继续preferred。
 
 以下为先前阶段的证据与背景，不覆盖以上当前运行状态。
 v433–v436完成61,229笔传输的因果时序评估。
