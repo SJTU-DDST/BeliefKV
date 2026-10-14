@@ -1,0 +1,449 @@
+{
+  "status": "active_stack_attribution_not_cpu_or_gpu_duration",
+  "observed_at_local": "2026-10-14T22:30:01.408433+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+  "scheduler_identity": {
+    "pid": 1630621,
+    "state": "R",
+    "ppid": 1630192,
+    "start_ticks": "615685363",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "method": "py-spy record --nonblocking --pid1630621 --rate99 --duration20 --threads --format speedscope",
+  "all_thread_samples": 1786,
+  "main_thread_samples": 1744,
+  "sampling_errors": 194,
+  "raw_decoding_error": {
+    "type": "UnicodeDecodeError",
+    "start": 300213,
+    "end": 300214,
+    "invalid_bytes_hex": "f9"
+  },
+  "invalid_frame_indices": [
+    793
+  ],
+  "main_samples_excluded_for_invalid_frame_text": 1,
+  "raw": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v552_v58_active_stack_20261014.speedscope.json",
+  "raw_sha256": "b9fa5360f47067cbeff0866dc50c49c40e00f533c1cf7bdee702a5f5bfce390d",
+  "profile_finished_at_local": "2026-10-14T22:24:40.743258+08:00",
+  "routes": {
+    "result": 712,
+    "selection": 307,
+    "launch": 574,
+    "post_launch": 88,
+    "other": 62,
+    "excluded_invalid_frame_text": 1
+  },
+  "selected_inclusive_function_samples": {
+    "observe_unified_node_closure": 52,
+    "_roll_tool_prefetch": 32,
+    "drain": 27,
+    "plan_native_prefill": 23,
+    "init_forward_metadata": 15,
+    "plan_prefetch_gpu_steps": 12,
+    "inspect_session_residency_hint": 9
+  },
+  "top_main_leaf_frames": [
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/streams.py",
+      "line": 254,
+      "function": "synchronize",
+      "samples": 597
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/kernels/ops/kvcache/hicache.py",
+      "line": 305,
+      "function": "transfer_hicache_all_layer_staged_lf_pf",
+      "samples": 37
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/backends/nvidia/driver.py",
+      "line": 328,
+      "function": "__call__",
+      "samples": 25
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py",
+      "line": 528,
+      "function": "extend",
+      "samples": 22
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py",
+      "line": 544,
+      "function": "extend",
+      "samples": 21
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+      "line": 673,
+      "function": "observe_unified_node_closure",
+      "samples": 19
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/runtime/jit.py",
+      "line": 723,
+      "function": "run",
+      "samples": 15
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/gdn_backend.py",
+      "line": 929,
+      "function": "forward_extend",
+      "samples": 13
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py",
+      "line": 548,
+      "function": "extend",
+      "samples": 12
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py",
+      "line": 2195,
+      "function": "event_loop_overlap",
+      "samples": 12
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py",
+      "line": 581,
+      "function": "extend",
+      "samples": 11
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_ops.py",
+      "line": 875,
+      "function": "__call__",
+      "samples": 11
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/gdn_backend.py",
+      "line": 872,
+      "function": "forward_extend",
+      "samples": 10
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/streams.py",
+      "line": 209,
+      "function": "record",
+      "samples": 10
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/zmq/sugar/socket.py",
+      "line": 1002,
+      "function": "send_pyobj",
+      "samples": 10
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py",
+      "line": 550,
+      "function": "extend",
+      "samples": 9
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/memory_pool.py",
+      "line": 1479,
+      "function": "alloc",
+      "samples": 9
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/triton/runtime/jit.py",
+      "line": 370,
+      "function": "<lambda>",
+      "samples": 8
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/_ops.py",
+      "line": 1279,
+      "function": "__call__",
+      "samples": 8
+    },
+    {
+      "file": "<string>",
+      "line": 4,
+      "function": "dynamic_func",
+      "samples": 8
+    },
+    {
+      "file": "<string>",
+      "line": 20,
+      "function": "__init__",
+      "samples": 7
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py",
+      "line": 146,
+      "function": "__getitem__",
+      "samples": 7
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/event_channel.py",
+      "line": 159,
+      "function": "drain",
+      "samples": 7
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/graphs.py",
+      "line": 186,
+      "function": "replay",
+      "samples": 7
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/mem_cache/radix_cache.py",
+      "line": 209,
+      "function": "match_at",
+      "samples": 7
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py",
+      "line": 1021,
+      "function": "_track_mamba_state_extend",
+      "samples": 7
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py",
+      "line": 551,
+      "function": "extend",
+      "samples": 7
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py",
+      "line": 545,
+      "function": "extend",
+      "samples": 7
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/layers/attention/linear/gdn_backend.py",
+      "line": 927,
+      "function": "forward_extend",
+      "samples": 7
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/beliefkv/runtime/sglang_v0520_observer.py",
+      "line": 179,
+      "function": "_bounded",
+      "samples": 6
+    }
+  ],
+  "top_main_inclusive_frames": [
+    {
+      "file": "",
+      "line": 0,
+      "function": "thread (1630621): MainThread",
+      "samples": 1743
+    },
+    {
+      "file": "<string>",
+      "line": 1,
+      "function": "<module>",
+      "samples": 1702
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py",
+      "line": 2036,
+      "function": "run_event_loop",
+      "samples": 1702
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/spawn.py",
+      "line": 122,
+      "function": "spawn_main",
+      "samples": 1702
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/spawn.py",
+      "line": 135,
+      "function": "_main",
+      "samples": 1702
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py",
+      "line": 6323,
+      "function": "run_scheduler_process",
+      "samples": 1702
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/utils/_contextlib.py",
+      "line": 124,
+      "function": "decorate_context",
+      "samples": 1702
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/process.py",
+      "line": 314,
+      "function": "_bootstrap",
+      "samples": 1702
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/multiprocessing/process.py",
+      "line": 108,
+      "function": "run",
+      "samples": 1702
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py",
+      "line": 6169,
+      "function": "dispatch_event_loop",
+      "samples": 1702
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/utils/nvtx_utils.py",
+      "line": 109,
+      "function": "wrapper",
+      "samples": 1597
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/observability/scheduler_stage_metrics.py",
+      "line": 155,
+      "function": "wrapper",
+      "samples": 1595
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py",
+      "line": 2195,
+      "function": "event_loop_overlap",
+      "samples": 727
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py",
+      "line": 2119,
+      "function": "pop_and_process",
+      "samples": 713
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/cuda/streams.py",
+      "line": 254,
+      "function": "synchronize",
+      "samples": 597
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py",
+      "line": 2168,
+      "function": "event_loop_overlap",
+      "samples": 574
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py",
+      "line": 5025,
+      "function": "process_batch_result",
+      "samples": 546
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler.py",
+      "line": 4731,
+      "function": "run_batch",
+      "samples": 542
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/tp_worker.py",
+      "line": 628,
+      "function": "forward_batch_generation",
+      "samples": 529
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/model_runner.py",
+      "line": 1675,
+      "function": "forward",
+      "samples": 525
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/model_runner.py",
+      "line": 1856,
+      "function": "_forward_raw",
+      "samples": 497
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/scheduler_components/batch_result_processor.py",
+      "line": 926,
+      "function": "process_batch_result_decode",
+      "samples": 475
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/nn/modules/module.py",
+      "line": 1778,
+      "function": "_wrapped_call_impl",
+      "samples": 473
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py",
+      "line": 1946,
+      "function": "execute",
+      "samples": 472
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py",
+      "line": 1844,
+      "function": "_execute_body_capture",
+      "samples": 471
+    },
+    {
+      "file": "/home/longhao/miniconda3/envs/beliefkv-next/lib/python3.11/site-packages/torch/nn/modules/module.py",
+      "line": 1789,
+      "function": "_call_impl",
+      "samples": 470
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/models/qwen3_vl.py",
+      "line": 1630,
+      "function": "forward",
+      "samples": 468
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/managers/mm_utils.py",
+      "line": 750,
+      "function": "general_mm_embed_routine",
+      "samples": 465
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner_backend/breakable_cuda_graph_backend.py",
+      "line": 258,
+      "function": "replay",
+      "samples": 464
+    },
+    {
+      "file": "/home/longhao/experiment/BeliefKV/third_party/sglang-v0.5.20/python/sglang/srt/model_executor/runner/prefill_cuda_graph_runner.py",
+      "line": 1815,
+      "function": "replay_layer_forward",
+      "samples": 464
+    }
+  ],
+  "collection_execution": {
+    "collection_code_commit": "9a54233c3d1d18c12bfc202f61e2ec36a911e46f",
+    "verification_code_commit": "eb125eed8fe35e1c6aa4899978258adf13792efc",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": [
+      "docs/README_zh.md",
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/reports/v536_v58_gdn_prefill_frozen_20261014.json",
+      "experiments/reports/v537_v58_gdn_prefill_resource_registration_20261014.json"
+    ]
+  },
+  "helper_sha256": "6e6397b95dcefbf2f8109b7fad6a474e4dda48b8bb119fa69655eb13e2c26958",
+  "limitations": [
+    "Active nonblocking Python samples exclude idle periods and retain194 read errors.",
+    "Damaged UTF-8 frame text is preserved in raw; all samples containing it are excluded from attribution.",
+    "Inclusive samples overlap and do not measure GIL ownership, thread CPU, CUDA or saved JCT.",
+    "Routes are stack labels, not isolated per-request phases or identical-demand attribution.",
+    "Profile ended22:24:40, after600-900s and before1800-2100s selected windows.",
+    "Use complete phase probes and matched-version arms to evaluate changes; do not extrapolate sample percentages to throughput."
+  ]
+}

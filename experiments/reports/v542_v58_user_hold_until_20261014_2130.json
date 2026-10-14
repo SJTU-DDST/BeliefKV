@@ -1,0 +1,167 @@
+{
+  "status": "deadline_reached_resource_wait_resumed_after_verified_compatibility_retry",
+  "requested_at_local": "2026-10-14T19:19:23.607495+08:00",
+  "not_before_local": "2026-10-14T21:30:00+08:00",
+  "user_request": "\u4eca\u5929\u5230\u4e5d\u70b9\u534a\u4e4b\u524d\u670d\u52a1\u5668\u8981\u7ed9\u5176\u4ed6\u4eba\u4f7f\u7528\uff0c\u8fd9\u4e2a\u65f6\u95f4\u6bb5\u5148\u4e0d\u8fdb\u884c\u5b9e\u9a8c",
+  "scope": "One-off 2026-10-14 hold; daily00:00-06:00 restriction remains revoked.",
+  "held_managers": [
+    {
+      "pid": 1528612,
+      "state": "R",
+      "ppid": 1528399,
+      "start_ticks": "614598365",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/ops/register_v58_gdn_prefill.py",
+        "--watch"
+      ]
+    },
+    {
+      "pid": 1532627,
+      "state": "R",
+      "ppid": 1532600,
+      "start_ticks": "614634863",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/ops/observe_v58_startup.py",
+        "--watch"
+      ]
+    }
+  ],
+  "resource_state_before_hold": {
+    "status": "waiting_for_exclusive_gpu_capacity",
+    "registered_at_local": "2026-10-14T19:02:00.786555+08:00",
+    "watcher": {
+      "pid": 1528612,
+      "state": "R",
+      "ppid": 1,
+      "start_ticks": "614598365",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/ops/register_v58_gdn_prefill.py",
+        "--watch"
+      ]
+    },
+    "frozen": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v536_v58_gdn_prefill_frozen_20261014.json",
+      "sha256": "7e6749e21466289aef1fb07eb274f136d3c652a8a082f6db3a50fdea11076cf0"
+    },
+    "target_revision": "9a54233c3d1d18c12bfc202f61e2ec36a911e46f",
+    "launch_arguments": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-v533-v58-gdn-prefill-20261014/scripts/launch_semantic_h2d_after_pair.py",
+      "--repo",
+      "/home/longhao/experiment/BeliefKV",
+      "--previous-run",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v57",
+      "--target-checkout",
+      "/home/longhao/experiment/.worktrees/beliefkv-v533-v58-gdn-prefill-20261014",
+      "--run-root",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+      "--state",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/v58_launch_after_v57_gdn_prefill_20261014.json",
+      "--wait-pid",
+      "3811053",
+      "--port",
+      "18462",
+      "--arm-order",
+      "predictive_h2d native",
+      "--execution-handoff",
+      "0",
+      "--host-numa-memory-policy",
+      "preferred"
+    ],
+    "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+    "launch_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v58_launch_after_v57_gdn_prefill_20261014.json",
+    "driver_log": "/home/longhao/experiment/ops/v58_gdn_prefill_after_v57_20261014.log",
+    "requirements": {
+      "no_compute_processes": true,
+      "minimum_free_gpu_mib": 140000,
+      "maximum_gpu_utilization_percent": 5,
+      "minimum_free_disk_bytes": 48318382080,
+      "consecutive_available_polls": 2,
+      "poll_interval_seconds": 30
+    },
+    "workflows_dispatched": 0,
+    "resource_snapshot": {
+      "observed_at_local": "2026-10-14T19:16:02.304514+08:00",
+      "gpu_total_mib": 143771,
+      "gpu_free_mib": 19588,
+      "gpu_utilization_percent": 100,
+      "compute_processes": [
+        {
+          "pid": 1536774,
+          "gpu_memory_mib": "123024"
+        },
+        {
+          "pid": 1536667,
+          "gpu_memory_mib": "518"
+        }
+      ],
+      "disk_free_bytes": 62696263680,
+      "ready": false
+    },
+    "consecutive_available_polls": 0,
+    "updated_at_local": "2026-10-14T19:16:02.304581+08:00"
+  },
+  "observer_state_before_hold": {
+    "status": "waiting_for_verified_cold_v58_start",
+    "observer": {
+      "pid": 1532627,
+      "state": "R",
+      "ppid": 1,
+      "start_ticks": "614634863",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/ops/observe_v58_startup.py",
+        "--watch"
+      ]
+    },
+    "started_at_local": "2026-10-14T19:08:05.771460+08:00",
+    "observed_at_local": "2026-10-14T19:16:20.806124+08:00"
+  },
+  "no_experiment_directory_created": true,
+  "owned_active_runs": [],
+  "helper_sha256": "f2fe7d5b2daaa0260ade3ffa73c55e7b6d10ca5e22cf43c7c8a955f2e87a17fc",
+  "release_action": "Resume only these verified managers after21:30; the original exclusive-GPU resource wait remains required.",
+  "release_waiter": {
+    "pid": 1540002,
+    "state": "R",
+    "ppid": 1539998,
+    "start_ticks": "614702670",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/ops/hold_v58_until_20261014_2130.py",
+      "--resume-at-deadline"
+    ]
+  },
+  "error": "AttributeError: module 'os' has no attribute 'pidfd_open'",
+  "observed_at_local": "2026-10-14T21:30:00.071356+08:00",
+  "prior_failed_release_error": "AttributeError: module 'os' has no attribute 'pidfd_open'",
+  "released_at_local": "2026-10-14T22:02:25.290084+08:00",
+  "resumed_managers": [
+    {
+      "pid": 1528612,
+      "state": "R",
+      "ppid": 1,
+      "start_ticks": "614598365",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/ops/register_v58_gdn_prefill.py",
+        "--watch"
+      ]
+    },
+    {
+      "pid": 1532627,
+      "state": "R",
+      "ppid": 1,
+      "start_ticks": "614634863",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/ops/observe_v58_startup.py",
+        "--watch"
+      ]
+    }
+  ],
+  "compatibility_retry_receipt": "/home/longhao/experiment/BeliefKV/experiments/reports/v544_v58_temporary_hold_release_retry_20261014.json"
+}

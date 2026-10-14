@@ -1,0 +1,200 @@
+{
+  "status": "verified_cold_v58_predictive_startup_and_docs_only_sync",
+  "observed_at_local": "2026-10-14T22:06:10.807520+08:00",
+  "scheduler": {
+    "pid": 1630621,
+    "state": "R",
+    "ppid": 1630192,
+    "start_ticks": "615685363",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "collection_revision": "9a54233c3d1d18c12bfc202f61e2ec36a911e46f",
+  "qualified_sources_verified": 58,
+  "engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "ebdbc183d95b925e40064c9d2ca4611f5f22c1797a3c926e994fcf4a90403417",
+    "expected_tree": "91daa419276fecd60398d056a316f567e096cfed",
+    "actual_tree": "91daa419276fecd60398d056a316f567e096cfed",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_gdn_prefill_mask.py",
+      "test/srt/test_beliefkv_mamba_request_mapping.py",
+      "test/srt/test_beliefkv_prefill_track_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_slots.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "selected_server_info": {
+    "status": "ready",
+    "max_running_requests": 48,
+    "context_length": 131072,
+    "chunked_prefill_size": 4096,
+    "prefill_decode_interval": 0,
+    "enable_mixed_chunk": false,
+    "enable_prefill_delayer": false,
+    "min_free_slots_delay": null,
+    "numa_node": null
+  },
+  "telemetry_status": {
+    "background_writer_timing": {
+      "categories": {
+        "audit:prefill_turnover_sample": {
+          "max_sample_cpu_ms": 0.10518,
+          "max_sample_wall_ms": 0.103776,
+          "mean_sample_cpu_ms": 0.10518,
+          "mean_sample_wall_ms": 0.103776,
+          "records_seen": 1,
+          "sampled_cpu_ms": 0.10518,
+          "sampled_wall_ms": 0.103776,
+          "samples": 1
+        }
+      },
+      "cpu_clock": "thread_time_ns",
+      "sample_every": 64,
+      "schema_version": 1,
+      "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+      "snapshot_ts_ms": 1791986770228.2075,
+      "wall_clock": "perf_counter_ns"
+    },
+    "collection_mode": "admission_observation",
+    "context_prefix_reuse_evidence": {
+      "counts": {},
+      "semantics": "Previously served same-session input-prefix loss, not newly appended input or a per-layer FULL/Mamba recomputation count.",
+      "tracked_context_count": 0,
+      "tracking_limit": 1024
+    },
+    "dropped_records": 0,
+    "failed_records": 0,
+    "gpu_restore_wait_probe": {
+      "counts": {},
+      "pending_samples": 0,
+      "queue_limit": 32,
+      "sampling_interval": 16
+    },
+    "host_block_eviction_attribution": {
+      "available": true,
+      "counts": {},
+      "evicted_units_by_pool": {},
+      "full_reaccess_semantics": "exact prefix match plus request device/host cached-token intervals; remaining evicted FULL interval is attributed to recomputation",
+      "identity_semantics": "run-keyed HMAC over exact cache namespace and radix token prefix; raw token IDs are not written",
+      "mamba_reaccess_semantics": "exact prefix revisit is observable, but native telemetry does not expose the Mamba hit location per node",
+      "pending_blocks_by_pool": {},
+      "pending_latest_evicted_units_by_pool": {},
+      "probe_prefix_length_overflow": 0,
+      "recomputed_full_units": 0,
+      "reused_full_units": 0
+    },
+    "host_pool_evidence": {
+      "full": {
+        "bytes_per_unit": 20480,
+        "capacity_units": 7812501,
+        "d2h_ack_units": 0,
+        "evicted_bytes": 0,
+        "evicted_units": 0,
+        "eviction_calls": 0,
+        "h2d_ack_units": 0,
+        "h2d_units_after_first_host_eviction": 0,
+        "high_water": {
+          "used_bytes": 0,
+          "used_units": 0
+        }
+      },
+      "mamba": {
+        "bytes_per_unit": 64389120,
+        "capacity_units": 622,
+        "d2h_ack_units": 0,
+        "evicted_bytes": 0,
+        "evicted_units": 0,
+        "eviction_calls": 0,
+        "h2d_ack_units": 0,
+        "h2d_units_after_first_host_eviction": 0,
+        "high_water": {
+          "used_bytes": 0,
+          "used_units": 0
+        }
+      }
+    },
+    "pending_batch_count": 0,
+    "pending_request_count": 0,
+    "prefill_turnover_probe": {
+      "counts": {
+        "completed_samples": 1,
+        "eligible_prefills": 1,
+        "selected_samples": 1
+      },
+      "pending_samples": 0,
+      "queue_limit": 32,
+      "sampling_interval": 16
+    },
+    "record_counts": {
+      "audit": 12
+    },
+    "request_cache_evidence": {
+      "after_first_full_host_eviction": {},
+      "after_first_host_eviction": {},
+      "after_first_mamba_host_eviction": {},
+      "all": {}
+    },
+    "request_cache_evidence_semantics": {
+      "after_eviction": "pool-level request hits and uncached prompt tokens after the first eviction; use eviction_attribution.jsonl for node-level FULL reaccess attribution",
+      "full_host_hit": "cached_tokens_host input-token count",
+      "mamba_host_hit": "mamba_host_hit_length checkpoint-slot count; not tokens"
+    },
+    "schema_version": 1,
+    "snapshot_ts_ms": 1791986770228.2024,
+    "source": "native_sglang_v0520",
+    "writer_error": null,
+    "writer_queue_depth": 0
+  },
+  "documentation_revision": "eb125eed8fe35e1c6aa4899978258adf13792efc",
+  "documentation_only_changed_paths": [
+    "docs/README_zh.md",
+    "docs/architecture_status_zh.md",
+    "docs/beliefkv_design.md",
+    "docs/experiment_operating_notes_zh.md",
+    "docs/implementation_plan.md",
+    "docs/v0520_scheduler_redesign_zh.md",
+    "experiments/reports/v536_v58_gdn_prefill_frozen_20261014.json",
+    "experiments/reports/v537_v58_gdn_prefill_resource_registration_20261014.json"
+  ],
+  "working_documentation_preserved": {
+    "docs/figures/generate_monthly_paper_figures.py": "7c77edc225daa3134f31b46b6815e1f9c7d21c4dd26bb468706783dbaf05dc08",
+    "docs/reports/2026-10/\u6708\u5ea6\u6c47\u62a5\u6a21\u677f.pptx": "ff80af4771a7f9b4071a848a0292c9eef45a367c4e1808f8a9b5a48b63778d2c",
+    "docs/reports/2026-10/assets/README.md": "eb926fbaa22754046642e8538dd7f464e88978f8cd177e99dff5556fa5ed7802"
+  },
+  "execution": {
+    "collection_code_commit": "9a54233c3d1d18c12bfc202f61e2ec36a911e46f",
+    "verification_code_commit": "eb125eed8fe35e1c6aa4899978258adf13792efc",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": [
+      "docs/README_zh.md",
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/reports/v536_v58_gdn_prefill_frozen_20261014.json",
+      "experiments/reports/v537_v58_gdn_prefill_resource_registration_20261014.json"
+    ]
+  },
+  "helper_sha256": "a6e0987b8612823ae460ca85e7c9616b80822b25f2b63d78b3174decb9ebe799",
+  "scope": "Startup/source/configuration evidence; not performance acceptance."
+}

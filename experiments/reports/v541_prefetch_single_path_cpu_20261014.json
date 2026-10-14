@@ -1,0 +1,863 @@
+{
+  "status": "cpu_plan_equivalence_and_cost_not_online_or_gpu_gain",
+  "observed_at_local": "2026-10-14T22:02:25.574202+08:00",
+  "baseline_revision": "9a54233c3d1d18c12bfc202f61e2ec36a911e46f",
+  "baseline_source_sha256": "f53b15523badf3f31123f14300b3fda60a503d3c0cf1cfbf71df19713e112ec5",
+  "candidate_source_sha256": "397d870ff988453d8b98ba6b70d3f10942286f210cd3e7fef53c1747fc2bae53",
+  "helper_sha256": "8a31789708b527826b3830d8c7b3c8b7f8d54fcf99c50e8dede0ec6123b9f401",
+  "equivalence": {
+    "comparisons": 14580,
+    "single_leaf": 4860,
+    "nonempty_plans": 312,
+    "errors": 4860,
+    "empty_plans": 9408,
+    "multiple_leaves": 9720
+  },
+  "planner_costs": [
+    {
+      "levels": 4,
+      "full_leaves": 1,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.012399552941176471,
+            "p50_ms": 0.0123942,
+            "p99_ms": 0.0131611,
+            "max_ms": 0.0131611
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.012343703921568628,
+            "p50_ms": 0.0123423,
+            "p99_ms": 0.0130957,
+            "max_ms": 0.0130957
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.010633913725490196,
+            "p50_ms": 0.010593,
+            "p99_ms": 0.0115141,
+            "max_ms": 0.0115141
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.010579803921568627,
+            "p50_ms": 0.0105365,
+            "p99_ms": 0.0114595,
+            "max_ms": 0.0114595
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.14289876128006196
+    },
+    {
+      "levels": 4,
+      "full_leaves": 1,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.015798068627450982,
+            "p50_ms": 0.015814,
+            "p99_ms": 0.0164669,
+            "max_ms": 0.0164669
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.01573967450980392,
+            "p50_ms": 0.0157578,
+            "p99_ms": 0.0164032,
+            "max_ms": 0.0164032
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.014140319607843137,
+            "p50_ms": 0.0141263,
+            "p99_ms": 0.0146013,
+            "max_ms": 0.0146013
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.014080992156862746,
+            "p50_ms": 0.0140703,
+            "p99_ms": 0.0145424,
+            "max_ms": 0.0145424
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.10538225246703892
+    },
+    {
+      "levels": 4,
+      "full_leaves": 2,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.018507666666666665,
+            "p50_ms": 0.018547,
+            "p99_ms": 0.0195519,
+            "max_ms": 0.0195519
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.018445601960784312,
+            "p50_ms": 0.018489,
+            "p99_ms": 0.0194916,
+            "max_ms": 0.0194916
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.01886993333333333,
+            "p50_ms": 0.0189325,
+            "p99_ms": 0.01952,
+            "max_ms": 0.01952
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.018808250980392155,
+            "p50_ms": 0.0188719,
+            "p99_ms": 0.0194643,
+            "max_ms": 0.0194643
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.019660460004441216
+    },
+    {
+      "levels": 4,
+      "full_leaves": 2,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.026852472549019606,
+            "p50_ms": 0.0268585,
+            "p99_ms": 0.0277207,
+            "max_ms": 0.0277207
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.026788633333333332,
+            "p50_ms": 0.0267959,
+            "p99_ms": 0.0276598,
+            "max_ms": 0.0276598
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.027368333333333335,
+            "p50_ms": 0.0273267,
+            "p99_ms": 0.0280689,
+            "max_ms": 0.0280689
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.027302298039215685,
+            "p50_ms": 0.0272549,
+            "p99_ms": 0.0280052,
+            "max_ms": 0.0280052
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.019174726067238135
+    },
+    {
+      "levels": 16,
+      "full_leaves": 1,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.02437193137254902,
+            "p50_ms": 0.0243542,
+            "p99_ms": 0.0251201,
+            "max_ms": 0.0251201
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.024309529411764706,
+            "p50_ms": 0.0242907,
+            "p99_ms": 0.0250475,
+            "max_ms": 0.0250475
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.01898836862745098,
+            "p50_ms": 0.0189698,
+            "p99_ms": 0.0198281,
+            "max_ms": 0.0198281
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.018926550980392157,
+            "p50_ms": 0.018912,
+            "p99_ms": 0.0197437,
+            "max_ms": 0.0197437
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.22143490892783113
+    },
+    {
+      "levels": 16,
+      "full_leaves": 1,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.041808692156862746,
+            "p50_ms": 0.0418091,
+            "p99_ms": 0.042937,
+            "max_ms": 0.042937
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.04174643333333333,
+            "p50_ms": 0.0417455,
+            "p99_ms": 0.0428778,
+            "max_ms": 0.0428778
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.0368928568627451,
+            "p50_ms": 0.0368671,
+            "p99_ms": 0.0382162,
+            "max_ms": 0.0382162
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.0368301568627451,
+            "p50_ms": 0.0368042,
+            "p99_ms": 0.0381589,
+            "max_ms": 0.0381589
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.11776518562276139
+    },
+    {
+      "levels": 16,
+      "full_leaves": 2,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.04080653725490196,
+            "p50_ms": 0.0408937,
+            "p99_ms": 0.041975,
+            "max_ms": 0.041975
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.0407413862745098,
+            "p50_ms": 0.0408279,
+            "p99_ms": 0.0418993,
+            "max_ms": 0.0418993
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.04095361568627451,
+            "p50_ms": 0.0408811,
+            "p99_ms": 0.0419951,
+            "max_ms": 0.0419951
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.040889039215686276,
+            "p50_ms": 0.0408147,
+            "p99_ms": 0.0419326,
+            "max_ms": 0.0419326
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.0036241511317658404
+    },
+    {
+      "levels": 16,
+      "full_leaves": 2,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.05926837450980392,
+            "p50_ms": 0.0592148,
+            "p99_ms": 0.060551,
+            "max_ms": 0.060551
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.0592038137254902,
+            "p50_ms": 0.059151,
+            "p99_ms": 0.0604851,
+            "max_ms": 0.0604851
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.06029358431372549,
+            "p50_ms": 0.0603246,
+            "p99_ms": 0.0616311,
+            "max_ms": 0.0616311
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.060228886274509806,
+            "p50_ms": 0.0602597,
+            "p99_ms": 0.0615723,
+            "max_ms": 0.0615723
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.017314299274241884
+    },
+    {
+      "levels": 64,
+      "full_leaves": 1,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.06290651960784313,
+            "p50_ms": 0.0629152,
+            "p99_ms": 0.0639367,
+            "max_ms": 0.0639367
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.06284290588235295,
+            "p50_ms": 0.0628556,
+            "p99_ms": 0.0638639,
+            "max_ms": 0.0638639
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.048323174509803925,
+            "p50_ms": 0.0482657,
+            "p99_ms": 0.0518542,
+            "max_ms": 0.0518542
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.048260358823529415,
+            "p50_ms": 0.0482054,
+            "p99_ms": 0.0517984,
+            "max_ms": 0.0517984
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.23204762501153675
+    },
+    {
+      "levels": 64,
+      "full_leaves": 1,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.08143565098039215,
+            "p50_ms": 0.0815175,
+            "p99_ms": 0.0825403,
+            "max_ms": 0.0825403
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.08136974117647058,
+            "p50_ms": 0.0814523,
+            "p99_ms": 0.0824777,
+            "max_ms": 0.0824777
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.06680036274509804,
+            "p50_ms": 0.0666573,
+            "p99_ms": 0.0684306,
+            "max_ms": 0.0684306
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.06673669019607843,
+            "p50_ms": 0.0665938,
+            "p99_ms": 0.0683743,
+            "max_ms": 0.0683743
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.17983406078012132
+    },
+    {
+      "levels": 64,
+      "full_leaves": 2,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.1194500862745098,
+            "p50_ms": 0.1194233,
+            "p99_ms": 0.1213718,
+            "max_ms": 0.1213718
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.11938696666666666,
+            "p50_ms": 0.1193598,
+            "p99_ms": 0.1213085,
+            "max_ms": 0.1213085
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.11995022941176471,
+            "p50_ms": 0.1199327,
+            "p99_ms": 0.1218985,
+            "max_ms": 0.1218985
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.11988839411764705,
+            "p50_ms": 0.1198716,
+            "p99_ms": 0.1218369,
+            "max_ms": 0.1218369
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.004200018351922852
+    },
+    {
+      "levels": 64,
+      "full_leaves": 2,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.13893764901960784,
+            "p50_ms": 0.1389952,
+            "p99_ms": 0.1410211,
+            "max_ms": 0.1410211
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.13886615294117646,
+            "p50_ms": 0.1389323,
+            "p99_ms": 0.1409624,
+            "max_ms": 0.1409624
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.13922161764705882,
+            "p50_ms": 0.1389661,
+            "p99_ms": 0.1414813,
+            "max_ms": 0.1414813
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.1391589588235294,
+            "p50_ms": 0.138886,
+            "p99_ms": 0.1414213,
+            "max_ms": 0.1414213
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.0021085475196895853
+    },
+    {
+      "levels": 300,
+      "full_leaves": 1,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.2357334,
+            "p50_ms": 0.2359387,
+            "p99_ms": 0.2392361,
+            "max_ms": 0.2392361
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.23565925098039217,
+            "p50_ms": 0.2358462,
+            "p99_ms": 0.2391854,
+            "max_ms": 0.2391854
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.18177483529411764,
+            "p50_ms": 0.1815562,
+            "p99_ms": 0.1866169,
+            "max_ms": 0.1866169
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.18164897647058822,
+            "p50_ms": 0.1814924,
+            "p99_ms": 0.1842945,
+            "max_ms": 0.1842945
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.22918800889466384
+    },
+    {
+      "levels": 300,
+      "full_leaves": 1,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.2539121392156863,
+            "p50_ms": 0.2536485,
+            "p99_ms": 0.2565894,
+            "max_ms": 0.2565894
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.25385549215686276,
+            "p50_ms": 0.25359,
+            "p99_ms": 0.2565315,
+            "max_ms": 0.2565315
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.20073543333333332,
+            "p50_ms": 0.2006101,
+            "p99_ms": 0.203787,
+            "max_ms": 0.203787
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.2006769,
+            "p50_ms": 0.2005517,
+            "p99_ms": 0.2037214,
+            "max_ms": 0.2037214
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.20948371731111726
+    },
+    {
+      "levels": 300,
+      "full_leaves": 2,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.4901060529411765,
+            "p50_ms": 0.4897505,
+            "p99_ms": 0.4948186,
+            "max_ms": 0.4948186
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.4900442529411765,
+            "p50_ms": 0.4896952,
+            "p99_ms": 0.4947763,
+            "max_ms": 0.4947763
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.49096212352941176,
+            "p50_ms": 0.4906269,
+            "p99_ms": 0.4969505,
+            "max_ms": 0.4969505
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.4908300666666667,
+            "p50_ms": 0.490548,
+            "p99_ms": 0.4968999,
+            "max_ms": 0.4968999
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.0016035566599830187
+    },
+    {
+      "levels": 300,
+      "full_leaves": 2,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.5085904058823529,
+            "p50_ms": 0.5088409,
+            "p99_ms": 0.5117387,
+            "max_ms": 0.5117387
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.5085428901960785,
+            "p50_ms": 0.5087911,
+            "p99_ms": 0.5116939,
+            "max_ms": 0.5116939
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.5115152882352941,
+            "p50_ms": 0.5099373,
+            "p99_ms": 0.5752302,
+            "max_ms": 0.5752302
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.5114583352941177,
+            "p50_ms": 0.5098925,
+            "p99_ms": 0.5750972,
+            "max_ms": 0.5750972
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.005732938468405502
+    }
+  ],
+  "complete_tool_scan_costs": [
+    {
+      "mode": "before_start_window",
+      "workflows": 108,
+      "depth": 16,
+      "complete_scan_observations_compared": 26,
+      "decisions_counters_and_native_reads_equal": true,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 31.03363842857143,
+            "p50_ms": 30.306532,
+            "p99_ms": 32.861995,
+            "max_ms": 32.861995
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 31.03173919047619,
+            "p50_ms": 30.306194,
+            "p99_ms": 32.862228,
+            "max_ms": 32.862228
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 30.338731095238096,
+            "p50_ms": 29.559261,
+            "p99_ms": 32.406647,
+            "max_ms": 32.406647
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 30.337509,
+            "p50_ms": 29.537834,
+            "p99_ms": 32.406692,
+            "max_ms": 32.406692
+          }
+        }
+      },
+      "candidate_counts": {
+        "tool_prefetch_scans": 26,
+        "tool_prefetch_no_restore_target": 2808,
+        "h2d_service_estimate_computed": 1,
+        "tool_prefetch_not_latest_start": 2808,
+        "h2d_service_estimate_reused": 2807
+      },
+      "thread_cpu_mean_reduction": 0.022371617208269523
+    },
+    {
+      "mode": "before_start_window",
+      "workflows": 108,
+      "depth": 64,
+      "complete_scan_observations_compared": 26,
+      "decisions_counters_and_native_reads_equal": true,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 79.28599747619047,
+            "p50_ms": 78.433428,
+            "p99_ms": 117.042023,
+            "max_ms": 117.042023
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 79.2814779047619,
+            "p50_ms": 78.435741,
+            "p99_ms": 117.045821,
+            "max_ms": 117.045821
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 75.71163966666667,
+            "p50_ms": 72.195953,
+            "p99_ms": 112.504714,
+            "max_ms": 112.504714
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 75.70896842857142,
+            "p50_ms": 72.197441,
+            "p99_ms": 112.458212,
+            "max_ms": 112.458212
+          }
+        }
+      },
+      "candidate_counts": {
+        "tool_prefetch_scans": 26,
+        "tool_prefetch_no_restore_target": 2808,
+        "h2d_service_estimate_computed": 1,
+        "tool_prefetch_not_latest_start": 2808,
+        "h2d_service_estimate_reused": 2807
+      },
+      "thread_cpu_mean_reduction": 0.04506108577443535
+    },
+    {
+      "mode": "service_unsupported",
+      "workflows": 108,
+      "depth": 64,
+      "complete_scan_observations_compared": 26,
+      "decisions_counters_and_native_reads_equal": true,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 77.62952442857143,
+            "p50_ms": 75.78032,
+            "p99_ms": 120.826464,
+            "max_ms": 120.826464
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 77.61832114285714,
+            "p50_ms": 75.739197,
+            "p99_ms": 120.830595,
+            "max_ms": 120.830595
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 73.9335090952381,
+            "p50_ms": 71.110627,
+            "p99_ms": 110.986162,
+            "max_ms": 110.986162
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 73.93120642857143,
+            "p50_ms": 71.111968,
+            "p99_ms": 110.989583,
+            "max_ms": 110.989583
+          }
+        }
+      },
+      "candidate_counts": {
+        "tool_prefetch_scans": 26,
+        "tool_prefetch_no_restore_target": 2808,
+        "h2d_service_estimate_computed": 1,
+        "tool_prefetch_service_unsupported": 2808,
+        "h2d_service_estimate_reused": 2807
+      },
+      "thread_cpu_mean_reduction": 0.047503149514140475
+    },
+    {
+      "mode": "resident",
+      "workflows": 108,
+      "depth": 64,
+      "complete_scan_observations_compared": 26,
+      "decisions_counters_and_native_reads_equal": true,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 11.608268285714285,
+            "p50_ms": 11.087942,
+            "p99_ms": 12.359029,
+            "max_ms": 12.359029
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 11.607332476190477,
+            "p50_ms": 11.08692,
+            "p99_ms": 12.358296,
+            "max_ms": 12.358296
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 11.370711142857143,
+            "p50_ms": 10.86644,
+            "p99_ms": 12.150496,
+            "max_ms": 12.150496
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 11.369613047619048,
+            "p50_ms": 10.865448,
+            "p99_ms": 12.149638,
+            "max_ms": 12.149638
+          }
+        }
+      },
+      "candidate_counts": {
+        "tool_prefetch_scans": 26,
+        "tool_prefetch_no_restore_target": 5616,
+        "wait_prefetch_empty_restore_shortcut": 2808
+      },
+      "thread_cpu_mean_reduction": 0.020480108505468442
+    }
+  ],
+  "limitations": [
+    "Static/mutated CPU candidates and native stand-ins do not reproduce live tree mutations or GPU execution.",
+    "The original checkpoint helper and data-class ASTs are checked unchanged before using their current objects.",
+    "All ordered steps and rejection/error outcomes are compared, including leaf ID zero and multiple leaves.",
+    "Complete scans compare decisions, counters, native reads and observations at identical monotonic times.",
+    "Physical enqueue is prohibited; scan frequency and candidate geometry are fixture parameters, not online frequency.",
+    "The108-workflow cache fixture has separate ancestry roots; it does not measure shared-prefix or cross-context tree contention.",
+    "Preserve measured regressions; thread CPU or microbenchmark gains do not prove JCT or completion throughput."
+  ]
+}
