@@ -7,20 +7,50 @@ short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
 and interval changes remain disabled.
 
-The user reserves the server for others until2026-10-14 21:30 CST.
-Hold both unstarted V58 managers by verified process identity and defer
-experiments/performance benchmarks. At the deadline resume only the resource
-wait, still requiring available GPU capacity. V542 records this one-off hold;
-the revoked daily00:00-06:00 restriction is not reinstated.
+V58 cold-deployed9a54233/ebdbc183/91daa419 at2026-10-14 22:02:57 CST.
+V539 verified58 qualified sources and ready service at22:06:10; scheduler
+1630621 has served full48-request decode batches. Predictive runs first,
+then native on the same shared engine and frozen108+48 arrivals/pools/budgets.
+V545 observes large-map NUMA0/1 about52.860/149.102GB, not exact pool
+identities or bandwidth. V551 registers four complete phase windows:
+120-300,600-900,1800-2100,3600-3900s.
+The one-off hold expired at21:30, but the original Python lacked pidfd_open.
+V544 preserves that failure and the verified identity-bound recovery; no
+workflow was dispatched during the hold. The daily restriction remains revoked.
 
 The development candidate reuses the validated single-FULL-leaf ancestry
 order instead of rebuilding per-node depth/provenance maps and sorting it.
 Multiple leaves, validation and native enqueue checks remain unchanged.
-V543 retains the448 checks completed at19:12 before the user hold and the
-unchanged-reference AST review. V541 full-plan equivalence and paired CPU
-cost measurement are deferred, not passed. Keep V58 frozen at9a54233;
-qualify this development candidate after resource release before a later
-cold deployment. No speedup or final acceptance is established.
+V543 retains448 pre-hold checks. V541 compares14580 complete outcomes,
+including312 positive plans. Single-leaf planner thread CPU falls10.5%-23.2%;
+complete108-workflow scans exercising this path fall2.2%-4.8%. Multiple-leaf
+fixtures are about0.2%-2.0% slower; the resident negative control does not
+execute the changed planner, so its variation is not attributed to this change.
+V547 binds1237 checks,58 qualified sources and the unchanged engine for a
+subsequent cold observation. Active V58 stays frozen without this candidate.
+
+Latest V549/V550 retain the complete120-300s window:45/38 short-single
+samples have run_batch P50 34.606/45.972ms, complete turnover43.793/
+52.239ms, selection4.834/1.768ms and run-return gap6.879/4.287ms.
+Decode request steps222673/229951 and instrumented self-wall16.253s/180s
+retain differing actual demand. Control drain2.776s and admission2.203s
+lead the observed costs. V56 native is a cross-version development reference;
+prioritize current event/admission costs and await matched-version evidence.
+V548 losslessly archives24 stopped V50-V52 logs,10.258GB to295.657MB.
+It completed22:15:45 between the early and600-900s windows; V53-V58 raw
+evidence remains directly readable. Final JCT/throughput acceptance is open.
+
+The latest complete600-900s V58 window has66/65 short samples:
+run_batch P50 36.906/42.150ms, full turnover51.504/50.291ms,
+run-return gap9.362/4.273ms and365271/377059 decode request steps.
+Instrumented self-wall34.103s/300s now ranks tool-prefetch5.338s first,
+then JOIN prepare3.370s and prefetch2.807s. Do not reuse the early
+event/admission ranking as a whole-run attribution.
+V552/V553 retain1744 main-thread active samples,194 read errors and one
+damaged-text exclusion.597 samples end in CUDA stream synchronize; these
+include real dependency waiting and are not removable CPU/JCT estimates.
+Preserve native dependencies while inspecting preparation/control work.
+Fresh same-version native and final repeated acceptance are still pending.
 
 V57 naturally finished all156 workflows and postprocessing at2026-10-14
 18:47:37 CST:156 completed, zero incomplete. Frozen0fd9d13/

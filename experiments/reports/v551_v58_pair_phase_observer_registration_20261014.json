@@ -1,0 +1,78 @@
+{
+  "status": "registered_complete_window_observer_no_new_experiment",
+  "registered_at_local": "2026-10-14T22:20:30.485530+08:00",
+  "launcher": {
+    "pid": 1629938,
+    "state": "R",
+    "ppid": 1528612,
+    "start_ticks": "615683938",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-v533-v58-gdn-prefill-20261014/scripts/launch_semantic_h2d_after_pair.py",
+      "--repo",
+      "/home/longhao/experiment/BeliefKV",
+      "--previous-run",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v57",
+      "--target-checkout",
+      "/home/longhao/experiment/.worktrees/beliefkv-v533-v58-gdn-prefill-20261014",
+      "--run-root",
+      "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+      "--state",
+      "/home/longhao/experiment/BeliefKV/experiments/reports/v58_launch_after_v57_gdn_prefill_20261014.json",
+      "--wait-pid",
+      "3811053",
+      "--port",
+      "18462",
+      "--arm-order",
+      "predictive_h2d native",
+      "--execution-handoff",
+      "0",
+      "--host-numa-memory-policy",
+      "preferred"
+    ]
+  },
+  "predictive_scheduler": {
+    "pid": 1630621,
+    "state": "R",
+    "ppid": 1630192,
+    "start_ticks": "615685363",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "plan_sha256": "9db6d01614a3e13d5b3ca0d0d1f557dc6fa5959b410b9c9efb3636e9c6315f50",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+  "helper_sha256": "4dc1edb30a200e2f10f8facd8805c6f0ab5862910732fa053a46ba00e1f276f8",
+  "windows_seconds": [
+    [
+      120,
+      300
+    ],
+    [
+      600,
+      900
+    ],
+    [
+      1800,
+      2100
+    ],
+    [
+      3600,
+      3900
+    ]
+  ],
+  "state": "/home/longhao/experiment/ops/v58_pair_phase_observer_20261014.state.json",
+  "log": "/home/longhao/experiment/ops/v58_pair_phase_observer_20261014.log",
+  "analysis_sources_sha256": {
+    "scripts/analyze_busy_context_control.py": "711d5494c6a6a5be8a163a1907450873b7367f5544bfd0714cfc66771824b7d9",
+    "scripts/analyze_prefill_turnover.py": "4becc5d75d7be52a85848241cc8792c1153cd5fa85833766b3f486dcd1f06a7d"
+  },
+  "scope": "Read complete windows from already executing arms. Historical native is development-only; matched-version phase evidence still differs in realized demand and is not final JCT proof.",
+  "observer": {
+    "pid": 1851368,
+    "state": "R",
+    "ppid": 1851197,
+    "start_ticks": "615789358",
+    "argv": []
+  }
+}

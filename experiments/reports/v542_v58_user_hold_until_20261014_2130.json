@@ -1,5 +1,5 @@
 {
-  "status": "holding_registered_managers_until_user_deadline",
+  "status": "deadline_reached_resource_wait_resumed_after_verified_compatibility_retry",
   "requested_at_local": "2026-10-14T19:19:23.607495+08:00",
   "not_before_local": "2026-10-14T21:30:00+08:00",
   "user_request": "\u4eca\u5929\u5230\u4e5d\u70b9\u534a\u4e4b\u524d\u670d\u52a1\u5668\u8981\u7ed9\u5176\u4ed6\u4eba\u4f7f\u7528\uff0c\u8fd9\u4e2a\u65f6\u95f4\u6bb5\u5148\u4e0d\u8fdb\u884c\u5b9e\u9a8c",
@@ -134,5 +134,34 @@
       "/home/longhao/experiment/ops/hold_v58_until_20261014_2130.py",
       "--resume-at-deadline"
     ]
-  }
+  },
+  "error": "AttributeError: module 'os' has no attribute 'pidfd_open'",
+  "observed_at_local": "2026-10-14T21:30:00.071356+08:00",
+  "prior_failed_release_error": "AttributeError: module 'os' has no attribute 'pidfd_open'",
+  "released_at_local": "2026-10-14T22:02:25.290084+08:00",
+  "resumed_managers": [
+    {
+      "pid": 1528612,
+      "state": "R",
+      "ppid": 1,
+      "start_ticks": "614598365",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/ops/register_v58_gdn_prefill.py",
+        "--watch"
+      ]
+    },
+    {
+      "pid": 1532627,
+      "state": "R",
+      "ppid": 1,
+      "start_ticks": "614634863",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/ops/observe_v58_startup.py",
+        "--watch"
+      ]
+    }
+  ],
+  "compatibility_retry_receipt": "/home/longhao/experiment/BeliefKV/experiments/reports/v544_v58_temporary_hold_release_retry_20261014.json"
 }
