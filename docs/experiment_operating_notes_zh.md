@@ -4,6 +4,13 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+最新v577纳入同版本1800–2100s：周转P50多7.07%、decode服务
+量多2.30%；发射区间依旧不是GPU时间。v576核验native的
+pytest-dev__pytest-10051最后两次root输出均8192且length结束，
+既有reasoning重试未完成；deadline未过期、两child返回、零
+取消/guard。保持已约定的输出上限，不借增加预算或丢掉该样本
+改善对照；保留其workspace、trace及全任务质量计数。
+
 V58 predictive于2026-10-15自然完成156/156；native独立核验
 scheduler3865597/start_ticks616567785及58份冻结源码后开始。
 同版本120–300/600–900s的周转P50仍多9.06%/16.11%，服务量

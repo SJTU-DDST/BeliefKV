@@ -1,0 +1,1445 @@
+{
+  "status": "development_consumption_checkpoint_not_final_acceptance",
+  "observed_at_local": "2026-10-14T10:28:56.528810-07:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+  "execution": {
+    "collection_code_commit": "9a54233c3d1d18c12bfc202f61e2ec36a911e46f",
+    "verification_code_commit": "461e082f094c0fc2d993b99b0c42eeff5910561a",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": [
+      "docs/README_zh.md",
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/figures/generate_monthly_paper_figures.py",
+      "docs/implementation_plan.md",
+      "docs/reports/2026-10/assets/01_system_overview_en.pdf",
+      "docs/reports/2026-10/assets/01_system_overview_en.png",
+      "docs/reports/2026-10/assets/01_system_overview_en.svg",
+      "docs/reports/2026-10/assets/01_system_overview_zh.pdf",
+      "docs/reports/2026-10/assets/01_system_overview_zh.png",
+      "docs/reports/2026-10/assets/01_system_overview_zh.svg",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_en.pdf",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_en.png",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_en.svg",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_zh.pdf",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_zh.png",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_zh.svg",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_en.pdf",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_en.png",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_en.svg",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_zh.pdf",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_zh.png",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_zh.svg",
+      "docs/reports/2026-10/assets/README.md",
+      "docs/reports/2026-10/assets/beliefkv_architecture_editable_en.pptx",
+      "docs/reports/2026-10/assets/beliefkv_architecture_editable_zh.pptx",
+      "docs/reports/2026-10/assets/beliefkv_figures_bilingual.pdf",
+      "docs/reports/2026-10/assets/manifest.json",
+      "docs/reports/2026-10/assets/powerpoint_validation.json",
+      "docs/reports/2026-10/assets/pptx_preview_en.png",
+      "docs/reports/2026-10/assets/pptx_preview_zh.png",
+      "docs/reports/2026-10/assets/preview.png",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/archive/README.md",
+      "experiments/reports/v536_v58_gdn_prefill_frozen_20261014.json",
+      "experiments/reports/v537_v58_gdn_prefill_resource_registration_20261014.json",
+      "experiments/reports/v538_v58_startup_observer_registration_20261014.json",
+      "experiments/reports/v539_v58_live_startup_validation_20261014.json",
+      "experiments/reports/v540_single_path_restore_checks_20261014.raw.gz",
+      "experiments/reports/v541_prefetch_single_path_cpu_20261014.json",
+      "experiments/reports/v542_v58_user_hold_until_20261014_2130.json",
+      "experiments/reports/v543_prefetch_single_path_development_20261014.json",
+      "experiments/reports/v544_v58_temporary_hold_release_retry_20261014.json",
+      "experiments/reports/v545_v58_predictive_numa_placement_20261014.json",
+      "experiments/reports/v546_single_path_runtime_qualification_checks_20261014.raw.gz",
+      "experiments/reports/v547_prefetch_single_path_qualification_20261014.json",
+      "experiments/reports/v548_v50_v52_server_trace_archive_20261014.json",
+      "experiments/reports/v549_v58_busy_120_300_20261014.json",
+      "experiments/reports/v550_v58_prefill_phases_120_300_20261014.json",
+      "experiments/reports/v551_v58_pair_phase_observer_registration_20261014.json",
+      "experiments/reports/v552_v58_active_stack_20261014.speedscope.json",
+      "experiments/reports/v553_v58_active_stack_attribution_20261014.json",
+      "experiments/reports/v554_v58_reviewed_documentation_sync_20261014.json",
+      "experiments/reports/v555_v58_wait_prefetch_live_20261014.json.gz",
+      "experiments/reports/v555_v58_wait_prefetch_live_20261014_summary.json",
+      "experiments/reports/v556_v58_latest_development_checkpoint_20261014.json",
+      "experiments/reports/v557_v58_latest_documentation_sync_20261014.json",
+      "experiments/reports/v558_old_server_snapshot_archive_20261014.json",
+      "experiments/reports/v559_old_server_snapshot_archive_20261014.json",
+      "experiments/reports/v560_v58_second_wave_documentation_sync_20261014.json",
+      "experiments/reports/v561_v58_wait_prefetch_coverage_and_tails_20261014.json.gz",
+      "experiments/reports/v562_v58_join_dispatch_capacity_gaps_20261014.json",
+      "experiments/reports/v563_checkpoint_scan_runtime_checks_20261014.raw.gz",
+      "experiments/reports/v564_prefetch_checkpoint_scan_cpu_20261014.json",
+      "experiments/reports/v565_prefetch_checkpoint_scan_qualification_20261014.json",
+      "experiments/reports/v566_v58_checkpoint_scan_documentation_sync_20261014.json",
+      "experiments/reports/v567_v58_wait_prefetch_latest_20261015.json.gz",
+      "experiments/reports/v567_v58_wait_prefetch_latest_20261015_summary.json",
+      "experiments/reports/v568_v58_restore_protection_20261015.json.gz",
+      "experiments/reports/v569_v58_latest_coverage_and_tails_20261015.json.gz",
+      "experiments/reports/v570_v58_latest_join_capacity_gaps_20261015.json",
+      "experiments/reports/v571_v58_join_work_and_rate_errors_20261015.json",
+      "experiments/reports/v572_v58_causal_work_bias_replay_20261015.json",
+      "experiments/reports/v573_v58_consumption_development_checkpoint_20261015.json",
+      "experiments/reports/v574_v58_development_evidence_packing_20261015.json",
+      "experiments/reports/v58_historical_native_busy_1800_2100_20261014.json",
+      "experiments/reports/v58_historical_native_busy_3600_3900_20261014.json",
+      "experiments/reports/v58_historical_native_busy_600_900_20261014.json",
+      "experiments/reports/v58_historical_native_prefill_phases_1800_2100_20261014.json",
+      "experiments/reports/v58_historical_native_prefill_phases_3600_3900_20261014.json",
+      "experiments/reports/v58_historical_native_prefill_phases_600_900_20261014.json",
+      "experiments/reports/v58_native_numa_placement_20261014.json",
+      "experiments/reports/v58_native_startup_validation_20261014.json",
+      "experiments/reports/v58_same_version_pair_busy_120_300_20261014.json",
+      "experiments/reports/v58_same_version_pair_busy_600_900_20261014.json",
+      "experiments/reports/v58_same_version_pair_prefill_phases_120_300_20261014.json",
+      "experiments/reports/v58_same_version_pair_prefill_phases_600_900_20261014.json"
+    ]
+  },
+  "live_native_scheduler": {
+    "pid": 3865597,
+    "state": "R",
+    "ppid": 3865217,
+    "start_ticks": "616567785",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "verified_native_startup": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v58_native_startup_validation_20261014.json",
+    "sha256": "c91603f3fd454d728b5399b7029adf16fb8ccc14d821418f2f52b55570e89a5e"
+  },
+  "predictive_summary": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/summary.json",
+    "sha256": "e9c0d4d9ec0c584c68a3360cfeb412906e3cb736685bb965307c18374103f45e"
+  },
+  "predictive_completion": {
+    "workflows": 156,
+    "completed": 156,
+    "duration_seconds": 8367.726276656613,
+    "llm_requests": 46682,
+    "tool_calls": 46167,
+    "scope": "Harness completion only; benchmark task correctness is unverified."
+  },
+  "diagnostic_sources": {
+    "latest_wait_summary": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v567_v58_wait_prefetch_latest_20261015_summary.json",
+      "sha256": "55b6374d5bd0556361e87d36c9ee82adc9eba01aeec5cac09cf1de4bc02a9b46"
+    },
+    "protection": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v568_v58_restore_protection_20261015.json",
+      "sha256": "a5a6afc51177049fba35cf1b74fe34d950e8278b3d6d01df85e4978ebfc30521"
+    },
+    "tails": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v569_v58_latest_coverage_and_tails_20261015.json",
+      "sha256": "0e26b49a9c594131225768d552c0aaae2d14c24587706b58e0e4ba554ea6b24e"
+    },
+    "capacity": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v570_v58_latest_join_capacity_gaps_20261015.json",
+      "sha256": "1fd62c0644ab4be491640695287ec8284108c644b150c357e338e961d156952c"
+    },
+    "work_errors": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v571_v58_join_work_and_rate_errors_20261015.json",
+      "sha256": "04d000cd5c39778fb0dcfadb35dbfdc4d4d71ab019c1d6ae73904cd3f6dc32ab"
+    },
+    "causal_bias": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v572_v58_causal_work_bias_replay_20261015.json",
+      "sha256": "e6820ab5587d1031b2b6ff52328ba4f7e8210cb81a674b7048650068fa1ec0ad"
+    }
+  },
+  "latest_wait_summary": {
+    "join_ticket": {
+      "observed_events": 195,
+      "events_with_observed_full_plan": 177,
+      "events_with_capacity_observation": 174,
+      "events_with_capacity_condition": {
+        "none": 169,
+        "full_only": 173,
+        "mamba_only": 120,
+        "both": 107
+      },
+      "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 2501140480,
+      "max_snapshot_planned_full_bytes_known": 4553584640,
+      "planned_full_bytes_unknown_events": 0,
+      "events_with_early_reused_full": 81,
+      "completion_boundary_unknown_events": 9,
+      "events_first_observed_after_completion": 0,
+      "events_with_tool_ids_outside_request_round": 0,
+      "early_started_and_reused_full_bytes": 1598771200,
+      "remaining_native_full_host_hit_bytes_known": 7022592000,
+      "remaining_native_full_evidence_unknown_events": 9,
+      "plan_evidence_categories": {
+        "only_zero_full_plan": {
+          "independent_events": 18,
+          "events_with_known_completion_boundary": 17,
+          "remaining_native_full_host_hit_bytes_known": 0,
+          "remaining_native_full_evidence_unknown_events": 1,
+          "events_with_early_reused_full": 0
+        },
+        "positive_full_plan": {
+          "independent_events": 177,
+          "events_with_known_completion_boundary": 169,
+          "remaining_native_full_host_hit_bytes_known": 7022592000,
+          "remaining_native_full_evidence_unknown_events": 8,
+          "events_with_early_reused_full": 81
+        }
+      },
+      "restore_burst_size_evidence": {
+        "one_to_fifteen_nodes_observed": {
+          "independent_events": 175,
+          "events_with_known_completion_boundary": 167,
+          "remaining_native_full_host_hit_bytes_known": 6467276800,
+          "remaining_native_full_evidence_unknown_events": 8,
+          "events_with_early_reused_full": 80
+        },
+        "only_empty_plan_observed": {
+          "independent_events": 18,
+          "events_with_known_completion_boundary": 17,
+          "remaining_native_full_host_hit_bytes_known": 0,
+          "remaining_native_full_evidence_unknown_events": 1,
+          "events_with_early_reused_full": 0
+        },
+        "sixteen_or_more_nodes_observed": {
+          "independent_events": 2,
+          "events_with_known_completion_boundary": 2,
+          "remaining_native_full_host_hit_bytes_known": 555315200,
+          "remaining_native_full_evidence_unknown_events": 0,
+          "events_with_early_reused_full": 1
+        }
+      },
+      "residual_native_demand_by_observed_planning_evidence": {
+        "observed_plan_reasons": {
+          "admission_budget_busy": {
+            "independent_events": 72,
+            "events_with_known_completion_boundary": 69,
+            "remaining_native_full_host_hit_bytes_known": 3563786240,
+            "remaining_native_full_evidence_unknown_events": 3,
+            "events_with_early_reused_full": 34
+          },
+          "before_start_window": {
+            "independent_events": 79,
+            "events_with_known_completion_boundary": 79,
+            "remaining_native_full_host_hit_bytes_known": 3535134720,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 40
+          },
+          "closure_unobservable": {
+            "independent_events": 39,
+            "events_with_known_completion_boundary": 37,
+            "remaining_native_full_host_hit_bytes_known": 905625600,
+            "remaining_native_full_evidence_unknown_events": 2,
+            "events_with_early_reused_full": 20
+          },
+          "enqueue_causal_changed": {
+            "independent_events": 4,
+            "events_with_known_completion_boundary": 4,
+            "remaining_native_full_host_hit_bytes_known": 459960320,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 0
+          },
+          "enqueue_slot_changed": {
+            "independent_events": 15,
+            "events_with_known_completion_boundary": 15,
+            "remaining_native_full_host_hit_bytes_known": 236113920,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 8
+          },
+          "fits_current_free_lists": {
+            "independent_events": 169,
+            "events_with_known_completion_boundary": 164,
+            "remaining_native_full_host_hit_bytes_known": 6363688960,
+            "remaining_native_full_evidence_unknown_events": 5,
+            "events_with_early_reused_full": 79
+          },
+          "insufficient_free_lists": {
+            "independent_events": 173,
+            "events_with_known_completion_boundary": 168,
+            "remaining_native_full_host_hit_bytes_known": 7015690240,
+            "remaining_native_full_evidence_unknown_events": 5,
+            "events_with_early_reused_full": 81
+          },
+          "no_restore_plan": {
+            "independent_events": 170,
+            "events_with_known_completion_boundary": 170,
+            "remaining_native_full_host_hit_bytes_known": 6451056640,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 79
+          },
+          "no_reusable_input_restore_step": {
+            "independent_events": 180,
+            "events_with_known_completion_boundary": 174,
+            "remaining_native_full_host_hit_bytes_known": 5789061120,
+            "remaining_native_full_evidence_unknown_events": 6,
+            "events_with_early_reused_full": 75
+          },
+          "service_progress_unavailable": {
+            "independent_events": 10,
+            "events_with_known_completion_boundary": 10,
+            "remaining_native_full_host_hit_bytes_known": 45875200,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 6
+          },
+          "start_window": {
+            "independent_events": 154,
+            "events_with_known_completion_boundary": 154,
+            "remaining_native_full_host_hit_bytes_known": 6439260160,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 81
+          },
+          "submitted": {
+            "independent_events": 100,
+            "events_with_known_completion_boundary": 100,
+            "remaining_native_full_host_hit_bytes_known": 2006138880,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 81
+          },
+          "supported_selected_payload_subset": {
+            "independent_events": 7,
+            "events_with_known_completion_boundary": 7,
+            "remaining_native_full_host_hit_bytes_known": 13598720,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 7
+          }
+        },
+        "observed_planning_no_step_reasons": {
+          "no_host_backed_missing_copy": {
+            "independent_events": 8,
+            "events_with_known_completion_boundary": 8,
+            "remaining_native_full_host_hit_bytes_known": 24903680,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 1
+          },
+          "no_reusable_input_restore_step": {
+            "independent_events": 93,
+            "events_with_known_completion_boundary": 93,
+            "remaining_native_full_host_hit_bytes_known": 1333145600,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 66
+          },
+          "prefetch_capacity_budget": {
+            "independent_events": 119,
+            "events_with_known_completion_boundary": 119,
+            "remaining_native_full_host_hit_bytes_known": 6344888320,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 47
+          }
+        },
+        "observed_planning_blocked_details": {
+          "input_checkpoint_unavailable_or_already_resident": {
+            "independent_events": 183,
+            "events_with_known_completion_boundary": 177,
+            "remaining_native_full_host_hit_bytes_known": 5789061120,
+            "remaining_native_full_evidence_unknown_events": 6,
+            "events_with_early_reused_full": 78
+          },
+          "pending_load_transfer": {
+            "independent_events": 8,
+            "events_with_known_completion_boundary": 8,
+            "remaining_native_full_host_hit_bytes_known": 253296640,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 5
+          },
+          "pending_write_transfer": {
+            "independent_events": 32,
+            "events_with_known_completion_boundary": 30,
+            "remaining_native_full_host_hit_bytes_known": 659210240,
+            "remaining_native_full_evidence_unknown_events": 2,
+            "events_with_early_reused_full": 15
+          },
+          "prefetch_full_capacity_budget": {
+            "independent_events": 111,
+            "events_with_known_completion_boundary": 111,
+            "remaining_native_full_host_hit_bytes_known": 6330101760,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 39
+          },
+          "prefetch_mamba_capacity_budget": {
+            "independent_events": 19,
+            "events_with_known_completion_boundary": 19,
+            "remaining_native_full_host_hit_bytes_known": 14786560,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 19
+          }
+        },
+        "observed_no_live_details": {}
+      },
+      "planning_gap_semantics": "One count per independent wait per observed reason, regardless of repeated samples. Evidence categories partition waits; reason/detail groups overlap and must not be summed. Zero or missing plans do not prove zero physical demand. Residual bytes are next-request native FULL Host hits, not a proven pre-boundary opportunity, exclusive rejection cause or oracle speedup. Burst categories partition waits by the largest explicitly observed plan, not lifetime node commands. A sixteen-node plan is not proof of truncation or that a larger early transfer would fit capacity or the service window.",
+      "client_submit_to_native_arrival_ms": {
+        "count": 186,
+        "p50": 101.119140625,
+        "p90": 214.568115234375,
+        "max": 506.58203125
+      },
+      "client_submit_to_http_request_ms": {
+        "count": 186,
+        "p50": 8.497314453125,
+        "p90": 15.9080810546875,
+        "max": 100.046142578125
+      },
+      "http_request_to_body_sent_ms": {
+        "count": 186,
+        "p50": 6.324462890625,
+        "p90": 30.365478515625,
+        "max": 106.926025390625
+      },
+      "body_sent_to_native_arrival_ms": {
+        "count": 186,
+        "p50": 81.466552734375,
+        "p90": 202.263916015625,
+        "max": 495.40673828125
+      },
+      "http_request_to_response_headers_ms": {
+        "count": 186,
+        "p50": 619.259521484375,
+        "p90": 13700.70654296875,
+        "max": 16391.35302734375
+      },
+      "body_sent_to_api_received_ms": {
+        "count": 149,
+        "p50": 2.346435546875,
+        "p90": 130.37714843750004,
+        "max": 430.78662109375
+      },
+      "api_received_to_chat_conversion_ms": {
+        "count": 186,
+        "p50": 14.87255859375,
+        "p90": 26.1744384765625,
+        "max": 35.1640625
+      },
+      "chat_conversion_ms": {
+        "count": 186,
+        "p50": 27.351318359375,
+        "p90": 40.6065673828125,
+        "max": 66.6044921875
+      },
+      "chat_conversion_to_tokenized_ms": {
+        "count": 186,
+        "p50": 0.387451171875,
+        "p90": 0.5528564453125,
+        "max": 3.322021484375
+      },
+      "tokenized_to_dispatch_ms": {
+        "count": 186,
+        "p50": 0.0048828125,
+        "p90": 0.0054931640625,
+        "max": 0.010986328125
+      },
+      "dispatch_to_scheduler_received_ms": {
+        "count": 186,
+        "p50": 16.9127197265625,
+        "p90": 60.8900146484375,
+        "max": 108.014892578125
+      },
+      "scheduler_received_to_queue_registered_ms": {
+        "count": 186,
+        "p50": 0.1553955078125,
+        "p90": 0.26513671875,
+        "max": 1.363037109375
+      },
+      "client_submit_to_first_service_ms": {
+        "count": 186,
+        "p50": 345.024658203125,
+        "p90": 13659.412231445312,
+        "max": 16186.4140625
+      },
+      "submit_to_first_service_ms": {
+        "count": 186,
+        "p50": 178.8687744140625,
+        "p90": 13511.287353515625,
+        "max": 16110.457275390625
+      },
+      "last_ack_to_first_service_ms": {
+        "count": 100,
+        "p50": 2903.3548583984375,
+        "p90": 16675.392529296885,
+        "max": 30994.68603515625
+      },
+      "full_expiration_commands_by_stage": {
+        "before_completion": 71,
+        "awaiting_client_submit": 1,
+        "awaiting_native_arrival": 1
+      },
+      "full_expiration_bytes_by_stage": {
+        "before_completion": 1101209600,
+        "awaiting_client_submit": 8007680,
+        "awaiting_native_arrival": 4280320
+      }
+    },
+    "tool_wait": {
+      "observed_events": 25626,
+      "events_with_observed_full_plan": 2093,
+      "events_with_capacity_observation": 354,
+      "events_with_capacity_condition": {
+        "none": 85,
+        "full_only": 275,
+        "mamba_only": 0,
+        "both": 0
+      },
+      "max_snapshot_full_bytes_under_mamba_only_shortfall_known": 0,
+      "max_snapshot_planned_full_bytes_known": 154031718400,
+      "planned_full_bytes_unknown_events": 0,
+      "events_with_early_reused_full": 210,
+      "completion_boundary_unknown_events": 0,
+      "events_first_observed_after_completion": 2552,
+      "events_with_tool_ids_outside_request_round": 0,
+      "early_started_and_reused_full_bytes": 11243868160,
+      "remaining_native_full_host_hit_bytes_known": 1303693496320,
+      "remaining_native_full_evidence_unknown_events": 0,
+      "plan_evidence_categories": {
+        "only_zero_full_plan": {
+          "independent_events": 23533,
+          "events_with_known_completion_boundary": 23533,
+          "remaining_native_full_host_hit_bytes_known": 776162344960,
+          "remaining_native_full_evidence_unknown_events": 0,
+          "events_with_early_reused_full": 0
+        },
+        "positive_full_plan": {
+          "independent_events": 2093,
+          "events_with_known_completion_boundary": 2093,
+          "remaining_native_full_host_hit_bytes_known": 527531151360,
+          "remaining_native_full_evidence_unknown_events": 0,
+          "events_with_early_reused_full": 210
+        }
+      },
+      "restore_burst_size_evidence": {
+        "one_to_fifteen_nodes_observed": {
+          "independent_events": 1611,
+          "events_with_known_completion_boundary": 1611,
+          "remaining_native_full_host_hit_bytes_known": 370159718400,
+          "remaining_native_full_evidence_unknown_events": 0,
+          "events_with_early_reused_full": 169
+        },
+        "only_empty_plan_observed": {
+          "independent_events": 23533,
+          "events_with_known_completion_boundary": 23533,
+          "remaining_native_full_host_hit_bytes_known": 776162344960,
+          "remaining_native_full_evidence_unknown_events": 0,
+          "events_with_early_reused_full": 0
+        },
+        "sixteen_or_more_nodes_observed": {
+          "independent_events": 482,
+          "events_with_known_completion_boundary": 482,
+          "remaining_native_full_host_hit_bytes_known": 157371432960,
+          "remaining_native_full_evidence_unknown_events": 0,
+          "events_with_early_reused_full": 41
+        }
+      },
+      "residual_native_demand_by_observed_planning_evidence": {
+        "observed_plan_reasons": {
+          "before_start_window": {
+            "independent_events": 1877,
+            "events_with_known_completion_boundary": 1877,
+            "remaining_native_full_host_hit_bytes_known": 487278653440,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 112
+          },
+          "closure_unobservable": {
+            "independent_events": 5,
+            "events_with_known_completion_boundary": 5,
+            "remaining_native_full_host_hit_bytes_known": 0,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 2
+          },
+          "enqueue_causal_changed": {
+            "independent_events": 13,
+            "events_with_known_completion_boundary": 13,
+            "remaining_native_full_host_hit_bytes_known": 3938283520,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 0
+          },
+          "fits_current_free_lists": {
+            "independent_events": 85,
+            "events_with_known_completion_boundary": 85,
+            "remaining_native_full_host_hit_bytes_known": 20063539200,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 10
+          },
+          "insufficient_free_lists": {
+            "independent_events": 275,
+            "events_with_known_completion_boundary": 275,
+            "remaining_native_full_host_hit_bytes_known": 76165201920,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 20
+          },
+          "no_restore_plan": {
+            "independent_events": 24886,
+            "events_with_known_completion_boundary": 24886,
+            "remaining_native_full_host_hit_bytes_known": 1159609323520,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 180
+          },
+          "no_reusable_input_restore_step": {
+            "independent_events": 3990,
+            "events_with_known_completion_boundary": 3990,
+            "remaining_native_full_host_hit_bytes_known": 9246883840,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 5
+          },
+          "start_window": {
+            "independent_events": 256,
+            "events_with_known_completion_boundary": 256,
+            "remaining_native_full_host_hit_bytes_known": 32931921920,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 210
+          },
+          "submitted": {
+            "independent_events": 242,
+            "events_with_known_completion_boundary": 242,
+            "remaining_native_full_host_hit_bytes_known": 28665958400,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 210
+          },
+          "supported_selected_payload_subset": {
+            "independent_events": 15,
+            "events_with_known_completion_boundary": 15,
+            "remaining_native_full_host_hit_bytes_known": 2225479680,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 14
+          }
+        },
+        "observed_planning_no_step_reasons": {
+          "closure_unobservable": {
+            "independent_events": 6,
+            "events_with_known_completion_boundary": 6,
+            "remaining_native_full_host_hit_bytes_known": 1085276160,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 0
+          },
+          "no_host_backed_missing_copy": {
+            "independent_events": 14996,
+            "events_with_known_completion_boundary": 14996,
+            "remaining_native_full_host_hit_bytes_known": 36646789120,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 7
+          },
+          "no_reusable_input_restore_step": {
+            "independent_events": 6121,
+            "events_with_known_completion_boundary": 6121,
+            "remaining_native_full_host_hit_bytes_known": 165846937600,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 105
+          },
+          "prefetch_capacity_budget": {
+            "independent_events": 3985,
+            "events_with_known_completion_boundary": 3985,
+            "remaining_native_full_host_hit_bytes_known": 989622476800,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 116
+          }
+        },
+        "observed_planning_blocked_details": {
+          "input_checkpoint_unavailable_or_already_resident": {
+            "independent_events": 9309,
+            "events_with_known_completion_boundary": 9309,
+            "remaining_native_full_host_hit_bytes_known": 167972679680,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 105
+          },
+          "pending_load_transfer": {
+            "independent_events": 4,
+            "events_with_known_completion_boundary": 4,
+            "remaining_native_full_host_hit_bytes_known": 211025920,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 2
+          },
+          "pending_write_transfer": {
+            "independent_events": 7,
+            "events_with_known_completion_boundary": 7,
+            "remaining_native_full_host_hit_bytes_known": 874250240,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 0
+          },
+          "prefetch_full_capacity_budget": {
+            "independent_events": 3985,
+            "events_with_known_completion_boundary": 3985,
+            "remaining_native_full_host_hit_bytes_known": 989622476800,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 116
+          },
+          "prefetch_mamba_capacity_budget": {
+            "independent_events": 1,
+            "events_with_known_completion_boundary": 1,
+            "remaining_native_full_host_hit_bytes_known": 7864320,
+            "remaining_native_full_evidence_unknown_events": 0,
+            "events_with_early_reused_full": 1
+          }
+        },
+        "observed_no_live_details": {}
+      },
+      "planning_gap_semantics": "One count per independent wait per observed reason, regardless of repeated samples. Evidence categories partition waits; reason/detail groups overlap and must not be summed. Zero or missing plans do not prove zero physical demand. Residual bytes are next-request native FULL Host hits, not a proven pre-boundary opportunity, exclusive rejection cause or oracle speedup. Burst categories partition waits by the largest explicitly observed plan, not lifetime node commands. A sixteen-node plan is not proof of truncation or that a larger early transfer would fit capacity or the service window.",
+      "client_submit_to_native_arrival_ms": {
+        "count": 25626,
+        "p50": 171.1865234375,
+        "p90": 376.1014404296875,
+        "max": 2868.288818359375
+      },
+      "client_submit_to_http_request_ms": {
+        "count": 25622,
+        "p50": 13.2135009765625,
+        "p90": 31.20563964843751,
+        "max": 931.563720703125
+      },
+      "http_request_to_body_sent_ms": {
+        "count": 25564,
+        "p50": 2.39697265625,
+        "p90": 35.027246093750016,
+        "max": 1278.1708984375
+      },
+      "body_sent_to_native_arrival_ms": {
+        "count": 25564,
+        "p50": 140.049560546875,
+        "p90": 335.9448486328125,
+        "max": 2854.943603515625
+      },
+      "http_request_to_response_headers_ms": {
+        "count": 25622,
+        "p50": 1267.978515625,
+        "p90": 12614.162988281252,
+        "max": 18783.320068359375
+      },
+      "body_sent_to_api_received_ms": {
+        "count": 23217,
+        "p50": 55.78759765625,
+        "p90": 251.48540039062505,
+        "max": 1499.499755859375
+      },
+      "api_received_to_chat_conversion_ms": {
+        "count": 25626,
+        "p50": 14.4808349609375,
+        "p90": 22.1529541015625,
+        "max": 87.41064453125
+      },
+      "chat_conversion_ms": {
+        "count": 25626,
+        "p50": 54.5093994140625,
+        "p90": 79.7479248046875,
+        "max": 155.532470703125
+      },
+      "chat_conversion_to_tokenized_ms": {
+        "count": 25626,
+        "p50": 0.6495361328125,
+        "p90": 0.88427734375,
+        "max": 78.349365234375
+      },
+      "tokenized_to_dispatch_ms": {
+        "count": 25626,
+        "p50": 0.004638671875,
+        "p90": 0.005615234375,
+        "max": 0.021728515625
+      },
+      "dispatch_to_scheduler_received_ms": {
+        "count": 25626,
+        "p50": 13.6246337890625,
+        "p90": 48.905029296875,
+        "max": 2741.616455078125
+      },
+      "scheduler_received_to_queue_registered_ms": {
+        "count": 25626,
+        "p50": 0.1298828125,
+        "p90": 0.171142578125,
+        "max": 4.614990234375
+      },
+      "client_submit_to_first_service_ms": {
+        "count": 25626,
+        "p50": 978.7515869140625,
+        "p90": 12398.755004882812,
+        "max": 18618.734619140625
+      },
+      "submit_to_first_service_ms": {
+        "count": 25626,
+        "p50": 692.002197265625,
+        "p90": 12159.576293945312,
+        "max": 18424.780517578125
+      },
+      "last_ack_to_first_service_ms": {
+        "count": 242,
+        "p50": 661.80322265625,
+        "p90": 13911.855053710939,
+        "max": 98992.27490234375
+      },
+      "full_expiration_commands_by_stage": {
+        "before_completion": 27,
+        "awaiting_native_arrival": 2
+      },
+      "full_expiration_bytes_by_stage": {
+        "before_completion": 324055040,
+        "awaiting_native_arrival": 21196800
+      }
+    }
+  },
+  "protection_summary": {
+    "join_ticket": {
+      "independent_waits": 99,
+      "early_full_commands": 251,
+      "early_full_bytes": 2386186240,
+      "next_request_confirmed_full_reuse_bytes": 1598771200,
+      "initial_registered_lease_ms": {
+        "3000.0": 251
+      },
+      "command_first_release_phases": {
+        "before_completion": 118,
+        "completion_to_native_arrival": 4,
+        "no_release_observed_by_first_service": 129
+      },
+      "command_first_release_reasons": {
+        "service_window_expired": 122,
+        "not_observed": 129
+      },
+      "commands_with_observed_own_or_shared_lock_at_arrival": 129,
+      "commands_with_unknown_lock_at_arrival": 0,
+      "waits_with_observed_own_or_shared_lock_at_arrival": 52,
+      "release_cohorts": {
+        "all_early_commands_released_before_completion": {
+          "independent_waits": 45,
+          "early_full_commands": 75,
+          "early_full_bytes": 579194880,
+          "next_request_confirmed_full_reuse_bytes": 315146240,
+          "waits_with_confirmed_reuse": 27,
+          "latest_ack_to_completion_ms": {
+            "count": 45,
+            "p50": 5346.525634765625,
+            "p90": 9380.99755859375,
+            "max": 17184.94140625
+          },
+          "native_queue_wait_ms": {
+            "count": 45,
+            "p50": 364.3994140625,
+            "p90": 14107.941992187501,
+            "max": 15692.96435546875
+          }
+        },
+        "no_early_command_release_before_completion_observed": {
+          "independent_waits": 40,
+          "early_full_commands": 99,
+          "early_full_bytes": 864583680,
+          "next_request_confirmed_full_reuse_bytes": 864583680,
+          "waits_with_confirmed_reuse": 40,
+          "latest_ack_to_completion_ms": {
+            "count": 40,
+            "p50": 704.7054443359375,
+            "p90": 2741.2074951171876,
+            "max": 3029.0546875
+          },
+          "native_queue_wait_ms": {
+            "count": 40,
+            "p50": 89.356689453125,
+            "p90": 214.75966796875002,
+            "max": 258.588623046875
+          }
+        },
+        "some_early_commands_released_before_completion": {
+          "independent_waits": 14,
+          "early_full_commands": 77,
+          "early_full_bytes": 942407680,
+          "next_request_confirmed_full_reuse_bytes": 419041280,
+          "waits_with_confirmed_reuse": 14,
+          "latest_ack_to_completion_ms": {
+            "count": 14,
+            "p50": 1611.571533203125,
+            "p90": 2667.9474365234373,
+            "max": 2903.079345703125
+          },
+          "native_queue_wait_ms": {
+            "count": 14,
+            "p50": 135.592041015625,
+            "p90": 211.70017089843753,
+            "max": 526.04541015625
+          }
+        }
+      }
+    },
+    "tool_wait": {
+      "independent_waits": 233,
+      "early_full_commands": 1798,
+      "early_full_bytes": 12977233920,
+      "next_request_confirmed_full_reuse_bytes": 11243868160,
+      "initial_registered_lease_ms": {
+        "3000.0": 1795
+      },
+      "command_first_release_phases": {
+        "no_release_observed_by_first_service": 1563,
+        "completion_to_native_arrival": 53,
+        "before_completion": 182
+      },
+      "command_first_release_reasons": {
+        "not_observed": 1563,
+        "service_window_expired": 188,
+        "context_summary_started": 47
+      },
+      "commands_with_observed_own_or_shared_lock_at_arrival": 1550,
+      "commands_with_unknown_lock_at_arrival": 13,
+      "waits_with_observed_own_or_shared_lock_at_arrival": 205,
+      "release_cohorts": {
+        "no_early_command_release_before_completion_observed": {
+          "independent_waits": 212,
+          "early_full_commands": 1586,
+          "early_full_bytes": 10965995520,
+          "next_request_confirmed_full_reuse_bytes": 10754990080,
+          "waits_with_confirmed_reuse": 206,
+          "latest_ack_to_completion_ms": {
+            "count": 212,
+            "p50": 107.716064453125,
+            "p90": 1156.0833007812503,
+            "max": 2962.317138671875
+          },
+          "native_queue_wait_ms": {
+            "count": 212,
+            "p50": 129.34619140625,
+            "p90": 469.96655273437506,
+            "max": 14494.352294921875
+          }
+        },
+        "all_early_commands_released_before_completion": {
+          "independent_waits": 19,
+          "early_full_commands": 166,
+          "early_full_bytes": 1715896320,
+          "next_request_confirmed_full_reuse_bytes": 289669120,
+          "waits_with_confirmed_reuse": 3,
+          "latest_ack_to_completion_ms": {
+            "count": 19,
+            "p50": 7337.875732421875,
+            "p90": 34708.26528320308,
+            "max": 87982.53881835938
+          },
+          "native_queue_wait_ms": {
+            "count": 19,
+            "p50": 10258.6220703125,
+            "p90": 12049.093505859375,
+            "max": 13835.3349609375
+          }
+        },
+        "some_early_commands_released_before_completion": {
+          "independent_waits": 2,
+          "early_full_commands": 46,
+          "early_full_bytes": 295342080,
+          "next_request_confirmed_full_reuse_bytes": 199208960,
+          "waits_with_confirmed_reuse": 1,
+          "latest_ack_to_completion_ms": {
+            "count": 2,
+            "p50": 2485.564453125,
+            "p90": 2629.61328125,
+            "max": 2665.62548828125
+          },
+          "native_queue_wait_ms": {
+            "count": 2,
+            "p50": 5357.81494140625,
+            "p90": 9607.06455078125,
+            "max": 10669.376953125
+          }
+        }
+      }
+    }
+  },
+  "capacity_gap_summary": {
+    "independent_join_gaps": 54,
+    "events_with_each_category": {
+      "bounded_reclaim_full_target_unsatisfied": 53,
+      "no_published_waiting_candidate_at_reclaim": 53,
+      "refusal_with_free_pages_within_reserve": 53,
+      "same_action_reclaim_diagnosis_recorded": 53,
+      "zero_full_budget_refusal": 53,
+      "bounded_native_scan_truncated": 28,
+      "no_recorded_full_refusal_after_start": 1
+    },
+    "first_start_lead_to_completion_ms": {
+      "count": 54,
+      "p50": 441.8143310546875,
+      "p90": 5310.648559570313,
+      "max": 11752.7646484375
+    },
+    "native_arrival_to_first_service_ms": {
+      "count": 54,
+      "p50": 10377.76318359375,
+      "p90": 13909.2517578125,
+      "max": 14611.260498046875
+    },
+    "remaining_next_request_native_full_host_hit_bytes": 4413788160
+  },
+  "selected_work_error_summary": {
+    "selected_independent_early_full_joins": 99,
+    "native_stage_eos_bound_joins": 99,
+    "omitted_observations": {},
+    "trigger_counts": {
+      "estimated_work": 84,
+      "observed_no_tool_eos": 15
+    },
+    "estimated_work_comparable_joins": 84,
+    "remaining_token_signed_error": {
+      "count": 84,
+      "p50": -71.47162708184364,
+      "p90": 1.9755536995407905,
+      "max": 57.04887516444522
+    },
+    "projected_to_actual_work_ratio": {
+      "count": 84,
+      "p50": 0.3731845627166933,
+      "p90": 1.034866407504377,
+      "max": 9.14983930920646
+    },
+    "predicted_wall_signed_error_ms": {
+      "count": 84,
+      "p50": -2674.093688099901,
+      "p90": 337.37250461492187,
+      "max": 1694.3869592608696
+    },
+    "predicted_to_actual_wall_rate_ratio": {
+      "count": 84,
+      "p50": 0.9291443240613134,
+      "p90": 1.2601915826566026,
+      "max": 2.182261149475309
+    },
+    "native_eos_to_join_completion_ms": {
+      "count": 99,
+      "p50": 120.4052734375,
+      "p90": 601.3222167968751,
+      "max": 950.79345703125
+    },
+    "live_interval_known_joins": 84,
+    "live_interval_covered_joins": 74
+  },
+  "selected_trigger_window": {
+    "h2d_ms": {
+      "count": 84,
+      "p50": 71.89132121223847,
+      "p90": 90.16255204935368,
+      "max": 103.27837355434896
+    },
+    "start_window_ms": {
+      "count": 84,
+      "p50": 1900.2277828837623,
+      "p90": 2000.0,
+      "max": 2000.0
+    },
+    "prediction_early_ms": {
+      "count": 84,
+      "p50": 1732.5959632536023,
+      "p90": 1971.1796810488004,
+      "max": 1997.960653462082
+    }
+  },
+  "causal_bias_replay": {
+    "all_previous_completions:raw": {
+      "count": 84,
+      "queries_with_past_completed_labels": 83,
+      "absolute_wall_error_ms": {
+        "count": 84,
+        "p50": 2674.093688099901,
+        "p90": 9880.914823809937,
+        "max": 41444.702179957596
+      },
+      "signed_wall_error_ms": {
+        "count": 84,
+        "p50": -2674.093688099901,
+        "p90": 337.37250461492187,
+        "max": 1694.3869592608696
+      },
+      "within_500ms": 7,
+      "within_1000ms": 18,
+      "early_by_more_than_3000ms": 34,
+      "late_by_more_than_1000ms": 4
+    },
+    "all_previous_completions:token_bias": {
+      "count": 84,
+      "queries_with_past_completed_labels": 83,
+      "absolute_wall_error_ms": {
+        "count": 84,
+        "p50": 2517.235210261947,
+        "p90": 6288.710930308642,
+        "max": 38828.412795799806
+      },
+      "signed_wall_error_ms": {
+        "count": 84,
+        "p50": 395.0432606154527,
+        "p90": 3780.1888607069086,
+        "max": 5887.921867375313
+      },
+      "within_500ms": 13,
+      "within_1000ms": 20,
+      "early_by_more_than_3000ms": 20,
+      "late_by_more_than_1000ms": 32
+    },
+    "all_previous_completions:log_bias": {
+      "count": 84,
+      "queries_with_past_completed_labels": 83,
+      "absolute_wall_error_ms": {
+        "count": 84,
+        "p50": 2665.026039918088,
+        "p90": 6340.714741445019,
+        "max": 39431.71495400888
+      },
+      "signed_wall_error_ms": {
+        "count": 84,
+        "p50": 1118.5810459777094,
+        "p90": 4481.127005158653,
+        "max": 6047.068776385217
+      },
+      "within_500ms": 5,
+      "within_1000ms": 10,
+      "early_by_more_than_3000ms": 16,
+      "late_by_more_than_1000ms": 43
+    },
+    "different_projects_only:raw": {
+      "count": 84,
+      "queries_with_past_completed_labels": 83,
+      "absolute_wall_error_ms": {
+        "count": 84,
+        "p50": 2674.093688099901,
+        "p90": 9880.914823809937,
+        "max": 41444.702179957596
+      },
+      "signed_wall_error_ms": {
+        "count": 84,
+        "p50": -2674.093688099901,
+        "p90": 337.37250461492187,
+        "max": 1694.3869592608696
+      },
+      "within_500ms": 7,
+      "within_1000ms": 18,
+      "early_by_more_than_3000ms": 34,
+      "late_by_more_than_1000ms": 4
+    },
+    "different_projects_only:token_bias": {
+      "count": 84,
+      "queries_with_past_completed_labels": 83,
+      "absolute_wall_error_ms": {
+        "count": 84,
+        "p50": 2606.401822518088,
+        "p90": 6435.1899374435525,
+        "max": 38690.73384310625
+      },
+      "signed_wall_error_ms": {
+        "count": 84,
+        "p50": 526.7449858624295,
+        "p90": 4005.9972918230183,
+        "max": 6403.030671098655
+      },
+      "within_500ms": 7,
+      "within_1000ms": 19,
+      "early_by_more_than_3000ms": 19,
+      "late_by_more_than_1000ms": 34
+    },
+    "different_projects_only:log_bias": {
+      "count": 84,
+      "queries_with_past_completed_labels": 83,
+      "absolute_wall_error_ms": {
+        "count": 84,
+        "p50": 2516.6145765827205,
+        "p90": 6761.196859801471,
+        "max": 39148.9067669525
+      },
+      "signed_wall_error_ms": {
+        "count": 84,
+        "p50": 1388.8552264826471,
+        "p90": 4571.193513629106,
+        "max": 6922.976093580264
+      },
+      "within_500ms": 8,
+      "within_1000ms": 13,
+      "early_by_more_than_3000ms": 15,
+      "late_by_more_than_1000ms": 44
+    }
+  },
+  "complete_matched_windows": [
+    {
+      "window_seconds": [
+        120.0,
+        300.0
+      ],
+      "busy": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v58_same_version_pair_busy_120_300_20261014.json",
+        "sha256": "ae9420b09001d249a43c3c7d6227128fe1b7d253ec01f0536bcc3c6741dc35a4"
+      },
+      "phases": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v58_same_version_pair_prefill_phases_120_300_20261014.json",
+        "sha256": "e0db8da06f53dc2cb5e2c828e4c16a89e59ff9f043700f4d5b9d840224d24e57"
+      },
+      "metrics": {
+        "predictive_h2d": {
+          "short_samples": 45,
+          "turnover": {
+            "count": 45,
+            "mean_ms": 51.03076725006103,
+            "p50_ms": 43.79300785064697,
+            "p90_ms": 73.77517414093018,
+            "max_ms": 102.2644624710083,
+            "sum_ms": 2296.3845262527466
+          },
+          "return_gap": {
+            "count": 45,
+            "mean_ms": 9.479410658942328,
+            "p50_ms": 6.878850936889648,
+            "p90_ms": 18.438039779663086,
+            "max_ms": 43.808024406433105,
+            "sum_ms": 426.5734796524048
+          },
+          "selection": {
+            "count": 45,
+            "mean_ms": 7.6164834,
+            "p50_ms": 4.833878,
+            "p90_ms": 9.662519,
+            "max_ms": 89.580606,
+            "sum_ms": 342.74175299999996
+          },
+          "run_batch": {
+            "count": 45,
+            "mean_ms": 39.21545851111111,
+            "p50_ms": 34.606455,
+            "p90_ms": 53.000844,
+            "max_ms": 78.782693,
+            "sum_ms": 1764.6956330000003
+          },
+          "decode_request_steps": 222673
+        },
+        "native": {
+          "short_samples": 51,
+          "turnover": {
+            "count": 51,
+            "mean_ms": 43.99509125129849,
+            "p50_ms": 40.154643058776855,
+            "p90_ms": 50.98806667327881,
+            "max_ms": 80.91787910461426,
+            "sum_ms": 2243.749653816223
+          },
+          "return_gap": {
+            "count": 51,
+            "mean_ms": 6.013133142508712,
+            "p50_ms": 3.8599748611450195,
+            "p90_ms": 6.608869552612305,
+            "max_ms": 42.94804859161377,
+            "sum_ms": 306.66979026794434
+          },
+          "selection": {
+            "count": 51,
+            "mean_ms": 2.8324699607843136,
+            "p50_ms": 1.6591,
+            "p90_ms": 3.408987,
+            "max_ms": 30.220492,
+            "sum_ms": 144.455968
+          },
+          "run_batch": {
+            "count": 51,
+            "mean_ms": 35.07159631372549,
+            "p50_ms": 33.907041,
+            "p90_ms": 42.148396,
+            "max_ms": 43.915365,
+            "sum_ms": 1788.6514120000004
+          },
+          "decode_request_steps": 246021
+        }
+      },
+      "turnover_p50_relative_gap": 0.0906088191730261,
+      "decode_service_relative_gap": -0.09490246767552368
+    },
+    {
+      "window_seconds": [
+        600.0,
+        900.0
+      ],
+      "busy": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v58_same_version_pair_busy_600_900_20261014.json",
+        "sha256": "e4e6b476f47a40060025458b9b46554e8aca9d7443ea472c24dc3782b2f6d9be"
+      },
+      "phases": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v58_same_version_pair_prefill_phases_600_900_20261014.json",
+        "sha256": "59925994944c0fe4b2bb0e1da28e24ee4a18a45ec82992981547b3b6d73a7e50"
+      },
+      "metrics": {
+        "predictive_h2d": {
+          "short_samples": 66,
+          "turnover": {
+            "count": 66,
+            "mean_ms": 56.67130762158018,
+            "p50_ms": 51.503711223602295,
+            "p90_ms": 66.05889511108398,
+            "max_ms": 121.45811367034912,
+            "sum_ms": 3740.306303024292
+          },
+          "return_gap": {
+            "count": 66,
+            "mean_ms": 11.522768237374045,
+            "p50_ms": 9.361905574798584,
+            "p90_ms": 17.64033317565918,
+            "max_ms": 49.81739807128906,
+            "sum_ms": 760.502703666687
+          },
+          "selection": {
+            "count": 66,
+            "mean_ms": 22.129356136363636,
+            "p50_ms": 18.368432,
+            "p90_ms": 31.447116,
+            "max_ms": 116.490897,
+            "sum_ms": 1460.5375050000002
+          },
+          "run_batch": {
+            "count": 66,
+            "mean_ms": 41.211155,
+            "p50_ms": 36.9057815,
+            "p90_ms": 45.458284,
+            "max_ms": 78.366664,
+            "sum_ms": 2719.9362300000003
+          },
+          "decode_request_steps": 365271
+        },
+        "native": {
+          "short_samples": 62,
+          "turnover": {
+            "count": 62,
+            "mean_ms": 46.283779897997455,
+            "p50_ms": 44.35922050476074,
+            "p90_ms": 53.211496353149414,
+            "max_ms": 56.13868236541748,
+            "sum_ms": 2869.5943536758423
+          },
+          "return_gap": {
+            "count": 62,
+            "mean_ms": 4.375697443562169,
+            "p50_ms": 4.146250247955322,
+            "p90_ms": 6.06906795501709,
+            "max_ms": 7.376157760620117,
+            "sum_ms": 271.2932415008545
+          },
+          "selection": {
+            "count": 62,
+            "mean_ms": 17.79438601612903,
+            "p50_ms": 15.992223500000001,
+            "p90_ms": 32.011823,
+            "max_ms": 52.945247,
+            "sum_ms": 1103.2519330000005
+          },
+          "run_batch": {
+            "count": 62,
+            "mean_ms": 37.58710158064516,
+            "p50_ms": 36.1954355,
+            "p90_ms": 43.946312,
+            "max_ms": 44.426401,
+            "sum_ms": 2330.4002980000005
+          },
+          "decode_request_steps": 386707
+        }
+      },
+      "turnover_p50_relative_gap": 0.16105987971711055,
+      "decode_service_relative_gap": -0.0554321488879177
+    },
+    {
+      "window_seconds": [
+        1800.0,
+        2100.0
+      ],
+      "busy": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v58_same_version_pair_busy_1800_2100_20261014.json",
+        "sha256": "307dc054c2a8ef39903eaebac86a837826cd37fd12e0f40c840150289c2fc9b9"
+      },
+      "phases": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v58_same_version_pair_prefill_phases_1800_2100_20261014.json",
+        "sha256": "f51e23d7fa6364417222fc25039638beaa5b56ef45582a5b184e96cc483c38b7"
+      },
+      "metrics": {
+        "predictive_h2d": {
+          "short_samples": 72,
+          "turnover": {
+            "count": 72,
+            "mean_ms": 56.01060514979892,
+            "p50_ms": 55.44884538650513,
+            "p90_ms": 66.8978681564331,
+            "max_ms": 89.14950370788574,
+            "sum_ms": 4032.7635707855225
+          },
+          "return_gap": {
+            "count": 72,
+            "mean_ms": 10.281623072094387,
+            "p50_ms": 8.812294960021973,
+            "p90_ms": 15.914702415466309,
+            "max_ms": 38.18009853363037,
+            "sum_ms": 740.2768611907959
+          },
+          "selection": {
+            "count": 72,
+            "mean_ms": 7.419674430555555,
+            "p50_ms": 6.1162575,
+            "p90_ms": 9.867469,
+            "max_ms": 40.856561,
+            "sum_ms": 534.2165590000001
+          },
+          "run_batch": {
+            "count": 72,
+            "mean_ms": 40.40219654166667,
+            "p50_ms": 42.9177455,
+            "p90_ms": 45.148106,
+            "max_ms": 46.772381,
+            "sum_ms": 2908.9581510000007
+          },
+          "decode_request_steps": 390566
+        },
+        "native": {
+          "short_samples": 64,
+          "turnover": {
+            "count": 64,
+            "mean_ms": 52.11813239753246,
+            "p50_ms": 51.787667751312256,
+            "p90_ms": 57.938758850097656,
+            "max_ms": 76.94858360290527,
+            "sum_ms": 3335.5604734420776
+          },
+          "return_gap": {
+            "count": 64,
+            "mean_ms": 4.460641443729401,
+            "p50_ms": 3.8858437538146973,
+            "p90_ms": 6.357324600219727,
+            "max_ms": 13.840901374816895,
+            "sum_ms": 285.48105239868164
+          },
+          "selection": {
+            "count": 64,
+            "mean_ms": 7.318729296875,
+            "p50_ms": 2.7438184999999997,
+            "p90_ms": 8.986172,
+            "max_ms": 112.086539,
+            "sum_ms": 468.398675
+          },
+          "run_batch": {
+            "count": 64,
+            "mean_ms": 40.418972328125,
+            "p50_ms": 36.780317499999995,
+            "p90_ms": 45.25358,
+            "max_ms": 66.048009,
+            "sum_ms": 2586.814229
+          },
+          "decode_request_steps": 381775
+        }
+      },
+      "turnover_p50_relative_gap": 0.07069593581186329,
+      "decode_service_relative_gap": 0.023026651823718103
+    }
+  ],
+  "remaining_work": [
+    "Explain conditional remaining-work underestimation across all causal frames, not only first action-selected stages.",
+    "Replay candidate rolling start windows against delivered forecasts before changing uncertainty padding; preserve unknown physical capacity.",
+    "Continue action-local cold-capacity/reclaim diagnosis and restored-parent admission/consumption.",
+    "Reduce remaining scheduler selection/control/result-handoff costs using the matched native phase evidence.",
+    "Retain the frozen V58 pair and complete native JCT, quality, fairness, recomputation and repeated controlled acceptance."
+  ],
+  "limitations": [
+    "Three-second lease release is not eviction; recorded own/shared locks are not proof of complete execution readiness.",
+    "Bias replay changes point estimates only and does not qualify a later H2D opportunity or policy.",
+    "Selected stage/early-transfer populations are not all-frame, all-child or project-isolated predictor validation.",
+    "Independent file prefixes are not an atomic snapshot; nine JOIN completions remain unknown in the sealed prefix.",
+    "Matched engine/configuration does not fix realized workload demand; aggregate phase medians are not additive per-request attribution.",
+    "Initial windows and successful harness completion do not prove final mean-JCT or completion-throughput gains.",
+    "The qualified checkpoint-scan candidate remains outside the running V58 source."
+  ],
+  "helper_sha256": "9dc1bae8914928aaf6df7a6629201e65d4826acb7516cfd9bb7a7483dc9bdda6"
+}

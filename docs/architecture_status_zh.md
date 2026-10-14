@@ -6,6 +6,16 @@
 改善平均workflow JCT与完成吞吐；既有PrefillAdder保留，新增
 延迟凑批、mixed chunk、最小槽延迟和间隔调整仍关闭。
 
+最新v577补齐1800–2100s同版本窗口：72/64个短样本周转P50
+55.449/51.788ms（+7.07%），decode服务量390566/381775
+（+2.30%）；run_batch42.918/36.780ms，仍须按实际形状区分
+发射墙钟与GPU工作，不能将前两个窗口的近似推广到全部阶段。
+v576保留native的pytest-dev__pytest-10051 incomplete：
+root最后两请求均finish_reason=length且实际输出8192 token，
+一次既有空白reasoning重试也到上限。deadline未过期，两个
+child均返回、零取消/guard干预。预算不变，保留workspace及
+全工作流质量计数，不仅比较共同completed任务。
+
 V58 predictive已自然完成156/156个workflow，8367.726s，原
 scheduler1630621退出；native于2026-10-15 00:33实际开始服务，
 scheduler3865597/start_ticks616567785经独立启动记录核验。

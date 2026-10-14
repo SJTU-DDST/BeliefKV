@@ -7,6 +7,16 @@ short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
 and interval changes remain disabled.
 
+Latest V577 adds the matched1800-2100s window:72/64 short samples,
+turnover P50 55.449/51.788ms (+7.07%), decode390566/381775 (+2.30%).
+Run_batch42.918/36.780ms still requires shape-matched CPU/GPU attribution;
+do not extend the first two windows' close launch spans to all phases.
+V576 retains native pytest-dev__pytest-10051 as incomplete: the final two
+root requests each emit8192 tokens with finish_reason=length, including
+the existing reasoning retry. The deadline did not expire, both children
+returned and no guard/cancellation intervened. Preserve current budgets,
+workspace evidence and all-workflow quality counts alongside paired JCT.
+
 V58 predictive naturally completed156/156 workflows in8367.726s; native
 is live from2026-10-15 00:33 with independently verified PID3865597/
 start_ticks616567785. Same-version120-300 and600-900s short turnover
