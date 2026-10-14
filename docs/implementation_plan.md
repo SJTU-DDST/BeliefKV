@@ -2,6 +2,24 @@
 
 Status date: 2026-10-14 (PDT).
 
+Next cold observation V60 uses the V615-qualified observation cache change;
+V620/V621 retain the frozen source and actual registration. Wait for V59's
+exact driver and complete postprocessing, exclusive GPU capacity and45GiB
+free disk. Keep predictive-only development with cached V58 native reference,
+unchanged engine, workload, pools, budgets and disabled new batching knobs.
+Recheck all72 source hashes and932 existing passing checks without rerunning
+unchanged tests. At16:05 PDT V59 had153 client completions and3 unknown
+terminal outcomes with actual model service. Measure live cache frequency,
+replenished turnover, useful FULL consumption and full JCT before claiming gain.
+
+V618 archives the six exact V56 client server logs as unique contents:
+8.960GB becomes0.215GB after full tar comparison and closed-source rechecks.
+Canonical logs and the failed V595 duplication receipt remain. V619 finalizes
+the V58 native single-workflow tail:6351.045s,99.551% tool coverage,
+0.332% GPU utilization and an empty queue.76 identical successful commands
+precede a final workflow-deadline cancellation. Keep all outcomes and budgets;
+this idle tail cannot establish predictive migration performance.
+
 Continue the original mean-workflow-JCT and completion-throughput goal through
 short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
@@ -78,7 +96,8 @@ still requires same-version repeated controls, quality/fairness/recompute checks
 
 V593 archives24.012GB of stopped V32/V49 mirrors and V54/V55 logs into0.613GB
 after full comparison. V595's additional V56 mirror-prefix check failed before
-source removal; all its files are retained. Space was independently rechecked
+source removal; V618 later archives the exact unique contents without claiming
+duplication. Space was independently rechecked
 at roughly76GiB after V58 cleanup. Do not attribute all recovered space to archival.
 The entries below retain the diagnostic history; current candidate status is V594.
 
