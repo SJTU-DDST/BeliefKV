@@ -1,0 +1,1081 @@
+{
+  "status": "qualified_for_subsequent_cold_observation_not_online_gain",
+  "qualified_at_local": "2026-10-14T23:52:03.334584+08:00",
+  "prior_qualification": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v547_prefetch_single_path_qualification_20261014.json",
+    "sha256": "5c72c40597e68b583ecb9acef0ccb7f7c0c3ef85096dbaa30ec37c1bbcb3b528"
+  },
+  "source_sha256": {
+    "beliefkv/control/causal_graph.py": "2b5070822d2dba1cc994b94e40245430de18edd12b2fd1dceed76e9a88d3f657",
+    "beliefkv/runtime/native_transfer_policy.py": "3dd8ebfcace6e3b4a1cee0abf68f8ea8baa9f7fc7d82cb6b142a34b7b24c5ff3",
+    "beliefkv/runtime/native_transfer_service.py": "7bd8f754f6aba88360afa33d2d33625f572142d8233feaa242d8060ff925525f",
+    "beliefkv/runtime/prefill_turnover_probe.py": "15201e06bae952c303405b647ac9ca069070fd86b3853e642c687ae172fadf54",
+    "beliefkv/runtime/semantic_report_worker.py": "36dfc62ec362ab2020695ff6c10b3cca09e9ff64681e8c0ac20082847afcd0ee",
+    "beliefkv/runtime/sglang_v0520_physical.py": "9a32cafbfe0ec5c2a5578583ba20a29ab65517c77ffdd9a0efd970d5fc45b77b",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "fe04ad26466bb22456df2cf813843053a66d410693c4d7acc31baa2095406041",
+    "beliefkv/runtime/v0520_native_telemetry.py": "60d65ccd5d1450555e6dec2ef6fdcbea9e10563da06c2d75fa9cdb45fc586bd8",
+    "scripts/analyze_prefill_turnover.py": "4becc5d75d7be52a85848241cc8792c1153cd5fa85833766b3f486dcd1f06a7d",
+    "scripts/benchmark_full_h2d_service_history.py": "146c43e8cc7614aad999a1d8556171d21f868bb13e1c758e88b13456c1db2429",
+    "scripts/benchmark_join_parent_projection.py": "887aef440732c57dafb1fc2b8385b5dd1105b5082d2043c57f01f7558b57125f",
+    "scripts/benchmark_native_prepare_path.py": "3ccb01eb8778c1fa11f5a6cdd67c03c300998085b0846a44eec76323c7e2e6a3",
+    "scripts/benchmark_native_reentry_cpu.py": "1df92051adfec888ea779a5080d67471f11c6247ea148eb64833c1a0fcf17299",
+    "scripts/benchmark_native_shared_path.py": "5105c132fa8ad4be3074019f9567b4c9800dd12960a2c44d1c2342875aa7f75c",
+    "scripts/benchmark_prefill_turnover_probe.py": "ca820778c724f1e87e7e5560213a1893bc4d34956a2bb7cb999cc289bddcd448",
+    "scripts/benchmark_wait_context_delta.py": "8168a6fdf30ab225258c1729e5dee4654693038eacda83cc5df205d08cc62235",
+    "scripts/benchmark_wait_prefetch_subset_service.py": "0c7378eb310820b08924f974c1006783fd3c06e5fccff9c32918626e57aa9835",
+    "scripts/compare_native_policy_runs.py": "5d8b927a10b0d308fabaabe4e97397d8d34a0b040378f55441778985bf2322f7",
+    "scripts/evaluate_transfer_service_history.py": "2b73a5a2d352bfbc504b35b4f2079d7d9744ac1c6e68a219bf6d6fdd5108614d",
+    "scripts/launch_qwen35_native_v0520.sh": "0d166fa03c0ab82c95cd80c816301a7ad9edf3f16d3a85626d0d131191446cb4",
+    "scripts/launch_semantic_h2d_after_pair.py": "a3a5ef89af51a9bd21d7e29560ce3d37d7a50912362573121142c1e4608345d1",
+    "scripts/preflight_qwen35_host_pool.py": "ce8286e4e0c7a012faf5a7289c44893239982b64a0be56f47abdb99e5904ae30",
+    "scripts/replay_h2d_full_service_history.py": "71770530ce977544bb3f192ddb118d01ce82d006643308205662f93ff9d1aa4b",
+    "scripts/replay_native_service_cache.py": "82f062e2c997daf45fbbc85ae91d4386dad1f05daee021ad89796d65a13dc196",
+    "scripts/replay_wait_context_delta.py": "e4f72b1ea4cd08edf45ca97fd268dcb7b81b212e802e054d0a45ebc6aa2099b8",
+    "scripts/replay_wait_prefetch_subset_service.py": "eff08432ab92be55e9319d78eedcccc1e2d00fc201a3166de321fa562483c736",
+    "scripts/resume_semantic_h2d_ab.py": "271dccc313016ae3878fd75d33ca30b7fc254b32b26736e17fc8ebe7dc0a4036",
+    "scripts/run_qwen35_native_regime_probe.sh": "bbd2d112b0225c380335438591c33cf342c23370f994bebd6874cc5648ce9d57",
+    "scripts/run_qwen35_semantic_h2d_ab.sh": "fe020ee50755c9d4c17ccd8e60493bee5f13c014f5932cf0eae16da7e25c93a7",
+    "scripts/seal_prefill_turnover_qualification.py": "25cd4d00157dd3bef2538f332ace1716f3fc1e57d587f169a95ec40a8ee410b6",
+    "scripts/seal_reservation_cutoff.py": "f0d341a2fcf1007e0c13aca7e31595cfbb8d339d5ea89febdeac3ebeaef8d9a7",
+    "scripts/summarize_semantic_h2d_ab.py": "77a4f1babbeebbbd57fbc1fb1e0350383f723cfb1633316e849f52b34c8d0480",
+    "tests/test_analyze_prefill_turnover.py": "0d7663ed67738868c5aa177e7a82fd1ca5948d3aab3ffa24471e8ff04301615b",
+    "tests/test_causal_graph.py": "8c0d0e199dad4b6b82fea193980bc7d9a2bc619d875ddebb7d9c971038e1dad7",
+    "tests/test_compare_native_policy_runs.py": "61a5bb61058af569fd1a951d8531257c085e8851795925c13f46affe498753bf",
+    "tests/test_h2d_full_service_history.py": "31ee2db9e1028817aba07e06a845414ba56dff4ce5af14ed34074e9d907b85b2",
+    "tests/test_h2d_service_estimate_cache.py": "1b0c69a48780d2cc988d783650aa1bf73ce7df1fad864f1e69cf2d68a9539488",
+    "tests/test_launch_semantic_h2d_after_pair.py": "2b518b3c2ede2086d7c41c7d9c617ff2a52ecf6d1f12a32c9f02490a11594a4f",
+    "tests/test_native_service_cache_invalidation.py": "19952d6f3d421c30c695ebe3656a48bf5c093c1d052665750bb3adca3388ed17",
+    "tests/test_native_transfer_policy.py": "4af4e89a1b35f45c8e2a9265c94d0863775f79e4be8f6979703f706677ee9414",
+    "tests/test_native_wait_candidates.py": "8cc0c31f0be3028b81c322565b0456d09f8f23fa947e3118e485c5a716e14813",
+    "tests/test_prefill_turnover_probe.py": "f1ae46016e063991149ba6548565640a07cfca1ad00247a453de4bd2f2095155",
+    "tests/test_qwen35_host_pool.py": "9c2cbc679fee256d71eaf0191b979096f92770efa6a4c80d0ec9ab30b1ed55f2",
+    "tests/test_qwen35_native_regime_probe.py": "0a2c6e96b5fbee949bc18800d8848a26b6f1321000d9eb409a45481bb81c67d6",
+    "tests/test_restore_wait_probe.py": "1dd1e766baf6c508377fe5a305628337cf3df37b976df93d4c4d34d54edfdbe7",
+    "tests/test_resume_semantic_h2d_ab.py": "b1d8d2cc9c330db9723a85ba35c376662debe2b55c91cedfd37814330e39b54a",
+    "tests/test_session_residency_hint.py": "5381604fe714c574668f5fa4a2d8afd40b61adea969d8b0d69e0019a577b0d61",
+    "tests/test_sglang_v0520_observer.py": "689615c9a418a5537c794b2a4c7c8111da1ea39211117bde9d0ccce8e47ea3d7",
+    "tests/test_sglang_v0520_physical.py": "17a7d6a60e7e9fea19f4e36a6b8695a8d9278a003d7cdef478af5a414eae89ed",
+    "tests/test_sglang_v0520_runtime.py": "d8a88f0ccf4be8b2f7a112acb5ad4f38f0378f235b720859961c33cbd324e4b2",
+    "tests/test_summarize_semantic_h2d_ab.py": "9aa1faa63f44271170d7ed45fe15eb7256af60765c35f501517e2ac2a2efbb28",
+    "tests/test_terminal_child_capacity.py": "eb7e28ab7a3fc7ceada661662047354a96468d08baaa152355935b10d5f9e2e0",
+    "tests/test_tool_census.py": "56dcc241e53b60c0163dadf6aa574ac20cde4dfc5a4bb9476011c18edabcfa3c",
+    "tests/test_tool_predictive_transfers.py": "e89eeb469c157e0554631c2979fcef8a652680b9ecd834fe7853e559fc7bc4c2",
+    "tests/test_v0520_native_telemetry.py": "969e3eb73a6d6075418fe95d6a5663e55d66d4a096e726c65825bfe4ce6056d7",
+    "tests/test_wait_prefetch_batch.py": "9765927f9adb36962c5603a3796bcf3bb8b529844da5f3bb07bc67c5be7928f1",
+    "tests/test_wait_prefetch_partial_extent.py": "d5a0eb9c6866093df5bca5f9268d828a9e1ef039441e532201728a39360f3a62",
+    "tests/test_wait_prefetch_service_subset.py": "2db8c283d4976c07d25c7a35aeaf6baa962760e283baa7de7c5957ff7b7ca079"
+  },
+  "changed_qualified_paths": [
+    "beliefkv/runtime/sglang_v0520_physical.py",
+    "tests/test_sglang_v0520_physical.py"
+  ],
+  "changed_physical_definitions_from_v58": [
+    "_checkpoint_paths",
+    "plan_prefetch_gpu_steps"
+  ],
+  "runtime_checks": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v563_checkpoint_scan_runtime_checks_20261014.raw.gz",
+    "sha256": "2f54e76e10b0cfa3198cca500e49a47750ecb327713f99ba73ae7930bcf009ee",
+    "original_xml_sha256": "7da4f941f3d833e1a601bef45e54c90c5ec5253456c401f5d8e537405d07f21a",
+    "tests": 1241,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "qualified_module_count": 26
+  },
+  "preserved_native_checks": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v527_gdn_prefill_full_native_checks_20261014.raw.gz",
+    "sha256": "1df5ae833d3fdf993405ea4940a5a4489f12b3229da1bd0c4400bf3fe6e66347",
+    "source_xml_sha256": "6105de16b0219c51cb132a2a5bc74594d06575bc54a5ca434de843854bd05139",
+    "tests": 490,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "engine": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "ebdbc183d95b925e40064c9d2ca4611f5f22c1797a3c926e994fcf4a90403417",
+    "expected_tree": "91daa419276fecd60398d056a316f567e096cfed",
+    "actual_tree": "91daa419276fecd60398d056a316f567e096cfed",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_gdn_prefill_mask.py",
+      "test/srt/test_beliefkv_mamba_request_mapping.py",
+      "test/srt/test_beliefkv_prefill_track_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_slots.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "cpu_evidence": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v564_prefetch_checkpoint_scan_cpu_20261014.json",
+    "sha256": "c8cbc9ab22c1a91999c6ed67cf5967f6ebbb6db982c3e912c85a596812346c73"
+  },
+  "frozen_equivalence": {
+    "comparisons": 14580,
+    "single_leaf": 4860,
+    "nonempty_plans": 312,
+    "errors": 4860,
+    "empty_plans": 9408,
+    "multiple_leaves": 9720
+  },
+  "qualified_equivalence": {
+    "comparisons": 14580,
+    "single_leaf": 4860,
+    "nonempty_plans": 312,
+    "errors": 4860,
+    "empty_plans": 9408,
+    "multiple_leaves": 9720
+  },
+  "suffix_length_equivalence": {
+    "frozen": {
+      "comparisons": 720,
+      "nonempty_plans_or_errors": 261,
+      "empty_plans": 459
+    },
+    "qualified": {
+      "comparisons": 720,
+      "nonempty_plans_or_errors": 261,
+      "empty_plans": 459
+    }
+  },
+  "incremental_planner_costs": [
+    {
+      "levels": 4,
+      "full_leaves": 1,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.013508303921568628,
+            "p50_ms": 0.0134592,
+            "p99_ms": 0.0142394,
+            "max_ms": 0.0142394
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.013437874509803922,
+            "p50_ms": 0.0133988,
+            "p99_ms": 0.0141443,
+            "max_ms": 0.0141443
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.013802413725490195,
+            "p50_ms": 0.0137959,
+            "p99_ms": 0.0145219,
+            "max_ms": 0.0145219
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.0137333,
+            "p50_ms": 0.0137298,
+            "p99_ms": 0.0144556,
+            "max_ms": 0.0144556
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.02198454003871997
+    },
+    {
+      "levels": 4,
+      "full_leaves": 1,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.016608086274509805,
+            "p50_ms": 0.0165963,
+            "p99_ms": 0.0175265,
+            "max_ms": 0.0175265
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.01653528431372549,
+            "p50_ms": 0.0165117,
+            "p99_ms": 0.0174401,
+            "max_ms": 0.0174401
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.016739729411764707,
+            "p50_ms": 0.0167157,
+            "p99_ms": 0.0177169,
+            "max_ms": 0.0177169
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.016667913725490195,
+            "p50_ms": 0.0166458,
+            "p99_ms": 0.0176357,
+            "max_ms": 0.0176357
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.00802099372761389
+    },
+    {
+      "levels": 4,
+      "full_leaves": 2,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.02401611568627451,
+            "p50_ms": 0.0240576,
+            "p99_ms": 0.0251712,
+            "max_ms": 0.0251712
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.02393028823529412,
+            "p50_ms": 0.0239623,
+            "p99_ms": 0.025075,
+            "max_ms": 0.025075
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.024363384313725492,
+            "p50_ms": 0.024204,
+            "p99_ms": 0.0277634,
+            "max_ms": 0.0277634
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.024276043137254903,
+            "p50_ms": 0.0241001,
+            "p99_ms": 0.0276485,
+            "max_ms": 0.0276485
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.014448421956357427
+    },
+    {
+      "levels": 4,
+      "full_leaves": 2,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.034471747058823526,
+            "p50_ms": 0.0345203,
+            "p99_ms": 0.0358118,
+            "max_ms": 0.0358118
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.03438603529411765,
+            "p50_ms": 0.0344332,
+            "p99_ms": 0.0357271,
+            "max_ms": 0.0357271
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.03455001372549019,
+            "p50_ms": 0.0344975,
+            "p99_ms": 0.0356329,
+            "max_ms": 0.0356329
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.03446012352941177,
+            "p50_ms": 0.0344095,
+            "p99_ms": 0.0355483,
+            "max_ms": 0.0355483
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.002154602432656416
+    },
+    {
+      "levels": 16,
+      "full_leaves": 1,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.023645403921568626,
+            "p50_ms": 0.0236347,
+            "p99_ms": 0.0249549,
+            "max_ms": 0.0249549
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.02357001568627451,
+            "p50_ms": 0.0235605,
+            "p99_ms": 0.024878,
+            "max_ms": 0.024878
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.02293709019607843,
+            "p50_ms": 0.0228574,
+            "p99_ms": 0.0246226,
+            "max_ms": 0.0246226
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.022865082352941175,
+            "p50_ms": 0.0227882,
+            "p99_ms": 0.0245462,
+            "max_ms": 0.0245462
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.029908055332514616
+    },
+    {
+      "levels": 16,
+      "full_leaves": 1,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.04394539019607843,
+            "p50_ms": 0.0439996,
+            "p99_ms": 0.0448219,
+            "max_ms": 0.0448219
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.043866433333333336,
+            "p50_ms": 0.0439208,
+            "p99_ms": 0.0447424,
+            "max_ms": 0.0447424
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.042872327450980394,
+            "p50_ms": 0.0428156,
+            "p99_ms": 0.0439808,
+            "max_ms": 0.0439808
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.04279161176470588,
+            "p50_ms": 0.0427403,
+            "p99_ms": 0.0438952,
+            "max_ms": 0.0438952
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.024502141773416475
+    },
+    {
+      "levels": 16,
+      "full_leaves": 2,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.05113576470588235,
+            "p50_ms": 0.0511365,
+            "p99_ms": 0.0527921,
+            "max_ms": 0.0527921
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.051048972549019606,
+            "p50_ms": 0.0510511,
+            "p99_ms": 0.0527098,
+            "max_ms": 0.0527098
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.05109833529411765,
+            "p50_ms": 0.0511122,
+            "p99_ms": 0.0525408,
+            "max_ms": 0.0525408
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.05100929803921569,
+            "p50_ms": 0.0510246,
+            "p99_ms": 0.0524481,
+            "max_ms": 0.0524481
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.0007771852756844888
+    },
+    {
+      "levels": 16,
+      "full_leaves": 2,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.07407391960784314,
+            "p50_ms": 0.0740884,
+            "p99_ms": 0.0759924,
+            "max_ms": 0.0759924
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.07398482549019608,
+            "p50_ms": 0.0739881,
+            "p99_ms": 0.0759024,
+            "max_ms": 0.0759024
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.0743583568627451,
+            "p50_ms": 0.0741738,
+            "p99_ms": 0.0767375,
+            "max_ms": 0.0767375
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.07427134117647059,
+            "p50_ms": 0.0740873,
+            "p99_ms": 0.0766561,
+            "max_ms": 0.0766561
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.003872627722998123
+    },
+    {
+      "levels": 64,
+      "full_leaves": 1,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.06050845490196079,
+            "p50_ms": 0.0605015,
+            "p99_ms": 0.0623743,
+            "max_ms": 0.0623743
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.060426229411764704,
+            "p50_ms": 0.0604281,
+            "p99_ms": 0.0622986,
+            "max_ms": 0.0622986
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.05659834117647059,
+            "p50_ms": 0.0565983,
+            "p99_ms": 0.0574147,
+            "max_ms": 0.0574147
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.056517288235294116,
+            "p50_ms": 0.0565278,
+            "p99_ms": 0.0573182,
+            "max_ms": 0.0573182
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.06468947697917315
+    },
+    {
+      "levels": 64,
+      "full_leaves": 1,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.0819746,
+            "p50_ms": 0.0820138,
+            "p99_ms": 0.0832807,
+            "max_ms": 0.0832807
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.08189159607843137,
+            "p50_ms": 0.0819217,
+            "p99_ms": 0.0831948,
+            "max_ms": 0.0831948
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.07803068235294118,
+            "p50_ms": 0.0780247,
+            "p99_ms": 0.0800535,
+            "max_ms": 0.0800535
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.07794641764705883,
+            "p50_ms": 0.0779404,
+            "p99_ms": 0.0799742,
+            "max_ms": 0.0799742
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.04817562021375266
+    },
+    {
+      "levels": 64,
+      "full_leaves": 2,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.15413523725490197,
+            "p50_ms": 0.1541541,
+            "p99_ms": 0.1563325,
+            "max_ms": 0.1563325
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.15404198431372548,
+            "p50_ms": 0.1540675,
+            "p99_ms": 0.1562449,
+            "max_ms": 0.1562449
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.15357887843137255,
+            "p50_ms": 0.1535412,
+            "p99_ms": 0.1557185,
+            "max_ms": 0.1557185
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.1534897,
+            "p50_ms": 0.1534276,
+            "p99_ms": 0.155613,
+            "max_ms": 0.155613
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.0035852843378119115
+    },
+    {
+      "levels": 64,
+      "full_leaves": 2,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.17722178235294117,
+            "p50_ms": 0.1770884,
+            "p99_ms": 0.1795423,
+            "max_ms": 0.1795423
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.17713576274509804,
+            "p50_ms": 0.176999,
+            "p99_ms": 0.1794595,
+            "max_ms": 0.1794595
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.1776300156862745,
+            "p50_ms": 0.1776549,
+            "p99_ms": 0.1792087,
+            "max_ms": 0.1792087
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.17754159019607843,
+            "p50_ms": 0.1775756,
+            "p99_ms": 0.1791043,
+            "max_ms": 0.1791043
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.002291053171258106
+    },
+    {
+      "levels": 300,
+      "full_leaves": 1,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.23408053333333334,
+            "p50_ms": 0.2337614,
+            "p99_ms": 0.2383205,
+            "max_ms": 0.2383205
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.23399604509803923,
+            "p50_ms": 0.2336981,
+            "p99_ms": 0.2382337,
+            "max_ms": 0.2382337
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.2173133725490196,
+            "p50_ms": 0.2171658,
+            "p99_ms": 0.2206815,
+            "max_ms": 0.2206815
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.21722783725490197,
+            "p50_ms": 0.2170894,
+            "p99_ms": 0.2206103,
+            "max_ms": 0.2206103
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.07166021902682906
+    },
+    {
+      "levels": 300,
+      "full_leaves": 1,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.2569023725490196,
+            "p50_ms": 0.2557901,
+            "p99_ms": 0.3113757,
+            "max_ms": 0.3113757
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.2568000254901961,
+            "p50_ms": 0.2557133,
+            "p99_ms": 0.3112541,
+            "max_ms": 0.3112541
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.24082175098039216,
+            "p50_ms": 0.240806,
+            "p99_ms": 0.2448984,
+            "max_ms": 0.2448984
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.2407351882352941,
+            "p50_ms": 0.2407176,
+            "p99_ms": 0.2448086,
+            "max_ms": 0.2448086
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.0625577712628198
+    },
+    {
+      "levels": 300,
+      "full_leaves": 2,
+      "max_steps": 1,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.4895347411764706,
+            "p50_ms": 0.4888289,
+            "p99_ms": 0.4972586,
+            "max_ms": 0.4972586
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.4894580803921569,
+            "p50_ms": 0.4887689,
+            "p99_ms": 0.4972031,
+            "max_ms": 0.4972031
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.49151480000000003,
+            "p50_ms": 0.4900679,
+            "p99_ms": 0.5724522,
+            "max_ms": 0.5724522
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.49145169607843137,
+            "p50_ms": 0.4900104,
+            "p99_ms": 0.5723718,
+            "max_ms": 0.5723718
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.004073108129458491
+    },
+    {
+      "levels": 300,
+      "full_leaves": 2,
+      "max_steps": 16,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.508717737254902,
+            "p50_ms": 0.5079762,
+            "p99_ms": 0.5336107,
+            "max_ms": 0.5336107
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.5086569725490196,
+            "p50_ms": 0.5079005,
+            "p99_ms": 0.5335421,
+            "max_ms": 0.5335421
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 51,
+            "mean_ms": 0.5090170019607844,
+            "p50_ms": 0.5083186,
+            "p99_ms": 0.5192776,
+            "max_ms": 0.5192776
+          },
+          "thread_cpu_ms": {
+            "count": 51,
+            "mean_ms": 0.5089095117647059,
+            "p50_ms": 0.5082544,
+            "p99_ms": 0.5192186,
+            "max_ms": 0.5192186
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.0004964823629973747
+    }
+  ],
+  "incremental_complete_tool_scan_costs": [
+    {
+      "mode": "before_start_window",
+      "workflows": 108,
+      "depth": 16,
+      "complete_scan_observations_compared": 26,
+      "decisions_counters_and_native_reads_equal": true,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 32.04838442857143,
+            "p50_ms": 30.917943,
+            "p99_ms": 55.884993,
+            "max_ms": 55.884993
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 32.047185666666664,
+            "p50_ms": 30.917378,
+            "p99_ms": 55.884942,
+            "max_ms": 55.884942
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 30.086077714285715,
+            "p50_ms": 29.531175,
+            "p99_ms": 32.493687,
+            "max_ms": 32.493687
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 30.085233285714285,
+            "p50_ms": 29.530221,
+            "p99_ms": 32.493135,
+            "max_ms": 32.493135
+          }
+        }
+      },
+      "candidate_counts": {
+        "tool_prefetch_scans": 26,
+        "tool_prefetch_no_restore_target": 2808,
+        "h2d_service_estimate_computed": 1,
+        "tool_prefetch_not_latest_start": 2808,
+        "h2d_service_estimate_reused": 2807
+      },
+      "thread_cpu_mean_reduction": 0.06122073873691414
+    },
+    {
+      "mode": "before_start_window",
+      "workflows": 108,
+      "depth": 64,
+      "complete_scan_observations_compared": 26,
+      "decisions_counters_and_native_reads_equal": true,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 80.33472338095238,
+            "p50_ms": 75.828407,
+            "p99_ms": 127.591855,
+            "max_ms": 127.591855
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 80.33118423809523,
+            "p50_ms": 75.828306,
+            "p99_ms": 127.593172,
+            "max_ms": 127.593172
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 75.62864685714285,
+            "p50_ms": 74.607821,
+            "p99_ms": 117.678785,
+            "max_ms": 117.678785
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 75.62660890476191,
+            "p50_ms": 74.607067,
+            "p99_ms": 117.680038,
+            "max_ms": 117.680038
+          }
+        }
+      },
+      "candidate_counts": {
+        "tool_prefetch_scans": 26,
+        "tool_prefetch_no_restore_target": 2808,
+        "h2d_service_estimate_computed": 1,
+        "tool_prefetch_not_latest_start": 2808,
+        "h2d_service_estimate_reused": 2807
+      },
+      "thread_cpu_mean_reduction": 0.05856474516035193
+    },
+    {
+      "mode": "service_unsupported",
+      "workflows": 108,
+      "depth": 64,
+      "complete_scan_observations_compared": 26,
+      "decisions_counters_and_native_reads_equal": true,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 76.82552285714286,
+            "p50_ms": 72.549397,
+            "p99_ms": 126.23007,
+            "max_ms": 126.23007
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 76.82296185714286,
+            "p50_ms": 72.540722,
+            "p99_ms": 126.231689,
+            "max_ms": 126.231689
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 74.6639100952381,
+            "p50_ms": 71.358892,
+            "p99_ms": 119.556779,
+            "max_ms": 119.556779
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 74.66330952380952,
+            "p50_ms": 71.358754,
+            "p99_ms": 119.558248,
+            "max_ms": 119.558248
+          }
+        }
+      },
+      "candidate_counts": {
+        "tool_prefetch_scans": 26,
+        "tool_prefetch_no_restore_target": 2808,
+        "h2d_service_estimate_computed": 1,
+        "tool_prefetch_service_unsupported": 2808,
+        "h2d_service_estimate_reused": 2807
+      },
+      "thread_cpu_mean_reduction": 0.02811206807346678
+    },
+    {
+      "mode": "resident",
+      "workflows": 108,
+      "depth": 64,
+      "complete_scan_observations_compared": 26,
+      "decisions_counters_and_native_reads_equal": true,
+      "costs": {
+        "baseline": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 11.537048857142857,
+            "p50_ms": 10.994918,
+            "p99_ms": 12.371917,
+            "max_ms": 12.371917
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 11.535520904761905,
+            "p50_ms": 10.993555,
+            "p99_ms": 12.370754,
+            "max_ms": 12.370754
+          }
+        },
+        "candidate": {
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 11.316277714285714,
+            "p50_ms": 10.845951,
+            "p99_ms": 12.405066,
+            "max_ms": 12.405066
+          },
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 11.314639904761904,
+            "p50_ms": 10.844498,
+            "p99_ms": 12.403798,
+            "max_ms": 12.403798
+          }
+        }
+      },
+      "candidate_counts": {
+        "tool_prefetch_scans": 26,
+        "tool_prefetch_no_restore_target": 5616,
+        "wait_prefetch_empty_restore_shortcut": 2808
+      },
+      "thread_cpu_mean_reduction": 0.019147899936518664
+    }
+  ],
+  "active_v58_execution": {
+    "collection_code_commit": "9a54233c3d1d18c12bfc202f61e2ec36a911e46f",
+    "verification_code_commit": "d5a0a364db33aedac8f1ae89f78d44fa724f367c",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": [
+      "docs/README_zh.md",
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/figures/generate_monthly_paper_figures.py",
+      "docs/implementation_plan.md",
+      "docs/reports/2026-10/assets/01_system_overview_en.pdf",
+      "docs/reports/2026-10/assets/01_system_overview_en.png",
+      "docs/reports/2026-10/assets/01_system_overview_en.svg",
+      "docs/reports/2026-10/assets/01_system_overview_zh.pdf",
+      "docs/reports/2026-10/assets/01_system_overview_zh.png",
+      "docs/reports/2026-10/assets/01_system_overview_zh.svg",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_en.pdf",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_en.png",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_en.svg",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_zh.pdf",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_zh.png",
+      "docs/reports/2026-10/assets/02_prediction_and_overlap_zh.svg",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_en.pdf",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_en.png",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_en.svg",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_zh.pdf",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_zh.png",
+      "docs/reports/2026-10/assets/03_pages_and_capacity_handoff_zh.svg",
+      "docs/reports/2026-10/assets/README.md",
+      "docs/reports/2026-10/assets/beliefkv_architecture_editable_en.pptx",
+      "docs/reports/2026-10/assets/beliefkv_architecture_editable_zh.pptx",
+      "docs/reports/2026-10/assets/beliefkv_figures_bilingual.pdf",
+      "docs/reports/2026-10/assets/manifest.json",
+      "docs/reports/2026-10/assets/powerpoint_validation.json",
+      "docs/reports/2026-10/assets/pptx_preview_en.png",
+      "docs/reports/2026-10/assets/pptx_preview_zh.png",
+      "docs/reports/2026-10/assets/preview.png",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/archive/README.md",
+      "experiments/reports/v536_v58_gdn_prefill_frozen_20261014.json",
+      "experiments/reports/v537_v58_gdn_prefill_resource_registration_20261014.json",
+      "experiments/reports/v538_v58_startup_observer_registration_20261014.json",
+      "experiments/reports/v539_v58_live_startup_validation_20261014.json",
+      "experiments/reports/v540_single_path_restore_checks_20261014.raw.gz",
+      "experiments/reports/v541_prefetch_single_path_cpu_20261014.json",
+      "experiments/reports/v542_v58_user_hold_until_20261014_2130.json",
+      "experiments/reports/v543_prefetch_single_path_development_20261014.json",
+      "experiments/reports/v544_v58_temporary_hold_release_retry_20261014.json",
+      "experiments/reports/v545_v58_predictive_numa_placement_20261014.json",
+      "experiments/reports/v546_single_path_runtime_qualification_checks_20261014.raw.gz",
+      "experiments/reports/v547_prefetch_single_path_qualification_20261014.json",
+      "experiments/reports/v548_v50_v52_server_trace_archive_20261014.json",
+      "experiments/reports/v549_v58_busy_120_300_20261014.json",
+      "experiments/reports/v550_v58_prefill_phases_120_300_20261014.json",
+      "experiments/reports/v551_v58_pair_phase_observer_registration_20261014.json",
+      "experiments/reports/v552_v58_active_stack_20261014.speedscope.json",
+      "experiments/reports/v553_v58_active_stack_attribution_20261014.json",
+      "experiments/reports/v554_v58_reviewed_documentation_sync_20261014.json",
+      "experiments/reports/v555_v58_wait_prefetch_live_20261014.json.gz",
+      "experiments/reports/v555_v58_wait_prefetch_live_20261014_summary.json",
+      "experiments/reports/v556_v58_latest_development_checkpoint_20261014.json",
+      "experiments/reports/v557_v58_latest_documentation_sync_20261014.json",
+      "experiments/reports/v558_old_server_snapshot_archive_20261014.json",
+      "experiments/reports/v559_old_server_snapshot_archive_20261014.json",
+      "experiments/reports/v58_historical_native_busy_1800_2100_20261014.json",
+      "experiments/reports/v58_historical_native_busy_3600_3900_20261014.json",
+      "experiments/reports/v58_historical_native_busy_600_900_20261014.json",
+      "experiments/reports/v58_historical_native_prefill_phases_1800_2100_20261014.json",
+      "experiments/reports/v58_historical_native_prefill_phases_3600_3900_20261014.json",
+      "experiments/reports/v58_historical_native_prefill_phases_600_900_20261014.json"
+    ]
+  },
+  "helper_sha256": "dca3a11f401dca2429872b82c8671e8d6ec8e6786fb774496b175c5401fbd0da",
+  "constraints": [
+    "Reuse only a validated, complete, root-first single-leaf path within the current planning call.",
+    "Validate every key length including suffixes beyond the reusable input checkpoint.",
+    "Deepest eligible input checkpoint, leaf provenance, ancestry, pending-transfer rejection and bounds remain unchanged.",
+    "Multiple-leaf checkpoint selection retains the original path-length map and ancestor traversal.",
+    "CPU and stand-in scan improvements do not establish CUDA, useful FULL, JCT or completion-throughput gains.",
+    "Resident negative controls bypass this planner; retain their variation and all multi-leaf regressions.",
+    "No physical snapshot or allocator budget is cached across planning calls; native enqueue revalidation remains live.",
+    "Current V58 remains frozen; apply this candidate only in a subsequent qualified cold deployment.",
+    "Frozen workload, tool180s, output/deadline budgets and disabled new batching/delay settings remain.",
+    "No canary, new completion guard, online eligibility override or zero-copy/operator framework is introduced."
+  ]
+}
