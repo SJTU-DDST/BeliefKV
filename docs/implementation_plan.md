@@ -7,6 +7,22 @@ short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
 and interval changes remain disabled.
 
+Latest V585/V587 partitions handoff gaps with exact neighboring forward
+boundaries; all239/252 predictive/native short samples reconcile. At600-900s
+mean handoff gaps are11.523/4.376ms, a7.147ms descriptive difference.
+Own-return-to-post-planning-end and prior-completion-to-next-launch mean
+differences are3.012/1.812ms. Composite boundaries are not exclusive
+function CPU durations or directly removable JCT.
+V586 rejects the root-only semantic-observation candidate: all-child callbacks
+regress24.1%, all-root improve only7.0%; observed predictive root step shares
+are0.3%,8.5%,20.9%,23.1%. The candidate and added tests were removed;
+all64 V582-qualified sources match again. Keep bff29cb as the qualified candidate.
+Next inspect overlap ordering of physical planning, previous result delivery
+and current sampling, preserving native read/free/H2D dependencies, then
+maintenance/admission before the next launch. Native still has154 completed,
+one incomplete and one live pylint workflow repeating whole-repository lint.
+Keep180s tools and existing budgets; no guard or running-source change.
+
 Latest development candidate bff29cb merges ancestry validation/missing-copy
 counting and avoids temporary leaf-count lists for internal nodes. V581 retains
 3456 capture and14580 ordered-plan/error comparisons; all six108-workflow
