@@ -17,6 +17,11 @@
 submit→ACK精度与child RETURN、DMA和暴露等待精度分开报告。
 当前V56保持冻结，新补充候选留在开发分支，未证明JCT改善。
 
+终态统计不能只依赖natural_child_return_count：v438的4个已返回
+child中，一个此前经历过图硬预算收尾。RETURN时机训练/评估须
+结合sandbox审计区分guard促成与自然收尾；root的length截断则
+保留为incomplete，不计为成功workflow，也不能归因于KV恢复。
+
 短prefill优化先减少实际共享路径开销，同时保持native对照相同。
 当前候选把单request row的Mamba及ping-pong映射改为保形切片，
 不改槽位生命周期、代际、状态或流依赖；多行/其他索引继续走

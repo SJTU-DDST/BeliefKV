@@ -1,0 +1,345 @@
+{
+  "status": "new_completed_workflow_terminal_diagnosis_not_transfer_failure",
+  "observed_at_local": "2026-10-14T09:33:42.537867+08:00",
+  "workflow_id": "deepagents:autonomous:django__django-11740:6d6039407d07",
+  "instance_id": "django__django-11740",
+  "outcome": "incomplete",
+  "error": null,
+  "duration_seconds": 4598.886854365468,
+  "workflow_deadline": {
+    "abort_requested_count": 0,
+    "active_command_cancel_count": 0,
+    "cleanup_complete": false,
+    "enabled": true,
+    "expired": false,
+    "pending_task_cancel_count": 0,
+    "server_terminal": false,
+    "server_terminal_latency_ms": null
+  },
+  "native_reactive_guard_profile": true,
+  "terminal_metadata": {
+    "finish_reason": "length",
+    "model_name": "Qwen3.5-35B-A3B",
+    "model_provider": "openai"
+  },
+  "terminal_content_chars": 35628,
+  "repeated_sentence_count": 42,
+  "last_client_llm_result": {
+    "agent_definition_id": null,
+    "agent_instance_id": null,
+    "attributes": {
+      "action_boundary_source": "runtime_structured_output",
+      "action_boundary_token_index": null,
+      "finish_reason": "length",
+      "invalid_tool_call_count": 0,
+      "output_chars": 35628,
+      "output_tokens": null,
+      "parser_reason": "Deep Agents exposed a complete AIMessage; incremental token boundary is unavailable",
+      "parser_status": "valid",
+      "rejected_task_call_count": 0,
+      "request_id": "beliefkv:01a13805-923c-7010-8637-46af273fd4f0",
+      "runtime_internal": false,
+      "source": "deepagents_callback",
+      "stream_content_chunk_count": null,
+      "stream_content_counted_chars": null,
+      "stream_content_max_chunk_chars": null,
+      "stream_content_token_chars": null,
+      "structured_action_kinds": [
+        "final_answer"
+      ],
+      "structured_action_names": [],
+      "tool_call_count": 0
+    },
+    "confidence": "observed_exact",
+    "context_epoch": 328,
+    "context_id": "deepagents:autonomous:django__django-11740:6d6039407d07:context:root",
+    "context_mode": null,
+    "event_id": "deepagents:autonomous:django__django-11740:6d6039407d07:deepagents:000009888",
+    "execution_mode": null,
+    "invocation_id": "deepagents:autonomous:django__django-11740:6d6039407d07:root",
+    "join_id": null,
+    "kind": "llm_result",
+    "member_invocation_ids": [],
+    "parent_context_id": null,
+    "parent_invocation_id": null,
+    "relation_type": null,
+    "return_target_id": null,
+    "schema_version": 1,
+    "sequence": 9888,
+    "target_context_id": null,
+    "target_invocation_id": null,
+    "ts_ms": 6111555106.151037,
+    "workflow_id": "deepagents:autonomous:django__django-11740:6d6039407d07"
+  },
+  "native_request_events": [
+    {
+      "kind": "llm_submit",
+      "ts_ms": 1791941251783.6057,
+      "workflow_id": "deepagents:autonomous:django__django-11740:6d6039407d07",
+      "invocation_id": "deepagents:autonomous:django__django-11740:6d6039407d07:root",
+      "context_id": "deepagents:autonomous:django__django-11740:6d6039407d07:context:root",
+      "context_epoch": 328,
+      "attributes": {
+        "request_id": "beliefkv:01a13805-923c-7010-8637-46af273fd4f0",
+        "native_ingress_timing_ms": {
+          "chat_conversion_started_ts_ms": 1791941251699.8926,
+          "chat_conversion_finished_ts_ms": 1791941251781.8328,
+          "api_received_ts_ms": 1791941251663.8987,
+          "api_tokenized_ts_ms": 1791941251782.726,
+          "api_dispatch_started_ts_ms": 1791941251782.7305,
+          "scheduler_received_ts_ms": 1791941251783.5012,
+          "native_queue_registered_ts_ms": 1791941251783.6057
+        },
+        "prompt_tokens": 30916,
+        "cached_tokens_device": 30400,
+        "cached_tokens_host": 0,
+        "mamba_host_hit_slots": 0,
+        "native_full_kv_hit_length": 30443,
+        "native_mamba_branching_seqlen": null,
+        "reentry_checkpoint_seqlen": 30912,
+        "cache_hit_tokens": 30400,
+        "uncached_prompt_tokens": 516,
+        "context_tokens": 30916,
+        "expected_output_tokens": 8192
+      }
+    },
+    {
+      "kind": "llm_result",
+      "ts_ms": 1791941291941.4666,
+      "workflow_id": "deepagents:autonomous:django__django-11740:6d6039407d07",
+      "invocation_id": "deepagents:autonomous:django__django-11740:6d6039407d07:root",
+      "context_id": "deepagents:autonomous:django__django-11740:6d6039407d07:context:root",
+      "context_epoch": 328,
+      "attributes": {
+        "request_id": "beliefkv:01a13805-923c-7010-8637-46af273fd4f0",
+        "output_tokens": 8192,
+        "complete_monotonic_ms": 6111555042.044646,
+        "monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+        "reentry_checkpoint": {
+          "status": "observed",
+          "mamba_states": [
+            {
+              "node_id": 85332,
+              "prefix_tokens": 30912,
+              "within_safe_input": true,
+              "device_present": true,
+              "host_present": false
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "trace_counts": {
+    "dynamic_subagent_count": 4,
+    "natural_child_return_count": 4,
+    "delegation_round_count": 2,
+    "join_satisfied_count": 2,
+    "all_subagents_returned": true,
+    "all_joins_satisfied": true,
+    "child_cancel_count": 0,
+    "llm_request_count": 1280,
+    "tool_call_count": 1247
+  },
+  "agent_terminal_and_budget_audit": [
+    {
+      "agent_scope": "autonomous:repository-explorer",
+      "content_chars": 3696,
+      "content_sha256": "987e64e4188f8308fac290f4d3eb79f829b58959e5b18fc3e28a03ac14e92d2e",
+      "event": "agent_natural_return",
+      "guard_intervened": false,
+      "schema_version": 1,
+      "sequence": 13,
+      "ts_ms": 6107526640.477306
+    },
+    {
+      "agent_scope": "autonomous:test-analyst",
+      "enforced": false,
+      "event": "agent_graph_step_soft_budget_observed",
+      "graph_recursion_limit": 9999,
+      "graph_step": 387,
+      "graph_step_soft_budget": 384,
+      "schema_version": 1,
+      "sequence": 32,
+      "ts_ms": 6107901735.655762
+    },
+    {
+      "activation_elapsed_s": 2941.125161955133,
+      "activation_wall_clock_s": 14400.0,
+      "agent_scope": "autonomous:test-analyst",
+      "completed_tool_calls": 403,
+      "consecutive_errors": 0,
+      "consecutive_no_progress": 0,
+      "event": "agent_graph_budget_finalization",
+      "graph_recursion_limit": 9999,
+      "graph_step": 2017,
+      "graph_step_hard_limit": 2048,
+      "graph_step_reserve": 32,
+      "model_calls": 403,
+      "physical_failure_count": 72,
+      "reason": "graph_step_hard_limit_low",
+      "recent_tool_names": [
+        "read_file",
+        "edit_file",
+        "read_file",
+        "edit_file",
+        "write_todos",
+        "read_file",
+        "read_file",
+        "edit_file"
+      ],
+      "repeated_failed_calls": 0,
+      "schema_version": 1,
+      "sequence": 176,
+      "suppressed_repeat_intent_count": 0,
+      "tool_calls": 403,
+      "ts_ms": 6109919703.808901
+    },
+    {
+      "agent_scope": "autonomous:test-analyst",
+      "attempt": 4,
+      "event": "agent_guard_finalization_attempt",
+      "failed_recovery": false,
+      "reason": "graph_step_hard_limit_low",
+      "recovery_active": false,
+      "recovery_stage": null,
+      "regular_tools_removed": 10,
+      "retained_tools": 0,
+      "schema_version": 1,
+      "sequence": 177,
+      "ts_ms": 6109919707.965684
+    },
+    {
+      "agent_scope": "autonomous:test-analyst",
+      "content_chars": 211,
+      "content_sha256": "6f52dc79832a44f6c53ccc8f584f94dfa03811cb04605eade8ac43f92bf085f2",
+      "event": "agent_natural_return",
+      "guard_intervened": true,
+      "schema_version": 1,
+      "sequence": 178,
+      "ts_ms": 6109924956.254423
+    },
+    {
+      "agent_scope": "autonomous:general-purpose",
+      "enforced": false,
+      "event": "agent_graph_step_soft_budget_observed",
+      "graph_recursion_limit": 9999,
+      "graph_step": 387,
+      "graph_step_soft_budget": 384,
+      "schema_version": 1,
+      "sequence": 270,
+      "ts_ms": 6110086222.135098
+    },
+    {
+      "agent_scope": "autonomous:implementation-agent",
+      "enforced": false,
+      "event": "agent_graph_step_soft_budget_observed",
+      "graph_recursion_limit": 9999,
+      "graph_step": 387,
+      "graph_step_soft_budget": 384,
+      "schema_version": 1,
+      "sequence": 292,
+      "ts_ms": 6110116009.180991
+    },
+    {
+      "agent_scope": "autonomous:general-purpose",
+      "content_chars": 1480,
+      "content_sha256": "edc99f29faed659fdc8b79066ad4b727385da3a78669b06790ed87d737f3ee8b",
+      "event": "agent_natural_return",
+      "guard_intervened": false,
+      "schema_version": 1,
+      "sequence": 426,
+      "ts_ms": 6110421577.586811
+    },
+    {
+      "agent_scope": "autonomous:implementation-agent",
+      "content_chars": 2752,
+      "content_sha256": "6b8881ff47d359f151993f26edfbd96aa5c322f8357542bb27803aec8d10fca8",
+      "event": "agent_natural_return",
+      "guard_intervened": false,
+      "schema_version": 1,
+      "sequence": 508,
+      "ts_ms": 6110583035.9629545
+    },
+    {
+      "agent_scope": "autonomous:supervisor",
+      "enforced": false,
+      "event": "agent_graph_step_soft_budget_observed",
+      "graph_recursion_limit": 2048,
+      "graph_step": 387,
+      "graph_step_soft_budget": 384,
+      "schema_version": 1,
+      "sequence": 546,
+      "ts_ms": 6110721965.332334
+    },
+    {
+      "agent_scope": "autonomous:supervisor",
+      "content_chars": 35628,
+      "content_sha256": "0410daf8eccff26ec0f32f1b72da30b2618ec6f084780c6b660510065cc55874",
+      "event": "agent_natural_return",
+      "guard_intervened": false,
+      "schema_version": 1,
+      "sequence": 676,
+      "ts_ms": 6111555110.023075
+    }
+  ],
+  "result_source": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55/predictive_h2d/client_156/workflows/django__django-11740/result.json",
+    "bytes": 41706,
+    "sha256": "f1057806c00f3e9c9340a724e009531ca3a340480b7bf1ac8eaecf02bc591127"
+  },
+  "trajectory_source": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55/predictive_h2d/client_156/workflows/django__django-11740/trajectory.json",
+    "bytes": 1346943,
+    "sha256": "19d0d07754e8cad5f0735a0b300075d2d7dd0002c59f63d0b814a065e5b2864f"
+  },
+  "sealed_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55/predictive_h2d/client_156/workflows/django__django-11740/runtime_events.deepagents.jsonl": {
+      "observed_at_local": "2026-10-14T09:33:41.215223+08:00",
+      "device": 66306,
+      "inode": 154807860,
+      "observed_bytes": 12149017,
+      "complete_prefix_bytes": 12149017,
+      "complete_prefix_sha256": "04912039b169d29c25e69853cc91d3c8fe1b6ff5fc551d229d42ffa8713de526"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55/predictive_h2d/server/runtime_events.sglang.jsonl": {
+      "observed_at_local": "2026-10-14T09:33:41.383931+08:00",
+      "device": 66306,
+      "inode": 139863404,
+      "observed_bytes": 95185751,
+      "complete_prefix_bytes": 95185751,
+      "complete_prefix_sha256": "0e5dd653b71faf09d82636f6f779222cb7aca6b7b0f6cd6d183fa4d61e7ec965"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v55/predictive_h2d/client_156/workflows/django__django-11740/sandbox_audit.jsonl": {
+      "observed_at_local": "2026-10-14T09:33:42.514507+08:00",
+      "device": 66306,
+      "inode": 154807856,
+      "observed_bytes": 565215,
+      "complete_prefix_bytes": 565215,
+      "complete_prefix_sha256": "59c38fc70f8c54817b37770bdfdd6390f30052856344c5b124be7872822af127"
+    }
+  },
+  "collection_code_commit": "0f2a992448812d28d5362e2b97de1aab66e35630",
+  "terminal_sources": {
+    "beliefkv/experiments/agent_protocol.py": "89fb79de0f4d19a1de1714e736f3d57b6f26f72f1741196e500999e2b3c1ffe1",
+    "beliefkv/experiments/deepagents_swebench.py": "096a0e0f1f6c5d49fddda969610ddd06afa50fa96443c5931cb9a0d68e2c5af8"
+  },
+  "observed_outcomes": {
+    "completed": 153,
+    "incomplete": 1
+  },
+  "remaining_without_terminal_result": [
+    "django__django-13112",
+    "django__django-12273"
+  ],
+  "helper_sha256": "d822e2450e1aeefe8a0e821220951a2ffeca0a4ef78d603735a90e3b1ed8c592",
+  "findings": [
+    "Direct workflow termination is the root's length-truncated response, not a JOIN timeout or cancelled child.",
+    "Native receipt confirms 8192 output tokens; the final root input has no Host FULL/Mamba hit.",
+    "The output repeatedly reconsiders the same dependency argument; increasing the cap is not justified by this case.",
+    "A different earlier child hit the existing 2048 graph-step hard limit at step2017; record it separately from the root's direct cause.",
+    "Soft budget observations were unenforced, and the frozen native-reactive guard profile was enabled.",
+    "The deadline remains unexpired and the outcome remains incomplete; it must not become a completed JCT sample.",
+    "No runtime/workload/output/graph/deadline changes or forced restart are made from this diagnosis."
+  ]
+}

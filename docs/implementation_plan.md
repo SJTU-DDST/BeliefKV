@@ -32,7 +32,14 @@ policy is exploratory, not a separately held-out policy validation.
 474 focused plus319 cross-module checks pass. V436's cached prediction
 median CPU increment is about0.02–0.16us; GPU/JCT effects remain untested.
 
-At this check V55 has153 completed results and3 unknown terminal outcomes.
+V438 subsequently observes153 completed,1 incomplete and2 unknown
+terminal outcomes. Django-11740 ends directly on the root's8192-token
+length-truncated repetitive response, with all4 children returned, both
+JOINs satisfied and deadline unexpired. An earlier child separately hit
+the existing2048 graph hard budget at step2017. Preserve both facts and
+the failure; do not change frozen caps or attribute this to H2D. Stratify
+future child timing labels with the guard audit, since a RETURN count alone
+does not establish an unguarded natural terminal.
 Keep frozen V56 c319339 and its predictive→native order for complete phase
 comparison and JOIN forecast-refresh validation. Keep the new supplement
 in development; Main must remain an ancestor of the pending frozen target
