@@ -11,8 +11,9 @@ v464记录移除23:59自动停止cron、关闭旧06:00恢复登记；冷启动�
 v451登记的launcher为3891419，scheduler为3892057，10:33:21
 启动，监控起点10:36:01.117。v453核验HTTP200、50份合格源码、
 实际池与running48/context131072；新增delayer/mixed/间隔均关闭。
-11:14首波108个workflow中48个completed、未见其他终态；第二波
-按一小时到达。predictive之后继续同版本native，运行树不热改。
+v474观测154个终态：153 completed、1 incomplete，django-10554和
+django-11749仍未终态；第二波已到达。predictive之后继续同版本
+native，运行树不热改。
 v450是arm-order参数传递错误，在argparse退出且无workflow派发；
 保留该原件，不能用作实际启动登记。V55已于10:20:55完整结束，
 最终154 completed、2 incomplete，后处理/HTML齐全，两个root的
@@ -33,6 +34,37 @@ prefill工作1.725M/1.891M token，版本和NUMA落点也不同。
 连续满48请求decode接近参考，短prefill截断worker仍约1.40–1.54倍；
 不能将它当完整forward差距。埋点self-wall为34.305s/300s，
 tool_prefetch占7.166s，既不是纯CPU，也不是可直接扣除的JCT。
+这是首波窗口，不能继续作为最新控制成本排序。
+
+v469/v470补齐3600–3900s第二波窗口。相对历史V29 native，
+decode request steps为355734/353757（+0.56%），实际prefill工作
+2.363M/2.271M token；连续满48请求decode匹配均值比约
+0.979–1.040。版本、需求和NUMA落点不同，仍不证明可归因收益。
+57个短单请求run_batch墙钟/线程CPU P50为46.018/45.010ms，
+V55 predictive的53个样本为46.756/45.799ms；10个几何匹配组
+多数每侧只有1例。已埋点self-wall为16.520s/300s，最大为
+control_drain 2.502s，随后opportunity_sampling 1.877s、
+event_apply 1.741s、join_prepare 1.642s；tool_prefetch为1.327s。
+当前没有稳定的短prefill加速证据。
+
+v471在12:41:34–12:42:33独立封存319份完整行前缀，v472按
+独立等待统计正计划/空闲容量可放入/实际提前FULL/确认复用：
+JOIN为161/161/78/69，工具为1993/277/191/171；确认提前复用
+FULL分别1.502GB/10.881GB。3个JOIN完成仍未知，快照可放入
+不是启动时的容量预留。JOIN最后ACK到首次服务P90为13.916s。
+超过10s的长尾中，JOIN9例、工具8例以native入队后等待为主，
+两组提前FULL约0.285GB/0.806GB，确认复用仅20KB/0；另3例
+JOIN、8例工具以完成前等待为主，4例工具以客户端提交空档为主。
+不能通过统一平移RETURN预测或延长所有租约解决这些不同相位。
+v473发现15条、14个JOIN的service_progress_unavailable记录，
+最后已完成服务年龄约262–395ms，未见旧工作端点已被进度越过；
+这些是因果关联，不是内存状态回放或15次已证明错拒。
+
+v474同时绑定django-11138的终态证据：root最后请求实际输出
+8192 token、finish_reason=length，正文重复讨论同一问题；
+两个child已返回、JOIN已满足、deadline未过期。更早的test-analyst
+在step2017触及既有2048图硬预算，必须与root直接终态原因分开。
+保留incomplete，不变更输出/图预算或把RETURN计数当无guard证明。
 
 v459封存894个active-stack样本和85次读取错误；主线程859样本
 中32个位于prefill Mamba槽号.item，307个位于synchronize，
@@ -54,6 +86,13 @@ native只读观测已独立登记，等既有native arm启动后记录源码、
 服务、NUMA及完整600–900s两侧相位；它不派发新实验或占用GPU。
 先获得这项同引擎参考，再决定下一冷候选；小幅噪声不足以中断
 当前匹配实验。最终目标仍未验收，既有PrefillAdder保留。
+
+已验证的设备槽候选安排在V56两侧和后处理完整结束后冷观察，
+启动登记以对应V57 launch state为准；当前引擎不得提前替换。
+后续predictive可用V56 native作开发参考，但新公共引擎优化的
+正式收益仍需同版本对照。v468记录本次大映射约141.10GiB在
+NUMA1、45.21GiB在NUMA0；GPU本地节点保守余量不足以支持整池
+加8GiB严格绑定，故本轮继续preferred，不清理其他用户共享内存。
 
 以下为历史证据；其中旧运行状态不覆盖以上当前状态。
 

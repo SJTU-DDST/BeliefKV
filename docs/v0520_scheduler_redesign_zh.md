@@ -11,6 +11,17 @@ V455的600–900s短单请求run_batch P50为42.163ms，对V55
 predictive40.815ms尚无稳定改善；同版本native完整相位待观测。
 旧V29和截断worker区间仅供开发诊断，不能代替完整forward。
 
+v469/v470是更新的3600–3900s证据：短单请求run_batch墙钟P50
+为46.018ms，V55 predictive为46.756ms，未形成稳定改善结论。
+最新控制self-wall16.520s/300s中control_drain为2.502s，
+tool_prefetch为1.327s；不沿用首波控制成本排序。v471/v472的
+独立等待确认提前FULL复用为JOIN69次/1.502GB、工具171次/
+10.881GB；9 JOIN/8工具长尾以native入队后等待为主，不能全归因
+预测误差。v473的15条服务进度拒绝没有旧端点已被越过的证据，
+仍须以实时request/epoch、运行批次、容量和依赖确认是否可提交。
+v474记录153 completed、1 incomplete、2未知；root8192-token
+截断与更早test-analyst图硬预算分别保留，不改冻结上限。
+
 v448已部署优化减少Mamba prefill元数据回读。独立CPU快照与
 decode完成mask分离，只在正常EXTEND且形状一致时使用；物理
 slot值继续由GPU翻译，CPU仅规划行号，异步H2D后integer gather。
@@ -29,6 +40,9 @@ CPU局部中位少1–7us、48请求lazy均值退化保留；未部署、GPU
 收益未知。v466/v467完成候选3c13ad50/572109fe导出与资格绑定，
 V56两侧仍保持原引擎。307个同步命中中的275个来自decode结果依赖，不能
 据此删除同步。native观测器只读已有arm，补齐NUMA与完整相位。
+设备槽候选只能在V56两侧和后处理完整结束后冷部署；相应V57
+启动登记不等于已完成或已证明收益。当前NUMA仍为preferred，
+v468本地保守容量不支持整worker强绑，也不清理其他用户共享内存。
 
 以下为历史证据，不覆盖以上当前状态。
 
