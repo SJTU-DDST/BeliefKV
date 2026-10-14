@@ -73,6 +73,15 @@ the log omits native leaf generation. V480 passes781 runtime checks.
 V481 records+0.162us common supported-window median CPU and+7.306us on
 the new fallback. V483/V485 bind the isolated source; GPU gains are unknown.
 
+V488 now provides the same-version600–900s phase reference. All-short
+run_batch P50 is42.163/42.150ms, but launch-to-result-completion is
+55.989/50.291ms (+11.33%) and run-return-to-result-start9.458/4.273ms.
+The68/65 populations and15 matched geometry groups are sparse; separate
+medians are not causal per-request accounting. Next prioritize post-launch
+planning and next-iteration maintenance in that interval while retaining
+normal native dependencies. Decode steps are368701/377059 (-2.22%);
+actual demand/NUMA placement still differ. Final acceptance stays pending.
+
 Next actions:
 
 1. Finish the existing V56 predictive→native pair with identical engine,
@@ -91,11 +100,16 @@ Next actions:
    Arrange predictive-first cold observation after the complete V56 pair
    and postprocessing; deployment must not alter either existing V56 arm.
    The corresponding V57 launch state is authoritative for registration.
-   Before dispatch, preserve/supersede the old0bd5664 waiter with the newly
-   qualified subset-timing candidate; never modify the queued frozen checkout.
+   V486/V487 supersede the unstarted0bd5664 waiter with frozen d7980a4,
+   engine3c13ad50/572109fe and54 source bindings. Launcher1922608 waits
+   for all V56 postprocessing; the prior registration/checkout is retained.
+   No new run directory exists and no V56 workflow was cancelled.
    V465 separately records the revoked non-execution launch wait; all49
    other prior qualified sources and the live V56 engine remain unchanged.
-3. Use the same-version phases to select the next bottleneck. V459's
+3. Use V488 to measure and reduce run-return-to-result-processing work.
+   Separate post-launch planning, next-iteration maintenance and normal
+   overlap dependencies; do not infer removable CPU from independent medians.
+   V459's
    894 active samples/85 read errors locate32 prefill scalar-readback
    leaves and275 decode-result synchronization leaves; these are call
    paths, not removable CPU or justification to delete data dependencies.
