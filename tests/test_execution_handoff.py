@@ -70,6 +70,122 @@ def test_warm_first_does_not_override_causal_parent_message_priority(monkeypatch
     assert cache.inspect_beliefkv_reentry.call_args.args == (parent,)
 
 
+def test_model_round_retains_other_join_ranks_and_consumes_messages(monkeypatch):
+    runtime, (cold, warm, parent), _ = runtime_with_requests(monkeypatch)
+    runtime.enable_resident_first = False
+    runtime.on_events((
+        RuntimeEvent(
+            "join-create", 10., RuntimeEventKind.JOIN_CREATE, "wf",
+            join_id="join", member_invocation_ids=("cold",),
+        ),
+        RuntimeEvent(
+            "join-wait", 11., RuntimeEventKind.JOIN_WAIT, "wf",
+            invocation_id="parent", join_id="join",
+        ),
+    ))
+    runtime.graph.invocations["warm"].pending_messages = 1
+    assert select(runtime, [warm, cold, parent]).candidates[0] is cold
+    assert runtime.frontier.admission_rank("warm") == (2, 0)
+    with patch.object(runtime.frontier, "_classification", wraps=runtime.frontier._classification) as classify:
+        runtime.on_events((RuntimeEvent(
+            "submit", 12., RuntimeEventKind.LLM_SUBMIT, "wf",
+            invocation_id="warm", context_id="ctx-warm", context_epoch=0,
+            attributes={"messages_consumed": 1},
+        ),))
+        assert select(runtime, [warm, cold, parent]).candidates[0] is cold
+        assert runtime.frontier.admission_rank("warm") == (3, 0)
+        assert [call.args[0].invocation_id for call in classify.call_args_list] == ["warm"]
+    runtime.close()
+
+
+@pytest.mark.parametrize("kind", (
+    RuntimeEventKind.LLM_RESULT,
+    RuntimeEventKind.TOOL_START,
+    RuntimeEventKind.TOOL_END,
+))
+def test_local_round_recomputes_only_the_changed_invocation(monkeypatch, kind):
+    runtime, requests, _ = runtime_with_requests(monkeypatch)
+    runtime.enable_resident_first = False
+    select(runtime, requests)
+    before = {request.rid: runtime.frontier.admission_rank(request.rid) for request in requests}
+    with patch.object(runtime.frontier, "_classification", wraps=runtime.frontier._classification) as classify:
+        runtime.on_events((RuntimeEvent(
+            "local-round", 10., kind, "wf", invocation_id="warm",
+            context_id="ctx-warm", context_epoch=0,
+            attributes={"tool_name": "execute", "tool_run_id": "run"},
+        ),))
+        after = {request.rid: runtime.frontier.admission_rank(request.rid) for request in requests}
+        assert after == before
+        assert [call.args[0].invocation_id for call in classify.call_args_list] == ["warm"]
+    runtime.close()
+
+
+def test_wait_child_state_change_invalidates_descendant_depth(monkeypatch):
+    runtime, (cold, warm, parent), _ = runtime_with_requests(monkeypatch)
+    runtime.enable_resident_first = False
+    runtime.on_events((RuntimeEvent(
+        "call", 10., RuntimeEventKind.CALL, "wf",
+        invocation_id="parent", target_invocation_id="cold",
+    ),))
+    assert select(runtime, [warm, cold, parent]).candidates[0] is cold
+    assert runtime.frontier.admission_rank("cold") == (1, -1)
+    runtime.on_events((RuntimeEvent(
+        "ancestor-tool", 11., RuntimeEventKind.TOOL_START, "wf",
+        invocation_id="parent", context_id="ctx-parent", context_epoch=0,
+        attributes={"tool_name": "execute", "tool_run_id": "run"},
+    ),))
+    assert select(runtime, [warm, cold, parent]).candidates[0] is warm
+    assert runtime.frontier.admission_rank("cold") == (3, 0)
+    runtime.close()
+
+
+def test_terminal_model_return_does_not_retain_join_dependency_cache(monkeypatch):
+    runtime, (cold, warm, parent), _ = runtime_with_requests(monkeypatch)
+    runtime.enable_resident_first = False
+    runtime.on_events((
+        RuntimeEvent(
+            "join-create", 10., RuntimeEventKind.JOIN_CREATE, "wf",
+            join_id="join", member_invocation_ids=("cold",),
+        ),
+        RuntimeEvent(
+            "join-wait", 11., RuntimeEventKind.JOIN_WAIT, "wf",
+            invocation_id="parent", join_id="join",
+        ),
+    ))
+    assert select(runtime, [warm, parent, cold]).candidates[0] is cold
+    assert runtime.frontier.admission_rank("cold") == (0, 0)
+    with patch.object(runtime.frontier, "_classification", wraps=runtime.frontier._classification) as classify:
+        runtime.on_events((RuntimeEvent(
+            "terminal-result", 12., RuntimeEventKind.LLM_RESULT, "wf",
+            invocation_id="cold", context_id="ctx-cold", context_epoch=0,
+            attributes={"terminal": True},
+        ),))
+        assert runtime.graph.joins["join"].satisfied
+        assert select(runtime, [warm, parent, cold]).candidates[0] is warm
+        assert runtime.frontier.admission_rank("cold") == (3, 0)
+        assert {call.args[0].invocation_id for call in classify.call_args_list} == {
+            "cold", "warm", "parent",
+        }
+    runtime.close()
+
+
+def test_new_message_invalidates_rank_even_after_a_retained_model_round(monkeypatch):
+    runtime, (cold, warm, parent), _ = runtime_with_requests(monkeypatch)
+    runtime.enable_resident_first = False
+    assert select(runtime, [cold, warm, parent]).candidates[0] is cold
+    runtime.on_events((RuntimeEvent(
+        "model-result", 10., RuntimeEventKind.LLM_RESULT, "wf",
+        invocation_id="cold", context_id="ctx-cold", context_epoch=0,
+    ),))
+    assert select(runtime, [cold, warm, parent]).candidates[0] is cold
+    runtime.on_events((RuntimeEvent(
+        "message", 11., RuntimeEventKind.MESSAGE, "wf",
+        invocation_id="cold", target_invocation_id="warm",
+    ),))
+    assert select(runtime, [cold, warm, parent]).candidates[0] is warm
+    runtime.close()
+
+
 def test_single_waiting_request_skips_sort_probe_but_handoff_reads_checkpoint(monkeypatch):
     runtime, (cold, _, _), cache = runtime_with_requests(monkeypatch)
     runtime._residency_scan_cursor = 8

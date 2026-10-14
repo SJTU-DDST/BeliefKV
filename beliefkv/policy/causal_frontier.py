@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Mapping
+from typing import Iterable, Mapping
 
 from beliefkv.control.causal_graph import (
     ExecutionMode,
@@ -32,6 +32,10 @@ class CausalFrontierScheduler:
         self._active_descendant_cache: dict[str, int] = {}
         self._join_waiter_cache_version: int | None = None
         self._join_waiter_cache: dict[str, int] = {}
+        self._admission_rank_cache_version: int | None = None
+        self._admission_rank_cache: dict[
+            str, tuple[int, ExecutionMode, tuple[int, int]]
+        ] = {}
 
     def candidates(self, workflow_id: str) -> list[FrontierCandidate]:
         active_descendants = self._active_descendant_counts()
@@ -56,18 +60,36 @@ class CausalFrontierScheduler:
     def admission_rank(self, invocation_id: str) -> tuple[int, int]:
         """Queue ordering needs causal class/depth, not a full descendant census."""
         invocation = self.graph.invocations[invocation_id]
+        if self._admission_rank_cache_version != self.graph.graph_version:
+            self._admission_rank_cache.clear()
+            self._admission_rank_cache_version = self.graph.graph_version
+        cached = self._admission_rank_cache.get(invocation_id)
+        if cached is not None and cached[:2] == (
+            invocation.pending_messages, invocation.execution_mode,
+        ):
+            return cached[2]
         _, class_rank, depth = self._classification(
             invocation, self._join_waiter_count(invocation_id)
         )
-        return class_rank, -depth
+        rank = class_rank, -depth
+        self._admission_rank_cache[invocation_id] = (
+            invocation.pending_messages, invocation.execution_mode, rank,
+        )
+        return rank
 
-    def retain_observed_state(self, *, previous_version: int) -> None:
-        """Advance cached classifications after a batch with no graph state changes."""
+    def retain_observed_state(
+        self, *, previous_version: int, invalidated_invocations: Iterable[str] = (),
+    ) -> None:
+        """Retain ranks whose JOIN, ancestry and local dependencies did not change."""
         version = self.graph.graph_version
         if self._join_waiter_cache_version == previous_version:
             self._join_waiter_cache_version = version
         if self._active_descendant_cache_version == previous_version:
             self._active_descendant_cache_version = version
+        if self._admission_rank_cache_version == previous_version:
+            self._admission_rank_cache_version = version
+            for invocation_id in invalidated_invocations:
+                self._admission_rank_cache.pop(invocation_id, None)
 
     def _candidate(
         self,

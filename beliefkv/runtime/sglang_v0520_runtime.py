@@ -869,6 +869,32 @@ class NativeAdmissionRuntime:
         graph_version = self.graph.graph_version
         semantic_revision = self.semantic_revision
         sessions_revision = self._context_sessions_revision
+        rank_dependencies_unchanged = True
+        changed_rank_invocations = set()
+        for event in events:
+            if event.kind in (
+                RuntimeEventKind.STRUCTURED_ACTION,
+                RuntimeEventKind.TOOL_WAIT_OBSERVATION,
+                RuntimeEventKind.CALL_CENSORED,
+                RuntimeEventKind.CONTEXT_ADVANCE,
+                RuntimeEventKind.CONTEXT_COMPACT,
+            ):
+                continue
+            if event.kind not in (
+                RuntimeEventKind.LLM_SUBMIT, RuntimeEventKind.LLM_RESULT,
+                RuntimeEventKind.TOOL_START, RuntimeEventKind.TOOL_END,
+            ):
+                rank_dependencies_unchanged = False
+                break
+            invocation = self.graph.invocations.get(event.invocation_id)
+            if (
+                invocation is None or invocation.state is InvocationState.WAIT_CHILD
+                or event.kind is RuntimeEventKind.LLM_RESULT
+                and bool(event.attributes.get("terminal", False))
+            ):
+                rank_dependencies_unchanged = False
+                break
+            changed_rank_invocations.add(event.invocation_id)
         try:
             with self._hotpath_timing.measure("graph_apply"):
                 deltas = self.graph.apply_batch(events, atomic=False)
@@ -1205,6 +1231,12 @@ class NativeAdmissionRuntime:
                     and self.visible.get(rid) == hint.key
                 }
             self.semantic_revision += 1
+            if rank_dependencies_unchanged:
+                self.frontier.retain_observed_state(
+                    previous_version=graph_version,
+                    invalidated_invocations=changed_rank_invocations,
+                )
+                self.counts["admission_rank_dependencies_preserved"] += 1
             if (
                 sessions_revision == self._context_sessions_revision
                 and all(event.kind in (
@@ -1215,7 +1247,6 @@ class NativeAdmissionRuntime:
             ):
                 # These RCCG handlers only validate identities and record labels.
                 # Keep live timing, boundary inputs and residency checks separate.
-                self.frontier.retain_observed_state(previous_version=graph_version)
                 cached = self._prefill_causal_cache
                 if cached is not None and cached[0][:2] == (
                     semantic_revision, graph_version,

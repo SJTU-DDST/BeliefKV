@@ -1,0 +1,568 @@
+{
+  "status": "local_rank_dependency_cpu_comparison_not_online_acceptance",
+  "observed_at_local": "2026-10-14T16:24:31.698551-07:00",
+  "cases": [
+    {
+      "kind": "llm_round",
+      "workflows": 108,
+      "join_rounds_per_workflow": 1,
+      "iterations": 300,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.8204048166666666,
+            "p50_ms": 0.816972,
+            "p99_ms": 0.874549,
+            "max_ms": 1.553052
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.8214775833333333,
+            "p50_ms": 0.818097,
+            "p99_ms": 0.8759,
+            "max_ms": 1.554013
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.6462279866666667,
+            "p50_ms": 0.644325,
+            "p99_ms": 0.702996,
+            "max_ms": 0.721717
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.6473022233333333,
+            "p50_ms": 0.645525,
+            "p99_ms": 0.704359,
+            "max_ms": 0.723432
+          }
+        }
+      },
+      "classification_calls": {
+        "baseline": 32508,
+        "candidate": 408
+      },
+      "retained_dependency_batches": 300,
+      "thread_cpu_mean_reduction_fraction": 0.21230595732931756,
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0,
+      "baseline_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "526af6f635b8bc3ae393dc8f14b8c3d5b199946bcdb57a427e4585213891abf2",
+        "beliefkv/policy/causal_frontier.py": "c0d7f40db9ed29ee3c1d209281fba9fccac733da3ef432a6918394224f44fd81"
+      }
+    },
+    {
+      "kind": "tool_round",
+      "workflows": 108,
+      "join_rounds_per_workflow": 1,
+      "iterations": 300,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.83282183,
+            "p50_ms": 0.831858,
+            "p99_ms": 0.897843,
+            "max_ms": 0.928
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.8340080166666667,
+            "p50_ms": 0.833019,
+            "p99_ms": 0.899525,
+            "max_ms": 0.930131
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.6615856033333334,
+            "p50_ms": 0.660225,
+            "p99_ms": 0.717795,
+            "max_ms": 0.730202
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.66291782,
+            "p50_ms": 0.661414,
+            "p99_ms": 0.722922,
+            "max_ms": 0.733354
+          }
+        }
+      },
+      "classification_calls": {
+        "baseline": 32508,
+        "candidate": 408
+      },
+      "retained_dependency_batches": 300,
+      "thread_cpu_mean_reduction_fraction": 0.20560967604159297,
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0,
+      "baseline_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "526af6f635b8bc3ae393dc8f14b8c3d5b199946bcdb57a427e4585213891abf2",
+        "beliefkv/policy/causal_frontier.py": "c0d7f40db9ed29ee3c1d209281fba9fccac733da3ef432a6918394224f44fd81"
+      }
+    },
+    {
+      "kind": "context",
+      "workflows": 108,
+      "join_rounds_per_workflow": 1,
+      "iterations": 300,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.81974101,
+            "p50_ms": 0.817661,
+            "p99_ms": 0.878408,
+            "max_ms": 0.886085
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.8232450533333333,
+            "p50_ms": 0.81874,
+            "p99_ms": 0.888238,
+            "max_ms": 1.410403
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.64552065,
+            "p50_ms": 0.642858,
+            "p99_ms": 0.695965,
+            "max_ms": 1.253293
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.6614969666666667,
+            "p50_ms": 0.644204,
+            "p99_ms": 0.886691,
+            "max_ms": 4.711561
+          }
+        }
+      },
+      "classification_calls": {
+        "baseline": 32508,
+        "candidate": 108
+      },
+      "retained_dependency_batches": 300,
+      "thread_cpu_mean_reduction_fraction": 0.2125309797542031,
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0,
+      "baseline_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "526af6f635b8bc3ae393dc8f14b8c3d5b199946bcdb57a427e4585213891abf2",
+        "beliefkv/policy/causal_frontier.py": "c0d7f40db9ed29ee3c1d209281fba9fccac733da3ef432a6918394224f44fd81"
+      }
+    },
+    {
+      "kind": "observation_control",
+      "workflows": 108,
+      "join_rounds_per_workflow": 1,
+      "iterations": 300,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.38236596333333334,
+            "p50_ms": 0.3805,
+            "p99_ms": 0.435889,
+            "max_ms": 0.457925
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.3841389966666667,
+            "p50_ms": 0.381461,
+            "p99_ms": 0.448241,
+            "max_ms": 0.558969
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.3800832966666667,
+            "p50_ms": 0.378162,
+            "p99_ms": 0.43306,
+            "max_ms": 0.533415
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.38140085,
+            "p50_ms": 0.379345,
+            "p99_ms": 0.434345,
+            "max_ms": 0.53548
+          }
+        }
+      },
+      "classification_calls": {
+        "baseline": 108,
+        "candidate": 108
+      },
+      "retained_dependency_batches": 300,
+      "thread_cpu_mean_reduction_fraction": 0.005969847961275532,
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0,
+      "baseline_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "526af6f635b8bc3ae393dc8f14b8c3d5b199946bcdb57a427e4585213891abf2",
+        "beliefkv/policy/causal_frontier.py": "c0d7f40db9ed29ee3c1d209281fba9fccac733da3ef432a6918394224f44fd81"
+      }
+    },
+    {
+      "kind": "message_control",
+      "workflows": 108,
+      "join_rounds_per_workflow": 1,
+      "iterations": 300,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.8275439966666667,
+            "p50_ms": 0.826097,
+            "p99_ms": 0.882359,
+            "max_ms": 0.907321
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.82871948,
+            "p50_ms": 0.827197,
+            "p99_ms": 0.88392,
+            "max_ms": 0.908481
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.85662384,
+            "p50_ms": 0.854292,
+            "p99_ms": 0.917876,
+            "max_ms": 1.259734
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.8578727066666667,
+            "p50_ms": 0.855519,
+            "p99_ms": 0.919472,
+            "max_ms": 1.260896
+          }
+        }
+      },
+      "classification_calls": {
+        "baseline": 32508,
+        "candidate": 32508
+      },
+      "retained_dependency_batches": 0,
+      "thread_cpu_mean_reduction_fraction": -0.03513993630606538,
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0,
+      "baseline_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "526af6f635b8bc3ae393dc8f14b8c3d5b199946bcdb57a427e4585213891abf2",
+        "beliefkv/policy/causal_frontier.py": "c0d7f40db9ed29ee3c1d209281fba9fccac733da3ef432a6918394224f44fd81"
+      }
+    },
+    {
+      "kind": "llm_round",
+      "workflows": 156,
+      "join_rounds_per_workflow": 2,
+      "iterations": 300,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 1.2038475833333333,
+            "p50_ms": 1.201298,
+            "p99_ms": 1.266828,
+            "max_ms": 1.416392
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 1.20526702,
+            "p50_ms": 1.202723,
+            "p99_ms": 1.26812,
+            "max_ms": 1.418541
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.9271438466666667,
+            "p50_ms": 0.925631,
+            "p99_ms": 0.984039,
+            "max_ms": 1.045842
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.92856031,
+            "p50_ms": 0.926973,
+            "p99_ms": 0.985421,
+            "max_ms": 1.046936
+          }
+        }
+      },
+      "classification_calls": {
+        "baseline": 46956,
+        "candidate": 456
+      },
+      "retained_dependency_batches": 300,
+      "thread_cpu_mean_reduction_fraction": 0.22984947637681974,
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0,
+      "baseline_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "526af6f635b8bc3ae393dc8f14b8c3d5b199946bcdb57a427e4585213891abf2",
+        "beliefkv/policy/causal_frontier.py": "c0d7f40db9ed29ee3c1d209281fba9fccac733da3ef432a6918394224f44fd81"
+      }
+    },
+    {
+      "kind": "tool_round",
+      "workflows": 156,
+      "join_rounds_per_workflow": 2,
+      "iterations": 300,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 1.22958192,
+            "p50_ms": 1.225447,
+            "p99_ms": 1.291077,
+            "max_ms": 1.925871
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 1.2309628566666666,
+            "p50_ms": 1.226866,
+            "p99_ms": 1.292326,
+            "max_ms": 1.928016
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.9519925633333334,
+            "p50_ms": 0.949509,
+            "p99_ms": 1.006216,
+            "max_ms": 1.109068
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.9534150366666667,
+            "p50_ms": 0.950829,
+            "p99_ms": 1.007568,
+            "max_ms": 1.110465
+          }
+        }
+      },
+      "classification_calls": {
+        "baseline": 46956,
+        "candidate": 456
+      },
+      "retained_dependency_batches": 300,
+      "thread_cpu_mean_reduction_fraction": 0.2257591398763139,
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0,
+      "baseline_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "526af6f635b8bc3ae393dc8f14b8c3d5b199946bcdb57a427e4585213891abf2",
+        "beliefkv/policy/causal_frontier.py": "c0d7f40db9ed29ee3c1d209281fba9fccac733da3ef432a6918394224f44fd81"
+      }
+    },
+    {
+      "kind": "context",
+      "workflows": 156,
+      "join_rounds_per_workflow": 2,
+      "iterations": 300,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 1.1967667833333333,
+            "p50_ms": 1.194476,
+            "p99_ms": 1.293399,
+            "max_ms": 1.411738
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 1.1982080833333333,
+            "p50_ms": 1.195829,
+            "p99_ms": 1.295461,
+            "max_ms": 1.413466
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.9146915566666667,
+            "p50_ms": 0.913032,
+            "p99_ms": 0.99818,
+            "max_ms": 1.017577
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.9162127,
+            "p50_ms": 0.914588,
+            "p99_ms": 1.000031,
+            "max_ms": 1.018773
+          }
+        }
+      },
+      "classification_calls": {
+        "baseline": 46956,
+        "candidate": 156
+      },
+      "retained_dependency_batches": 300,
+      "thread_cpu_mean_reduction_fraction": 0.23569774044113045,
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0,
+      "baseline_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "526af6f635b8bc3ae393dc8f14b8c3d5b199946bcdb57a427e4585213891abf2",
+        "beliefkv/policy/causal_frontier.py": "c0d7f40db9ed29ee3c1d209281fba9fccac733da3ef432a6918394224f44fd81"
+      }
+    },
+    {
+      "kind": "observation_control",
+      "workflows": 156,
+      "join_rounds_per_workflow": 2,
+      "iterations": 300,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.5409693166666667,
+            "p50_ms": 0.538557,
+            "p99_ms": 0.594859,
+            "max_ms": 0.597803
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.5424030866666667,
+            "p50_ms": 0.540035,
+            "p99_ms": 0.596409,
+            "max_ms": 0.599101
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 0.53286561,
+            "p50_ms": 0.531305,
+            "p99_ms": 0.583182,
+            "max_ms": 0.586347
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 0.534294,
+            "p50_ms": 0.532775,
+            "p99_ms": 0.584725,
+            "max_ms": 0.587564
+          }
+        }
+      },
+      "classification_calls": {
+        "baseline": 156,
+        "candidate": 156
+      },
+      "retained_dependency_batches": 300,
+      "thread_cpu_mean_reduction_fraction": 0.014979974680634278,
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0,
+      "baseline_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "526af6f635b8bc3ae393dc8f14b8c3d5b199946bcdb57a427e4585213891abf2",
+        "beliefkv/policy/causal_frontier.py": "c0d7f40db9ed29ee3c1d209281fba9fccac733da3ef432a6918394224f44fd81"
+      }
+    },
+    {
+      "kind": "message_control",
+      "workflows": 156,
+      "join_rounds_per_workflow": 2,
+      "iterations": 300,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 1.1910775666666666,
+            "p50_ms": 1.188923,
+            "p99_ms": 1.262975,
+            "max_ms": 1.705312
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 1.19250735,
+            "p50_ms": 1.190246,
+            "p99_ms": 1.264723,
+            "max_ms": 1.706458
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 300,
+            "mean_ms": 1.2187760933333334,
+            "p50_ms": 1.216819,
+            "p99_ms": 1.266349,
+            "max_ms": 1.725231
+          },
+          "wall_ms": {
+            "count": 300,
+            "mean_ms": 1.2201806366666668,
+            "p50_ms": 1.218006,
+            "p99_ms": 1.267872,
+            "max_ms": 1.726412
+          }
+        }
+      },
+      "classification_calls": {
+        "baseline": 46956,
+        "candidate": 46956
+      },
+      "retained_dependency_batches": 0,
+      "thread_cpu_mean_reduction_fraction": -0.023255014989647993,
+      "request_order_and_complete_graph_snapshots_equal": true,
+      "physical_actions": 0,
+      "baseline_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+      "baseline_sources": {
+        "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+        "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+        "beliefkv/runtime/sglang_v0520_runtime.py": "526af6f635b8bc3ae393dc8f14b8c3d5b199946bcdb57a427e4585213891abf2",
+        "beliefkv/policy/causal_frontier.py": "c0d7f40db9ed29ee3c1d209281fba9fccac733da3ef432a6918394224f44fd81"
+      }
+    }
+  ],
+  "candidate_sources": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "fc77d800fe4ec11bc9cc8002437572baaea6b132729c6de335fbc7072b93a929",
+    "beliefkv/policy/causal_frontier.py": "32e206ce1cc069c0690b05bedb0d5925b40fac3b48e1f77b4461ea51993240a4",
+    "scripts/benchmark_local_rank_dependencies.py": "370e7b18f92806ba426bb534332c5511c7290bf5f41e71c05bc55ccdf91ddd1e"
+  },
+  "limitations": [
+    "These are identical synthetic CPU scenes, not real V59/V60 batch frequencies or GPU/JCT evidence.",
+    "Both variants use their own frontier and runtime source; profiling is enabled in both.",
+    "Only local event pairs retain unaffected ranks; message control must rebuild.",
+    "Resident-first and native page inspection are disabled; no physical action is requested.",
+    "Frozen V60 and all budgets, models, capacity and priority policies remain unchanged."
+  ]
+}
