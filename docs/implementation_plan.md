@@ -7,6 +7,20 @@ short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
 and interval changes remain disabled.
 
+V58 tail audit separates shrinking batches from idle GPU time. At6000-8100s
+GPU sample means remain94.7%-96.4%; the last single workflow's183.842s
+averages46.8% with zero queued requests. Root LLM/tool/other partition
+that window into87.724/90.326/5.793s. Its identical check runs208 times
+without workspace changes; outputs differ only in hexadecimal object addresses.
+Do not attribute this tail to180s tool timeouts or exclusively to restoration.
+Raw natural-return records retain26 guard interventions across24 workflows,
+including7 roots, while the summary reports zero because it only counts
+semantic-completion interventions. Correct "all naturally completed" to
+"156 client-recorded completed", retain raw evidence and unknown task quality.
+Reports: v58_tail_diagnosis_20261014.json and
+v58_tail_repetition_and_terminal_20261014.json. This is an audit/doc update;
+the live native source, existing budgets and guard configuration stay frozen.
+
 Latest V579 binds all four complete matched windows. The phase observer
 finished normally; the verified driver/native scheduler remain live.
 Turnover P50 gaps are+9.06%,+16.11%,+7.07%,+6.19%; decode service
@@ -25,7 +39,7 @@ the existing reasoning retry. The deadline did not expire, both children
 returned and no guard/cancellation intervened. Preserve current budgets,
 workspace evidence and all-workflow quality counts alongside paired JCT.
 
-V58 predictive naturally completed156/156 workflows in8367.726s; native
+V58 predictive records156/156 completed workflows in8367.726s; native
 is live from2026-10-15 00:33 with independently verified PID3865597/
 start_ticks616567785. Same-version120-300 and600-900s short turnover
 P50 gaps are+9.06%/+16.11%; decode service gaps are-9.49%/-5.54%.

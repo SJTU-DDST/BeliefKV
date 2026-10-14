@@ -6,6 +6,22 @@
 改善平均workflow JCT与完成吞吐；既有PrefillAdder保留，新增
 延迟凑批、mixed chunk、最小槽延迟和间隔调整仍关闭。
 
+V58尾部审计见`v58_tail_diagnosis_20261014.json`与
+`v58_tail_repetition_and_terminal_20261014.json`。6000–8100s
+GPU采样均值仍约94.7%–96.4%，running逐步由22.9降至5.6；
+最后仅剩seaborn-3187的183.842s内GPU均值46.8%、零值时间
+49.9%，queue恒为0。root LLM/工具/其他分别87.724/90.326/
+5.793s，原生排队仅0.659s（完整重叠请求），不是180s工具超时
+造成。相同绘图检查208次均成功且workspace未变，去除对象
+地址后输出完全一致。较早长尾还包含child的数百轮重复执行。
+
+终态口径须纠正：156只是客户端completed计数。24个workflow
+的26条`agent_natural_return`实际带`guard_intervened=true`，
+其中7个workflow的root被干预；汇总仅从semantic completion
+统计干预，错误给出0，部分硬上限收尾被记作自然终态。保留
+原始结果并补充审计，不能据此宣称自然完成或任务正确性。
+本次仅分析和文档修正，冻结执行预算、源码及native继续运行。
+
 最新v579绑定四个完整同版本窗口；v551观测器正常结束，原
 launcher及native scheduler继续运行，不重启已完成的观测器。
 3600–3900s周转P50为46.489/43.778ms（+6.19%），decode
@@ -24,7 +40,7 @@ root最后两请求均finish_reason=length且实际输出8192 token，
 child均返回、零取消/guard干预。预算不变，保留workspace及
 全工作流质量计数，不仅比较共同completed任务。
 
-V58 predictive已自然完成156/156个workflow，8367.726s，原
+V58 predictive客户端记录156/156个completed，8367.726s，原
 scheduler1630621退出；native于2026-10-15 00:33实际开始服务，
 scheduler3865597/start_ticks616567785经独立启动记录核验。
 同版本120–300/600–900s的短周转P50为43.793/40.155及
