@@ -7,6 +7,27 @@ short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
 and interval changes remain disabled.
 
+V561/V562 inspect exact sealed V58 JOIN episodes. Of28 starts without an early
+submit,27 have post-start action-local reclaim diagnostics: free FULL remains
+within the roughly4144-token input/decode reserve, the FULL target is unmet
+and no waiting-agent candidate was published;11 episodes record a bounded
+native scan truncation. This is not a first-extent size refusal or a complete cold-KV census.
+Start-to-completion P50 is472.891ms; native arrival-to-service is12792.362ms.
+For11 early JOIN ACK-to-service tails above10s,10 are dominated by the
+post-native-arrival phase, with zero confirmed FULL reuse. Unknown reuse is
+not counted as waste. Continue admission/consumption and capacity diagnosis.
+
+The next candidate selects a single-leaf reusable checkpoint in one scan of
+its validated root-first ancestry while validating the complete suffix.
+V563/V565 retain1241 checks across26 modules and58 source bindings.
+V564 compares30600 complete plans/errors against frozen V58 and the prior
+qualified candidate. Incremental single-leaf CPU falls2.5%-7.2% for depths
+16-300; effective complete108-workflow scans fall2.8%-6.1%. Depth4 regresses
+0.8%-2.2%; multi-leaf variation and unaffected resident controls are retained.
+Keep this qualified CPU candidate out of the live V58 pair. The goal still
+requires same-version online turnover, useful FULL, quality/JCT and repeated
+completion-throughput evidence; CPU qualification does not satisfy acceptance.
+
 The newest complete3600-3900s window has56/65 short-single samples:
 run_batch P50 35.190/50.226ms, turnover46.489/58.199ms, return gap
 6.710/4.419ms and384729/373544 decode request steps. Instrumented
