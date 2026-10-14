@@ -7,11 +7,38 @@ short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
 and interval changes remain disabled.
 
-Latest V606 adds the complete1800-2100s window:69/64 short samples,
+Latest V614 binds all four corrected V59 windows. Replenished3600-3900s
+short-prefill turnover is52.818/43.778ms (+20.65%), and decode service
+is364026/388781 (-6.37%). Selection and return handoff still differ by
+about2.9ms in median. The original stage and final goals remain unachieved.
+The corrected observer completed normally; keep the original live run.
+At15:36 PDT,156 workspaces arrived,130 client completions and26 unknown
+terminal outcomes were observed. Full quality/JCT/recompute are pending.
+
+Candidate3c14655 retains validated causal ranks across observation-only
+STRUCTURED_ACTION/TOOL_WAIT_OBSERVATION/CALL_CENSORED batches with
+unchanged sessions. All graph validation, versions, watermarks, timing,
+aging and physical residency checks remain. V615 binds72 sources and932
+passing checks; six CPU event/maintenance/admission scenarios save52%-55%,
+with two state-changing tool controls within about0.7%. This is next-cold
+observation qualification, not a live frequency, GPU or JCT claim.
+
+V611/V612/V616 test causal project/command-shape duration history, including
+actual failed tool results and excluding cancellation. Across6607 single
+execute child waits, central timing improves but new142-171s overestimation
+appears. An initial-P90-overrun variant does not reduce the first >10s-early
+window count. Reject both online candidates; V616 reproduces the initial
+summary with the final evaluator source. Continue completion-stage/work
+prediction, measured native admission/consumption and control-cost work.
+V609/V610 retain exact independent waits: JOIN queue tails and tool
+pre-completion timing tails require different fixes, not a global ETA shift
+or lease increase. Keep quality/fairness/recompute and repeated controls.
+
+Earlier V606 adds the complete1800-2100s window:69/64 short samples,
 turnover P50 50.935/51.788ms (-1.65%) and decode384610/381775
 (+0.74%). All three development windows are close to the stage ranges.
-Keep the live run; inspect remaining selection/handoff costs, FULL consumption,
-restore waits and the replenished-load window before full quality/JCT acceptance.
+Keep the live run; inspect remaining selection/handoff costs, FULL consumption
+and restore waits. The replenished-load result is now retained in V614.
 
 V59 is now executing the frozen d1c3f14/5262707a candidate. V600 verifies
 actual GPU service,65 source hashes and fixed scheduling settings;108 first-wave
