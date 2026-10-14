@@ -1,0 +1,178 @@
+{
+  "status": "verified_and_cleaned",
+  "started_at_local": "2026-10-14T23:17:19.971263+08:00",
+  "runs": [
+    {
+      "status": "verified_and_cleaned",
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v27",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261014/v27_client_server_snapshots.tar.zst",
+      "closure_evidence": {
+        "kind": "finished_pair",
+        "summary_arms": [
+          "predictive_h2d",
+          "native"
+        ],
+        "cleanup_receipts": {
+          "predictive_h2d": {
+            "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v27/predictive_h2d.workspace_cleanup.json",
+            "sha256": "40c64945ecabfea4eb37a002ccb4e2925802c6c782edd5a3eccd0478cb1b4bf8",
+            "retained_workspace_count": 1
+          },
+          "native": {
+            "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261011_v27/native.workspace_cleanup.json",
+            "sha256": "fa290d15aa79582ba6c03100120bda5ab60dabb0830c7ad6e683bb4ae3178cb3",
+            "retained_workspace_count": 0
+          }
+        },
+        "retained_workspaces_not_selected_or_modified": true
+      },
+      "plan_sha256": "5231c3808f6d55ac3ed88f93a9674b5869266f5a16d657da62faf18d171fc376",
+      "file_inventory": {
+        "qwen35_native_predictive_replenished_108plus48_20261011_v27/native/client_156/server/runtime_audit.jsonl": {
+          "size_bytes": 3763353306,
+          "allocated_bytes": 3763359744,
+          "inode": 139863077,
+          "device": 66306,
+          "mtime_ns": 1791752218755474666
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261011_v27/native/client_156/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 104723559,
+          "allocated_bytes": 104730624,
+          "inode": 139863078,
+          "device": 66306,
+          "mtime_ns": 1791752222435420169
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261011_v27/native/client_156/server/server.log": {
+          "size_bytes": 17830494,
+          "allocated_bytes": 17833984,
+          "inode": 139863072,
+          "device": 66306,
+          "mtime_ns": 1791752222540418614
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261011_v27/predictive_h2d/client_156/server/runtime_audit.jsonl": {
+          "size_bytes": 4220323442,
+          "allocated_bytes": 4220329984,
+          "inode": 139912403,
+          "device": 66306,
+          "mtime_ns": 1791743459007894545
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261011_v27/predictive_h2d/client_156/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 113408962,
+          "allocated_bytes": 113410048,
+          "inode": 139912409,
+          "device": 66306,
+          "mtime_ns": 1791743463781804449
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261011_v27/predictive_h2d/client_156/server/server.log": {
+          "size_bytes": 20405437,
+          "allocated_bytes": 20406272,
+          "inode": 139912408,
+          "device": 66306,
+          "mtime_ns": 1791743463894802316
+        }
+      },
+      "source_bytes": 8240045200,
+      "archive_bytes": 179801259,
+      "archive_sha256": "337d81da42974155cbee1cd35977dc64f6f7bc035a77e3bc2aa0bb1933ab5d27",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "restore_command": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261014/v27_client_server_snapshots.tar.zst --directory experiments/raw",
+      "finished_at_local": "2026-10-14T23:18:04.931909+08:00",
+      "remaining_source_files": 0
+    },
+    {
+      "status": "verified_and_cleaned",
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261012_v28",
+      "archive": "/home/longhao/experiment/BeliefKV/experiments/archive/20261014/v28_superseded_server_traces.tar.zst",
+      "closure_evidence": {
+        "kind": "verified_development_stop",
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v118_v28_development_stop_20261012.json",
+        "sha256": "b59aea11630466e74cb0930132eb923341b50bcde618b2338720e6b82a3d7f7e"
+      },
+      "plan_sha256": "d4c3486ce2117f7ed377fc04e2c5de943cd4aac3bdc7d2868471bba9d76b5768",
+      "file_inventory": {
+        "qwen35_native_predictive_replenished_108plus48_20261012_v28/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+          "size_bytes": 943724652,
+          "allocated_bytes": 943730688,
+          "inode": 139865630,
+          "device": 66306,
+          "mtime_ns": 1791757646647491197
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v28/predictive_h2d/server/eviction_attribution.jsonl": {
+          "size_bytes": 58447733,
+          "allocated_bytes": 58454016,
+          "inode": 139865591,
+          "device": 66306,
+          "mtime_ns": 1791757646644491167
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v28/predictive_h2d/server/host_pool_telemetry.jsonl": {
+          "size_bytes": 16703725,
+          "allocated_bytes": 16711680,
+          "inode": 139865581,
+          "device": 66306,
+          "mtime_ns": 1791757645799482764
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v28/predictive_h2d/server/physical_action_ack.jsonl": {
+          "size_bytes": 9023297,
+          "allocated_bytes": 9027584,
+          "inode": 139865579,
+          "device": 66306,
+          "mtime_ns": 1791757613382132676
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v28/predictive_h2d/server/physical_action_use.jsonl": {
+          "size_bytes": 22439789,
+          "allocated_bytes": 22446080,
+          "inode": 139865580,
+          "device": 66306,
+          "mtime_ns": 1791757613787137391
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v28/predictive_h2d/server/runtime_audit.jsonl": {
+          "size_bytes": 2572140897,
+          "allocated_bytes": 2572148736,
+          "inode": 139865570,
+          "device": 66306,
+          "mtime_ns": 1791757646314487889
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v28/predictive_h2d/server/runtime_events.sglang.jsonl": {
+          "size_bytes": 83522989,
+          "allocated_bytes": 83529728,
+          "inode": 139863032,
+          "device": 66306,
+          "mtime_ns": 1791757645700481775
+        },
+        "qwen35_native_predictive_replenished_108plus48_20261012_v28/predictive_h2d/server/transfer_telemetry.jsonl": {
+          "size_bytes": 50565546,
+          "allocated_bytes": 50573312,
+          "inode": 139865576,
+          "device": 66306,
+          "mtime_ns": 1791757645732482095
+        }
+      },
+      "source_bytes": 3756568628,
+      "archive_bytes": 107988272,
+      "archive_sha256": "5b2e4572058bf557e3ede4f52771f7ae6d7e00e6387b7dae75d2219050f28e96",
+      "comparison": {
+        "returncode": 0,
+        "stderr": ""
+      },
+      "restore_command": "tar --extract --use-compress-program='zstd --long=30' --file experiments/archive/20261014/v28_superseded_server_traces.tar.zst --directory experiments/raw",
+      "finished_at_local": "2026-10-14T23:18:29.136253+08:00",
+      "remaining_source_files": 0
+    }
+  ],
+  "free_bytes_before": 23737077760,
+  "helper_sha256": "5afd0d4a6e86deaeaa1a3eaea8de2738d86eff126b1901957a3d83b1ee9182d2",
+  "compression_policy": "zstd -T1 --long=30 -3; nice19; idle I/O",
+  "scope": "Stopped V27 client-side server snapshots and V28 server/opportunity traces. Preserve outcomes, client events/content, frozen plans, HTML, censoring and V29-V58 evidence.",
+  "preserved_initial_attempt": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v558_old_server_snapshot_archive_20261014.json",
+    "sha256": "ab22320ed9b85a1824c65b23cb3344f7c8d436d41f70e991b54ab33c16adfe13",
+    "issue": "The first attempt required zero retained workspaces, although only closed server snapshots were selected. One incomplete-outcome workspace is retained and untouched."
+  },
+  "finished_at_local": "2026-10-14T23:18:29.137040+08:00",
+  "source_bytes": 11996613828,
+  "archive_bytes": 287789531,
+  "free_bytes_after": 35376668672
+}

@@ -1,0 +1,10 @@
+{
+  "status": "failed_preserve_unverified_sources",
+  "started_at_local": "2026-10-14T23:14:43.957990+08:00",
+  "runs": [],
+  "free_bytes_before": 23901319168,
+  "helper_sha256": "ae16c4bf59f81a30ebdd266c6ba9fb10d39324cfae416d25080bc8ea02fb3a95",
+  "compression_policy": "zstd -T1 --long=30 -3; nice19; idle I/O",
+  "scope": "Stopped V27 client-side server snapshots and V28 server/opportunity traces. Preserve outcomes, client events/content, frozen plans, HTML, censoring and V29-V58 evidence.",
+  "error": "ValueError('V27 is not a fully finished collection')"
+}

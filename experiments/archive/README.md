@@ -4,6 +4,30 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-10-14 V27 Snapshots And V28 Trace Recovery
+
+V27's six old client-side server snapshots and V28's eight stopped server/
+opportunity JSONL files passed complete GNU tar comparison before cleanup:
+11,996,613,828 source bytes became287,789,531 archive bytes. Client events,
+results, plans, HTML, administrative censoring and the one retained V27
+incomplete-workspace remain unchanged.
+
+Archives:
+`experiments/archive/20261014/v27_client_server_snapshots.tar.zst` and
+`experiments/archive/20261014/v28_superseded_server_traces.tar.zst`.
+Original runs contain exact hashes and restore commands in
+`CLIENT_SERVER_SNAPSHOTS_ARCHIVED.md` and`SERVER_TRACES_ARCHIVED.md`.
+Receipt:`experiments/reports/v559_old_server_snapshot_archive_20261014.json`.
+V558 preserves the first refusal caused by an unnecessary zero-retained-
+workspace requirement; no source was removed in that attempt.
+
+Compression and comparison ran23:17:19-23:18:29 CST after V58's3600-3900s
+window. Earlier lightweight disk inventories occurred inside that window;
+it remains a development observation, not an uncontaminated causal control.
+Available space at archival completion was35,376,668,672 bytes; concurrent
+temporary-file release and ongoing V58 writes prevent attributing all free
+space change to archival.
+
 ## 2026-10-14 V50-V52 Server Trace Recovery
 
 Twenty-four JSONL files from stopped V50-V52 passed complete GNU tar
