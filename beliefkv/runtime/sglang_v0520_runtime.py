@@ -908,7 +908,10 @@ class NativeAdmissionRuntime:
             self.counts["causal_mirror_discarded"] += 1
             raise
         else:
-            self._update_active_tool_census(deltas, previous_version=graph_version)
+            affected = self._update_active_tool_census(deltas, previous_version=graph_version)
+            self._update_wait_context_cache(
+                deltas, previous_version=graph_version, affected_invocations=affected,
+            )
             tool_wait_refreshes: dict[str, None] | None = None
             terminal_returns = {
                 event.invocation_id: event
@@ -1010,7 +1013,7 @@ class NativeAdmissionRuntime:
                         self._tool_opportunity_cache.pop(key, None)
                         self._tool_prefetch_survival_evidence.pop(key, None)
                         del self.context_sessions[context_id]
-                        self._context_sessions_revision += 1
+                        self._context_session_changed(context_id)
                         self._context_tokens.pop(context_id, None)
                     if event.kind in (
                         RuntimeEventKind.TOOL_END,
@@ -1090,6 +1093,7 @@ class NativeAdmissionRuntime:
                         if key.root_workflow_id != event.workflow_id
                     }
                     self._context_sessions_revision += 1
+                    self._wait_context_cache = None
                     self._context_tokens = {
                         context: tokens
                         for context, tokens in self._context_tokens.items()
@@ -2075,11 +2079,84 @@ class NativeAdmissionRuntime:
             self._submit_tool_wait(tool.key.context_id)
             self.counts["tool_wait_refresh_submitted"] += 1
 
+    def _invalidate_wait_context_states(self, cached, states: set[InvocationState]) -> None:
+        for state in states:
+            for key in cached[1].pop(state, ()):
+                cached[2].pop(key.invocation_id, None)
+                cached[3].pop(key.context_id, None)
+        self._wait_context_cache = (
+            (self.graph.graph_version, self._context_sessions_revision),
+            cached[1], cached[2], cached[3],
+        )
+        self.counts["wait_context_groups_invalidated"] += len(states)
+        if not states:
+            self.counts["wait_context_cache_retained"] += 1
+
+    def _update_wait_context_cache(
+        self, deltas: Sequence[GraphDelta], *, previous_version: int,
+        affected_invocations: set[str] | None = None,
+    ) -> None:
+        cached = self._wait_context_cache
+        if cached is None:
+            return
+        if cached[0] != (previous_version, self._context_sessions_revision):
+            # Changes outside the tracked event path require the original scan.
+            self._wait_context_cache = None
+            return
+        affected = affected_invocations
+        if affected is None:
+            affected = set()
+            for delta in deltas:
+                affected.update(delta.awakened_invocations)
+                affected.update(delta.parked_invocations)
+                affected.update(delta.completed_invocations)
+                for context_id in delta.changed_contexts:
+                    context = self.graph.contexts.get(context_id)
+                    if context is not None:
+                        affected.update(context.invocation_ids)
+                for invocation_id in delta.completed_invocations:
+                    invocation = self.graph.invocations.get(invocation_id)
+                    if invocation is not None:
+                        parent = invocation.return_target_id or invocation.parent_invocation_id
+                        if parent is not None:
+                            affected.add(parent)
+        states = set()
+        for invocation_id in affected:
+            previous_state = cached[2].get(invocation_id)
+            invocation = self.graph.invocations.get(invocation_id)
+            current_state = invocation.state if invocation is not None else None
+            if previous_state is current_state:
+                continue
+            if previous_state in cached[1]:
+                states.add(previous_state)
+            if current_state in cached[1]:
+                states.add(current_state)
+        self._invalidate_wait_context_states(cached, states)
+
+    def _context_session_changed(self, context_id: str) -> None:
+        previous_revision = self._context_sessions_revision
+        self._context_sessions_revision += 1
+        cached = self._wait_context_cache
+        if cached is None:
+            return
+        if cached[0] != (self.graph.graph_version, previous_revision):
+            self._wait_context_cache = None
+            return
+        key = self.context_sessions.get(context_id)
+        invocation = self.graph.invocations.get(key.invocation_id) if key is not None else None
+        states = {
+            state for state in (
+                cached[3].get(context_id),
+                invocation.state if invocation is not None else None,
+            ) if state in cached[1]
+        }
+        self._invalidate_wait_context_states(cached, states)
+
     def _waiting_context_keys(self, state: InvocationState) -> tuple[PrefillCandidateKey, ...]:
         signature = (self.graph.graph_version, self._context_sessions_revision)
         cached = self._wait_context_cache
         if cached is None or cached[0] != signature:
-            cached = (signature, {})
+            cached = (signature, {}, {}, {})
             self._wait_context_cache = cached
         if state not in cached[1]:
             keys = [
@@ -2091,6 +2168,10 @@ class NativeAdmissionRuntime:
             if state is InvocationState.WAIT_JOIN:
                 keys.sort(key=lambda key: key.context_id)
             cached[1][state] = tuple(keys)
+            for key in keys:
+                cached[2][key.invocation_id] = state
+                cached[3][key.context_id] = state
+            self.counts["wait_context_groups_built"] += 1
         return cached[1][state]
 
     def _scan_unhinted_wait(self) -> bool:
@@ -3020,7 +3101,7 @@ class NativeAdmissionRuntime:
 
     def _update_active_tool_census(
         self, deltas: Sequence[GraphDelta], *, previous_version: int,
-    ) -> None:
+    ) -> set[str] | None:
         if self._active_tool_census_version != previous_version:
             return
         affected = set()
@@ -3060,6 +3141,7 @@ class NativeAdmissionRuntime:
                 self._active_tool_census[family] += 1
                 self._active_tool_census_invocations[invocation_id] = family
         self._active_tool_census_version = self.graph.graph_version
+        return affected
 
     @timed_runtime("tool_features")
     def _local_frontier_features(
@@ -7443,7 +7525,7 @@ class NativeAdmissionRuntime:
             self.context_sessions[key.context_id] = key
         else:
             self.context_sessions.pop(key.context_id, None)
-        self._context_sessions_revision += 1
+        self._context_session_changed(key.context_id)
         self.semantic_revision += 1
         self._execution_handoff_next_ms = 0.
         self._refresh_prefetch_service_leases(context_id=key.context_id)
@@ -7507,7 +7589,7 @@ class NativeAdmissionRuntime:
                 self.context_sessions[key.context_id] = key
             else:
                 self.context_sessions.pop(key.context_id, None)
-            self._context_sessions_revision += 1
+            self._context_session_changed(key.context_id)
             self.demand_hints.pop(key.request_id, None)
             self.semantic_revision += 1
 
@@ -7518,7 +7600,7 @@ class NativeAdmissionRuntime:
                 self._tool_last_queries.pop(key, None)
                 self._tool_opportunity_cache.pop(key, None)
                 del self.context_sessions[context_id]
-                self._context_sessions_revision += 1
+                self._context_session_changed(context_id)
                 self._context_tokens.pop(context_id, None)
                 self.tool_wait_hints.pop(context_id, None)
                 self.join_wait_hints = {
@@ -8326,7 +8408,7 @@ class NativeAdmissionRuntime:
         for context_id, key in tuple(self.context_sessions.items()):
             if getattr(abort, "abort_all", False) or key.request_id.startswith(abort.rid):
                 del self.context_sessions[context_id]
-                self._context_sessions_revision += 1
+                self._context_session_changed(context_id)
                 self._context_tokens.pop(context_id, None)
                 self.tool_wait_hints.pop(context_id, None)
                 self.join_wait_hints = {

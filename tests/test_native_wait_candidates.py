@@ -5,7 +5,7 @@ from types import SimpleNamespace as NS
 import pytest
 
 from beliefkv.control.causal_graph import CausalGraphError, InvocationState
-from beliefkv.core.events import RuntimeEventKind
+from beliefkv.core.events import ExecutionMode, RuntimeEventKind
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
 from tests.test_sglang_v0520_runtime import event, req
 
@@ -187,3 +187,237 @@ def test_unknown_join_projection_follows_join_create_and_wait():
         event(12, RuntimeEventKind.JOIN_WAIT, invocation_id="z", join_id="later"),
     ))
     assert runtime._join_parent_key("later").invocation_id == "z"
+
+
+class CountedSessions(dict):
+    def __init__(self, values):
+        super().__init__(values)
+        self.full_scans = 0
+
+    def values(self):
+        self.full_scans += 1
+        return super().values()
+
+
+def uncached_waiters(runtime, state):
+    keys = tuple(
+        key for key in dict.values(runtime.context_sessions)
+        if runtime.graph.invocations[key.invocation_id].state is state
+    )
+    return tuple(sorted(keys, key=lambda key: key.context_id)) if (
+        state is InvocationState.WAIT_JOIN
+    ) else keys
+
+
+def test_observation_does_not_rebuild_unchanged_waiting_groups():
+    runtime, _ = waiting_runtime()
+    runtime.context_sessions = CountedSessions(runtime.context_sessions)
+    try:
+        joins = runtime._waiting_context_keys(InvocationState.WAIT_JOIN)
+        tools = runtime._waiting_context_keys(InvocationState.WAIT_TOOL)
+        scans = runtime.context_sessions.full_scans
+        runtime.on_events((event(
+            11, RuntimeEventKind.TOOL_WAIT_OBSERVATION, invocation_id="tool-a",
+        ),))
+        assert runtime._waiting_context_keys(InvocationState.WAIT_JOIN) is joins
+        assert runtime._waiting_context_keys(InvocationState.WAIT_TOOL) is tools
+        assert runtime.context_sessions.full_scans == scans
+    finally:
+        runtime.close()
+
+
+def test_unrelated_model_transitions_preserve_wait_groups_and_order():
+    runtime, _ = waiting_runtime()
+    runtime.context_sessions = CountedSessions(runtime.context_sessions)
+    try:
+        joins = runtime._waiting_context_keys(InvocationState.WAIT_JOIN)
+        tools = runtime._waiting_context_keys(InvocationState.WAIT_TOOL)
+        scans = runtime.context_sessions.full_scans
+        for sequence, kind in (
+            (11, RuntimeEventKind.LLM_SUBMIT),
+            (12, RuntimeEventKind.LLM_RESULT),
+        ):
+            runtime.on_events((event(
+                sequence, kind, invocation_id="child", context_id="ctx-child",
+                context_epoch=0,
+            ),))
+            assert runtime._waiting_context_keys(InvocationState.WAIT_JOIN) is joins
+            assert runtime._waiting_context_keys(InvocationState.WAIT_TOOL) is tools
+            assert runtime.context_sessions.full_scans == scans
+    finally:
+        runtime.close()
+
+
+def test_unrelated_native_binding_preserves_existing_wait_snapshots():
+    runtime, requests = waiting_runtime()
+    try:
+        joins = runtime._waiting_context_keys(InvocationState.WAIT_JOIN)
+        tools = runtime._waiting_context_keys(InvocationState.WAIT_TOOL)
+        replacement = req("child")
+        replacement.rid = "next-child"
+        replacement.session_id = requests["child"].session_id
+        replacement.session_generation = 1
+        assert runtime.register_visible_request(replacement)
+        assert runtime._waiting_context_keys(InvocationState.WAIT_JOIN) is joins
+        assert runtime._waiting_context_keys(InvocationState.WAIT_TOOL) is tools
+    finally:
+        runtime.close()
+
+
+def test_rebinding_invalidates_only_the_waiting_group_that_uses_it():
+    runtime, requests = waiting_runtime()
+    try:
+        joins = runtime._waiting_context_keys(InvocationState.WAIT_JOIN)
+        tools = runtime._waiting_context_keys(InvocationState.WAIT_TOOL)
+        requests["tool-a"].session_generation = 2
+        runtime.on_requests_requeued((requests["tool-a"],), is_retracted=True)
+        assert runtime._waiting_context_keys(InvocationState.WAIT_JOIN) is joins
+        replaced = runtime._waiting_context_keys(InvocationState.WAIT_TOOL)
+        assert replaced is not tools
+        assert replaced == uncached_waiters(runtime, InvocationState.WAIT_TOOL)
+        assert replaced[-1].session_generation == 2
+    finally:
+        runtime.close()
+
+
+def test_changed_wait_membership_invalidates_only_its_group():
+    runtime, _ = waiting_runtime()
+    try:
+        joins = runtime._waiting_context_keys(InvocationState.WAIT_JOIN)
+        runtime._waiting_context_keys(InvocationState.WAIT_TOOL)
+        runtime.on_events((event(
+            11, RuntimeEventKind.TOOL_END, invocation_id="tool-a",
+        ),))
+        assert runtime._waiting_context_keys(InvocationState.WAIT_JOIN) is joins
+        assert runtime._waiting_context_keys(InvocationState.WAIT_TOOL) == uncached_waiters(
+            runtime, InvocationState.WAIT_TOOL,
+        )
+    finally:
+        runtime.close()
+
+
+def test_same_state_parallel_tool_change_keeps_membership_snapshot():
+    runtime, _ = waiting_runtime()
+    try:
+        tools = runtime._waiting_context_keys(InvocationState.WAIT_TOOL)
+        runtime.on_events((event(
+            11, RuntimeEventKind.TOOL_START, invocation_id="tool-a",
+            attributes={"tool_run_id": "parallel"},
+        ),))
+        assert runtime._waiting_context_keys(InvocationState.WAIT_TOOL) is tools
+        runtime.on_events((event(
+            12, RuntimeEventKind.TOOL_END, invocation_id="tool-a",
+            attributes={"tool_run_id": "parallel"},
+        ),))
+        assert runtime._waiting_context_keys(InvocationState.WAIT_TOOL) is tools
+        assert tools == uncached_waiters(runtime, InvocationState.WAIT_TOOL)
+    finally:
+        runtime.close()
+
+
+def test_out_of_band_graph_change_rebuilds_before_trusting_new_deltas():
+    runtime, _ = waiting_runtime()
+    try:
+        runtime._waiting_context_keys(InvocationState.WAIT_TOOL)
+        runtime.graph.apply(event(
+            11, RuntimeEventKind.TOOL_END, invocation_id="tool-a",
+        ))
+        runtime.on_events((event(
+            12, RuntimeEventKind.TOOL_WAIT_OBSERVATION, invocation_id="tool-z",
+        ),))
+        for state in (InvocationState.WAIT_JOIN, InvocationState.WAIT_TOOL):
+            assert runtime._waiting_context_keys(state) == uncached_waiters(runtime, state)
+    finally:
+        runtime.close()
+
+
+def test_cached_aliases_follow_invocation_changes_even_with_different_context_tags():
+    runtime, _ = waiting_runtime()
+    try:
+        alias = req("tool-z")
+        alias.rid = "alias-tool-z"
+        alias.beliefkv_metadata["context_id"] = "alias-context"
+        alias.session_id, alias.session_generation = "alias-session", 1
+        assert runtime.register_visible_request(alias)
+        before = runtime._waiting_context_keys(InvocationState.WAIT_TOOL)
+        assert len(before) == 3
+        runtime.on_events((event(
+            11, RuntimeEventKind.TOOL_END, invocation_id="tool-z",
+        ),))
+        assert runtime._waiting_context_keys(InvocationState.WAIT_TOOL) == uncached_waiters(
+            runtime, InvocationState.WAIT_TOOL,
+        )
+    finally:
+        runtime.close()
+
+
+def test_mixed_event_batches_and_bulk_end_match_original_membership():
+    runtime, _ = waiting_runtime()
+    try:
+        batches = (
+            (event(11, RuntimeEventKind.TOOL_END, invocation_id="tool-a"),
+             event(12, RuntimeEventKind.TOOL_START, invocation_id="child")),
+            (event(13, RuntimeEventKind.JOIN_SATISFIED, join_id="join"),
+             event(14, RuntimeEventKind.TOOL_END, invocation_id="tool-z")),
+            (event(15, RuntimeEventKind.TOOL_END, invocation_id="child"),
+             event(16, RuntimeEventKind.WORKFLOW_END)),
+        )
+        for batch in batches:
+            runtime.on_events(batch)
+            for state in (InvocationState.WAIT_JOIN, InvocationState.WAIT_TOOL, InvocationState.READY):
+                assert runtime._waiting_context_keys(state) == uncached_waiters(runtime, state)
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("completion", (
+    RuntimeEventKind.RETURN, RuntimeEventKind.INVOCATION_CANCEL, RuntimeEventKind.LLM_RESULT,
+))
+def test_returning_callee_restores_tool_wait_without_an_awakening_delta(completion):
+    runtime, _ = waiting_runtime()
+    try:
+        runtime.on_events((event(
+            11, RuntimeEventKind.CALL, invocation_id="tool-a",
+            target_invocation_id="child", execution_mode=ExecutionMode.FOREGROUND,
+        ),))
+        assert runtime.graph.invocations["tool-a"].state is InvocationState.WAIT_CHILD
+        runtime._waiting_context_keys(InvocationState.WAIT_TOOL)
+        runtime.on_events((event(
+            12, completion, invocation_id="child",
+            attributes={"terminal": True} if completion is RuntimeEventKind.LLM_RESULT else {},
+        ),))
+        assert runtime.graph.invocations["tool-a"].state is InvocationState.WAIT_TOOL
+        assert runtime._waiting_context_keys(InvocationState.WAIT_TOOL) == uncached_waiters(
+            runtime, InvocationState.WAIT_TOOL,
+        )
+    finally:
+        runtime.close()
+
+
+def test_wait_cache_reuses_the_tool_census_affected_invocations():
+    runtime, _ = waiting_runtime()
+
+    class CountedIds:
+        def __init__(self, values):
+            self.values = tuple(values)
+            self.iterations = 0
+
+        def __iter__(self):
+            self.iterations += 1
+            return iter(self.values)
+
+    try:
+        invocation = runtime.graph.invocations["tool-a"]
+        runtime._local_frontier_features(invocation, 0, now_ms=10.)
+        runtime._waiting_context_keys(InvocationState.WAIT_JOIN)
+        runtime._waiting_context_keys(InvocationState.WAIT_TOOL)
+        contexts = CountedIds(runtime.graph.contexts["ctx-tool-a"].invocation_ids)
+        runtime.graph.contexts["ctx-tool-a"].invocation_ids = contexts
+        runtime.on_events((event(
+            11, RuntimeEventKind.TOOL_END, invocation_id="tool-a",
+        ),))
+        assert contexts.iterations == 1
+        for state in (InvocationState.WAIT_JOIN, InvocationState.WAIT_TOOL):
+            assert runtime._waiting_context_keys(state) == uncached_waiters(runtime, state)
+    finally:
+        runtime.close()

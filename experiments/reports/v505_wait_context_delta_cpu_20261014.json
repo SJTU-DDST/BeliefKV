@@ -1,0 +1,854 @@
+{
+  "status": "cpu_update_and_membership_fixture_not_online_frequency_or_gpu_gain",
+  "baseline_revision": "ba8c493",
+  "baseline_sources": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "7820de3e7555a6e73f6929dfca430fd5cba6c5c6519823e7b63661a04c601d41",
+    "beliefkv/runtime/sglang_v0520_physical.py": "f53b15523badf3f31123f14300b3fda60a503d3c0cf1cfbf71df19713e112ec5",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "f6e7a422c614066494c4101226d86553ccd26bd583526255ec81f0c920c4e534"
+  },
+  "candidate_sources": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "c7daf2a5b660335e577fee1eec41db932daa1f8f36ce41c9ea0be6301f333637",
+    "scripts/benchmark_wait_context_delta.py": "af07aacc0c184b77f7be3d4057d5713c4a69a2cccd4a248167b8e17a7f0b9515",
+    "tests/test_native_wait_candidates.py": "879b82c006c9fea1c9c82d74942f5089eefb78e42a44e14eebce48270caea1cf"
+  },
+  "cases": [
+    {
+      "workflows": 24,
+      "mode": "cached",
+      "iterations": 301,
+      "native_proxy_contexts": 24,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.001570295681063123,
+            "p50_ms": 0.001534,
+            "p99_ms": 0.001935,
+            "max_ms": 0.005779
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.0011490398671096344,
+            "p50_ms": 0.001112,
+            "p99_ms": 0.001509,
+            "max_ms": 0.005339
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.0015745182724252493,
+            "p50_ms": 0.001553,
+            "p99_ms": 0.001934,
+            "max_ms": 0.002002
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.0011516146179401993,
+            "p50_ms": 0.001133,
+            "p99_ms": 0.001475,
+            "max_ms": 0.001584
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.0026890422059031582,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 2
+      }
+    },
+    {
+      "workflows": 24,
+      "mode": "observation",
+      "iterations": 301,
+      "native_proxy_contexts": 24,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.02244168438538206,
+            "p50_ms": 0.022363,
+            "p99_ms": 0.025936,
+            "max_ms": 0.029122
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.021906255813953487,
+            "p50_ms": 0.021832,
+            "p99_ms": 0.025379,
+            "max_ms": 0.028521
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.01985614950166113,
+            "p50_ms": 0.019721,
+            "p99_ms": 0.024047,
+            "max_ms": 0.024496
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.019310435215946845,
+            "p50_ms": 0.019175,
+            "p99_ms": 0.023536,
+            "max_ms": 0.023931
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.11521126664650372,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 2,
+        "wait_context_groups_invalidated": 0,
+        "wait_context_cache_retained": 310
+      }
+    },
+    {
+      "workflows": 24,
+      "mode": "unrelated_llm",
+      "iterations": 301,
+      "native_proxy_contexts": 24,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.02529520930232558,
+            "p50_ms": 0.025195,
+            "p99_ms": 0.029402,
+            "max_ms": 0.0359
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.024750435215946845,
+            "p50_ms": 0.024637,
+            "p99_ms": 0.028916,
+            "max_ms": 0.035332
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.023468196013289037,
+            "p50_ms": 0.023473,
+            "p99_ms": 0.027083,
+            "max_ms": 0.030189
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.02291382392026578,
+            "p50_ms": 0.022914,
+            "p99_ms": 0.026463,
+            "max_ms": 0.029564
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.0722276407046204,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 2,
+        "wait_context_groups_invalidated": 0,
+        "wait_context_cache_retained": 310
+      }
+    },
+    {
+      "workflows": 24,
+      "mode": "waiting_change",
+      "iterations": 301,
+      "native_proxy_contexts": 24,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.0284694219269103,
+            "p50_ms": 0.028316,
+            "p99_ms": 0.033923,
+            "max_ms": 0.034542
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.027907013289036546,
+            "p50_ms": 0.027749,
+            "p99_ms": 0.033358,
+            "max_ms": 0.034028
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.029424598006644518,
+            "p50_ms": 0.029316,
+            "p99_ms": 0.033276,
+            "max_ms": 0.035658
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.0288394219269103,
+            "p50_ms": 0.028731,
+            "p99_ms": 0.032674,
+            "max_ms": 0.035136
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.03355094747573184,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 312,
+        "wait_context_groups_invalidated": 310
+      }
+    },
+    {
+      "workflows": 24,
+      "mode": "unrelated_rebind",
+      "iterations": 301,
+      "native_proxy_contexts": 24,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.010801511627906976,
+            "p50_ms": 0.010721,
+            "p99_ms": 0.012769,
+            "max_ms": 0.035727
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.010280671096345515,
+            "p50_ms": 0.010186,
+            "p99_ms": 0.012238,
+            "max_ms": 0.035185
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.007140205980066445,
+            "p50_ms": 0.007071,
+            "p99_ms": 0.009718,
+            "max_ms": 0.012605
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.0066298637873754155,
+            "p50_ms": 0.006572,
+            "p99_ms": 0.009186,
+            "max_ms": 0.011955
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.33896233915826346,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 2,
+        "wait_context_groups_invalidated": 0,
+        "wait_context_cache_retained": 310
+      }
+    },
+    {
+      "workflows": 24,
+      "mode": "external_graph_change",
+      "iterations": 301,
+      "native_proxy_contexts": 24,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.013426308970099669,
+            "p50_ms": 0.013317,
+            "p99_ms": 0.018554,
+            "max_ms": 0.020093
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.01289702657807309,
+            "p50_ms": 0.01277,
+            "p99_ms": 0.018053,
+            "max_ms": 0.019582
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.014368388704318938,
+            "p50_ms": 0.014267,
+            "p99_ms": 0.016645,
+            "max_ms": 0.04084
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.013828338870431894,
+            "p50_ms": 0.013742,
+            "p99_ms": 0.016077,
+            "max_ms": 0.040272
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.07016669557637001,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 622
+      }
+    },
+    {
+      "workflows": 156,
+      "mode": "cached",
+      "iterations": 301,
+      "native_proxy_contexts": 156,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.0016503820598006644,
+            "p50_ms": 0.001587,
+            "p99_ms": 0.003524,
+            "max_ms": 0.005611
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.0012135681063122925,
+            "p50_ms": 0.001164,
+            "p99_ms": 0.002988,
+            "max_ms": 0.005127
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.0017781827242524916,
+            "p50_ms": 0.001598,
+            "p99_ms": 0.003363,
+            "max_ms": 0.037603
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.0013490066445182723,
+            "p50_ms": 0.001171,
+            "p99_ms": 0.002904,
+            "max_ms": 0.037097
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.07743701750324594,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 2
+      }
+    },
+    {
+      "workflows": 156,
+      "mode": "observation",
+      "iterations": 301,
+      "native_proxy_contexts": 156,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.04132065780730897,
+            "p50_ms": 0.040945,
+            "p99_ms": 0.048977,
+            "max_ms": 0.053499
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.04075980398671096,
+            "p50_ms": 0.040398,
+            "p99_ms": 0.048408,
+            "max_ms": 0.052949
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.019684029900332224,
+            "p50_ms": 0.019366,
+            "p99_ms": 0.02724,
+            "max_ms": 0.063161
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.019136524916943523,
+            "p50_ms": 0.01879,
+            "p99_ms": 0.026574,
+            "max_ms": 0.062573
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.5236273828910238,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 2,
+        "wait_context_groups_invalidated": 0,
+        "wait_context_cache_retained": 310
+      }
+    },
+    {
+      "workflows": 156,
+      "mode": "unrelated_llm",
+      "iterations": 301,
+      "native_proxy_contexts": 156,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.04445660797342193,
+            "p50_ms": 0.044261,
+            "p99_ms": 0.050672,
+            "max_ms": 0.053936
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.04389856478405316,
+            "p50_ms": 0.043685,
+            "p99_ms": 0.050142,
+            "max_ms": 0.053371
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.024280548172757474,
+            "p50_ms": 0.024031,
+            "p99_ms": 0.030449,
+            "max_ms": 0.068375
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.02367762458471761,
+            "p50_ms": 0.023458,
+            "p99_ms": 0.029861,
+            "max_ms": 0.067664
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.4538371396379717,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 2,
+        "wait_context_groups_invalidated": 0,
+        "wait_context_cache_retained": 310
+      }
+    },
+    {
+      "workflows": 156,
+      "mode": "waiting_change",
+      "iterations": 301,
+      "native_proxy_contexts": 156,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.04764823920265781,
+            "p50_ms": 0.047269,
+            "p99_ms": 0.053774,
+            "max_ms": 0.056862
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.04707955149501661,
+            "p50_ms": 0.046736,
+            "p99_ms": 0.053079,
+            "max_ms": 0.056328
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.03961757475083057,
+            "p50_ms": 0.039347,
+            "p99_ms": 0.043594,
+            "max_ms": 0.085525
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.03903079734219269,
+            "p50_ms": 0.03877,
+            "p99_ms": 0.042979,
+            "max_ms": 0.084912
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.16854063416008236,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 312,
+        "wait_context_groups_invalidated": 310
+      }
+    },
+    {
+      "workflows": 156,
+      "mode": "unrelated_rebind",
+      "iterations": 301,
+      "native_proxy_contexts": 156,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.029696514950166113,
+            "p50_ms": 0.029388,
+            "p99_ms": 0.03463,
+            "max_ms": 0.067195
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.029157066445182723,
+            "p50_ms": 0.028846,
+            "p99_ms": 0.034107,
+            "max_ms": 0.066592
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.007268504983388704,
+            "p50_ms": 0.007247,
+            "p99_ms": 0.008534,
+            "max_ms": 0.010882
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.006731548172757475,
+            "p50_ms": 0.006713,
+            "p99_ms": 0.007973,
+            "max_ms": 0.010363
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.7552404719683093,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 2,
+        "wait_context_groups_invalidated": 0,
+        "wait_context_cache_retained": 310
+      }
+    },
+    {
+      "workflows": 156,
+      "mode": "external_graph_change",
+      "iterations": 301,
+      "native_proxy_contexts": 156,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.03203394684385382,
+            "p50_ms": 0.031649,
+            "p99_ms": 0.037005,
+            "max_ms": 0.069181
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.031489558139534884,
+            "p50_ms": 0.031085,
+            "p99_ms": 0.036524,
+            "max_ms": 0.068622
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.03248444850498339,
+            "p50_ms": 0.032257,
+            "p99_ms": 0.037333,
+            "max_ms": 0.038219
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.03194942524916944,
+            "p50_ms": 0.031717,
+            "p99_ms": 0.036863,
+            "max_ms": 0.037619
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.01406325805950459,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 622
+      }
+    },
+    {
+      "workflows": 512,
+      "mode": "cached",
+      "iterations": 301,
+      "native_proxy_contexts": 512,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.0016452823920265782,
+            "p50_ms": 0.001587,
+            "p99_ms": 0.003463,
+            "max_ms": 0.003885
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.0012189568106312292,
+            "p50_ms": 0.001159,
+            "p99_ms": 0.003029,
+            "max_ms": 0.003428
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.0017645415282392027,
+            "p50_ms": 0.001592,
+            "p99_ms": 0.003905,
+            "max_ms": 0.035619
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.0013297441860465116,
+            "p50_ms": 0.001165,
+            "p99_ms": 0.003294,
+            "max_ms": 0.035098
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.07248551178240414,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 2
+      }
+    },
+    {
+      "workflows": 512,
+      "mode": "observation",
+      "iterations": 301,
+      "native_proxy_contexts": 512,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.09580319933554818,
+            "p50_ms": 0.094766,
+            "p99_ms": 0.106546,
+            "max_ms": 0.137332
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.09514767441860465,
+            "p50_ms": 0.094087,
+            "p99_ms": 0.105868,
+            "max_ms": 0.13666
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.019905867109634552,
+            "p50_ms": 0.019935,
+            "p99_ms": 0.02421,
+            "max_ms": 0.026037
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.01935198338870432,
+            "p50_ms": 0.019366,
+            "p99_ms": 0.023629,
+            "max_ms": 0.025457
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.7922212697728938,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 2,
+        "wait_context_groups_invalidated": 0,
+        "wait_context_cache_retained": 310
+      }
+    },
+    {
+      "workflows": 512,
+      "mode": "unrelated_llm",
+      "iterations": 301,
+      "native_proxy_contexts": 512,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.10280588372093023,
+            "p50_ms": 0.098899,
+            "p99_ms": 0.111678,
+            "max_ms": 0.99371
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.10214751162790697,
+            "p50_ms": 0.098251,
+            "p99_ms": 0.110726,
+            "max_ms": 0.992283
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.024348139534883722,
+            "p50_ms": 0.024184,
+            "p99_ms": 0.02941,
+            "max_ms": 0.033881
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.02378340199335548,
+            "p50_ms": 0.023615,
+            "p99_ms": 0.028831,
+            "max_ms": 0.033294
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.7631639488555197,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 2,
+        "wait_context_groups_invalidated": 0,
+        "wait_context_cache_retained": 310
+      }
+    },
+    {
+      "workflows": 512,
+      "mode": "waiting_change",
+      "iterations": 301,
+      "native_proxy_contexts": 512,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.106419926910299,
+            "p50_ms": 0.104205,
+            "p99_ms": 0.123609,
+            "max_ms": 0.165314
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.10574212956810632,
+            "p50_ms": 0.103559,
+            "p99_ms": 0.12296,
+            "max_ms": 0.164458
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.07058711295681064,
+            "p50_ms": 0.070212,
+            "p99_ms": 0.077093,
+            "max_ms": 0.080619
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.0699088903654485,
+            "p50_ms": 0.069524,
+            "p99_ms": 0.077822,
+            "max_ms": 0.08564
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.3367115068937392,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 312,
+        "wait_context_groups_invalidated": 310
+      }
+    },
+    {
+      "workflows": 512,
+      "mode": "unrelated_rebind",
+      "iterations": 301,
+      "native_proxy_contexts": 512,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.08742155813953488,
+            "p50_ms": 0.087124,
+            "p99_ms": 0.09676,
+            "max_ms": 0.133585
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.08672972093023255,
+            "p50_ms": 0.086419,
+            "p99_ms": 0.096136,
+            "max_ms": 0.132796
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.007736378737541528,
+            "p50_ms": 0.007704,
+            "p99_ms": 0.010996,
+            "max_ms": 0.01167
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.0071811129568106315,
+            "p50_ms": 0.007147,
+            "p99_ms": 0.010506,
+            "max_ms": 0.010996
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.9115049090615226,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 2,
+        "wait_context_groups_invalidated": 0,
+        "wait_context_cache_retained": 310
+      }
+    },
+    {
+      "workflows": 512,
+      "mode": "external_graph_change",
+      "iterations": 301,
+      "native_proxy_contexts": 512,
+      "ordered_waiting_keys_equal": true,
+      "combined_update_and_query_costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.08806721926910299,
+            "p50_ms": 0.087601,
+            "p99_ms": 0.097757,
+            "max_ms": 0.098257
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.08741811627906977,
+            "p50_ms": 0.086944,
+            "p99_ms": 0.097104,
+            "max_ms": 0.09764
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 301,
+            "mean_ms": 0.08952526910299004,
+            "p50_ms": 0.088931,
+            "p99_ms": 0.099333,
+            "max_ms": 0.129054
+          },
+          "wall_ms": {
+            "count": 301,
+            "mean_ms": 0.08888580398671096,
+            "p50_ms": 0.088273,
+            "p99_ms": 0.098682,
+            "max_ms": 0.128332
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": -0.016556101645854637,
+      "candidate_cache_counts": {
+        "wait_context_groups_built": 622
+      }
+    }
+  ],
+  "limitations": [
+    "Both event/binding update and wait queries are timed; update overhead is not excluded.",
+    "Identical CPU fixtures with16 prior rounds and one live child per workflow; this is not sampled workload frequency.",
+    "Alternating unpinned calls with a plain replay clock, no model worker, event transport or GPU.",
+    "External graph changes exercise the full-scan fallback instead of relying on an incomplete delta.",
+    "No physical prefix/capacity checks, allocation, prefetch consumption or JCT gains are inferred."
+  ]
+}

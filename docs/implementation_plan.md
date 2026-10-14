@@ -2,6 +2,21 @@
 
 Status date: 2026-10-14.
 
+The latest cold candidate updates wait membership from tracked graph deltas,
+invalidating only changed member groups and native bindings. Tool insertion
+order and JOIN sorting remain unchanged; external graph changes, bulk end
+and mirror failure retain complete rebuilding. Reuse the tool census's
+affected-invocation set. No physical state is cached or enqueue check skipped.
+V507 replays384505 events and45223 proxy bindings from156 sealed V56 files:
+769010 ordered queries equal the old code and uncached oracle. Combined
+event/binding/query thread CPU is15.639/10.921s, approximately30.2% lower.
+Proxy generation, message boundaries and per-event query frequency are not
+native delivery or JCT evidence. V508 preserves18.4%/24.5% slower full-rebuild
+fixtures at156/512 workflows. V502's empty-binding initial replay is invalid
+evidence and retained. V509 passes841 checks; V510 binds58 source files.
+Include the change with all earlier qualified fixes in the unstarted V57,
+usingV511/V512 for replacement. Keep V56 frozen and final acceptance open.
+
 The latest cold candidate invalidates service caches only for the ACK's
 direction and any direction actually evicted from the shared 256-row FIFO.
 Supported and unsupported opposite-direction entries remain cached when
