@@ -1,0 +1,107 @@
+{
+  "status": "sealed_service_cache_equivalence_not_live_action_or_gpu_gain",
+  "started_at_local": "2026-10-14T14:15:13.848740+08:00",
+  "finished_at_local": "2026-10-14T14:15:16.007698+08:00",
+  "baseline_revision": "dda9004",
+  "baseline_sources": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "7820de3e7555a6e73f6929dfca430fd5cba6c5c6519823e7b63661a04c601d41",
+    "beliefkv/runtime/sglang_v0520_physical.py": "f53b15523badf3f31123f14300b3fda60a503d3c0cf1cfbf71df19713e112ec5",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "612e9e85c5283d69315f6f280f36950eecb12a8bfdc942c22926a087e3636b82"
+  },
+  "collection_revision": "661ed45906a203ae87a9cb52b23542059e5085a8",
+  "sealed_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v482_v56_final_wait_prefetch_20261014.json.gz",
+  "sealed_report_sha256": "6fce0da13a6a7c735ecb06f32421d4c0bcdc0031fd346cda54ccd66a5b65fe29",
+  "plan_sha256": "70d74e0dc47608bc8d627af009ca1eaf14e0eba33befa9d40c190c8ce2ab5d26",
+  "source_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+      "observed_at_local": "2026-10-14T13:22:00.856309+08:00",
+      "device": 66306,
+      "inode": 139863839,
+      "observed_bytes": 1381211783,
+      "complete_prefix_bytes": 1381211783,
+      "complete_prefix_sha256": "fa2ab4709d63c3840b0a9de10ec498af433f7ed679d18fe5b2315e243202b7af"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/server/transfer_telemetry.jsonl": {
+      "observed_at_local": "2026-10-14T13:22:17.652529+08:00",
+      "device": 66306,
+      "inode": 139863829,
+      "observed_bytes": 54997226,
+      "complete_prefix_bytes": 54997226,
+      "complete_prefix_sha256": "be267ed8de64fade4a955d3d307af6d213cbe050e6e3c9a5758cbdf6c3bc182a"
+    }
+  },
+  "candidate_sources": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "f6e7a422c614066494c4101226d86553ccd26bd583526255ec81f0c920c4e534",
+    "beliefkv/runtime/native_transfer_service.py": "7bd8f754f6aba88360afa33d2d33625f572142d8233feaa242d8060ff925525f",
+    "scripts/replay_native_service_cache.py": "82f062e2c997daf45fbbc85ae91d4386dad1f05daee021ad89796d65a13dc196",
+    "tests/test_native_service_cache_invalidation.py": "19952d6f3d421c30c695ebe3656a48bf5c093c1d052665750bb3adca3388ed17"
+  },
+  "queries": 7395,
+  "counts": {
+    "identical_queries": 7395,
+    "source:join_ticket": 3507,
+    "reason:start_window": 2490,
+    "supported": 6687,
+    "reason:submitted": 321,
+    "reason:admission_budget_busy": 230,
+    "source:tool_wait": 3888,
+    "reason:before_start_window": 3622,
+    "reason:service_unsupported": 640,
+    "unsupported": 708,
+    "reason:service_size_unsupported": 68,
+    "reason:enqueue_slot_changed": 9,
+    "reason:service_progress_unavailable": 15
+  },
+  "skipped": {
+    "empty_plan_or_invalid_time": 41865
+  },
+  "receipts_fed_per_runtime": 71158,
+  "receipt_directions": {
+    "d2h": 61808,
+    "h2d": 9350
+  },
+  "service_evidence_identical": true,
+  "cache_counts": {
+    "baseline": {
+      "h2d_service_estimate_computed": 4656,
+      "h2d_service_estimate_reused": 2739
+    },
+    "candidate": {
+      "h2d_service_estimate_computed": 4372,
+      "h2d_service_estimate_reused": 3023,
+      "h2d_service_cache_retained_after_d2h": 4600
+    }
+  },
+  "thread_cpu": {
+    "baseline": {
+      "query_us": {
+        "count": 7395,
+        "p50": 50.667,
+        "p90": 65.59540000000001,
+        "max": 140.611
+      },
+      "query_total_ms": 280.4352750000005,
+      "callback_total_ms": 716.1814,
+      "combined_total_ms": 996.6166750000006
+    },
+    "candidate": {
+      "query_us": {
+        "count": 7395,
+        "p50": 49.424,
+        "p90": 63.77540000000001,
+        "max": 133.31
+      },
+      "query_total_ms": 258.04468200000025,
+      "callback_total_ms": 712.993243,
+      "combined_total_ms": 971.0379250000003
+    }
+  },
+  "limitations": [
+    "Recorded wait-plan sizes are known at observation; query timestamps approximate estimator call time.",
+    "Only completed receipts strictly before queries are fed; actual scheduler callback order is unknown.",
+    "Exactly the same histories, estimator, output support and queue quantiles are compared.",
+    "Diagnostic plan rows are not an exhaustive log of actual estimator calls or their workload frequency.",
+    "Alternating unpinned CPU timing includes the replay clock and concurrent server interference.",
+    "No physical allocation, prefetch execution, GPU throughput, JCT or quality gain is inferred."
+  ]
+}

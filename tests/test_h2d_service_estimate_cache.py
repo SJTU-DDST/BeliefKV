@@ -37,7 +37,7 @@ def test_exact_size_and_shape_reuse_only_statistics():
 
 
 @pytest.mark.parametrize("direction", ("h2d", "d2h"))
-def test_new_receipt_invalidates_supported_and_unknown_estimates(direction):
+def test_new_receipt_invalidates_only_changed_direction_estimates(direction):
     runtime = NativeAdmissionRuntime()
     try:
         assert runtime._estimate_h2d_service(100, shape="full") is None
@@ -47,8 +47,12 @@ def test_new_receipt_invalidates_supported_and_unknown_estimates(direction):
         assert runtime._estimate_h2d_service(100, shape="full") == expected
         runtime._estimate_h2d_service(1_000_000, shape="hybrid")
         assert len(runtime._h2d_service_estimates) == 2
+        cached = dict(runtime._h2d_service_estimates)
         commit(runtime, direction=direction, delay=40.)
-        assert runtime._h2d_service_estimates == {}
+        if direction == "h2d":
+            assert runtime._h2d_service_estimates == {}
+        else:
+            assert runtime._h2d_service_estimates == cached
         expected = estimate_native_service(runtime._native_service_samples, 100, shape="full")
         assert runtime._estimate_h2d_service(100, shape="full") == expected
     finally:

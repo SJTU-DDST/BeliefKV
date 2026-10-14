@@ -2,6 +2,23 @@
 
 Status date: 2026-10-14.
 
+The latest cold candidate invalidates service caches only for the ACK's
+direction and any direction actually evicted from the shared 256-row FIFO.
+Supported and unsupported opposite-direction entries remain cached when
+their evidence is unchanged. Estimator math, history order, legacy fallback,
+300s FULL supplement expiry and physical enqueue validation stay intact.
+V491 compares 7395 sealed V56 wait queries after 71158 earlier receipts:
+all outputs match dda9004; recomputations fall from4656 to4372. Combined
+query/receipt thread CPU is996.62/971.04ms in this replay, not online call
+frequency, GPU gain or JCT savings. V493 passes803 checks; V492 preserves
+one initial old-test assertion requiring unconditional invalidation.
+V494 binds56 source files and the unchanged400+29 native qualification.
+Include this bounded change with the device-slot and subset-timing fixes
+in the unstarted V57; useV495/V496 for the replacement registration.
+Do not hot-edit V56, launch an extra experiment for this small change, or
+enable deferred batching. Post-launch turnover and final acceptance remain
+unproven. Broad zero-copy and a general operator framework are deferred.
+
 The user revoked the daily00:00–06:00 experiment restriction on2026-10-14.
 Remove23:59 automatic stopping and the old06:00 resume registration.
 Cold launches and existing runs now depend on actual resource availability,

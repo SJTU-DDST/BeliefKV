@@ -7380,13 +7380,21 @@ class NativeAdmissionRuntime:
                 actual_bytes, float(ack_ms), getattr(commit, "direction"),
                 pool_shape(full, mamba), getattr(commit, "enqueue_to_submit_ms", None),
             )
-            self._native_service_samples.append(sample)
+            history = self._native_service_samples
+            evicted = history[0] if history and len(history) == history.maxlen else None
+            history.append(sample)
             if sample.direction == "h2d" and sample.shape == "full":
                 self._h2d_full_service_samples.append((time.monotonic(), sample))
-            # Either direction can evict opposite-direction evidence from the
-            # shared bounded history, including an unsupported estimate.
-            self._d2h_service_estimates.clear()
-            self._h2d_service_estimates.clear()
+            # Estimators filter by direction. Preserve the other cache unless
+            # this append also evicts its evidence from the shared FIFO.
+            if sample.direction == "d2h" or evicted is not None and evicted.direction == "d2h":
+                self._d2h_service_estimates.clear()
+            elif self._d2h_service_estimates:
+                self.counts["d2h_service_cache_retained_after_h2d"] += 1
+            if sample.direction == "h2d" or evicted is not None and evicted.direction == "h2d":
+                self._h2d_service_estimates.clear()
+            elif self._h2d_service_estimates:
+                self.counts["h2d_service_cache_retained_after_d2h"] += 1
         # A burst's deepest node locks its FULL ancestry once; registering its
         # ancestors first would consume the budget without protecting the state.
         for action in reversed(completed):
