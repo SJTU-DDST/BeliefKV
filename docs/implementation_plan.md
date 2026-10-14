@@ -1,11 +1,38 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-14.
+Status date: 2026-10-15.
 
 Continue the original mean-workflow-JCT and completion-throughput goal through
 short-prefill turnover, lower control cost and useful FULL prefetch consumption.
 Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
 and interval changes remain disabled.
+
+V58 predictive naturally completed156/156 workflows in8367.726s; native
+is live from2026-10-15 00:33 with independently verified PID3865597/
+start_ticks616567785. Same-version120-300 and600-900s short turnover
+P50 gaps are+9.06%/+16.11%; decode service gaps are-9.49%/-5.54%.
+Run_batch medians are already close, but selection/result handoff costs
+remain. Realized demand differs; do not declare stage or final acceptance.
+
+V567 seals319 independent complete-line prefixes across both predictive
+waves. Confirmed early FULL reuse reaches JOIN81 events/1.599GB and
+tool210/11.244GB;9 JOIN completions remain unknown. V568 observes own/
+shared protection at native arrival for52/99 early JOIN waits. All40 waits
+without observed pre-completion release confirm reuse, versus27/45 with
+all early commands released beforehand. This is observation, not eviction
+or causal gain. V570 finds54 starts without submit,53 zero-FULL-budget
+refusals after action-local reclaim; a bounded scan is not a global census.
+
+V571 separates84 first action-selected work forecasts: work/actual P50
+0.373, predicted/actual wall-rate0.929, signed wall error-2.674s.
+V572's causal cross-project token-bias correction gives absolute P50
+2.606s versus2.674s, leaves500ms hits at7/84 and raises >1s-late
+forecasts from4 to34. Keep it offline; a global shift is not qualified.
+V573 records H2D estimate/window/uncertainty P50 of71.891/1900.228/
+1732.596ms. Next inspect all delivered forecast frames, conditional work
+bias and rolling timing with physical feasibility kept unknown when absent.
+Continue restored-parent consumption/capacity and measured control costs;
+complete native and repeated quality/JCT/throughput acceptance unchanged.
 
 V561/V562 inspect exact sealed V58 JOIN episodes. Of28 starts without an early
 submit,27 have post-start action-local reclaim diagnostics: free FULL remains
