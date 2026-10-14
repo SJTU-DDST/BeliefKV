@@ -1,0 +1,337 @@
+{
+  "status": "complete_ancestry_cpu_equivalence_not_online_gpu_or_jct_gain",
+  "started_at_local": "2026-10-14T11:29:52.360271-07:00",
+  "finished_at_local": "2026-10-14T11:30:12.274160-07:00",
+  "reference_revision": "43ae685",
+  "reference_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "7820de3e7555a6e73f6929dfca430fd5cba6c5c6519823e7b63661a04c601d41",
+    "beliefkv/runtime/sglang_v0520_physical.py": "9a32cafbfe0ec5c2a5578583ba20a29ab65517c77ffdd9a0efd970d5fc45b77b"
+  },
+  "candidate_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+    "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66"
+  },
+  "capture_equivalence": {
+    "comparisons": 3456,
+    "rejected": 3000,
+    "nonempty": 456
+  },
+  "planner_equivalence": {
+    "comparisons": 14580,
+    "single_leaf": 4860,
+    "nonempty_plans": 312,
+    "errors": 4860,
+    "empty_plans": 9408,
+    "multiple_leaves": 9720
+  },
+  "complete_tool_scan_costs": [
+    {
+      "mode": "before_start_window",
+      "depth": 16,
+      "workflows": 108,
+      "session_ids_on_leaf_only": false,
+      "compared_complete_scans": 26,
+      "decisions_counters_native_reads_and_observations_equal": true,
+      "costs": {
+        "reference": {
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 31.054341523809523,
+            "p50_ms": 30.730439,
+            "p99_ms": 34.694314,
+            "max_ms": 34.694314
+          },
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 31.060004666666668,
+            "p50_ms": 30.732523,
+            "p99_ms": 34.694607,
+            "max_ms": 34.694607
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 30.107605,
+            "p50_ms": 29.428432,
+            "p99_ms": 32.399412,
+            "max_ms": 32.399412
+          },
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 30.119675142857144,
+            "p50_ms": 29.441159,
+            "p99_ms": 32.5405,
+            "max_ms": 32.5405
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.030486446575711645,
+      "candidate_counts": {
+        "tool_prefetch_scans": 26,
+        "tool_prefetch_no_restore_target": 2808,
+        "h2d_service_estimate_computed": 1,
+        "tool_prefetch_not_latest_start": 2808,
+        "h2d_service_estimate_reused": 2807
+      }
+    },
+    {
+      "mode": "before_start_window",
+      "depth": 64,
+      "workflows": 108,
+      "session_ids_on_leaf_only": false,
+      "compared_complete_scans": 26,
+      "decisions_counters_native_reads_and_observations_equal": true,
+      "costs": {
+        "reference": {
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 98.59829452380953,
+            "p50_ms": 97.234055,
+            "p99_ms": 144.198286,
+            "max_ms": 144.198286
+          },
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 98.62356528571429,
+            "p50_ms": 97.253477,
+            "p99_ms": 144.195593,
+            "max_ms": 144.195593
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 95.28182290476191,
+            "p50_ms": 91.663433,
+            "p99_ms": 146.353511,
+            "max_ms": 146.353511
+          },
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 95.33912085714286,
+            "p50_ms": 91.674661,
+            "p99_ms": 146.35078,
+            "max_ms": 146.35078
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.03363619660020345,
+      "candidate_counts": {
+        "tool_prefetch_scans": 26,
+        "tool_prefetch_no_restore_target": 2808,
+        "h2d_service_estimate_computed": 1,
+        "tool_prefetch_not_latest_start": 2808,
+        "h2d_service_estimate_reused": 2807
+      }
+    },
+    {
+      "mode": "before_start_window",
+      "depth": 16,
+      "workflows": 108,
+      "session_ids_on_leaf_only": true,
+      "compared_complete_scans": 26,
+      "decisions_counters_native_reads_and_observations_equal": true,
+      "costs": {
+        "reference": {
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 29.854287904761904,
+            "p50_ms": 29.707742,
+            "p99_ms": 35.994804,
+            "max_ms": 35.994804
+          },
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 29.858116428571428,
+            "p50_ms": 29.708161,
+            "p99_ms": 35.995673,
+            "max_ms": 35.995673
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 28.790847666666668,
+            "p50_ms": 29.03025,
+            "p99_ms": 35.220382,
+            "max_ms": 35.220382
+          },
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 28.792340904761904,
+            "p50_ms": 29.031003,
+            "p99_ms": 35.229417,
+            "max_ms": 35.229417
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.03562102172685255,
+      "candidate_counts": {
+        "tool_prefetch_scans": 26,
+        "tool_prefetch_no_restore_target": 2808,
+        "h2d_service_estimate_computed": 1,
+        "tool_prefetch_not_latest_start": 2808,
+        "h2d_service_estimate_reused": 2807
+      }
+    },
+    {
+      "mode": "before_start_window",
+      "depth": 64,
+      "workflows": 108,
+      "session_ids_on_leaf_only": true,
+      "compared_complete_scans": 26,
+      "decisions_counters_native_reads_and_observations_equal": true,
+      "costs": {
+        "reference": {
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 70.92716942857143,
+            "p50_ms": 66.408338,
+            "p99_ms": 110.293104,
+            "max_ms": 110.293104
+          },
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 70.9306741904762,
+            "p50_ms": 66.410472,
+            "p99_ms": 110.291054,
+            "max_ms": 110.291054
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 67.57071138095237,
+            "p50_ms": 64.671304,
+            "p99_ms": 100.727854,
+            "max_ms": 100.727854
+          },
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 67.57281442857143,
+            "p50_ms": 64.671184,
+            "p99_ms": 100.726112,
+            "max_ms": 100.726112
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.04732259971264241,
+      "candidate_counts": {
+        "tool_prefetch_scans": 26,
+        "tool_prefetch_no_restore_target": 2808,
+        "h2d_service_estimate_computed": 1,
+        "tool_prefetch_not_latest_start": 2808,
+        "h2d_service_estimate_reused": 2807
+      }
+    },
+    {
+      "mode": "service_unsupported",
+      "depth": 64,
+      "workflows": 108,
+      "session_ids_on_leaf_only": true,
+      "compared_complete_scans": 26,
+      "decisions_counters_native_reads_and_observations_equal": true,
+      "costs": {
+        "reference": {
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 68.06475247619048,
+            "p50_ms": 66.145927,
+            "p99_ms": 72.329183,
+            "max_ms": 72.329183
+          },
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 68.07504314285714,
+            "p50_ms": 66.145862,
+            "p99_ms": 72.328282,
+            "max_ms": 72.328282
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 67.85409566666667,
+            "p50_ms": 64.18374,
+            "p99_ms": 99.506914,
+            "max_ms": 99.506914
+          },
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 67.85667595238095,
+            "p50_ms": 64.190367,
+            "p99_ms": 99.505336,
+            "max_ms": 99.505336
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.003094947118150504,
+      "candidate_counts": {
+        "tool_prefetch_scans": 26,
+        "tool_prefetch_no_restore_target": 2808,
+        "h2d_service_estimate_computed": 1,
+        "tool_prefetch_service_unsupported": 2808,
+        "h2d_service_estimate_reused": 2807
+      }
+    },
+    {
+      "mode": "resident",
+      "depth": 64,
+      "workflows": 108,
+      "session_ids_on_leaf_only": true,
+      "compared_complete_scans": 26,
+      "decisions_counters_native_reads_and_observations_equal": true,
+      "costs": {
+        "reference": {
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 11.287945238095238,
+            "p50_ms": 10.746955,
+            "p99_ms": 12.066919,
+            "max_ms": 12.066919
+          },
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 11.289023857142858,
+            "p50_ms": 10.748302,
+            "p99_ms": 12.067818,
+            "max_ms": 12.067818
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 21,
+            "mean_ms": 11.123329523809524,
+            "p50_ms": 10.571706,
+            "p99_ms": 12.189337,
+            "max_ms": 12.189337
+          },
+          "wall_ms": {
+            "count": 21,
+            "mean_ms": 11.126442714285714,
+            "p50_ms": 10.573149,
+            "p99_ms": 12.190344,
+            "max_ms": 12.190344
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": 0.014583319710850473,
+      "candidate_counts": {
+        "tool_prefetch_scans": 26,
+        "tool_prefetch_no_restore_target": 5616,
+        "wait_prefetch_empty_restore_shortcut": 2808
+      }
+    }
+  ],
+  "helper_sha256": "caddad52d265c0ab74e39ac2db52e05bf8d18cb8d3a45759c602c4b323c9a93e",
+  "fixture_helper_sha256": "8a31789708b527826b3830d8c7b3c8b7f8d54fcf99c50e8dede0ec6123b9f401",
+  "limitations": [
+    "Bounded CPU stand-ins do not establish online closure geometry, frequency or throughput gains.",
+    "Both dense leaf identities and identities only at the leaf are retained; regressions remain visible.",
+    "All ordered plans, capture failures, scan decisions, counters, native reads and observations are compared.",
+    "Physical enqueue is prohibited; resident control bypasses closure/planning and its variation is not attributed.",
+    "Measurement runs after the four matched V58 windows while native is live; retain this observation condition.",
+    "The running V58 source, engine, workload budgets and prefetch timing are unchanged."
+  ]
+}
