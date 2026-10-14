@@ -1,64 +1,77 @@
 {
-  "checked_at": "2026-10-11T16:29:15.716757+08:00",
-  "reported_period": "2026-08-15 through 2026-10-11",
-  "generator_sha256": "684baf64a75d2cdbf7347c895d15347819aad69e27ffeb5e4a9989195649677f",
+  "checked_at": "2026-10-14T22:48:41.253356+08:00",
+  "architecture_date": "2026-10-14",
+  "source_revision": "1e72ae0aeeedea7381bfae84d54994495574e544",
+  "generator_sha256": "755bacfdb365ea6837cfe206e889266a2cdf781c3903bfd859466d93c0232cd3",
   "powerpoints": [
     {
       "file": "beliefkv_architecture_editable_zh.pptx",
-      "sha256": "76dec0c6af41b2ff0e7dc514c48caf26e21186c9a34993c0e1c99104716c6ad0",
+      "sha256": "c57290857a6cd85c6a196c90af86355a9a128307781e827436f88d8197c9b66f",
       "slides": [
         {
-          "editable_objects": 82,
-          "editable_text_objects": 44,
+          "editable_objects": 169,
+          "editable_text_objects": 65,
           "text_matches_svg": true,
           "all_objects_within_slide": true,
+          "unique_shape_ids": true,
+          "notes_present": true,
           "picture_objects": 0
         },
         {
-          "editable_objects": 83,
-          "editable_text_objects": 44,
+          "editable_objects": 155,
+          "editable_text_objects": 53,
           "text_matches_svg": true,
           "all_objects_within_slide": true,
+          "unique_shape_ids": true,
+          "notes_present": true,
           "picture_objects": 0
         },
         {
-          "editable_objects": 106,
-          "editable_text_objects": 57,
+          "editable_objects": 221,
+          "editable_text_objects": 91,
           "text_matches_svg": true,
           "all_objects_within_slide": true,
+          "unique_shape_ids": true,
+          "notes_present": true,
           "picture_objects": 0
         }
       ],
-      "office_render_pdf_sha256": "a7f018e10400923f60ffc16f61a9bd89e205c6131e0061d498a38a160b437e75",
+      "office_render_pdf_sha256": "4ca49bc68ee29689cb7b975fa8e9502d2e532467c3e27aecdef3a599b4853eb8",
       "office_render_pages": 3
     },
     {
       "file": "beliefkv_architecture_editable_en.pptx",
-      "sha256": "4632749e097a0e03db734551640264b7a7f71d81146f5680236eb1bc87e64f2c",
+      "sha256": "accc26c1f164a3563ea0626acbe906b98bf8e7ad90a9d56d58e842b48b3aa214",
       "slides": [
         {
-          "editable_objects": 82,
-          "editable_text_objects": 44,
+          "editable_objects": 169,
+          "editable_text_objects": 65,
           "text_matches_svg": true,
           "all_objects_within_slide": true,
+          "unique_shape_ids": true,
+          "notes_present": true,
           "picture_objects": 0
         },
         {
-          "editable_objects": 83,
-          "editable_text_objects": 44,
+          "editable_objects": 155,
+          "editable_text_objects": 53,
           "text_matches_svg": true,
           "all_objects_within_slide": true,
+          "unique_shape_ids": true,
+          "notes_present": true,
           "picture_objects": 0
         },
         {
-          "editable_objects": 106,
-          "editable_text_objects": 57,
+          "editable_objects": 221,
+          "editable_text_objects": 91,
           "text_matches_svg": true,
           "all_objects_within_slide": true,
+          "unique_shape_ids": true,
+          "notes_present": true,
           "picture_objects": 0
         }
       ],
-      "office_render_pdf_sha256": "3847906c4388115e01820dfea8e2ed99364647fb1cf39d2747af5a0c500d932b",
+      "office_render_pdf_sha256": "37fcc96fc5d5bb5a6ff17c0b9a1433fa05c03aca539caf9cf9945aa44cb0db59",
       "office_render_pages": 3
     }
   ],
@@ -66,5 +79,6 @@
   "png_dpi": 600,
   "vector_pdf_pages": 6,
   "office_renderer": "LibreOffice 24.2.7 in isolated temporary directory",
-  "office_render_check": "passed: all six slides rendered and visually reviewed"
+  "office_render_check": "passed: all six slides rendered and visually reviewed",
+  "figure_scope": "2026-10-14 development mechanisms, schematic not empirical performance"
 }
