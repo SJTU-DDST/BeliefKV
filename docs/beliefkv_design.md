@@ -25,7 +25,8 @@ Mamba KV迁移，不能计入预测迁移覆盖或已隐藏的传输开销。
 先.item回CPU再H2D；mask和长度由已有CPU值显式异步上传。
 不引入长期CPU物理槽缓存，不改变原生物理翻译/槽位生命周期/
 checkpoint或stream barrier。400测试+29子检查与CPU等价支持
-继续资格验证，未部署；48请求lazy均值退化也保留，不宣称GPU收益。
+冷观测资格；v466/v467绑定3c13ad50/572109fe，未部署。48请求
+lazy均值退化也保留，不宣称GPU收益。
 v459的307个同步采样中275个为decode结果依赖，不能因为命中多
 就删除等待。active-stack比例与self-wall均不可直接当作可扣JCT。
 

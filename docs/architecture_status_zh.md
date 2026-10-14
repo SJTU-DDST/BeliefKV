@@ -45,7 +45,10 @@ v459封存894个active-stack样本和85次读取错误；主线程859样本
 首轮三个空批fixture失败与修正原件均保留：原生flatten本就拒绝
 空输入，最终检查分别验证该拒绝，没有改变生产路径支持范围。
 v462六组CPU比较中位少约1–7us，48请求lazy均值反而多19.1us；
-尚未导出最终canonical patch、未部署、未测GPU/JCT收益。
+v466/v467已导出并资格绑定canonical patch 3c13ad50、树572109fe；
+未部署、未测GPU/JCT收益。原793项runtime检查的49份源码不变，
+唯一已变的原资格路径为撤销时段限制的非执行launcher，v465单列
+其旧/新哈希，仍验证冻结runtime与原b8e7942c引擎未变。
 
 native只读观测已独立登记，等既有native arm启动后记录源码、
 服务、NUMA及完整600–900s两侧相位；它不派发新实验或占用GPU。

@@ -39,14 +39,17 @@ Next actions:
    probes and configuration. The registered read-only observer captures
    native placement/startup and the complete600–900s phase comparison.
    It neither launches a workload nor profiles GPU execution.
-2. Export and qualify isolated candidateV463 after retaining current
-   observation evidence. It removes prefill per-request slot.item by
+2. Isolated candidateV463 is exported and qualified byV466/V467 as
+   patch3c13ad50/tree572109fe; keep it for the next cold observation.
+   It removes prefill per-request slot.item by
    stacking current device virtual slots; mask/seqlen use explicit
    nonblocking uploads. Physical translation, allocation/references,
    checkpoint/state and stream barriers stay unchanged.400 native tests
    plus29 subtests pass, with both the initial empty-fixture rejection
    and final checks retained. V462's CPU medians improve1–7us, but the
    48-request lazy mean regresses19.1us. Cold GPU benefit is unknown.
+   V465 separately records the revoked non-execution launch wait; all49
+   other prior qualified sources and the live V56 engine remain unchanged.
 3. Use the same-version phases to select the next bottleneck. V459's
    894 active samples/85 read errors locate32 prefill scalar-readback
    leaves and275 decode-result synchronization leaves; these are call
