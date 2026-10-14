@@ -4,6 +4,16 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+V58尾部审计区分负载消退与真正空闲：6000–8100s GPU均值仍
+约95%–96%，最后单workflow的183.842s才降至46.8%，queue
+恒为0。重复208次的成功检查在workspace不变、去除对象地址
+后输出完全相同；不能把长尾统一归因于工具180s超时或H2D。
+详见`v58_tail_diagnosis_20261014.json`。
+`v58_tail_repetition_and_terminal_20261014.json`发现24个
+workflow的26次natural-return事件带guard干预，而汇总漏计
+为0。156 completed不是全部自然完成；报告须补充硬上限收尾
+和质量未知。此发现不授权新guard、预算调整或热改当前native。
+
 最新v579纳入全部四窗，v551正常完成观察；原driver/native
 scheduler仍在运行。不因已完成observer的PID消失重启实验或
 观测器。最后3600–3900s周转P50多6.19%、decode服务少1.04%；
@@ -16,7 +26,7 @@ pytest-dev__pytest-10051最后两次root输出均8192且length结束，
 取消/guard。保持已约定的输出上限，不借增加预算或丢掉该样本
 改善对照；保留其workspace、trace及全任务质量计数。
 
-V58 predictive于2026-10-15自然完成156/156；native独立核验
+V58 predictive于2026-10-15记录156/156个completed；native独立核验
 scheduler3865597/start_ticks616567785及58份冻结源码后开始。
 同版本120–300/600–900s的周转P50仍多9.06%/16.11%，服务量
 少9.49%/5.54%，不作阶段/最终收益验收。同步文档时须核验当前

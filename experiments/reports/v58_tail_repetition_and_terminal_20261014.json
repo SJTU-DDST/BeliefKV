@@ -1,0 +1,2214 @@
+{
+  "schema_version": 1,
+  "created_at_local": "2026-10-14T11:10:14.824332-07:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+  "sources": [
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v58_tail_diagnosis_20261014.json",
+      "bytes": 1260573,
+      "sha256": "e6b1c4ca6f55cc61bff0925e5adb49be837ef57900e872d8f42a5cbf556cd260"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/summary.json",
+      "bytes": 1096521,
+      "sha256": "e9c0d4d9ec0c584c68a3360cfeb412906e3cb736685bb965307c18374103f45e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/trajectory.json",
+      "bytes": 1261331,
+      "sha256": "dda6c9385ffe1570a781af4349259c8cacc0549775b488e287d35445530fd5d3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-10097/sandbox_audit.jsonl",
+      "bytes": 106752,
+      "sha256": "999f9647b4f4a1bb7ff0231fa0f8852038e7fa262442098c45377ddd272a9d5f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-10554/sandbox_audit.jsonl",
+      "bytes": 131157,
+      "sha256": "24e98d513e2d9c50db3f00f1759324a2ee370e051c7b5216d6d26508fb25b662"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-10880/sandbox_audit.jsonl",
+      "bytes": 45685,
+      "sha256": "5080c40a0b8217f107c93f252d078d58374e833e48c72aaece02689e91f2d4e6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-10914/sandbox_audit.jsonl",
+      "bytes": 104532,
+      "sha256": "f4fa860ed5d63b388f4fddbb3e9a76866415f8e68a205f3ed66342a5a37b02db"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-10973/sandbox_audit.jsonl",
+      "bytes": 9561,
+      "sha256": "007ef6c6d526a02bff34728eb8b0697262f8a68c26b65ccb44f75433e0e9cba0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-10999/sandbox_audit.jsonl",
+      "bytes": 24013,
+      "sha256": "1f60f281619cce04ef0077d4a732ce147ad99ac5f5f3b7a813ade35640b36589"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11066/sandbox_audit.jsonl",
+      "bytes": 25941,
+      "sha256": "af4428dbca3af0b26e3f794931502585d2e4bcbed592ee06fa17ee887da755e4"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11087/sandbox_audit.jsonl",
+      "bytes": 51450,
+      "sha256": "ca0f0ca2a8abb475b22ae1db0c4e95a4ce9c12d869b4d06f44848ef066eea87f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11095/sandbox_audit.jsonl",
+      "bytes": 19993,
+      "sha256": "6d95f067dc2036cb0136c8e5b182116f48ef6ab786caf083d8b3fd452d641e42"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11099/sandbox_audit.jsonl",
+      "bytes": 22714,
+      "sha256": "de2b290163826ebb7c7198d3c9fe1ada3ff8aba328608086a0962cc6abf554fd"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11119/sandbox_audit.jsonl",
+      "bytes": 19935,
+      "sha256": "7723973189ebf74cc72bf40075b5a838807264e013ca116ba757a037e43833f2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11133/sandbox_audit.jsonl",
+      "bytes": 123414,
+      "sha256": "09950d346df9a528d2813c4814c69f4aeb3b9fd9c1e4383d38e7d155f92a0440"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11138/sandbox_audit.jsonl",
+      "bytes": 475834,
+      "sha256": "6b51db882ecf13aa981e116b4a89d9acf1563066f2e46329f2ad72b32ece2df4"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11141/sandbox_audit.jsonl",
+      "bytes": 317381,
+      "sha256": "9fe48d55c21514188da622396033ab448300804d9d3dcda2a597b0291e123721"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11149/sandbox_audit.jsonl",
+      "bytes": 223449,
+      "sha256": "1accb034a642995d179bf198e7e6b05b6256d746082648a513b6f8e1c8dd8ded"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11163/sandbox_audit.jsonl",
+      "bytes": 26290,
+      "sha256": "61e1f0a0c8f4c3422ffe34bca3f9d6be8f8b5ec447ee72c6d78bfc5f4b504c10"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11179/sandbox_audit.jsonl",
+      "bytes": 25114,
+      "sha256": "1bba2105407720eb11b3f592194252086a55a60058b3e0abd8cb6828a85ca215"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11206/sandbox_audit.jsonl",
+      "bytes": 94532,
+      "sha256": "20ea574b2ccdba0658baa999cade6d1f738bdef94805ea58af7fd5988655c383"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11211/sandbox_audit.jsonl",
+      "bytes": 224887,
+      "sha256": "6a5b7f49c28a8da564e5c642b80d3c0db906b870a0b5b458312edf71638fead8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11239/sandbox_audit.jsonl",
+      "bytes": 16843,
+      "sha256": "2f50aa37bda730ed5d33a09d4c0d38fc1813a5d3df164b91df68ce90ff7ca4b0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11265/sandbox_audit.jsonl",
+      "bytes": 41440,
+      "sha256": "581be9d753d9ee6970d218861942f4b80c0c236bc64a2759e5320cee20e6040d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11276/sandbox_audit.jsonl",
+      "bytes": 55863,
+      "sha256": "925bf47b80156b7ebcc6f2ed62719ee8c2975589034e9a890746ccb08dccdd31"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11292/sandbox_audit.jsonl",
+      "bytes": 423006,
+      "sha256": "82123b4ebb4ce904e8dea4f17e0e35b1f178a166850b653108a532b9e14b68b0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11299/sandbox_audit.jsonl",
+      "bytes": 266472,
+      "sha256": "9bb3ca91e170e4f3e95d77b7f4ab62e49a7039be2b7bf38c16dc38c7d7f5824e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11333/sandbox_audit.jsonl",
+      "bytes": 28718,
+      "sha256": "5b3bd208c8febe24eca80f9df18474e1152dfda83b2d8a2aef2c9c62904a1a1f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11400/sandbox_audit.jsonl",
+      "bytes": 28947,
+      "sha256": "f953cdeb8a4a762ee1cc7c980129b204235235f362fee8d2eb57e4e99b540cbc"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11433/sandbox_audit.jsonl",
+      "bytes": 267898,
+      "sha256": "9b3618c73284487959434e08c91bf75b2e40ff8808905693699c21379c888d4a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11451/sandbox_audit.jsonl",
+      "bytes": 27996,
+      "sha256": "8b1feb53f15b53544ec8571d5378c55d2d0768e106e44d5aed7ae11880f99514"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11477/sandbox_audit.jsonl",
+      "bytes": 489643,
+      "sha256": "f06198e1be78eeff39384da2088ce1f85af72ee9259bcd408a2dc17421c4a665"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11490/sandbox_audit.jsonl",
+      "bytes": 574107,
+      "sha256": "441e33674bcda02a165bcdf97c0d9b4f06fa690be2f18146826e3efcd65ec4f8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11532/sandbox_audit.jsonl",
+      "bytes": 305872,
+      "sha256": "3c048f92d904569cea84d97828c57c71ec70bfeb2068e6e36f873baaba4e61c3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11551/sandbox_audit.jsonl",
+      "bytes": 38364,
+      "sha256": "31e4cfb3aa6b6d92fb83f071291b2284b051c9f570ab6594fb85be2271d0ad0e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11555/sandbox_audit.jsonl",
+      "bytes": 192620,
+      "sha256": "7e7a5cfbaf000e842228f824936192e5f3d59369ce0d8ed1df53db2d3c8769b5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11603/sandbox_audit.jsonl",
+      "bytes": 28557,
+      "sha256": "fe4e093d23bef7449e0fee6aa68e4e173d95d1b45a50e6cd79be682246d1ef0f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11728/sandbox_audit.jsonl",
+      "bytes": 17303,
+      "sha256": "67f11d0140df5611f0adfaac655af0afed6a0dca594293d5c3349b2f37330956"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11734/sandbox_audit.jsonl",
+      "bytes": 153451,
+      "sha256": "017a4545da56800d77ebf2f0cdaa22370880639624ea512354ad9e3569bcb5cd"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11740/sandbox_audit.jsonl",
+      "bytes": 210278,
+      "sha256": "3aa996935db386d140d8df1a9593de111d2221e395b823f333eca6bbd91ac434"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11749/sandbox_audit.jsonl",
+      "bytes": 150538,
+      "sha256": "5dddf814b270332f175ea2ce335a0f67a45839fd0daab70da61567bdb9b035b3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11790/sandbox_audit.jsonl",
+      "bytes": 47010,
+      "sha256": "cbe5e705202ed238f8ef065e48be828e1ac3dd796d82e2a82df9c9eed8b2dd26"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11815/sandbox_audit.jsonl",
+      "bytes": 159813,
+      "sha256": "efa56a2ff9e374c3898968e6f4fe3517fef0c0640f4d414b33700d3b24f0e94e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11820/sandbox_audit.jsonl",
+      "bytes": 312024,
+      "sha256": "e470257b603232d2d19ff4decc3a2f85aa1438cf7d7823b5f4683fb8f6d78f4a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11848/sandbox_audit.jsonl",
+      "bytes": 15336,
+      "sha256": "7c601b5fd4bca4e83c5d01ad7ed281be5d0756786068c63058ba66f87af5c11d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11880/sandbox_audit.jsonl",
+      "bytes": 26513,
+      "sha256": "7991dce1ff4788a5f4aab0b703cc565a3ed55df4b29ee1c74cebeeb0ccd6dfc8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11885/sandbox_audit.jsonl",
+      "bytes": 268810,
+      "sha256": "b4a2a005a0e948c651c16058927937b22a2e63bfe6518c799bc84ddb81539d12"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11951/sandbox_audit.jsonl",
+      "bytes": 17059,
+      "sha256": "327ee0fc283cff67dcc9d34487987785338393526438333c9f382fc292a04f76"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11964/sandbox_audit.jsonl",
+      "bytes": 36338,
+      "sha256": "7c5bb741e5c31807f6964b098ea6489e4aa3476becf6914d721274538f091441"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-11999/sandbox_audit.jsonl",
+      "bytes": 175165,
+      "sha256": "7c7039b130567fa8448ee5998818a3925a98bfb8b81a32a49afe883084f895eb"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12039/sandbox_audit.jsonl",
+      "bytes": 94931,
+      "sha256": "21dcb9e20364bdcfe6fd1c59be24ecd1616813012dcb7c24e01af2aba7bc8fff"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12050/sandbox_audit.jsonl",
+      "bytes": 145043,
+      "sha256": "f1192b1c7177e4a9e3fda65d5b8ff77ccf3e16ce15ac9d58ffbca54d57572797"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12125/sandbox_audit.jsonl",
+      "bytes": 223462,
+      "sha256": "b634a0482617e573d104d49d71facbdc60777add79a716b570ba8fc2148b4f4c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12143/sandbox_audit.jsonl",
+      "bytes": 68552,
+      "sha256": "9e933fc0bc5d4ff41e9bef1c3b75781a3996d27854e6e524f9c8d52992e40733"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12155/sandbox_audit.jsonl",
+      "bytes": 107361,
+      "sha256": "c22001c5e011ed6c83717e713c57878df9d9c1a43e0104109dab034a06ba2141"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12193/sandbox_audit.jsonl",
+      "bytes": 428919,
+      "sha256": "00f6fffad085e15cd9599ed086787a742070997cdac4427aaafecc727a55c34d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12209/sandbox_audit.jsonl",
+      "bytes": 631264,
+      "sha256": "2a368ee79fbcab9fcd35e8d627403ae1bfca8d40228ebfb492a64f31a2dd8733"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12262/sandbox_audit.jsonl",
+      "bytes": 151490,
+      "sha256": "f8a76de4e1eef50391e47feec3ec8f94edaba022999d9a8442c5ec2acc776db0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12273/sandbox_audit.jsonl",
+      "bytes": 158975,
+      "sha256": "b53fcfd65a18e41d2626a509710f674bb62f6b0ebb14303aa043a53ee8e8fb8a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12276/sandbox_audit.jsonl",
+      "bytes": 58731,
+      "sha256": "c7d58634467b4a07fa78524b176d941333cb7e0e56b56841b95cad313245290c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12304/sandbox_audit.jsonl",
+      "bytes": 201131,
+      "sha256": "5f65c1737957f778f54626ca4a0a54511d139acafd28acdac6e1296a2f892f10"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12308/sandbox_audit.jsonl",
+      "bytes": 102910,
+      "sha256": "c2c548fc9595a1eb69afb397e00b918e557e1a1d3001ebe2d63b3aa984ae28b9"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12325/sandbox_audit.jsonl",
+      "bytes": 56986,
+      "sha256": "ba448f1060c522a0d3261d2041fefd9245dd7aab50d000d7a4e8b4adc72a9833"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12406/sandbox_audit.jsonl",
+      "bytes": 93037,
+      "sha256": "9e164fede59ecdf0079d9a95b082cd7855991ab6ce12dc720016bf89df7e61e5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12419/sandbox_audit.jsonl",
+      "bytes": 21818,
+      "sha256": "691474e4ba983f07d7afb0f803c9fe889538f0ae476826ea36ba84cb0402d6b5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12663/sandbox_audit.jsonl",
+      "bytes": 265819,
+      "sha256": "1c617367872732562c5e824ce66641f31134f3b71e3c0aafccdbd29444fbbcab"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12708/sandbox_audit.jsonl",
+      "bytes": 355682,
+      "sha256": "c1998e1a8797ea5a1616e9a5a7072edc640f2156d0150ac818b5ab6f0f9dcc63"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12713/sandbox_audit.jsonl",
+      "bytes": 30115,
+      "sha256": "8dc44413bc77711b72dff6a67127a62c6af6abfbdb6a8c15ba93e2b3982659fd"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12741/sandbox_audit.jsonl",
+      "bytes": 110911,
+      "sha256": "4b9a040f69fa2493eec905d501dd24c98f7831679ffc65ecfcc2925a2dbf7649"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12754/sandbox_audit.jsonl",
+      "bytes": 213525,
+      "sha256": "7906b816a0d7942c4ffa4f21700722baf133212ecdb484007674f9616f4f3f20"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12774/sandbox_audit.jsonl",
+      "bytes": 86314,
+      "sha256": "4cef5e248d4b8b182b4e068632ed66396352bbd8aa1c7532262e9d238003242b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12858/sandbox_audit.jsonl",
+      "bytes": 171927,
+      "sha256": "c62eeed119756e9b18c427367586af42729aa9105af57859d5f29482ef2bc473"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-12965/sandbox_audit.jsonl",
+      "bytes": 303014,
+      "sha256": "95af3f1fe1ecad265ae413e0982f949b333d3d0fc26b4c9b803e8537f30c6c0e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13012/sandbox_audit.jsonl",
+      "bytes": 109123,
+      "sha256": "4f0acc947a54a69f80f3e1ce400b6f4e46a5e585dd39f8a1d579e87913477d77"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13023/sandbox_audit.jsonl",
+      "bytes": 24644,
+      "sha256": "adc40839a91f804b8ef09d9b829f5604a39ee3b20c9b6a6a29ce7a95f70c76ad"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13028/sandbox_audit.jsonl",
+      "bytes": 205966,
+      "sha256": "2057f891067da3289c005a219d078403b9796a459029660a26e9691476d7c8c6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13033/sandbox_audit.jsonl",
+      "bytes": 202740,
+      "sha256": "312f7e88cc1bfd481f082c86a01d0f5de39ac237e14de3a532e88e4fdf6ace2f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13089/sandbox_audit.jsonl",
+      "bytes": 61399,
+      "sha256": "2d78f3602d6f37fe9ab9ab82dea88057614e2c8c7cde5d7c235d9df9b7d5ba25"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13109/sandbox_audit.jsonl",
+      "bytes": 39621,
+      "sha256": "5ccb5d9c105de92cc335166e68ce492cbabe3e5ed5e3b368cba6a987c6e22109"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13112/sandbox_audit.jsonl",
+      "bytes": 335055,
+      "sha256": "91c3f3fc87c80d48562d0afc19d7dfa5b4dcfbb075052342c9019240a96cb0f6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13121/sandbox_audit.jsonl",
+      "bytes": 671502,
+      "sha256": "946d4419af218c930b0951bbad62d1f1cdf8e3c8929bfe0c72d8993d30265eae"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13128/sandbox_audit.jsonl",
+      "bytes": 387007,
+      "sha256": "fe3f0460e9644fde4e6a3d1960e2e32848e347241df6878a378132466922b7c3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13158/sandbox_audit.jsonl",
+      "bytes": 59909,
+      "sha256": "96d141f5f382483d1c282efa6788c3dfba1581b6d919dd03eb190332273034d3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13195/sandbox_audit.jsonl",
+      "bytes": 40883,
+      "sha256": "557145614fc53bd5846518997bbb652697426b24c2c1201a0ba7c4ed47acc589"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13212/sandbox_audit.jsonl",
+      "bytes": 54418,
+      "sha256": "0762c73e8b26c83486c4d8461fa77a12695c316c60d05cd630eebdc504fd85f0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13279/sandbox_audit.jsonl",
+      "bytes": 40420,
+      "sha256": "21f61bcefc64770ab842afd189a1f767b6f638930df051ccac628c1a1138df34"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-13964/sandbox_audit.jsonl",
+      "bytes": 185141,
+      "sha256": "6a29e18d2736a0de2090a2c1abca7fc7aa36cdda195f1a85b2cb2851c4008942"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-14349/sandbox_audit.jsonl",
+      "bytes": 32441,
+      "sha256": "903e691f3ecb5f3a8d0f9f29a2fd23d1fdc1dcb1ddceb942dc781a460d35c981"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-14500/sandbox_audit.jsonl",
+      "bytes": 213564,
+      "sha256": "1f0be61bac7a87640965fdc63ac847cbaf347ac98fd5a20a6e0399fee4586f93"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-14631/sandbox_audit.jsonl",
+      "bytes": 24984,
+      "sha256": "c462a3708c9edeb287f1d935cd2758630e9d2b51705b9e3efa8aac11bb6403d6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-15103/sandbox_audit.jsonl",
+      "bytes": 39050,
+      "sha256": "9322bb65aacfd384a2c68d189c60f852570afbc6799d18218ef1723a6f31ccf0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-15315/sandbox_audit.jsonl",
+      "bytes": 53008,
+      "sha256": "97348f63df501ff01f9f6d136ff21e74ce1d571e1db62ef21a8f66e0e65527cb"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-15368/sandbox_audit.jsonl",
+      "bytes": 52000,
+      "sha256": "77d8cb7690bb2786b65e6006694c67ac19b13970ce96bc63b170dc000d33cb60"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-16255/sandbox_audit.jsonl",
+      "bytes": 24559,
+      "sha256": "ac284cd254b75a909c8e2ecf0863241a36072d8226d99bb1ca932f6f82129568"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-16502/sandbox_audit.jsonl",
+      "bytes": 73714,
+      "sha256": "08c67b32ead20d61cefc6aa94cdf4d8a671f97be58b0e5b093c060cb624dea13"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-16667/sandbox_audit.jsonl",
+      "bytes": 31470,
+      "sha256": "6b884e62d7ea3a661fb39b94e2a2b51560e3b7c7d23b65fe442aaebe00ee4b11"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-16877/sandbox_audit.jsonl",
+      "bytes": 36839,
+      "sha256": "0f8c48485e21f4465501774240d2bbe3155df5c8ebbb459034496019bc3d86be"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/django__django-16938/sandbox_audit.jsonl",
+      "bytes": 521803,
+      "sha256": "fd37390cd65fbe839f3531ee4f4236e241b3024589fc865200e0cab8295b4bab"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/mwaskom__seaborn-3069/sandbox_audit.jsonl",
+      "bytes": 69930,
+      "sha256": "f8884877bb795b77e67d5d9dd4152867de1e7c6b015a0d92b3728722fa95a3df"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/sandbox_audit.jsonl",
+      "bytes": 483129,
+      "sha256": "2858903e67eac858a38c34baefafc2eb4ee5866db084fb4c8c4c3b1c0392d44a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pallets__flask-5014/sandbox_audit.jsonl",
+      "bytes": 13809,
+      "sha256": "6f976cb54d78e3cd10ede2b51abee88bbd3d45c084ac239dc0a7abea83d96da5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/psf__requests-1142/sandbox_audit.jsonl",
+      "bytes": 30380,
+      "sha256": "1cb6748d45631166c60418f87482af394efbb74d5127f75e58e8cbd1853efabb"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/psf__requests-1724/sandbox_audit.jsonl",
+      "bytes": 29271,
+      "sha256": "e1ce7917e8d5632665dcb0b178aadb06239765f073afc841e114bee56cd994ba"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/psf__requests-1766/sandbox_audit.jsonl",
+      "bytes": 20306,
+      "sha256": "25511a587d1f98d57e10980e2d143a66d8b4adb7f122d9301f37c6689bd1f4c2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/psf__requests-1921/sandbox_audit.jsonl",
+      "bytes": 105805,
+      "sha256": "a27df905b081b57c956f841d699396c58ecf91d279961e75d8a6b9acd79a6494"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/psf__requests-2317/sandbox_audit.jsonl",
+      "bytes": 36080,
+      "sha256": "177f7e7980a1ad619b232d2621ea677a04ca810381b79c70ba3824e3ad4fb388"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/psf__requests-2931/sandbox_audit.jsonl",
+      "bytes": 68944,
+      "sha256": "5e2c76329f221310076cfac9d126192e605eee8bfa279606e6e6d907c17cc451"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/psf__requests-5414/sandbox_audit.jsonl",
+      "bytes": 278202,
+      "sha256": "8f6a9f86415d44b5dcaca846f77def81b18165509be8665423c8d8bfb6d03757"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/psf__requests-6028/sandbox_audit.jsonl",
+      "bytes": 62866,
+      "sha256": "ada6ba547aed9c6376035671720e53dd1dbbad3031c1b6df3d78c929f763fa54"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-2905/sandbox_audit.jsonl",
+      "bytes": 191383,
+      "sha256": "797879899d3b8e2bd63dc5547a37b2240fdb2f0f1ce5b5ab56c81212089e3ca2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-3095/sandbox_audit.jsonl",
+      "bytes": 101623,
+      "sha256": "9a5bbfad998c5a9cbea8fd46337022627cb55ac9c26c36de5a9afafa652f424a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-3151/sandbox_audit.jsonl",
+      "bytes": 36620,
+      "sha256": "cd9b8de3582b962415079b4d118d1301fb9058aa1ac8a30997eb2994b6c3a5e1"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-3305/sandbox_audit.jsonl",
+      "bytes": 34301,
+      "sha256": "0f6c7ae358a1ef265cd7a9318b1691f02359bc5d619e877a6e7fa693eb51f96e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-3677/sandbox_audit.jsonl",
+      "bytes": 208834,
+      "sha256": "ac48680a517d7f4ce3b5af75db8e5c9fef2f5bb519ef3fa6c147a7f752aa9497"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-3993/sandbox_audit.jsonl",
+      "bytes": 15915,
+      "sha256": "b7357ef5053af6b8963c36938482d520e5bca4938409aefc07317d20a2459489"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-4075/sandbox_audit.jsonl",
+      "bytes": 98657,
+      "sha256": "7be908db14afb9295755917c0fa51897a1102392ee9c9ef55e0efdfd2bbd3f4f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-4094/sandbox_audit.jsonl",
+      "bytes": 95863,
+      "sha256": "8911bd17ba5d01cf9ab34a4421b587da2414c5656195ca2b7fb116c0d605bf26"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-4356/sandbox_audit.jsonl",
+      "bytes": 193487,
+      "sha256": "46cfdf563139bd1a80226706513e5e1bffa420da1efe58bc675a2c2c0ac6784f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-4629/sandbox_audit.jsonl",
+      "bytes": 21825,
+      "sha256": "8a7c9f2c5a960eec1e8c7e8cffdfb7b49057f81dc3be0592db4340d5627f0cb7"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-4687/sandbox_audit.jsonl",
+      "bytes": 224083,
+      "sha256": "8131afaa28f7a3743291157ee748bc8fdc1cd58a9dfd35cee8fc2d437e148f4a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-4966/sandbox_audit.jsonl",
+      "bytes": 230652,
+      "sha256": "fdabc7ec48fccefb979e54ab60dede4b0a35988a3c93195434d58790610af4db"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-6461/sandbox_audit.jsonl",
+      "bytes": 38600,
+      "sha256": "7eea296a869a7b456130210a35c903ad4fce42ac547c3c2582f2589e45b59e52"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-6599/sandbox_audit.jsonl",
+      "bytes": 272527,
+      "sha256": "856ea9b464d3ee4da9aabc52d4c82ac2a568fce80ca5b5f83f4795e830543e2e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-6721/sandbox_audit.jsonl",
+      "bytes": 100034,
+      "sha256": "5389d445fdade7a9d28526d7c3d4441de2525d7c9bbfb122440c24c2169b3c09"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-6744/sandbox_audit.jsonl",
+      "bytes": 156946,
+      "sha256": "49eb15348198fdf233288d7717799f32aaae7dd8749170cecbc8239cd811e0db"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-6938/sandbox_audit.jsonl",
+      "bytes": 184534,
+      "sha256": "0a281530f286361de6969dff2d9c1b7cbeaa34911462d18825410fb43bc0d357"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-6992/sandbox_audit.jsonl",
+      "bytes": 118213,
+      "sha256": "a48f61fc5dcdf7c926d4830b04e2fda9f4ded83b1f01b69858d4814ef2c04e79"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-7229/sandbox_audit.jsonl",
+      "bytes": 198071,
+      "sha256": "c5b262574cab166b38a4c1bf612e91255b2698774f9d112f49e7b4ff639eb35e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-7233/sandbox_audit.jsonl",
+      "bytes": 91620,
+      "sha256": "513c5f0588a971f68e7647bd663129b71ada344d5e0ccbd6a8c48075b307cbd5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pydata__xarray-7393/sandbox_audit.jsonl",
+      "bytes": 358605,
+      "sha256": "bd4be4a2cfde562a5214c667df140760e23f22846a3b83a0368310b4761bbd05"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pylint-dev__pylint-4551/sandbox_audit.jsonl",
+      "bytes": 73546,
+      "sha256": "d6deab9ce5b276ad5e4cda4c32313fb2ee280c39ea364203471a175165f7296b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pylint-dev__pylint-4604/sandbox_audit.jsonl",
+      "bytes": 132966,
+      "sha256": "2a38060f4fafd73678bf3ef02552799e8446f28ef2b0cf957283c1b20eb61bb1"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pylint-dev__pylint-4661/sandbox_audit.jsonl",
+      "bytes": 219799,
+      "sha256": "8b353a1d7113993d4dd3b0af15fbdb8e4a87356b66aee5b32216d51781726c8b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/sandbox_audit.jsonl",
+      "bytes": 75259,
+      "sha256": "ce1b9a4f33a9b3e925fd4928b7b9183fdec48979a9d0e46f01159d787d886a8d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pylint-dev__pylint-6386/sandbox_audit.jsonl",
+      "bytes": 75505,
+      "sha256": "95bef854d07daa4ab7164fbb7bb7cb9e81c89da47756c24959a3aeb94f2e2c26"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pylint-dev__pylint-6528/sandbox_audit.jsonl",
+      "bytes": 283923,
+      "sha256": "daa1212412b63915a7ead74bf28ca8ffb5df24895fd0e25cdb23c9bbd9dd6d46"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pylint-dev__pylint-6903/sandbox_audit.jsonl",
+      "bytes": 26425,
+      "sha256": "4f41e25aef8eba13ca7d7d9d870dd04e8e168606c6d53550db44a989dfa04f41"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pylint-dev__pylint-7080/sandbox_audit.jsonl",
+      "bytes": 262873,
+      "sha256": "11cb844991198b7e756821a4812444c690b5e83ecf98420a6ff211a41d84f741"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pylint-dev__pylint-7277/sandbox_audit.jsonl",
+      "bytes": 72092,
+      "sha256": "7bc252b15e3e5b160819d7c18dc588dcb7707af8c50171820a06c2caf5610baf"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pylint-dev__pylint-8898/sandbox_audit.jsonl",
+      "bytes": 98008,
+      "sha256": "906d7cee671098a76cac00b7007727a2d6756ad1ccc0c7a6179536e276effd79"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-10051/sandbox_audit.jsonl",
+      "bytes": 42724,
+      "sha256": "9ed3e7d598bdfad98b6669c932544628b70076b116089bba5e17e507ababc596"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-10081/sandbox_audit.jsonl",
+      "bytes": 439055,
+      "sha256": "e2c14adbbb91ef533977e52fc9cb53f50cb92d35320768184cc11346e7eb5518"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-10356/sandbox_audit.jsonl",
+      "bytes": 346983,
+      "sha256": "5aec1a9eaa4eae3d8b723a7149ea724f443c64ed8c7797fe18bec2b7b35c6392"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-5262/sandbox_audit.jsonl",
+      "bytes": 115620,
+      "sha256": "3c7b49087495017bf22e23ff069c773de6029cc5be466fc0cad173590d2807f6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-5631/sandbox_audit.jsonl",
+      "bytes": 614675,
+      "sha256": "e8b098041dea099424c0c5468c2b02fba7ae17c4848eb57b6c6dd56da802b5af"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-5787/sandbox_audit.jsonl",
+      "bytes": 246025,
+      "sha256": "c7064b40a0a95e89b2893a6678d418b7980d031ac22ec9523e289d1bfcd76eb4"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-5809/sandbox_audit.jsonl",
+      "bytes": 20406,
+      "sha256": "396e7c249cfc4dde0caea4356f7393fd006fb26c9f34ef672976d33928534a7b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-5840/sandbox_audit.jsonl",
+      "bytes": 514361,
+      "sha256": "c5b98aaf98f21bfac14af569d7b9db9a837384ae24f5ec996fd0d3ef2bb22129"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-6197/sandbox_audit.jsonl",
+      "bytes": 190618,
+      "sha256": "cb66296fe67d757badf475301f503f4b028dea05e041a40f6bb20c49b0665c3f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-6202/sandbox_audit.jsonl",
+      "bytes": 169840,
+      "sha256": "dacd54854ced76fef4abfe25fcaa6e813f54ebd6077185534b880ff220b98650"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-7205/sandbox_audit.jsonl",
+      "bytes": 75099,
+      "sha256": "bc45782395721e14bd78c7f86aa00054efdd010f6b629f738854a886cee4965e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-7236/sandbox_audit.jsonl",
+      "bytes": 282867,
+      "sha256": "e80a893f08b6b133ec5e82479ba6af580a2dbcfde313a3c08546b6b03e2f88b5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-7324/sandbox_audit.jsonl",
+      "bytes": 130421,
+      "sha256": "ed4c32538db889545763a696e28f8f163b8cba64516bb8a14f34c589417fd221"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-7432/sandbox_audit.jsonl",
+      "bytes": 34879,
+      "sha256": "be4b35e4ba0cd6540681656ff7c94106184c2fa7523e7db18a251e510c187e81"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-7490/sandbox_audit.jsonl",
+      "bytes": 216327,
+      "sha256": "a461ab486f2b5532fd3bce0740e748105051ad71a7bd435f0f777b377355bc22"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-7521/sandbox_audit.jsonl",
+      "bytes": 128735,
+      "sha256": "7cdf25e53ac6f9393532876ad1a96135a3b4398ed4312b504d7137503e9c320d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-7571/sandbox_audit.jsonl",
+      "bytes": 64298,
+      "sha256": "6c2e3a315ef99093fd1b446c1276ec4e133ee17ec2253016fbdd2fa931c9f7cb"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-7982/sandbox_audit.jsonl",
+      "bytes": 136536,
+      "sha256": "6afa3a560ed98952e0460299494d6cb5f4213b203bfe7ff58358635ac490ea0c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/predictive_h2d/client_156/workflows/pytest-dev__pytest-8399/sandbox_audit.jsonl",
+      "bytes": 81572,
+      "sha256": "1b546fc146ab458c5d7ec269e7d242172e6ea0e728a6e05b8d47f10c97c81512"
+    }
+  ],
+  "root_repeated_check": {
+    "instance_id": "mwaskom__seaborn-3187",
+    "calls": 208,
+    "distinct_raw_results": 208,
+    "distinct_results_without_hex_addresses": 1,
+    "workspace_changed_false_count": 208,
+    "tool_statuses": {
+      "success": 208
+    },
+    "sample_call": {
+      "args": {
+        "command": "cd /workspace && python -c \"\nimport matplotlib\nmatplotlib.use('Agg')\nimport matplotlib.pyplot as plt\nimport numpy as np\nimport seaborn as sns\nimport seaborn.objects as so\n\n# Create synthetic data with large values\nnp.random.seed(42)\nn = 100\nspecies = np.random.choice(['A', 'B', 'C'], n)\nbill_length = np.random.uniform(35, 60, n)\nbill_depth = np.random.uniform(15, 25, n)\nbody_mass_mg = np.random.uniform(1e6, 5e6, n)  # Values around 1e6\n\nimport pandas as pd\ndata = pd.DataFrame({\n    'bill_length_mm': bill_length,\n    'bill_depth_mm': bill_depth,\n    'species': species,\n    'body_mass_mg': body_mass_mg\n})\n\n# Test seaborn.objects.Plot with pointsize legend\nplot = (\n    so.Plot(\n        data, x='bill_length_mm', y='bill_depth_mm',\n        color='species', pointsize='body_mass_mg',\n    )\n    .add(so.Dot())\n)\n\n# Plot and save\nplotter = plot.plot()\nfig = plotter._figure\n\n# Check the figure's legends\nprint('Figure legends:', fig.legends)\nprint()\nfor i, legend in enumerate(fig.legends):\n    print(f'Legend {i}: {legend}')\n    print(f'  Title: {legend.get_title().get_text()}')\n    print(f'  Labels: {[t.get_text() for t in legend.get_texts()]}')\n\"\n"
+      },
+      "id": "call_bc860169f8d8409395955805",
+      "name": "execute",
+      "type": "tool_call"
+    },
+    "stable_result": "Figure legends: [<matplotlib.legend.Legend object at <address>>]\n\nLegend 0: Legend\n  Title: species\n  Labels: ['C', 'A', 'B']\n\n[Command succeeded with exit code 0]",
+    "semantics": "Offline comparison of this exact output only; not a general rule for suppressing tool calls."
+  },
+  "terminal_accounting": {
+    "recorded_workflows": 156,
+    "raw_guard_intervened_workflows": 24,
+    "raw_guard_intervened_natural_returns": 26,
+    "raw_guard_intervened_root_workflows": 7,
+    "reported_guard_intervened_completions": 0,
+    "affected_workflows": [
+      {
+        "instance_id": "django__django-11138",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:repository-explorer",
+            "content_chars": 1102,
+            "content_sha256": "5a6f2db53d0478f9f23e93e68881ca8ae6a1490a6e01630559c673bcdb92f350",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 370,
+            "ts_ms": 6162052527.73064
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 4984.675018808804,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:repository-explorer",
+            "completed_tool_calls": 410,
+            "consecutive_errors": 136,
+            "consecutive_no_progress": 136,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 149,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 131,
+            "schema_version": 1,
+            "sequence": 368,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 410,
+            "ts_ms": 6162041931.9925165
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-11141",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:test-analyst",
+            "content_chars": 478,
+            "content_sha256": "1669ccce2228422a0a3adb633f18dca1ef920c500484e1f4710815e3b4617fd2",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 303,
+            "ts_ms": 6160925629.924726
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 3850.8189652459696,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:test-analyst",
+            "completed_tool_calls": 403,
+            "consecutive_errors": 1,
+            "consecutive_no_progress": 1,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 18,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "read_file",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 1,
+            "schema_version": 1,
+            "sequence": 301,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 403,
+            "ts_ms": 6160912483.411246
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-11292",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:general-purpose",
+            "content_chars": 980,
+            "content_sha256": "0fdb2a0758b0b62cad7ef773766cae8ad471e595abb6bfa2c92b0b1b3c9ee148",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 731,
+            "ts_ms": 6162821905.947136
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 5755.185833379626,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:general-purpose",
+            "completed_tool_calls": 403,
+            "consecutive_errors": 64,
+            "consecutive_no_progress": 64,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 311,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 62,
+            "schema_version": 1,
+            "sequence": 729,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 403,
+            "ts_ms": 6162813687.112267
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-11477",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:test-analyst",
+            "content_chars": 145,
+            "content_sha256": "033ce0e7995a9205317cd5463d440548999380637581113527216cabbe117bf9",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 820,
+            "ts_ms": 6160160892.223803
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 3100.49069439061,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:test-analyst",
+            "completed_tool_calls": 403,
+            "consecutive_errors": 362,
+            "consecutive_no_progress": 362,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 366,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 361,
+            "schema_version": 1,
+            "sequence": 818,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 403,
+            "ts_ms": 6160157671.102267
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-11490",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 1,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:supervisor",
+            "content_chars": 185,
+            "content_sha256": "5b74196fd55de5442020e8c2fd58a0860ec6a7c57be6b368f158616e2c48e9c4",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 743,
+            "ts_ms": 6164905461.583325
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 7847.148961272091,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:supervisor",
+            "completed_tool_calls": 406,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 0,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 2048,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 45,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "read_file",
+              "execute",
+              "edit_file",
+              "execute",
+              "execute",
+              "read_file",
+              "edit_file",
+              "execute"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 741,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 406,
+            "ts_ms": 6164904301.41494
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-11532",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:test-analyst",
+            "content_chars": 138,
+            "content_sha256": "2addd663e5e868d331d675e2aa67cc7aaa10df9d4b5d1805f3e66e476c03a796",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 428,
+            "ts_ms": 6160272000.634048
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 3209.444389156997,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:test-analyst",
+            "completed_tool_calls": 403,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 0,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 26,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 426,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 403,
+            "ts_ms": 6160266437.473846
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-11740",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 1,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:supervisor",
+            "content_chars": 239,
+            "content_sha256": "7f351166798a71332d16a41b9da0c9ac35544fa9335c16f00c29eff7d650fcb9",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 253,
+            "ts_ms": 6164954519.281116
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 4303.619048992172,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:supervisor",
+            "completed_tool_calls": 406,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 0,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 2048,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 79,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "read_file",
+              "read_file",
+              "read_file",
+              "grep",
+              "read_file",
+              "grep",
+              "grep",
+              "read_file"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 251,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 406,
+            "ts_ms": 6164953489.023517
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-11820",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:test-analyst",
+            "content_chars": 194,
+            "content_sha256": "844e0ced05a41402a572a1c3a6c8b4f49d86d30e6df7351a96c49bae07e830bb",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 496,
+            "ts_ms": 6160262048.462942
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 3199.5321548040956,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:test-analyst",
+            "completed_tool_calls": 403,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 372,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 7,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 494,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 403,
+            "ts_ms": 6160257733.844075
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-11885",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 1,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:supervisor",
+            "content_chars": 204,
+            "content_sha256": "f249b99185ff944620d6aa740c611b0b7ad70358b400db0a0fa122b552fe95eb",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 311,
+            "ts_ms": 6165050287.851926
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 4398.8264531660825,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:supervisor",
+            "completed_tool_calls": 404,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 0,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 2048,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 88,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "read_file",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 309,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 404,
+            "ts_ms": 6165049066.67229
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-12193",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:repository-explorer",
+            "content_chars": 3226,
+            "content_sha256": "bd2d9ff0b5c51ae35eec6a8cc04dcfadc8f0f60a5625b0b1ce9389af0a8e9101",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 772,
+            "ts_ms": 6165018843.697462
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 4361.791127474047,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:repository-explorer",
+            "completed_tool_calls": 405,
+            "consecutive_errors": 1,
+            "consecutive_no_progress": 328,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 190,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 1,
+            "schema_version": 1,
+            "sequence": 770,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 405,
+            "ts_ms": 6165011691.608574
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-12209",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 2,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:test-analyst",
+            "content_chars": 251,
+            "content_sha256": "bce5ee3cf76cb4de88ff4885bd20ce4f3e83aab696b63ffda5ea88f075fc83d1",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 766,
+            "ts_ms": 6163823902.720625
+          },
+          {
+            "agent_scope": "autonomous:implementation-agent",
+            "content_chars": 1267,
+            "content_sha256": "a1fd4a3b9d577f418ab62eef8c0c38e92a78b2080a09b5181dc80cf75a076adb",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 963,
+            "ts_ms": 6164559204.272316
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 3170.901320964098,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:test-analyst",
+            "completed_tool_calls": 404,
+            "consecutive_errors": 6,
+            "consecutive_no_progress": 6,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 159,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "grep",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 1,
+            "schema_version": 1,
+            "sequence": 763,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 404,
+            "ts_ms": 6163820723.701271
+          },
+          {
+            "activation_elapsed_s": 3905.545975989662,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:implementation-agent",
+            "completed_tool_calls": 404,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 356,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 7,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 961,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 404,
+            "ts_ms": 6164555369.259954
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-12708",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:test-analyst",
+            "content_chars": 160,
+            "content_sha256": "74b97a12424da99ff8f7aa3a6e8146323d583e901b9ee56ad90176f544512837",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 590,
+            "ts_ms": 6163179904.066141
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 2527.0987311797217,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:test-analyst",
+            "completed_tool_calls": 403,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 2,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 34,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 588,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 403,
+            "ts_ms": 6163177373.937279
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-12754",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 1,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:supervisor",
+            "content_chars": 204,
+            "content_sha256": "0ce950918b8fc887e8121de4575cfb218a0ccc19f6b5a0daaebd7908dfed21a8",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 267,
+            "ts_ms": 6162800649.91597
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 5741.102629775181,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:supervisor",
+            "completed_tool_calls": 413,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 0,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 2048,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 49,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "read_file",
+              "grep",
+              "grep"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 265,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 413,
+            "ts_ms": 6162797808.802283
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-13033",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:test-analyst",
+            "content_chars": 193,
+            "content_sha256": "1f5a6846d50bd76bd5cf23ef6f8a15c2b395d676394b2faded4dacc3c94c16ae",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 217,
+            "ts_ms": 6164188967.764485
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 3536.993866614066,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:test-analyst",
+            "completed_tool_calls": 403,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 0,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 47,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "read_file",
+              "read_file",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 215,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 403,
+            "ts_ms": 6164187027.870914
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-13112",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:repository-explorer",
+            "content_chars": 139,
+            "content_sha256": "7ea0f5bff2f0f56f4c74a8ba07b6dff9b3fe7b8478eaa90b545cb888bb37dc7a",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 417,
+            "ts_ms": 6163070057.69562
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 2417.8680158546194,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:repository-explorer",
+            "completed_tool_calls": 403,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 263,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 51,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 415,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 403,
+            "ts_ms": 6163067980.65885
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-13121",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 2,
+        "raw_guard_intervened_root_returns": 1,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:test-analyst",
+            "content_chars": 239,
+            "content_sha256": "aa876e57cd20e585d21032c0e0db39f43c8e325a8c98eaf26028b6133755c485",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 608,
+            "ts_ms": 6163623676.465412
+          },
+          {
+            "agent_scope": "autonomous:supervisor",
+            "content_chars": 181,
+            "content_sha256": "ce8e36aa0550271fd137eda795ca98026f6a0ceb91c709d53cf41320b22cce13",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 1065,
+            "ts_ms": 6164694483.803285
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 2971.39540510159,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:test-analyst",
+            "completed_tool_calls": 403,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 146,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 27,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 606,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 403,
+            "ts_ms": 6163621293.771115
+          },
+          {
+            "activation_elapsed_s": 4043.146147798747,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:supervisor",
+            "completed_tool_calls": 405,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 139,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 2048,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 60,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 1063,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 405,
+            "ts_ms": 6164693050.821305
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-13128",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:test-analyst",
+            "content_chars": 200,
+            "content_sha256": "b2cde6629f8b8eb4ed40529ec28a41ce791e565267844fee8342a93ac7578838",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 457,
+            "ts_ms": 6164596852.784056
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 3945.095968456939,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:test-analyst",
+            "completed_tool_calls": 403,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 0,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 23,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 455,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 403,
+            "ts_ms": 6164595275.201919
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-14500",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:test-analyst",
+            "content_chars": 251,
+            "content_sha256": "5838e603d6aef2758a2cf380feaf7ab44f75220d7716dd9a5c1243c50a97db29",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 191,
+            "ts_ms": 6162676402.452625
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 5613.288107872009,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:test-analyst",
+            "completed_tool_calls": 403,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 1,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 59,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "read_file",
+              "glob",
+              "execute",
+              "execute",
+              "execute",
+              "read_file",
+              "read_file",
+              "grep"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 189,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 403,
+            "ts_ms": 6162671141.518893
+          }
+        ]
+      },
+      {
+        "instance_id": "django__django-16938",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:test-analyst",
+            "content_chars": 2677,
+            "content_sha256": "1a675786e553b34dd518e87dc8d451f72b391372a5e5259d494eb26f1b3e2f16",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 671,
+            "ts_ms": 6164480982.719291
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 7414.095929648727,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:test-analyst",
+            "completed_tool_calls": 403,
+            "consecutive_errors": 227,
+            "consecutive_no_progress": 227,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 269,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 155,
+            "schema_version": 1,
+            "sequence": 669,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 403,
+            "ts_ms": 6164471935.774765
+          }
+        ]
+      },
+      {
+        "instance_id": "mwaskom__seaborn-3187",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 1,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:supervisor",
+            "content_chars": 1245,
+            "content_sha256": "7710479cc7aef63a62625beaaffb19c163ca3fa575d7d0edbd664fa997434b94",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 763,
+            "ts_ms": 6165343644.845719
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 8284.40859150514,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:supervisor",
+            "completed_tool_calls": 407,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 0,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 2048,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 76,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 761,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 407,
+            "ts_ms": 6165341108.282468
+          }
+        ]
+      },
+      {
+        "instance_id": "psf__requests-5414",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:test-analyst",
+            "content_chars": 345,
+            "content_sha256": "bbbf82b4645642a5ba3677600c34c3abdd4879f0dac627d2a6b87a3827b56c96",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 512,
+            "ts_ms": 6160573423.706779
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 3508.778465178795,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:test-analyst",
+            "completed_tool_calls": 403,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 0,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 350,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "read_file",
+              "execute",
+              "execute",
+              "execute",
+              "read_file",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 510,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 403,
+            "ts_ms": 6160569062.83338
+          }
+        ]
+      },
+      {
+        "instance_id": "pylint-dev__pylint-7080",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 1,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:supervisor",
+            "content_chars": 203,
+            "content_sha256": "76b88a4d06afde114a339f5f7cd58468b629a7cab4d7fa6062d6c91d3b2eca06",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 311,
+            "ts_ms": 6162358714.274973
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 5296.541292053647,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:supervisor",
+            "completed_tool_calls": 410,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 150,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 2048,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 24,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "grep",
+              "grep",
+              "grep",
+              "grep",
+              "grep",
+              "grep",
+              "grep",
+              "grep"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 309,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 410,
+            "ts_ms": 6162354280.985005
+          }
+        ]
+      },
+      {
+        "instance_id": "pytest-dev__pytest-10356",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:repository-explorer",
+            "content_chars": 197,
+            "content_sha256": "4596850c474ed082c7242b5b4e27b2b64974b22d0acf867206f08d350ec3f91b",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 438,
+            "ts_ms": 6162766285.698915
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 5705.095282572322,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:repository-explorer",
+            "completed_tool_calls": 403,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 77,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 11,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "read_file",
+              "read_file",
+              "read_file",
+              "read_file",
+              "read_file",
+              "read_file",
+              "read_file",
+              "read_file"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 436,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 403,
+            "ts_ms": 6162763752.447931
+          }
+        ]
+      },
+      {
+        "instance_id": "pytest-dev__pytest-5840",
+        "outcome": "completed",
+        "recorded_natural_terminal": true,
+        "recorded_guard_intervened_completions": 0,
+        "raw_guard_intervened_natural_returns": 1,
+        "raw_guard_intervened_root_returns": 0,
+        "raw_guard_intervened_returns": [
+          {
+            "agent_scope": "autonomous:repository-explorer",
+            "content_chars": 2646,
+            "content_sha256": "5e205fb201a1edc4a0368a815b124c207a621d400e909e3826f654e55473dd41",
+            "event": "agent_natural_return",
+            "guard_intervened": true,
+            "schema_version": 1,
+            "sequence": 727,
+            "ts_ms": 6165102810.502375
+          }
+        ],
+        "hard_finalizations": [
+          {
+            "activation_elapsed_s": 8037.264272863977,
+            "activation_wall_clock_s": 14400.0,
+            "agent_scope": "autonomous:repository-explorer",
+            "completed_tool_calls": 403,
+            "consecutive_errors": 0,
+            "consecutive_no_progress": 0,
+            "event": "agent_graph_budget_finalization",
+            "graph_recursion_limit": 9999,
+            "graph_step": 2017,
+            "graph_step_hard_limit": 2048,
+            "graph_step_reserve": 32,
+            "model_calls": 403,
+            "physical_failure_count": 3,
+            "reason": "graph_step_hard_limit_low",
+            "recent_tool_names": [
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute",
+              "execute"
+            ],
+            "repeated_failed_calls": 0,
+            "schema_version": 1,
+            "sequence": 725,
+            "suppressed_repeat_intent_count": 0,
+            "tool_calls": 403,
+            "ts_ms": 6165097060.943321
+          }
+        ]
+      }
+    ],
+    "cause": "summarize_agent_control counts guard_intervened only in agent_semantic_completion, omitting agent_natural_return.",
+    "semantics": "Raw hard-limit intervention must be retained; this does not establish benchmark task correctness or require a new guard."
+  },
+  "script_sha256": "76d7dbe44eea237d2d1b778f5ab8e766e9a482dcde476b5b3f4a3d83cb5c3d24"
+}

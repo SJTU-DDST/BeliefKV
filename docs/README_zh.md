@@ -2,6 +2,15 @@
 
 更新日期：2026-10-15
 
+最新尾部诊断：
+`../experiments/reports/v58_tail_diagnosis_20261014.json`及
+`../experiments/reports/v58_tail_repetition_and_terminal_20261014.json`。
+最后单workflow的183.842s内GPU均值46.8%、queue恒为0，
+相同检查208次无workspace变化且有效输出相同。更早尾部仍有
+约95%–96%的GPU采样利用率，batch逐步消退。
+24个workflow的26次natural-return事件带guard干预而汇总漏计，
+156 completed不再表述为全部自然完成；完整native和任务质量待验。
+
 最新v579已绑定全部四个完整同版本窗口：周转差距+9.06%/
 +16.11%/+7.07%/+6.19%，decode服务差距-9.49%/-5.54%/
 +2.30%/-1.04%。观察器正常结束，native仍运行；最终收益待验。
@@ -10,7 +19,7 @@ v577补齐1800–2100s同版本窗口：周转P50多7.07%，decode
 服务量多2.30%，收益随阶段变化。v576保存native一个incomplete
 的两次8192-token根请求截断证据；保持预算和全任务质量口径。
 
-v573：V58 predictive已自然完成156/156；同版本native
+v573：V58 predictive客户端记录156/156个completed；同版本native
 正在运行。120–300/600–900s短周转P50仍多9.06%/16.11%，
 decode服务量少9.49%/5.54%，最终JCT/吞吐待完整重复对照。
 v567早传且复用FULL为JOIN81事件/1.599GB、工具210/11.244GB；
