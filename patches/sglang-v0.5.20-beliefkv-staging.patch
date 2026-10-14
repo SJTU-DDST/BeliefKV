@@ -550,6 +550,96 @@ index b1e4ac8..7e29076 100644
              num_h_states = (extend_seq_lens - 1) // state_chunk_size + 1
              track_ssm_src_offset = torch.zeros_like(num_h_states)
              track_ssm_src_offset[1:] = torch.cumsum(num_h_states[:-1], dim=0)
+diff --git a/python/sglang/srt/layers/attention/linear/gdn_backend.py b/python/sglang/srt/layers/attention/linear/gdn_backend.py
+index dfdfee7..26bd34f 100644
+--- a/python/sglang/srt/layers/attention/linear/gdn_backend.py
++++ b/python/sglang/srt/layers/attention/linear/gdn_backend.py
+@@ -22,7 +22,14 @@ from sglang.srt.mem_cache.memory_pool import MambaPool
+ from sglang.srt.model_executor.forward_batch_info import ForwardBatch
+ from sglang.srt.model_executor.model_runner import ModelRunner
+ from sglang.srt.runtime_context import get_exec, get_memory, get_schedule
+-from sglang.srt.utils import is_cpu, is_cuda, is_hip, is_npu, is_xpu
++from sglang.srt.utils import (
++    is_cpu,
++    is_cuda,
++    is_hip,
++    is_npu,
++    is_pin_memory_available,
++    is_xpu,
++)
+ from sglang.srt.utils.common import rank0_log
+ 
+ _is_hip = is_hip()
+@@ -540,8 +547,16 @@ class GDNAttnBackend(MambaAttnBackendBase):
+                 raise ValueError("GDN MIS metadata requires --enable-mis")
+             self.mis_metadata = build_gdn_mis_metadata(forward_batch)
+         if self.forward_metadata.has_mamba_track_mask:
++            track_cpu = self._extend_track_cpu_metadata(forward_batch)
+             self.forward_metadata.mamba_track_mask_indices = (
+-                forward_batch.mamba_track_mask.nonzero(as_tuple=True)[0]
++                torch.tensor(
++                    [i for i, tracked in enumerate(track_cpu[0]) if tracked],
++                    dtype=torch.int64,
++                    device="cpu",
++                    pin_memory=is_pin_memory_available(self.device),
++                ).to(self.device, non_blocking=True)
++                if track_cpu is not None
++                else forward_batch.mamba_track_mask.nonzero(as_tuple=True)[0]
+             )
+             self.forward_metadata.conv_states_mask_indices = (
+                 forward_batch.mamba_track_indices[
+@@ -554,7 +569,10 @@ class GDNAttnBackend(MambaAttnBackendBase):
+                 )
+ 
+                 maybe_build_flashinfer_checkpoint_plan(
+-                    forward_batch, self.forward_metadata, self.device
++                    forward_batch,
++                    self.forward_metadata,
++                    self.device,
++                    cpu_metadata=track_cpu,
+                 )
+ 
+     def forward_decode(
+diff --git a/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py b/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py
+index e66cee0..5c8c9d5 100644
+--- a/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py
++++ b/python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py
+@@ -67,6 +67,8 @@ def maybe_build_flashinfer_checkpoint_plan(
+     forward_batch: ForwardBatch,
+     forward_metadata: ForwardMetadata,
+     device: str,
++    *,
++    cpu_metadata=None,
+ ) -> None:
+     """Populate packed FlashInfer checkpoint metadata when tracking requires it."""
+     if (
+@@ -76,11 +78,21 @@ def maybe_build_flashinfer_checkpoint_plan(
+         return
+ 
+     checkpoint_every_n_tokens = mamba_cache_chunk_size()
+-    extend_seq_lens = forward_batch.extend_seq_lens.to(device="cpu", dtype=torch.int64)
+-    track_mask = forward_batch.mamba_track_mask.to(device="cpu", dtype=torch.bool)
+-    relative_track_lens = forward_batch.mamba_track_seqlens.to(
+-        device="cpu", dtype=torch.int64
+-    ) - forward_batch.extend_prefix_lens.to(device="cpu", dtype=torch.int64)
++    if cpu_metadata is not None:
++        mask, seqlens, extend, prefix = cpu_metadata
++        extend_seq_lens = torch.tensor(extend, dtype=torch.int64)
++        track_mask = torch.tensor(mask, dtype=torch.bool)
++        relative_track_lens = torch.tensor(seqlens, dtype=torch.int64) - torch.tensor(
++            prefix, dtype=torch.int64
++        )
++    else:
++        extend_seq_lens = forward_batch.extend_seq_lens.to(
++            device="cpu", dtype=torch.int64
++        )
++        track_mask = forward_batch.mamba_track_mask.to(device="cpu", dtype=torch.bool)
++        relative_track_lens = forward_batch.mamba_track_seqlens.to(
++            device="cpu", dtype=torch.int64
++        ) - forward_batch.extend_prefix_lens.to(device="cpu", dtype=torch.int64)
+ 
+     checkpoint_counts = extend_seq_lens // checkpoint_every_n_tokens
+     checkpoint_cu_starts = torch.zeros(checkpoint_counts.numel() + 1, dtype=torch.int64)
 diff --git a/python/sglang/srt/managers/cache_controller.py b/python/sglang/srt/managers/cache_controller.py
 index b9a134e..d0dd6eb 100644
 --- a/python/sglang/srt/managers/cache_controller.py
@@ -5343,6 +5433,284 @@ index 0000000..ed83480
 +        }
 +    finally:
 +        release_result(result)
+diff --git a/test/srt/test_beliefkv_gdn_prefill_mask.py b/test/srt/test_beliefkv_gdn_prefill_mask.py
+new file mode 100644
+index 0000000..073fe77
+--- /dev/null
++++ b/test/srt/test_beliefkv_gdn_prefill_mask.py
+@@ -0,0 +1,272 @@
++"""Compare complete GDN metadata with the preceding qualified engine."""
++
++import ast
++import copy
++from pathlib import Path
++import subprocess
++from types import SimpleNamespace as NS
++from unittest.mock import Mock, patch
++
++import pytest
++import torch
++
++from sglang.srt.layers.attention import hybrid_linear_attn_backend as hybrid
++from sglang.srt.layers.attention.linear import gdn_backend
++from sglang.srt.layers.attention.linear.kernels import gdn_flashinfer
++from sglang.srt.model_executor.forward_batch_info import ForwardMode
++from test_beliefkv_prefill_track_metadata import batch, cases, equal_metadata
++
++
++ENGINE = Path(__file__).resolve().parents[2]
++BASELINE_TREE = "572109fe8e4e301c395f218bf6b509afb0425ae7"
++SOURCE = "python/sglang/srt/layers/attention/linear/gdn_backend.py"
++CHECKPOINT_SOURCE = (
++    "python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py"
++)
++
++
++def reference_function(path, name, *, class_name=None, namespace):
++    source = subprocess.check_output(
++        ["git", "show", f"{BASELINE_TREE}:{path}"], cwd=ENGINE, text=True
++    )
++    tree = ast.parse(source)
++    body = tree.body
++    if class_name is not None:
++        body = next(
++            node.body
++            for node in body
++            if isinstance(node, ast.ClassDef) and node.name == class_name
++        )
++    function = next(
++        node for node in body if isinstance(node, ast.FunctionDef) and node.name == name
++    )
++    for node in ast.walk(function):
++        if isinstance(node, ast.Call) and isinstance(node.func, ast.Name):
++            if node.func.id == "super" and not node.args:
++                node.args = [
++                    ast.Name(id="GDNAttnBackend", ctx=ast.Load()),
++                    ast.Name(id="self", ctx=ast.Load()),
++                ]
++    exec(
++        compile(
++            ast.fix_missing_locations(
++                ast.Module(
++                    body=[
++                        ast.ImportFrom(
++                            module="__future__",
++                            names=[ast.alias(name="annotations")],
++                            level=0,
++                        ),
++                        function,
++                    ],
++                    type_ignores=[],
++                )
++            ),
++            f"{BASELINE_TREE}:{path}",
++            "exec",
++        ),
++        namespace,
++    )
++    return namespace[name]
++
++
++ReferenceBackend = type("ReferenceBackend", (gdn_backend.GDNAttnBackend,), {})
++reference_namespace = dict(vars(gdn_backend))
++reference_namespace["ReferenceBackend"] = ReferenceBackend
++ReferenceBackend.init_forward_metadata = reference_function(
++    SOURCE,
++    "init_forward_metadata",
++    class_name="GDNAttnBackend",
++    namespace=reference_namespace,
++)
++REFERENCE_CHECKPOINT = reference_function(
++    CHECKPOINT_SOURCE,
++    "maybe_build_flashinfer_checkpoint_plan",
++    namespace=dict(vars(gdn_flashinfer)),
++)
++
++
++def backend(*, reference, size, chunk, checkpoints):
++    cls = ReferenceBackend if reference else gdn_backend.GDNAttnBackend
++    result = cls.__new__(cls)
++    result.device = "cpu"
++    result._mamba_chunk_size = chunk
++    result.conv_states_shape = (16, 4)
++    mapping = torch.randperm(256, generator=torch.Generator().manual_seed(83))
++    slots = torch.arange(10, 10 + size, dtype=torch.int32)
++    result.req_to_token_pool = NS(
++        get_mamba_indices=lambda rows: slots[rows],
++        translate_mamba_indices=lambda indices: mapping[indices.long()].to(indices.dtype),
++    )
++    result.enable_mis = False
++    result.kernel_dispatcher = NS(extend_uses_state_checkpoints=checkpoints)
++    return result
++
++
++def run_metadata(configuration, *, reference, chunk, checkpoints, cached=True):
++    data = batch(**configuration, cached=cached)
++    target = backend(
++        reference=reference, size=data.batch_size, chunk=chunk, checkpoints=checkpoints
++    )
++    checkpoint = REFERENCE_CHECKPOINT if reference else gdn_flashinfer.maybe_build_flashinfer_checkpoint_plan
++    with patch(
++        "sglang.srt.model_executor.forward_batch_info.mamba_cache_chunk_size",
++        return_value=chunk,
++    ), patch(
++        "sglang.srt.layers.attention.linear.kernels.gdn_flashinfer.mamba_cache_chunk_size",
++        return_value=chunk,
++    ), patch(
++        "sglang.srt.layers.attention.linear.kernels.gdn_flashinfer.maybe_build_flashinfer_checkpoint_plan",
++        checkpoint,
++    ), patch.dict(
++        REFERENCE_CHECKPOINT.__globals__, {"mamba_cache_chunk_size": lambda: chunk}
++    ), patch.object(gdn_backend, "is_pin_memory_available", return_value=False):
++        target.init_forward_metadata(data)
++    return target.forward_metadata, data
++
++
++@pytest.mark.parametrize("chunk", (8, 64))
++@pytest.mark.parametrize("checkpoints", (False, True))
++def test_complete_gdn_prefill_metadata_equals_qualified_engine(chunk, checkpoints):
++    for configuration in cases(chunk):
++        expected_error = None
++        try:
++            expected, reference_batch = run_metadata(
++                configuration, reference=True, chunk=chunk, checkpoints=checkpoints
++            )
++        except (AssertionError, ValueError) as error:
++            expected_error = type(error)
++        if expected_error is not None:
++            with pytest.raises(expected_error):
++                run_metadata(
++                    configuration, reference=False, chunk=chunk, checkpoints=checkpoints
++                )
++        else:
++            actual, candidate_batch = run_metadata(
++                configuration, reference=False, chunk=chunk, checkpoints=checkpoints
++            )
++            equal_metadata(expected, actual)
++            assert torch.equal(
++                reference_batch.mamba_track_indices, candidate_batch.mamba_track_indices
++            )
++
++
++@pytest.mark.parametrize("checkpoints", (False, True))
++def test_valid_cpu_snapshot_avoids_gpu_mask_queries_and_checkpoint_readback(checkpoints):
++    configuration = dict(
++        extend=[129, 128, 129], prefix=[4096, 2048, 1024],
++        mask=[True, False, True], tracked=[65, 128, 129],
++    )
++    original_to = torch.Tensor.to
++    original_nonzero = torch.Tensor.nonzero
++    protected = []
++
++    def forbid_device_readback(value, *args, **kwargs):
++        if any(value is tensor for tensor in protected):
++            raise AssertionError("checkpoint metadata device readback")
++        return original_to(value, *args, **kwargs)
++
++    data = batch(**configuration)
++
++    def forbid_device_nonzero(value, *args, **kwargs):
++        if value is data.mamba_track_mask:
++            raise AssertionError("device nonzero")
++        return original_nonzero(value, *args, **kwargs)
++
++    protected.extend((
++        data.extend_seq_lens, data.mamba_track_mask,
++        data.mamba_track_seqlens, data.extend_prefix_lens,
++    ))
++    target = backend(reference=False, size=3, chunk=64, checkpoints=checkpoints)
++    with patch.object(
++        torch.Tensor, "nonzero", forbid_device_nonzero
++    ), patch.object(
++        torch.Tensor, "any", side_effect=AssertionError("device any")
++    ), patch.object(
++        torch.Tensor, "cpu", side_effect=AssertionError("device cpu")
++    ), patch.object(
++        torch.Tensor, "to", forbid_device_readback
++    ), patch(
++        "sglang.srt.model_executor.forward_batch_info.mamba_cache_chunk_size",
++        return_value=64,
++    ), patch(
++        "sglang.srt.layers.attention.linear.kernels.gdn_flashinfer.mamba_cache_chunk_size",
++        return_value=64,
++    ), patch.object(gdn_backend, "is_pin_memory_available", return_value=False):
++        target.init_forward_metadata(data)
++    assert target.forward_metadata.mamba_track_mask_indices.tolist() == [0, 2]
++    assert torch.equal(
++        target.forward_metadata.conv_states_mask_indices, data.mamba_track_indices[[0, 2]]
++    )
++
++
++@pytest.mark.parametrize("missing", ("absent", "mask_size", "seq_size", "extend", "prefix"))
++@pytest.mark.parametrize("checkpoints", (False, True))
++def test_missing_or_mismatched_snapshot_preserves_full_native_fallback(missing, checkpoints):
++    configuration = dict(
++        extend=[71, 129], prefix=[1024, 4096],
++        mask=[True, True], tracked=[65, 129],
++    )
++    original = batch(**configuration)
++    if missing == "absent":
++        original.mamba_extend_track_cpu = None
++    elif missing == "mask_size":
++        original.mamba_extend_track_cpu = ((True,), (1089, 4225))
++    elif missing == "seq_size":
++        original.mamba_extend_track_cpu = ((True, True), (1089,))
++    elif missing == "extend":
++        original.extend_seq_lens_cpu = None
++    else:
++        original.extend_prefix_lens_cpu = None
++    outputs, calls = [], {}
++    for reference in (True, False):
++        target = backend(reference=reference, size=2, chunk=64, checkpoints=checkpoints)
++        checkpoint = REFERENCE_CHECKPOINT if reference else gdn_flashinfer.maybe_build_flashinfer_checkpoint_plan
++        original_nonzero = torch.Tensor.nonzero
++        nonzero = Mock(side_effect=original_nonzero)
++
++        def count_nonzero(value, *args, **kwargs):
++            return nonzero(value, *args, **kwargs)
++
++        with patch.object(torch.Tensor, "nonzero", count_nonzero), patch(
++            "sglang.srt.model_executor.forward_batch_info.mamba_cache_chunk_size",
++            return_value=64,
++        ), patch(
++            "sglang.srt.layers.attention.linear.kernels.gdn_flashinfer.mamba_cache_chunk_size",
++            return_value=64,
++        ), patch(
++            "sglang.srt.layers.attention.linear.kernels.gdn_flashinfer.maybe_build_flashinfer_checkpoint_plan",
++            checkpoint,
++        ), patch.dict(
++            REFERENCE_CHECKPOINT.__globals__, {"mamba_cache_chunk_size": lambda: 64}
++        ), patch.object(gdn_backend, "is_pin_memory_available", return_value=False):
++            target.init_forward_metadata(copy.deepcopy(original))
++        outputs.append(target.forward_metadata)
++        calls[reference] = nonzero.call_count
++    equal_metadata(*outputs)
++    assert calls[False] == calls[True] and calls[False] > 0
++
++
++@pytest.mark.parametrize("mode", (
++    ForwardMode.DECODE, ForwardMode.MIXED, ForwardMode.TARGET_VERIFY,
++    ForwardMode.DRAFT_EXTEND_V2, ForwardMode.SPLIT_PREFILL, ForwardMode.DLLM_EXTEND,
++))
++def test_nonstandard_modes_keep_original_mask_selection(mode):
++    data = batch(extend=[65], prefix=[4096], mask=[True], tracked=[65])
++    data.forward_mode = mode
++    target = backend(reference=False, size=1, chunk=64, checkpoints=False)
++    metadata = NS(has_mamba_track_mask=True)
++    original_nonzero = torch.Tensor.nonzero
++    calls = []
++
++    def count_nonzero(value, *args, **kwargs):
++        calls.append(value)
++        return original_nonzero(value, *args, **kwargs)
++
++    with patch.object(hybrid.MambaAttnBackendBase, "init_forward_metadata"), patch.object(
++        torch.Tensor, "nonzero", count_nonzero
++    ):
++        target.forward_metadata = metadata
++        target.init_forward_metadata(data)
++    assert len(calls) == 1
++    assert torch.equal(metadata.conv_states_mask_indices, data.mamba_track_indices)
 diff --git a/test/srt/test_beliefkv_host_eviction_observer.py b/test/srt/test_beliefkv_host_eviction_observer.py
 new file mode 100644
 index 0000000..ae52cd2

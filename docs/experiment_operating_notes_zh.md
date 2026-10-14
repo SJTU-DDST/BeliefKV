@@ -4,12 +4,19 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
-实际运行V57 predictive，2026-10-14 16:10:41 CST冷启动，
-冻结0fd9d13/3c13ad50/572109fe，launcher3811053、
-scheduler3811711；v511–v514绑定58份源码、真实服务和NUMA。
-V56完整两侧与后处理已于16:01:22自然结束，不能继续把V57
-登记写成待派发；旧等待器2985446和docs observer3165501均已
-在派发前核验终止。保持工作负载/工具180s/输出和截止预算。
+V57已于2026-10-14 18:47:37 CST自然完成全部156个workflow及
+后处理，156 completed、零incomplete。原执行0fd9d13/
+3c13ad50/572109fe保留，launcher3811053和scheduler3811711
+均已退出；HTML及workspace cleanup齐全。v535保留历史native
+对照的需求/版本差异；不得把平均JCT或完成率优势当独立策略验收。
+保持工作负载/工具180s/输出与截止预算及关闭的新凑批配置。
+
+下一候选v533/v534绑定GDN普通prefill mask行选择和FlashInfer
+checkpoint CPU元数据；437原生测试+53子检查、68启动检查通过。
+初次两轮fixture失败和修正完整保留。CPU API调用减少不证明GPU
+加速，短单请求CPU准备增加约20–37us也须报告。V58先predictive、
+后同引擎native，以便验证共用路径；不得热改已封存V57代码。
+启动器允许docs中的用户工作内容，未提交执行文件仍阻止部署。
 
 v515记录V56两侧各155 completed/1 incomplete，154个共同
 完成任务的平均JCT约-7.44%、完成吞吐约+2.35%，但实际输出
@@ -18,14 +25,12 @@ v515记录V56两侧各155 completed/1 incomplete，154个共同
 最新V57开发参考v516/v517版本不同；短prefill周转仍需优化，
 不因769010次逻辑查询等价或离线CPU约少30.2%宣布GPU收益。
 
-v519绑定实际kernel/page_first且无L3后端。零拷贝评估不得将
-page_first FULL D2H的有条件GPU打包说成不存在，也不能把
-CUDA stream计时总和当可直接节省的JCT。v518未绑定运行layout，
-相关layout决策以v519为准。先测局部中转/索引/重复搬运成本，
-不为这项评估启动额外GPU实验或替换通用算子框架。
-按事件维护逻辑状态仍须处理代际、计时器和预测刷新，不能据
-“状态未变”复用过时容量或跳过物理核验。新增prefill延迟凑批、
-最小槽延迟、mixed chunk、间隔调整仍关闭，既有PrefillAdder保留。
+v528将已停止V49的8份server/opportunity JSONL无损归档并完整
+tar比较：6.289GB→175.401MB。客户端、结果、计划和V50–V57
+raw证据保留；原目录提供恢复指针。随后V57正常workspace cleanup
+释放空间，不能把并发磁盘空闲变化全归于归档。
+最新3600–3900s分析见v530/v531，批次数相近不代表decode请求
+服务量相同。当前仍须检验预测时机、物理恢复、首次消费和重算。
 
 以下保留历史资格与执行记录；旧V57待派发及V56运行中描述
 不覆盖以上实际状态。

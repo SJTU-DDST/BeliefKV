@@ -2,11 +2,33 @@
 
 Status date: 2026-10-14.
 
-V57 predictive cold-started at2026-10-14 16:10:41 CST on frozen0fd9d13,
-patch3c13ad50 and engine572109fe. V511/V512 bind the actual target and
-launch; V513/V514 verify NUMA, all58 qualified sources and healthy service.
-Launcher3811053 and scheduler3811711 are live. Preserve existing PrefillAdder;
-new delay, minimum-slot delay, mixed chunk and interval changes stay disabled.
+Continue the original mean-workflow-JCT and completion-throughput goal through
+short-prefill turnover, lower control cost and useful FULL prefetch consumption.
+Preserve existing PrefillAdder; new delay, minimum-slot delay, mixed chunk
+and interval changes remain disabled.
+
+V57 naturally finished all156 workflows and postprocessing at2026-10-14
+18:47:37 CST:156 completed, zero incomplete. Frozen0fd9d13/
+3c13ad50/572109fe is retained; launcher3811053 and scheduler3811711
+are gone, with HTML and workspace cleanup complete. V535 reports paired
+mean JCT-5.78% across155 shared completions and completion rate+7.26%
+against V56 historical native, with11.73% less output work and5.93%
+lower token rate. This is not an isolated policy gain. Early next-request
+FULL reuse is69 JOIN events/1.587GB and155 tool events/10.690GB;
+JOIN last-ACK-to-service P90 remains19.201s.
+
+The next qualified cold candidate removes GDN normal-EXTEND device-mask
+nonzero and four repeated FlashInfer checkpoint metadata readbacks. Use the
+existing shape-matched immutable CPU snapshot for logical rows; physical
+slot values stay on the current device translation. Missing/mismatched
+snapshots and other modes preserve the original fallback. V527 passes437
+native tests plus53 subtests; V532 passes68 launch checks. V533/V534 bind
+patch ebdbc183 and engine91daa419. V529 preserves complete CPU metadata
+equality and about20–37us added short-single CPU preparation, not GPU gain.
+Cold V58 should run predictive first, then native on this same shared engine.
+Do not change workload, tool180s, output/deadline budgets or deferred batching.
+The launcher permits tracked/untracked docs edits while rejecting execution
+source changes; retain the user's working documentation.
 
 V56 completed both arms and postprocessing naturally at16:01:22.
 V515 retains155 completed/1 incomplete per arm and154 shared completions.
@@ -16,7 +38,7 @@ lower. These observations do not isolate migration-policy gains. Retain
 different incomplete identities, quality/fairness/recomputation outcomes
 and pending repeated matched controls. V56 native is a development reference.
 
-V516/V517 bind the newest complete V57 600–900s development window.
+V516/V517 retain the V57 600–900s development window.
 Across56/65 short samples, run_batch P50 is44.522/42.150ms,
 launch-to-result56.896/50.291ms and run-return-to-result-start9.757/
 4.273ms. Tool-prefetch self-wall is7.327s and all instrumented self-wall
@@ -25,14 +47,13 @@ and the public engine differ; separate medians are not causal accounting.
 Prioritize remaining control work and consumption rather than assuming
 the qualified logical caches have already improved online throughput.
 
-V518/V519 assess zero-copy and stateful/finite-state operator ideas against
-the deployed kernel/page_first path without L3 storage. Native registered
-Host pools, async streams and layer dependencies are already present.
-FULL page_first writeback can still use GPU packing buffers; eliminating
-packing needs complete-path measurement and may benefit native equally.
-Defer mapped-host attention and a general operator framework. Continue
-bounded event-driven logical maintenance, retaining current physical checks,
-prediction refresh, timers and admission constraints.
+V530/V531 add the complete3600–3900s window. Short-prefill launch-to-result
+P50 is60.271/58.199ms and run-return-to-result-start7.613/4.419ms.
+Decode request steps336229/373544 differ despite8581/8583 batches.
+V522 records206 inclusive GDN mask samples among1831 active main-thread
+samples,205 at the leaf; retain109 sampling errors. Active stacks and
+independent phase medians do not measure removable CPU or CUDA savings.
+Keep current physical checks, prediction refresh and admission constraints.
 
 The deployed candidate updates wait membership from tracked graph deltas,
 invalidating only changed member groups and native bindings. Tool insertion

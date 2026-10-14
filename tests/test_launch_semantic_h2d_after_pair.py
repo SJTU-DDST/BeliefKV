@@ -198,6 +198,31 @@ def _frozen_checkout(tmp_path):
     return repo, previous, revision
 
 
+def test_launch_preserves_tracked_and_untracked_document_edits(tmp_path):
+    repo, _, _ = _frozen_checkout(tmp_path)
+    docs = repo / "docs"
+    docs.mkdir()
+    tracked = docs / "report.md"
+    tracked.write_text("original\n")
+    subprocess.run(["git", "add", "docs/report.md"], cwd=repo, check=True)
+    subprocess.run(["git", "commit", "-qm", "report"], cwd=repo, check=True)
+    tracked.write_text("user edits\n")
+    untracked = docs / "presentation.pptx"
+    untracked.write_bytes(b"user presentation")
+    launcher._require_clean(repo)
+    assert tracked.read_text() == "user edits\n"
+    assert untracked.read_bytes() == b"user presentation"
+
+
+@pytest.mark.parametrize("tracked", (False, True))
+def test_launch_still_rejects_uncommitted_execution_source(tmp_path, tracked):
+    repo, _, _ = _frozen_checkout(tmp_path)
+    path = repo / ("runtime.py" if tracked else "new_runtime.py")
+    path.write_text("VERSION = 3\n")
+    with pytest.raises(ValueError, match="checkout changed"):
+        launcher._require_clean(repo)
+
+
 def test_development_verifies_retained_execution_after_repo_has_advanced(tmp_path):
     repo, previous, revision = _frozen_checkout(tmp_path)
     root, verification = launcher.verify_previous_execution(

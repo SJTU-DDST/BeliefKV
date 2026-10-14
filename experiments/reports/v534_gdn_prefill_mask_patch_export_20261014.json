@@ -1,0 +1,62 @@
+{
+  "status": "canonical_patch_matches_isolated_tested_engine",
+  "exported_at_local": "2026-10-14T18:48:21.296317+08:00",
+  "baseline_tree": "572109fe8e4e301c395f218bf6b509afb0425ae7",
+  "actual_tree": "91daa419276fecd60398d056a316f567e096cfed",
+  "old_patch_sha256": "3c13ad50342d6a6e1b6e9c9c9f91edde322398d7cdee8bc4ea26be6e802ecfd5",
+  "engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "ebdbc183d95b925e40064c9d2ca4611f5f22c1797a3c926e994fcf4a90403417",
+    "expected_tree": "91daa419276fecd60398d056a316f567e096cfed",
+    "actual_tree": "91daa419276fecd60398d056a316f567e096cfed",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_execution_handoff.py",
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_gdn_prefill_mask.py",
+      "test/srt/test_beliefkv_host_eviction_observer.py",
+      "test/srt/test_beliefkv_latest_mamba_state.py",
+      "test/srt/test_beliefkv_layer_wait_probe.py",
+      "test/srt/test_beliefkv_lifecycle.py",
+      "test/srt/test_beliefkv_mamba_request_mapping.py",
+      "test/srt/test_beliefkv_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_slots.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_scheduler_hook.py",
+      "test/srt/test_beliefkv_session_anchors.py",
+      "test/srt/test_beliefkv_shadow_dispatch.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py",
+      "test/srt/test_beliefkv_transfer_receipts.py",
+      "test/srt/test_beliefkv_unified_ack.py"
+    ]
+  },
+  "changed_engine_paths": [
+    "python/sglang/srt/layers/attention/linear/gdn_backend.py",
+    "python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py",
+    "test/srt/test_beliefkv_gdn_prefill_mask.py"
+  ],
+  "changed_engine_sha256": {
+    "python/sglang/srt/layers/attention/linear/gdn_backend.py": "a3598f2870f0788af5306fc7b49b4c9eb1967e336f4579b4f5d0725c7c2e4749",
+    "python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py": "dd7c1fb1fcf6b580e835de91a7ba363e043081c1d721ecfb74ff3609909b8267",
+    "test/srt/test_beliefkv_gdn_prefill_mask.py": "c57b137c7206a0df5cca30be57f1d5bdacb794166b8b615c723cc5c1dd0da21b"
+  },
+  "live_engine_unchanged": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "3c13ad50342d6a6e1b6e9c9c9f91edde322398d7cdee8bc4ea26be6e802ecfd5",
+    "expected_tree": "572109fe8e4e301c395f218bf6b509afb0425ae7",
+    "actual_tree": "572109fe8e4e301c395f218bf6b509afb0425ae7",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_mamba_request_mapping.py",
+      "test/srt/test_beliefkv_prefill_track_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_slots.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "helper_sha256": "b9aeec94ee308fbb05600d97b5e73a6919c939ca411ac6c3c9d2659226a2bcce"
+}

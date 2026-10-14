@@ -4,6 +4,22 @@ Superseded, interrupted, and debugging-only raw runs are moved here rather than
 deleted. The archive is local-only and excluded from Git; this README is the
 tracked inventory.
 
+## 2026-10-14 V49 Server Trace Recovery
+
+The stopped V49 run's eight server/opportunity JSONL files passed complete
+GNU tar comparison before source cleanup:6,289,029,356 source bytes became
+175,401,071 archive bytes. Clients, outcomes, frozen plan, summaries, HTML
+and cleanup receipt remain in raw; V29 native and V50-V57 are unchanged.
+The archive is`experiments/archive/20261014/v49_superseded_server_traces.tar.zst`;
+the original run contains`SERVER_TRACES_ARCHIVED.md` with the exact hash and
+restore command. Receipt:
+`experiments/reports/v528_v49_server_trace_archive_20261014.json`.
+
+Process ownership, open files, containers, plan and source inventory were
+verified before and after compression. One nice19 worker with idle I/O ran
+after V57 GPU collection finished; its normal workspace cleanup subsequently
+freed additional space. Do not attribute all disk-headroom change to archival.
+
 ## 2026-10-14 V30-V39 server trace recovery
 
 Nine stopped superseded runs, V30/V31/V33-V39, retain their client traces,

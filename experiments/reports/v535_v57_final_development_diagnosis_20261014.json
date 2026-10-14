@@ -1,0 +1,240 @@
+{
+  "status": "completed_latest_development_diagnosis_not_isolated_policy_acceptance",
+  "observed_at_local": "2026-10-14T18:50:53.655023+08:00",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v57",
+  "source_bindings": {
+    "native_reference": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v57/native_reference_comparison.json",
+      "sha256": "4e7ea37723dbf520fe74798dc3199102c8b9e4b9fa4e8c639c83c48766b8b7e6"
+    },
+    "lifecycle": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v57/predictive_h2d/prefetch_lifecycle.json",
+      "sha256": "5554e769a1d7cb7db2fe91cb749dd3a08cbc06e72ee3a73c8e9e58b1717b64a6"
+    },
+    "busy_1800_2100": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v520_v57_busy_1800_2100_20261014.json",
+      "sha256": "7808171f52d09b61be8139c111bebef634eafce5cbfef398e69bdd8f60217216"
+    },
+    "phases_1800_2100": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v521_v57_prefill_phases_1800_2100_20261014.json",
+      "sha256": "2b3c506bb76637b81d80a011a34ccbb2f912d65efcea983bd6106700adf0f35c"
+    },
+    "busy_3600_3900": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v530_v57_busy_3600_3900_20261014.json",
+      "sha256": "f433c09383654dbea0cc3c36eb729439de39cf3dd395d26afb35f1e90656a268"
+    },
+    "phases_3600_3900": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v531_v57_prefill_phases_3600_3900_20261014.json",
+      "sha256": "1b3fb9472bb7c0939ab79ce75caadc8ff73e1d7d4f09783c42b720afffc96a1d"
+    },
+    "active_stack": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v522_v57_active_stack_20261014.speedscope.json",
+      "sha256": "042d4726fb162bd7702eed3bcc51bdd23aad465472cc01d228de8199b950837b"
+    }
+  },
+  "arms": {
+    "predictive_h2d": {
+      "outcomes": {
+        "completed": 156
+      },
+      "collection_duration_seconds": 8955.683848511428,
+      "completed_per_hour": 62.70877908372643,
+      "jct_mean_seconds": 2509.092028938819,
+      "jct_p50_seconds": 2127.0560988443904,
+      "llm_requests": 44600,
+      "tool_calls": 44186,
+      "output_tokens": 8135205,
+      "input_tokens": 970784294,
+      "output_tokens_per_second": 908.3845675673551,
+      "multi_round_workflows": 31
+    },
+    "native": {
+      "outcomes": {
+        "completed": 155,
+        "incomplete": 1
+      },
+      "collection_duration_seconds": 9544.041854777373,
+      "completed_per_hour": 58.465795570739985,
+      "jct_mean_seconds": 2671.8706763638365,
+      "jct_p50_seconds": 2238.3749426389113,
+      "llm_requests": 47136,
+      "tool_calls": 46768,
+      "output_tokens": 9216444,
+      "input_tokens": 1035596613,
+      "output_tokens_per_second": 965.6751447906329,
+      "multi_round_workflows": 31
+    }
+  },
+  "paired_completed": {
+    "left_arm": "predictive_h2d",
+    "right_arm": "native",
+    "shared_instances": 156,
+    "shared_outcome_pairs": {
+      "completed/completed": 155,
+      "completed/incomplete": 1
+    },
+    "paired_completed_workflows": 155,
+    "paired_completed_with_explicit_jct_eligibility": 155,
+    "unpaired_completed_instances": {
+      "left": [
+        "django__django-12273"
+      ],
+      "right": []
+    },
+    "duration_seconds": {
+      "left": {
+        "mean": 2517.549578628232,
+        "p50": 2135.5611628917977,
+        "p95": 5845.3023305925535
+      },
+      "right": {
+        "mean": 2671.8706763638365,
+        "p50": 2238.3749426389113,
+        "p95": 6418.177176765064
+      }
+    },
+    "mean_delta_seconds": -154.32109773560398,
+    "p50_delta_seconds": 55.12706856522709,
+    "p95_delta_seconds": 2254.1115229164234,
+    "left_shorter_workflows": 71,
+    "right_shorter_workflows": 84,
+    "tied_workflows": 0,
+    "semantics": "The same instances completed in both arms; negative deltas favor left. Unpaired completions and shared outcome differences remain explicit. Eligibility flags are reported without silently changing this outcome-based cohort. Request, tool and delegation counts describe realized demand; matching tasks does not match execution traces or establish causal speedup."
+  },
+  "relative_changes": {
+    "paired_mean_jct": -0.05775769729454894,
+    "completed_per_hour": 0.07257206494099089,
+    "output_tokens_per_second": -0.05932696676758609,
+    "output_tokens": -0.11731628814757622,
+    "llm_requests": -0.053801765105227384,
+    "tool_calls": -0.05520868970236059
+  },
+  "historical_native_scope": {
+    "kind": "historical_native_reference",
+    "selection": "fixed reference recorded in predictive collection plan",
+    "reference_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56",
+    "reference_code_commit": "661ed45906a203ae87a9cb52b23542059e5085a8",
+    "current_code_commit": "0fd9d1304d1e371fd211e643a7dc666b3cb3216e",
+    "reference_plan_sha256": "70d74e0dc47608bc8d627af009ca1eaf14e0eba33befa9d40c190c8ce2ab5d26",
+    "same_engine_patch": false,
+    "matched_configuration_fields": [
+      "workload_sha256",
+      "root_count",
+      "arrival_schedule",
+      "server_running",
+      "context_tokens",
+      "max_completion_tokens",
+      "host_gb",
+      "host_split",
+      "mamba_full_memory_ratio",
+      "mem_fraction_static",
+      "native_write_policy",
+      "fanout_profile",
+      "sampling_seed",
+      "temperature",
+      "sandbox_command_timeout_s",
+      "activation_wall_clock_seconds",
+      "child_final_report_shadow",
+      "host_numa_node",
+      "host_numa_memory_policy"
+    ],
+    "configuration_differences": {},
+    "unrecorded_configuration_fields": [],
+    "formal_paired_evidence": false,
+    "semantics": "Development comparison against a preselected historical native run; task pairing does not match live trajectories. Patch equality alone does not prove every native/client path unchanged.",
+    "reused_cached_native_metrics": true
+  },
+  "closed_phase_windows": {
+    "1800_2100": {
+      "same_version": false,
+      "arms": {
+        "predictive_h2d": {
+          "decode_request_steps": 362740,
+          "short_prefill_samples": 61,
+          "run_batch_p50_ms": 50.480739,
+          "run_return_to_result_start_p50_ms": 8.592795372009277,
+          "launch_to_result_p50_ms": 64.5584888458252
+        },
+        "native": {
+          "decode_request_steps": 357282,
+          "short_prefill_samples": 67,
+          "run_batch_p50_ms": 49.621717,
+          "run_return_to_result_start_p50_ms": 4.2216691970825195,
+          "launch_to_result_p50_ms": 58.000779151916504
+        }
+      },
+      "predictive_python_self_ms": 28438.263173000018
+    },
+    "3600_3900": {
+      "same_version": false,
+      "arms": {
+        "predictive_h2d": {
+          "decode_request_steps": 336229,
+          "short_prefill_samples": 52,
+          "run_batch_p50_ms": 48.0957975,
+          "run_return_to_result_start_p50_ms": 7.6131815910339355,
+          "launch_to_result_p50_ms": 60.27080202102661
+        },
+        "native": {
+          "decode_request_steps": 373544,
+          "short_prefill_samples": 65,
+          "run_batch_p50_ms": 50.226102,
+          "run_return_to_result_start_p50_ms": 4.419301986694336,
+          "launch_to_result_p50_ms": 58.19883632659912
+        }
+      },
+      "predictive_python_self_ms": 20460.470106999994
+    }
+  },
+  "confirmed_preboundary_next_request_full_reuse": {
+    "join_ticket": {
+      "observed_events": 195,
+      "events_with_early_reused_full": 69,
+      "early_started_and_reused_full_bytes": 1586954240,
+      "last_ack_to_first_service_ms": {
+        "count": 88,
+        "p50": 3373.1038818359375,
+        "p90": 19200.852294921875,
+        "max": 37417.349365234375
+      }
+    },
+    "tool_wait": {
+      "observed_events": 24860,
+      "events_with_early_reused_full": 155,
+      "early_started_and_reused_full_bytes": 10689720320,
+      "last_ack_to_first_service_ms": {
+        "count": 185,
+        "p50": 616.02587890625,
+        "p90": 15766.942236328123,
+        "max": 189814.91357421875
+      }
+    }
+  },
+  "prepare_observation": {
+    "prepare_issued_commands": 1536,
+    "prepare_commands_with_observed_restore": 164,
+    "prepare_commands_without_observed_restore": 1372
+  },
+  "active_stack_evidence": {
+    "method": "py-spy record --nonblocking --pid3811711 --rate99 --duration20 --threads --format speedscope",
+    "all_thread_samples": 1858,
+    "main_thread_samples": 1831,
+    "recorded_sampling_errors": 109,
+    "main_thread_samples_in_gdn_mask_nonzero": 206,
+    "semantics": "Observed active stacks only, not duration, CPU attribution, GIL ownership, per-prefill frequency or JCT savings."
+  },
+  "next_priority": [
+    "Cold-observe the qualified GDN mask/checkpoint fix, with same-engine native comparison because this is a shared path.",
+    "Continue reducing tool planning and physical-closure observation costs, preserving fresh native checks and action coverage.",
+    "Resolve JOIN first-consumption tails and residual capacity/timing gaps; independent waits and FULL bytes remain the evidence unit."
+  ],
+  "helper_sha256": "802d8ff6aabc98b79f44ad6cd8b28821e347ce8d2777eaf7532898a161542145",
+  "limitations": [
+    "Both workload trajectories and engine revisions differ from the historical native reference.",
+    "All156 V57 completions remain explicit; paired JCT uses155 shared completions, retaining the unmatched completed workflow.",
+    "Lower realized output work and requests confound JCT/completion-rate observations; token rate remains lower.",
+    "Independent phase medians are not per-request causal accounting and clipped worker spans are not complete forward.",
+    "PREPARE without an observed restore is not automatically wasted; later allocations and sharing are not counterfactual measurements.",
+    "Formal repeated controls, ablations, quality, fairness, tail and useful recomputation acceptance remain pending."
+  ]
+}

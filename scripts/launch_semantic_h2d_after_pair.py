@@ -91,7 +91,10 @@ def wait_for_processes(identities: dict[int, tuple | None]) -> None:
 
 
 def _require_clean(root: Path) -> None:
-    tracked = git(root, "status", "--porcelain", "--untracked-files=no").strip()
+    tracked = git(
+        root, "status", "--porcelain", "--untracked-files=no", "--",
+        ".", ":(exclude)docs/",
+    ).strip()
     untracked = git(
         root, "ls-files", "--others", "--exclude-standard", "--",
         ".", ":(exclude)docs/",
