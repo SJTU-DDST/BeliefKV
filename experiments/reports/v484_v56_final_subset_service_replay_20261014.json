@@ -1,0 +1,67 @@
+{
+  "status": "causal_subset_cost_replay_not_native_identity_or_action_replay",
+  "observed_at_local": "2026-10-14T13:26:53.882322+08:00",
+  "collection_revision": "661ed45906a203ae87a9cb52b23542059e5085a8",
+  "baseline_sources": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "7820de3e7555a6e73f6929dfca430fd5cba6c5c6519823e7b63661a04c601d41",
+    "beliefkv/runtime/sglang_v0520_physical.py": "f53b15523badf3f31123f14300b3fda60a503d3c0cf1cfbf71df19713e112ec5",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "632dd5f40defe0980eb6e51cb8046b11f0831c4a6006c85d0152ae3b8f238c0f"
+  },
+  "sealed_report": "/home/longhao/experiment/BeliefKV/experiments/reports/v482_v56_final_wait_prefetch_20261014.json.gz",
+  "sealed_report_sha256": "6fce0da13a6a7c735ecb06f32421d4c0bcdc0031fd346cda54ccd66a5b65fe29",
+  "plan_sha256": "70d74e0dc47608bc8d627af009ca1eaf14e0eba33befa9d40c190c8ce2ab5d26",
+  "source_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/opportunities/admission_opportunities.jsonl": {
+      "observed_at_local": "2026-10-14T13:22:00.856309+08:00",
+      "device": 66306,
+      "inode": 139863839,
+      "observed_bytes": 1381211783,
+      "complete_prefix_bytes": 1381211783,
+      "complete_prefix_sha256": "fa2ab4709d63c3840b0a9de10ec498af433f7ed679d18fe5b2315e243202b7af"
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v56/predictive_h2d/server/transfer_telemetry.jsonl": {
+      "observed_at_local": "2026-10-14T13:22:17.652529+08:00",
+      "device": 66306,
+      "inode": 139863829,
+      "observed_bytes": 54997226,
+      "complete_prefix_bytes": 54997226,
+      "complete_prefix_sha256": "be267ed8de64fade4a955d3d307af6d213cbe050e6e3c9a5758cbdf6c3bc182a"
+    }
+  },
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "612e9e85c5283d69315f6f280f36950eecb12a8bfdc942c22926a087e3636b82",
+    "beliefkv/runtime/native_transfer_policy.py": "3dd8ebfcace6e3b4a1cee0abf68f8ea8baa9f7fc7d82cb6b142a34b7b24c5ff3",
+    "beliefkv/runtime/native_transfer_service.py": "7bd8f754f6aba88360afa33d2d33625f572142d8233feaa242d8060ff925525f",
+    "scripts/replay_wait_prefetch_subset_service.py": "eff08432ab92be55e9319d78eedcccc1e2d00fc201a3166de321fa562483c736"
+  },
+  "counts": {
+    "queries": 708,
+    "recorded_selection_same_visible_scope_within_2s": 617,
+    "direct_runtime_estimates_identical": 708,
+    "new_cost_supported_queries": 617
+  },
+  "receipts_fed_per_runtime": 69174,
+  "new_cost_supported_independent_waits": 21,
+  "new_cost_supported_waits_by_source": {
+    "tool_wait": 5,
+    "join_ticket": 16
+  },
+  "new_cost_supported_queries_service_ms": {
+    "count": 617,
+    "p50": 85.60186297660987,
+    "p90": 85.60228964327654,
+    "max": 102.66087297350168
+  },
+  "details": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v484_v56_final_subset_service_replay_20261014.rows.json.gz",
+  "details_sha256": "92df8407f98e9381fafe0965963ecfcc27c3c291dd9c443d4ac633dadb5ed4f7",
+  "limitations": [
+    "Only receipts completed strictly before each query feed the actual runtime receipt handler.",
+    "Clock order approximates scheduler callback/cache order; future and in-flight outcomes are excluded.",
+    "All original direct estimates stay identical; the estimator and bounded histories are unchanged.",
+    "A <=2s same-visible-scope selection exercises cost fallback; missing native leaf generation stays unknown.",
+    "Actual runtime still checks key, checkpoint generation, reduced per-pool payload, latest forecast and native capacity.",
+    "A larger selected payload's measured cost is a planning allowance, not a guaranteed queue/DMA upper bound.",
+    "Rejected smaller payloads have no executed-transfer labels; support is not timing accuracy or newly executed prefetch.",
+    "No physical action, GPU experiment, online policy acceptance or JCT/throughput benefit is inferred."
+  ]
+}

@@ -204,6 +204,46 @@ class _ChildFinalStage:
     semantic_only: bool = False
 
 
+@dataclass(frozen=True)
+class _WaitPrefetchServiceShape:
+    key: PrefillCandidateKey
+    leaf_node_id: int
+    leaf_creation_time: int | float
+    full_tokens: int
+    mamba_slots: int
+
+    @classmethod
+    def from_opportunity(
+        cls, opportunity: SessionH2DOpportunity,
+    ) -> _WaitPrefetchServiceShape | None:
+        step = opportunity.step
+        full = getattr(opportunity, "required_full_tokens", None)
+        mamba = getattr(opportunity, "required_mamba_slots", None)
+        if (
+            step is None or type(full) is not int or type(mamba) is not int
+            or min(full, mamba) < 0 or full + mamba == 0
+        ):
+            return None
+        return cls(
+            step.key, step.leaf_node_id, step.leaf_creation_time,
+            full, mamba,
+        )
+
+    def contains(self, opportunity: SessionH2DOpportunity) -> bool:
+        step = opportunity.step
+        return bool(
+            step is not None and step.key == self.key
+            and (step.leaf_node_id, step.leaf_creation_time)
+            == (self.leaf_node_id, self.leaf_creation_time)
+            and 0 <= opportunity.required_full_tokens <= self.full_tokens
+            and 0 <= opportunity.required_mamba_slots <= self.mamba_slots
+            and (
+                opportunity.required_full_tokens < self.full_tokens
+                or opportunity.required_mamba_slots < self.mamba_slots
+            )
+        )
+
+
 @dataclass
 class _ToolPrefetchTicket:
     key: PrefillCandidateKey
@@ -212,6 +252,7 @@ class _ToolPrefetchTicket:
     drained: bool = False
     start_window_ms: float | None = None
     command_ids: tuple[str, ...] = ()
+    service_shape: _WaitPrefetchServiceShape | None = None
 
 
 @dataclass(frozen=True)
@@ -2844,6 +2885,10 @@ class NativeAdmissionRuntime:
         # rechecks the current native prefix, capacity and timing.
         if observation is None:
             observation = self._wait_prefetch_opportunity(ticket.key)
+        service_shape = (
+            _WaitPrefetchServiceShape.from_opportunity(observation)
+            if observation is not None else None
+        )
         if (
             observation is not None and observation.step is not None
             and callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
@@ -2911,7 +2956,7 @@ class NativeAdmissionRuntime:
             return
         commands = self._issue_wait_prefetch_steps(
             ticket.key, getattr(observation, "steps", ()) or (step,),
-            source="join_ticket",
+            source="join_ticket", service_shape=service_shape,
         )
         if commands:
             ticket.command_id = commands[-1]
@@ -4049,17 +4094,25 @@ class NativeAdmissionRuntime:
             "predicted_remaining_ms": remaining_ms,
             "start_window_ms": window.horizon_ms if window else None,
             "h2d_p90_ms": window.service_ms if window else None,
+            **({
+                "h2d_service_ceiling_bytes": window.service_ceiling_bytes,
+                "h2d_service_ceiling_shape": window.service_ceiling_shape,
+            } if window is not None and window.service_ceiling_bytes is not None else {}),
             "prediction_early_ms": window.prediction_early_ms if window else None,
             "scope": "bounded reusable checkpoint plan; not a reservation or oracle",
         })
 
     def _wait_prefetch_timing_valid(
         self, key: PrefillCandidateKey, opportunity: SessionH2DOpportunity, source: str,
+        *, service_shape: _WaitPrefetchServiceShape | None = None,
     ) -> bool:
         ticket = self._join_ticket if source == "join_ticket" else self._tool_ticket
         if source == "join_ticket" and ticket is not None and ticket.phase == "confirmed":
             return True
-        window = self._h2d_start_window(opportunity)
+        window = (
+            self._h2d_start_window(opportunity, service_shape=service_shape)
+            if service_shape is not None else self._h2d_start_window(opportunity)
+        )
         remaining = None
         if window is not None and source == "tool_wait":
             hint = self._live_tool_hint(key)
@@ -4126,6 +4179,11 @@ class NativeAdmissionRuntime:
                     else "service_progress_unavailable" if remaining is None
                     else "before_start_window"
                 ), remaining_ms=remaining, window=window,
+            )
+        elif window.service_ceiling_bytes is not None:
+            self._record_wait_prefetch_plan(
+                source, key, opportunity, reason="supported_selected_payload_subset",
+                remaining_ms=remaining, window=window,
             )
         return valid
 
@@ -5255,6 +5313,7 @@ class NativeAdmissionRuntime:
                     remaining_ms=remaining,
                 )
                 continue
+            service_shape = _WaitPrefetchServiceShape.from_opportunity(opportunity)
             if opportunity.fits_current_free_lists is not True:
                 budget = None
                 opportunity = self._reclaim_wait_prefetch_capacity(
@@ -5277,7 +5336,10 @@ class NativeAdmissionRuntime:
                         remaining_ms=remaining,
                     )
                     continue
-                window = self._h2d_start_window(opportunity)
+                window = (
+                    self._h2d_start_window(opportunity, service_shape=service_shape)
+                    if service_shape is not None else self._h2d_start_window(opportunity)
+                )
                 remaining = self._tool_prefetch_remaining(
                     hint, .5, now_ms=time.monotonic() * 1000.,
                 )
@@ -5296,6 +5358,7 @@ class NativeAdmissionRuntime:
             )
             self._tool_ticket = _ToolPrefetchTicket(
                 hint.key, hint.invocation_revision_ts_ms, start_window_ms=horizon,
+                service_shape=service_shape,
             )
             self.counts["tool_prefetch_window_entered"] += 1
             if self._opportunity_writer is not None:
@@ -5414,6 +5477,7 @@ class NativeAdmissionRuntime:
 
     def _h2d_start_window(
         self, opportunity: SessionH2DOpportunity,
+        *, service_shape: _WaitPrefetchServiceShape | None = None,
     ) -> TransferStartWindow | None:
         try:
             entries = self._native_cache.cache_controller.mem_pool_host.entry_map
@@ -5428,6 +5492,20 @@ class NativeAdmissionRuntime:
                 opportunity.required_full_tokens, opportunity.required_mamba_slots,
             ),
         )
+        ceiling_bytes, ceiling_shape = None, None
+        if estimate is None and service_shape is not None and service_shape.contains(opportunity):
+            # Reclaim can shrink a selected burst below measured size support.
+            # Retain the current cost of its larger same-checkpoint payload,
+            # without scaling polling overhead or caching a physical plan.
+            ceiling_bytes = (
+                service_shape.full_tokens * entries["kv"].host_pool.size_per_token
+                + service_shape.mamba_slots * entries["mamba"].host_pool.size_per_token
+            )
+            ceiling_shape = pool_shape(service_shape.full_tokens, service_shape.mamba_slots)
+            estimate = self._estimate_h2d_service(ceiling_bytes, shape=ceiling_shape)
+            self.counts["wait_prefetch_subset_service_queries"] += 1
+            if estimate is not None:
+                self.counts["wait_prefetch_subset_service_supported"] += 1
         if estimate is None:
             return None
         prediction_early_ms = 0.
@@ -5440,10 +5518,17 @@ class NativeAdmissionRuntime:
                 prediction_early_ms = max(0., center - lower)
         elif opportunity.step is not None:
             prediction_early_ms = self._join_work_prediction_early_ms(opportunity.step.key)
-        return transfer_start_window(
+        window = transfer_start_window(
             estimate, max_lead_ms=self.prefetch_lead_ms,
             observation_spacing_ms=SEMANTIC_FRAME_INTERVAL_MS,
             prediction_early_ms=prediction_early_ms,
+        )
+        return (
+            replace(
+                window, service_ceiling_bytes=ceiling_bytes,
+                service_ceiling_shape=ceiling_shape,
+            )
+            if window is not None and ceiling_bytes is not None else window
         )
 
     def _join_work_prediction_early_ms(self, key: PrefillCandidateKey) -> float:
@@ -5496,11 +5581,16 @@ class NativeAdmissionRuntime:
         if (
             opportunity is not None and opportunity.step is not None
             and callable(getattr(self._native_cache, "prefetch_gpu_session_nodes", None))
-            and not self._wait_prefetch_timing_valid(ticket.key, opportunity, "tool_wait")
+            and not self._wait_prefetch_timing_valid(
+                ticket.key, opportunity, "tool_wait",
+                service_shape=ticket.service_shape,
+            )
         ):
             self._tool_ticket = None
             return
         if opportunity is not None and opportunity.step is not None:
+            if ticket.service_shape is None:
+                ticket.service_shape = _WaitPrefetchServiceShape.from_opportunity(opportunity)
             opportunity = self._reclaim_wait_prefetch_capacity(
                 ticket.key, opportunity, source="tool_wait",
             )
@@ -5517,7 +5607,7 @@ class NativeAdmissionRuntime:
             return
         commands = self._issue_wait_prefetch_steps(
             ticket.key, getattr(opportunity, "steps", ()) or (step,),
-            source="tool_wait",
+            source="tool_wait", service_shape=ticket.service_shape,
         )
         if commands:
             self._remember_tool_prefetch_survival(hint)
@@ -5812,6 +5902,7 @@ class NativeAdmissionRuntime:
     def _issue_wait_prefetch_steps(
         self, key: PrefillCandidateKey, steps: tuple[PrefetchLoadStep, ...], *,
         source: str,
+        service_shape: _WaitPrefetchServiceShape | None = None,
     ) -> tuple[str, ...]:
         cache = self._native_cache
         if not callable(getattr(cache, "prefetch_gpu_session_nodes", None)):
@@ -5894,7 +5985,9 @@ class NativeAdmissionRuntime:
                 required_mamba_slots=fresh.required_mamba_slots - dropped_mamba,
                 deferred_mamba_slots=fresh.deferred_mamba_slots + dropped_mamba,
             )
-        if not self._wait_prefetch_timing_valid(key, fresh, source):
+        if not self._wait_prefetch_timing_valid(
+            key, fresh, source, service_shape=service_shape,
+        ):
             if source == "join_ticket":
                 self._discard_join_ticket("enqueue_start_window_changed")
             return ()

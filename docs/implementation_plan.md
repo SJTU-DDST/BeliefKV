@@ -7,12 +7,14 @@ Remove23:59 automatic stopping and the old06:00 resume registration.
 Cold launches and existing runs now depend on actual resource availability,
 without a daily blocked interval. Historical cutoff evidence stays intact.
 
-V56 is running on frozen661ed45, patchb8e7942c, enginec916d585, with
-predictive first and one same-version native reference next. V451 is the
+V56 predictive finished naturally; same-version native is running on
+frozen661ed45, patchb8e7942c, enginec916d585. V451 is the
 actual registration; V450 is a preserved argparse failure before dispatch.
 V453 validates all50 source hashes, HTTP service and fixed capacities.
-V474 observes153 completed,1 incomplete and2 unknown live workflows;
-the second wave has arrived. Preserve the workload and budgets. V55
+Final predictive has155 completed and1 incomplete across all156 terminal
+records, duration9325.121s,29 multi-spawn workflows and191 JOINs. HTML
+is complete. Native startup at13:18:38 verifies scheduler1616628 and
+unchanged48 slots/context131072/disabled new batching. Preserve budgets. V55
 finished postprocessing at10:20:55 with154 completed and2 incomplete;
 retain the two root output truncations and all156 terminal records.
 
@@ -57,6 +59,20 @@ repeated prose, returned children, satisfied JOIN and unexpired deadline.
 Its earlier test-analyst graph hard-budget finalization is a separate event.
 Retain both facts and frozen caps.
 
+V482 seals the final predictive traces: confirmed early FULL remains
+69 JOIN waits/1.502GB and171 tool waits/10.881GB. The isolated candidate
+fixes a measured selection-to-enqueue gap: reclaim shrinks a supported
+FULL+Mamba burst to a small FULL-only prefix, whose direct service estimate
+is unsupported. Only a strictly reduced per-pool payload at the same
+key/checkpoint may use the current larger selected payload's cost as a
+planning allowance. Direct estimates, latest forecast, EOS/tool and native
+identity/prefix/capacity/transaction checks remain authoritative.
+V479/V484 cost replay preserves all708 direct estimates and adds support
+for617 queries across16 JOIN/5 tool waits; this is not action replay because
+the log omits native leaf generation. V480 passes781 runtime checks.
+V481 records+0.162us common supported-window median CPU and+7.306us on
+the new fallback. V483/V485 bind the isolated source; GPU gains are unknown.
+
 Next actions:
 
 1. Finish the existing V56 predictive→native pair with identical engine,
@@ -72,10 +88,11 @@ Next actions:
    plus29 subtests pass, with both the initial empty-fixture rejection
    and final checks retained. V462's CPU medians improve1–7us, but the
    48-request lazy mean regresses19.1us. Cold GPU benefit is unknown.
-   V475/V476 register frozen0bd5664/3c13ad50/572109fe, launcher1578177,
-   for predictive-first cold observation after the complete V56 pair and
-   postprocessing. No V57 run directory exists at registration. Deployment
-   must not alter either V56 arm; the V57 launch state is authoritative.
+   Arrange predictive-first cold observation after the complete V56 pair
+   and postprocessing; deployment must not alter either existing V56 arm.
+   The corresponding V57 launch state is authoritative for registration.
+   Before dispatch, preserve/supersede the old0bd5664 waiter with the newly
+   qualified subset-timing candidate; never modify the queued frozen checkout.
    V465 separately records the revoked non-execution launch wait; all49
    other prior qualified sources and the live V56 engine remain unchanged.
 3. Use the same-version phases to select the next bottleneck. V459's

@@ -1,0 +1,64 @@
+{
+  "status": "cpu_window_fixture_not_scheduler_or_gpu_gain",
+  "baseline_revision": "661ed45906a203ae87a9cb52b23542059e5085a8",
+  "baseline_sources": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "7820de3e7555a6e73f6929dfca430fd5cba6c5c6519823e7b63661a04c601d41",
+    "beliefkv/runtime/sglang_v0520_physical.py": "f53b15523badf3f31123f14300b3fda60a503d3c0cf1cfbf71df19713e112ec5",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "632dd5f40defe0980eb6e51cb8046b11f0831c4a6006c85d0152ae3b8f238c0f"
+  },
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "612e9e85c5283d69315f6f280f36950eecb12a8bfdc942c22926a087e3636b82",
+    "beliefkv/runtime/native_transfer_policy.py": "3dd8ebfcace6e3b4a1cee0abf68f8ea8baa9f7fc7d82cb6b142a34b7b24c5ff3",
+    "scripts/benchmark_wait_prefetch_subset_service.py": "0c7378eb310820b08924f974c1006783fd3c06e5fccff9c32918626e57aa9835",
+    "tests/test_wait_prefetch_service_subset.py": "2db8c283d4976c07d25c7a35aeaf6baa962760e283baa7de7c5957ff7b7ca079"
+  },
+  "blocks": 201,
+  "calls_per_block": 100,
+  "cases": [
+    {
+      "case": "supported_common_window",
+      "common_outputs_identical": true,
+      "p50_thread_cpu_us": {
+        "baseline": 3.38717,
+        "candidate": 3.5496
+      },
+      "mean_thread_cpu_us": {
+        "baseline": 3.3913719900497514,
+        "candidate": 3.5436626865671643
+      },
+      "p50_added_thread_cpu_us": 0.16243000000000007
+    },
+    {
+      "case": "unsupported_common_window",
+      "common_outputs_identical": true,
+      "p50_thread_cpu_us": {
+        "baseline": 0.86563,
+        "candidate": 0.89242
+      },
+      "mean_thread_cpu_us": {
+        "baseline": 0.8678532338308458,
+        "candidate": 0.8966637313432836
+      },
+      "p50_added_thread_cpu_us": 0.02678999999999998
+    },
+    {
+      "case": "reduced_payload_cost_fallback",
+      "common_outputs_identical": false,
+      "p50_thread_cpu_us": {
+        "baseline": 0.85739,
+        "candidate": 8.16329
+      },
+      "mean_thread_cpu_us": {
+        "baseline": 0.8628134328358209,
+        "candidate": 8.180213631840797
+      },
+      "p50_added_thread_cpu_us": 7.3059
+    }
+  ],
+  "limitations": [
+    "CPU-only fixtures with no event writer, cache allocation, action or GPU.",
+    "Alternating order under concurrent experiment load; thread placement is uncontrolled.",
+    "The fallback comparison intentionally adds supported timing where baseline has none.",
+    "Per-window CPU does not measure dispatch shape construction, live call frequency or JCT savings."
+  ]
+}

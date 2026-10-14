@@ -14,6 +14,8 @@ class TransferStartWindow:
     enqueue_ms: float
     horizon_ms: float
     prediction_early_ms: float = 0.
+    service_ceiling_bytes: int | None = None
+    service_ceiling_shape: str | None = None
 
 
 def transfer_start_window(
