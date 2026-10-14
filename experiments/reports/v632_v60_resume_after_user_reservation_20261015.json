@@ -1,0 +1,33 @@
+{
+  "status": "registered_one_time_reservation_wait_not_experiment_start",
+  "registered_at_local": "2026-10-14T16:29:13.346158-07:00",
+  "not_before": "2026-10-15T15:00:00+08:00",
+  "not_before_los_angeles": "2026-10-15T00:00:00-07:00",
+  "timezone_source": "/home/longhao/experiment/ops/server_reservation.json",
+  "user_instruction": "\u4eca\u592915\uff1a00\u4e4b\u524d\u670d\u52a1\u5668\u88ab\u9884\u7ea6\u4e86\uff0c\u8fd9\u6bb5\u65f6\u95f4\u5185\u4e0d\u8981\u8fdb\u884c\u5b9e\u9a8c",
+  "hold": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v630_user_server_reservation_hold_20261015.json",
+    "sha256": "2ad65a5c4fb6040a2b435193efed6d4d22eebf81b6b32e2d44d11f3c5975e5d0"
+  },
+  "frozen": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v620_v60_observation_cache_frozen_20261014.json",
+    "sha256": "fe4c82b90b8aa8be560d2383e17c8fdaa8f18e841c5adebad9b6afaf69c7e834"
+  },
+  "target_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v60",
+  "state": "/home/longhao/experiment/ops/v60_user_reservation_20261015.state.json",
+  "helper_sha256": "bba096242dc73098fa0f9bf2cccf18d479f25a5fd55cde07a6d91aeb5aaf730c",
+  "constraints": [
+    "No GPU experiments, tests or benchmarks during the one-time reservation.",
+    "Do not reinstate the revoked daily 00:00-06:00 rule.",
+    "After the deadline, reuse the qualified V60 plan and all exclusive-resource/source checks.",
+    "Do not stop another user's jobs or deploy the newer unqualified development candidate."
+  ],
+  "watcher": {
+    "pid": 3615090,
+    "state": "R",
+    "ppid": 3615086,
+    "start_ticks": "619081644",
+    "argv": []
+  }
+}

@@ -1,0 +1,56 @@
+{
+  "status": "registered_resource_wait_not_experiment_start",
+  "registered_at_local": "2026-10-14T16:13:04.237144-07:00",
+  "watcher": {
+    "pid": 3579385,
+    "state": "R",
+    "ppid": 3579286,
+    "start_ticks": "618984733",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/ops/register_v60_observation_cache.py",
+      "--watch"
+    ]
+  },
+  "frozen": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v620_v60_observation_cache_frozen_20261014.json",
+    "sha256": "fe4c82b90b8aa8be560d2383e17c8fdaa8f18e841c5adebad9b6afaf69c7e834"
+  },
+  "target_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+  "resource_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v60_resource_wait_observation_cache_20261014.json",
+  "launch_arguments": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/.worktrees/beliefkv-v620-v60-observation-cache-20261014/scripts/launch_semantic_h2d_after_pair.py",
+    "--repo",
+    "/home/longhao/experiment/BeliefKV",
+    "--previous-run",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59",
+    "--target-checkout",
+    "/home/longhao/experiment/.worktrees/beliefkv-v620-v60-observation-cache-20261014",
+    "--run-root",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v60",
+    "--state",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v60_launch_after_v59_observation_cache_20261014.json",
+    "--wait-pid",
+    "1518675",
+    "--port",
+    "18464",
+    "--arm-order",
+    "predictive_h2d",
+    "--native-reference-run",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+    "--execution-handoff",
+    "0",
+    "--host-numa-memory-policy",
+    "preferred"
+  ],
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v60",
+  "helper_sha256": "e1737342a31bc681b3e194af894c93e991b6b21eb8a1ced3e656ad6a35cc89b2",
+  "constraints": [
+    "Wait for exact V59 driver and all postprocessing; no running source edits.",
+    "Do not stop or modify another user's GPU jobs.",
+    "Preserve workload, pools, tool/output/deadline budgets and disabled batching knobs.",
+    "Predictive only, cached V58 native development reference; formal repeated matched controls remain required.",
+    "Registration and CPU qualification do not establish GPU/JCT improvement."
+  ]
+}

@@ -1,0 +1,92 @@
+{
+  "status": "qualified_frozen_candidate_not_deployed",
+  "observed_at_local": "2026-10-14T16:13:04.221002-07:00",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v620-v60-observation-cache-20261014",
+  "target_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+  "qualification": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v620-v60-observation-cache-20261014/experiments/reports/v615_observation_rank_cache_qualification_20261014.json",
+    "sha256": "8246f460cea8a1f18ee9dc5991511f9f513da556d59d92f0fd3581888b066f1a"
+  },
+  "qualified_source_count": 72,
+  "candidate_engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v620-v60-observation-cache-20261014/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "f7b1942b37d7c30998dadb29e512ecc6013f1eb02dcbb65b068e0c71c92bed81",
+    "expected_tree": "5262707a2c17a365fd75ef44d4c96ff0f53a50c3",
+    "actual_tree": "5262707a2c17a365fd75ef44d4c96ff0f53a50c3",
+    "matches_worktree": true,
+    "covered_untracked_paths": [
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_gdn_prefill_mask.py",
+      "test/srt/test_beliefkv_mamba_request_mapping.py",
+      "test/srt/test_beliefkv_prefill_track_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_slots.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py"
+    ]
+  },
+  "previous_plan": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/ab_plan.json",
+    "sha256": "ed7b32abf59c0535ee7a07a0b7f78e7ef6bfff5e8e8a5a6c07e6f34e3af5a4e8"
+  },
+  "previous_execution": {
+    "collection_code_commit": "d1c3f1407d8841bde1e3aff3d4fc37559bcc8247",
+    "verification_code_commit": "c6d30be1d56fd2393808d2fd33c29cea2c6592d6",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": [
+      "docs/README_zh.md",
+      "docs/architecture_status_zh.md",
+      "docs/beliefkv_design.md",
+      "docs/experiment_operating_notes_zh.md",
+      "docs/implementation_plan.md",
+      "docs/v0520_scheduler_redesign_zh.md",
+      "experiments/reports/v597_v59_post_sampling_frozen_20261014.json",
+      "experiments/reports/v598_v59_post_sampling_registration_20261014.json",
+      "experiments/reports/v599_v59_predictive_numa_placement_20261014.json",
+      "experiments/reports/v59_v58_native_reference_tz_busy_120_300_20261014.json",
+      "experiments/reports/v59_v58_native_reference_tz_busy_1800_2100_20261014.json",
+      "experiments/reports/v59_v58_native_reference_tz_busy_600_900_20261014.json",
+      "experiments/reports/v59_v58_native_reference_tz_prefill_phases_120_300_20261014.json",
+      "experiments/reports/v59_v58_native_reference_tz_prefill_phases_1800_2100_20261014.json",
+      "experiments/reports/v59_v58_native_reference_tz_prefill_phases_600_900_20261014.json",
+      "experiments/reports/v600_v59_live_startup_validation_20261014.json",
+      "experiments/reports/v601_v59_window_observer_registration_20261014.json",
+      "experiments/reports/v602_v59_wall_clock_alignment_20261014.json",
+      "experiments/reports/v603_v59_corrected_window_observer_registration_20261014.json",
+      "experiments/reports/v604_v59_first_corrected_windows_20261014.json",
+      "experiments/reports/v606_v59_three_corrected_windows_20261014.json",
+      "experiments/reports/v608_v59_wait_prefetch_before_second_wave_20261014.json.gz",
+      "experiments/reports/v608_v59_wait_prefetch_before_second_wave_20261014_summary.json",
+      "experiments/reports/v609_v59_wait_prefetch_tails_before_second_wave_20261014.json",
+      "experiments/reports/v610_v59_restore_protection_before_second_wave_20261014.json",
+      "experiments/reports/v611_v59_causal_shape_survival_20261014.json.gz",
+      "experiments/reports/v612_v59_overrun_shape_survival_20261014.json.gz",
+      "experiments/reports/v613_observation_rank_cache_cpu_20261014.json",
+      "experiments/reports/v614_v59_four_windows_and_timing_candidates_20261014.json",
+      "experiments/reports/v615_observation_rank_cache_qualification_20261014.json",
+      "experiments/reports/v616_v59_shape_survival_final_source_replay_20261014.json.gz",
+      "experiments/reports/v617_v59_latest_documentation_sync_20261014.json",
+      "experiments/reports/v618_v56_unique_client_logs_archive_20261014.json",
+      "experiments/reports/v619_v58_final_tail_attribution_20261014.json"
+    ]
+  },
+  "previous_driver": {
+    "pid": 1518675,
+    "start_ticks": "618164127"
+  },
+  "helper_sha256": "e1737342a31bc681b3e194af894c93e991b6b21eb8a1ced3e656ad6a35cc89b2",
+  "native_reference_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58"
+}

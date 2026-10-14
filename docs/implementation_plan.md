@@ -2,6 +2,21 @@
 
 Status date: 2026-10-14 (PDT).
 
+One-time user reservation: no experiments, tests or benchmarks before
+2026-10-15 15:00 Asia/Shanghai (2026-10-15 00:00 PDT). V630 stops
+the original V60 launch/startup waiters; V632 waits for this absolute time,
+then rechecks the frozen source and exclusive resources before attempting
+the existing V60 plan. Do not reinstate the revoked daily rule.
+V59 collected156 client completions in8743.634s; its GPU service has exited.
+
+V628/V631 retain unaffected admission ranks across local model/tool rounds,
+while changed invocations and message/JOIN/topology/terminal or WAIT_CHILD
+ancestor transitions still invalidate.479 checks pass. Six identical CPU
+event/maintenance/admission scenes save20.6%-23.6%; message controls still
+rebuild and cost2.3%-3.5% more. The candidate is development-only, not cold
+qualified or deployed; preserve the already frozen V60 plan and measure live
+frequency, GPU, useful reuse and JCT after the reservation.
+
 Next cold observation V60 uses the V615-qualified observation cache change;
 V620/V621 retain the frozen source and actual registration. Wait for V59's
 exact driver and complete postprocessing, exclusive GPU capacity and45GiB

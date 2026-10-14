@@ -1,0 +1,134 @@
+{
+  "status": "experiment_autostart_paused_for_user_reservation_time_confirmation",
+  "observed_at_local": "2026-10-14T16:26:38.235286-07:00",
+  "user_instruction": "\u4eca\u592915\uff1a00\u4e4b\u524d\u670d\u52a1\u5668\u88ab\u9884\u7ea6\u4e86\uff0c\u8fd9\u6bb5\u65f6\u95f4\u5185\u4e0d\u8981\u8fdb\u884c\u5b9e\u9a8c",
+  "time_interpretation": "Do not launch experiments until the intended reservation end date/timezone is confirmed; no automatic resume is armed.",
+  "stopped_exact_waiting_processes": [
+    {
+      "registered": {
+        "pid": 3579385,
+        "state": "R",
+        "ppid": 3579286,
+        "start_ticks": "618984733",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/ops/register_v60_observation_cache.py",
+          "--watch"
+        ]
+      },
+      "signal": "SIGTERM",
+      "still_live": false
+    },
+    {
+      "registered": {
+        "pid": 3594186,
+        "state": "R",
+        "ppid": 3594182,
+        "start_ticks": "619010267",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/ops/observe_v60_startup.py",
+          "--watch"
+        ]
+      },
+      "signal": "SIGTERM",
+      "still_live": false
+    }
+  ],
+  "prior_state_snapshots": {
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v60_resource_wait_observation_cache_20261014.json": {
+      "status": "paused_by_user_server_reservation",
+      "registered_at_local": "2026-10-14T16:13:04.464079-07:00",
+      "watcher": {
+        "pid": 3579385,
+        "state": "R",
+        "ppid": 1,
+        "start_ticks": "618984733",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/ops/register_v60_observation_cache.py",
+          "--watch"
+        ]
+      },
+      "frozen": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v620_v60_observation_cache_frozen_20261014.json",
+        "sha256": "fe4c82b90b8aa8be560d2383e17c8fdaa8f18e841c5adebad9b6afaf69c7e834"
+      },
+      "launch_arguments": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-v620-v60-observation-cache-20261014/scripts/launch_semantic_h2d_after_pair.py",
+        "--repo",
+        "/home/longhao/experiment/BeliefKV",
+        "--previous-run",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59",
+        "--target-checkout",
+        "/home/longhao/experiment/.worktrees/beliefkv-v620-v60-observation-cache-20261014",
+        "--run-root",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v60",
+        "--state",
+        "/home/longhao/experiment/BeliefKV/experiments/reports/v60_launch_after_v59_observation_cache_20261014.json",
+        "--wait-pid",
+        "1518675",
+        "--port",
+        "18464",
+        "--arm-order",
+        "predictive_h2d",
+        "--native-reference-run",
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+        "--execution-handoff",
+        "0",
+        "--host-numa-memory-policy",
+        "preferred"
+      ],
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v60",
+      "launch_state": "/home/longhao/experiment/BeliefKV/experiments/reports/v60_launch_after_v59_observation_cache_20261014.json",
+      "requirements": {
+        "previous_exact_driver_terminal": {
+          "pid": 1518675,
+          "start_ticks": "618164127"
+        },
+        "no_compute_processes": true,
+        "minimum_free_gpu_mib": 140000,
+        "maximum_gpu_utilization_percent": 5,
+        "minimum_free_disk_bytes": 48318382080,
+        "consecutive_available_polls": 2,
+        "poll_interval_seconds": 30
+      },
+      "resource_snapshot": {
+        "observed_at_local": "2026-10-14T16:26:35.880068-07:00",
+        "previous_driver_live": true,
+        "gpu_free_mib": 143142,
+        "gpu_utilization_percent": 0,
+        "compute_processes": [],
+        "disk_free_bytes": 38228180992,
+        "ready": false
+      },
+      "consecutive_available_polls": 0,
+      "updated_at_local": "2026-10-14T16:26:35.880595-07:00",
+      "reservation_receipt": "/home/longhao/experiment/BeliefKV/experiments/reports/v630_user_server_reservation_hold_20261015.json",
+      "paused_at_local": "2026-10-14T16:26:38.235286-07:00"
+    },
+    "/home/longhao/experiment/ops/v60_startup_observer_20261014.state.json": {
+      "status": "paused_by_user_server_reservation",
+      "observer": {
+        "pid": 3594186,
+        "state": "R",
+        "ppid": 1,
+        "start_ticks": "619010267",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/ops/observe_v60_startup.py",
+          "--watch"
+        ]
+      },
+      "started_at_local": "2026-10-14T16:17:19.812898-07:00",
+      "observed_at_local": "2026-10-14T16:26:34.861325-07:00",
+      "reservation_receipt": "/home/longhao/experiment/BeliefKV/experiments/reports/v630_user_server_reservation_hold_20261015.json",
+      "paused_at_local": "2026-10-14T16:26:38.235286-07:00"
+    }
+  },
+  "v60_run_exists": false,
+  "v60_launch_state_exists": false,
+  "v59_scheduler_1519312": null,
+  "scope": "Pause only the exact registered future-experiment watcher/observer. Preserve completed V59 collection and postprocessing and all other users jobs."
+}
