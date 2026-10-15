@@ -10,6 +10,16 @@ recovery, KV lifecycle and first-service coordination. CPU checks, local
 microseconds, ACK counts and transferred bytes are not acceptance. Inspect
 running V65_tagged_summary_latest/614069b and completed V63 retry1; use V58
 for development and matched repeated formal controls. Keep source/engine frozen.
+V950 now registers V66_restore_cost, waiter3745107/start_ticks627491372,
+port18470, to cold-start2374925 only after complete V65 collection,
+verified old-process exit and free GPU resources. V949 binds1615 unique
+passes/two skips; V948 freshly passes592 checks in the frozen checkout
+against the unchanged dedbe1a0 engine. Includes73a4a33 missing-FULL+Mamba
+byte ordering within existing non-aged causal groups, plus the previously
+checked250ms tool planning slack. Keep V65 model/harness/workload/budgets.
+Unknown pool geometry retains old ordering; ordering grants no DMA or
+execution authorization. V947 adds no native inspections and48/156-queue
+CPU plans are near flat, not GPU benefit. Registration is not launch.
 V65 cold-started at2026-10-15 14:00:16 PDT (2026-10-16 05:00:16
 Asia/Shanghai), supervisor2241585,driver2241737,port18469. V920 binds1455
 unique passing checks/two skips; V921/V922/V923 bind release, registration
@@ -100,6 +110,25 @@ V941 samples native stacks only at4129-4150s:377 of927 main samples
 include forward_extend, with GDN/Triton/CUTLASS and breakable graph eager
 calls. This is neither recapture evidence nor CPU/CUDA duration.
 Native unwinding can briefly pause threads; retain the diagnostic interval.
+
+The fifth4800-5100s window has386637/330775 request steps,15.954s
+control exclusive wall; short-prefill65/73 samples run_batch40.410/
+37.723ms, selection thread CPU7.016/4.959ms. V943's exact adjacent-forward
+second-wave48/75 samples have mean return-to-result gaps13.707/4.853ms,
+including return-to-next-launch10.426/2.977ms; these are not exclusive
+function costs or removable JCT. Mixed windows retain trajectory limits.
+V942's fixed108 first-wave identities at4200s have94/92 eligible finishes
+and2243.551/2405.262s mean restricted time to eligible root completion,
+about6.72% lower. This event-clock censoring statistic is not final mean
+result.duration_seconds; V65 quality and matched-version acceptance remain open.
+V944/V945 include opportunity snapshots:138/198 positive pre-completion
+FULL JOIN/tool plans,103/35 actual early FULL submissions,86/32 next-request
+reuse events and2.376/3.232GB FULL;22 JOIN boundaries remain unknown.
+Selected large later-native-restore episodes had zero FULL missing in
+waiting snapshots, only missing state; their later demand is not proof
+of earlier prefetchable pages. At15:51 PDT V65 has147 completed,
+one incomplete and8 pending. django-11087 ended length without semantic
+completion; retain its failure and the8192 output budget.
 
 V64's1800-2100s window has392903/381775 request steps,23.081s control
 exclusive wall and39.240/40.419ms short-prefill run_batch. Mixed windows,
