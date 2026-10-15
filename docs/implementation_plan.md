@@ -14,6 +14,18 @@ Continue trace-supported implementation and CPU validation during the GPU
 reservation. A new GPU run is required for end-to-end benefit acceptance,
 not as a prerequisite for fixing identifiable control or lifecycle defects.
 
+The two development optimizations now form independent candidate45f46b7,
+directly extending V61/9e8a574. Only dispatch, its tests and that candidate's
+canonical engine patch change. Engine treeaca4c6a8 changes only the reclamation
+production method and its two test files relative to the frozen engine.
+V779 binds89 sources and the complete engine tree. All1838 unique checks plus
+2 subtests pass, covering1691 inherited runtime and143 engine identities.
+The initial Docker check used a cached Django image lacking pytest; preserve
+that failure and replace only its identity with the passing cached pytest-image
+check. No new registration/deployment is performed. Keep original V61, engine
+and19:51 waiter unchanged; earlier conditional CPU timings are not measured
+GPU, mean-JCT or completion-throughput benefits for this combined candidate.
+
 V773 adds recorded multi-reference FULL volume to the exact same V59 prefix
 as V685, with measured bytes/token and all prior audit fields unchanged.
 Only four listed checks have multiple references. The three still-short
