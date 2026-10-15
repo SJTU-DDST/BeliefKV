@@ -4,6 +4,7 @@ import hashlib
 import json
 import re
 import threading
+import time
 from collections import OrderedDict
 from collections.abc import Awaitable, Callable
 from dataclasses import dataclass
@@ -23,6 +24,9 @@ class _CircuitRecord:
     outcome_status: str
     error_class: str | None
     failure_episode_id: str | None
+    result_fingerprint: str | None = None
+    identical_result_count: int = 0
+    identical_result_elapsed_ms: float = 0.0
 
 
 @dataclass(frozen=True)
@@ -119,7 +123,18 @@ class ToolObservationBudgetMiddleware(AgentMiddleware[Any, Any, Any]):
         if len(text) <= result_budget:
             return result
         digest = hashlib.sha256(text.encode("utf-8", errors="replace")).hexdigest()
-        bounded = self._bounded_text(text, budget=result_budget, digest=digest)
+        feedback = result.additional_kwargs.get("beliefkv_execution_feedback_text")
+        if (
+            isinstance(feedback, str) and feedback and text.endswith(feedback)
+            and len(feedback) < result_budget
+        ):
+            bounded = self._bounded_text(
+                text[:-len(feedback)],
+                budget=result_budget - len(feedback),
+                digest=str(result.additional_kwargs.get("beliefkv_source_result_sha256") or digest),
+            ) + feedback
+        else:
+            bounded = self._bounded_text(text, budget=result_budget, digest=digest)
         tool_name = result.name or str(request.tool_call.get("name", ""))
         self._emit(
             "agent_tool_observation_truncated",
@@ -179,7 +194,7 @@ def _canonical_tool_call(tool_call: dict[str, Any]) -> str:
 
 
 class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
-    """Suppress repeated failed or observably inert tool work."""
+    """Report repeated execution results and optionally suppress inert work."""
 
     _COMMAND_SUCCESS_ONLY = re.compile(
         r"^\s*\[Command succeeded with exit code 0\]\s*$"
@@ -197,6 +212,7 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
         max_records: int = 2048,
         excluded_tools: frozenset[str] = frozenset({"task"}),
         censor_observer: Callable[[Mapping[str, Any]], None] | None = None,
+        clock: Callable[[], float] = time.monotonic,
     ) -> None:
         super().__init__()
         if transient_retry_limit < 0:
@@ -214,6 +230,7 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
         self._max_records = max_records
         self._excluded_tools = excluded_tools
         self._censor_observer = censor_observer
+        self._clock = clock
         self._records: OrderedDict[tuple[str, str, int], _CircuitRecord] = (
             OrderedDict()
         )
@@ -357,7 +374,10 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
                 and self._should_suppress(record)
             )
             if record is None or not should_suppress:
-                if record is not None and not self._suppress_repeats:
+                if (
+                    record is not None and not self._suppress_repeats
+                    and record.outcome_status != "success"
+                ):
                     self._emit(
                         "agent_tool_repeat_observed",
                         tool_name=tool_name,
@@ -373,6 +393,21 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
                     outcome_status="inflight",
                     error_class=None,
                     failure_episode_id=None,
+                    result_fingerprint=(
+                        record.result_fingerprint
+                        if record is not None and record.outcome_status != "inflight"
+                        else None
+                    ),
+                    identical_result_count=(
+                        record.identical_result_count
+                        if record is not None and record.outcome_status != "inflight"
+                        else 0
+                    ),
+                    identical_result_elapsed_ms=(
+                        record.identical_result_elapsed_ms
+                        if record is not None and record.outcome_status != "inflight"
+                        else 0.0
+                    ),
                 )
                 self._records[key] = reservation
                 self._records.move_to_end(key)
@@ -441,6 +476,7 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
         *,
         key: tuple[str, str, int] | None,
         reservation: _CircuitRecord | None,
+        elapsed_ms: float,
     ) -> ToolMessage | Command[Any]:
         if key is None or reservation is None:
             return result
@@ -455,6 +491,23 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
         outcome = classify_tool_outcome(result, tool_name=tool_name)
         workspace_epoch_after = int(self._state_epoch())
         workspace_changed = workspace_epoch_after > key[2]
+        source_text = result.content if isinstance(result.content, str) else None
+        source_digest = (
+            hashlib.sha256(source_text.encode("utf-8", errors="replace")).hexdigest()
+            if tool_name == "execute" and source_text is not None else None
+        )
+        fingerprint = (
+            f"{outcome.status}:{outcome.error_class or ''}:{source_digest}"
+            if source_digest is not None else None
+        )
+        identical_result_count = 1
+        identical_result_elapsed_ms = elapsed_ms
+        if (
+            fingerprint is not None and fingerprint == reservation.result_fingerprint
+            and not workspace_changed
+        ):
+            identical_result_count += reservation.identical_result_count
+            identical_result_elapsed_ms += reservation.identical_result_elapsed_ms
         no_observable_effect = (
             outcome.status == "success"
             and self._success_has_no_observable_effect(
@@ -477,27 +530,54 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
             ).hexdigest()
         with self._lock:
             if self._records.get(key) is reservation:
-                if outcome.status == "success":
-                    if no_observable_effect:
-                        self._records[key] = _CircuitRecord(
-                            execution_count=reservation.execution_count,
-                            outcome_status="success_no_effect",
-                            error_class="no_observable_effect",
-                            failure_episode_id=None,
-                        )
-                        self._records.move_to_end(key)
-                    else:
-                        self._records.pop(key, None)
-                else:
+                if (
+                    outcome.status == "error" or no_observable_effect
+                    or fingerprint is not None
+                ):
                     self._records[key] = _CircuitRecord(
                         execution_count=reservation.execution_count,
-                        outcome_status=outcome.status,
-                        error_class=outcome.error_class,
+                        outcome_status=(
+                            "success_no_effect" if no_observable_effect else outcome.status
+                        ),
+                        error_class="no_observable_effect" if no_observable_effect else outcome.error_class,
                         failure_episode_id=failure_episode_id,
+                        result_fingerprint=fingerprint,
+                        identical_result_count=identical_result_count,
+                        identical_result_elapsed_ms=identical_result_elapsed_ms,
                     )
                     self._records.move_to_end(key)
+                else:
+                    self._records.pop(key, None)
+            else:
+                # Concurrent executions do not establish an ordered result streak.
+                identical_result_count = 1
+                identical_result_elapsed_ms = elapsed_ms
+        feedback = None
+        if fingerprint is not None and identical_result_count > 1:
+            feedback = (
+                "\n\n[Execution history: identical command and visible result "
+                f"{identical_result_count} times; total tool wall time "
+                f"{identical_result_elapsed_ms / 1000.0:.3f}s. "
+                "This does not prove files or external state are unchanged. Use this "
+                "evidence for the assigned deliverable, or inspect missing subprocess "
+                "diagnostics with a focused probe. Shell success alone does not "
+                "establish task success. When the assigned deliverable is supported, "
+                "report the result or the concrete blocker.]"
+            )
+            self._emit(
+                "agent_tool_repeated_result_feedback",
+                tool_name=tool_name,
+                tool_call_id=str(request.tool_call.get("id", "")),
+                signature=key[1],
+                source_result_sha256=source_digest,
+                identical_result_count=identical_result_count,
+                identical_result_elapsed_ms=identical_result_elapsed_ms,
+                physical_execution=True,
+                suppression_enabled=self._suppress_repeats,
+            )
         return result.model_copy(
             update={
+                "content": source_text + feedback if feedback is not None else result.content,
                 "additional_kwargs": {
                     **(result.additional_kwargs or {}),
                     "beliefkv_error_class": outcome.error_class,
@@ -509,6 +589,15 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
                     "beliefkv_workspace_epoch_after": workspace_epoch_after,
                     "beliefkv_workspace_changed": workspace_changed,
                     "beliefkv_no_observable_effect": no_observable_effect,
+                    **({
+                        "beliefkv_source_result_sha256": source_digest,
+                        "beliefkv_source_result_chars": len(source_text.strip()),
+                        "beliefkv_identical_result_count": identical_result_count,
+                        "beliefkv_identical_result_elapsed_ms": identical_result_elapsed_ms,
+                        "beliefkv_repeated_result_feedback": feedback is not None,
+                        **({"beliefkv_execution_feedback_text": feedback}
+                           if feedback is not None else {}),
+                    } if source_digest is not None else {}),
                 }
             }
         )
@@ -548,6 +637,7 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
         _signature, key, reservation, suppressed = self._before_call(request)
         if suppressed is not None:
             return suppressed
+        started = self._clock() if request.tool_call.get("name") == "execute" else None
         try:
             result = handler(request)
         except BaseException:
@@ -558,6 +648,9 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
             result,
             key=key,
             reservation=reservation,
+            elapsed_ms=(
+                max(0.0, self._clock() - started) * 1000.0 if started is not None else 0.0
+            ),
         )
 
     async def awrap_tool_call(
@@ -570,6 +663,7 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
         _signature, key, reservation, suppressed = self._before_call(request)
         if suppressed is not None:
             return suppressed
+        started = self._clock() if request.tool_call.get("name") == "execute" else None
         try:
             result = await handler(request)
         except BaseException:
@@ -580,6 +674,9 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
             result,
             key=key,
             reservation=reservation,
+            elapsed_ms=(
+                max(0.0, self._clock() - started) * 1000.0 if started is not None else 0.0
+            ),
         )
 
 

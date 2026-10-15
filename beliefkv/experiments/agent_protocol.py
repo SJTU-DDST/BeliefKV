@@ -298,7 +298,10 @@ def _credible_progress_key(
             command = str(tool_args.get("command", "")).strip().lower()
         if command.startswith(_SHELL_EVIDENCE_PREFIXES):
             return f"shell-evidence:{signature}:{output_digest}"
-        if len(_message_text(message).strip()) >= _MIN_EXECUTION_EVIDENCE_CHARS:
+        source_chars = metadata.get("beliefkv_source_result_chars")
+        if source_chars is None:
+            source_chars = len(_message_text(message).strip())
+        if source_chars >= _MIN_EXECUTION_EVIDENCE_CHARS:
             return f"execution-evidence:{signature}:{output_digest}"
     if is_error:
         error_class = str(metadata.get("beliefkv_error_class") or "")
@@ -382,11 +385,11 @@ def analyze_agent_history(
         signature = call[0] if call is not None else ""
         batch_index = call[2] if call is not None else unmatched_batch_index
         tool_args = call[3] if call is not None else {}
-        output_digest = hashlib.sha256(
+        metadata = _tool_metadata(message)
+        output_digest = metadata.get("beliefkv_source_result_sha256") or hashlib.sha256(
             _message_text(message).encode("utf-8", errors="replace")
         ).hexdigest()
         is_error = _tool_result_is_error(message)
-        metadata = _tool_metadata(message)
         suppressed_intent = bool(
             metadata.get("beliefkv_suppressed_repeat_intent", False)
             or metadata.get("beliefkv_error_class") == "duplicate_suppressed"

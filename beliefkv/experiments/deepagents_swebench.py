@@ -1989,6 +1989,9 @@ the supported edit, or return an honest blocked result with the evidence and exa
 blocker. Retry a failed tool only after correcting its inputs or changing the method;
 do not cycle equivalent probes. A new call ID or slightly altered probe that produces
 no new evidence is not progress.
+For shell wrappers, expose the subprocess's stdout, stderr, and return status;
+a successful wrapper exit is not proof of test or task success. Prefer a small
+isolated fixture when investigating recursive linters or directory walkers.
 """ + SANDBOX_PATH_CONTRACT
 
 AUTONOMOUS_SYSTEM_PROMPT = (
@@ -2008,6 +2011,10 @@ Avoid repeated tool loops. Do not repeat the same tool call with identical argum
 when the result and workspace are unchanged. After one unproductive repeat, change
 approach, add concrete evidence, edit/test when appropriate, or report the blocker
 honestly. Do not treat equivalent probes as progress.
+For shell wrappers, report the subprocess's stdout, stderr, and return status
+separately; a printed number or the wrapper's successful exit is not proof that
+the diagnostic or the assigned task succeeded. For recursive linters or walkers,
+prefer a small isolated reproduction fixture over traversing the entire checkout.
 """
 
 NATIVE_CHILD_RETURN_INSTRUCTION = """
@@ -2036,6 +2043,10 @@ repeat an unchanged failing call. Once the assigned deliverable is supported by 
 return the result to the parent instead of continuing broad exploration. If blocked,
 report the exact command, path, and observed failure without guessing another repository
 root.
+An investigation or reproduction assignment is complete once its specific question
+can be answered with observed evidence, even when the repository bug remains unfixed.
+The parent coordinates the overall repair. Do not keep rerunning a broad diagnostic
+while waiting for a reproduction task to turn into a full passing repair.
 """
 
 AUTONOMOUS_NATURAL_SUBAGENT_PROMPT = """
@@ -3066,6 +3077,11 @@ def _autonomous_subagents(
                         ),
                     ),
                     PatchToolCallsMiddleware(),
+                    _tool_observation_budget(
+                        config,
+                        audit=backend.audit,
+                        scope=scope,
+                    ),
                     _tool_circuit(
                         backend,
                         scope=scope,
@@ -3073,11 +3089,6 @@ def _autonomous_subagents(
                         suppress_repeats=config.tool_circuit_breaker_enabled,
                     ),
                     ToolOutcomeStatusMiddleware(),
-                    _tool_observation_budget(
-                        config,
-                        audit=backend.audit,
-                        scope=scope,
-                    ),
                     _loop_guard(
                         config,
                         completion_schema=ChildCompletion,
@@ -3161,6 +3172,11 @@ def _build_autonomous_agent(
             model_context_tokens=config.context_lifecycle.model_context_tokens,
         ),
         PatchToolCallsMiddleware(),
+        _tool_observation_budget(
+            config,
+            audit=backend.audit,
+            scope="autonomous:supervisor",
+        ),
         _tool_circuit(
             backend,
             scope="autonomous:supervisor",
@@ -3168,11 +3184,6 @@ def _build_autonomous_agent(
             suppress_repeats=config.tool_circuit_breaker_enabled,
         ),
         ToolOutcomeStatusMiddleware(),
-        _tool_observation_budget(
-            config,
-            audit=backend.audit,
-            scope="autonomous:supervisor",
-        ),
         _loop_guard(
             config,
             completion_schema=WorkflowCompletion,
@@ -3394,6 +3405,11 @@ def _run_planned_child(
             model=child_model,
             tools=shadow_tools,
             middleware=[
+                _tool_observation_budget(
+                    config,
+                    audit=backend.audit,
+                    scope=f"planned:child:{handle.invocation_id}",
+                ),
                 _tool_circuit(
                     child_backend,
                     scope=f"planned:child:{handle.invocation_id}",
@@ -3401,11 +3417,6 @@ def _run_planned_child(
                     suppress_repeats=config.tool_circuit_breaker_enabled,
                 ),
                 ToolOutcomeStatusMiddleware(),
-                _tool_observation_budget(
-                    config,
-                    audit=backend.audit,
-                    scope=f"planned:child:{handle.invocation_id}",
-                ),
                 _filesystem_middleware(child_backend, allow_direct_edits=False),
                 _context_lifecycle_middleware(
                     config, child_backend, adapter, summary_model,
@@ -3692,6 +3703,11 @@ def _run_planned(
         model=_model(config, adapter, deadline_controller),
         tools=[_workspace_patch_tool(backend)],
         middleware=[
+            _tool_observation_budget(
+                config,
+                audit=backend.audit,
+                scope="planned:implementer",
+            ),
             _tool_circuit(
                 backend,
                 scope="planned:implementer",
@@ -3699,11 +3715,6 @@ def _run_planned(
                 suppress_repeats=config.tool_circuit_breaker_enabled,
             ),
             ToolOutcomeStatusMiddleware(),
-            _tool_observation_budget(
-                config,
-                audit=backend.audit,
-                scope="planned:implementer",
-            ),
             _filesystem_middleware(backend, allow_direct_edits=True),
             _loop_guard(
                 config,
@@ -3821,6 +3832,11 @@ def _repair_incomplete_workflow(
             model=_model(config, adapter, deadline_controller),
             tools=[_workspace_patch_tool(backend)],
             middleware=[
+                _tool_observation_budget(
+                    config,
+                    audit=backend.audit,
+                    scope=f"completion-repair:{attempt + 1}",
+                ),
                 _tool_circuit(
                     backend,
                     scope=f"completion-repair:{attempt + 1}",
@@ -3828,11 +3844,6 @@ def _repair_incomplete_workflow(
                     suppress_repeats=config.tool_circuit_breaker_enabled,
                 ),
                 ToolOutcomeStatusMiddleware(),
-                _tool_observation_budget(
-                    config,
-                    audit=backend.audit,
-                    scope=f"completion-repair:{attempt + 1}",
-                ),
                 _filesystem_middleware(backend, allow_direct_edits=True),
                 _loop_guard(
                     config,

@@ -35,11 +35,15 @@ Preserve all state needed to continue the task correctly:
 - the current plan, completed work, and exact next actions;
 - files read or modified and the important changes in each file;
 - commands and tests already run, including their results;
+- repeated commands with identical observations, their accumulated cost, and any
+  diagnostics still missing; distinguish shell status from test or task success;
 - unresolved errors, blockers, hypotheses, and rejected approaches;
 - child-agent assignments, returned findings, and outstanding JOIN state.
 
 Do not copy verbose tool output when a concise factual record is sufficient. Do
 not claim that work or tests completed unless the messages establish that fact.
+Keep each delegated deliverable distinct from the parent workflow's unfinished
+repair, so an answered investigation can return without repeating its tool work.
 Return only the checkpoint summary.
 
 <messages>
