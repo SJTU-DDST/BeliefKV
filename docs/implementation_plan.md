@@ -2,6 +2,21 @@
 
 Status date: 2026-10-15 (Asia/Shanghai).
 
+V662 splits the same sealed V59/V58 prefixes at adjacent run_batch entries.
+Across four windows, decode/short-prefill/decode return-to-next-entry P50
+is4.9-6.0ms predictive versus2.3-2.6ms native; next-entry-to-result is
+about1.3-1.6ms. The second-wave previous-completion-observer-to-entry
+P50 is3.595/1.392ms, or3.715/1.297ms for47->1->48 neighbors.
+Continue isolating telemetry tail, sampling, deferred physical planning and
+next-iteration receive/maintenance/selection before changing another path.
+An observer timestamp is not all result work completed, and scheduler entry
+is not CUDA launch. Quantiles are not additive or removable JCT bounds.
+The24 analyzer checks pass; V60, d925278 and registered observers are unchanged.
+Actual engine trees91daa419/5262707a differ only in scheduler ordering and
+tests; model/attention/cache/worker and telemetry source equality does not
+control realized cache pressure, prefixes or trajectories. Keep the original
+GPU, quality, mean-JCT and completion-throughput acceptance open.
+
 V658 binds7386610's immutable-key identity equality fast path. Complete CPU
 event/maintenance/planning/live-selection fixtures improve7.5%-8.5%,
 about0.07-0.11ms per canonical-key iteration; all graph/plans/selection match.
