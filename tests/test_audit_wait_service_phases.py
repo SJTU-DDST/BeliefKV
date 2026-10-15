@@ -51,3 +51,25 @@ def test_cohorts_keep_no_action_and_unknown_waits_visible():
     assert source["cohorts"]["early_verified_full"]["events"] == 1
     assert source["cohorts"]["no_early_verified_full"]["events"] == 1
     assert source["cohorts"]["long_gap"]["events"] == 2
+    windows = source["all_wait_completion_windows_ms"]
+    assert windows["completion_to_client_submit"]["count"] == 4
+    assert windows["completion_to_client_submit"]["p50"] == 20.
+    assert windows["completion_to_native_arrival"]["count"] == 3
+    assert windows["completion_to_native_arrival"]["missing_or_unordered_events"] == 1
+
+
+def test_completion_windows_keep_no_action_demand_and_invalid_boundaries_separate():
+    result = evaluate({"wait_event_attribution": {"rows": [
+        wait(node_command_count=0, remaining_native_full_host_hit_bytes=100),
+        wait(node_command_count=0, client_submit_ts_ms=90.),
+        wait(node_command_count=0, completion_ts_ms=None),
+    ]}})
+    source = result["sources"]["join_ticket"]
+    assert source["waits_with_node_commands"] == 0
+    assert source["all_wait_completion_windows_ms"]["completion_to_client_submit"] == {
+        "count": 1, "p50": 20., "p90": 20., "min": 20., "max": 20.,
+        "missing_or_unordered_events": 2,
+    }
+    assert source["positive_native_full_restore_completion_windows_ms"][
+        "completion_to_native_arrival"
+    ]["count"] == 1

@@ -86,6 +86,27 @@ def cohort_summary(rows: list[dict]) -> dict:
     }
 
 
+def completion_windows(rows: list[dict]) -> dict:
+    result = {}
+    for name, left, right in (
+        ("completion_to_client_submit", "completion_ts_ms", "client_submit_ts_ms"),
+        ("completion_to_native_arrival", "completion_ts_ms", "native_arrival_ts_ms"),
+        ("client_submit_to_native_arrival", "client_submit_ts_ms", "native_arrival_ts_ms"),
+    ):
+        values = []
+        for row in rows:
+            pair = row.get(left), row.get(right)
+            if (
+                all(type(value) in (int, float) and math.isfinite(value) for value in pair)
+                and pair[0] <= pair[1]
+            ):
+                values.append(pair[1] - pair[0])
+        result[name] = {
+            **distribution(values), "missing_or_unordered_events": len(rows) - len(values),
+        }
+    return result
+
+
 def evaluate(lifecycle: dict, *, long_gap_ms: float = 5000.) -> dict:
     if not math.isfinite(long_gap_ms) or long_gap_ms < 0:
         raise ValueError("long-gap threshold must be finite and nonnegative")
@@ -99,6 +120,11 @@ def evaluate(lifecycle: dict, *, long_gap_ms: float = 5000.) -> dict:
         detail.extend(rows)
         groups[source] = {
             "observed_waits": len(waits), "waits_with_node_commands": len(rows),
+            "all_wait_completion_windows_ms": completion_windows(waits),
+            "positive_native_full_restore_completion_windows_ms": completion_windows([
+                row for row in waits
+                if (row.get("remaining_native_full_host_hit_bytes") or 0) > 0
+            ]),
             "partition_status": dict(Counter(row["status"] for row in rows)),
             "cohorts": {
                 "all_partitioned": cohort_summary(valid),
@@ -124,6 +150,10 @@ def evaluate(lifecycle: dict, *, long_gap_ms: float = 5000.) -> dict:
             "restoration and control work; it is not pure GPU queueing. No FULL Host "
             "hit does not establish complete Mamba readiness. Missing restore samples "
             "are unknown, and no exposed-stall or counterfactual saving is inferred."
+            " Completion windows include independent waits without node commands; "
+            "positive native FULL restore is an explicitly outcome-conditioned subset. "
+            "These endpoint intervals include notification/planning work and are "
+            "not guaranteed available DMA overlap."
         ),
         "long_gap_diagnostic_threshold_ms": long_gap_ms, "sources": groups, "rows": detail,
     }

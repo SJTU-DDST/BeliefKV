@@ -446,6 +446,7 @@ class NativeAdmissionRuntime:
         self._final_priority_promoted: str | None = None
         self._final_priority_native_rank: int | None = None
         self._join_ticket: _JoinPrefetchTicket | None = None
+        self._confirmed_join_tickets: dict[str, _JoinPrefetchTicket] = {}
         self._join_prefetch_issued: Counter[_JoinPrefetchIdentity] = Counter()
         self.enable_admission_prefetch = enable_admission_prefetch
         self.enable_final_stage_prefetch = enable_final_stage_prefetch
@@ -691,6 +692,7 @@ class NativeAdmissionRuntime:
         )
         self._residency_hint_admissions.clear()
         self._discard_join_ticket("shutdown")
+        self._confirmed_join_tickets.clear()
         self._final_stages.clear()
         self._final_request_stages.clear()
         self._terminal_cache_watches.clear()
@@ -721,12 +723,13 @@ class NativeAdmissionRuntime:
             if pending is not None and self.prefetch_discarded_callback is not None:
                 self.prefetch_discarded_callback(command, reason)
 
-    def _discard_join_ticket(self, reason: str) -> None:
-        ticket = self._join_ticket
+    def _discard_join_ticket(
+        self, reason: str, *, ticket: _JoinPrefetchTicket | None = None,
+    ) -> None:
+        ticket = ticket if ticket is not None else self._join_ticket
         if (
             ticket is not None
             and ticket.phase == "confirmed"
-            and self.enable_confirmed_join_canary
             and self._opportunity_writer is not None
         ):
             self._opportunity_writer.record({
@@ -741,7 +744,10 @@ class NativeAdmissionRuntime:
                 "no_step_recorded": ticket.no_step_recorded,
                 "command_id": ticket.command_id,
             })
-        self._join_ticket = None
+        if ticket is not None and self._confirmed_join_tickets.get(ticket.join_id) is ticket:
+            del self._confirmed_join_tickets[ticket.join_id]
+        if self._join_ticket is ticket:
+            self._join_ticket = None
 
     def attach_native_cache(self, cache: object) -> None:
         self._native_cache = cache
@@ -922,6 +928,7 @@ class NativeAdmissionRuntime:
             self._final_request_stages.clear()
             self._child_report_notices.clear()
             self._discard_join_ticket("causal_mirror_discarded")
+            self._confirmed_join_tickets.clear()
             self._admission_lease = None
             self.shadow_candidate = None
             self._context_tokens.clear()
@@ -2864,14 +2871,28 @@ class NativeAdmissionRuntime:
         ticket = self._join_ticket
         if ticket is not None and ticket.join_id in self._noncontinuing_joins:
             self._discard_join_ticket("noncontinuing_join")
+            ticket = None
+        if event.kind in (
+            RuntimeEventKind.JOIN_TIMEOUT, RuntimeEventKind.INVOCATION_CANCEL,
+        ):
+            candidates = list(self._confirmed_join_tickets.values())
+            if ticket is not None and self._confirmed_join_tickets.get(ticket.join_id) is not ticket:
+                candidates.append(ticket)
+            for pending in candidates:
+                if event.kind is RuntimeEventKind.JOIN_TIMEOUT and event.join_id == pending.join_id:
+                    self._discard_join_ticket("join_timeout", ticket=pending)
+                elif event.kind is RuntimeEventKind.INVOCATION_CANCEL and (
+                    event.invocation_id == pending.key.invocation_id
+                    or event.invocation_id in pending.member_ids
+                ):
+                    self._discard_join_ticket("invocation_canceled", ticket=pending)
             return
-        if ticket is None:
-            if not (
-                self.enable_admission_prefetch or self.enable_confirmed_join_canary
-            ) or event.kind not in (
-                RuntimeEventKind.RETURN, RuntimeEventKind.JOIN_SATISFIED,
-            ):
-                return
+        if (
+            self.enable_admission_prefetch or self.enable_final_stage_prefetch
+            or self.enable_confirmed_join_canary
+        ) and event.kind in (
+            RuntimeEventKind.RETURN, RuntimeEventKind.JOIN_SATISFIED,
+        ):
             candidate_joins = (
                 (event.join_id,) if event.join_id is not None else
                 tuple(sorted(self._join_by_invocation.get(event.invocation_id, ())))
@@ -2886,6 +2907,10 @@ class NativeAdmissionRuntime:
                     or join.workflow_id != event.workflow_id
                     or event.kind is RuntimeEventKind.RETURN
                     and event.invocation_id not in join.member_invocation_ids
+                    or join.mode.value == "all" and any(
+                        self.graph.invocations[member].state is InvocationState.CANCELLED
+                        for member in join.member_invocation_ids
+                    )
                 ):
                     continue
                 key = self._join_parent_key(join_id)
@@ -2895,14 +2920,27 @@ class NativeAdmissionRuntime:
                     or parent.join_id != join_id
                 ):
                     continue
-                self._join_ticket = _JoinPrefetchTicket(
-                    key, join_id, join.mode.value,
-                    tuple(sorted(join.member_invocation_ids)),
-                    "confirmed", time.monotonic() + 2.0,
-                    issued_nodes=self._issued_join_nodes(join_id, key),
+                pending = self._confirmed_join_tickets.get(join_id)
+                if pending is not None and pending.key == key:
+                    continue
+                pending = (
+                    ticket if ticket is not None
+                    and (ticket.join_id, ticket.key) == (join_id, key)
+                    else _JoinPrefetchTicket(
+                        key, join_id, join.mode.value,
+                        tuple(sorted(join.member_invocation_ids)),
+                        "confirmed", 0.,
+                        issued_nodes=self._issued_join_nodes(join_id, key),
+                    )
                 )
+                # Keep any issued burst and its ACK identity across RETURN.
+                pending.phase = "confirmed"
+                pending.expires_at = time.monotonic() + 2.0
+                self._confirmed_join_tickets[join_id] = pending
+                if self._join_ticket is None:
+                    self._join_ticket = pending
                 self.counts["join_reentry_confirmed"] += 1
-                if self.enable_confirmed_join_canary and self._opportunity_writer:
+                if self._opportunity_writer is not None:
                     self._opportunity_writer.record({
                         "event": "confirmed_join_ticket",
                         "ts_ms": time.time() * 1000.0,
@@ -2912,36 +2950,19 @@ class NativeAdmissionRuntime:
                         "context_epoch": key.context_epoch,
                         "session_id": key.session_id,
                         "session_generation": key.session_generation,
+                        "confirmation_event_id": event.event_id,
+                        "issued_nodes": pending.issued_nodes,
+                        "pre_boundary_prediction": False,
                     })
-                return
-            return
-        join = self.graph.joins.get(ticket.join_id)
-        if join is None or join.workflow_id != ticket.key.root_workflow_id:
-            self._discard_join_ticket("join_removed_or_changed")
-            return
-        if event.kind is RuntimeEventKind.JOIN_TIMEOUT and event.join_id == ticket.join_id:
-            self._discard_join_ticket("join_timeout")
-        elif event.kind is RuntimeEventKind.INVOCATION_CANCEL and (
-            event.invocation_id == ticket.key.invocation_id
-            or event.invocation_id in ticket.member_ids
+        if (
+            ticket is not None and ticket.phase != "confirmed"
+            and event.kind is RuntimeEventKind.RETURN
+            and event.invocation_id in ticket.member_ids
         ):
-            self._discard_join_ticket("invocation_canceled")
-        elif join.satisfied and (
-            event.join_id == ticket.join_id
-            or event.invocation_id in ticket.member_ids
-        ):
-            if self._semantic_worker is not None:
-                self._discard_join_ticket("semantic_join_already_returned")
-                return
-            if ticket.phase != "confirmed":
-                ticket.phase = "confirmed"
-                ticket.expires_at = time.monotonic() + 2.0
-                self.counts["join_reentry_confirmed"] += 1
-        elif event.kind is RuntimeEventKind.RETURN and event.invocation_id in ticket.member_ids:
             ticket.phase = "probabilistic"
 
-    def _live_join_ticket(self) -> bool:
-        ticket = self._join_ticket
+    def _live_join_ticket(self, ticket: _JoinPrefetchTicket | None = None) -> bool:
+        ticket = ticket if ticket is not None else self._join_ticket
         if ticket is None or time.monotonic() >= ticket.expires_at:
             return False
         key = ticket.key
@@ -2951,7 +2972,8 @@ class NativeAdmissionRuntime:
         return bool(
             (
                 self.enable_admission_prefetch
-                or self.enable_final_stage_prefetch and ticket.stage_bound
+                or self.enable_final_stage_prefetch
+                and (ticket.stage_bound or ticket.phase == "confirmed")
                 or self.enable_confirmed_join_canary and ticket.phase == "confirmed"
             ) and not self.physical_disabled
             and ticket.join_id not in self._noncontinuing_joins
@@ -2979,9 +3001,38 @@ class NativeAdmissionRuntime:
             and not self._terminal(key)
         )
 
+    def _select_confirmed_join_ticket(self) -> None:
+        if not self._confirmed_join_tickets:
+            return
+        ticket = self._join_ticket
+        if ticket is not None and self._live_join_ticket(ticket) and (
+            ticket.phase == "confirmed" or ticket.command_id is not None
+        ):
+            return
+        for pending in tuple(self._confirmed_join_tickets.values()):
+            if self._live_join_ticket(pending):
+                self._join_ticket = pending
+                return
+            self._discard_join_ticket(
+                "expired" if time.monotonic() >= pending.expires_at
+                else "confirmed_reentry_invalidated",
+                ticket=pending,
+            )
+
+    def _yield_confirmed_join_ticket(self) -> None:
+        ticket = self._join_ticket
+        if (
+            ticket is not None and ticket.phase == "confirmed"
+            and len(self._confirmed_join_tickets) > 1
+        ):
+            self._confirmed_join_tickets.pop(ticket.join_id, None)
+            self._confirmed_join_tickets[ticket.join_id] = ticket
+            self._join_ticket = None
+
     @timed_runtime("join_prefetch")
     def dispatch_join_prefetch(self) -> None:
         """Restore a bounded reusable prefix burst, without granting admission."""
+        self._select_confirmed_join_ticket()
         observation = self._roll_final_stage()
         ticket = self._join_ticket
         if ticket is None or not self._live_join_ticket():
@@ -3089,12 +3140,15 @@ class NativeAdmissionRuntime:
                 ticket.no_step_recorded = True
             if ticket.issued_nodes:
                 self._discard_join_ticket("prefix_resident_or_unavailable")
+            else:
+                self._yield_confirmed_join_ticket()
             return
         if observation.fits_current_free_lists is not True:
             self.counts["semantic_h2d_no_free_capacity"] += 1
             self._record_wait_prefetch_plan(
                 "join_ticket", ticket.key, observation, reason="no_cold_capacity",
             )
+            self._yield_confirmed_join_ticket()
             return
         commands = self._issue_wait_prefetch_steps(
             ticket.key, getattr(observation, "steps", ()) or (step,),
@@ -3111,6 +3165,8 @@ class NativeAdmissionRuntime:
             if stage is not None and ticket.phase == "provisional":
                 stage.issued_nodes = ticket.issued_nodes
             self.counts[f"join_prefetch_{ticket.phase}_issued"] += len(commands)
+        else:
+            self._yield_confirmed_join_ticket()
 
     def _submit_tool_wait(self, context_id: str) -> None:
         worker = self._model_worker
@@ -6018,6 +6074,11 @@ class NativeAdmissionRuntime:
                     "child_request_id": stage.request_id if stage else None,
                     "phase": ticket.phase,
                 })
+                if ticket.phase == "confirmed":
+                    record.update({
+                        "timing_policy": "confirmed_join_before_parent_request",
+                        "pre_boundary_prediction": False,
+                    })
             elif source == "tool_wait":
                 hint = self.tool_wait_hints.get(step.key.context_id)
                 invocation = self.graph.invocations.get(step.key.invocation_id)

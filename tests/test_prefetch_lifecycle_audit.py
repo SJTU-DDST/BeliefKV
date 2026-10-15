@@ -7,7 +7,7 @@ from scripts.audit_prefetch_lifecycle import (
     prepare_host_lifetime_summary, prepare_restore_attribution,
     prepare_selection_summary, source_summary, terminal_capacity_summary, wait_event_attribution,
     terminal_invocation_scopes, terminal_join_capacity_windows, wait_plan_gap_summary,
-    wait_plan_timing_attribution,
+    wait_plan_timing_attribution, reentry_full_reuse_phases,
 )
 
 
@@ -543,6 +543,15 @@ def test_wait_events_deduplicate_node_commands_and_keep_native_residual_demand_s
     assert row["node_command_count"] == 3
     assert row["early_started_and_reused_full_command_ids"] == ["early-1", "early-2"]
     assert row["early_started_and_reused_full_bytes"] == 50
+    assert row["post_completion_reused_full_by_phase"][
+        "completion_to_client_submit"
+    ] == {"boundaries_valid": True, "command_ids": ["late"], "full_bytes": 50}
+    assert result["summary"]["by_source"]["join_ticket"][
+        "post_completion_reused_full_by_phase"
+    ]["completion_to_client_submit"] == {
+        "events_with_reused_full": 1, "full_bytes": 50,
+        "unknown_or_unordered_boundary_events": 0,
+    }
     assert row["remaining_native_full_host_hit_bytes"] == 30
     assert row["demand_handoff_full_bytes_known"] == 80
     assert row["completion_to_client_submit_ms"] == 10.
@@ -572,6 +581,46 @@ def test_wait_events_deduplicate_node_commands_and_keep_native_residual_demand_s
     assert missing["rows"][0]["max_observed_planned_full_tokens"] is None
     assert missing["rows"][0]["max_observed_planned_full_bytes"] is None
     assert missing["summary"]["by_source"]["join_ticket"]["planned_full_bytes_unknown_events"] == 1
+
+
+def test_reentry_reuse_phases_use_actual_submit_and_do_not_double_count_boundaries():
+    actions = [
+        {"command_id": command, "submit_ts_ms": submit, "pool_bytes": {"kv": size}}
+        for command, submit, size in (
+            ("early", 99., 10), ("at-completion", 100., 20),
+            ("at-client-submit", 110., 30), ("at-native-arrival", 120., 40),
+            ("at-service", 200., 50), ("unknown-submit", None, 60),
+        )
+    ]
+    result = reentry_full_reuse_phases(
+        actions, completion=100., client_submit=110., native_arrival=120., service=200.,
+    )
+    assert [row["command_ids"] for row in result.values()] == [
+        ["at-completion"], ["at-client-submit"], ["at-native-arrival"],
+    ]
+    assert [row["full_bytes"] for row in result.values()] == [20, 30, 40]
+    assert all(row["boundaries_valid"] for row in result.values())
+
+
+@pytest.mark.parametrize("arrival,service,valid", [
+    (None, 200., (True, False, False)),
+    (109., 200., (True, False, False)),
+    (120., None, (True, True, False)),
+    (120., 119., (True, True, False)),
+    (float("nan"), 200., (True, False, False)),
+])
+def test_reentry_reuse_keeps_missing_or_reversed_phase_boundaries_unknown(
+    arrival, service, valid,
+):
+    result = reentry_full_reuse_phases(
+        [{"command_id": "restore", "submit_ts_ms": 115., "pool_bytes": {"kv": 20}}],
+        completion=100., client_submit=110., native_arrival=arrival, service=service,
+    )
+    assert tuple(row["boundaries_valid"] for row in result.values()) == valid
+    for row in result.values():
+        if not row["boundaries_valid"]:
+            assert row["command_ids"] == []
+            assert row["full_bytes"] == 0
 
 
 def test_tool_event_waits_for_all_tools_and_leaves_unknown_evidence_unknown(tmp_path):
