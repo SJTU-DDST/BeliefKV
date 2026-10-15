@@ -20,14 +20,18 @@ V839绑定最新V63三窗及V834固定前缀。1800–2100秒请求步数多
 的Mamba状态来释放容量。CPU Host元数据/拷贝替身不是真实DMA；
 不得将终态child快照当作当时等待agent的可回收拓扑证据。
 
-V849/24a83c9为下一候选，替代尚未运行的V843；记录口径修正后
-v847的703项及原报告136项、同引擎157项共996个不重复检查。
-V64已排队，由ops/start_v64_cold_full_tail_20261015.py等待
-V63成功完整采集、原driver/scheduler退出与GPU0独占空闲后启动；
-接续器238495、观察器275192，端口18468。保留原V63并使用
-原156项配置与V58开发参考，不改成canary，不因观察超时重启。
+最新V855/5229d98继承V849的996项检查，另加只读工具反馈32项，
+共1028个不重复身份。V859保存原V845登记与状态，确认旧V64
+未启动后只停止等待器238495/观察器275192，不触碰V63。
+当前V64_latest/V857由ops/start_v64_latest_read_feedback_20261015.py
+等待V63成功完整采集、driver/scheduler退出与GPU0空闲后接续，
+接续器493245、观察器494540，端口18468；旧等待器不得重启。
+保持156项配置与V58开发参考，不改canary，不因观察超时重启。
 若原轮physical_disabled或driver失败，接续器先停下供诊断。
-runtime prepare_pool_scope与实际FULL尾段策略必须一致。
+新反馈仅追加工具结果历史，实际调用仍执行；不把同参次数或
+序列化对象output_sha256不同当作内容变化、无效调用或质量证据。
+共享harness更新须在正式native/predictive对照两侧一致，旧V58
+仍只作开发参考。runtime prepare_pool_scope须与实际策略一致。
 
 原生日志full token usage按capacity减available和evictable，
 不能将19%解释为物理空闲81%。V842按同一固定前缀分时区分

@@ -80,14 +80,25 @@ ineligible outcomes censored. At3000s, eligible completions84/78 and restricted
 root-completion time2118.599/2166.941s favor predictive by2.23%. This is not
 complete result.duration_seconds mean JCT, matched trajectories or quality.
 
-The next cold candidate is24a83c9/V849, superseding unlaunchedV843/deccbf3.
-It also fixes runtime prepare_pool_scope to match the actual incremental
-FULL session path. V847 reruns703 checks; unchanged reporting136 and engine157
-give996 unique identities. V64 is registered inV845 and queued only after
-successful complete V63, its driver/scheduler exit and exclusive free GPU0.
-Launcher238495 and observer275192 are live; V64 GPU collection has not begun.
-Keep the156-workflow setup and V58 development reference. Stop the sequence
-for prior physical disablement or driver failure and diagnose before resuming.
+The next cold candidate is5229d98/V855. It inherits V849/24a83c9's996
+checks and FULL session-path scope correction, and adds32 relevant checks
+for factual read-result feedback. V852 observes309 same-input grep calls
+in one child; different serialized output hashes do not prove changed visible
+content. The old feedback covered execute only. grep/read_file/glob/ls now
+retain physical execution and append history for identical visible text and
+outcome within the same conversation/workspace epoch. Scripted-model checks
+use a real LangChain agent and preserve earlier messages and observation bounds.
+No new guard, suppression or forced RETURN. Actual loop and quality gains
+remain unverified; total distinct passing checks1028.
+
+V859 verifies the old queue was still unlaunched, stops only launcher238495
+and observer275192, and preserves V845 plus original state snapshots.
+V64_latest is registered inV857 with launcher493245 and observer494540,
+waiting for complete successful V63, its driver/scheduler exit and free GPU0.
+Keep the156-workflow setup and V58 development reference. The shared harness
+change can alter trajectories, JOIN timing and pressure: formal native controls
+must use the same harness and resources, and gains cannot be assigned to
+scheduling from the historical comparison. V63 source remains frozen.
 
 The fifth4800-5100s window is complete:343212/330775 request steps,
 mean context23055/23153 and worker interval22.367/22.231ms. Short-prefill
