@@ -66,6 +66,41 @@ same JOIN/session/node generation/FULL length:21 of39 repeat restores
 have confirmed first-service reuse. Reject a blanket one-restore limit;
 registered-target identity is not an exact page-content/allocation fingerprint.
 
+V939 binds the selected child request to exact native output totals. Of51
+first estimated-work triggers,45 lead native EOS by over2s; median actual/
+predicted remaining work is188/44.64 tokens, signed error-136.96.
+The last pre-native-EOS snapshot instead overestimates by16.93 tokens
+(median absolute33.78). Client notice features align. A global seconds
+shift cannot correct both directions; retain phase/work/rate separation.
+
+beff01e adds sealed delivered-input exports, baseline reproduction and
+per-role notice coverage;43 CPU checks pass. V940 binds5869 snapshots/
+63 natural requests,5359 notice-active. Work-only train/calibration/evaluation
+have35/18/6 project-disjoint workflows; calibration contains1488 active
+notice snapshots. Baseline work reproduces within0.0009 tokens.
+Both workload waves contain only the existing seven project families, not
+Astropy/Sphinx. These new roles are development work-head holdouts; the
+frozen phase/encoder previously saw their families, not a sealed new test.
+On six evaluation requests, unweighted refit changes last-snapshot median
+absolute error 47.737->30.703 tokens but P90 114.993->180.378; late4 gives
+40.235/88.032 with a worse selector pinball score. Original-progress replay
+does not establish stable subsecond triggers. Neither candidate is selected
+for GPU; retain both results. Fits use CPU only and do not change live V65.
+
+V65's second-wave3600-3900s window is complete:312147/388781 request
+steps,23.217s control exclusive wall. Short-prefill48/75 samples have
+58.237/39.102ms mean run_batch and7.669/4.027ms selection thread CPU.
+Most full48/context-matched decode worker groups remain close, with one
+at1.114x; bucketed short-prefill differences remain. Earlier close groups
+do not close the control-cost workstream. Retain trajectory/configuration
+limits and continue the fifth fixed window and full-run observation.
+Two-thread CPU work refits overlap part of this second-wave window;
+retain this resource intervention, not a formal matched comparison.
+V941 samples native stacks only at4129-4150s:377 of927 main samples
+include forward_extend, with GDN/Triton/CUTLASS and breakable graph eager
+calls. This is neither recapture evidence nor CPU/CUDA duration.
+Native unwinding can briefly pause threads; retain the diagnostic interval.
+
 V64's1800-2100s window has392903/381775 request steps,23.081s control
 exclusive wall and39.240/40.419ms short-prefill run_batch. Mixed windows,
 different contexts and work leave end-to-end acceptance open.
