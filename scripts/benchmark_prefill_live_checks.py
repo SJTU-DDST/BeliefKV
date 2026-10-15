@@ -17,8 +17,10 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
-from beliefkv.runtime.sglang_v0520_admission import select_native_prefill_candidates
-from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime
+from beliefkv.runtime.sglang_v0520_admission import (
+    PrefillCandidateKey, select_native_prefill_candidates,
+)
+from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime, _ChildFinalStage
 from scripts.benchmark_native_shared_path import (
     baseline_classes, distribution, synthetic_runtime,
 )
@@ -41,9 +43,27 @@ def measure(baseline, baseline_frontier, *, workflows, profiling, scenario, iter
     try:
         for runtime, _ in variants.values():
             runtime.enable_resident_first = False
-            runtime.enable_final_stage_priority = True
+            runtime.enable_final_stage_priority = scenario != "disabled_priority_control"
             runtime._final_priority_normal_admissions = 4
             runtime._prefetch_priority_normal_admissions = 4
+        if scenario == "final_stage_control":
+            for runtime, queue in variants.values():
+                child_key = runtime.visible[queue[-1].rid]
+                parent = runtime.graph.invocations[f"{child_key.root_workflow_id}-root"]
+                parent.join_id = f"{child_key.root_workflow_id}-join-1"
+                parent_key = PrefillCandidateKey(
+                    f"parent-{child_key.root_workflow_id}",
+                    child_key.root_workflow_id, parent.invocation_id,
+                    parent.context_id, 0, 0, f"session-{parent.context_id}", 0,
+                )
+                runtime.context_sessions[parent.context_id] = parent_key
+                stage = _ChildFinalStage(
+                    parent_key, parent.join_id, child_key.invocation_id,
+                    child_key.context_epoch, 64, time.monotonic() + 600.,
+                    request_id=child_key.request_id,
+                )
+                runtime._final_stages[parent.join_id] = stage
+                runtime._final_request_stages[stage.request_id] = stage
         for iteration in range(iterations + warmup):
             order = list(variants)
             if iteration % 2:
@@ -51,12 +71,12 @@ def measure(baseline, baseline_frontier, *, workflows, profiling, scenario, iter
             for name in order:
                 runtime, queue = variants[name]
                 key = runtime.visible[queue[iteration % len(queue)].rid]
-                if scenario == "stable":
-                    kinds = ()
-                elif scenario == "local_round":
+                if scenario == "local_round":
                     kinds = (RuntimeEventKind.LLM_SUBMIT, RuntimeEventKind.LLM_RESULT)
-                else:
+                elif scenario == "message_control":
                     kinds = (RuntimeEventKind.MESSAGE,)
+                else:
+                    kinds = ()
                 events = tuple(
                     RuntimeEvent(
                         f"{iteration}-{kind.value}", float(iteration), kind,
@@ -95,6 +115,12 @@ def measure(baseline, baseline_frontier, *, workflows, profiling, scenario, iter
                     raise AssertionError("CPU admission fixture issued a physical action")
             if outputs["baseline"] != outputs["candidate"]:
                 raise AssertionError("plan, selection, complete graph or counters changed")
+        if scenario == "final_stage_control" and not all(
+            runtime.counts["final_priority_candidates_inspected"] > 0
+            and runtime._final_priority_promoted == queue[-1].rid
+            for runtime, queue in variants.values()
+        ):
+            raise AssertionError("final-stage control did not exercise a live promotion")
         costs = {
             name: {
                 field: distribution([sample[field] for sample in values])
@@ -132,7 +158,10 @@ def main():
         )
         for workflows in (108, 156)
         for profiling in (False, True)
-        for scenario in ("stable", "local_round", "message_control")
+        for scenario in (
+            "stable", "local_round", "message_control",
+            "final_stage_control", "disabled_priority_control",
+        )
     ]
     paths = (
         "beliefkv/runtime/sglang_v0520_runtime.py",
@@ -152,7 +181,8 @@ def main():
         "limits": [
             "Synthetic same-input CPU queues do not establish live frequency, GPU or JCT gains.",
             "Timing includes causal events, scheduler maintenance, complete planning and live selection.",
-            "Resident-first is disabled, final priority is enabled with no final-stage candidates.",
+            "Resident-first is disabled; final-stage and disabled-priority controls retain their existing policies.",
+            "Final-stage controls require an actual last-child candidate inspected and promoted in both arms.",
             "Message control invalidates causal ranks; stable cases retain the prior causal cache.",
             "All identity parsing and final terminal checks remain; GC and timing stay enabled.",
             "Native allocator, neural workers, socket IPC and DMA are outside this fixture.",
