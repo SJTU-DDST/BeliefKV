@@ -4083,9 +4083,15 @@ class NativeAdmissionRuntime:
                 first = opportunity.steps[0]
                 missing = nodes[first.node_id].full_host_tokens
                 probe_tokens = min(missing, byte_limit // full_unit)
-                probe_tokens = probe_tokens // max(1, self._native_page_size) * max(
-                    1, self._native_page_size,
-                )
+                page_size = max(1, self._native_page_size)
+                probe_tokens = probe_tokens // page_size * page_size
+                if (
+                    probe_tokens == 0 and budget.source == "native_next_prefill"
+                    and missing >= page_size
+                ):
+                    # Backed waiting pages may be absent from both native
+                    # budgets. Probe one page; reclaim must earn a fresh budget.
+                    probe_tokens = page_size
                 if probe_tokens > 0:
                     first = replace(first, include_mamba=False)
                     return replace(
