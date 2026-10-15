@@ -37,6 +37,10 @@ analyzers for120-300/600-900/1800-2100/3600-3900/4800-5100s. The first window
 has228469/246021 request steps, short-prefill selection CPU4.999/2.734ms and
 run_batch37.354/34.842ms. Real deadline coalescing and indexed reclaim execute,
 but no measured net benefit is established; all three workstreams stay open.
+In600-900s, steps356509/386707 exceed V62's346953 by2.8%, and control
+exclusive wall falls33.710 to31.284s. Mean context23794/23674 is close,
+yet decode worker intervals34.078/31.212ms remain different. Continue
+actual CUDA-graph, batch-geometry and adjacent-phase attribution.
 
 V819/V820 bind a recent sealed prefix: JOIN/tool early verified FULL reuse
 1.570/8.594GB. Tool's last submit is1835.983s after first GPU service. Among
