@@ -102,6 +102,28 @@ frozen and do not restart a healthy full run for conditional CPU gains.
 Input/decode reservation, useful FULL conversion and end-to-end acceptance
 remain open; no GPU, DMA, JCT or throughput benefit is established here.
 
+V810/V814 inspect the same1116125886-byte V62 prefix, SHA2566f1bdc44...
+06b1e424. Tool/JOIN counts2889/106 identify waits with no FULL allowance
+after reservation. Across recorded reclaim diagnoses,493 wait identities
+have a selected payload fitting without reserve and2674 have a payload
+that itself exceeds free space; categories may overlap over time. These
+are not successful opportunities, a complete census or permission to remove
+input/decode reservation. Native rejection checks include109917 unbacked
+and257591 session-referenced records, with only23 published-waiter checks.
+
+Post-forward dispatch now refreshes the native running-batch reference before
+JOIN/tool planning. Missing batch observations preserve the previous state.
+The original reproduced six restore slots despite an actual full48 batch.
+KeepV811's three failures/one pass;V812 has406 passing related checks.
+No adder reread, input-reserve change, KV scan or weakened check is added.
+V813 has26 passing offline audit checks. At23:46 Asia/Shanghai,146 outcomes
+include145 completed/one incomplete and142 natural/JCT-qualified results.
+django__django-14500 ends with finish_reason=length; retain8192 output cap.
+Three other completions retain their existing finalization intervention.
+This repair remains outside V62. Freeze the next latest-runtime candidate
+with engine64641f62 and its matching canonical patch; the development
+default staging patch is older and must not silently replace this engine.
+
 The two development optimizations now form independent candidate45f46b7,
 directly extending V61/9e8a574. Only dispatch, its tests and that candidate's
 canonical engine patch change. Engine treeaca4c6a8 changes only the reclamation

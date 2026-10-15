@@ -776,6 +776,8 @@ class NativeAdmissionRuntime:
         self, waiting_queue: Sequence[object] = (), *, running_batch: object = None,
     ) -> None:
         """Plan immutable waiting contexts after native forward submission."""
+        if running_batch is not None:
+            self._observe_native_admission_capacity(running_batch=running_batch, adder=None)
         self.counts["physical_planning_after_forward"] += 1
         self.dispatch_join_prefetch()
         if (

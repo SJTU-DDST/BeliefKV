@@ -140,3 +140,50 @@ def test_missing_pool_units_preserve_tokens_without_fabricating_bytes():
     assert row["listed_device_tokens"] == 2
     assert row["listed_device_bytes"] is None
     assert row["post_reclaim_full_deficit_bytes"] is None
+
+
+@pytest.mark.parametrize("available,payload_fits,reserve_exceeds", (
+    (3267, True, True), (4400, True, False), (300, False, True),
+))
+def test_recorded_reserve_and_payload_constraints_are_distinguished(
+    available, payload_fits, reserve_exceeds,
+):
+    result = evaluate((plan(
+        capacity_budget={
+            "source": "native_next_prefill", "reserve_full_tokens": 4145,
+        },
+        capacity_reclaim={
+            "target_full_tokens": 4473, "free_full_tokens_after": available,
+            "full_target_satisfied": False,
+        },
+    ),))
+    label = (
+        "recorded_target_payload_fits_without_full_reserve" if payload_fits else
+        "recorded_target_payload_exceeds_free_full"
+    )
+    assert result["buckets"][label]["observed_wait_identities"] == 1
+    assert ("full_reserve_alone_exceeds_free_full" in result["buckets"]) == reserve_exceeds
+    assert "does not authorize removing it" in result["reserve_classification_semantics"]
+
+
+@pytest.mark.parametrize("changes", (
+    {"reserve_full_tokens": None}, {"reserve_full_tokens": True},
+    {"reserve_full_tokens": -1}, {"target_full_tokens": None},
+    {"target_full_tokens": 4145}, {"free_full_tokens_after": 5000},
+    {"full_target_satisfied": True},
+))
+def test_missing_invalid_or_already_satisfied_targets_are_not_reserve_blocked(changes):
+    budget = {
+        "source": "native_next_prefill",
+        "reserve_full_tokens": changes.get("reserve_full_tokens", 4145),
+    }
+    diagnosis = {
+        "target_full_tokens": 4473, "free_full_tokens_after": 3267,
+        "full_target_satisfied": False,
+        **{key: value for key, value in changes.items() if key != "reserve_full_tokens"},
+    }
+    result = evaluate((plan(capacity_budget=budget, capacity_reclaim=diagnosis),))
+    assert not any(
+        name.startswith(("recorded_target_payload_", "full_reserve_alone_"))
+        for name in result["buckets"]
+    )

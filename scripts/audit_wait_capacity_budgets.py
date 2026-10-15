@@ -150,6 +150,24 @@ def evaluate(records, *, full_bytes_per_token=None) -> dict:
         if full is False:
             add("reclaim_full_target_unsatisfied", row)
             failed_full_rejections.update(observed_rejections)
+            if isinstance(budget, dict) and budget.get("source") == "native_next_prefill":
+                target, available, reserve = (
+                    diagnosis.get("target_full_tokens"),
+                    diagnosis.get("free_full_tokens_after"),
+                    budget.get("reserve_full_tokens"),
+                )
+                if all(type(value) is int and value >= 0 for value in (
+                    target, available, reserve,
+                )) and target > reserve and available < target:
+                    payload = target - reserve
+                    add(
+                        "recorded_target_payload_fits_without_full_reserve"
+                        if available >= payload else
+                        "recorded_target_payload_exceeds_free_full",
+                        row,
+                    )
+                    if available < reserve:
+                        add("full_reserve_alone_exceeds_free_full", row)
             published = diagnosis.get("published_waiting_candidates")
             if published == 0:
                 add("full_unsatisfied_without_published_waiter", row)
@@ -200,6 +218,13 @@ def evaluate(records, *, full_bytes_per_token=None) -> dict:
         "native_full_rejection_check_counts": dict(rejections),
         "full_unsatisfied_native_rejection_check_counts": dict(failed_full_rejections),
         "waiting_candidate_check_counts": dict(waiting_checks),
+        "reserve_classification_semantics": (
+            "For a positive selected target payload, subtract the same plan's recorded "
+            "FULL reserve from its reclaim target and compare with post-reclaim free "
+            "tokens. This arithmetic does not validate current input/decode needs, "
+            "complete parent readiness, Mamba, timing, DMA, next admission or reuse. "
+            "Payload fitting without the reserve does not authorize removing it."
+        ),
         "recorded_shared_waiting_volume": {
             "full_bytes_per_token": full_bytes_per_token,
             "diagnostic_snapshots": len(shared_volumes),

@@ -332,6 +332,74 @@ def test_completed_prefill_selections_do_not_consume_next_restore_frontier(
         runtime.close()
 
 
+@pytest.mark.parametrize("current_running", (0, 4, 48))
+def test_post_forward_restore_budget_observes_current_native_running_batch(current_running):
+    runtime, *_ = locked_runtime()
+    runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
+    runtime._native_cache.host_pool_group.entry_map["mamba"].host_pool.size_per_token = 64
+    runtime._observe_native_admission_capacity(
+        running_batch=NS(reqs=[NS()] * 20),
+        adder=NS(
+            max_running_requests=48, max_prefill_bs=8, page_size=16,
+            rem_input_tokens=100,
+        ),
+    )
+    observed = []
+    try:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+            return_value=StaticPoolHeadroomObservation(
+                True, device_full_free_tokens=10_000, device_mamba_free_slots=10,
+            ),
+        ), patch.object(
+            runtime, "dispatch_join_prefetch",
+            side_effect=lambda: observed.append(runtime._current_residency_budget()),
+        ), patch.object(runtime, "dispatch_tool_prefetch"), patch.object(
+            runtime, "dispatch_join_prepare",
+        ), patch.object(runtime, "dispatch_tool_prepare"):
+            runtime.dispatch_after_forward(running_batch=NS(reqs=[NS()] * current_running))
+        expected_slots = min(6, max(1, 48 - current_running))
+        assert len(observed) == 1
+        assert observed[0].request_slots == expected_slots
+        assert observed[0].reserve_full_tokens == 100 + 16 * (
+            current_running + expected_slots
+        )
+    finally:
+        runtime.close()
+
+
+def test_post_forward_without_native_batch_preserves_last_observed_capacity():
+    runtime, *_ = locked_runtime()
+    runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
+    runtime._native_cache.host_pool_group.entry_map["mamba"].host_pool.size_per_token = 64
+    runtime._observe_native_admission_capacity(
+        running_batch=NS(reqs=[NS()] * 48),
+        adder=NS(
+            max_running_requests=48, max_prefill_bs=8, page_size=16,
+            rem_input_tokens=100,
+        ),
+    )
+    observed = []
+    try:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+            return_value=StaticPoolHeadroomObservation(
+                True, device_full_free_tokens=10_000, device_mamba_free_slots=10,
+            ),
+        ), patch.object(
+            runtime, "dispatch_join_prefetch",
+            side_effect=lambda: observed.append(runtime._current_residency_budget()),
+        ), patch.object(runtime, "dispatch_tool_prefetch"), patch.object(
+            runtime, "dispatch_join_prepare",
+        ), patch.object(runtime, "dispatch_tool_prepare"):
+            runtime.dispatch_after_forward()
+        assert len(observed) == 1
+        assert observed[0].request_slots == 1
+        assert observed[0].reserve_full_tokens == 100 + 16 * 49
+    finally:
+        runtime.close()
+
+
 def test_unobservable_capacity_does_not_keep_an_old_expanded_budget():
     runtime, *_ = locked_runtime()
     from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
