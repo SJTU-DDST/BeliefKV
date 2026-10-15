@@ -12,6 +12,7 @@ import re
 import subprocess
 import tempfile
 import xml.etree.ElementTree as ET
+from zipfile import ZipFile
 
 from PIL import Image
 from pptx import Presentation
@@ -49,6 +50,9 @@ def validate_slide(slide, svg: Path, presentation):
         f"SVG/PowerPoint text differs: {svg.name}",
     )
     math_count = italic_count = 0
+    expected_heads = sum("marker-end" in node.attrib for node in root)
+    native_heads = sum(shape.name.startswith("arrowhead ") for shape in slide.shapes)
+    require(native_heads == expected_heads, f"Missing editable arrowheads in {svg.name}")
     for node, shape in zip(expected, text_shapes):
         runs = [run for paragraph in shape.text_frame.paragraphs for run in paragraph.runs]
         require(len(runs) == 1, f"Unexpected text-run structure: {shape.text!r}")
@@ -72,6 +76,10 @@ def validate_slide(slide, svg: Path, presentation):
             and shape.top + shape.height <= presentation.slide_height,
             f"Object outside slide: {shape.name!r}",
         )
+        require(
+            bool(shape._element.xpath("p:spPr/a:effectLst")),
+            f"Missing explicit effect reset: {shape.name!r}",
+        )
     notes = slide.notes_slide.notes_text_frame.text
     require(len(notes) > 300, f"Missing mechanism notes in {svg.name}")
     require(math_count > 0 and italic_count > 0, f"Missing editable math in {svg.name}")
@@ -86,7 +94,27 @@ def validate_slide(slide, svg: Path, presentation):
         "unique_shape_ids": True,
         "notes_present": True,
         "picture_objects": pictures,
+        "all_shapes_and_text_have_effect_resets": True,
+        "editable_arrowheads": native_heads,
     }
+
+
+def validate_no_effects(path: Path):
+    forbidden = {
+        "outerShdw", "innerShdw", "prstShdw", "glow", "reflection",
+        "softEdge", "blur", "scene3d", "sp3d",
+    }
+    with ZipFile(path) as package:
+        for name in package.namelist():
+            if not name.endswith(".xml"):
+                continue
+            root = ET.fromstring(package.read(name))
+            for node in root.iter():
+                local = node.tag.rsplit("}", 1)[-1]
+                require(local not in forbidden, f"Visual effect remains in {name}: {local}")
+                if local == "effectRef":
+                    require(node.get("idx") == "0", f"Inherited effect remains in {name}")
+    return True
 
 
 def office_preview(pdf: Path, destination: Path):
@@ -97,7 +125,7 @@ def office_preview(pdf: Path, destination: Path):
             ["pdftoppm", "-png", "-scale-to", "1800", str(pdf), str(prefix)],
             check=True,
         )
-        sheet = Image.new("RGB", (1488, 2976), "#e8edef")
+        sheet = Image.new("RGB", (1488, 2976), "white")
         for index in range(3):
             with Image.open(Path(scratch) / f"page-{index + 1}.png") as image:
                 page = image.convert("RGB").resize((1440, 960), Image.Resampling.LANCZOS)
@@ -121,6 +149,7 @@ def main():
     for language in ("zh", "en"):
         path = args.output / f"beliefkv_architecture_editable_{language}.pptx"
         presentation = Presentation(path)
+        no_effects = validate_no_effects(path)
         require(len(presentation.slides) == 3, f"Expected three slides: {path}")
         figures = [row for row in manifest["figures"] if row["language"] == language]
         slides = [
@@ -138,6 +167,7 @@ def main():
             "file": path.name, "sha256": digest(path), "slides": slides,
             "office_render_pdf_sha256": digest(office_pdf),
             "office_render_pages": 3,
+            "package_wide_shadow_and_3d_effects_absent": no_effects,
         })
 
     for row in manifest["figures"]:

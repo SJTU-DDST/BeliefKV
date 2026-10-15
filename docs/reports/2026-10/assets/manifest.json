@@ -1,5 +1,5 @@
 {
-  "source_revision": "c6d30be1d56fd2393808d2fd33c29cea2c6592d6",
+  "source_revision": "453525adb1297c8ac7267720df9a549360cb8c64",
   "architecture_date": "2026-10-15",
   "source_revision_scope": "latest development implementation, not every frozen experiment; source files and drawing generator are individually fingerprinted",
   "architecture_source_sha256": {
@@ -16,14 +16,19 @@
     "beliefkv/runtime/native_transfer_service.py": "7bd8f754f6aba88360afa33d2d33625f572142d8233feaa242d8060ff925525f",
     "patches/sglang-v0.5.20-beliefkv-staging.patch": "f7b1942b37d7c30998dadb29e512ecc6013f1eb02dcbb65b068e0c71c92bed81"
   },
-  "generator_sha256": "9359c4594ad491fd7c741550c252bce255fc4df4c3a106a1dc3a220248b45a52",
+  "generator_sha256": "dfe156f6d77fc37c69a6ffec46839a40bf19561832e617e79d8873ab6592afa6",
   "drawing_helpers_sha256": "656ff099ec8617dde72d7b33122e136b073f5879bbecc81530b9d31917b6602b",
   "schematic_not_empirical_performance": true,
-  "visual_style": "gray backplates, black outlines, semantic ownership colors",
+  "visual_style": "compact control/data planes, native page pools and state ledgers, flat black outlines and semantic ownership colors",
+  "shadow_policy": "no offset decorative layers; explicit shape/text resets; package-wide theme, master, layout, shadow, glow, reflection and 3D effects removed",
+  "powerpoint_arrowheads": "editable native triangles oriented from the final SVG path segment",
   "palette": {
     "ink": "#181818",
     "gray_backplate": "#eeeeee",
     "blue_section": "#a9cee8",
+    "green_section": "#9dc38b",
+    "control_plane": "#e8f1f8",
+    "data_plane": "#eaf2e7",
     "parent": "#e9a6bf",
     "child_1": "#b5d68b",
     "child_2": "#f2bd7d",
@@ -47,8 +52,8 @@
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 78,
-      "editable_math_text_objects": 12
+      "text_objects": 128,
+      "editable_math_text_objects": 29
     },
     {
       "stem": "01_system_overview_zh",
@@ -64,8 +69,8 @@
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 78,
-      "editable_math_text_objects": 12
+      "text_objects": 128,
+      "editable_math_text_objects": 29
     },
     {
       "stem": "02_prediction_and_overlap_en",
@@ -81,8 +86,8 @@
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 123,
-      "editable_math_text_objects": 88
+      "text_objects": 183,
+      "editable_math_text_objects": 116
     },
     {
       "stem": "02_prediction_and_overlap_zh",
@@ -98,8 +103,8 @@
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 123,
-      "editable_math_text_objects": 88
+      "text_objects": 183,
+      "editable_math_text_objects": 116
     },
     {
       "stem": "03_pages_and_capacity_handoff_en",
@@ -115,8 +120,8 @@
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 113,
-      "editable_math_text_objects": 30
+      "text_objects": 139,
+      "editable_math_text_objects": 39
     },
     {
       "stem": "03_pages_and_capacity_handoff_zh",
@@ -132,8 +137,8 @@
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 113,
-      "editable_math_text_objects": 30
+      "text_objects": 139,
+      "editable_math_text_objects": 39
     }
   ],
   "powerpoints": [
@@ -142,18 +147,18 @@
       "language": "zh",
       "slides": [
         {
-          "objects": 375,
-          "text_objects": 78,
+          "objects": 499,
+          "text_objects": 128,
           "picture_objects": 0
         },
         {
-          "objects": 284,
-          "text_objects": 123,
+          "objects": 436,
+          "text_objects": 183,
           "picture_objects": 0
         },
         {
-          "objects": 367,
-          "text_objects": 113,
+          "objects": 425,
+          "text_objects": 139,
           "picture_objects": 0
         }
       ]
@@ -163,18 +168,18 @@
       "language": "en",
       "slides": [
         {
-          "objects": 375,
-          "text_objects": 78,
+          "objects": 499,
+          "text_objects": 128,
           "picture_objects": 0
         },
         {
-          "objects": 284,
-          "text_objects": 123,
+          "objects": 436,
+          "text_objects": 183,
           "picture_objects": 0
         },
         {
-          "objects": 367,
-          "text_objects": 113,
+          "objects": 425,
+          "text_objects": 139,
           "picture_objects": 0
         }
       ]

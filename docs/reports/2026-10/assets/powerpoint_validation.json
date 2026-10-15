@@ -1,97 +1,111 @@
 {
-  "checked_at": "2026-10-15T03:20:32.711841+00:00",
+  "checked_at": "2026-10-15T04:07:56.010264+00:00",
   "architecture_date": "2026-10-15",
-  "source_revision": "c6d30be1d56fd2393808d2fd33c29cea2c6592d6",
-  "generator_sha256": "9359c4594ad491fd7c741550c252bce255fc4df4c3a106a1dc3a220248b45a52",
-  "validator_sha256": "2b734bfa0179b384ef4543ffde1f9b994139e4e8cbb2f2ef1f7c680cdbaddeba",
+  "source_revision": "453525adb1297c8ac7267720df9a549360cb8c64",
+  "generator_sha256": "dfe156f6d77fc37c69a6ffec46839a40bf19561832e617e79d8873ab6592afa6",
+  "validator_sha256": "a17e735cd1fdd9d38c78d7e9e10b34652bf68e2d230da979ebba24a615c3ca24",
   "powerpoints": [
     {
       "file": "beliefkv_architecture_editable_zh.pptx",
-      "sha256": "7cef962c4110e0fd32f3b252db1e9d689ba071e63790209c9545d7f82a21023d",
+      "sha256": "94a9589fa80d901aa50bf35f5952ae94c1074d26494454780be685e238b0de86",
       "slides": [
         {
-          "editable_objects": 375,
-          "editable_text_objects": 78,
-          "editable_math_text_objects": 12,
-          "italic_math_variables": 4,
-          "text_matches_svg": true,
-          "font_and_italic_styles_match_svg": true,
-          "all_objects_within_slide": true,
-          "unique_shape_ids": true,
-          "notes_present": true,
-          "picture_objects": 0
-        },
-        {
-          "editable_objects": 284,
-          "editable_text_objects": 123,
-          "editable_math_text_objects": 88,
-          "italic_math_variables": 40,
-          "text_matches_svg": true,
-          "font_and_italic_styles_match_svg": true,
-          "all_objects_within_slide": true,
-          "unique_shape_ids": true,
-          "notes_present": true,
-          "picture_objects": 0
-        },
-        {
-          "editable_objects": 367,
-          "editable_text_objects": 113,
-          "editable_math_text_objects": 30,
+          "editable_objects": 499,
+          "editable_text_objects": 128,
+          "editable_math_text_objects": 29,
           "italic_math_variables": 13,
           "text_matches_svg": true,
           "font_and_italic_styles_match_svg": true,
           "all_objects_within_slide": true,
           "unique_shape_ids": true,
           "notes_present": true,
-          "picture_objects": 0
+          "picture_objects": 0,
+          "all_shapes_and_text_have_effect_resets": true,
+          "editable_arrowheads": 41
+        },
+        {
+          "editable_objects": 436,
+          "editable_text_objects": 183,
+          "editable_math_text_objects": 116,
+          "italic_math_variables": 52,
+          "text_matches_svg": true,
+          "font_and_italic_styles_match_svg": true,
+          "all_objects_within_slide": true,
+          "unique_shape_ids": true,
+          "notes_present": true,
+          "picture_objects": 0,
+          "all_shapes_and_text_have_effect_resets": true,
+          "editable_arrowheads": 30
+        },
+        {
+          "editable_objects": 425,
+          "editable_text_objects": 139,
+          "editable_math_text_objects": 39,
+          "italic_math_variables": 18,
+          "text_matches_svg": true,
+          "font_and_italic_styles_match_svg": true,
+          "all_objects_within_slide": true,
+          "unique_shape_ids": true,
+          "notes_present": true,
+          "picture_objects": 0,
+          "all_shapes_and_text_have_effect_resets": true,
+          "editable_arrowheads": 38
         }
       ],
-      "office_render_pdf_sha256": "a531847f2779867015b673cd16f5b4b8a5ee14919fa31fa176e3640d90b4b76b",
-      "office_render_pages": 3
+      "office_render_pdf_sha256": "c2ce445f18818eb70b40ae3aa2411201c7bc5f9b565db3d116cf1dedc39a46b5",
+      "office_render_pages": 3,
+      "package_wide_shadow_and_3d_effects_absent": true
     },
     {
       "file": "beliefkv_architecture_editable_en.pptx",
-      "sha256": "34574b0d354dac637698e02d7dd5ca96f3b7725484c5e7d2504793b145dc1bcc",
+      "sha256": "9993c6e0e602ee12b9dfda9a8fee5de41a4bc5ef22718938f5bf3fdda9255a48",
       "slides": [
         {
-          "editable_objects": 375,
-          "editable_text_objects": 78,
-          "editable_math_text_objects": 12,
-          "italic_math_variables": 4,
-          "text_matches_svg": true,
-          "font_and_italic_styles_match_svg": true,
-          "all_objects_within_slide": true,
-          "unique_shape_ids": true,
-          "notes_present": true,
-          "picture_objects": 0
-        },
-        {
-          "editable_objects": 284,
-          "editable_text_objects": 123,
-          "editable_math_text_objects": 88,
-          "italic_math_variables": 40,
-          "text_matches_svg": true,
-          "font_and_italic_styles_match_svg": true,
-          "all_objects_within_slide": true,
-          "unique_shape_ids": true,
-          "notes_present": true,
-          "picture_objects": 0
-        },
-        {
-          "editable_objects": 367,
-          "editable_text_objects": 113,
-          "editable_math_text_objects": 30,
+          "editable_objects": 499,
+          "editable_text_objects": 128,
+          "editable_math_text_objects": 29,
           "italic_math_variables": 13,
           "text_matches_svg": true,
           "font_and_italic_styles_match_svg": true,
           "all_objects_within_slide": true,
           "unique_shape_ids": true,
           "notes_present": true,
-          "picture_objects": 0
+          "picture_objects": 0,
+          "all_shapes_and_text_have_effect_resets": true,
+          "editable_arrowheads": 41
+        },
+        {
+          "editable_objects": 436,
+          "editable_text_objects": 183,
+          "editable_math_text_objects": 116,
+          "italic_math_variables": 52,
+          "text_matches_svg": true,
+          "font_and_italic_styles_match_svg": true,
+          "all_objects_within_slide": true,
+          "unique_shape_ids": true,
+          "notes_present": true,
+          "picture_objects": 0,
+          "all_shapes_and_text_have_effect_resets": true,
+          "editable_arrowheads": 30
+        },
+        {
+          "editable_objects": 425,
+          "editable_text_objects": 139,
+          "editable_math_text_objects": 39,
+          "italic_math_variables": 18,
+          "text_matches_svg": true,
+          "font_and_italic_styles_match_svg": true,
+          "all_objects_within_slide": true,
+          "unique_shape_ids": true,
+          "notes_present": true,
+          "picture_objects": 0,
+          "all_shapes_and_text_have_effect_resets": true,
+          "editable_arrowheads": 38
         }
       ],
-      "office_render_pdf_sha256": "a61a53f06a37762905c862221471de6745796fa58413f077fe9cc3e44d29efde",
-      "office_render_pages": 3
+      "office_render_pdf_sha256": "04390cfcecf8503dce3750cf3e8de61ceee64edd11e775d71397dd22b5692270",
+      "office_render_pages": 3,
+      "package_wide_shadow_and_3d_effects_absent": true
     }
   ],
   "png_count": 6,

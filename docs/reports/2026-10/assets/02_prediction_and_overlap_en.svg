@@ -14,262 +14,384 @@
 <text x="40" y="51" xml:space="preserve" font-size="37" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">From Completion Signals to Near-term Demand</text>
 <text x="40" y="88" xml:space="preserve" font-size="24" fill="#535353" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">Delivered content + service progress → separate phase / work heads → runtime timing</text>
 <line x1="40" y1="108" x2="1760" y2="108" stroke="#181818" stroke-width="1.6"/>
-<rect x="40" y="132" width="1110" height="440" rx="6" fill="#eeeeee" stroke="#181818" stroke-width="2"/>
-<rect x="40" y="132" width="1110" height="48" rx="6" fill="#a9cee8" stroke="#181818" stroke-width="2"/>
-<rect x="41.2" y="159" width="1107.6" height="20" rx="0" fill="#a9cee8" stroke="none" stroke-width="0"/>
-<line x1="40" y1="180" x2="1150" y2="180" stroke="#181818" stroke-width="1.7"/>
-<text x="60" y="165" xml:space="preserve" font-size="28" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">(a) Asynchronous child model</text>
-<rect x="76" y="238" width="145" height="123" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.9"/>
-<polygon points="197,238 221,262 197,262" fill="#dddddd" stroke="#181818" stroke-width="1.8"/>
-<rect x="88" y="262" width="86.39999999999999" height="10" rx="0" fill="#dddddd" stroke="none" stroke-width="0"/>
-<rect x="88" y="281" width="100.8" height="10" rx="0" fill="#f2bd7d" stroke="none" stroke-width="0"/>
-<rect x="88" y="300" width="78.0" height="10" rx="0" fill="#dddddd" stroke="none" stroke-width="0"/>
-<rect x="88" y="319" width="92.4" height="10" rx="0" fill="#f2bd7d" stroke="none" stroke-width="0"/>
-<text x="121.841796875" y="219" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">x</text>
-<text x="136.158203125" y="226.5" xml:space="preserve" font-size="19.5" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">t−k:t</text>
-<path d="M223 298 L291 298" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<line x1="326" y1="250" x2="387" y2="250" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="326" y1="250" x2="387" y2="295" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="326" y1="250" x2="387" y2="340" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="326" y1="295" x2="387" y2="250" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="326" y1="295" x2="387" y2="295" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="326" y1="295" x2="387" y2="340" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="326" y1="340" x2="387" y2="250" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="326" y1="340" x2="387" y2="295" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="326" y1="340" x2="387" y2="340" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="409" y1="250" x2="470" y2="250" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="409" y1="250" x2="470" y2="295" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="409" y1="250" x2="470" y2="340" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="409" y1="295" x2="470" y2="250" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="409" y1="295" x2="470" y2="295" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="409" y1="295" x2="470" y2="340" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="409" y1="340" x2="470" y2="250" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="409" y1="340" x2="470" y2="295" stroke="#a6a6a6" stroke-width="1.1"/>
-<line x1="409" y1="340" x2="470" y2="340" stroke="#a6a6a6" stroke-width="1.1"/>
-<circle cx="315" cy="250" r="12" fill="#a9cee8" stroke="#181818" stroke-width="1.6"/>
-<circle cx="315" cy="295" r="12" fill="#a9cee8" stroke="#181818" stroke-width="1.6"/>
-<circle cx="315" cy="340" r="12" fill="#a9cee8" stroke="#181818" stroke-width="1.6"/>
-<circle cx="398" cy="250" r="12" fill="#a9cee8" stroke="#181818" stroke-width="1.6"/>
-<circle cx="398" cy="295" r="12" fill="#a9cee8" stroke="#181818" stroke-width="1.6"/>
-<circle cx="398" cy="340" r="12" fill="#a9cee8" stroke="#181818" stroke-width="1.6"/>
-<circle cx="481" cy="250" r="12" fill="#b5d68b" stroke="#181818" stroke-width="1.6"/>
-<circle cx="481" cy="295" r="12" fill="#b5d68b" stroke="#181818" stroke-width="1.6"/>
-<circle cx="481" cy="340" r="12" fill="#b5d68b" stroke="#181818" stroke-width="1.6"/>
-<path d="M474.75 206.75 L474.75 198.5 L485.25 198.5 L485.25 206.75" fill="none" stroke="#181818" stroke-width="2"/>
-<rect x="471" y="206.75" width="18.0" height="15.0" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<circle cx="480.0" cy="212.75" r="1.5" fill="#181818" stroke="#181818" stroke-width="1"/>
-<text x="398" y="399" xml:space="preserve" font-size="24" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">Frozen encoder</text>
-<path d="M496 297 L553 297" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<rect x="568" y="234" width="30" height="17" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1.1"/>
-<rect x="568" y="254" width="30" height="17" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="1.1"/>
-<rect x="568" y="274" width="30" height="17" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1.1"/>
-<rect x="568" y="294" width="30" height="17" rx="0" fill="#b5d68b" stroke="#181818" stroke-width="1.1"/>
-<rect x="568" y="314" width="30" height="17" rx="0" fill="#e9a6bf" stroke="#181818" stroke-width="1.1"/>
-<rect x="568" y="334" width="30" height="17" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1.1"/>
-<text x="573.453125" y="395" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">z</text>
-<text x="586.12890625" y="402.5" xml:space="preserve" font-size="19.5" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">t</text>
-<circle cx="668" cy="297" r="26" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<text x="656.33203125" y="307" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">∥</text>
-<path d="M601 297 L639 297" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<polygon points="82,448 215,448 215,504 145,504 126,520 126,504 82,504" fill="#f2bd7d" stroke="#181818" stroke-width="1.8"/>
-<text x="148" y="483" xml:space="preserve" font-size="24" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">Notice</text>
-<path d="M310 504 L335 504 L335 488 L365 488 L365 470 L396 470 L396 450 L422 450" fill="none" stroke="#2676b8" stroke-width="2.7"/>
-<text x="322.9296875" y="538" xml:space="preserve" font-size="29" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">N</text>
-<text x="343.2734375" y="545.25" xml:space="preserve" font-size="18.85" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">t</text>
-<text x="349.484375" y="538" xml:space="preserve" font-size="29" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">, { }</text>
-<path d="M217 477 L258 477 L258 418 L668 418" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<path d="M427 477 L668 477 L668 327" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<path d="M697 297 L730 297 L730 256 L777 256" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<path d="M730 297 L730 442 L777 442" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<rect x="790" y="220" width="11" height="11" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
-<rect x="805" y="220" width="11" height="11" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="820" y="220" width="11" height="11" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="790" y="235" width="11" height="11" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="805" y="235" width="11" height="11" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
-<rect x="820" y="235" width="11" height="11" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="790" y="250" width="11" height="11" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="805" y="250" width="11" height="11" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="820" y="250" width="11" height="11" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
-<text x="850" y="251" xml:space="preserve" font-size="25" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">Phase</text>
-<rect x="790" y="405" width="11" height="11" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
-<rect x="805" y="405" width="11" height="11" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="820" y="405" width="11" height="11" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="790" y="420" width="11" height="11" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="805" y="420" width="11" height="11" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
-<rect x="820" y="420" width="11" height="11" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="790" y="435" width="11" height="11" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="805" y="435" width="11" height="11" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="820" y="435" width="11" height="11" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
-<text x="850" y="436" xml:space="preserve" font-size="25" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">Work</text>
-<path d="M926 255 L958 255" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<path d="M935 440 L964 440" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<rect x="982" y="296" width="29" height="25" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1.5"/>
-<text x="996" y="352" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">W</text>
-<rect x="1031" y="278" width="29" height="43" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="1.5"/>
-<text x="1045" y="352" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">N</text>
-<rect x="1080" y="238" width="29" height="83" rx="0" fill="#e9a6bf" stroke="#181818" stroke-width="1.5"/>
-<text x="1094" y="352" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">F</text>
-<text x="1016.40625" y="214" xml:space="preserve" font-size="29" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">p</text>
-<text x="1031.90625" y="221.25" xml:space="preserve" font-size="18.85" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">phase</text>
-<line x1="978" y1="440" x2="1116" y2="440" stroke="#181818" stroke-width="2.5"/>
-<line x1="978" y1="431" x2="978" y2="449" stroke="#181818" stroke-width="2"/>
-<line x1="1116" y1="431" x2="1116" y2="449" stroke="#181818" stroke-width="2"/>
-<circle cx="1033" cy="440" r="5" fill="#181818" stroke="#181818" stroke-width="1"/>
-<text x="971.853515625" y="498" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">[</text>
-<text x="980.513671875" y="498" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
-<text x="1003.173828125" y="504.5" xml:space="preserve" font-size="16.900000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">lo</text>
-<text x="1017.396484375" y="498" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">, </text>
-<text x="1030.396484375" y="498" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
-<text x="1053.056640625" y="504.5" xml:space="preserve" font-size="16.900000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">c</text>
-<text x="1061.603515625" y="498" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">, </text>
-<text x="1074.603515625" y="498" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
-<text x="1097.263671875" y="504.5" xml:space="preserve" font-size="16.900000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">hi</text>
-<text x="1111.486328125" y="498" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">]</text>
-<path d="M1080 548 L54 548 L54 310 L75 310" fill="none" stroke="#2676b8" stroke-width="1.8" stroke-dasharray="8 6" marker-end="url(#blue-arrow)"/>
-<rect x="518" y="531" width="214" height="30" rx="0" fill="#eeeeee" stroke="none" stroke-width="0"/>
-<text x="573.19140625" y="554" xml:space="preserve" font-size="26" fill="#2676b8" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
-<text x="580.4140625" y="554" xml:space="preserve" font-size="26" fill="#2676b8" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> → </text>
-<text x="619.4140625" y="554" xml:space="preserve" font-size="26" fill="#2676b8" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
-<text x="626.63671875" y="554" xml:space="preserve" font-size="26" fill="#2676b8" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + Δ</text>
-<text x="669.5859375" y="554" xml:space="preserve" font-size="26" fill="#2676b8" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
-<rect x="1190" y="132" width="570" height="440" rx="6" fill="#eeeeee" stroke="#181818" stroke-width="2"/>
-<rect x="1190" y="132" width="570" height="48" rx="6" fill="#a9cee8" stroke="#181818" stroke-width="2"/>
-<rect x="1191.2" y="159" width="567.6" height="20" rx="0" fill="#a9cee8" stroke="none" stroke-width="0"/>
-<line x1="1190" y1="180" x2="1760" y2="180" stroke="#181818" stroke-width="1.7"/>
-<text x="1210" y="165" xml:space="preserve" font-size="28" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">(b) Direct JOIN</text>
-<circle cx="1248" cy="307" r="25" fill="#e9a6bf" stroke="#181818" stroke-width="2"/>
-<text x="1248" y="315.16" xml:space="preserve" font-size="24" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">P</text>
-<circle cx="1383" cy="243" r="25" fill="#b5d68b" stroke="#181818" stroke-width="2"/>
-<text x="1383" y="250.82" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">C1</text>
-<circle cx="1383" cy="366" r="25" fill="#f2bd7d" stroke="#181818" stroke-width="2"/>
-<text x="1383" y="373.82" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">C2</text>
-<path d="M1418 228.0 L1425.0 238 L1438 218" fill="none" stroke="#181818" stroke-width="2.8"/>
-<polygon points="1565,268.5 1618.0,307 1565,345.5 1512.0,307" fill="#ffffff" stroke="#181818" stroke-width="1.5"/>
-<text x="1565" y="316" xml:space="preserve" font-size="25" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">ALL</text>
-<circle cx="1700" cy="307" r="25" fill="#e9a6bf" stroke="#181818" stroke-width="2"/>
-<text x="1700" y="315.16" xml:space="preserve" font-size="24" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">P</text>
-<path d="M1274 294 L1356 253" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<path d="M1274 321 L1356 355" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<path d="M1411 243 L1466 243 L1517 292" fill="none" stroke="#969696" stroke-width="2.6" marker-end="url(#gray-arrow)"/>
-<path d="M1411 366 L1466 366 L1517 321" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<path d="M1621 307 L1671 307" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<text x="1244" y="426" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">pending = {C2}</text>
-<text x="1238" y="493" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">τ</text>
-<text x="1251.16796875" y="501.5" xml:space="preserve" font-size="22.1" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">join</text>
-<text x="1286.39453125" y="493" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> = </text>
-<text x="1384.0" y="471" xml:space="preserve" font-size="33" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">[</text>
-<text x="1394.98828125" y="471" xml:space="preserve" font-size="33" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
-<text x="1422.4765625" y="471" xml:space="preserve" font-size="33" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> − Δ</text>
-<text x="1476.98828125" y="471" xml:space="preserve" font-size="33" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">N</text>
-<text x="1499.0" y="471" xml:space="preserve" font-size="33" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">]</text>
-<text x="1512.84375" y="479.25" xml:space="preserve" font-size="21.45" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">+</text>
-<line x1="1374" y1="480" x2="1535.96875" y2="480" stroke="#181818" stroke-width="1.8"/>
-<text x="1432.087890625" y="516" xml:space="preserve" font-size="33" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">v</text>
-<text x="1446.736328125" y="516" xml:space="preserve" font-size="33" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
-<text x="1457.724609375" y="516" xml:space="preserve" font-size="33" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
-<text x="1466.892578125" y="516" xml:space="preserve" font-size="33" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
-<text x="1238" y="551" xml:space="preserve" font-size="22" fill="#535353" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">Observed service rate; queue separate</text>
-<path d="M1119 440 L1212 440 L1212 480 L1233 480" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<path d="M1502 573 L1502 595 L1780 595 L1780 840 L1282 840 L1282 908" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<rect x="40" y="618" width="1720" height="206" rx="6" fill="#eeeeee" stroke="#181818" stroke-width="2"/>
-<rect x="40" y="618" width="1720" height="48" rx="6" fill="#a9cee8" stroke="#181818" stroke-width="2"/>
-<rect x="41.2" y="645" width="1717.6" height="20" rx="0" fill="#a9cee8" stroke="none" stroke-width="0"/>
-<line x1="40" y1="666" x2="1760" y2="666" stroke="#181818" stroke-width="1.7"/>
-<text x="60" y="651" xml:space="preserve" font-size="28" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">(c) Tool timing conditioned on survival</text>
-<circle cx="103" cy="718" r="29" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<path d="M103 699.15 L103 718 L118.95 725.25" fill="none" stroke="#181818" stroke-width="2"/>
-<text x="81.33984375" y="783" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
-<text x="96.33984375" y="783" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
-<text x="106.33203125" y="783" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
-<text x="114.66796875" y="783" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
-<rect x="184" y="691" width="116" height="65" rx="3" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<rect x="185" y="692" width="114" height="13" rx="0" fill="#dddddd" stroke="none" stroke-width="0"/>
-<path d="M200 719 L211 729 L200 739" fill="none" stroke="#181818" stroke-width="2"/>
-<line x1="222" y1="738" x2="286" y2="738" stroke="#181818" stroke-width="2"/>
-<text x="177" y="793" xml:space="preserve" font-size="22" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">cmd / project</text>
-<path d="M135 718 L181 718" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<path d="M303 718 L378 718" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<rect x="405" y="679" width="180" height="58" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.5"/>
-<rect x="397" y="687" width="180" height="58" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.5"/>
-<rect x="389" y="695" width="180" height="58" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.5"/>
-<text x="479" y="733" xml:space="preserve" font-size="25" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">History</text>
-<path d="M554 679.5 L559.95 688 L571 671" fill="none" stroke="#181818" stroke-width="2.8"/>
-<path d="M591 718 L655 718" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<rect x="794" y="677" width="173" height="101" rx="0" fill="#b5d68b" stroke="none" stroke-width="0"/>
-<line x1="682" y1="779" x2="968" y2="779" stroke="#181818" stroke-width="1.8"/>
-<line x1="682" y1="779" x2="682" y2="680" stroke="#181818" stroke-width="1.8"/>
-<path d="M683 778 L717 778 L717 760 L751 760 L751 740 L794 740 L794 710 L841 710 L841 691 L909 691 L909 680 L965 680" fill="none" stroke="#181818" stroke-width="2.6"/>
-<line x1="793" y1="681" x2="793" y2="785" stroke="#bf3335" stroke-width="2" stroke-dasharray="6 4"/>
-<text x="786.75" y="810" xml:space="preserve" font-size="25" fill="#bf3335" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
-<text x="948" y="810" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">T</text>
-<text x="657.33984375" y="691" xml:space="preserve" font-size="24" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">F</text>
-<path d="M987 718 L1036 718" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<text x="1060" y="713" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">P(</text>
-<text x="1090.234375" y="713" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">T</text>
-<text x="1109.14453125" y="713" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> ≤ </text>
-<text x="1144.8046875" y="713" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
-<text x="1161.8046875" y="713" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + </text>
-<text x="1197.98046875" y="713" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">r</text>
-<text x="1211.2109375" y="713" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> | </text>
-<text x="1235.01953125" y="713" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">T</text>
-<text x="1253.9296875" y="713" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> &gt; </text>
-<text x="1290.10546875" y="713" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
-<text x="1307.10546875" y="713" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
-<line x1="1090" y1="762" x2="1471" y2="762" stroke="#181818" stroke-width="2.5"/>
-<line x1="1090" y1="753" x2="1090" y2="771" stroke="#181818" stroke-width="2"/>
-<line x1="1471" y1="753" x2="1471" y2="771" stroke="#181818" stroke-width="2"/>
-<circle cx="1259" cy="762" r="5" fill="#181818" stroke="#181818" stroke-width="1"/>
-<text x="1073.5" y="805" xml:space="preserve" font-size="27" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">q</text>
-<text x="1088.0" y="811.75" xml:space="preserve" font-size="17.55" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">10</text>
-<text x="1242.5" y="805" xml:space="preserve" font-size="27" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">q</text>
-<text x="1257.0" y="811.75" xml:space="preserve" font-size="17.55" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">50</text>
-<text x="1454.5" y="805" xml:space="preserve" font-size="27" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">q</text>
-<text x="1469.0" y="811.75" xml:space="preserve" font-size="17.55" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">90</text>
-<path d="M1490 744 L1553 744" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<text x="1605.5234375" y="753" xml:space="preserve" font-size="35" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">τ</text>
-<text x="1619.05078125" y="761.75" xml:space="preserve" font-size="22.75" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">tool</text>
-<text x="1655.44140625" y="753" xml:space="preserve" font-size="35" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
-<text x="1667.09765625" y="753" xml:space="preserve" font-size="35" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
-<text x="1676.8203125" y="753" xml:space="preserve" font-size="35" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
-<line x1="1647" y1="825" x2="1647" y2="840" stroke="#bf3335" stroke-width="2.6"/>
-<circle cx="1647" cy="840" r="4" fill="#bf3335" stroke="#bf3335" stroke-width="1"/>
-<rect x="40" y="864" width="1720" height="132" rx="6" fill="#eeeeee" stroke="#181818" stroke-width="2"/>
-<rect x="40" y="864" width="1720" height="48" rx="6" fill="#a9cee8" stroke="#181818" stroke-width="2"/>
-<rect x="41.2" y="891" width="1717.6" height="20" rx="0" fill="#a9cee8" stroke="none" stroke-width="0"/>
-<line x1="40" y1="912" x2="1760" y2="912" stroke="#181818" stroke-width="1.7"/>
-<text x="60" y="897" xml:space="preserve" font-size="28" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">(d) Runtime transfer window</text>
-<text x="64" y="958" xml:space="preserve" font-size="25" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">ACK history</text>
-<rect x="242" y="955" width="10" height="19" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<rect x="257" y="945" width="10" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<rect x="272" y="951" width="10" height="23" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<rect x="287" y="935" width="10" height="39" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<path d="M310 946 L358 946" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<text x="386" y="958" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">H</text>
-<text x="410.5546875" y="958" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> = min(</text>
-<text x="510.9453125" y="958" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">L</text>
-<text x="529.85546875" y="958" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">, </text>
-<text x="546.85546875" y="958" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">S</text>
-<text x="564.85546875" y="966.5" xml:space="preserve" font-size="22.1" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">90</text>
-<text x="587.85546875" y="958" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + </text>
-<text x="624.03125" y="958" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">Q</text>
-<text x="649.5859375" y="966.5" xml:space="preserve" font-size="22.1" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">90</text>
-<text x="672.5859375" y="958" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + </text>
-<text x="708.76171875" y="958" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">Δ</text>
-<text x="729.71875" y="966.5" xml:space="preserve" font-size="22.1" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">obs</text>
-<text x="761.28125" y="958" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + </text>
-<text x="797.45703125" y="958" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">ε</text>
-<text x="811.85546875" y="966.5" xml:space="preserve" font-size="22.1" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">early</text>
-<text x="856.828125" y="958" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
-<path d="M1091 946 L1168 946" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<polygon points="1282,910.0 1391.0,946 1282,982.0 1173.0,946" fill="#ffffff" stroke="#181818" stroke-width="1.5"/>
-<text x="1245.80859375" y="958" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">τ</text>
-<text x="1257.9765625" y="958" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> ≤ </text>
-<text x="1293.63671875" y="958" xml:space="preserve" font-size="34" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">H</text>
-<path d="M1395 946 L1550 946" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<rect x="1567" y="925" width="165" height="58" rx="3" fill="#f5d460" stroke="#181818" stroke-width="2"/>
-<text x="1649.5" y="951.1" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">H2D</text>
-<path d="M1586 961.54 L1713 961.54" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
-<path d="M1713 972.56 L1586 972.56" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="32" y="124" width="1060" height="564" rx="2" fill="#eeeeee" stroke="#181818" stroke-width="1.8"/>
+<rect x="32" y="124" width="1060" height="38" rx="2" fill="#a9cee8" stroke="#181818" stroke-width="1.8"/>
+<text x="46" y="151.36" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">(a) Content, events and rolling work forecasts</text>
+<rect x="57" y="220" width="122" height="110" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.9"/>
+<polygon points="155,220 179,244 155,244" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
+<rect x="69" y="244" width="69.84" height="10" rx="0" fill="#dddddd" stroke="none" stroke-width="0"/>
+<rect x="69" y="263" width="81.48" height="10" rx="0" fill="#f2bd7d" stroke="none" stroke-width="0"/>
+<rect x="69" y="282" width="63.050000000000004" height="10" rx="0" fill="#dddddd" stroke="none" stroke-width="0"/>
+<rect x="69" y="301" width="74.69" height="10" rx="0" fill="#f2bd7d" stroke="none" stroke-width="0"/>
+<text x="91.7734375" y="202" xml:space="preserve" font-size="29" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">x</text>
+<text x="105.64453125" y="209.25" xml:space="preserve" font-size="18.85" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">t−k:t</text>
+<path d="M182 269 L232 269" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
+<line x1="260" y1="228" x2="310" y2="228" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="260" y1="228" x2="310" y2="271" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="260" y1="228" x2="310" y2="314" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="260" y1="271" x2="310" y2="228" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="260" y1="271" x2="310" y2="271" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="260" y1="271" x2="310" y2="314" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="260" y1="314" x2="310" y2="228" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="260" y1="314" x2="310" y2="271" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="260" y1="314" x2="310" y2="314" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="330" y1="228" x2="380" y2="228" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="330" y1="228" x2="380" y2="271" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="330" y1="228" x2="380" y2="314" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="330" y1="271" x2="380" y2="228" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="330" y1="271" x2="380" y2="271" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="330" y1="271" x2="380" y2="314" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="330" y1="314" x2="380" y2="228" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="330" y1="314" x2="380" y2="271" stroke="#a6a6a6" stroke-width="1"/>
+<line x1="330" y1="314" x2="380" y2="314" stroke="#a6a6a6" stroke-width="1"/>
+<circle cx="250" cy="228" r="10" fill="#a9cee8" stroke="#181818" stroke-width="1.4"/>
+<circle cx="250" cy="271" r="10" fill="#a9cee8" stroke="#181818" stroke-width="1.4"/>
+<circle cx="250" cy="314" r="10" fill="#a9cee8" stroke="#181818" stroke-width="1.4"/>
+<circle cx="320" cy="228" r="10" fill="#a9cee8" stroke="#181818" stroke-width="1.4"/>
+<circle cx="320" cy="271" r="10" fill="#a9cee8" stroke="#181818" stroke-width="1.4"/>
+<circle cx="320" cy="314" r="10" fill="#a9cee8" stroke="#181818" stroke-width="1.4"/>
+<circle cx="390" cy="228" r="10" fill="#b5d68b" stroke="#181818" stroke-width="1.4"/>
+<circle cx="390" cy="271" r="10" fill="#b5d68b" stroke="#181818" stroke-width="1.4"/>
+<circle cx="390" cy="314" r="10" fill="#b5d68b" stroke="#181818" stroke-width="1.4"/>
+<path d="M398.25 190.45 L398.25 183.3 L407.35 183.3 L407.35 190.45" fill="none" stroke="#181818" stroke-width="2"/>
+<rect x="395" y="190.45" width="15.600000000000001" height="13.0" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
+<circle cx="402.8" cy="195.65" r="1.3" fill="#181818" stroke="#181818" stroke-width="1"/>
+<text x="429" y="194" xml:space="preserve" font-size="20" fill="#535353" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">request / epoch</text>
+<text x="320" y="357" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">Frozen encoder</text>
+<path d="M403 269 L453 269" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
+<rect x="466" y="218" width="27" height="14" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<rect x="466" y="235" width="27" height="14" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="1"/>
+<rect x="466" y="252" width="27" height="14" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<rect x="466" y="269" width="27" height="14" rx="0" fill="#b5d68b" stroke="#181818" stroke-width="1"/>
+<rect x="466" y="286" width="27" height="14" rx="0" fill="#e9a6bf" stroke="#181818" stroke-width="1"/>
+<rect x="466" y="303" width="27" height="14" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<text x="470.751953125" y="355" xml:space="preserve" font-size="29" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">z</text>
+<text x="483.037109375" y="362.25" xml:space="preserve" font-size="18.85" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">t</text>
+<circle cx="576" cy="269" r="24" fill="#ffffff" stroke="#181818" stroke-width="1.6"/>
+<line x1="572" y1="259" x2="572" y2="279" stroke="#181818" stroke-width="1.8"/>
+<line x1="580" y1="259" x2="580" y2="279" stroke="#181818" stroke-width="1.8"/>
+<path d="M496 269 L549 269" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
+<polygon points="57,392 182,392 182,439 115,439 100,451 100,439 57,439" fill="#f2bd7d" stroke="#181818" stroke-width="1.8"/>
+<text x="119" y="423" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">Notice</text>
+<path d="M251 425 L275 425 L275 410 L300 410 L300 394 L327 394 L327 378 L351 378" fill="none" stroke="#2676b8" stroke-width="2.5"/>
+<text x="266.185546875" y="467" xml:space="preserve" font-size="28" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">N</text>
+<text x="285.861328125" y="474.0" xml:space="preserve" font-size="18.2" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">t</text>
+<text x="291.931640625" y="467" xml:space="preserve" font-size="28" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">, { }</text>
+<rect x="374" y="389" width="77" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<text x="382" y="409.59" xml:space="preserve" font-size="19" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">notice</text>
+<rect x="451" y="389" width="80" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<text x="459" y="409.59" xml:space="preserve" font-size="19" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">tokens</text>
+<rect x="531" y="389" width="79" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<text x="539" y="409.59" xml:space="preserve" font-size="19" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">syntax</text>
+<rect x="374" y="418" width="77" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="382" y="438.59" xml:space="preserve" font-size="19" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">1</text>
+<rect x="451" y="418" width="80" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="459" y="438.59" xml:space="preserve" font-size="19" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">N(t)</text>
+<rect x="531" y="418" width="79" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="539" y="438.59" xml:space="preserve" font-size="19" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">{ }</text>
+<path d="M184 416 L209 416 L209 370 L576 370 L576 297" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M355 409 L371 409" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M612 435 L619 435 L619 350 L576 350 L576 297" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M603 269 L636 269 L636 244 L665 244" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
+<path d="M636 269 L636 399 L665 399" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
+<rect x="680" y="215" width="10" height="10" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
+<rect x="694" y="215" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
+<rect x="708" y="215" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
+<rect x="680" y="229" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
+<rect x="694" y="229" width="10" height="10" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
+<rect x="708" y="229" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
+<rect x="680" y="243" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
+<rect x="694" y="243" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
+<rect x="708" y="243" width="10" height="10" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
+<text x="735" y="246" xml:space="preserve" font-size="24" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">Phase</text>
+<rect x="680" y="370" width="10" height="10" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
+<rect x="694" y="370" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
+<rect x="708" y="370" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
+<rect x="680" y="384" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
+<rect x="694" y="384" width="10" height="10" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
+<rect x="708" y="384" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
+<rect x="680" y="398" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
+<rect x="694" y="398" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
+<rect x="708" y="398" width="10" height="10" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
+<text x="735" y="401" xml:space="preserve" font-size="24" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">Work</text>
+<path d="M820 244 L862 244" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M839 399 L862 399" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
+<rect x="884" y="282" width="31" height="22" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1.3"/>
+<text x="899" y="335" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">W</text>
+<rect x="946" y="264" width="31" height="40" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="1.3"/>
+<text x="961" y="335" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">N</text>
+<rect x="1008" y="231" width="31" height="73" rx="0" fill="#e9a6bf" stroke="#181818" stroke-width="1.3"/>
+<text x="1023" y="335" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">F</text>
+<text x="938.40625" y="199" xml:space="preserve" font-size="29" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">p</text>
+<text x="953.90625" y="206.25" xml:space="preserve" font-size="18.85" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">phase</text>
+<line x1="881" y1="399" x2="1065" y2="399" stroke="#181818" stroke-width="2.5"/>
+<line x1="881" y1="390" x2="881" y2="408" stroke="#181818" stroke-width="2"/>
+<line x1="1065" y1="390" x2="1065" y2="408" stroke="#181818" stroke-width="2"/>
+<circle cx="977" cy="399" r="5" fill="#181818" stroke="#181818" stroke-width="1"/>
+<text x="901.693359375" y="447" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">[</text>
+<text x="910.017578125" y="447" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
+<text x="931.841796875" y="453.25" xml:space="preserve" font-size="16.25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">lo</text>
+<text x="945.482421875" y="447" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">, </text>
+<text x="957.982421875" y="447" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
+<text x="979.806640625" y="453.25" xml:space="preserve" font-size="16.25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">c</text>
+<text x="988.017578125" y="447" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">, </text>
+<text x="1000.517578125" y="447" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
+<text x="1022.341796875" y="453.25" xml:space="preserve" font-size="16.25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">hi</text>
+<text x="1035.982421875" y="447" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">]</text>
+<line x1="48" y1="484" x2="1076" y2="484" stroke="#181818" stroke-width="1.2"/>
+<text x="49" y="516" xml:space="preserve" font-size="24" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">Online snapshots → revised endpoints</text>
+<text x="517.966796875" y="550" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">N</text>
+<text x="536.310546875" y="556.5" xml:space="preserve" font-size="16.900000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">t</text>
+<text x="845.6171875" y="550" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
+<text x="868.27734375" y="556.5" xml:space="preserve" font-size="16.900000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">lo</text>
+<text x="882.5" y="550" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> … </text>
+<text x="921.5" y="550" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
+<text x="944.16015625" y="556.5" xml:space="preserve" font-size="16.900000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">hi</text>
+<text x="72.875" y="582" xml:space="preserve" font-size="27" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
+<text x="81.375" y="588.75" xml:space="preserve" font-size="17.55" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">0</text>
+<rect x="124" y="563" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
+<rect x="158" y="563" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
+<rect x="192" y="563" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
+<rect x="226" y="563" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
+<path d="M271 574 L363 574" fill="none" stroke="#2676b8" stroke-width="1.8" stroke-dasharray="8 6" marker-end="url(#blue-arrow)"/>
+<rect x="397" y="565" width="110" height="18" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<path d="M666 574 L710 574" fill="none" stroke="#181818" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="778" y1="574" x2="1047" y2="574" stroke="#181818" stroke-width="2.5"/>
+<line x1="778" y1="565" x2="778" y2="583" stroke="#181818" stroke-width="2"/>
+<line x1="1047" y1="565" x2="1047" y2="583" stroke="#181818" stroke-width="2"/>
+<circle cx="935" cy="574" r="5" fill="#181818" stroke="#181818" stroke-width="1"/>
+<text x="72.875" y="621" xml:space="preserve" font-size="27" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
+<text x="81.375" y="627.75" xml:space="preserve" font-size="17.55" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">1</text>
+<rect x="124" y="602" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
+<rect x="158" y="602" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
+<rect x="192" y="602" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
+<rect x="226" y="602" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
+<path d="M271 613 L363 613" fill="none" stroke="#2676b8" stroke-width="1.8" stroke-dasharray="8 6" marker-end="url(#blue-arrow)"/>
+<rect x="397" y="604" width="180" height="18" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<path d="M666 613 L710 613" fill="none" stroke="#181818" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="725" y1="613" x2="944" y2="613" stroke="#181818" stroke-width="2.5"/>
+<line x1="725" y1="604" x2="725" y2="622" stroke="#181818" stroke-width="2"/>
+<line x1="944" y1="604" x2="944" y2="622" stroke="#181818" stroke-width="2"/>
+<circle cx="837" cy="613" r="5" fill="#181818" stroke="#181818" stroke-width="1"/>
+<text x="72.875" y="660" xml:space="preserve" font-size="27" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
+<text x="81.375" y="666.75" xml:space="preserve" font-size="17.55" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">2</text>
+<rect x="124" y="641" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
+<rect x="158" y="641" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
+<rect x="192" y="641" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
+<rect x="226" y="641" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
+<path d="M271 652 L363 652" fill="none" stroke="#2676b8" stroke-width="1.8" stroke-dasharray="8 6" marker-end="url(#blue-arrow)"/>
+<rect x="397" y="643" width="245" height="18" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<path d="M666 652 L710 652" fill="none" stroke="#181818" stroke-width="1.8" marker-end="url(#arrow)"/>
+<line x1="754" y1="652" x2="990" y2="652" stroke="#181818" stroke-width="2.5"/>
+<line x1="754" y1="643" x2="754" y2="661" stroke="#181818" stroke-width="2"/>
+<line x1="990" y1="643" x2="990" y2="661" stroke="#181818" stroke-width="2"/>
+<circle cx="901" cy="652" r="5" fill="#181818" stroke="#181818" stroke-width="1"/>
+<path d="M1066 669 L43 669 L43 272 L54 272" fill="none" stroke="#2676b8" stroke-width="1.6" stroke-dasharray="8 6" marker-end="url(#blue-arrow)"/>
+<rect x="1116" y="124" width="652" height="564" rx="2" fill="#eeeeee" stroke="#181818" stroke-width="1.8"/>
+<rect x="1116" y="124" width="652" height="38" rx="2" fill="#a9cee8" stroke="#181818" stroke-width="1.8"/>
+<text x="1130" y="151.36" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">(b) JOIN projection + observed service</text>
+<circle cx="1176" cy="273" r="24" fill="#e9a6bf" stroke="#181818" stroke-width="2"/>
+<text x="1176" y="280.82" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">P</text>
+<circle cx="1315" cy="213" r="24" fill="#b5d68b" stroke="#181818" stroke-width="2"/>
+<text x="1315" y="220.82" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">C1</text>
+<circle cx="1315" cy="334" r="24" fill="#f2bd7d" stroke="#181818" stroke-width="2"/>
+<text x="1315" y="341.82" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">C2</text>
+<path d="M1350 201.0 L1356.3 210 L1368 192" fill="none" stroke="#181818" stroke-width="2.8"/>
+<polygon points="1518,236.0 1574.5,273 1518,310.0 1461.5,273" fill="#ffffff" stroke="#181818" stroke-width="1.5"/>
+<text x="1518" y="282" xml:space="preserve" font-size="25" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">ALL</text>
+<circle cx="1698" cy="273" r="24" fill="#e9a6bf" stroke="#181818" stroke-width="2"/>
+<text x="1698" y="280.82" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">P</text>
+<path d="M1203 263 L1288 224" fill="none" stroke="#181818" stroke-width="2.2" marker-end="url(#arrow)"/>
+<path d="M1203 286 L1288 322" fill="none" stroke="#181818" stroke-width="2.2" marker-end="url(#arrow)"/>
+<path d="M1342 213 L1404 213 L1467 257" fill="none" stroke="#969696" stroke-width="2.2" marker-end="url(#gray-arrow)"/>
+<path d="M1342 334 L1404 334 L1467 289" fill="none" stroke="#bf3335" stroke-width="2.2" marker-end="url(#red-arrow)"/>
+<path d="M1576 273 L1671 273" fill="none" stroke="#bf3335" stroke-width="2.2" marker-end="url(#red-arrow)"/>
+<rect x="1139" y="389" width="107" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<text x="1147" y="409.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">group</text>
+<rect x="1246" y="389" width="247" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<text x="1254" y="409.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">pending</text>
+<rect x="1493" y="389" width="248" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<text x="1501" y="409.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">signal</text>
+<rect x="1139" y="418" width="107" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="1147" y="438.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">g</text>
+<rect x="1246" y="418" width="247" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="1254" y="438.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">{C1, C2}</text>
+<rect x="1493" y="418" width="248" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="1501" y="438.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">WAIT</text>
+<rect x="1139" y="447" width="107" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="1147" y="467.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">g</text>
+<rect x="1246" y="447" width="247" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="1254" y="467.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">{C2}</text>
+<rect x="1493" y="447" width="248" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="1501" y="467.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">NOTICE</text>
+<text x="1144" y="534" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">τ</text>
+<text x="1156.453125" y="542.0" xml:space="preserve" font-size="20.8" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">join</text>
+<text x="1189.734375" y="534" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
+<text x="1200.390625" y="534" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
+<text x="1209.28125" y="534" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">) = </text>
+<text x="1365.0" y="511" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">[</text>
+<text x="1375.65625" y="511" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
+<text x="1402.3125" y="511" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> − Δ</text>
+<text x="1455.171875" y="511" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">N</text>
+<text x="1476.515625" y="511" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">]</text>
+<text x="1489.96875" y="519.0" xml:space="preserve" font-size="20.8" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">+</text>
+<line x1="1355" y1="520" x2="1512.671875" y2="520" stroke="#181818" stroke-width="1.8"/>
+<text x="1411.6328125" y="555" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">v</text>
+<text x="1425.8359375" y="555" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
+<text x="1436.4921875" y="555" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
+<text x="1445.3828125" y="555" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
+<text x="1560" y="532" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">pending = 1</text>
+<line x1="1138" y1="579" x2="1747" y2="579" stroke="#a6a6a6" stroke-width="1"/>
+<rect x="1150" y="605" width="70" height="23" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<line x1="1225" y1="617" x2="1281" y2="617" stroke="#969696" stroke-width="1.3" stroke-dasharray="5 4"/>
+<rect x="1295" y="605" width="44" height="23" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<line x1="1344" y1="617" x2="1426" y2="617" stroke="#969696" stroke-width="1.3" stroke-dasharray="5 4"/>
+<rect x="1440" y="605" width="89" height="23" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<line x1="1534" y1="617" x2="1571" y2="617" stroke="#969696" stroke-width="1.3" stroke-dasharray="5 4"/>
+<rect x="1585" y="605" width="57" height="23" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<line x1="1647" y1="617" x2="1716" y2="617" stroke="#969696" stroke-width="1.3" stroke-dasharray="5 4"/>
+<text x="1146" y="668" xml:space="preserve" font-size="28" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">v</text>
+<text x="1158.4296875" y="668" xml:space="preserve" font-size="28" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
+<text x="1167.75390625" y="668" xml:space="preserve" font-size="28" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
+<text x="1175.53515625" y="668" xml:space="preserve" font-size="28" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
+<text x="1245" y="664" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">served work</text>
+<text x="1468" y="664" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">queue separate</text>
+<rect x="32" y="712" width="838" height="273" rx="2" fill="#eeeeee" stroke="#181818" stroke-width="1.8"/>
+<rect x="32" y="712" width="838" height="38" rx="2" fill="#a9cee8" stroke="#181818" stroke-width="1.8"/>
+<text x="46" y="739.36" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">(c) Conditional tool timing</text>
+<rect x="50" y="777" width="114" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<text x="58" y="797.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">project</text>
+<rect x="164" y="777" width="117" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<text x="172" y="797.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">cmd</text>
+<rect x="281" y="777" width="103" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<text x="289" y="797.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">done</text>
+<rect x="50" y="806" width="114" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="58" y="826.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">p</text>
+<rect x="164" y="806" width="117" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="172" y="826.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">k</text>
+<rect x="281" y="806" width="103" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="289" y="826.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">T1</text>
+<rect x="50" y="835" width="114" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="58" y="855.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">p</text>
+<rect x="164" y="835" width="117" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="172" y="855.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">k</text>
+<rect x="281" y="835" width="103" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="289" y="855.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">T2</text>
+<path d="M386 819 L418 819" fill="none" stroke="#181818" stroke-width="1.8" marker-end="url(#arrow)"/>
+<rect x="512" y="777" width="102" height="105" rx="0" fill="#b5d68b" stroke="none" stroke-width="0"/>
+<line x1="432" y1="882" x2="616" y2="882" stroke="#181818" stroke-width="1.4"/>
+<line x1="432" y1="882" x2="432" y2="778" stroke="#181818" stroke-width="1.4"/>
+<path d="M432 880 L464 880 L464 861 L493 861 L493 837 L528 837 L528 806 L572 806 L572 784 L615 784" fill="none" stroke="#181818" stroke-width="2.3"/>
+<line x1="511" y1="778" x2="511" y2="889" stroke="#bf3335" stroke-width="1.6" stroke-dasharray="5 4"/>
+<text x="505.0" y="907" xml:space="preserve" font-size="24" fill="#bf3335" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
+<circle cx="657" cy="792" r="20" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
+<path d="M657 779.0 L657 792 L668.0 797.0" fill="none" stroke="#181818" stroke-width="2"/>
+<line x1="661" y1="850" x2="836" y2="850" stroke="#181818" stroke-width="2.5"/>
+<line x1="661" y1="841" x2="661" y2="859" stroke="#181818" stroke-width="2"/>
+<line x1="836" y1="841" x2="836" y2="859" stroke="#181818" stroke-width="2"/>
+<circle cx="748" cy="850" r="5" fill="#181818" stroke="#181818" stroke-width="1"/>
+<text x="645.625" y="894" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">q</text>
+<text x="659.125" y="900.25" xml:space="preserve" font-size="16.25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">10</text>
+<text x="732.625" y="894" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">q</text>
+<text x="746.125" y="900.25" xml:space="preserve" font-size="16.25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">50</text>
+<text x="820.625" y="894" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">q</text>
+<text x="834.125" y="900.25" xml:space="preserve" font-size="16.25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">90</text>
+<text x="50" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">P(</text>
+<text x="76.67578125" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">T</text>
+<text x="93.359375" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> ≤ </text>
+<text x="124.82421875" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
+<text x="139.82421875" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + </text>
+<text x="171.7421875" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">r</text>
+<text x="183.41796875" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> | </text>
+<text x="204.42578125" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">T</text>
+<text x="221.109375" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> &gt; </text>
+<text x="253.02734375" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
+<text x="268.02734375" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
+<text x="360" y="961" xml:space="preserve" font-size="29" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> = </text>
+<text x="419.0" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">F</text>
+<text x="434.26953125" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
+<text x="442.59375" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
+<text x="455.09375" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + </text>
+<text x="481.69140625" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">r</text>
+<text x="491.421875" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">) − </text>
+<text x="526.34375" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">F</text>
+<text x="541.61328125" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
+<text x="549.9375" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
+<text x="562.4375" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
+<line x1="409" y1="946" x2="580.76171875" y2="946" stroke="#181818" stroke-width="1.8"/>
+<text x="453.123046875" y="974" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">1 − </text>
+<text x="492.220703125" y="974" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">F</text>
+<text x="507.490234375" y="974" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
+<text x="515.814453125" y="974" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
+<text x="528.314453125" y="974" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
+<path d="M623 946 L695 946" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
+<text x="739.1328125" y="956" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">τ</text>
+<text x="751.5859375" y="964.0" xml:space="preserve" font-size="20.8" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">tool</text>
+<rect x="894" y="712" width="874" height="273" rx="2" fill="#eeeeee" stroke="#181818" stroke-width="1.8"/>
+<rect x="894" y="712" width="874" height="38" rx="2" fill="#9dc38b" stroke="#181818" stroke-width="1.8"/>
+<text x="908" y="739.36" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">(d) Runtime: cost, timing and physical checks</text>
+<rect x="914" y="769" width="103" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<text x="922" y="789.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">dir</text>
+<rect x="1017" y="769" width="126" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<text x="1025" y="789.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">shape</text>
+<rect x="1143" y="769" width="139" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<text x="1151" y="789.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">bytes</text>
+<rect x="914" y="798" width="103" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="922" y="818.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">H2D</text>
+<rect x="1017" y="798" width="126" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="1025" y="818.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">extents</text>
+<rect x="1143" y="798" width="139" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
+<text x="1151" y="818.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">B</text>
+<text x="1320" y="788" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">submit → ACK</text>
+<text x="1532" y="788" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">enqueue → submit</text>
+<rect x="1325" y="827" width="17" height="14" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<rect x="1545" y="831.2" width="17" height="9.799999999999999" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="1"/>
+<rect x="1350" y="816" width="17" height="25" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<rect x="1570" y="823.5" width="17" height="17.5" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="1"/>
+<rect x="1375" y="802" width="17" height="39" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<rect x="1595" y="813.7" width="17" height="27.299999999999997" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="1"/>
+<rect x="1400" y="811" width="17" height="30" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
+<rect x="1620" y="820.0" width="17" height="21.0" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="1"/>
+<text x="1457" y="837" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">S</text>
+<text x="1471.0" y="843.5" xml:space="preserve" font-size="16.900000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">90</text>
+<text x="1674" y="837" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">Q</text>
+<text x="1693.77734375" y="843.5" xml:space="preserve" font-size="16.900000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">90</text>
+<text x="916" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">H</text>
+<text x="938.38671875" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> = min(</text>
+<text x="1029.921875" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">L</text>
+<text x="1047.1640625" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">, </text>
+<text x="1062.6640625" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">S</text>
+<text x="1079.1640625" y="893.75" xml:space="preserve" font-size="20.150000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">90</text>
+<text x="1100.4140625" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + </text>
+<text x="1133.3984375" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">Q</text>
+<text x="1156.78515625" y="893.75" xml:space="preserve" font-size="20.150000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">90</text>
+<text x="1178.03515625" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + </text>
+<text x="1211.01953125" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">Δ</text>
+<text x="1230.21484375" y="893.75" xml:space="preserve" font-size="20.150000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">obs</text>
+<text x="1259.34375" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + </text>
+<text x="1292.328125" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">ε</text>
+<text x="1305.54296875" y="893.75" xml:space="preserve" font-size="20.150000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">early</text>
+<text x="1347.01171875" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
+<polygon points="1161,916.0 1250.5,944 1161,972.0 1071.5,944" fill="#ffffff" stroke="#181818" stroke-width="1.5"/>
+<text x="1128.001953125" y="953" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">τ</text>
+<text x="1139.095703125" y="953" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> ≤ </text>
+<text x="1171.611328125" y="953" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">H</text>
+<path d="M1255 944 L1320 944" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
+<circle cx="1343" cy="944" r="18" fill="#ffffff" stroke="#181818" stroke-width="1.6"/>
+<path d="M1335 950 L1343 936 L1351 950" fill="none" stroke="#181818" stroke-width="1.8"/>
+<text x="1375" y="929" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">c</text>
+<text x="1387.09765625" y="916.0" xml:space="preserve" font-size="16.25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">*</text>
+<text x="1396.22265625" y="929" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> / </text>
+<text x="1415.66796875" y="929" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">B</text>
+<path d="M1450 929 L1462 929 L1462 901 L1343 901 L1343 923" fill="none" stroke="#181818" stroke-width="1.7" marker-end="url(#arrow)"/>
+<path d="M1365 944 L1545 944" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
+<rect x="1560" y="918" width="185" height="55" rx="3" fill="#f5d460" stroke="#181818" stroke-width="2"/>
+<text x="1652.5" y="942.75" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">H2D</text>
+<path d="M1579 952.65 L1726 952.65" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M1726 963.1 L1579 963.1" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
+<path d="M1504 689 L1504 700 L882 700 L882 944 L1068 944" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
+<line x1="825" y1="944" x2="882" y2="944" stroke="#bf3335" stroke-width="2"/>
+<circle cx="882" cy="944" r="4" fill="#bf3335" stroke="#bf3335" stroke-width="1"/>
 <line x1="1160" y1="1029" x2="1160" y2="1190" stroke="#969696" stroke-width="1.7" stroke-dasharray="6 5"/>
 <text x="1172" y="1025" xml:space="preserve" font-size="22" fill="#181818" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">RETURN / TOOL_END</text>
 <line x1="900" y1="1028" x2="1156" y2="1028" stroke="#bf3335" stroke-width="2"/>

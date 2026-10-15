@@ -9,13 +9,15 @@ import hashlib
 from html import escape
 from io import BytesIO
 import json
+import math
 from pathlib import Path
 import re
 import subprocess
 import xml.etree.ElementTree as ET
 
 import cairosvg
-from PIL import Image, ImageDraw, ImageFont
+from lxml import etree
+from PIL import Image, ImageFont
 from pptx import Presentation
 from pptx.dml.color import RGBColor
 from pptx.enum.dml import MSO_LINE_DASH_STYLE
@@ -52,9 +54,13 @@ AMBER_PALE = "#f2bd7d"
 PINK = "#e9a6bf"
 YELLOW = "#f5d460"
 RED = "#bf3335"
+CONTROL_PALE = "#e8f1f8"
+DATA_PALE = "#eaf2e7"
+GREEN_BAND = "#9dc38b"
 MATH_FAMILY = "Liberation Serif"
 PALETTE = {
     "ink": INK, "gray_backplate": GRAY_PALE, "blue_section": BLUE_PALE,
+    "green_section": GREEN_BAND, "control_plane": CONTROL_PALE, "data_plane": DATA_PALE,
     "parent": PINK, "child_1": TEAL_PALE, "child_2": AMBER_PALE,
     "transfer_engine": YELLOW, "control_action": RED,
 }
@@ -146,12 +152,14 @@ class PaperFigure(Figure):
         if family == MATH_FAMILY:
             self.math_objects += 1
 
-    def panel(self, x, y, w, h, title, *, color=BLUE_PALE, fill=GRAY_PALE, size=28):
-        self.rect(x, y, w, h, fill, INK, 2, 6)
-        self.rect(x, y, w, 48, color, INK, 2, 6)
-        self.rect(x + 1.2, y + 27, w - 2.4, 20, color, "none", 0, 0)
-        self.line(x, y + 48, x + w, y + 48, INK, 1.7)
-        self.text(x + 20, y + 33, title, size, INK, 700)
+    def panel(
+        self, x, y, w, h, title, *, color=BLUE_PALE, fill=GRAY_PALE,
+        size=26, band=38,
+    ):
+        self.rect(x, y, w, h, fill, INK, 1.8, 2)
+        self.rect(x, y, w, band, color, INK, 1.8, 2)
+        self.text(x + 14, y + band * .72 + (4 if self.language == "zh" else 0),
+                  title, size, INK, 700)
 
     def heading(self, english, chinese, subtitle_en, subtitle_zh):
         self.text(40, 51, self.tr(english, chinese), 37, INK, 700)
@@ -235,7 +243,7 @@ class PaperFigure(Figure):
     def document(self, x, y, w=130, h=112, *, color=BLUE_PALE):
         self.rect(x, y, w, h, PAPER, INK, 1.9, 2)
         self.polygon(((x + w - 24, y), (x + w, y + 24), (x + w - 24, y + 24)),
-                     BACKPLATE, INK)
+                     PAPER, INK)
         for index, fraction in enumerate((.72, .84, .65, .77)):
             yy = y + 33 + index * 19
             if yy > y + h - 10:
@@ -251,7 +259,7 @@ class PaperFigure(Figure):
 
     def bank(self, x, y, w, h, colors, *, label=None, missing=()):
         self.rect(x, y, w, h, PAPER, INK, 2, 3)
-        self.rect(x + 6, y + 6, w - 12, 12, BACKPLATE, "none", 0, 0)
+        self.line(x + 8, y + 17, x + w - 8, y + 17, INK, 1)
         gap = 6
         page_w = (w - 20 - (len(colors) - 1) * gap) / len(colors)
         for index, color in enumerate(colors):
@@ -264,10 +272,8 @@ class PaperFigure(Figure):
             self.centered(x + w / 2, y - 15, label, size=27, bold=True)
 
     def snapshot(self, x, y, label="", *, fill=PINK, scale=1, faded=False):
-        for index in (2, 1, 0):
-            self.rect(x + index * 7 * scale, y - index * 6 * scale,
-                      79 * scale, 59 * scale, BACKPLATE if faded else fill,
-                      GRAY if faded else INK, 1.5, 1)
+        self.rect(x, y, 79 * scale, 59 * scale, PAPER if faded else fill,
+                  GRAY if faded else INK, 1.5, 1)
         for row in range(2):
             for column in range(3):
                 self.rect(x + (10 + column * 22) * scale,
@@ -277,6 +283,30 @@ class PaperFigure(Figure):
         if label:
             self.math(x + 40 * scale, y + 87 * scale, [label],
                       size=27 * scale, color=GRAY if faded else INK, anchor="middle")
+
+    def table(self, x, y, widths, rows, *, row_h=30, size=20, header=True):
+        for row_index, values in enumerate(rows):
+            xx = x
+            for width, value in zip(widths, values):
+                self.rect(xx, y + row_index * row_h, width, row_h,
+                          BLUE_PALE if header and row_index == 0 else PAPER,
+                          INK, 1, 0)
+                self.text(xx + 8, y + row_index * row_h + row_h * .71,
+                          value, size, INK, 700 if header and row_index == 0 else 400)
+                xx += width
+
+    def strip(self, x, y, fills, *, labels=None, w=40, h=30, gap=5, missing=()):
+        for index, fill in enumerate(fills):
+            self.page(x + index * (w + gap), y,
+                      labels[index] if labels else "",
+                      fill=PAPER if index in missing else fill,
+                      stroke=GRAY if index in missing else INK,
+                      dashed=index in missing, w=w, h=h, size=min(21, h * .65))
+
+    def bracket(self, x1, x2, y, *, color=INK, down=False):
+        direction = -1 if down else 1
+        self.path(((x1, y + 7 * direction), (x1, y),
+                   (x2, y), (x2, y + 7 * direction)), color, 1.6)
 
     def gpu(self, x, y, w=130, h=114, *, label="GPU", running=None):
         for xx in range(round(x + 14), round(x + w - 5), 20):
@@ -299,7 +329,8 @@ class PaperFigure(Figure):
 
     def dma(self, x, y, w=142, h=85, *, label="DMA"):
         self.rect(x, y, w, h, YELLOW, INK, 2, 3)
-        self.centered(x + w / 2, y + min(29, h * .45), label, size=26, bold=True)
+        self.centered(x + w / 2, y + min(29, h * .45) + (4 if self.language == "zh" else 0),
+                      label, size=26, bold=True)
         self.arrow(((x + 19, y + h * .63), (x + w - 19, y + h * .63)), width=2)
         self.arrow(((x + w - 19, y + h * .82), (x + 19, y + h * .82)), width=2)
 
@@ -323,9 +354,18 @@ class PaperFigure(Figure):
 
     def terminal(self, x, y, w=105, h=65):
         self.rect(x, y, w, h, PAPER, INK, 1.8, 3)
-        self.rect(x + 1, y + 1, w - 2, 13, BACKPLATE, "none", 0, 0)
-        self.path(((x + 16, y + 28), (x + 27, y + 38), (x + 16, y + 48)), INK, 2)
-        self.line(x + 38, y + 47, x + w - 14, y + 47, INK, 2)
+        self.line(x + 1, y + h * .21, x + w - 1, y + h * .21, INK, 1)
+        self.path(((x + 16, y + h * .43), (x + 27, y + h * .61),
+                   (x + 16, y + h * .79)), INK, 2)
+        self.line(x + 38, y + h * .78, x + w - 14, y + h * .78, INK, 2)
+
+    def junction(self, x, y, *, kind="and", radius=18):
+        self.circle(x, y, radius, PAPER, INK, 1.6)
+        if kind == "concat":
+            for offset in (-4, 4):
+                self.line(x + offset, y - 10, x + offset, y + 10, INK, 1.8)
+        else:
+            self.path(((x - 8, y + 6), (x, y - 8), (x + 8, y + 6)), INK, 1.8)
 
     def lock(self, x, y, *, color=INK, scale=1):
         self.path(((x + 5 * scale, y + 13 * scale),
@@ -390,160 +430,215 @@ class PaperFigure(Figure):
 def system_overview(language: str) -> PaperFigure:
     f = PaperFigure("01_system_overview", "BeliefKV Execution and KV Coordination", HEIGHT, language)
     f.heading(
-        "BeliefKV: Execution and KV Coordination",
-        "BeliefKV：动态 Agent 执行与 KV 协同管理",
-        "Who executes next?   →   What stays or moves?   →   When is it served?",
-        "谁即将执行？  →  哪些缓存应保留或迁移？  →  怎样及时消费？",
+        "BeliefKV: Workflow-aware Execution and KV Management",
+        "BeliefKV：工作流感知的执行与 KV 协同管理",
+        "Observed dependencies → demand forecasts → page migration and native admission",
+        "运行时依赖 → 近期执行需求 → 页级迁移、驻留与原生准入",
     )
-    f.panel(40, 132, 1720, 202, f.tr("(a) Observed workflow", "(a) 已观测工作流"))
-    f.token(111, 257, "P", PINK)
-    f.token(307, 222, "C1", TEAL_PALE)
-    f.token(307, 294, "C2", AMBER_PALE)
-    f.terminal(443, 197, 109, 52)
-    f.text(448, 283, "Tool", 23)
-    f.diamond(708, 257, 124, 82, PAPER, INK)
-    f.centered(708, 266, "JOIN", size=25, bold=True)
-    f.token(872, 257, "P", PINK)
-    for points, color in (
-        (((140, 247), (277, 224)), INK),
-        (((140, 269), (277, 293)), INK),
-        (((337, 222), (441, 222)), INK),
-        (((554, 222), (605, 222), (651, 245)), INK),
-        (((337, 294), (605, 294), (651, 270)), INK),
-        (((771, 257), (842, 257)), INK),
+    f.panel(32, 124, 1736, 152, f.tr("Agent harness: dynamic requests and completion signals",
+                                                   "Agent harness：动态请求与完成信号"))
+    f.token(83, 220, "P", PINK, r=24, size=23)
+    f.token(245, 194, "C1", TEAL_PALE, r=23, size=22)
+    f.token(245, 246, "C2", AMBER_PALE, r=23, size=22)
+    f.terminal(347, 175, 95, 40)
+    f.diamond(551, 220, 107, 66, PAPER, INK)
+    f.centered(551, 229, "JOIN", size=24, bold=True)
+    f.token(692, 220, "P", PINK, r=24, size=23)
+    for points in (
+        ((109, 211), (218, 196)), ((109, 231), (218, 245)),
+        ((270, 194), (343, 194)), ((445, 194), (474, 194), (498, 209)),
+        ((270, 246), (474, 246), (498, 232)), ((607, 220), (665, 220)),
     ):
-        f.arrow(points, color=color)
-    f.text(159, 215, "SPAWN", 23)
-    f.text(557, 322, "RETURN", 23)
-    f.arrow(((899, 265), (983, 265), (983, 310), (872, 310), (872, 288)),
-            dashed=True)
-    f.text(905, 222, f.tr("Round 2", "下一轮"), 23, MUTED)
-    f.line(1030, 200, 1030, 316, RULE, 1.4)
-    for index, label in enumerate(("SPAWN", "WAIT", "RETURN")):
-        f.rect(1072 + index * 6, 213 + index * 25, 128, 29, PAPER, INK, 1.3, 1)
-        f.text(1082 + index * 6, 234 + index * 25, label, 19)
-    f.document(1270, 205, 114, 88, color=AMBER_PALE)
-    f.path(((1480, 275), (1500, 275), (1500, 255), (1524, 255),
-            (1524, 238), (1551, 238), (1551, 212), (1580, 212)), BLUE, 3)
-    f.clock(1661, 245, 25)
-    f.centered(1139, 320, f.tr("Events", "依赖事件"), size=23)
-    f.centered(1327, 320, f.tr("Text + notice", "正文 + 通知"), size=23)
-    f.centered(1576, 320, f.tr("Decode progress", "生成进度"), size=23)
-    f.arrow(((1140, 334), (1140, 359), (310, 359), (310, 393)),
-            color=BLUE, dashed=True)
-    f.arrow(((1327, 334), (1327, 375), (454, 375), (454, 393)),
-            color=BLUE, dashed=True)
+        f.arrow(points)
+    f.text(128, 185, "SPAWN", 21)
+    f.text(347, 271 if language == "zh" else 267, "WAIT_TOOL", 20)
+    f.arrow(((719, 226), (804, 226), (804, 257), (692, 257), (692, 248)), dashed=True, width=2)
+    f.text(730, 195, f.tr("Next round", "下一轮"), 21)
+    f.line(844, 173, 844, 264, RULE, 1.2)
+    f.table(866, 174, (122, 92, 136), (
+        ("context", "epoch", "request"), ("P / C", "e", "r"),
+    ), row_h=30, size=20)
+    f.centered(1040, 258, f.tr("Causal identity", "因果身份"), size=21)
+    f.document(1255, 172, 96, 77, color=AMBER_PALE)
+    f.path(((1411, 245), (1434, 245), (1434, 225), (1460, 225),
+            (1460, 209), (1491, 209), (1491, 187), (1521, 187)), BLUE, 2.5)
+    f.clock(1588, 207, 23)
+    f.centered(1303, 271 if language == "zh" else 267, f.tr("Text / notice", "正文 / 通知"), size=20)
+    f.centered(1500, 271 if language == "zh" else 267, f.tr("Service progress", "服务进度"), size=20)
+    f.strip(1638, 181, [PINK, AMBER_PALE, PINK], w=26, h=50, gap=6)
+    f.text(1633, 260, "tokens", 20)
 
-    for x, title in zip((40, 630, 1220), (
-        f.tr("1  Execution demand", "1  执行需求预测"),
-        f.tr("2  KV lifecycle", "2  KV 生命周期"),
-        f.tr("3  Admission + prefetch", "3  准入与预取协同"),
-    )):
-        f.panel(x, 394, 540, 482, title)
-
-    f.text(70, 489, "RCCG", 27, INK, 700)
-    f.token(103, 586, "P", PINK)
-    f.token(224, 534, "C1", TEAL_PALE)
-    f.token(224, 656, "C2", AMBER_PALE)
-    f.arrow(((131, 574), (194, 546)))
-    f.arrow(((128, 603), (196, 641)))
-    f.check(253, 507, color=INK, size=20)
-    f.clock(260, 654, 16)
-    f.text(70, 722, "GraphDelta", 23, BLUE)
-    f.rect(319, 472, 234, 268, PAPER, INK, 1.5, 4, "7 5")
-    f.text(335, 504, f.tr("Async CPU", "异步 CPU"), 24, INK, 700)
-    for column in range(3):
-        for row in range(3):
-            f.circle(359 + column * 53, 543 + row * 32, 9,
-                     BLUE_PALE if column < 2 else AMBER_PALE, INK, 1.3)
-            if column:
-                f.line(359 + (column - 1) * 53 + 10, 543 + row * 32,
-                       359 + column * 53 - 10, 543 + row * 32, INK, 1.3)
-    f.arrow(((253, 656), (294, 656), (294, 585), (318, 585)), color=BLUE, dashed=True)
-    f.math(436, 655, [("p", "final")], size=29, anchor="middle")
-    f.interval(352, 520, 686, color=INK, center=448)
-    f.math(436, 724, ["[", ("W", "lo"), ", ", ("W", "hi"), "]"],
-           size=27, anchor="middle")
-    f.arrow(((224, 685), (224, 757), (168, 757), (168, 780)))
-    f.arrow(((436, 742), (436, 779)), color=RED)
-    f.ticket(70, 782, "P / A", PINK, w=483, h=65)
-    f.centered(311, 824, f.tr("Next consumer", "下一消费者"), size=25)
-    f.arrow(((582, 813), (628, 813)), color=RED)
-
-    f.bank(660, 518, 202, 88, [PINK, PINK, TEAL_PALE, AMBER_PALE], label="HBM")
-    f.bank(943, 518, 202, 88, [PINK, PINK, PINK, AMBER_PALE], label="Host", missing=(2, 3))
-    f.arrow(((866, 535), (938, 535)), color=RED)
-    f.text(871, 522, "D2H", 20)
-    f.arrow(((939, 590), (867, 590)), color=RED)
-    f.text(871, 626, "H2D", 20)
-    for x, label, rows in (
-        (668, "HBM", 1), (846, "H+Host", 2), (1023, "Host-only", 1),
+    f.panel(32, 300, 912, 844, f.tr("BeliefKV control plane", "BeliefKV 控制面"),
+            fill=CONTROL_PALE, size=28)
+    f.panel(968, 300, 800, 844, f.tr("Native SGLang data plane", "原生 SGLang 数据面"),
+            color=GREEN_BAND, fill=DATA_PALE, size=28)
+    f.arrow(((1040, 278), (1040, 288), (453, 288), (453, 348)), color=BLUE, dashed=True, width=2)
+    f.arrow(((1304, 278), (1304, 294), (707, 294), (707, 348)), color=BLUE, dashed=True, width=2)
+    f.panel(48, 350, 418, 316, f.tr("1  Dependency state / RCCG", "1  依赖状态 / RCCG"), size=24)
+    f.token(90, 471, "P", PINK, r=23, size=22)
+    f.token(206, 422, "C1", TEAL_PALE, r=23, size=22)
+    f.token(206, 510, "C2", AMBER_PALE, r=23, size=22)
+    f.check(236, 402, color=INK, size=18)
+    f.diamond(369, 470, 93, 60, PAPER, INK)
+    f.centered(369, 478, "ALL", size=22, bold=True)
+    for points in (
+        ((115, 461), (181, 432)), ((115, 481), (181, 502)),
+        ((232, 422), (288, 422), (325, 456)),
     ):
-        for row in range(rows):
-            for column in range(3):
-                f.page(x + column * 28, 669 + row * 24, fill=PINK, w=23, h=19)
-        f.centered(x + 40, 735, label, size=21)
-    f.arrow(((754, 680), (839, 680)), color=RED)
-    f.arrow(((932, 680), (1017, 680)), color=RED)
-    f.text(760, 660, "prepare", 20)
-    f.text(940, 660, f.tr("pressure", "压力"), 20)
-    f.page(679, 788, fill=PINK, w=39, h=41)
-    f.page(724, 788, fill=PINK, w=39, h=41)
-    f.math(792, 818, ["ΔFULL"], size=25)
-    f.centered(931, 816, "+", size=32)
-    f.snapshot(985, 779, scale=.62)
-    f.math(1100, 816, [("s", None, "*")], size=30)
-    f.arrow(((1171, 813), (1218, 813)), color=RED)
+        f.arrow(points, width=2)
+    f.arrow(((232, 510), (288, 510), (325, 483)), color=RED, width=2)
+    f.table(64, 548, (89, 145, 150), (
+        ("child", "state", "waiter"),
+        ("C1", "RETURN", "P"),
+        ("C2", "NOTICE", "P"),
+    ), size=20, row_h=29)
+    f.text(65, 657 if language == "zh" else 653, "GraphDelta", 21, BLUE)
+    f.text(241, 657 if language == "zh" else 653, "pending = {C2}", 21, INK, 700)
 
-    f.text(1250, 489, f.tr("Native waiting queue", "原生等待队列"), 25, INK, 700)
-    f.ticket(1250, 515, "old", BACKPLATE, w=208)
-    f.ticket(1250, 610, "hit", TEAL_PALE, w=208, resident=True)
-    f.ticket(1250, 705, "P", PINK, w=208, resident=True, protected=True)
-    f.text(1250, 597, f.tr("aging", "老化"), 22, MUTED)
-    f.text(1250, 693, f.tr("HBM-resident", "HBM 命中"), 22, MUTED)
-    f.text(1250, 788, f.tr("restored", "恢复就绪"), 22, MUTED)
-    f.gpu(1570, 588, 140, 133, running=[PINK, TEAL_PALE, AMBER_PALE, PAPER, PINK, PAPER])
-    f.arrow(((1461, 541), (1514, 541), (1514, 609), (1557, 609)), dashed=True)
-    f.arrow(((1461, 636), (1557, 636)))
-    f.arrow(((1461, 731), (1514, 731), (1514, 693), (1557, 693)), color=RED)
-    f.check(1536, 788, color=INK, size=17)
-    f.text(1562, 807, "KV ∧ slot", 25)
-    f.text(1531, 851, "PrefillAdder", 24, INK, 700)
+    f.panel(486, 350, 442, 316, f.tr("2  Async demand forecasts", "2  异步执行需求预测"), size=24)
+    f.strip(504, 409, [PINK, AMBER_PALE, PINK, TEAL_PALE], w=30, h=42, gap=5)
+    f.arrow(((645, 429), (684, 429)), width=2)
+    f.rect(699, 402, 211, 65, PAPER, INK, 1.5, 2, "6 4")
+    f.text(716, 428, "CPU worker", 23, INK, 700)
+    f.text(716, 453, f.tr("text + progress", "正文 + 进度"), 20)
+    f.math(553, 490, [("p", "final")], size=25)
+    for index, height in enumerate((17, 30, 49)):
+        f.rect(520 + index * 41, 550 - height, 26, height,
+               (BLUE_PALE, AMBER_PALE, PINK)[index], INK, 1.2, 0)
+    f.interval(720, 894, 526, color=INK, center=799)
+    f.math(807, 567, ["[", ("W", "lo"), ", ", ("W", "hi"), "]"], size=25, anchor="middle")
+    f.line(504, 582, 910, 582, RULE, 1)
+    f.token(524, 616, "P", PINK, r=18, size=20)
+    f.text(554, 624, "JOIN", 21, INK, 700)
+    f.math(654, 623, [("τ", "join")], size=27)
+    f.clock(764, 616, 18)
+    f.math(797, 623, [("τ", "tool")], size=27)
+    f.text(504, 657 if language == "zh" else 652,
+           f.tr("Model → demand; runtime → action", "模型预测需求；runtime 决定动作"), 21)
 
-    f.panel(40, 938, 1720, 206, f.tr("(b) Native SGLang data plane", "(b) 原生 SGLang 数据路径"))
-    f.arrow(((899, 876), (899, 910), (587, 910), (587, 987)), color=RED)
-    f.arrow(((1628, 876), (1628, 936)), color=RED)
-    for x, y, fill in ((110, 1049, PINK), (222, 1018, TEAL_PALE), (222, 1092, AMBER_PALE)):
-        f.page(x, y - 14, fill=fill, w=50, h=29)
-    f.line(160, 1048, 219, 1020, INK, 2)
-    f.line(160, 1050, 219, 1092, INK, 2)
-    f.text(301, 1031, "Unified", 25, INK, 700)
-    f.text(301, 1068, "RadixCache", 25, INK, 700)
-    f.arrow(((457, 1051), (505, 1051)))
-    f.dma(512, 1008, 162, 87, label="HiCache")
-    f.arrow(((681, 1051), (741, 1051)))
-    f.bank(751, 1027, 235, 63, [PINK, TEAL_PALE, AMBER_PALE, PINK])
-    f.snapshot(1019, 1027, scale=.75)
-    f.text(802, 1126, "FULL", 23)
-    f.text(1016, 1126, "Mamba", 23)
-    f.arrow(((1105, 1051), (1160, 1051)))
-    for index in range(3):
-        f.ticket(1175, 1010 + index * 30, f"r{index}", BACKPLATE, w=170, h=25, resident=True)
-    f.arrow(((1353, 1051), (1406, 1051)))
-    f.gpu(1444, 1005, 137, 114, running=[PINK, TEAL_PALE, PINK, AMBER_PALE, PAPER, PAPER])
-    f.text(1610, 1040, "Native", 24, INK, 700)
-    f.text(1610, 1073, "batch", 24, INK, 700)
-    f.arrow(((1730, 1123), (1730, 1164), (20, 1164), (20, 655), (39, 655)),
-            color=BLUE, dashed=True, width=2)
-    for x, fill, label in (
-        (70, PINK, "Parent"), (281, TEAL_PALE, "Child 1"), (490, AMBER_PALE, "Child 2"),
+    f.panel(48, 690, 880, 438, f.tr("3  Checkpoint, timing, capacity and execution order",
+                                                  "3  Checkpoint、时机、容量与执行顺序"), size=24)
+    for xx in (334, 628):
+        f.line(xx, 744, xx, 1109, RULE, 1.2)
+    f.text(64, 763, f.tr("Reusable checkpoint", "可复用 checkpoint"), 22, INK, 700)
+    f.page(76, 806, "p0", fill=BACKPLATE, w=43, h=32)
+    f.page(166, 781, "p1", w=43, h=32)
+    f.page(253, 806, "p5", w=43, h=32)
+    f.arrow(((120, 820), (163, 804)), width=1.7)
+    f.arrow(((210, 804), (250, 820)), color=RED, width=1.7)
+    f.page(167, 867, "g", fill=PAPER, dashed=True, w=43, h=32)
+    f.arrow(((117, 838), (164, 879)), color=GRAY, dashed=True, width=1.6)
+    f.cross(225, 876, color=GRAY, size=17)
+    f.math(272, 877, [("c", None, "*")], size=28, anchor="middle")
+    f.text(65, 939, "context / epoch / prefix", 20)
+    f.check(307, 917, color=INK, size=16)
+    f.text(65, 979, "ΔFULL + required state", 21)
+
+    f.text(350, 763, f.tr("Timing window", "实测传输启动窗口"), 22, INK, 700)
+    f.line(365, 852, 579, 852, INK, 1.1)
+    f.path(((365, 846), (394, 846), (394, 834), (428, 834),
+            (428, 808), (469, 808), (469, 793), (578, 793)), INK, 2)
+    f.line(468, 788, 468, 858, RED, 1.8, "5 4")
+    f.math(477, 890, [("S", "90"), " + ", ("Q", "90")], size=28, anchor="middle")
+    f.diamond(481, 944, 176, 62, PAPER, INK)
+    f.math(481, 954, [("τ",), " ≤ ", ("H",)], size=30, anchor="middle")
+
+    f.text(645, 763, f.tr("Capacity + admission", "容量与准入机会"), 22, INK, 700)
+    f.strip(649, 788, [PAPER] * 3 + [TEAL_PALE] * 3 + [BACKPLATE] * 2, w=26, h=28, gap=4)
+    for xx, symbol, sub in ((679, "C", "free"), (765, "C", "cold"), (857, "G", "next")):
+        f.math(xx, 845, [(symbol, sub)], size=26, anchor="middle")
+    f.ticket(650, 866, "old", BACKPLATE, w=257, h=28)
+    f.ticket(650, 903, "hit", TEAL_PALE, w=257, h=28, resident=True)
+    f.ticket(650, 940, "P", PINK, w=257, h=28, resident=True)
+    f.text(648, 994, "aging / batch fill", 21)
+
+    f.line(64, 1010, 911, 1010, INK, 1.2)
+    for xx, title in (
+        (65, "PREPARE_HOST"), (350, f.tr("Reclaim cold FULL", "回收冷 FULL")), (645, "PREFETCH_GPU"),
     ):
-        f.rect(x, 1176, 25, 19, fill, INK, 1.3, 1)
-        f.text(x + 36, 1187, label, 21)
-    f.arrow(((757, 1184), (801, 1184)), color=RED, width=2)
-    f.text(817, 1187, f.tr("Action", "控制动作"), 21)
-    f.arrow(((1064, 1184), (1108, 1184)), color=BLUE, dashed=True, width=2)
-    f.text(1125, 1187, "ACK / service / reuse", 21)
+        f.text(xx, 1041, title, 22, INK, 700)
+    f.strip(68, 1062, [PINK] * 3, w=28, h=29, missing=(2,))
+    f.arrow(((172, 1076), (215, 1076)), color=RED, width=2)
+    f.text(228, 1085, "Host", 23)
+    f.strip(353, 1062, [PINK] * 2, w=28, h=29)
+    f.arrow(((424, 1076), (460, 1076)), color=RED, width=2)
+    f.strip(477, 1062, [PAPER] * 3, w=24, h=29)
+    f.strip(648, 1062, [PINK] * 3, w=28, h=29)
+    f.snapshot(783, 1061, scale=.48)
+    f.lock(866, 1057, scale=.65)
+    f.arrow(((467, 615), (478, 615), (478, 680), (247, 680), (247, 689)), color=BLUE, dashed=True, width=1.8)
+    f.arrow(((706, 667), (706, 688)), color=RED, width=2)
+
+    f.panel(986, 350, 764, 206, "HBM: FULL pages + checkpoint state", color=GREEN_BAND, size=24)
+    f.text(1002, 433, "FULL", 22, INK, 700)
+    pool_fills = [PINK] * 4 + [TEAL_PALE] * 3 + [AMBER_PALE] * 3 + [PAPER] * 2
+    f.strip(1083, 404, pool_fills, w=48, h=42, gap=6)
+    f.text(1002, 512, "Mamba", 22, INK, 700)
+    for index, (fill, label) in enumerate(((PINK, "P"), (TEAL_PALE, "C1"), (AMBER_PALE, "C2"), (PAPER, "free"))):
+        xx = 1092 + index * 160
+        f.snapshot(xx, 483, scale=.65, fill=fill)
+        f.text(xx + 64, 511, label, 21)
+    f.text(1083, 547 if language == "zh" else 543,
+           f.tr("Native allocator · shared pages · growth reserve",
+                "原生分配器 · 共享页 · 输入增长预留"), 21)
+
+    f.panel(986, 578, 330, 204, "UnifiedRadixCache", color=GREEN_BAND, size=24)
+    for xx, yy, label, fill in (
+        (1005, 667, "p0", BACKPLATE), (1114, 635, "P", PINK),
+        (1114, 723, "C1", TEAL_PALE), (1227, 635, "c*", PINK),
+    ):
+        f.page(xx, yy, label, fill=fill, w=49, h=31)
+    f.line(1056, 679, 1111, 650, INK, 1.7)
+    f.line(1056, 689, 1111, 736, INK, 1.7)
+    f.arrow(((1166, 650), (1224, 650)), color=RED, width=2)
+    f.lock(1017, 707, scale=.65)
+    f.text(1197, 746, "safe input", 20)
+
+    f.panel(1338, 578, 412, 204, "HiCache / DMA", color=YELLOW, size=25)
+    f.dma(1355, 636, 166, 79, label="D2H")
+    f.dma(1563, 636, 166, 79, label="H2D")
+    f.strip(1359, 737, [PINK] * 4, w=30, h=25, gap=5)
+    f.strip(1569, 737, [PINK] * 3, w=30, h=25, gap=5)
+    f.snapshot(1691, 734, scale=.43)
+    f.arrow(((1717, 557), (1717, 623), (1439, 623), (1439, 633)), color=RED, width=2)
+    f.arrow(((1439, 717), (1439, 728)), color=RED, width=2)
+    f.arrow(((1439, 784), (1439, 804)), color=RED, width=2)
+    f.arrow(((1646, 804), (1646, 784)), color=RED, width=2)
+    f.arrow(((1646, 633), (1646, 557)), color=RED, width=2)
+    f.arrow(((1318, 682), (1336, 682)), width=2)
+
+    f.panel(986, 806, 764, 152, f.tr("Host pool: backed FULL + valid state",
+                                                  "Host 池：已备份 FULL 与有效状态"), color=GREEN_BAND, size=24)
+    f.text(1001, 880, "FULL", 22, INK, 700)
+    f.strip(1083, 852, [PINK] * 5 + [TEAL_PALE] * 3 + [PAPER] * 4,
+            w=48, h=32, gap=6, missing=(8, 9, 10, 11))
+    f.text(1001, 935, "Mamba", 22, INK, 700)
+    for index, (fill, label) in enumerate(((PINK, "P: c*"), (PAPER, "C1: ∅"), (AMBER_PALE, "C2"), (PAPER, "free"))):
+        xx = 1092 + index * 160
+        f.snapshot(xx, 909, scale=.47, fill=fill)
+        f.text(xx + 46, 931, label, 20)
+    f.arrow(((945, 866), (983, 866)), color=RED, width=2)
+
+    f.panel(986, 980, 764, 148, f.tr("Restore-aware native admission", "恢复感知的原生准入"), color=GREEN_BAND, size=24)
+    for yy, label, fill in ((1030, "old", BACKPLATE), (1060, "hit", TEAL_PALE), (1090, "P", PINK)):
+        f.ticket(1003, yy, label, fill, w=173, h=25, resident=label != "old")
+    f.arrow(((1179, 1042), (1244, 1042), (1244, 1065), (1280, 1065)), dashed=True, width=1.8)
+    f.arrow(((1179, 1072), (1280, 1072)), width=2)
+    f.arrow(((1179, 1102), (1244, 1102), (1244, 1082), (1280, 1082)), color=RED, width=2)
+    f.text(1289, 1055, "PrefillAdder", 23, INK, 700)
+    f.centered(1380, 1095, "KV ∧ slot", size=25)
+    f.arrow(((1480, 1074), (1558, 1074)), width=2)
+    f.gpu(1580, 1030, 146, 83, running=[PINK, TEAL_PALE, AMBER_PALE, PINK, PAPER, PAPER])
+    f.arrow(((945, 1041), (982, 1041)), color=RED, width=2)
+    f.arrow(((1738, 1129), (1738, 1157), (17, 1157), (17, 598), (46, 598)),
+            color=BLUE, dashed=True, width=1.8)
+    for xx, fill, label in ((48, PINK, "Parent"), (252, TEAL_PALE, "Child 1"), (460, AMBER_PALE, "Child 2")):
+        f.rect(xx, 1176, 25, 18, fill, INK, 1.1, 0)
+        f.text(xx + 36, 1188, label, 21)
+    f.arrow(((711, 1184), (756, 1184)), color=RED, width=2)
+    f.text(773, 1189, f.tr("Runtime action", "Runtime 动作"), 21)
+    f.arrow(((1084, 1184), (1129, 1184)), color=BLUE, dashed=True, width=2)
+    f.text(1146, 1189, "ACK / service / first reuse", 21)
     return f
 
 
@@ -555,140 +650,171 @@ def prediction_and_overlap(language: str) -> PaperFigure:
         "Delivered content + service progress → separate phase / work heads → runtime timing",
         "已送达正文 + 服务进度 → 阶段 / 工作量双头 → Runtime 决定启动时机",
     )
-    f.panel(40, 132, 1110, 440, f.tr("(a) Asynchronous child model", "(a) 异步 Child 模型"))
-    f.document(76, 238, 145, 123, color=AMBER_PALE)
-    f.math(148, 219, [("x", "t−k:t")], size=30, anchor="middle")
-    f.arrow(((223, 298), (291, 298)))
-    layer_x = (315, 398, 481)
+    f.panel(32, 124, 1060, 564, f.tr("(a) Content, events and rolling work forecasts",
+                                                  "(a) 内容、事件与滚动剩余工作预测"))
+    f.document(57, 220, 122, 110, color=AMBER_PALE)
+    f.math(117, 202, [("x", "t−k:t")], size=29, anchor="middle")
+    f.arrow(((182, 269), (232, 269)))
+    layer_x = (250, 320, 390)
     for left, right in zip(layer_x, layer_x[1:]):
         for source in range(3):
             for target in range(3):
-                f.line(left + 11, 250 + source * 45,
-                       right - 11, 250 + target * 45, RULE, 1.1)
+                f.line(left + 10, 228 + source * 43,
+                       right - 10, 228 + target * 43, RULE, 1)
     for column, xx in enumerate(layer_x):
         for row in range(3):
-            f.circle(xx, 250 + row * 45, 12,
-                     BLUE_PALE if column != 2 else TEAL_PALE, INK, 1.6)
-    f.lock(471, 197, scale=.75)
-    f.centered(398, 399, f.tr("Frozen encoder", "冻结编码器"), size=24, bold=True)
-    f.arrow(((496, 297), (553, 297)))
+            f.circle(xx, 228 + row * 43, 10,
+                     BLUE_PALE if column != 2 else TEAL_PALE, INK, 1.4)
+    f.lock(395, 182, scale=.65)
+    f.text(429, 194, "request / epoch", 20, MUTED)
+    f.centered(320, 357, f.tr("Frozen encoder", "冻结编码器"), size=23, bold=True)
+    f.arrow(((403, 269), (453, 269)))
     for index, fill in enumerate((BLUE_PALE, AMBER_PALE, BLUE_PALE, TEAL_PALE, PINK, BLUE_PALE)):
-        f.rect(568, 234 + index * 20, 30, 17, fill, INK, 1.1, 0)
-    f.math(583, 395, [("z", "t")], size=30, anchor="middle")
-    f.circle(668, 297, 26, PAPER, INK, 1.8)
-    f.math(668, 307, ["∥"], size=30, anchor="middle")
-    f.arrow(((601, 297), (639, 297)))
-
-    f.polygon(((82, 448), (215, 448), (215, 504), (145, 504),
-               (126, 520), (126, 504), (82, 504)), AMBER_PALE, INK)
-    f.centered(148, 483, f.tr("Notice", "收尾通知"), size=24, bold=True)
-    f.path(((310, 504), (335, 504), (335, 488), (365, 488),
-            (365, 470), (396, 470), (396, 450), (422, 450)), BLUE, 2.7)
-    f.math(361, 538, [("N", "t"), ", { }"], size=29, anchor="middle")
-    f.arrow(((217, 477), (258, 477), (258, 418), (668, 418)))
-    f.arrow(((427, 477), (668, 477), (668, 327)))
-    f.arrow(((697, 297), (730, 297), (730, 256), (777, 256)), color=RED)
-    f.arrow(((730, 297), (730, 442), (777, 442)), color=RED)
+        f.rect(466, 218 + index * 17, 27, 14, fill, INK, 1, 0)
+    f.math(480, 355, [("z", "t")], size=29, anchor="middle")
+    f.junction(576, 269, kind="concat", radius=24)
+    f.arrow(((496, 269), (549, 269)))
+    f.polygon(((57, 392), (182, 392), (182, 439), (115, 439),
+               (100, 451), (100, 439), (57, 439)), AMBER_PALE, INK)
+    f.centered(119, 423, f.tr("Notice", "收尾通知"), size=23, bold=True)
+    f.path(((251, 425), (275, 425), (275, 410), (300, 410),
+            (300, 394), (327, 394), (327, 378), (351, 378)), BLUE, 2.5)
+    f.math(303, 467, [("N", "t"), ", { }"], size=28, anchor="middle")
+    f.table(374, 389, (77, 80, 79), (("notice", "tokens", "syntax"), ("1", "N(t)", "{ }")),
+            row_h=29, size=19)
+    f.arrow(((184, 416), (209, 416), (209, 370), (576, 370), (576, 297)), width=2)
+    f.arrow(((355, 409), (371, 409)), width=2)
+    f.arrow(((612, 435), (619, 435), (619, 350), (576, 350), (576, 297)), width=2)
+    f.arrow(((603, 269), (636, 269), (636, 244), (665, 244)), color=RED)
+    f.arrow(((636, 269), (636, 399), (665, 399)), color=RED)
     for yy, title in (
-        (220, f.tr("Phase", "阶段头")), (405, f.tr("Work", "工作量头")),
+        (215, f.tr("Phase", "阶段头")), (370, f.tr("Work", "工作量头")),
     ):
         for row in range(3):
             for column in range(3):
-                f.rect(790 + column * 15, yy + row * 15, 11, 11,
+                f.rect(680 + column * 14, yy + row * 14, 10, 10,
                        BLUE_PALE if row != column else AMBER_PALE, INK, .8, 0)
-        f.text(850, yy + 31, title, 25, INK, 700)
-    f.arrow(((926, 255), (958, 255)))
-    f.arrow(((935, 440), (964, 440)))
+        f.text(735, yy + 31, title, 24, INK, 700)
+    f.arrow(((820, 244), (862, 244)), width=2)
+    f.arrow(((839, 399), (862, 399)), width=2)
     for xx, height, label, fill in (
-        (982, 25, "W", BLUE_PALE), (1031, 43, "N", AMBER_PALE),
-        (1080, 83, "F", PINK),
+        (884, 22, "W", BLUE_PALE), (946, 40, "N", AMBER_PALE),
+        (1008, 73, "F", PINK),
     ):
-        f.rect(xx, 321 - height, 29, height, fill, INK, 1.5, 0)
-        f.centered(xx + 14, 352, label, size=21)
-    f.math(1046, 214, [("p", "phase")], size=29, anchor="middle")
-    f.interval(978, 1116, 440, color=INK, center=1033)
-    f.math(1046, 498, ["[", ("W", "lo"), ", ", ("W", "c"), ", ", ("W", "hi"), "]"],
-           size=26, anchor="middle")
-    f.arrow(((1080, 548), (54, 548), (54, 310), (75, 310)),
-            color=BLUE, dashed=True, width=1.8)
-    f.rect(518, 531, 214, 30, GRAY_PALE, "none", 0, 0)
-    f.math(625, 554, [("t",), " → ", ("t",), " + Δ", ("t",)],
-           size=26, color=BLUE, anchor="middle")
+        f.rect(xx, 304 - height, 31, height, fill, INK, 1.3, 0)
+        f.centered(xx + 15, 335, label, size=21)
+    f.math(968, 199, [("p", "phase")], size=29, anchor="middle")
+    f.interval(881, 1065, 399, color=INK, center=977)
+    f.math(973, 447, ["[", ("W", "lo"), ", ", ("W", "c"), ", ", ("W", "hi"), "]"],
+           size=25, anchor="middle")
+    f.line(48, 484, 1076, 484, INK, 1.2)
+    f.text(49, 516, f.tr("Online snapshots → revised endpoints", "在线快照 → 滚动修正工作端点"), 24, INK, 700)
+    f.math(530, 550, [("N", "t")], size=26, anchor="middle")
+    f.math(902, 550, [("W", "lo"), " … ", ("W", "hi")], size=26, anchor="middle")
+    for index, (width, lo, hi, center) in enumerate((
+        (110, 778, 1047, 935), (180, 725, 944, 837), (245, 754, 990, 901),
+    )):
+        yy = 574 + index * 39
+        f.math(82, yy + 8, [("t", str(index))], size=27, anchor="middle")
+        f.strip(124, yy - 11, [PINK] * 4, w=29, h=23, gap=5)
+        f.arrow(((271, yy), (363, yy)), color=BLUE, dashed=True, width=1.8)
+        f.rect(397, yy - 9, width, 18, BLUE_PALE, INK, 1, 0)
+        f.arrow(((666, yy), (710, yy)), width=1.8)
+        f.interval(lo, hi, yy, color=INK, center=center)
+    f.arrow(((1066, 669), (43, 669), (43, 272), (54, 272)),
+            color=BLUE, dashed=True, width=1.6)
 
-    f.panel(1190, 132, 570, 440, f.tr("(b) Direct JOIN", "(b) 直接 JOIN"))
-    f.token(1248, 307, "P", PINK, r=25, size=24)
-    f.token(1383, 243, "C1", TEAL_PALE, r=25, size=23)
-    f.token(1383, 366, "C2", AMBER_PALE, r=25, size=23)
-    f.check(1418, 218, color=INK, size=20)
-    f.diamond(1565, 307, 106, 77, PAPER, INK)
-    f.centered(1565, 316, "ALL", size=25, bold=True)
-    f.token(1700, 307, "P", PINK, r=25, size=24)
+    f.panel(1116, 124, 652, 564, f.tr("(b) JOIN projection + observed service",
+                                                   "(b) JOIN 投影与已观测服务进度"))
+    f.token(1176, 273, "P", PINK, r=24, size=23)
+    f.token(1315, 213, "C1", TEAL_PALE, r=24, size=23)
+    f.token(1315, 334, "C2", AMBER_PALE, r=24, size=23)
+    f.check(1350, 192, color=INK, size=18)
+    f.diamond(1518, 273, 113, 74, PAPER, INK)
+    f.centered(1518, 282, "ALL", size=25, bold=True)
+    f.token(1698, 273, "P", PINK, r=24, size=23)
     for points, color in (
-        (((1274, 294), (1356, 253)), INK),
-        (((1274, 321), (1356, 355)), INK),
-        (((1411, 243), (1466, 243), (1517, 292)), GRAY),
-        (((1411, 366), (1466, 366), (1517, 321)), RED),
-        (((1621, 307), (1671, 307)), RED),
+        (((1203, 263), (1288, 224)), INK),
+        (((1203, 286), (1288, 322)), INK),
+        (((1342, 213), (1404, 213), (1467, 257)), GRAY),
+        (((1342, 334), (1404, 334), (1467, 289)), RED),
+        (((1576, 273), (1671, 273)), RED),
     ):
-        f.arrow(points, color=color)
-    f.text(1244, 426, "pending = {C2}", 26, INK, 700)
-    f.math(1238, 493, [("τ", "join"), " = "], size=34)
-    f.fraction(1374, 480, ["[", ("W",), " − Δ", ("N",), ("]", "+")],
-               [("v",), "(", ("t",), ")"], size=33)
-    f.text(1238, 551, f.tr("Observed service rate; queue separate",
-                          "实测服务速率；排队单独处理"), 22, MUTED)
-    f.arrow(((1119, 440), (1212, 440), (1212, 480), (1233, 480)), color=RED)
-    f.arrow(((1502, 573), (1502, 595), (1780, 595), (1780, 840),
-             (1282, 840), (1282, 908)), color=RED)
+        f.arrow(points, color=color, width=2.2)
+    f.table(1139, 389, (107, 247, 248), (
+        ("group", "pending", "signal"),
+        ("g", "{C1, C2}", "WAIT"),
+        ("g", "{C2}", "NOTICE"),
+    ), row_h=29, size=21)
+    f.math(1144, 534, [("τ", "join"), "(", ("t",), ") = "], size=32)
+    f.fraction(1355, 520, ["[", ("W",), " − Δ", ("N",), ("]", "+")],
+               [("v",), "(", ("t",), ")"], size=32)
+    f.text(1560, 532, "pending = 1", 23, INK, 700)
+    f.line(1138, 579, 1747, 579, RULE, 1)
+    for index, width in enumerate((70, 44, 89, 57)):
+        xx = 1150 + index * 145
+        f.rect(xx, 605, width, 23, BLUE_PALE, INK, 1, 0)
+        f.line(xx + width + 5, 617, xx + 131, 617, GRAY, 1.3, "5 4")
+    f.math(1146, 668, [("v",), "(", ("t",), ")"], size=28)
+    f.text(1245, 664, f.tr("served work", "已获服务"), 21)
+    f.text(1468, 664, f.tr("queue separate", "排队单独处理"), 21)
 
-    f.panel(40, 618, 1720, 206, f.tr("(c) Tool timing conditioned on survival",
-                                                 "(c) 仍在执行条件下的工具时机"))
-    f.clock(103, 718, 29)
-    f.math(103, 783, [("a",), "(", ("t",), ")"], size=30, anchor="middle")
-    f.terminal(184, 691, 116, 65)
-    f.text(177, 793, "cmd / project", 22)
-    f.arrow(((135, 718), (181, 718)))
-    f.arrow(((303, 718), (378, 718)))
-    for index in (2, 1, 0):
-        f.rect(389 + index * 8, 695 - index * 8, 180, 58, PAPER, INK, 1.5, 2)
-    f.centered(479, 733, f.tr("History", "完成历史"), size=25, bold=True)
-    f.check(554, 671, color=INK, size=17)
-    f.arrow(((591, 718), (655, 718)))
-    f.rect(794, 677, 173, 101, TEAL_PALE, "none", 0, 0)
-    f.line(682, 779, 968, 779, INK, 1.8)
-    f.line(682, 779, 682, 680, INK, 1.8)
-    f.path(((683, 778), (717, 778), (717, 760), (751, 760),
-            (751, 740), (794, 740), (794, 710), (841, 710),
-            (841, 691), (909, 691), (909, 680), (965, 680)), INK, 2.6)
-    f.line(793, 681, 793, 785, RED, 2, "6 4")
-    f.math(793, 810, [("a",)], size=25, color=RED, anchor="middle")
-    f.math(948, 810, [("T",)], size=25)
-    f.math(672, 691, [("F",)], size=24, anchor="end")
-    f.arrow(((987, 718), (1036, 718)))
-    f.math(1060, 713, ["P(", ("T",), " ≤ ", ("a",), " + ", ("r",),
-                       " | ", ("T",), " > ", ("a",), ")"], size=34)
-    f.interval(1090, 1471, 762, color=INK, center=1259)
-    for xx, label in ((1090, "10"), (1259, "50"), (1471, "90")):
-        f.math(xx, 805, [("q", label)], size=27, anchor="middle")
-    f.arrow(((1490, 744), (1553, 744)), color=RED)
-    f.math(1647, 753, [("τ", "tool"), "(", ("t",), ")"], size=35, anchor="middle")
-    f.line(1647, 825, 1647, 840, RED, 2.6)
-    f.circle(1647, 840, 4, RED, RED, 1)
+    f.panel(32, 712, 838, 273, f.tr("(c) Conditional tool timing", "(c) 存活条件下的工具时机"))
+    f.table(50, 777, (114, 117, 103), (
+        ("project", "cmd", "done"),
+        ("p", "k", "T1"),
+        ("p", "k", "T2"),
+    ), row_h=29, size=21)
+    f.arrow(((386, 819), (418, 819)), width=1.8)
+    f.rect(512, 777, 102, 105, TEAL_PALE, "none", 0, 0)
+    f.line(432, 882, 616, 882, INK, 1.4)
+    f.line(432, 882, 432, 778, INK, 1.4)
+    f.path(((432, 880), (464, 880), (464, 861), (493, 861),
+            (493, 837), (528, 837), (528, 806), (572, 806), (572, 784), (615, 784)),
+           INK, 2.3)
+    f.line(511, 778, 511, 889, RED, 1.6, "5 4")
+    f.math(511, 907, [("a",)], size=24, color=RED, anchor="middle")
+    f.clock(657, 792, 20)
+    f.interval(661, 836, 850, color=INK, center=748)
+    for xx, sub in ((661, "10"), (748, "50"), (836, "90")):
+        f.math(xx, 894, [("q", sub)], size=25, anchor="middle")
+    f.math(50, 960, ["P(", ("T",), " ≤ ", ("a",), " + ", ("r",),
+                     " | ", ("T",), " > ", ("a",), ")"], size=30)
+    f.math(360, 961, [" = "], size=29)
+    f.fraction(409, 946, [
+        ("F",), "(", ("a",), " + ", ("r",), ") − ", ("F",), "(", ("a",), ")",
+    ], ["1 − ", ("F",), "(", ("a",), ")"], size=25)
+    f.arrow(((623, 946), (695, 946)), color=RED, width=2)
+    f.math(762, 956, [("τ", "tool")], size=32, anchor="middle")
 
-    f.panel(40, 864, 1720, 132, f.tr("(d) Runtime transfer window", "(d) Runtime 传输窗口"))
-    f.text(64, 958, "ACK history", 25, INK, 700)
-    for index, height in enumerate((19, 29, 23, 39)):
-        f.rect(242 + index * 15, 974 - height, 10, height, BLUE_PALE, INK, 1, 0)
-    f.arrow(((310, 946), (358, 946)))
-    f.math(386, 958, [
+    f.panel(894, 712, 874, 273, f.tr("(d) Runtime: cost, timing and physical checks",
+                                                   "(d) Runtime：成本、时机与物理校验"), color=GREEN_BAND)
+    f.table(914, 769, (103, 126, 139), (
+        ("dir", "shape", "bytes"),
+        ("H2D", "extents", "B"),
+    ), row_h=29, size=21)
+    f.text(1320, 788, "submit → ACK", 21)
+    f.text(1532, 788, "enqueue → submit", 21)
+    for index, height in enumerate((14, 25, 39, 30)):
+        f.rect(1325 + index * 25, 841 - height, 17, height, BLUE_PALE, INK, 1, 0)
+        f.rect(1545 + index * 25, 841 - height * .7, 17, height * .7, AMBER_PALE, INK, 1, 0)
+    f.math(1457, 837, [("S", "90")], size=26)
+    f.math(1674, 837, [("Q", "90")], size=26)
+    f.math(916, 886, [
         ("H",), " = min(", ("L",), ", ", ("S", "90"), " + ",
         ("Q", "90"), " + ", ("Δ", "obs"), " + ", ("ε", "early"), ")",
-    ], size=34)
-    f.arrow(((1091, 946), (1168, 946)), color=RED)
-    f.diamond(1282, 946, 218, 72, PAPER, INK)
-    f.math(1282, 958, [("τ",), " ≤ ", ("H",)], size=34, anchor="middle")
-    f.arrow(((1395, 946), (1550, 946)), color=RED)
-    f.dma(1567, 925, 165, 58, label="H2D")
+    ], size=31)
+    f.diamond(1161, 944, 179, 56, PAPER, INK)
+    f.math(1161, 953, [("τ",), " ≤ ", ("H",)], size=31, anchor="middle")
+    f.arrow(((1255, 944), (1320, 944)), color=RED, width=2)
+    f.junction(1343, 944)
+    f.math(1375, 929, [("c", None, "*"), " / ", ("B",)], size=25)
+    f.arrow(((1450, 929), (1462, 929), (1462, 901), (1343, 901), (1343, 923)), width=1.7)
+    f.arrow(((1365, 944), (1545, 944)), color=RED, width=2)
+    f.dma(1560, 918, 185, 55, label="H2D")
+    f.arrow(((1504, 689), (1504, 700), (882, 700), (882, 944), (1068, 944)), color=RED, width=2)
+    f.line(825, 944, 882, 944, RED, 2)
+    f.circle(882, 944, 4, RED, RED, 1)
 
     left, trigger, boundary, ack, serve, native_serve, right = 360, 900, 1160, 1300, 1460, 1560, 1760
     f.line(boundary, 1029, boundary, 1190, GRAY, 1.7, "6 5")
@@ -727,9 +853,13 @@ def pages_and_handoff(language: str) -> PaperFigure:
         "稳定 FULL 前缀 · checkpoint 状态 · 缺失页恢复 · child → parent 容量交接",
     )
     f.panel(40, 132, 1040, 285, f.tr("(a) Stable FULL: incremental PREPARE_HOST",
-                                                   "(a) 稳定 FULL：增量 PREPARE_HOST"))
+                                                   "(a) 稳定 FULL：增量 PREPARE_HOST"), color=GREEN_BAND)
     f.text(68, 244, "HBM", 28, INK, 700)
     f.text(68, 327, "Host", 28, INK, 700)
+    for index in range(4):
+        xx = 213 + index * 172
+        f.bracket(xx, xx + 150, 202)
+        f.math(xx + 75, 193, [("e", str(index))], size=24, anchor="middle")
     for i in range(8):
         x = 213 + i * 86
         f.page(x, 213, f"p{i}", w=64, h=44)
@@ -738,37 +868,33 @@ def pages_and_handoff(language: str) -> PaperFigure:
         if i >= 4:
             f.arrow(((x + 32, 259), (x + 32, 291)), color=RED, width=2)
     f.math(968, 285, ["ΔFULL"], size=26)
-    for xx, label, rows in (
-        (90, "HBM", 1), (449, "HBM + Host", 2), (840, "Host-only", 1),
-    ):
-        for row in range(rows):
-            for column in range(3):
-                f.page(xx + column * 22, 362 + row * 15, fill=PINK, w=17, h=12)
-        f.text(xx + 85, 386, label, 22)
-    f.arrow(((267, 378), (438, 378)), color=RED)
-    f.text(307, 363, "prepare", 20)
-    f.arrow(((704, 378), (827, 378)), color=RED)
-    f.text(718, 363, f.tr("pressure", "真实压力"), 20)
+    f.text(68, 389, f.tr("Host valid", "Host 有效位"), 22, INK, 700)
+    f.strip(213, 362, [PINK] * 4 + [PAPER] * 4,
+            labels=["1"] * 4 + ["0"] * 4, w=64, h=32, gap=22)
+    f.math(974, 389, [("Δ",), " only"], size=25, anchor="middle")
 
-    f.panel(1120, 132, 640, 285, f.tr("(b) Required Mamba state", "(b) 必要 Mamba 状态"))
+    f.panel(1120, 132, 640, 285, f.tr("(b) Checkpoint-matched Mamba", "(b) Checkpoint 匹配的 Mamba"), color=GREEN_BAND)
     for xx, sub, faded in ((1150, "0", True), (1340, "1", True), (1556, None, False)):
-        f.snapshot(xx, 226, scale=.82, faded=faded)
-        f.math(xx + 34, 306, [("s", sub, "*" if sub is None else None)],
+        f.snapshot(xx, 216, scale=.82, faded=faded)
+        f.math(xx + 34, 295, [("s", sub, "*" if sub is None else None)],
                size=30, color=GRAY if faded else INK, anchor="middle")
     f.arrow(((1233, 249), (1324, 249)), color=GRAY, width=2)
     f.arrow(((1424, 249), (1541, 249)), color=GRAY, width=2)
     f.text(1427, 219, "decode", 21, MUTED)
     f.math(1697, 257, [("c", None, "*")], size=32, anchor="middle")
     f.line(1640, 250, 1668, 250, INK, 1.6)
-    f.text(1148, 382, "PREPARE", 24, MUTED)
-    f.cross(1300, 357, color=RED, size=24)
-    f.snapshot(1556, 354, scale=.6)
-    f.text(1400, 392, "Host", 25, INK, 700)
-    f.arrow(((1580, 342), (1580, 317)), color=RED, width=2)
-    f.text(1633, 365, "H2D", 22)
+    f.table(1142, 322, (124, 135, 333), (
+        ("context", "epoch", "Host checkpoint"),
+        ("P", "e", "c*"),
+    ), row_h=28, size=21)
+    f.text(1146, 404, "PREPARE", 21, MUTED)
+    f.cross(1260, 385, color=RED, size=19)
+    f.arrow(((1697, 322), (1697, 287), (1640, 287), (1640, 243), (1623, 243)),
+            color=RED, width=2)
+    f.text(1500, 405, f.tr("Restore matched state", "只恢复匹配状态"), 21)
 
     f.panel(40, 459, 1720, 326, f.tr("(c) Safe-input checkpoint → missing pages → native layer pipeline",
-                                                   "(c) 安全输入 checkpoint → 缺失页 → 原生逐层流水线"))
+                                                   "(c) 安全输入 checkpoint → 缺失页 → 原生逐层流水线"), color=GREEN_BAND)
     f.text(67, 550, f.tr("Native radix tree", "原生前缀树"), 24, INK, 700)
     for xx, yy, label, fill in (
         (81, 605, "p0", BACKPLATE), (218, 565, "p1", PINK),
@@ -807,17 +933,24 @@ def pages_and_handoff(language: str) -> PaperFigure:
     f.math(1215, 725, [("s", None, "*")], size=31)
     f.arrow(((1266, 602), (1328, 602), (1328, 651)), color=RED)
     f.arrow(((1252, 715), (1328, 715), (1328, 683)), color=RED)
-    f.circle(1328, 667, 18, PAPER, INK, 1.8)
-    f.math(1328, 676, ["∧"], size=28, anchor="middle")
-    f.arrow(((1349, 667), (1393, 667), (1393, 561), (1453, 561)))
+    f.junction(1328, 667)
+    f.arrow(((1349, 667), (1376, 667), (1376, 544), (1450, 544), (1450, 551)), width=2)
+    f.text(1453, 530, "H2D", 22, INK, 700)
+    f.text(1607, 530, "GPU", 22, INK, 700)
     for index in range(3):
-        yy = 534 + index * 78
-        f.rect(1457, yy, 263, 55, BLUE_PALE, INK, 1.8, 3)
-        f.math(1488, yy + 35, [("ℓ", str(index))], size=30)
-        for column in range(4):
-            f.rect(1550 + column * 37, yy + 16, 27, 25, PAPER, INK, 1.1, 1)
-        if index < 2:
-            f.arrow(((1590, yy + 57), (1590, yy + 75)), width=2)
+        yy = 554 + index * 73
+        copy_x = 1450 + index * 38
+        gpu_x = 1563 + index * 54
+        f.math(1411, yy + 23, [("ℓ", str(index))], size=29, anchor="middle")
+        f.line(1438, yy + 38, 1738, yy + 38, RULE, 1)
+        f.rect(copy_x, yy, 82, 29, YELLOW, INK, 1.4, 0)
+        f.strip(copy_x + 8, yy + 7, [PINK] * 3, w=17, h=15, gap=5)
+        f.arrow(((copy_x + 85, yy + 14), (gpu_x - 5, yy + 14)), width=1.7)
+        f.rect(gpu_x, yy, 1736 - gpu_x, 29, BLUE_PALE, INK, 1.4, 0)
+        if index:
+            previous_x = 1563 + (index - 1) * 54
+            f.arrow(((previous_x + 25, yy - 41), (previous_x + 25, yy - 13),
+                     (gpu_x + 17, yy - 13), (gpu_x + 17, yy - 3)), width=1.6)
     f.arrow(((1183, 654), (1183, 673), (1032, 673), (1032, 766), (1450, 766)),
             color=BLUE, dashed=True, width=1.7)
     f.text(1353, 754, "ACK", 21, BLUE)
@@ -831,6 +964,8 @@ def pages_and_handoff(language: str) -> PaperFigure:
     f.arrow(((125, 994), (226, 1064)))
     f.check(287, 898, color=INK, size=18)
     f.arrow(((283, 925), (351, 925)))
+    f.table(359, 876, (80, 80, 80), (("private", "refs=0", "DMA=0"),),
+            header=False, row_h=22, size=17)
     for index in range(4):
         f.page(361 + index * 45, 906, fill=BACKPLATE if index == 0 else TEAL_PALE,
                w=36, h=34)
@@ -856,7 +991,15 @@ def pages_and_handoff(language: str) -> PaperFigure:
     f.arrow(((648, 941), (615, 941), (615, 1001), (811, 1001), (811, 1044)), color=RED)
     f.lock(242, 1114, scale=.65)
 
-    f.panel(1150, 830, 610, 326, f.tr("(e) Timely consumption", "(e) 恢复后及时消费"))
+    f.panel(1150, 830, 610, 326, f.tr("(e) Residency and consumption",
+                                                   "(e) 驻留、准入与首次消费"), color=GREEN_BAND)
+    f.text(1176, 892, "ACK", 21, BLUE)
+    f.arrow(((1231, 885), (1274, 885)), width=1.6)
+    f.lock(1285, 866, scale=.65)
+    f.text(1310, 892, "lease", 21)
+    f.arrow(((1372, 885), (1411, 885)), width=1.6)
+    f.text(1428, 892, f.tr("use / expiry", "消费 / 到期"), 21)
+    f.clock(1663, 883, 13)
     f.ticket(1181, 906, "old", BACKPLATE, w=196)
     f.ticket(1181, 984, "hit", TEAL_PALE, w=196, resident=True)
     f.ticket(1181, 1062, "P", PINK, w=196, resident=True, protected=True)
@@ -907,6 +1050,9 @@ def slide_notes(figure: PaperFigure):
             "across comparison arms. Root workflows can spawn again after JOIN; the current "
             "child harness does not expose nested task delegation. Colors identify memory "
             "owners, while location and solid/dashed borders indicate residency. "
+            "NOTICE is an observed completion announcement, not ground-truth terminal phase. "
+            "The control plane combines checkpoints, measured timing, native capacity and "
+            "candidate order; physical FULL pages and Mamba slots remain separate. "
             "Sources: causal_graph.py; semantic_report_worker.py; sglang_v0520_runtime.py "
             "(scheduler_step, dispatch_after_forward, plan_native_prefill); staging patch.",
             "架构基线：2026-10-15 当前开发实现，不代表所有运行实验的冻结代码。"
@@ -919,6 +1065,8 @@ def slide_notes(figure: PaperFigure):
             "显式完成通知属于 harness 协议，应在所有对照组保持一致。"
             "root 可以在 JOIN 后再次 spawn；当前 child harness 不提供嵌套 task 委派。"
             "页和请求票据的颜色表示归属，驻留状态由位置及实虚边框表达。"
+            "NOTICE 是已观测到的收尾通知，不是真实终态标签。控制面结合 checkpoint、"
+            "实测时机、原生容量和候选顺序；数据面的 FULL 页与 Mamba 槽分别核算。"
             "代码：causal_graph.py、semantic_report_worker.py、sglang_v0520_runtime.py "
             "的 scheduler_step / dispatch_after_forward / plan_native_prefill，以及 staging patch。",
         )
@@ -943,6 +1091,9 @@ def slide_notes(figure: PaperFigure):
             "history. A smaller same-checkpoint payload can retain the measured cost of its "
             "larger supported selection when its own direct estimate is unavailable. "
             "The timeline is schematic and allows partial overlap. "
+            "The t0/t1/t2 snapshots, work intervals, history records and CDF are schematic, "
+            "not measurements. Input notice=1 is observable; true final phase is never an "
+            "input. The conditional tool CDF normalizes the surviving historical mass. "
             "Sources: child_semantic_work.py; conditional_work.py; native_transfer_policy.py; "
             "native_transfer_service.py; _roll_final_stage / _roll_tool_prefetch / "
             "_wait_prefetch_timing_valid / _h2d_start_window in sglang_v0520_runtime.py.",
@@ -959,6 +1110,9 @@ def slide_notes(figure: PaperFigure):
             "提前完成余量)。服务耗时按方向、形态、大小从实际 ACK 历史取得。"
             "同 checkpoint 的计划缩小时，直接估计优先，缺支持可沿用较大已支持计划"
             "的当前成本预算，不按字节缩放固定 ACK 开销。时序仅为机制示意，允许部分重叠。"
+            "t0/t1/t2、区间、历史记录及 CDF 都是机制示意，不是实测。输入 notice=1"
+            "是在线可观测信息，不把真实 final 阶段标签作为模型输入。工具条件 CDF"
+            "对尚未完成的历史概率质量重新归一化。"
             "代码：child_semantic_work.py、conditional_work.py、native_transfer_policy.py、"
             "native_transfer_service.py 与 runtime 的 _roll_final_stage / "
             "_roll_tool_prefetch / _wait_prefetch_timing_valid / _h2d_start_window。",
@@ -1030,6 +1184,41 @@ class PowerPointExporter:
     def rgb(value: str):
         return RGBColor.from_string(value.lstrip("#"))
 
+    @staticmethod
+    def clear_shape_effects(shape):
+        for effect in shape._element.xpath(".//a:effectRef"):
+            effect.set("idx", "0")
+        for effect in shape._element.xpath(".//a:effectLst|.//a:effectDag"):
+            effect.getparent().remove(effect)
+        shape._element.spPr.append(OxmlElement("a:effectLst"))
+        for properties in shape._element.xpath(".//a:rPr|.//a:defRPr|.//a:endParaRPr"):
+            properties.append(OxmlElement("a:effectLst"))
+
+    def clear_package_effects(self):
+        namespace = "http://schemas.openxmlformats.org/drawingml/2006/main"
+        removed = {
+            "outerShdw", "innerShdw", "prstShdw", "glow", "reflection",
+            "softEdge", "blur", "scene3d", "sp3d",
+        }
+        for part in self.presentation.part.package.iter_parts():
+            if not part.content_type.endswith("+xml"):
+                continue
+            live_root = getattr(part, "_element", None)
+            root = live_root if live_root is not None else etree.fromstring(part.blob)
+            for element in list(root.iter()):
+                name = etree.QName(element)
+                if name.namespace != namespace:
+                    continue
+                if name.localname in ("effectLst", "effectDag"):
+                    for child in list(element):
+                        element.remove(child)
+                elif name.localname in removed and element.getparent() is not None:
+                    element.getparent().remove(element)
+                elif name.localname == "effectRef":
+                    element.set("idx", "0")
+            if live_root is None:
+                part._blob = etree.tostring(root, xml_declaration=True, encoding="UTF-8", standalone=True)
+
     def style(self, shape, attributes):
         fill = attributes.get("fill", "none")
         if shape.shape_type != MSO_SHAPE_TYPE.LINE:
@@ -1046,13 +1235,27 @@ class PowerPointExporter:
         shape.line.width = Pt(float(attributes.get("stroke-width", 1)) * self.point_scale)
         if "stroke-dasharray" in attributes:
             shape.line.dash_style = MSO_LINE_DASH_STYLE.DASH
-        if "marker-end" in attributes:
-            line = shape.line._get_or_add_ln()
-            arrow = OxmlElement("a:tailEnd")
-            arrow.set("type", "triangle")
-            arrow.set("w", "lg")
-            arrow.set("len", "lg")
-            line.append(arrow)
+
+    def add_arrowhead(self, slide, points, attributes):
+        end = points[-1]
+        previous = next((point for point in reversed(points[:-1]) if point != end), None)
+        if previous is None:
+            return
+        length = math.hypot(end[0] - previous[0], end[1] - previous[1])
+        ux, uy = (end[0] - previous[0]) / length, (end[1] - previous[1]) / length
+        size = float(attributes.get("stroke-width", 1)) * 7
+        tip = (end[0] + .15 * size * ux, end[1] + .15 * size * uy)
+        base = (end[0] - .85 * size * ux, end[1] - .85 * size * uy)
+        vertices = [
+            tip, (base[0] - .5 * size * uy, base[1] + .5 * size * ux),
+            (base[0] + .5 * size * uy, base[1] - .5 * size * ux),
+        ]
+        builder = slide.shapes.build_freeform(*vertices[0], scale=self.unit)
+        builder.add_line_segments(vertices[1:], close=True)
+        head = builder.convert_to_shape()
+        head.name = f"arrowhead {len(slide.shapes)}"
+        self.style(head, {"fill": attributes.get("stroke", INK), "stroke": "none"})
+        self.clear_shape_effects(head)
 
     def add_text(self, slide, element, figure, offset_y):
         value = "".join(element.itertext())
@@ -1097,6 +1300,7 @@ class PowerPointExporter:
         east_asian = OxmlElement("a:ea")
         east_asian.set("typeface", family)
         properties.append(east_asian)
+        self.clear_shape_effects(shape)
 
     def add_primitive(self, slide, element, figure, offset_y):
         tag = element.tag.rsplit("}", 1)[-1]
@@ -1129,12 +1333,13 @@ class PowerPointExporter:
                 self.length(radius * 2), self.length(radius * 2),
             )
         elif tag == "line":
+            points = [
+                (float(element.get("x1", 0)), float(element.get("y1", 0)) + offset_y),
+                (float(element.get("x2", 0)), float(element.get("y2", 0)) + offset_y),
+            ]
             shape = slide.shapes.add_connector(
                 MSO_CONNECTOR_TYPE.STRAIGHT,
-                self.length(float(element.get("x1", 0))),
-                self.length(float(element.get("y1", 0)) + offset_y),
-                self.length(float(element.get("x2", 0))),
-                self.length(float(element.get("y2", 0)) + offset_y),
+                *(self.length(coordinate) for point in points for coordinate in point),
             )
         elif tag in ("path", "polygon"):
             if tag == "path":
@@ -1160,10 +1365,9 @@ class PowerPointExporter:
             raise ValueError(f"Unsupported diagram element {tag}")
         shape.name = f"{tag} {len(slide.shapes)}"
         self.style(shape, attributes)
-        # Disable theme shadows and other inherited decorative effects.
-        for effect in shape._element.xpath(".//a:effectRef"):
-            effect.set("idx", "0")
-        shape._element.spPr.append(OxmlElement("a:effectLst"))
+        self.clear_shape_effects(shape)
+        if "marker-end" in attributes:
+            self.add_arrowhead(slide, points, attributes)
 
     def add_figure(self, figure: PaperFigure, directory: Path):
         slide = self.presentation.slides.add_slide(self.presentation.slide_layouts[6])
@@ -1178,6 +1382,7 @@ class PowerPointExporter:
         slide.notes_slide.notes_text_frame.text = slide_notes(figure)
 
     def save(self, path: Path):
+        self.clear_package_effects()
         self.presentation.save(path)
         reopened = Presentation(path)
         slides = []
@@ -1214,7 +1419,6 @@ def export_powerpoints(figures, directory: Path):
 
 
 def preview(directory: Path, manifest: list[dict]):
-    font = ImageFont.truetype("/usr/share/fonts/truetype/dejavu/DejaVuSans.ttf", 23)
     tile_width = 1020
     rows = []
     for row in manifest:
@@ -1223,11 +1427,10 @@ def preview(directory: Path, manifest: list[dict]):
         with Image.open(directory / (row["stem"] + ".png")) as original:
             image = original.copy()
         image.thumbnail((tile_width - 48, 690), Image.Resampling.LANCZOS)
-        tile = Image.new("RGB", (tile_width, image.height + 74), "white")
-        ImageDraw.Draw(tile).text((24, 16), row["title"], fill=INK, font=font)
-        tile.paste(image, (24, 57))
+        tile = Image.new("RGB", (tile_width, image.height + 24), PAPER)
+        tile.paste(image, (24, 12))
         rows.append(tile)
-    sheet = Image.new("RGB", (tile_width, sum(row.height for row in rows) + 24), "#e8edef")
+    sheet = Image.new("RGB", (tile_width, sum(row.height for row in rows) + 24), PAPER)
     position = 8
     for row in rows:
         sheet.paste(row, (0, position))
@@ -1266,7 +1469,17 @@ def main():
             (Path(__file__).parent / "generate_beliefkv_paper_figures.py").read_bytes(),
         ).hexdigest(),
         "schematic_not_empirical_performance": True,
-        "visual_style": "gray backplates, black outlines, semantic ownership colors",
+        "visual_style": (
+            "compact control/data planes, native page pools and state ledgers, "
+            "flat black outlines and semantic ownership colors"
+        ),
+        "shadow_policy": (
+            "no offset decorative layers; explicit shape/text resets; package-wide "
+            "theme, master, layout, shadow, glow, reflection and 3D effects removed"
+        ),
+        "powerpoint_arrowheads": (
+            "editable native triangles oriented from the final SVG path segment"
+        ),
         "palette": PALETTE,
         "math_typography": (
             "editable Liberation Serif italic variables; positioned upright subscripts "
