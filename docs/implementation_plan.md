@@ -17,9 +17,15 @@ V701 seals all193 V59 JOIN windows: completion-to-client-submit P50/P90
 Count actual reused FULL separately before completion, between completion
 and client submit, between submit and native arrival, and after native
 arrival. Missing or unordered boundaries remain unknown; window length
-is not guaranteed DMA overlap or isolated JCT saving. Keep registeredV60
-and the reservation unchanged; deployment, turnover and full JCT/throughput
-acceptance remain pending.
+is not guaranteed DMA overlap or isolated JCT saving.
+V707/V708 now register V61 with73518e2 and supersede only the exact owned,
+unstarted V60 wait process. Retain all V60 frozen files and qualifications.
+Use isolatedV709 execution, initially at exactV59 and then fast-forwarded
+to the candidate: Main has newer document commits, so its old fast-forward
+assumption no longer holds. Do not modify Main or its local documents.
+Wait until2026-10-15 15:00 Asia/Shanghai and confirm exclusive resources
+before starting predictive only with the historicalV58 reference. The new
+wait process is live; actual service and full JCT/throughput remain pending.
 
 V695 cold-qualifies isolated43b6310 in the V691 worktree: two capacity
 repairs plus a test-identity-only commit extend9c79eee. Production AST
