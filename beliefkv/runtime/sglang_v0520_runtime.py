@@ -517,6 +517,7 @@ class NativeAdmissionRuntime:
         self._admission_lease: _AdmissionPrefetchLease | None = None
         self.shadow_candidate: ActionLocalShadowCandidate | None = None
         self._native_cache: object | None = None
+        self._residency_pool_bytes: tuple[int, int] | None = None
         self._context_tokens: dict[str, tuple[int, int, int, bool]] = {}
         self._boundary_history: dict[str, deque[str]] = {}
         self._tool_metadata: dict[
@@ -758,6 +759,18 @@ class NativeAdmissionRuntime:
 
     def attach_native_cache(self, cache: object) -> None:
         self._native_cache = cache
+        self._residency_pool_bytes = None
+        try:
+            entries = cache.host_pool_group.entry_map
+            full_unit = entries["kv"].host_pool.size_per_token
+            mamba_unit = entries["mamba"].host_pool.size_per_token
+            if (
+                type(full_unit) is int and full_unit > 0
+                and type(mamba_unit) is int and mamba_unit > 0
+            ):
+                self._residency_pool_bytes = full_unit, mamba_unit
+        except (AttributeError, KeyError, TypeError):
+            pass
         if callable(getattr(cache, "_evict_backed_join_parent", None)):
             cache.beliefkv_join_pressure_validator = self._live_parent_pressure_node
             cache.beliefkv_join_pressure_parked = self._on_parent_pressure_parked
@@ -8386,7 +8399,7 @@ class NativeAdmissionRuntime:
             def residency_rank(pair: tuple[int, object]) -> tuple:
                 rank = waiting_ranks[pair[0]]
                 if rank[0] == -1:
-                    return rank[:2] + (0,) + rank[2:]
+                    return rank[:2] + (0, 0) + rank[2:]
                 key = keys[pair[0]]
                 observation = residency_observations.get(pair[0])
                 if observation is None:
@@ -8402,7 +8415,18 @@ class NativeAdmissionRuntime:
                     and observation["device_checkpoint_tokens"] > 0
                     else 2
                 )
-                return rank[:2] + (resident,) + rank[2:]
+                restore_bytes = 0
+                if observation is not None and self._residency_pool_bytes is not None:
+                    full_unit, mamba_unit = self._residency_pool_bytes
+                    restore_bytes = (
+                        observation["missing_full_tokens"] * full_unit
+                        + observation["missing_mamba_slots"] * mamba_unit
+                    )
+                    # A host-only state can leave a large FULL prefix resident.
+                    # Compare missing bytes instead of requiring an older
+                    # complete device checkpoint for all partial hits.
+                    resident = int(restore_bytes > 0)
+                return rank[:2] + (resident, restore_bytes) + rank[2:]
 
             resident_ordered = sorted(ordered, key=residency_rank)
             if resident_ordered != ordered:

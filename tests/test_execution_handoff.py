@@ -70,6 +70,78 @@ def test_warm_first_does_not_override_causal_parent_message_priority(monkeypatch
     assert cache.inspect_beliefkv_reentry.call_args.args == (parent,)
 
 
+@pytest.mark.parametrize("cold_full_tokens,expected", [
+    (10000, ("parent", "warm", "cold")),
+    (100, ("parent", "cold", "warm")),
+])
+def test_resident_order_compares_full_and_mamba_bytes_without_requiring_device_state(
+    monkeypatch, cold_full_tokens, expected,
+):
+    runtime, (cold, warm, parent), cache = runtime_with_requests(monkeypatch)
+    runtime.enable_execution_handoff = False
+    cache.host_pool_group = NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=20480)),
+        "mamba": NS(host_pool=NS(size_per_token=64389120)),
+    })
+    runtime.attach_native_cache(cache)
+    observed = {
+        "cold": {"missing_full_tokens": cold_full_tokens, "missing_mamba_slots": 0,
+                 "device_checkpoint_tokens": 256},
+        "warm": {"missing_full_tokens": 0, "missing_mamba_slots": 1,
+                 "device_checkpoint_tokens": 0},
+        "parent": {"missing_full_tokens": 0, "missing_mamba_slots": 0,
+                   "device_checkpoint_tokens": 1024},
+    }
+    cache.inspect_beliefkv_reentry.side_effect = lambda request: {
+        "checkpoint_tokens": 40000, **observed[request.rid],
+    }
+    plain = NS(rid="plain", beliefkv_metadata=None)
+    actual = select(runtime, [cold, plain, warm, parent]).candidates
+    assert actual[1] is plain
+    assert tuple(request.rid for request in actual if request is not plain) == expected
+    assert cache.inspect_beliefkv_reentry.call_count == 3
+    assert not runtime._prefetch_service_leases
+    assert runtime.physical_ledger.pending_count == 0
+    runtime._visible_since[cold.rid] -= 11.
+    assert select(runtime, [cold, warm, parent]).candidates[0] is cold
+    runtime.close()
+
+
+def test_restore_byte_order_preserves_parent_causal_priority(monkeypatch):
+    runtime, (cold, warm, parent), cache = runtime_with_requests(monkeypatch)
+    cache.host_pool_group = NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=20480)),
+        "mamba": NS(host_pool=NS(size_per_token=64389120)),
+    })
+    runtime.attach_native_cache(cache)
+    runtime.graph.invocations["parent"].pending_messages = 1
+    assert select(runtime, [cold, warm, parent]).candidates[0] is parent
+    assert runtime._prefetch_priority_promoted is None
+    runtime.close()
+
+
+@pytest.mark.parametrize("full_unit,mamba_unit", [(None, 10), (True, 10), (10, -1)])
+def test_unobservable_pool_units_keep_original_residency_order(
+    monkeypatch, full_unit, mamba_unit,
+):
+    runtime, (cold, warm, _), cache = runtime_with_requests(monkeypatch)
+    runtime.enable_execution_handoff = False
+    cache.host_pool_group = NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=full_unit)),
+        "mamba": NS(host_pool=NS(size_per_token=mamba_unit)),
+    })
+    runtime.attach_native_cache(cache)
+    cache.inspect_beliefkv_reentry.side_effect = lambda request: {
+        "checkpoint_tokens": 40000,
+        "missing_full_tokens": 10000 if request is cold else 0,
+        "missing_mamba_slots": int(request is warm),
+        "device_checkpoint_tokens": 256 if request is cold else 0,
+    }
+    assert runtime._residency_pool_bytes is None
+    assert select(runtime, [cold, warm]).candidates == (cold, warm)
+    runtime.close()
+
+
 def test_model_round_retains_other_join_ranks_and_consumes_messages(monkeypatch):
     runtime, (cold, warm, parent), _ = runtime_with_requests(monkeypatch)
     runtime.enable_resident_first = False
