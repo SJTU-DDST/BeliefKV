@@ -1,6 +1,6 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-15 (Asia/Shanghai).
+Status date: 2026-10-16 (Asia/Shanghai).
 
 The active goal requires measured mean-workflow-JCT and completion-throughput
 improvements over native, with task quality, completion, fairness, tails and
@@ -8,10 +8,50 @@ recomputation checked. All three workstreams remain open: actual short-prefill
 and high-frequency control cost; useful JOIN/tool FULL prefetch conversion;
 recovery, KV lifecycle and first-service coordination. CPU checks, local
 microseconds, ACK counts and transferred bytes are not acceptance. Inspect
-running V62/cd53d19; use V58 for development and matched repeated formal controls.
+running V63 retry1/a297462 and completed V62; use V58 for development and
+matched repeated formal controls. Keep running source and engine frozen.
 Continue trace-supported implementation and CPU validation during the GPU
 reservation. A new GPU run is required for end-to-end benefit acceptance,
 not as a prerequisite for fixing identifiable control or lifecycle defects.
+
+Current facts override later historical scheduling notes. V62 collected156
+workflows in7653.886s:154 completed/two incomplete,148 natural terminal and
+143 agent-JCT-eligible. Both incomplete12754/14500 final responses hit length;
+retain8192 output cap. Eleven completed workflows retain finalization
+intervention. V62's frozen HTML import failure was repaired offline, with
+the original driver failure retained and no physical migration disablement.
+V823 supplements, without rewriting, the152 outcome-completed pairs with141
+explicitly eligible pairs: mean2053.910/2172.270s,5.45% lower than historical
+native. Realized LLM requests are also11.25% fewer30483/34346. Different harness/
+engine and absent independent quality checks leave comparison_eligible=false.
+
+V63's first attempt failed before GPU use because TCP preflight missed a
+stale Unix control socket. PreserveV817/V818 and the original directory.
+After connection refusal verified it stale, the samea297462 startedV63_retry1
+at2026-10-16 00:16:43 Asia/Shanghai. V821/V822 bind recovery and launch;
+V824/V826 verify actual service, source/configuration and matching capacity.
+NUMA remains preferred, with large mapsN0=41.52GB/N1=160.44GB, not hard bind.
+Actual supervisor/driver/scheduler3157362/3157516/3157952 are recorded in
+ops/v63_latest_capacity_retry1_20261015.state.json. Observer3208346 uses frozen
+analyzers for120-300/600-900/1800-2100/3600-3900/4800-5100s. The first window
+has228469/246021 request steps, short-prefill selection CPU4.999/2.734ms and
+run_batch37.354/34.842ms. Real deadline coalescing and indexed reclaim execute,
+but no measured net benefit is established; all three workstreams stay open.
+
+V819/V820 bind a recent sealed prefix: JOIN/tool early verified FULL reuse
+1.570/8.594GB. Tool's last submit is1835.983s after first GPU service. Among
+zero-size pre-completion FULL plans,1809 later tool requests restore449.164GB
+native FULL and wait12.684s median after arrival. Those later bytes do not
+prove the same pages could be prefetched earlier. Same-event ACK partitions
+show arrival-to-service P90 0.388/0.988s while ACK-to-service remains6.846/
+7.101s; early residence must not be mislabeled pure GPU queueing. Investigate
+capacity/reserve, cold-candidate registration and admission using these
+separate boundaries; this prefix is not a complete-run oracle bound.
+Next reproduce, on the real CPU radix path, whether an unbacked output leaf
+prevents reclaim of an already-backed input ancestor for a waiting context.
+Check FULL/Mamba ownership and checkpoint reuse before changing PREPARE scope;
+the live indexed scan's235 duplicate entries with zero candidate leaves is
+diagnostic motivation, not proof that such a tail is safe to discard.
 
 The free-GPU instruction supersedes the19:51 reservation. The identity-checked
 old waiter4030423 has exited and must not restart. V61/824cd44 has finished:
