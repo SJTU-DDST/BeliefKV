@@ -2,6 +2,25 @@
 
 Status date: 2026-10-15 (Asia/Shanghai).
 
+Development48838cd repairs normal-mode confirmed JOIN restoration.
+RETURN/complete JOIN can create a ticket without a time forecast; an
+existing burst keeps its command/ACK identities. Concurrent confirmed
+JOINs retain separate targets and rotate past temporarily unplannable
+ones. Parent submission, epoch/session changes and physical revalidation
+still bind issuance. Earlier semantic/EOS triggering remains available;
+the alternative trigger policies have not yet been compared.
+V706 cold-qualifies isolated73518e2 directly on43b6310:89 sources,
+36 modules,1662 checks plus2 subtests, all1645 inherited identities covered.
+V704's no-candidate control adds0.081-0.108us per dispatch, not a speedup.
+V701 seals all193 V59 JOIN windows: completion-to-client-submit P50/P90
+24.00/94.31ms and completion-to-native-arrival130.51/341.47ms.
+Count actual reused FULL separately before completion, between completion
+and client submit, between submit and native arrival, and after native
+arrival. Missing or unordered boundaries remain unknown; window length
+is not guaranteed DMA overlap or isolated JCT saving. Keep registeredV60
+and the reservation unchanged; deployment, turnover and full JCT/throughput
+acceptance remain pending.
+
 V695 cold-qualifies isolated43b6310 in the V691 worktree: two capacity
 repairs plus a test-identity-only commit extend9c79eee. Production AST
 diff is restricted to two runtime methods and one physical function;
