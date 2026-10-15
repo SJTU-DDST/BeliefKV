@@ -44,6 +44,40 @@ checkout package; the development CLI now inserts its own root. Keep running
 sources frozen. Subsequent old candidate,19:51 and deployment statements below
 are historical and do not override the current state.
 
+V799 binds the latest V62 sealed-prefix audits, adjacent CPU evidence and a
+separate tool-scan candidate. V794 retains each complete-line prefix and hash.
+Verified FULL reuse is1.306/8.951GB for JOIN/tool commands; independent
+pre-completion started-and-reused events are40/132 with0.943/8.594GB.
+Positive FULL-plan event counts are113/1174; command counts208/1140 have a
+different denominator. Native FULL H2D in that prefix remains about1.159TB.
+Independent last-ACK-to-first-service P90 is6.264/7.101s over64/150 events.
+Next diagnose the capacity chain: a recorded reclaim freed3155 tokens, leaving
+3267 free, yet a4145-token input/decode reserve blocked a328-token target.
+Separate immediate execution needs from future input reservation and revocable
+restoration before changing this budget; do not infer that no cold KV existed.
+Residency/first-service tails and incomplete conversion remain open.
+
+In1800-2100s, decode request steps395596/381775 are about3.6% above historical
+native;600-900s remains346953/386707. The latter64 exact adjacent short-prefill
+samples measure9.410ms to the successor launch observer,8.458ms scheduler-thread
+CPU:2.435 predecessor results,2.614 physical planning,2.925 successor selection,
+0.036 WAR publication and0.448 between phases. V795 validates neighbor identities. No GPU-idle or
+removable-JCT inference is justified, and native lacks the same CPU endpoints.
+Keep V791's12s49Hz nonblocking stack sample with543 samples/58 errors as
+diagnostic evidence, not a CPU-time allocation.
+
+The new undeployed tool scanner sleeps until the earliest possible entry when
+no live forecast can yet enter the window. Near entry it may wake before the
+old100ms cadence; new forecasts, verified D2H and pending tickets still wake
+immediately, while eligible capacity failures retain the old retry cadence.
+V797 has225 passing related checks; preserve V796's initial failures.
+V798 compares complete CPU maintenance/dispatch fixtures: stable far waits
+reduce scans30 to1 and156-context thread CPU16.3%-17.4%; refreshed/eligible
+controls are near-flat, including the worst0.44% regression. This omits model
+inference, writer I/O, native allocation, DMA and GPU service. Keep V62 frozen
+and running; this conditional saving does not justify an immediate restart.
+Full JCT, throughput, quality, fairness, tails and recomputation remain unproven.
+
 The two development optimizations now form independent candidate45f46b7,
 directly extending V61/9e8a574. Only dispatch, its tests and that candidate's
 canonical engine patch change. Engine treeaca4c6a8 changes only the reclamation

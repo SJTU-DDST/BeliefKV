@@ -5689,6 +5689,7 @@ class NativeAdmissionRuntime:
         budget = None
         candidates = []
         outside_window = deferred = 0
+        next_possible_window_ms = math.inf
         for hint in self.tool_wait_hints.values():
             if self._live_tool_hint(hint.key, now_ms=now_ms) is None:
                 self._tool_survival_probes.pop(hint.key.context_id, None)
@@ -5699,16 +5700,16 @@ class NativeAdmissionRuntime:
                 if probe is not None and probe[0] is hint and now_ms < probe[1]:
                     deferred += 1
                     outside_window += 1
+                    next_possible_window_ms = min(next_possible_window_ms, probe[1])
                     continue
             remaining = self._tool_prefetch_remaining(hint, .5, now_ms=now_ms)
             if remaining is None or remaining > self.prefetch_lead_ms:
+                deadline = hint.next_prefetch_check_ms(
+                    self.prefetch_lead_ms, now_ms=now_ms, remaining_ms=remaining,
+                )
+                next_possible_window_ms = min(next_possible_window_ms, deadline)
                 if use_probe:
-                    self._tool_survival_probes[hint.key.context_id] = (
-                        hint, hint.next_prefetch_check_ms(
-                            self.prefetch_lead_ms, now_ms=now_ms,
-                            remaining_ms=remaining,
-                        ),
-                    )
+                    self._tool_survival_probes[hint.key.context_id] = (hint, deadline)
                 outside_window += 1
                 continue
             if self._tool_survival_probes:
@@ -5724,6 +5725,19 @@ class NativeAdmissionRuntime:
                 if self.tool_wait_hints.get(context) is probe[0] and now_ms < probe[1]
             }
         if not candidates:
+            # No live hint can enter earlier. New forecasts and credited D2H
+            # already rearm this deadline; pending tickets are handled above.
+            if (
+                math.isfinite(next_possible_window_ms)
+                and next_possible_window_ms > now_ms
+                and next_possible_window_ms != self._tool_prefetch_next_ms
+            ):
+                self.counts[
+                    "tool_prefetch_scan_deadline_coalesced"
+                    if next_possible_window_ms > self._tool_prefetch_next_ms
+                    else "tool_prefetch_scan_deadline_advanced"
+                ] += 1
+                self._tool_prefetch_next_ms = next_possible_window_ms
             return
         # Scheduler/event/batch maintenance already expires leases. Revalidate
         # them here only when this scan will use restoration capacity.
