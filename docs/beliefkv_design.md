@@ -2,6 +2,20 @@
 
 更新日期：2026-10-15（Asia/Shanghai）
 
+内部上下文摘要是独立前台模型工作，不能归为parent纯排队或
+客户端空等。v718–v720对完整V59/V58 native各156份轨迹确认
+786/749次摘要请求和71/77次空正文length响应；请求区间包含
+排队、生成及传输。旧checkpoint的预取保护已有summary开始
+失效路径，压缩后的下一请求须重新核对安全输入，不能为提高
+预取覆盖而绕过该边界。工具间隔中的显式JOIN等待也须单列。
+
+开发v721在一次交付中按序发布CONTEXT_COMPACT及LLM_SUBMIT，
+保留compaction的同步ACK屏障、本地session轮换及错误降级。
+108项及2个subtest通过，审计另17项。减少一个逻辑控制批次
+尚不证明实际加速；LLM_SUBMIT现在于ACK前采时，验收以HTTP/
+原生到达、完整周转、FULL消费和最终JCT为准。已冻结73518e2/
+V61与19:51预约保持，摘要模型、预算和thinking策略未改。
+
 JOIN恢复新增已确认的执行依据：最后必需child返回后，parent
 下一请求送达前即可恢复安全checkpoint，无须继续猜child时间。
 开发48838cd使其在正常final-stage模式可用，保留原有在途burst

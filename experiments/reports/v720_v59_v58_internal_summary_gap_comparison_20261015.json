@@ -1,0 +1,447 @@
+{
+  "created_at_local": "2026-10-15T00:19:00.969977-07:00",
+  "scope": "Descriptive comparison of complete client logs, not matched-demand causal performance. Summary request spans include queueing, model work and transport. Concurrent request sums are not elapsed run time or removable JCT. Generic raw tool rounds include short control tools and are a broader population than the earlier instrumented WAIT_TOOL audit. JOIN parent identity comes from JOIN_WAIT, not JOIN_CREATE. Outside-summary time can contain explicit JOIN waiting, callbacks, prompt preparation and control delivery; it must not be called pure client idle. Two empty results before compaction are observed; source-history fallback follows from the unchanged context_lifecycle implementation.",
+  "source_provenance": {
+    "v58_native": {
+      "revision": "9a54233c3d1d18c12bfc202f61e2ec36a911e46f",
+      "sha256": {
+        "beliefkv/runtime/context_lifecycle.py": "7719ed2cd863aa803804bedd3157db43dbb92faa667fb184685e2b4cc339a844",
+        "beliefkv/runtime/deepagents_adapter.py": "a00d2d41ab7d58e5b29c6f972a146f41aedb210a130724fdff116423d727916a",
+        "beliefkv/experiments/deepagents_swebench.py": "096a0e0f1f6c5d49fddda969610ddd06afa50fa96443c5931cb9a0d68e2c5af8"
+      }
+    },
+    "v59_predictive": {
+      "revision": "d1c3f1407d8841bde1e3aff3d4fc37559bcc8247",
+      "sha256": {
+        "beliefkv/runtime/context_lifecycle.py": "7719ed2cd863aa803804bedd3157db43dbb92faa667fb184685e2b4cc339a844",
+        "beliefkv/runtime/deepagents_adapter.py": "a00d2d41ab7d58e5b29c6f972a146f41aedb210a130724fdff116423d727916a",
+        "beliefkv/experiments/deepagents_swebench.py": "916d4a5cbfb0d42eb76b9f5a5a061dd3e5852aa78d438f258786e141247a6fde"
+      }
+    }
+  },
+  "inputs": {
+    "audit_script": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/scripts/audit_context_summary_gaps.py",
+      "bytes": 20299,
+      "sha256": "e88372a708a05b928058304c8a6f95dc0dd89b988245c2691b57e3c0e488e842"
+    },
+    "audit_tests": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/tests/test_audit_context_summary_gaps.py",
+      "bytes": 8049,
+      "sha256": "01df8d653831dd48ca8bb1f0fb098f3a0d5d731ec6d1c13855f00b13c429cdab"
+    },
+    "audit_checks": {
+      "path": "/home/longhao/experiment/ops/v718_context_summary_audit_checks_20261015.xml",
+      "bytes": 2831,
+      "sha256": "aa28cc3eecbe9b0344ee5ca24d69e2268e229db0c8108ddbf15d51b32629106c"
+    }
+  },
+  "excluded_preliminary_reports": {
+    "reason": "Initial JOIN matching used an absent JOIN_CREATE parent field; superseded by V718/V719 using JOIN_WAIT. Retained for audit history, not JOIN conclusions.",
+    "paths": [
+      "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v716_v59_internal_summary_client_gaps_20261015.json.gz",
+      "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v717_v58_native_internal_summary_client_gaps_20261015.json.gz"
+    ]
+  },
+  "runs": {
+    "v59_predictive": {
+      "audit": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v718_v59_internal_summary_client_gaps_20261015.json.gz",
+        "bytes": 4591188,
+        "sha256": "1d4a41cb8d38095907850f026f325d5f68311dc053cea432f44d54d8db9fa98d"
+      },
+      "source_files": 156,
+      "summary_requests": 786,
+      "summary_episodes_at_next_ordinary_submit": 725,
+      "episodes_with_multiple_summary_requests": 61,
+      "two_empty_results_before_compaction_episodes": 10,
+      "empty_length_summary_requests": 71,
+      "summary_request_span_ms": {
+        "count": 786,
+        "sum": 30908069.572888374,
+        "p50": 37733.232679367065,
+        "p90": 67660.64916229248,
+        "min": 1588.5854482650757,
+        "max": 100114.8022184372
+      },
+      "empty_length_request_span_ms": {
+        "count": 71,
+        "sum": 4613476.494202614,
+        "p50": 70279.24917793274,
+        "p90": 90470.16328048706,
+        "min": 9747.646615982056,
+        "max": 98768.73126029968
+      },
+      "tool_round_counts_and_statuses": {
+        "measured": 46432
+      },
+      "join_counts_and_statuses": {
+        "measured": 194
+      },
+      "tool_gap_with_summary_ms": {
+        "count": 724,
+        "sum": 31065085.586607933,
+        "p50": 38099.77745246887,
+        "p90": 71585.66055297852,
+        "min": 1754.0904922485352,
+        "max": 197416.1043176651
+      },
+      "tool_gap_without_summary_ms": {
+        "count": 45708,
+        "sum": 2700353.072142601,
+        "p50": 22.5075101852417,
+        "p90": 92.72389926910401,
+        "min": 3.5514535903930664,
+        "max": 730763.7737598419
+      },
+      "tool_gap_outside_summary_ms": {
+        "count": 724,
+        "sum": 164602.3592004776,
+        "p50": 199.38552331924438,
+        "p90": 405.5123742103577,
+        "min": 29.87410259246826,
+        "max": 1181.3918380737305
+      },
+      "summary_related_phase_ms": {
+        "blocking_join_overlap_ms": {
+          "count": 724,
+          "sum": 0.0,
+          "p50": 0.0,
+          "p90": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "outside_summary_and_join_spans_ms": {
+          "count": 724,
+          "sum": 164602.3592004776,
+          "p50": 199.38552331924438,
+          "p90": 405.5123742103577,
+          "min": 29.87410259246826,
+          "max": 1181.3918380737305
+        },
+        "completion_to_first_summary_submit_ms": {
+          "count": 724,
+          "sum": 67514.49355697632,
+          "p50": 68.71736288070679,
+          "p90": 175.8115032196045,
+          "min": 14.988958358764648,
+          "max": 912.2002954483032
+        },
+        "between_summary_request_spans_ms": {
+          "count": 724,
+          "sum": 3966.1044387817383,
+          "p50": 0.0,
+          "p90": 0.0,
+          "min": 0.0,
+          "max": 244.6022720336914
+        },
+        "last_summary_result_to_next_submit_ms": {
+          "count": 724,
+          "sum": 93121.76120471954,
+          "p50": 101.29052972793579,
+          "p90": 251.64060163497925,
+          "min": 10.567920684814453,
+          "max": 1028.317151069641
+        },
+        "last_summary_result_to_compaction_ms": {
+          "count": 724,
+          "sum": 16238.20185470581,
+          "p50": 9.804986000061035,
+          "p90": 55.09401016235351,
+          "min": 1.4836816787719727,
+          "max": 412.71745777130127
+        },
+        "compaction_to_next_submit_ms": {
+          "count": 724,
+          "sum": 76883.55935001373,
+          "p50": 80.17038249969482,
+          "p90": 210.9989356994629,
+          "min": 7.451022148132324,
+          "max": 640.9326982498169
+        }
+      },
+      "summary_fraction_of_with_summary_tool_gap_sum": 0.994701371134434,
+      "summary_fraction_of_all_tool_gap_sum": 0.915151245026085,
+      "longest_tool_gap": {
+        "workflow_id": "deepagents:autonomous:pytest-dev__pytest-6202:31098ed45ef5",
+        "workflow_path": "pytest-dev__pytest-6202",
+        "source": "tool_round",
+        "invocation_id": "deepagents:autonomous:pytest-dev__pytest-6202:31098ed45ef5:root",
+        "completion_ts_ms": 6187417850.758396,
+        "next_request_id": "beliefkv:01a13c96-e949-7c80-9daa-0e6d5e173150",
+        "client_submit_ts_ms": 6188148614.532156,
+        "origin_request_id": "beliefkv:01a13c8b-b187-7a81-8e90-3439aefbf27a",
+        "tool_run_ids": [
+          "01a13c8b-c28d-7661-b906-83c287a7670c"
+        ],
+        "tool_names": [
+          "read_file"
+        ],
+        "status": "measured",
+        "gap_ms": 730763.7737598419,
+        "summary_request_ids": [],
+        "summary_request_count": 0,
+        "summary_requests_with_unknown_span": 0,
+        "empty_length_summary_requests": 0,
+        "summary_span_overlap_lower_bound_ms": 0.0,
+        "summary_span_overlap_ms": 0.0,
+        "outside_summary_request_spans_ms": 730763.7737598419,
+        "blocking_join_overlap_ms": 730757.9812355042,
+        "outside_summary_and_join_spans_ms": 5.792524337768555,
+        "context_compactions_in_gap": []
+      },
+      "original_cases": [
+        {
+          "workflow_id": "deepagents:autonomous:django__django-10880:daee8fcbdad8",
+          "workflow_path": "django__django-10880",
+          "source": "tool_round",
+          "invocation_id": "deepagents-invocation:db72a0538a56d8a5",
+          "completion_ts_ms": 6183500665.5426655,
+          "next_request_id": "beliefkv:01a13c51-f5b6-7660-9138-af516410dbe1",
+          "client_submit_ts_ms": 6183630452.095051,
+          "origin_request_id": "beliefkv:01a13c4f-e7ed-7ba3-bcf6-abde572b3329",
+          "tool_run_ids": [
+            "01a13c4f-face-7b43-bb38-306974b36076"
+          ],
+          "tool_names": [
+            "execute"
+          ],
+          "status": "measured",
+          "gap_ms": 129786.5523853302,
+          "summary_request_ids": [
+            "beliefkv:01a13c4f-fd48-7461-88a2-b32060aaaa74",
+            "beliefkv:01a13c51-535a-74b3-8c85-992ed015f4d8"
+          ],
+          "summary_request_count": 2,
+          "summary_requests_with_unknown_span": 0,
+          "empty_length_summary_requests": 1,
+          "summary_span_overlap_lower_bound_ms": 128751.26891422272,
+          "summary_span_overlap_ms": 128751.26891422272,
+          "outside_summary_request_spans_ms": 1035.283471107483,
+          "blocking_join_overlap_ms": 0.0,
+          "outside_summary_and_join_spans_ms": 1035.283471107483,
+          "context_compactions_in_gap": [
+            {
+              "ts_ms": 6183629811.162353,
+              "attributes": {
+                "keep_tokens": 8192,
+                "old_kv_disposition": "release_ownership",
+                "previous_context_epoch": 80,
+                "retained_message_count": 44,
+                "source": "deepagents_summarization",
+                "source_message_count": 161,
+                "summary_chars": 2177,
+                "summary_sha256": "7032a85accd66ac27fc76f2adeb5bde6fa28201e82d669e9ebead6734a9921eb",
+                "trigger_tokens": 32768
+              }
+            }
+          ],
+          "completion_to_first_summary_submit_ms": 53.399845123291016,
+          "between_summary_request_spans_ms": 156.9646759033203,
+          "last_summary_result_to_next_submit_ms": 824.9189500808716,
+          "last_summary_result_to_compaction_ms": 183.9862518310547,
+          "compaction_to_next_submit_ms": 640.9326982498169
+        },
+        {
+          "workflow_id": "deepagents:autonomous:django__django-11820:90dadb463ed8",
+          "workflow_path": "django__django-11820",
+          "source": "tool_round",
+          "invocation_id": "deepagents-invocation:3fb4619563d6d679",
+          "completion_ts_ms": 6182945819.904117,
+          "next_request_id": "beliefkv:01a13c48-5ba1-7953-8fee-b09a2ca02944",
+          "client_submit_ts_ms": 6183000858.369058,
+          "origin_request_id": "beliefkv:01a13c47-2510-7f60-be9f-bc000494d21a",
+          "tool_run_ids": [
+            "01a13c47-843c-7eb1-bc53-bdc9e7c62fde"
+          ],
+          "tool_names": [
+            "execute"
+          ],
+          "status": "measured",
+          "gap_ms": 55038.46494102478,
+          "summary_request_ids": [
+            "beliefkv:01a13c47-85ee-72a2-8c9f-8b296cdabf0e"
+          ],
+          "summary_request_count": 1,
+          "summary_requests_with_unknown_span": 0,
+          "empty_length_summary_requests": 0,
+          "summary_span_overlap_lower_bound_ms": 54667.119448661804,
+          "summary_span_overlap_ms": 54667.119448661804,
+          "outside_summary_request_spans_ms": 371.3454923629761,
+          "blocking_join_overlap_ms": 0.0,
+          "outside_summary_and_join_spans_ms": 371.3454923629761,
+          "context_compactions_in_gap": [
+            {
+              "ts_ms": 6183000542.6240835,
+              "attributes": {
+                "keep_tokens": 8192,
+                "old_kv_disposition": "release_ownership",
+                "previous_context_epoch": 57,
+                "retained_message_count": 36,
+                "source": "deepagents_summarization",
+                "source_message_count": 117,
+                "summary_chars": 2459,
+                "summary_sha256": "c40069fa46ad038d8cb2f67f3b52302a821c14e00b4973e56c5efed9c3b819d9",
+                "trigger_tokens": 32768
+              }
+            }
+          ],
+          "completion_to_first_summary_submit_ms": 38.79330062866211,
+          "between_summary_request_spans_ms": 0.0,
+          "last_summary_result_to_next_submit_ms": 332.55219173431396,
+          "last_summary_result_to_compaction_ms": 16.807217597961426,
+          "compaction_to_next_submit_ms": 315.74497413635254
+        }
+      ]
+    },
+    "v58_native": {
+      "audit": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v719_v58_native_internal_summary_client_gaps_20261015.json.gz",
+        "bytes": 4058855,
+        "sha256": "0abc1f539d6744ba17578869e34983cc6d9103a1b4d74354554c93e6bd3efcf7"
+      },
+      "source_files": 156,
+      "summary_requests": 749,
+      "summary_episodes_at_next_ordinary_submit": 686,
+      "episodes_with_multiple_summary_requests": 63,
+      "two_empty_results_before_compaction_episodes": 14,
+      "empty_length_summary_requests": 77,
+      "summary_request_span_ms": {
+        "count": 749,
+        "sum": 26713736.397483826,
+        "p50": 33767.73541736603,
+        "p90": 62736.931933021544,
+        "min": 2205.4897031784058,
+        "max": 94225.74538612366
+      },
+      "empty_length_request_span_ms": {
+        "count": 77,
+        "sum": 3962992.935177803,
+        "p50": 49308.868492126465,
+        "p90": 84293.66301479339,
+        "min": 9275.78611278534,
+        "max": 94225.74538612366
+      },
+      "tool_round_counts_and_statuses": {
+        "measured": 40893
+      },
+      "join_counts_and_statuses": {
+        "measured": 184
+      },
+      "tool_gap_with_summary_ms": {
+        "count": 686,
+        "sum": 26787609.59129238,
+        "p50": 34774.63111591339,
+        "p90": 67431.44935369492,
+        "min": 2233.317318916321,
+        "max": 185992.1777858734
+      },
+      "tool_gap_without_summary_ms": {
+        "count": 40207,
+        "sum": 3000325.557373047,
+        "p50": 23.00301456451416,
+        "p90": 83.80081043243408,
+        "min": 3.5882043838500977,
+        "max": 747650.1634283066
+      },
+      "tool_gap_outside_summary_ms": {
+        "count": 686,
+        "sum": 73873.1938085556,
+        "p50": 83.7745852470398,
+        "p90": 200.67824459075928,
+        "min": 16.563053131103516,
+        "max": 671.9815626144409
+      },
+      "summary_related_phase_ms": {
+        "blocking_join_overlap_ms": {
+          "count": 686,
+          "sum": 0.0,
+          "p50": 0.0,
+          "p90": 0.0,
+          "min": 0.0,
+          "max": 0.0
+        },
+        "outside_summary_and_join_spans_ms": {
+          "count": 686,
+          "sum": 73873.1938085556,
+          "p50": 83.7745852470398,
+          "p90": 200.67824459075928,
+          "min": 16.563053131103516,
+          "max": 671.9815626144409
+        },
+        "completion_to_first_summary_submit_ms": {
+          "count": 686,
+          "sum": 38244.003849983215,
+          "p50": 41.34779167175293,
+          "p90": 108.70386123657227,
+          "min": 8.7048978805542,
+          "max": 533.5184888839722
+        },
+        "between_summary_request_spans_ms": {
+          "count": 686,
+          "sum": 1218.0876369476318,
+          "p50": 0.0,
+          "p90": 0.0,
+          "min": 0.0,
+          "max": 200.02301120758057
+        },
+        "last_summary_result_to_next_submit_ms": {
+          "count": 686,
+          "sum": 34411.102321624756,
+          "p50": 22.615729808807373,
+          "p90": 124.06046533584595,
+          "min": 4.478570938110352,
+          "max": 661.6200342178345
+        },
+        "last_summary_result_to_compaction_ms": {
+          "count": 686,
+          "sum": 11905.955924034119,
+          "p50": 7.058235168457031,
+          "p90": 37.20837926864624,
+          "min": 1.3603219985961914,
+          "max": 593.6085863113403
+        },
+        "compaction_to_next_submit_ms": {
+          "count": 686,
+          "sum": 22505.146397590637,
+          "p50": 11.802081108093262,
+          "p90": 93.59192419052124,
+          "min": 2.4977731704711914,
+          "max": 400.42778968811035
+        }
+      },
+      "summary_fraction_of_with_summary_tool_gap_sum": 0.9972422625633394,
+      "summary_fraction_of_all_tool_gap_sum": 0.8967971853087865,
+      "longest_tool_gap": {
+        "workflow_id": "deepagents:autonomous:django__django-13158:adbeceb73c49",
+        "workflow_path": "django__django-13158",
+        "source": "tool_round",
+        "invocation_id": "deepagents:autonomous:django__django-13158:adbeceb73c49:root",
+        "completion_ts_ms": 6170432532.082715,
+        "next_request_id": "beliefkv:01a13b93-fe58-7891-966b-769060d17822",
+        "client_submit_ts_ms": 6171180182.246143,
+        "origin_request_id": "beliefkv:01a13b88-7843-73b3-a6f0-466d2c72391a",
+        "tool_run_ids": [
+          "01a13b88-95cc-7c50-80c0-53d2071202c5"
+        ],
+        "tool_names": [
+          "read_file"
+        ],
+        "status": "measured",
+        "gap_ms": 747650.1634283066,
+        "summary_request_ids": [],
+        "summary_request_count": 0,
+        "summary_requests_with_unknown_span": 0,
+        "empty_length_summary_requests": 0,
+        "summary_span_overlap_lower_bound_ms": 0.0,
+        "summary_span_overlap_ms": 0.0,
+        "outside_summary_request_spans_ms": 747650.1634283066,
+        "blocking_join_overlap_ms": 747638.250752449,
+        "outside_summary_and_join_spans_ms": 11.912675857543945,
+        "context_compactions_in_gap": []
+      },
+      "original_cases": []
+    }
+  },
+  "decision": "Internal summarization explains the sampled 55.0s/129.8s gaps, but empty summaries also occur in native and do not establish the cause of predictive slowdown. Preserve the scheduled V61 candidate. Develop compaction/submission batching separately with the compaction ACK barrier intact; validate actual HTTP/native arrival and end-to-end behavior rather than moved LLM_SUBMIT log timestamps. Keep original short-prefill turnover, useful FULL reuse and mean-JCT/throughput acceptance."
+}

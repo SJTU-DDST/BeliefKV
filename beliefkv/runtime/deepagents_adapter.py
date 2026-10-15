@@ -753,6 +753,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             isinstance(callback_metadata, Mapping)
             and callback_metadata.get("lc_source") == "summarization"
         )
+        context_events: tuple[RuntimeEvent, ...] = ()
         if is_summary:
             metadata = self._begin_internal_summary(key)
             invocation_id = metadata.invocation_id
@@ -772,32 +773,25 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     self._post_join_model_runs[key] = satisfied[0]
             compaction = self._pending_context_compaction.get()
             if compaction is not None:
-                self._publish(
-                    (
-                        self._event(
-                            RuntimeEventKind.CONTEXT_COMPACT,
-                            invocation_id=invocation_id,
-                            context_id=metadata.context_id,
-                            context_epoch=epoch,
-                            confidence=EventConfidence.OBSERVED_EXACT,
-                            attributes={
-                                "source": "deepagents_summarization",
-                                "previous_context_epoch": previous_epoch,
-                                "source_message_count": (
-                                    compaction.source_message_count
-                                ),
-                                "retained_message_count": (
-                                    compaction.retained_message_count
-                                ),
-                                "summary_chars": compaction.summary_chars,
-                                "summary_sha256": compaction.summary_sha256,
-                                "trigger_tokens": compaction.trigger_tokens,
-                                "keep_tokens": compaction.keep_tokens,
-                                "old_kv_disposition": "release_ownership",
-                            },
-                        ),
+                context_events = (
+                    self._event(
+                        RuntimeEventKind.CONTEXT_COMPACT,
+                        invocation_id=invocation_id,
+                        context_id=metadata.context_id,
+                        context_epoch=epoch,
+                        confidence=EventConfidence.OBSERVED_EXACT,
+                        attributes={
+                            "source": "deepagents_summarization",
+                            "previous_context_epoch": previous_epoch,
+                            "source_message_count": compaction.source_message_count,
+                            "retained_message_count": compaction.retained_message_count,
+                            "summary_chars": compaction.summary_chars,
+                            "summary_sha256": compaction.summary_sha256,
+                            "trigger_tokens": compaction.trigger_tokens,
+                            "keep_tokens": compaction.keep_tokens,
+                            "old_kv_disposition": "release_ownership",
+                        },
                     ),
-                    control=True,
                 )
                 self._pending_context_compaction.set(None)
         prompt_messages = messages[0] if messages else []
@@ -829,7 +823,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "sampling_seed": sampling_seed,
             },
         )
-        self._publish((event,), control=True)
+        self._publish(context_events + (event,), control=True)
 
     def on_llm_new_token(
         self,
@@ -2545,10 +2539,14 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         len(control_events) == 1
                         and control_events[0].kind == RuntimeEventKind.TOOL_START
                     )
+                    # A compacted prompt keeps its ACK barrier when paired with submit.
                     async_reentry = (
                         isinstance(self.control_sink, QueuedRuntimeEventSink)
                         and not any(
-                            event.kind == RuntimeEventKind.WORKFLOW_END
+                            event.kind in {
+                                RuntimeEventKind.WORKFLOW_END,
+                                RuntimeEventKind.CONTEXT_COMPACT,
+                            }
                             for event in control_events
                         )
                         and any(

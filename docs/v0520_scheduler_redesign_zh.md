@@ -2,6 +2,17 @@
 
 更新日期：2026-10-15（Asia/Shanghai）。
 
+v718–v720补齐完整客户端摘要归因：V59/V58 native各156份，
+摘要请求786/749次，空正文length71/77次。其区间含模型排队/
+生成/传输，不能归为控制CPU；显式JOIN等待也须单列。内部
+summary已经使旧checkpoint的投机保护失效，不能放松恢复
+身份来提高消费率。带摘要工具轮次的压缩至提交P50为80.17/
+11.80ms；开发v721合并CONTEXT_COMPACT及LLM_SUBMIT，
+减少一个逻辑控制批次，仍等compact ACK并轮换native session。
+108项及2个subtest、另17项审计通过，未证明GPU/JCT收益。
+提交采时移至ACK前，须比较真实HTTP/原生到达和完整周转。
+已冻结73518e2/V61、引擎和19:51预约保持，新开发修改须另取冷资格。
+
 开发48838cd补正常final-stage模式的confirmed JOIN接续，
 不增加canary或修改原生引擎。完成事件可直接建立任务；已提交
 burst保留ACK身份，并发JOIN分别待处理，无计划/容量时轮转。

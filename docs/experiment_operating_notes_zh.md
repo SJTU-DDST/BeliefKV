@@ -4,6 +4,20 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+v718–v720以同一文件内的monotonic时间匹配工具轮次、内部摘要和
+JOIN，parent从JOIN_WAIT取，不能从JOIN_CREATE的空invocation
+猜测。原始全部工具轮次不等于已记录WAIT_TOOL机会；并行工具
+只用最后完成时刻，摘要请求取区间并集，缺失边界保留未知。
+摘要区间含模型排队/生成/传输，摘要外也可能是JOIN等待，均不能
+直接折算可扣除JCT；初版v716/v717 JOIN归因排除，正式审计17项通过。
+
+开发v721合并CONTEXT_COMPACT与LLM_SUBMIT，保留compact ACK、
+session轮换及交付失败降级，108项及2个subtest通过。新提交
+事件在ACK前采时，COMPACT→LLM_SUBMIT缩短本身不证明加速；
+比较真实HTTP/原生到达及完整周转。该修改没有进入已冻结
+73518e2/V61，19:51预约保持；后续必须重新绑定源码后冷测，
+不能继承旧资格或改摘要输出预算/终态逻辑来缩短轨迹。
+
 v706的73518e2只追加正常JOIN确认恢复及对应测试，89份源码、
 同一引擎、1662项及2个subtest已绑定。不能将此资格扩展到含
 其他开发改动的checkout。v707/v708现登记V61：只终止身份核对

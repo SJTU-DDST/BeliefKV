@@ -2,6 +2,28 @@
 
 Status date: 2026-10-15 (Asia/Shanghai).
 
+V718-V720 audit all156 V59 and156 V58-native client sources. There are
+786/749 internal summary requests, with71/77 empty length responses.
+Their request spans include queueing, generation and transport, not pure
+GPU computation or client idle. Two-empty-response compactions occur in
+10/14 episodes, implying the unchanged source-history fallback. Generic
+raw tool rounds are broader than prior WAIT_TOOL opportunity cohorts.
+Use JOIN_WAIT for parent identity; exclude preliminaryV716/V717 JOIN
+conclusions. The audit has17 passing checks and binds every raw source.
+
+The summary-related compaction-to-submit P50 is80.17/11.80ms. Development
+V721 coalesces CONTEXT_COMPACT and LLM_SUBMIT into one ordered control
+batch while retaining the compaction ACK barrier, local session rotation
+and delivery-failure degradation. All108 related checks plus2 subtests pass.
+This removes one logical delivery, not a demonstrated GPU/JCT cost.
+LLM_SUBMIT is now timestamped before that ACK; assess actual HTTP/native
+arrival, complete turnover and FULL consumption instead of this moved
+phase boundary. Keep scheduledV61/73518e2 and19:51 unchanged. The new
+development patch requires its own cold qualification; do not silently
+alter the frozen run, summary budget/thinking, model or workload. Shared
+summary changes require matching native treatment and quality validation.
+The original short-prefill and mean-JCT/throughput acceptance remains open.
+
 Development48838cd repairs normal-mode confirmed JOIN restoration.
 RETURN/complete JOIN can create a ticket without a time forecast; an
 existing burst keeps its command/ACK identities. Concurrent confirmed

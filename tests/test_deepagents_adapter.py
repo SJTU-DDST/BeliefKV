@@ -2391,8 +2391,17 @@ def test_control_delivery_failure_does_not_change_workflow_trajectory() -> None:
 
 
 def test_context_compaction_advances_epoch_before_next_model_submit() -> None:
+    class BatchSink(CollectingSink):
+        def __init__(self):
+            super().__init__()
+            self.batches = []
+
+        def emit_batch(self, events):
+            self.batches.append(tuple(events))
+            super().emit_batch(events)
+
     trace_sink = CollectingSink()
-    control_sink = CollectingSink()
+    control_sink = BatchSink()
     root = BeliefKVRequestMetadata("wf", "root", "ctx", 0, "supervisor", "root")
     adapter = DeepAgentsRuntimeAdapter(
         trace_sink,
@@ -2445,6 +2454,7 @@ def test_context_compaction_advances_epoch_before_next_model_submit() -> None:
     assert compact.attributes["previous_context_epoch"] == 0
     assert compact.attributes["old_kv_disposition"] == "release_ownership"
     assert compact in control_sink.events
+    assert control_sink.batches[-1] == (compact, second_submit)
 
     graph = RuntimeCausalContextGraph()
     graph.apply_batch(trace_sink.events)
@@ -2452,6 +2462,81 @@ def test_context_compaction_advances_epoch_before_next_model_submit() -> None:
     control_graph = RuntimeCausalContextGraph()
     control_graph.apply_batch(control_sink.events)
     assert control_graph.contexts["ctx"].epoch == 1
+
+
+@pytest.mark.parametrize("reject", (False, True))
+def test_compaction_submit_batch_keeps_ack_barrier_and_reports_rejection(reject):
+    entered, release, done = threading.Event(), threading.Event(), threading.Event()
+
+    class HeldCompactionSink(CollectingSink):
+        def emit_batch(self, events):
+            if any(event.kind == RuntimeEventKind.CONTEXT_COMPACT for event in events):
+                assert [event.kind for event in events] == [
+                    RuntimeEventKind.CONTEXT_COMPACT, RuntimeEventKind.LLM_SUBMIT,
+                ]
+                entered.set()
+                if not release.wait(2):
+                    raise TimeoutError("compaction ACK was not released")
+                if reject:
+                    raise RuntimeError("compaction batch rejected")
+            super().emit_batch(events)
+
+    control, trace = HeldCompactionSink(), CollectingSink()
+    queued = QueuedRuntimeEventSink(control)
+    closed = []
+    sessions = NativeRadixSessionLeases(closed.append)
+    adapter = DeepAgentsRuntimeAdapter(
+        trace, BeliefKVRequestMetadata(
+            "wf", "root", "ctx", 0, full_prompt_replay_guaranteed=True,
+        ), control_sink=queued, native_radix_sessions=sessions,
+    )
+    sender = None
+    second_run = uuid4()
+    try:
+        adapter.start()
+        first_run = uuid4()
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="first")]], run_id=first_run,
+        )
+        first_session = sessions.for_request(adapter.metadata_for_model_run(first_run))
+        adapter.on_llm_end(_natural_child_result("continue"), run_id=first_run)
+        queued.flush()
+
+        def compact_then_submit():
+            with adapter.stage_context_compaction(ContextCompactionRecord(
+                source_message_count=40, retained_message_count=8,
+                summary_chars=512, summary_sha256="a" * 64,
+                trigger_tokens=24_576, keep_tokens=8_192,
+            )):
+                adapter.on_chat_model_start(
+                    {}, [[HumanMessage(content="checkpoint")]], run_id=second_run,
+                )
+            done.set()
+
+        sender = threading.Thread(target=compact_then_submit)
+        sender.start()
+        assert entered.wait(1)
+        assert not done.wait(.05)
+        assert closed == []
+        release.set()
+        sender.join(2)
+        assert done.is_set()
+        assert closed == [first_session]
+        assert adapter.metadata_for_model_run(second_run).context_epoch == 1
+        delivery = adapter.control_delivery_summary()
+        assert delivery["degraded"] is reject
+        if reject:
+            assert delivery["first_failure"]["event_count"] == 2
+            assert delivery["first_failure"]["error_type"] == "RuntimeError"
+        else:
+            graph = RuntimeCausalContextGraph()
+            graph.apply_batch(control.events)
+            assert graph.contexts["ctx"].epoch == 1
+    finally:
+        release.set()
+        if sender is not None:
+            sender.join(2)
+        queued.close()
 
 
 def test_native_session_survives_rounds_and_rotates_on_real_compaction() -> None:
