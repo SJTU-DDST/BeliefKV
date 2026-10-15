@@ -8,6 +8,7 @@ PrefillAdder remains the sole authority for resource admission and load-back.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from types import NotImplementedType
 from typing import Mapping, Sequence, TypeVar
 
 
@@ -24,6 +25,21 @@ class PrefillCandidateKey:
     attempt_id: int
     session_id: str | None = None
     session_generation: int | None = None
+
+    def __eq__(self, other: object) -> bool | NotImplementedType:
+        if self is other:
+            return True
+        if other.__class__ is self.__class__:
+            return (
+                self.request_id, self.root_workflow_id, self.invocation_id,
+                self.context_id, self.context_epoch, self.attempt_id,
+                self.session_id, self.session_generation,
+            ) == (
+                other.request_id, other.root_workflow_id, other.invocation_id,
+                other.context_id, other.context_epoch, other.attempt_id,
+                other.session_id, other.session_generation,
+            )
+        return NotImplemented
 
 
 @dataclass(frozen=True)

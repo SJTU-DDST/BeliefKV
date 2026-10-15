@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import fields, replace
 from types import SimpleNamespace as NS
 
 import pytest
@@ -45,6 +46,39 @@ def _key(req) -> PrefillCandidateKey:
         session_id=req.session_id,
         session_generation=req.session_generation,
     )
+
+
+@pytest.mark.parametrize("field", [field.name for field in fields(PrefillCandidateKey)])
+def test_key_hash_lookup_preserves_all_identity_fields(field):
+    request = _req("tagged", epoch=2, attempt=3)
+    request.session_id, request.session_generation = "session", 4
+    key, rebuilt = _key(request), _key(request)
+    assert rebuilt is not key
+    assert key == rebuilt
+    assert hash(key) == hash(rebuilt)
+    values = {key: "authorized"}
+    assert values[rebuilt] == "authorized"
+    value = getattr(key, field)
+    changed = replace(
+        key, **{field: value + 1 if type(value) is int else f"{value}-changed"},
+    )
+    values[changed] = "different"
+    assert len(values) == 2
+    assert values[rebuilt] == "authorized"
+    assert changed != key
+    assert key != changed
+
+
+def test_key_subclass_and_foreign_values_do_not_share_authorization():
+    class OtherKey(PrefillCandidateKey):
+        pass
+
+    key = _key(_req("tagged"))
+    subtype = OtherKey(**{field.name: getattr(key, field.name) for field in fields(key)})
+    assert key != subtype
+    assert subtype != key
+    assert key != tuple(getattr(key, field.name) for field in fields(key))
+    assert len({key, subtype}) == 2
 
 
 @pytest.mark.parametrize("streaming_session", (False, True))
