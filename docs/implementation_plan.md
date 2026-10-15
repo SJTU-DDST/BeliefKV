@@ -2,6 +2,21 @@
 
 Status date: 2026-10-15 (Asia/Shanghai).
 
+Development24054ca removes redundant causal-classification terminal reads
+and skips final-stage queue indexing when no stage exists. Final authorization
+and live native identity checks remain. V664 has231 passing runtime/admission/
+prediction checks; V668 adds12 passing benchmark timing/control checks.
+Use V667's equal-parent-timing comparison against60275db: complete CPU local
+rounds improve9.8%-10.4%, message updates7.6%-8.7%, stable queues3.1%-5.7%.
+Event cases save about0.07-0.12ms per iteration; active-stage/disabled-priority
+controls are near-flat at0.7%-1.7%. Plans, live selection, full graphs, counters
+and timing counts match. V665/V666 omit baseline parent wrappers and must not
+support performance claims; retain their receipts and source revisions.
+This excludes native residency inspection, neural inference, sockets and DMA.
+The extension is not cold-frozen/deployed, and leaves V60/d925278 untouched.
+Continue toward actual turnover, useful FULL consumption and complete JCT/
+throughput acceptance; do not substitute these CPU gains for the full goal.
+
 V662 splits the same sealed V59/V58 prefixes at adjacent run_batch entries.
 Across four windows, decode/short-prefill/decode return-to-next-entry P50
 is4.9-6.0ms predictive versus2.3-2.6ms native; next-entry-to-result is

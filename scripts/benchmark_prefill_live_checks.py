@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT))
 
 from beliefkv.core.events import RuntimeEvent, RuntimeEventKind
 from beliefkv.policy.causal_frontier import CausalFrontierScheduler
+from beliefkv.runtime.hotpath_timing import timed_runtime
 from beliefkv.runtime.sglang_v0520_admission import (
     PrefillCandidateKey, select_native_prefill_candidates,
 )
@@ -107,9 +108,19 @@ def measure(baseline, baseline_frontier, *, workflows, profiling, scenario, iter
                 wall_ms = (time.perf_counter_ns() - wall_start) / 1_000_000.
                 if iteration >= warmup:
                     samples[name].append({"thread_cpu_ms": cpu_ms, "wall_ms": wall_ms})
+                phase_counts = {
+                    phase: stats["count"] for phase, stats in
+                    runtime._hotpath_timing.snapshot()["phases"].items()
+                }
+                if profiling and any(
+                    phase_counts.get(phase) != iteration + 1
+                    for phase in ("scheduler_maintenance", "admission_plan")
+                ):
+                    raise AssertionError("both arms must retain the same parent timing")
                 outputs[name] = (
                     plan, tuple(request.rid for request in selection.candidates),
                     selection.rejected, runtime.graph.snapshot(), dict(runtime.counts),
+                    phase_counts,
                 )
                 if runtime.physical_ledger.pending_count or runtime.completed_physical_actions:
                     raise AssertionError("CPU admission fixture issued a physical action")
@@ -136,6 +147,9 @@ def measure(baseline, baseline_frontier, *, workflows, profiling, scenario, iter
                 / costs["baseline"]["thread_cpu_ms"]["mean_ms"]
             ),
             "plan_selection_graph_and_counters_equal": True, "physical_actions": 0,
+            "timing_phase_counts_by_arm": {
+                name: output[-1] for name, output in outputs.items()
+            },
         }
     finally:
         for runtime, _ in variants.values():
@@ -151,6 +165,9 @@ def main():
     if args.iterations < 1 or args.output.exists():
         raise ValueError("positive iterations and a fresh output path are required")
     baseline, frontier, sources = baseline_classes(args.baseline_revision)
+    # The AST loader removes decorators; restore the measured parent scopes.
+    baseline.scheduler_step = timed_runtime("scheduler_maintenance")(baseline.scheduler_step)
+    baseline.plan_native_prefill = timed_runtime("admission_plan")(baseline.plan_native_prefill)
     cases = [
         measure(
             baseline, frontier, workflows=workflows, profiling=profiling,
@@ -174,6 +191,7 @@ def main():
         "status": "prefill_live_check_cpu_comparison_not_gpu_or_jct_acceptance",
         "observed_at_local": datetime.now().astimezone().isoformat(),
         "baseline_revision": args.baseline_revision, "baseline_sources": sources,
+        "equal_parent_timing_scopes": True,
         "candidate_sources": {
             path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths
         },
@@ -185,6 +203,8 @@ def main():
             "Final-stage controls require an actual last-child candidate inspected and promoted in both arms.",
             "Message control invalidates causal ranks; stable cases retain the prior causal cache.",
             "All identity parsing and final terminal checks remain; GC and timing stay enabled.",
+            "Both arms have the same parent timing wrappers and assert identical phase counts.",
+            "V665/V666 omitted baseline parent wrappers; retain them but reject their performance comparisons.",
             "Native allocator, neural workers, socket IPC and DMA are outside this fixture.",
             "V60, the qualified d925278 candidate and the reservation waiter remain unchanged.",
         ],
