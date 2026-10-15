@@ -120,9 +120,11 @@ V813 has26 passing offline audit checks. At23:46 Asia/Shanghai,146 outcomes
 include145 completed/one incomplete and142 natural/JCT-qualified results.
 django__django-14500 ends with finish_reason=length; retain8192 output cap.
 Three other completions retain their existing finalization intervention.
-This repair remains outside V62. Freeze the next latest-runtime candidate
-with engine64641f62 and its matching canonical patch; the development
-default staging patch is older and must not silently replace this engine.
+This repair remains outside V62. Candidatea297462 now freezes622ae92 runtime
+with engine64641f62 and its matching canonical patch. V815 binds589 unique
+passing checks:406 runtime,157 engine and26 offline-audit identities.
+It is not launched or GPU-qualified. The development default staging patch
+is older and must not silently replace this engine.
 
 The two development optimizations now form independent candidate45f46b7,
 directly extending V61/9e8a574. Only dispatch, its tests and that candidate's
