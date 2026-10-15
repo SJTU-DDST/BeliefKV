@@ -90,6 +90,34 @@ def test_prepare_prefix_hint_refreshes_after_host_backup_or_eviction():
     assert missing_prepare_full_prefix_tokens(cache, anchors) == 2
 
 
+def test_prepare_prefix_hint_preserves_backed_input_nodes_but_excludes_output_tail():
+    cache, anchors, nodes = prepare_prefix_fixture(second_leaf=True)
+    for node_id in (1, 3, 4):
+        nodes[node_id].component_data[0].host_value = nodes[node_id].component_data[0].value
+    cache.tree_core.evictable_device_leaves = (nodes[3], nodes[4])
+    backed = []
+    assert missing_prepare_full_prefix_tokens(cache, anchors, backed_nodes=backed) == 2
+    assert backed == [(4, 5.)]
+
+
+def test_prepare_prefix_hint_does_not_publish_partial_or_replaced_backed_identities():
+    cache, anchors, nodes = prepare_prefix_fixture(second_leaf=True)
+    nodes[4].component_data[0].host_value = nodes[4].component_data[0].value
+    cache.tree_core.evictable_device_leaves = (nodes[3], nodes[4])
+    backed = []
+    assert missing_prepare_full_prefix_tokens(cache, anchors, backed_nodes=backed) == 3
+    assert backed == [(4, 5.)]
+    lookup = cache.tree_core.node_by_id
+    cache.tree_core.node_by_id = lambda node_id: (
+        NS(**vars(nodes[4])) if node_id == 4 else lookup(node_id)
+    )
+    unchanged = [(99, 100.)]
+    assert missing_prepare_full_prefix_tokens(
+        cache, anchors, backed_nodes=unchanged,
+    ) is None
+    assert unchanged == [(99, 100.)]
+
+
 @pytest.mark.parametrize("change", (
     lambda anchors, nodes: replace(anchors, reusable_input_tokens=None),
     lambda anchors, nodes: replace(anchors, reusable_input_tokens=-1),

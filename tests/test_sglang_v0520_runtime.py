@@ -3652,6 +3652,56 @@ def test_prepare_budget_hint_only_skips_definitely_unfittable_closures(
     runtime.close()
 
 
+@pytest.mark.parametrize("blocked", (
+    None, "locked", "shared", "pending_write", "pending_load", "host_evicted",
+))
+def test_prepare_host_shortfall_keeps_existing_safe_backed_nodes_for_reclaim(blocked):
+    from tests.test_sglang_v0520_physical import prepare_prefix_fixture
+
+    runtime = final_stage_runtime()
+    runtime.enable_prepare_host = True
+    key = runtime.context_sessions["ctx-parent"]
+    cache, anchors, nodes = prepare_prefix_fixture(second_leaf=True)
+    anchors = replace(anchors, key=key)
+    for node_id in (1, 3, 4):
+        nodes[node_id].component_data[0].host_value = nodes[node_id].component_data[0].value
+    cache.tree_core.evictable_device_leaves = (nodes[3], nodes[4])
+    nodes[4].backuped = True
+    runtime.attach_native_cache(cache)
+    try:
+        with patch.object(runtime, "snapshot_session_anchors", return_value=anchors), patch(
+            "beliefkv.runtime.sglang_v0520_runtime.capture_action_local_shadow",
+        ) as capture:
+            candidate = runtime.capture_shadow_candidate(
+                cache, context_id=key.context_id, context_epoch=key.context_epoch,
+                include_non_actionable=True, host_full_free_tokens=0,
+            )
+        assert candidate is None
+        capture.assert_not_called()
+        assert runtime.counts["prepare_prefix_budget_rejected_early"] == 1
+        assert runtime._parent_pressure_candidates == {
+            4: (key, 5.),
+        }
+        assert runtime._live_parent_pressure_node(4, 5.)
+        if blocked == "locked":
+            nodes[4].component_data[0].lock_ref = 1
+        elif blocked == "shared":
+            nodes[4].component_data[0].session_ref = 2
+        elif blocked == "pending_write":
+            nodes[4].write_through_pending_id = 1
+        elif blocked == "pending_load":
+            nodes[4].load_back_pending_id = 1
+        elif blocked == "host_evicted":
+            nodes[4].component_data[0].host_value = None
+        runtime._publish_parent_pressure_candidates()
+        assert cache.beliefkv_join_pressure_candidates_by_component[0] == (
+            ((4, 5.),) if blocked is None else ()
+        )
+        assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
+
+
 def test_final_stage_latest_start_requires_serviced_decode_and_h2d_evidence():
     runtime = final_stage_runtime()
     child = req("child")

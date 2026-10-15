@@ -3891,8 +3891,18 @@ class NativeAdmissionRuntime:
             and type(anchors.reusable_input_tokens) is int
             and host_full_free_tokens < anchors.reusable_input_tokens
         ):
-            needed = missing_prepare_full_prefix_tokens(cache, anchors)
+            backed = [] if (
+                cache is self._native_cache and self.enable_prepare_host
+                and include_non_actionable
+            ) else None
+            needed = missing_prepare_full_prefix_tokens(cache, anchors, backed_nodes=backed)
             if needed is not None and needed > host_full_free_tokens:
+                # New backups may not fit while settled cold copies can still
+                # release HBM. Publication and native reclaim validate them live.
+                for node_id, created in backed or ():
+                    self._parent_pressure_candidates[node_id] = (anchors.key, created)
+                if backed:
+                    self.counts["prepare_backed_budget_registration"] += len(backed)
                 self.counts["prepare_prefix_budget_rejected_early"] += 1
                 return None
         return capture_action_local_shadow(

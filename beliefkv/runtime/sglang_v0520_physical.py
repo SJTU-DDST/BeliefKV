@@ -479,8 +479,9 @@ def has_host_backed_missing_copy(
 
 def missing_prepare_full_prefix_tokens(
     cache: object, anchors: ContextSessionAnchors, *, max_nodes: int | None = None,
+    backed_nodes: list[tuple[int, int | float]] | None = None,
 ) -> int | None:
-    """Read a budget rejection hint; viable candidates still need a full closure."""
+    """Report missing tokens and backed candidates when new backup is still needed."""
     if (
         (max_nodes is not None and (type(max_nodes) is not int or max_nodes <= 0))
         or type(anchors.reusable_input_tokens) is not int
@@ -507,6 +508,8 @@ def missing_prepare_full_prefix_tokens(
                 if node.id != node_id or normalize_native_creation_time(node.creation_time) != created:
                     return None
         nodes: dict[int, _PreparePrefixNode] = {}
+        native_backed = {}
+        device_leaves = getattr(cache.tree_core, "evictable_device_leaves", ())
         depth: dict[int, int] = {}
         for leaf in leaves:
             current = cache.tree_core.node_by_id(leaf)
@@ -536,6 +539,13 @@ def missing_prepare_full_prefix_tokens(
                 if node_id in nodes and nodes[node_id] != summary:
                     return None
                 nodes[node_id] = summary
+                if backed_nodes is not None and (
+                    summary.full_device_tokens > 0
+                    and summary.full_host_tokens >= summary.full_device_tokens
+                    and current in device_leaves
+                    or summary.mamba_device_present and summary.mamba_host_present
+                ):
+                    native_backed[node_id] = current
                 if max_nodes is not None and len(nodes) > max_nodes:
                     return None
                 current = parent
@@ -544,10 +554,22 @@ def missing_prepare_full_prefix_tokens(
         selected = _checkpoint_paths(anchors, nodes, leaves, depth)
         if selected is None:
             return None
-        return sum(
+        missing = sum(
             max(nodes[node_id].full_device_tokens - nodes[node_id].full_host_tokens, 0)
             for node_id in selected[0]
         )
+        if missing and backed_nodes is not None:
+            identities = []
+            for node_id, native in native_backed.items():
+                if node_id not in selected[0]:
+                    continue
+                if cache.tree_core.node_by_id(node_id) is not native:
+                    return None
+                identities.append((
+                    node_id, normalize_native_creation_time(native.creation_time),
+                ))
+            backed_nodes.extend(identities)
+        return missing
     except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError):
         return None
 

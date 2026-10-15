@@ -300,8 +300,6 @@ def test_zero_native_byte_budget_rechecks_actual_capacity_after_backed_probe(
             patch.object(runtime, "_current_residency_budget", side_effect=budget), \
             patch.object(runtime, "_publish_parent_pressure_candidates"), \
             patch.object(runtime, "_live_parent_pressure_node", return_value=True), \
-            patch.object(runtime, "_h2d_start_window",
-                         return_value=TransferStartWindow(200., 0., 500.)), \
             patch("beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
                   return_value=NS(
                       observable=True, nodes=tuple(reversed(opportunity.candidate.nodes)),
