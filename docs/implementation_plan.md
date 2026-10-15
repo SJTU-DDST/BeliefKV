@@ -25,7 +25,7 @@ V64 was intentionally interrupted after155 completed in V916; retain
 django__django-12273 as censored with no terminal result and all five
 fixed windows. Do not invent a complete summary or full-run JCT comparison.
 
-V65's first two windows are collected. At600-900s, request steps370969/
+V65's first three windows are collected. At600-900s, request steps370969/
 386707 exceed V64's365786 but retain different versions/realized work.
 Control exclusive wall is28.203s versus V64's33.956s. Matched full48
 worker intervals approach native; short-prefill63/62 samples run_batch
@@ -49,6 +49,22 @@ Most lack observed free capacity; no achievable prefetch or benefit follows.
 Do not widen JOIN's already-premature signals. V931/V933 pass448 related
 checks and V934 binds the source/evidence. Not GPU-deployed or a replacement
 for full qualification; do not hot-edit or restart the live V65 for this alone.
+
+Latest V935 fixed prefixes show63/182 explicit pre-completion positive FULL
+JOIN/tool plans,52/31 pre-completion submissions,41/30 early next-request
+reuse events and1.079/3.211GB FULL.47 JOIN/three tool boundaries are unknown.
+V937 includes opportunity snapshots and counts188 positive tool plans; keep
+that denominator separate. JOIN ACK-to-service P90 remains15.376s; early
+FULL events have2.275s median ACK-to-completion and10.619s P90 native-arrival
+to service. Repeated same-parent restores without reuse require exact
+prediction/lease/eviction/admission diagnosis, not longer leases everywhere.
+At1800-2100s, steps389293/381775 and control exclusive wall21.663s;
+short-prefill80/64 samples run_batch36.566/40.419ms and selection thread
+CPU5.575/6.962ms. Full48/context-matched ratios are1.005-1.008. Mixed
+windows still do not prove complete JCT or stable benefit. V938 groups by
+same JOIN/session/node generation/FULL length:21 of39 repeat restores
+have confirmed first-service reuse. Reject a blanket one-restore limit;
+registered-target identity is not an exact page-content/allocation fingerprint.
 
 V64's1800-2100s window has392903/381775 request steps,23.081s control
 exclusive wall and39.240/40.419ms short-prefill run_batch. Mixed windows,
@@ -130,8 +146,11 @@ official summary; no missing nonempty reports or grading infrastructure
 errors.152 container receipts retain1 CPU/8GiB/runc/no GPU. Source workflow
 outcomes are154 completed,one incomplete,one error; grading completion is
 separate. All90 resolved workflows are completed and JCT eligible. The
-all156 resolved fraction is57.69%. V63 grading is now running; do not
-compare its partial results or claim quality/performance acceptance.
+all156 resolved fraction is57.69%. V936 now verifies all156 V63 task reports:
+93 resolved,63 unresolved,no empty patches,missing reports or infrastructure
+errors;59.62% of156. Paired counts are74 both,19 V63-only,16 native-only
+and47 neither. This historical single run does not establish noninferiority
+or policy causality. Resolved pytest-8399 remains JCT-ineligible.
 
 The first two V64 windows are complete. Steps228359/246021 at120-300s;
 365786/386707 at600-900s,2.6% above V63 but5.4% below historical native.
@@ -159,9 +178,9 @@ but LLM requests31073/36896 and different harness/engine prevent attribution.
 Pre-completion next-request FULL reuse: JOIN75 events/1.542GB and tool140/
 8.700GB. ACK-to-service P90 remains12.552/19.516s. All workstreams stay open.
 
-Independent official CPU quality grading is running serially for V58/V63
-with one worker,1 CPU,8GiB and no GPU. Bind V864 and resource overlap with V64;
-audit missing reports and infrastructure errors before interpreting quality.
+Independent official CPU quality grading has completed for V58/V63 and
+V906/V936 verify every task. Retain V864's one worker,1 CPU,8GiB,no GPU
+and overlap with V64/V65; this does not validate V65 quality or the full goal.
 Separate Dev repair V871 suppresses only semantic control frames after a
 generation's first tool-negative marker, retaining local snapshots, cadence
 and following final-report generations. Old code fails two reproductions;
