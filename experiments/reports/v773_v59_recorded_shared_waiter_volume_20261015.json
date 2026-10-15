@@ -1,0 +1,1489 @@
+{
+  "scope": "Recorded plan snapshots, including post-completion observations. Wait identities use source/context/epoch/JOIN/active tools and are not validated completion labels. Missing diagnostics are unknown, not zero reclaimable capacity. Diagnostic sums can repeat the same native attempt or victim and are not unique evictions, continuous opportunities, recoverable bytes, oracle savings or speedup.",
+  "counts": {
+    "records": 392555,
+    "wait_prefetch_plan_records": 55165,
+    "plan_records_without_capacity_budget": 35685,
+    "plan_records_without_reclaim_diagnostics": 44525
+  },
+  "buckets": {
+    "all_recorded_budgets": {
+      "snapshots": 19480,
+      "observed_wait_identities": 6019,
+      "by_source": {
+        "join_ticket": 6865,
+        "tool_wait": 12615
+      },
+      "examples": [
+        {
+          "ts_ms": 1792011803119.5771,
+          "source": "join_ticket",
+          "reason": "start_window",
+          "no_step_reason": null,
+          "blocked_detail": null,
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 5233,
+            "device_mamba_free_slots": 6,
+            "evictable_full_tokens": 1350969,
+            "evictable_mamba_slots": 327,
+            "reserve_full_tokens": 4144,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 1352058,
+            "mamba_limit_slots": 332,
+            "remaining_byte_limit": 49067335680,
+            "requested_full_tokens": 593,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": null
+        },
+        {
+          "ts_ms": 1792011803124.9478,
+          "source": "join_ticket",
+          "reason": "submitted",
+          "no_step_reason": null,
+          "blocked_detail": null,
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 5233,
+            "device_mamba_free_slots": 6,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4144,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 1089,
+            "mamba_limit_slots": 5,
+            "remaining_byte_limit": 49067335680,
+            "requested_full_tokens": 593,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": null
+        },
+        {
+          "ts_ms": 1792011805854.9448,
+          "source": "join_ticket",
+          "reason": "admission_budget_busy",
+          "no_step_reason": null,
+          "blocked_detail": null,
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 33167,
+            "device_mamba_free_slots": 11,
+            "evictable_full_tokens": 1317135,
+            "evictable_mamba_slots": 317,
+            "reserve_full_tokens": 4145,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 1346157,
+            "mamba_limit_slots": 327,
+            "remaining_byte_limit": 48624537600,
+            "requested_full_tokens": 337,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": null
+        }
+      ]
+    },
+    "positive_requested_full": {
+      "snapshots": 18333,
+      "observed_wait_identities": 6019,
+      "by_source": {
+        "join_ticket": 5718,
+        "tool_wait": 12615
+      },
+      "examples": [
+        {
+          "ts_ms": 1792011803119.5771,
+          "source": "join_ticket",
+          "reason": "start_window",
+          "no_step_reason": null,
+          "blocked_detail": null,
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 5233,
+            "device_mamba_free_slots": 6,
+            "evictable_full_tokens": 1350969,
+            "evictable_mamba_slots": 327,
+            "reserve_full_tokens": 4144,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 1352058,
+            "mamba_limit_slots": 332,
+            "remaining_byte_limit": 49067335680,
+            "requested_full_tokens": 593,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": null
+        },
+        {
+          "ts_ms": 1792011803124.9478,
+          "source": "join_ticket",
+          "reason": "submitted",
+          "no_step_reason": null,
+          "blocked_detail": null,
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 5233,
+            "device_mamba_free_slots": 6,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4144,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 1089,
+            "mamba_limit_slots": 5,
+            "remaining_byte_limit": 49067335680,
+            "requested_full_tokens": 593,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": null
+        },
+        {
+          "ts_ms": 1792011805854.9448,
+          "source": "join_ticket",
+          "reason": "admission_budget_busy",
+          "no_step_reason": null,
+          "blocked_detail": null,
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 33167,
+            "device_mamba_free_slots": 11,
+            "evictable_full_tokens": 1317135,
+            "evictable_mamba_slots": 317,
+            "reserve_full_tokens": 4145,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 1346157,
+            "mamba_limit_slots": 327,
+            "remaining_byte_limit": 48624537600,
+            "requested_full_tokens": 337,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": null
+        }
+      ]
+    },
+    "positive_bytes_full_block": {
+      "snapshots": 9890,
+      "observed_wait_identities": 5299,
+      "by_source": {
+        "join_ticket": 2492,
+        "tool_wait": 7398
+      },
+      "examples": [
+        {
+          "ts_ms": 1792011821861.0383,
+          "source": "join_ticket",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 2020,
+            "device_mamba_free_slots": 8,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4144,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 7,
+            "remaining_byte_limit": 48328294400,
+            "requested_full_tokens": 401,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4545,
+            "target_mamba_slots": 2,
+            "free_full_tokens_before": 2020,
+            "free_mamba_slots_before": 8,
+            "native_full_leaf_count": 223,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 0,
+            "native_full_rejections": {
+              "unbacked": 56,
+              "session_referenced": 8
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 0,
+            "native_full_scan_cycle_started": true,
+            "native_full_scan_remaining": 159,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": false,
+            "freed_units": {},
+            "free_full_tokens_after": 2020,
+            "free_mamba_slots_after": 8,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        },
+        {
+          "ts_ms": 1792011822106.2131,
+          "source": "join_ticket",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 1436,
+            "device_mamba_free_slots": 6,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4143,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 5,
+            "remaining_byte_limit": 47310172160,
+            "requested_full_tokens": 401,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4544,
+            "target_mamba_slots": 2,
+            "free_full_tokens_before": 1436,
+            "free_mamba_slots_before": 6,
+            "native_full_leaf_count": 219,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 0,
+            "native_full_rejections": {
+              "unbacked": 56,
+              "session_referenced": 8
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 0,
+            "native_full_scan_cycle_started": true,
+            "native_full_scan_remaining": 155,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": false,
+            "freed_units": {},
+            "free_full_tokens_after": 1436,
+            "free_mamba_slots_after": 6,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        },
+        {
+          "ts_ms": 1792011822629.8362,
+          "source": "join_ticket",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 1171,
+            "device_mamba_free_slots": 1,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4143,
+            "reserve_mamba_slots": 0,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 1,
+            "remaining_byte_limit": 46716334080,
+            "requested_full_tokens": 401,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4544,
+            "target_mamba_slots": 1,
+            "free_full_tokens_before": 1171,
+            "free_mamba_slots_before": 1,
+            "native_full_leaf_count": 219,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 0,
+            "native_full_rejections": {
+              "unbacked": 56,
+              "session_referenced": 7,
+              "not_current_device_leaf": 1
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 0,
+            "native_full_scan_cycle_started": false,
+            "native_full_scan_remaining": 91,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": false,
+            "freed_units": {},
+            "free_full_tokens_after": 1171,
+            "free_mamba_slots_after": 1,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        }
+      ]
+    },
+    "with_reclaim_diagnostics": {
+      "snapshots": 10640,
+      "observed_wait_identities": 5355,
+      "by_source": {
+        "join_ticket": 3053,
+        "tool_wait": 7587
+      },
+      "examples": [
+        {
+          "ts_ms": 1792011821861.0383,
+          "source": "join_ticket",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 2020,
+            "device_mamba_free_slots": 8,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4144,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 7,
+            "remaining_byte_limit": 48328294400,
+            "requested_full_tokens": 401,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4545,
+            "target_mamba_slots": 2,
+            "free_full_tokens_before": 2020,
+            "free_mamba_slots_before": 8,
+            "native_full_leaf_count": 223,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 0,
+            "native_full_rejections": {
+              "unbacked": 56,
+              "session_referenced": 8
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 0,
+            "native_full_scan_cycle_started": true,
+            "native_full_scan_remaining": 159,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": false,
+            "freed_units": {},
+            "free_full_tokens_after": 2020,
+            "free_mamba_slots_after": 8,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        },
+        {
+          "ts_ms": 1792011822106.2131,
+          "source": "join_ticket",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 1436,
+            "device_mamba_free_slots": 6,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4143,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 5,
+            "remaining_byte_limit": 47310172160,
+            "requested_full_tokens": 401,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4544,
+            "target_mamba_slots": 2,
+            "free_full_tokens_before": 1436,
+            "free_mamba_slots_before": 6,
+            "native_full_leaf_count": 219,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 0,
+            "native_full_rejections": {
+              "unbacked": 56,
+              "session_referenced": 8
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 0,
+            "native_full_scan_cycle_started": true,
+            "native_full_scan_remaining": 155,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": false,
+            "freed_units": {},
+            "free_full_tokens_after": 1436,
+            "free_mamba_slots_after": 6,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        },
+        {
+          "ts_ms": 1792011822629.8362,
+          "source": "join_ticket",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 1171,
+            "device_mamba_free_slots": 1,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4143,
+            "reserve_mamba_slots": 0,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 1,
+            "remaining_byte_limit": 46716334080,
+            "requested_full_tokens": 401,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4544,
+            "target_mamba_slots": 1,
+            "free_full_tokens_before": 1171,
+            "free_mamba_slots_before": 1,
+            "native_full_leaf_count": 219,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 0,
+            "native_full_rejections": {
+              "unbacked": 56,
+              "session_referenced": 7,
+              "not_current_device_leaf": 1
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 0,
+            "native_full_scan_cycle_started": false,
+            "native_full_scan_remaining": 91,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": false,
+            "freed_units": {},
+            "free_full_tokens_after": 1171,
+            "free_mamba_slots_after": 1,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        }
+      ]
+    },
+    "reclaim_full_target_unsatisfied": {
+      "snapshots": 10099,
+      "observed_wait_identities": 5327,
+      "by_source": {
+        "join_ticket": 2584,
+        "tool_wait": 7515
+      },
+      "examples": [
+        {
+          "ts_ms": 1792011821861.0383,
+          "source": "join_ticket",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 2020,
+            "device_mamba_free_slots": 8,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4144,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 7,
+            "remaining_byte_limit": 48328294400,
+            "requested_full_tokens": 401,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4545,
+            "target_mamba_slots": 2,
+            "free_full_tokens_before": 2020,
+            "free_mamba_slots_before": 8,
+            "native_full_leaf_count": 223,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 0,
+            "native_full_rejections": {
+              "unbacked": 56,
+              "session_referenced": 8
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 0,
+            "native_full_scan_cycle_started": true,
+            "native_full_scan_remaining": 159,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": false,
+            "freed_units": {},
+            "free_full_tokens_after": 2020,
+            "free_mamba_slots_after": 8,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        },
+        {
+          "ts_ms": 1792011822106.2131,
+          "source": "join_ticket",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 1436,
+            "device_mamba_free_slots": 6,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4143,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 5,
+            "remaining_byte_limit": 47310172160,
+            "requested_full_tokens": 401,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4544,
+            "target_mamba_slots": 2,
+            "free_full_tokens_before": 1436,
+            "free_mamba_slots_before": 6,
+            "native_full_leaf_count": 219,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 0,
+            "native_full_rejections": {
+              "unbacked": 56,
+              "session_referenced": 8
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 0,
+            "native_full_scan_cycle_started": true,
+            "native_full_scan_remaining": 155,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": false,
+            "freed_units": {},
+            "free_full_tokens_after": 1436,
+            "free_mamba_slots_after": 6,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        },
+        {
+          "ts_ms": 1792011822629.8362,
+          "source": "join_ticket",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 1171,
+            "device_mamba_free_slots": 1,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4143,
+            "reserve_mamba_slots": 0,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 1,
+            "remaining_byte_limit": 46716334080,
+            "requested_full_tokens": 401,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4544,
+            "target_mamba_slots": 1,
+            "free_full_tokens_before": 1171,
+            "free_mamba_slots_before": 1,
+            "native_full_leaf_count": 219,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 0,
+            "native_full_rejections": {
+              "unbacked": 56,
+              "session_referenced": 7,
+              "not_current_device_leaf": 1
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 0,
+            "native_full_scan_cycle_started": false,
+            "native_full_scan_remaining": 91,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": false,
+            "freed_units": {},
+            "free_full_tokens_after": 1171,
+            "free_mamba_slots_after": 1,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        }
+      ]
+    },
+    "full_unsatisfied_without_published_waiter": {
+      "snapshots": 10096,
+      "observed_wait_identities": 5326,
+      "by_source": {
+        "join_ticket": 2584,
+        "tool_wait": 7512
+      },
+      "examples": [
+        {
+          "ts_ms": 1792011821861.0383,
+          "source": "join_ticket",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 2020,
+            "device_mamba_free_slots": 8,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4144,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 7,
+            "remaining_byte_limit": 48328294400,
+            "requested_full_tokens": 401,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4545,
+            "target_mamba_slots": 2,
+            "free_full_tokens_before": 2020,
+            "free_mamba_slots_before": 8,
+            "native_full_leaf_count": 223,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 0,
+            "native_full_rejections": {
+              "unbacked": 56,
+              "session_referenced": 8
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 0,
+            "native_full_scan_cycle_started": true,
+            "native_full_scan_remaining": 159,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": false,
+            "freed_units": {},
+            "free_full_tokens_after": 2020,
+            "free_mamba_slots_after": 8,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        },
+        {
+          "ts_ms": 1792011822106.2131,
+          "source": "join_ticket",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 1436,
+            "device_mamba_free_slots": 6,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4143,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 5,
+            "remaining_byte_limit": 47310172160,
+            "requested_full_tokens": 401,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4544,
+            "target_mamba_slots": 2,
+            "free_full_tokens_before": 1436,
+            "free_mamba_slots_before": 6,
+            "native_full_leaf_count": 219,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 0,
+            "native_full_rejections": {
+              "unbacked": 56,
+              "session_referenced": 8
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 0,
+            "native_full_scan_cycle_started": true,
+            "native_full_scan_remaining": 155,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": false,
+            "freed_units": {},
+            "free_full_tokens_after": 1436,
+            "free_mamba_slots_after": 6,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        },
+        {
+          "ts_ms": 1792011822629.8362,
+          "source": "join_ticket",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 1171,
+            "device_mamba_free_slots": 1,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4143,
+            "reserve_mamba_slots": 0,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 1,
+            "remaining_byte_limit": 46716334080,
+            "requested_full_tokens": 401,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4544,
+            "target_mamba_slots": 1,
+            "free_full_tokens_before": 1171,
+            "free_mamba_slots_before": 1,
+            "native_full_leaf_count": 219,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 0,
+            "native_full_rejections": {
+              "unbacked": 56,
+              "session_referenced": 7,
+              "not_current_device_leaf": 1
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 0,
+            "native_full_scan_cycle_started": false,
+            "native_full_scan_remaining": 91,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": false,
+            "freed_units": {},
+            "free_full_tokens_after": 1171,
+            "free_mamba_slots_after": 1,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        }
+      ]
+    },
+    "full_unsatisfied_native_scan_truncated": {
+      "snapshots": 2892,
+      "observed_wait_identities": 1641,
+      "by_source": {
+        "join_ticket": 922,
+        "tool_wait": 1970
+      },
+      "examples": [
+        {
+          "ts_ms": 1792011821861.0383,
+          "source": "join_ticket",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 2020,
+            "device_mamba_free_slots": 8,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4144,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 7,
+            "remaining_byte_limit": 48328294400,
+            "requested_full_tokens": 401,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4545,
+            "target_mamba_slots": 2,
+            "free_full_tokens_before": 2020,
+            "free_mamba_slots_before": 8,
+            "native_full_leaf_count": 223,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 0,
+            "native_full_rejections": {
+              "unbacked": 56,
+              "session_referenced": 8
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 0,
+            "native_full_scan_cycle_started": true,
+            "native_full_scan_remaining": 159,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": false,
+            "freed_units": {},
+            "free_full_tokens_after": 2020,
+            "free_mamba_slots_after": 8,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        },
+        {
+          "ts_ms": 1792011822106.2131,
+          "source": "join_ticket",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 1436,
+            "device_mamba_free_slots": 6,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4143,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 5,
+            "remaining_byte_limit": 47310172160,
+            "requested_full_tokens": 401,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4544,
+            "target_mamba_slots": 2,
+            "free_full_tokens_before": 1436,
+            "free_mamba_slots_before": 6,
+            "native_full_leaf_count": 219,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 0,
+            "native_full_rejections": {
+              "unbacked": 56,
+              "session_referenced": 8
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 0,
+            "native_full_scan_cycle_started": true,
+            "native_full_scan_remaining": 155,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": false,
+            "freed_units": {},
+            "free_full_tokens_after": 1436,
+            "free_mamba_slots_after": 6,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        },
+        {
+          "ts_ms": 1792011822629.8362,
+          "source": "join_ticket",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 1171,
+            "device_mamba_free_slots": 1,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4143,
+            "reserve_mamba_slots": 0,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 1,
+            "remaining_byte_limit": 46716334080,
+            "requested_full_tokens": 401,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4544,
+            "target_mamba_slots": 1,
+            "free_full_tokens_before": 1171,
+            "free_mamba_slots_before": 1,
+            "native_full_leaf_count": 219,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 0,
+            "native_full_rejections": {
+              "unbacked": 56,
+              "session_referenced": 7,
+              "not_current_device_leaf": 1
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 0,
+            "native_full_scan_cycle_started": false,
+            "native_full_scan_remaining": 91,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": false,
+            "freed_units": {},
+            "free_full_tokens_after": 1171,
+            "free_mamba_slots_after": 1,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        }
+      ]
+    },
+    "full_unsatisfied_with_published_waiter": {
+      "snapshots": 3,
+      "observed_wait_identities": 3,
+      "by_source": {
+        "tool_wait": 3
+      },
+      "examples": [
+        {
+          "ts_ms": 1792012327189.1387,
+          "source": "tool_wait",
+          "reason": "start_window",
+          "no_step_reason": null,
+          "blocked_detail": null,
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 5908,
+            "device_mamba_free_slots": 201,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4145,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 1763,
+            "mamba_limit_slots": 200,
+            "remaining_byte_limit": 37000929280,
+            "requested_full_tokens": 8850,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 12995,
+            "target_mamba_slots": 2,
+            "free_full_tokens_before": 5442,
+            "free_mamba_slots_before": 200,
+            "native_full_leaf_count": 83,
+            "native_full_scanned": 64,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": true,
+            "native_full_excluded": 1,
+            "native_full_rejections": {
+              "session_referenced": 55,
+              "unbacked": 9
+            },
+            "waiting_candidate_checks": [
+              {
+                "node_id": 79,
+                "creation_time": 522.0,
+                "identity_matches": true,
+                "causal_wait_valid": true,
+                "full_device_tokens": 466,
+                "full_host_tokens": 466,
+                "full_session_ref": 1,
+                "full_lock_ref": 0,
+                "mamba_session_ref": 1,
+                "mamba_lock_ref": 0,
+                "is_device_leaf": true,
+                "inflight": false,
+                "context_id": "deepagents:autonomous:django__django-14631:2f18f23667cc:context:root",
+                "invocation_state": "wait_join"
+              },
+              {
+                "node_id": 78,
+                "creation_time": 472.0,
+                "identity_matches": true,
+                "causal_wait_valid": true,
+                "full_device_tokens": 1,
+                "full_host_tokens": 1,
+                "full_session_ref": 3,
+                "full_lock_ref": 0,
+                "mamba_session_ref": 0,
+                "mamba_lock_ref": 0,
+                "is_device_leaf": true,
+                "inflight": false,
+                "context_id": "deepagents:autonomous:django__django-14631:2f18f23667cc:context:root",
+                "invocation_state": "wait_join"
+              }
+            ],
+            "max_nodes": 64,
+            "transaction_attempts": 2,
+            "native_full_scan_cycle_started": true,
+            "native_full_scan_remaining": 18,
+            "published_waiting_candidates": 1,
+            "transaction_truncated": false,
+            "freed_units": {
+              "0": 466,
+              "2": 1
+            },
+            "free_full_tokens_after": 5908,
+            "free_mamba_slots_after": 201,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        },
+        {
+          "ts_ms": 1792013065718.7742,
+          "source": "tool_wait",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 2871,
+            "device_mamba_free_slots": 225,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4144,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 224,
+            "remaining_byte_limit": 40201134080,
+            "requested_full_tokens": 1650,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 5794,
+            "target_mamba_slots": 2,
+            "free_full_tokens_before": 1358,
+            "free_mamba_slots_before": 225,
+            "native_full_leaf_count": 61,
+            "native_full_scanned": 60,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": false,
+            "native_full_excluded": 1,
+            "native_full_rejections": {
+              "session_referenced": 54,
+              "unbacked": 6
+            },
+            "waiting_candidate_checks": [
+              {
+                "node_id": 23614,
+                "creation_time": 891114.0,
+                "identity_matches": true,
+                "causal_wait_valid": true,
+                "full_device_tokens": 1513,
+                "full_host_tokens": 1513,
+                "full_session_ref": 1,
+                "full_lock_ref": 0,
+                "mamba_session_ref": 1,
+                "mamba_lock_ref": 0,
+                "is_device_leaf": true,
+                "inflight": false,
+                "context_id": "deepagents-context:cfbef71dac3d18ae",
+                "invocation_state": "wait_tool"
+              },
+              {
+                "node_id": 23613,
+                "creation_time": 883127.0,
+                "identity_matches": true,
+                "causal_wait_valid": true,
+                "full_device_tokens": 23,
+                "full_host_tokens": 23,
+                "full_session_ref": 2,
+                "full_lock_ref": 0,
+                "mamba_session_ref": 0,
+                "mamba_lock_ref": 0,
+                "is_device_leaf": true,
+                "inflight": false,
+                "context_id": "deepagents-context:cfbef71dac3d18ae",
+                "invocation_state": "wait_tool"
+              }
+            ],
+            "max_nodes": 64,
+            "transaction_attempts": 2,
+            "native_full_scan_cycle_started": true,
+            "native_full_scan_remaining": 0,
+            "published_waiting_candidates": 1,
+            "transaction_truncated": false,
+            "freed_units": {
+              "0": 1513
+            },
+            "free_full_tokens_after": 2871,
+            "free_mamba_slots_after": 225,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        },
+        {
+          "ts_ms": 1792013358370.7996,
+          "source": "tool_wait",
+          "reason": "no_restore_plan",
+          "no_step_reason": "prefetch_capacity_budget",
+          "blocked_detail": "prefetch_full_capacity_budget",
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 804,
+            "device_mamba_free_slots": 55,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4145,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 0,
+            "mamba_limit_slots": 54,
+            "remaining_byte_limit": 37401436160,
+            "requested_full_tokens": 397,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 4542,
+            "target_mamba_slots": 2,
+            "free_full_tokens_before": 9,
+            "free_mamba_slots_before": 54,
+            "native_full_leaf_count": 54,
+            "native_full_scanned": 53,
+            "native_full_selected": 0,
+            "native_full_selected_tokens": 0,
+            "native_full_scan_truncated": false,
+            "native_full_excluded": 1,
+            "native_full_rejections": {
+              "unbacked": 15,
+              "session_referenced": 38
+            },
+            "waiting_candidate_checks": [
+              {
+                "node_id": 27498,
+                "creation_time": 1080879.0,
+                "identity_matches": true,
+                "causal_wait_valid": true,
+                "full_device_tokens": 795,
+                "full_host_tokens": 795,
+                "full_session_ref": 1,
+                "full_lock_ref": 0,
+                "mamba_session_ref": 0,
+                "mamba_lock_ref": 0,
+                "is_device_leaf": true,
+                "inflight": false,
+                "context_id": "deepagents-context:334d741c0d5df882",
+                "invocation_state": "wait_tool"
+              },
+              {
+                "node_id": 27497,
+                "creation_time": 1072565.0,
+                "identity_matches": true,
+                "causal_wait_valid": true,
+                "full_device_tokens": 37,
+                "full_host_tokens": 37,
+                "full_session_ref": 2,
+                "full_lock_ref": 0,
+                "mamba_session_ref": 0,
+                "mamba_lock_ref": 0,
+                "is_device_leaf": true,
+                "inflight": false,
+                "context_id": "deepagents-context:334d741c0d5df882",
+                "invocation_state": "wait_tool"
+              }
+            ],
+            "max_nodes": 64,
+            "transaction_attempts": 2,
+            "native_full_scan_cycle_started": true,
+            "native_full_scan_remaining": 0,
+            "published_waiting_candidates": 1,
+            "transaction_truncated": false,
+            "freed_units": {
+              "0": 795,
+              "2": 1
+            },
+            "free_full_tokens_after": 804,
+            "free_mamba_slots_after": 55,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        }
+      ]
+    },
+    "full_unsatisfied_transactions_truncated": {
+      "snapshots": 1,
+      "observed_wait_identities": 1,
+      "by_source": {
+        "tool_wait": 1
+      },
+      "examples": [
+        {
+          "ts_ms": 1792013097961.5378,
+          "source": "tool_wait",
+          "reason": "start_window",
+          "no_step_reason": null,
+          "blocked_detail": null,
+          "capacity_budget": {
+            "source": "native_next_prefill",
+            "device_full_free_tokens": 16618,
+            "device_mamba_free_slots": 221,
+            "evictable_full_tokens": 0,
+            "evictable_mamba_slots": 0,
+            "reserve_full_tokens": 4145,
+            "reserve_mamba_slots": 1,
+            "full_limit_tokens": 12473,
+            "mamba_limit_slots": 220,
+            "remaining_byte_limit": 38677360640,
+            "requested_full_tokens": 13549,
+            "requested_mamba_slots": 1,
+            "partial_full_tokens": 0
+          },
+          "capacity_reclaim_probe": false,
+          "capacity_reclaim": {
+            "target_full_tokens": 17694,
+            "target_mamba_slots": 2,
+            "free_full_tokens_before": 7612,
+            "free_mamba_slots_before": 221,
+            "native_full_leaf_count": 57,
+            "native_full_scanned": 56,
+            "native_full_selected": 1,
+            "native_full_selected_tokens": 46,
+            "native_full_scan_truncated": false,
+            "native_full_excluded": 1,
+            "native_full_rejections": {
+              "session_referenced": 54,
+              "unbacked": 1
+            },
+            "waiting_candidate_checks": [],
+            "max_nodes": 64,
+            "transaction_attempts": 64,
+            "native_full_scan_cycle_started": true,
+            "native_full_scan_remaining": 0,
+            "published_waiting_candidates": 0,
+            "transaction_truncated": true,
+            "freed_units": {
+              "0": 9006
+            },
+            "free_full_tokens_after": 16618,
+            "free_mamba_slots_after": 221,
+            "full_target_satisfied": false,
+            "mamba_target_satisfied": true
+          }
+        }
+      ]
+    }
+  },
+  "recorded_reclaim_outcomes": {
+    "full=False,mamba=True": 9781,
+    "full=True,mamba=True": 72,
+    "full=True,mamba=False": 469,
+    "full=False,mamba=False": 318
+  },
+  "native_full_rejection_check_counts": {
+    "unbacked": 118117,
+    "session_referenced": 397023,
+    "not_current_device_leaf": 2115
+  },
+  "full_unsatisfied_native_rejection_check_counts": {
+    "unbacked": 117882,
+    "session_referenced": 394908,
+    "not_current_device_leaf": 2112
+  },
+  "waiting_candidate_check_counts": {
+    "recorded_checks": 9,
+    "identity_matches=True": 9,
+    "causal_wait_valid=True": 9,
+    "inflight=False": 9,
+    "full_session_ref>1": 4
+  },
+  "recorded_shared_waiting_volume": {
+    "full_bytes_per_token": 20480,
+    "diagnostic_snapshots": 4,
+    "shared_check_records": 4,
+    "rows": [
+      {
+        "ts_ms": 1792012327189.1387,
+        "wait_identity": [
+          "tool_wait",
+          "deepagents:autonomous:django__django-16877:22a8438bda7c",
+          "deepagents:autonomous:django__django-16877:22a8438bda7c:root",
+          "deepagents:autonomous:django__django-16877:22a8438bda7c:context:root",
+          15,
+          null,
+          [
+            "01a13c42-18c4-7fa3-98da-146a889b84a4"
+          ]
+        ],
+        "shared_check_records": 1,
+        "known_node_identities": 1,
+        "checks_without_valid_identity_or_size": 0,
+        "listed_device_tokens_sum_known": 1,
+        "listed_device_tokens": 1,
+        "listed_device_bytes": 20480,
+        "post_reclaim_full_deficit_tokens": 7087,
+        "post_reclaim_full_deficit_bytes": 145141760,
+        "listed_tokens_fraction_of_post_reclaim_deficit": 0.00014110342881332017,
+        "all_referencing_sessions_waiting": null,
+        "node_ids": [
+          {
+            "node_id": 78,
+            "creation_time": 472.0,
+            "device_tokens": 1
+          }
+        ]
+      },
+      {
+        "ts_ms": 1792013065718.7742,
+        "wait_identity": [
+          "tool_wait",
+          "deepagents:autonomous:pydata__xarray-6461:ba706c945707",
+          "deepagents-invocation:57ca7e6aaebdf59c",
+          "deepagents-context:57ca7e6aaebdf59c",
+          78,
+          null,
+          [
+            "01a13c4d-573f-78e2-adda-af6cf2b0d1f1"
+          ]
+        ],
+        "shared_check_records": 1,
+        "known_node_identities": 1,
+        "checks_without_valid_identity_or_size": 0,
+        "listed_device_tokens_sum_known": 23,
+        "listed_device_tokens": 23,
+        "listed_device_bytes": 471040,
+        "post_reclaim_full_deficit_tokens": 2923,
+        "post_reclaim_full_deficit_bytes": 59863040,
+        "listed_tokens_fraction_of_post_reclaim_deficit": 0.00786862812179268,
+        "all_referencing_sessions_waiting": null,
+        "node_ids": [
+          {
+            "node_id": 23613,
+            "creation_time": 883127.0,
+            "device_tokens": 23
+          }
+        ]
+      },
+      {
+        "ts_ms": 1792013090340.3286,
+        "wait_identity": [
+          "tool_wait",
+          "deepagents:autonomous:pylint-dev__pylint-7080:6a2c45052f84",
+          "deepagents-invocation:6e24c7973a57d4eb",
+          "deepagents-context:6e24c7973a57d4eb",
+          98,
+          null,
+          [
+            "01a13c4d-bcc4-7a73-bfb4-3ed1a84ba626"
+          ]
+        ],
+        "shared_check_records": 1,
+        "known_node_identities": 1,
+        "checks_without_valid_identity_or_size": 0,
+        "listed_device_tokens_sum_known": 48,
+        "listed_device_tokens": 48,
+        "listed_device_bytes": 983040,
+        "post_reclaim_full_deficit_tokens": 0,
+        "post_reclaim_full_deficit_bytes": 0,
+        "listed_tokens_fraction_of_post_reclaim_deficit": null,
+        "all_referencing_sessions_waiting": null,
+        "node_ids": [
+          {
+            "node_id": 23940,
+            "creation_time": 898830.0,
+            "device_tokens": 48
+          }
+        ]
+      },
+      {
+        "ts_ms": 1792013358370.7996,
+        "wait_identity": [
+          "tool_wait",
+          "deepagents:autonomous:mwaskom__seaborn-3187:b49fcc2a0fb8",
+          "deepagents-invocation:cfbef71dac3d18ae",
+          "deepagents-context:cfbef71dac3d18ae",
+          73,
+          null,
+          [
+            "01a13c51-d4c7-73d3-9fdf-329746f46d12"
+          ]
+        ],
+        "shared_check_records": 1,
+        "known_node_identities": 1,
+        "checks_without_valid_identity_or_size": 0,
+        "listed_device_tokens_sum_known": 37,
+        "listed_device_tokens": 37,
+        "listed_device_bytes": 757760,
+        "post_reclaim_full_deficit_tokens": 3738,
+        "post_reclaim_full_deficit_bytes": 76554240,
+        "listed_tokens_fraction_of_post_reclaim_deficit": 0.009898341359015517,
+        "all_referencing_sessions_waiting": null,
+        "node_ids": [
+          {
+            "node_id": 27497,
+            "creation_time": 1072565.0,
+            "device_tokens": 37
+          }
+        ]
+      }
+    ],
+    "semantics": "Only listed multi-reference waiting-candidate checks. Deduplicate node ID/creation within each diagnostic using its maximum recorded size; unknown identity or size keeps that diagnostic's complete volume unknown. No cross-time capacity sum, complete cache census, unique eviction or recoverable-byte claim. FULL references count branch ancestry coverage, not necessarily distinct sessions. Other owners' states were not recorded; a causal wait for one recorded context cannot authorize shared reclamation."
+  },
+  "sources": {
+    "opportunities": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/opportunities/admission_opportunities.jsonl",
+    "opportunities_read_bytes": 1457985716,
+    "opportunities_sha256": "b6f7cdb84cd10e8e324c01f1bc9abd85ebdbf5df879c36190636763f765009a0",
+    "audit_script_sha256": "a0d7fdbc55dfd522e0c0877772d0b0e80edeb68947da8e845ba017df1c17d3ab",
+    "pool_evidence": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/server/native_telemetry_status.json",
+    "pool_evidence_sha256": "79921094c5b23531d4320a13ffb236a003c842c7e4e2f0dc40b632ee6fb82ce3"
+  }
+}

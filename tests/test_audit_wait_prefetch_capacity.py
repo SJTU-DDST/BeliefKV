@@ -76,3 +76,67 @@ def test_reclaim_rejections_remain_overlapping_observations_not_unique_evictions
     ] == 1
     assert "full_unsatisfied_transactions_truncated" not in result["buckets"]
     assert "full_unsatisfied_without_published_waiter" not in result["buckets"]
+
+
+def test_shared_waiting_volume_deduplicates_listed_nodes_without_authorizing_reclaim():
+    check = {
+        "node_id": 3, "creation_time": 9., "full_session_ref": 2,
+        "full_device_tokens": 23,
+    }
+    diagnosis = {
+        "target_full_tokens": 5794, "free_full_tokens_after": 2871,
+        "full_target_satisfied": False,
+        "waiting_candidate_checks": [check, {**check, "full_device_tokens": 20}],
+    }
+    result = evaluate(
+        (plan(capacity_reclaim=diagnosis), plan(capacity_reclaim=diagnosis)),
+        full_bytes_per_token=20480,
+    )
+    volume = result["recorded_shared_waiting_volume"]
+    assert volume["diagnostic_snapshots"] == 2
+    assert volume["shared_check_records"] == 4
+    first, second = volume["rows"]
+    assert first == second
+    assert first["known_node_identities"] == 1
+    assert first["listed_device_tokens"] == 23
+    assert first["listed_device_bytes"] == 23 * 20480
+    assert first["post_reclaim_full_deficit_tokens"] == 2923
+    assert first["listed_tokens_fraction_of_post_reclaim_deficit"] == 23 / 2923
+    assert first["all_referencing_sessions_waiting"] is None
+
+
+@pytest.mark.parametrize("change", (
+    {"node_id": None}, {"creation_time": float("nan")}, {"full_device_tokens": None},
+))
+def test_missing_shared_identity_or_size_keeps_complete_volume_unknown(change):
+    check = {
+        "node_id": 3, "creation_time": 9., "full_session_ref": 2,
+        "full_device_tokens": 23, **change,
+    }
+    result = evaluate((plan(capacity_reclaim={"waiting_candidate_checks": [check]}),))
+    row, = result["recorded_shared_waiting_volume"]["rows"]
+    assert row["checks_without_valid_identity_or_size"] == 1
+    assert row["listed_device_tokens"] is None
+    assert row["listed_device_bytes"] is None
+    assert row["post_reclaim_full_deficit_tokens"] is None
+    assert row["all_referencing_sessions_waiting"] is None
+
+
+@pytest.mark.parametrize("unit", (0, -1, True, 1.5))
+def test_shared_waiting_volume_rejects_unmeasured_or_invalid_pool_units(unit):
+    with pytest.raises(ValueError, match="positive integer"):
+        evaluate((), full_bytes_per_token=unit)
+
+
+def test_missing_pool_units_preserve_tokens_without_fabricating_bytes():
+    result = evaluate((plan(capacity_reclaim={
+        "target_full_tokens": 10, "free_full_tokens_after": 0,
+        "waiting_candidate_checks": [{
+            "node_id": 3, "creation_time": 9., "full_session_ref": 2,
+            "full_device_tokens": 2,
+        }],
+    }),))
+    row, = result["recorded_shared_waiting_volume"]["rows"]
+    assert row["listed_device_tokens"] == 2
+    assert row["listed_device_bytes"] is None
+    assert row["post_reclaim_full_deficit_bytes"] is None

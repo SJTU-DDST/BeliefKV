@@ -14,6 +14,18 @@ Continue trace-supported implementation and CPU validation during the GPU
 reservation. A new GPU run is required for end-to-end benefit acceptance,
 not as a prerequisite for fixing identifiable control or lifecycle defects.
 
+V773 adds recorded multi-reference FULL volume to the exact same V59 prefix
+as V685, with measured bytes/token and all prior audit fields unchanged.
+Only four listed checks have multiple references. The three still-short
+snapshots list20.48/471.04/757.76KB, or0.0141%/0.7869%/0.9898% of their
+individual deficits. This is not a global cache census or reclaimable-volume
+upper bound; other owners' waiting states are unknown. Three real CPU radix
+cases show that FULL session_ref counts branch ancestry coverage, not distinct
+sessions. One session with two branches can produce2 and release to0.
+Keep shared reclamation checks unchanged. All16 audit checks pass; V774 binds
+the evidence and source semantics. Continue the existing capacity/registration
+and control-cost repairs without changing frozen V61 or its19:51 registration.
+
 The new development engine defers native leaf census until known waiting
 victims and their safely exposed ancestors leave a real capacity deficit.
 Only the reclaim method and two engine test files differ from the frozen tree;
@@ -51,6 +63,13 @@ requests. Stop admitting tasks at19:13 and stop/clean owned containers at19:45,
 preserving completed logs before V61. Unattempted/interrupted grading is
 missing evaluation evidence, not a model failure. No complete official score
 or performance gain is established; raw outcomes and frozen V61 stay unchanged.
+The CPU job has now exited after its19:13 admission cutoff. V59 admitted116
+containers and produced115 official reports:80 resolved and35 unresolved.
+One Docker API read timeout and40 unattempted tasks remain missing evidence.
+The unchanged official summary combines these as41 errors; V775 separates
+their meanings. V58 is still ungraded. This nonrandom partial cohort cannot
+support a complete quality score or cross-arm comparison. No evaluator worker
+or owned running container remains; frozen V61 and19:51 stay unchanged.
 
 Development diagnostics now retain predecessor result processing, successor
 selection and successor launch-observer endpoints for exact adjacent forwards,

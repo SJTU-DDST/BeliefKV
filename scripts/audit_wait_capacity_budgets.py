@@ -7,6 +7,7 @@ import argparse
 from collections import Counter
 import hashlib
 import json
+import math
 from pathlib import Path
 
 
@@ -20,10 +21,76 @@ def wait_identity(row: dict) -> tuple:
     )
 
 
-def evaluate(records) -> dict:
+def shared_waiting_volume(row, diagnosis, *, full_bytes_per_token):
+    shared = [
+        check for check in diagnosis.get("waiting_candidate_checks") or ()
+        if type(check.get("full_session_ref")) is int and check["full_session_ref"] > 1
+    ]
+    if not shared:
+        return None
+    nodes = {}
+    unknown = 0
+    for check in shared:
+        node_id, created, tokens = (
+            check.get("node_id"), check.get("creation_time"),
+            check.get("full_device_tokens"),
+        )
+        if (
+            type(node_id) is not int or node_id < 0
+            or type(created) not in (int, float) or not math.isfinite(created)
+            or created < 0 or type(tokens) is not int or tokens < 0
+        ):
+            unknown += 1
+            continue
+        identity = node_id, created
+        nodes[identity] = max(nodes.get(identity, 0), tokens)
+    target, available = (
+        diagnosis.get("target_full_tokens"), diagnosis.get("free_full_tokens_after"),
+    )
+    deficit = (
+        max(0, target - available)
+        if type(target) is int and type(available) is int
+        and target >= 0 and available >= 0 else None
+    )
+    observed = sum(nodes.values())
+    complete = unknown == 0
+    return {
+        "ts_ms": row.get("ts_ms"),
+        "wait_identity": wait_identity(row),
+        "shared_check_records": len(shared),
+        "known_node_identities": len(nodes),
+        "checks_without_valid_identity_or_size": unknown,
+        "listed_device_tokens_sum_known": observed,
+        "listed_device_tokens": observed if complete else None,
+        "listed_device_bytes": (
+            observed * full_bytes_per_token
+            if complete and full_bytes_per_token is not None else None
+        ),
+        "post_reclaim_full_deficit_tokens": deficit,
+        "post_reclaim_full_deficit_bytes": (
+            deficit * full_bytes_per_token
+            if deficit is not None and full_bytes_per_token is not None else None
+        ),
+        "listed_tokens_fraction_of_post_reclaim_deficit": (
+            observed / deficit if complete and deficit else None
+        ),
+        "all_referencing_sessions_waiting": None,
+        "node_ids": [
+            {"node_id": node_id, "creation_time": created, "device_tokens": tokens}
+            for (node_id, created), tokens in nodes.items()
+        ],
+    }
+
+
+def evaluate(records, *, full_bytes_per_token=None) -> dict:
+    if full_bytes_per_token is not None and (
+        type(full_bytes_per_token) is not int or full_bytes_per_token <= 0
+    ):
+        raise ValueError("FULL bytes per token must be a positive integer")
     counts = Counter()
     buckets, reclaim_outcomes = {}, Counter()
     rejections, waiting_checks, failed_full_rejections = Counter(), Counter(), Counter()
+    shared_volumes = []
 
     def add(name, row):
         bucket = buckets.setdefault(name, {
@@ -107,6 +174,11 @@ def evaluate(records) -> dict:
             device, host = check.get("full_device_tokens"), check.get("full_host_tokens")
             if type(device) is int and device > 0 and type(host) is int and host < device:
                 waiting_checks["full_host_shortfall"] += 1
+        volume = shared_waiting_volume(
+            row, diagnosis, full_bytes_per_token=full_bytes_per_token,
+        )
+        if volume is not None:
+            shared_volumes.append(volume)
 
     return {
         "scope": (
@@ -128,6 +200,21 @@ def evaluate(records) -> dict:
         "native_full_rejection_check_counts": dict(rejections),
         "full_unsatisfied_native_rejection_check_counts": dict(failed_full_rejections),
         "waiting_candidate_check_counts": dict(waiting_checks),
+        "recorded_shared_waiting_volume": {
+            "full_bytes_per_token": full_bytes_per_token,
+            "diagnostic_snapshots": len(shared_volumes),
+            "shared_check_records": sum(row["shared_check_records"] for row in shared_volumes),
+            "rows": shared_volumes,
+            "semantics": (
+                "Only listed multi-reference waiting-candidate checks. Deduplicate node ID/"
+                "creation within each diagnostic using its maximum recorded size; unknown "
+                "identity or size keeps that diagnostic's complete volume unknown. No "
+                "cross-time capacity sum, complete cache census, unique eviction or "
+                "recoverable-byte claim. FULL references count branch ancestry coverage, "
+                "not necessarily distinct sessions. Other owners' states were not recorded; "
+                "a causal wait for one recorded context cannot authorize shared reclamation."
+            ),
+        },
     }
 
 
@@ -136,6 +223,7 @@ def main() -> None:
     parser.add_argument("--opportunities", type=Path, required=True)
     parser.add_argument("--read-bytes", type=int, required=True)
     parser.add_argument("--output", type=Path, required=True)
+    parser.add_argument("--pool-evidence", type=Path)
     args = parser.parse_args()
     if args.read_bytes < 1:
         parser.error("--read-bytes must be positive")
@@ -157,13 +245,27 @@ def main() -> None:
         if consumed != args.read_bytes:
             raise ValueError("source shorter than requested prefix")
 
-    result = evaluate(records())
+    pool = None
+    if args.pool_evidence is not None:
+        pool = json.loads(args.pool_evidence.read_text())
+    full_unit = (
+        pool.get("host_pool_evidence", {}).get("full", {}).get("bytes_per_unit")
+        if pool is not None else None
+    )
+    if pool is not None and full_unit is None:
+        raise ValueError("pool evidence has no measured FULL bytes per unit")
+    result = evaluate(records(), full_bytes_per_token=full_unit)
     result["sources"] = {
         "opportunities": str(args.opportunities.resolve()),
         "opportunities_read_bytes": consumed,
         "opportunities_sha256": digest.hexdigest(),
         "audit_script_sha256": hashlib.sha256(Path(__file__).read_bytes()).hexdigest(),
     }
+    if args.pool_evidence is not None:
+        result["sources"]["pool_evidence"] = str(args.pool_evidence.resolve())
+        result["sources"]["pool_evidence_sha256"] = hashlib.sha256(
+            args.pool_evidence.read_bytes(),
+        ).hexdigest()
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("x") as stream:
         json.dump(result, stream, indent=2, allow_nan=False)
