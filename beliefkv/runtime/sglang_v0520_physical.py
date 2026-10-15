@@ -1308,6 +1308,7 @@ class PhysicalTransactionLedger:
         self.max_nodes = max_nodes
         self.max_age_s = max_age_s
         self._pending: dict[str, tuple[PhysicalActionExpectation, float, set[int]]] = {}
+        self._pending_action_counts: dict[str, int] = {}
         self._history: deque[str] = deque()
         self._seen: set[str] = set()
         self._published_by_command: dict[str, dict[int, tuple[int, ...]]] = {}
@@ -1319,7 +1320,7 @@ class PhysicalTransactionLedger:
 
     def pending_action_count(self, action: str) -> int:
         """Count a direction without serializing unrelated native transfers."""
-        return sum(expected.action == action for expected, _, _ in self._pending.values())
+        return self._pending_action_counts.get(action, 0)
 
     def is_pending(self, command_id: str) -> bool:
         return command_id in self._pending
@@ -1361,6 +1362,15 @@ class PhysicalTransactionLedger:
         self._history.append(command_id)
         self._seen.add(command_id)
 
+    def _retire(self, command_id: str) -> None:
+        expected, _, _ = self._pending.pop(command_id)
+        remaining = self._pending_action_counts[expected.action] - 1
+        if remaining:
+            self._pending_action_counts[expected.action] = remaining
+        else:
+            del self._pending_action_counts[expected.action]
+        self._remember(command_id)
+
     def expire(self) -> tuple[str, ...]:
         """Drop timed-out commands without issuing any completion credit."""
         now = monotonic()
@@ -1370,8 +1380,7 @@ class PhysicalTransactionLedger:
             if now - started >= self.max_age_s
         )
         for command_id in expired:
-            del self._pending[command_id]
-            self._remember(command_id)
+            self._retire(command_id)
         return expired
 
     def register(self, expected: PhysicalActionExpectation) -> None:
@@ -1442,6 +1451,9 @@ class PhysicalTransactionLedger:
         ):
             raise PhysicalReceiptError("node already owned by a pending command")
         self._pending[expected.command_id] = (expected, monotonic(), set())
+        self._pending_action_counts[expected.action] = (
+            self._pending_action_counts.get(expected.action, 0) + 1
+        )
 
     def cancel_unsubmitted(self, command_id: str) -> None:
         """Release a reservation only when native confirms nothing was queued.
@@ -1457,14 +1469,12 @@ class PhysicalTransactionLedger:
             raise PhysicalReceiptError(
                 f"cannot cancel partially acknowledged {expected.action}"
             )
-        del self._pending[command_id]
-        self._remember(command_id)
+        self._retire(command_id)
 
     def _reject(self, message: str) -> None:
         # An invalid merged event cannot safely be attributed to any subset.
         for command_id in tuple(self._pending):
-            del self._pending[command_id]
-            self._remember(command_id)
+            self._retire(command_id)
         raise PhysicalReceiptError(message)
 
     def observe(
@@ -1490,8 +1500,7 @@ class PhysicalTransactionLedger:
             )
         except PhysicalReceiptError:
             for command_id in tuple(self._pending):
-                del self._pending[command_id]
-                self._remember(command_id)
+                self._retire(command_id)
             raise
         except (TypeError, ValueError, AttributeError, KeyError):
             self._reject("invalid or inconsistent native child commit")
@@ -1641,6 +1650,5 @@ class PhysicalTransactionLedger:
                 )
             )
         for action in completed:
-            del self._pending[action.command_id]
-            self._remember(action.command_id)
+            self._retire(action.command_id)
         return tuple(completed)

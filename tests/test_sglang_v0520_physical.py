@@ -1557,16 +1557,20 @@ def test_overlapping_pending_node_or_unbounded_publication_rejected():
 def test_rejected_native_enqueue_releases_reservation_without_reusing_identity():
     ledger = PhysicalTransactionLedger(max_pending=1)
     ledger.register(expected())
+    assert ledger.pending_action_count("PREPARE_HOST") == 1
     ledger.cancel_unsubmitted("cmd")
     assert ledger.pending_count == 0
+    assert ledger.pending_action_count("PREPARE_HOST") == 0
     with pytest.raises(PhysicalReceiptError, match="reused"):
         ledger.register(expected())
     with pytest.raises(PhysicalReceiptError, match="unknown"):
         ledger.cancel_unsubmitted("cmd")
     ledger.register(expected("other"))
+    assert ledger.pending_action_count("PREPARE_HOST") == 1
     with pytest.raises(PhysicalReceiptError, match="unknown"):
         ledger.observe(ack(receipt()), live_context_epochs={"ctx": 3})
     assert ledger.pending_count == 0
+    assert ledger.pending_action_count("PREPARE_HOST") == 0
 
 
 def test_partially_acknowledged_command_cannot_cancel_reservation():
@@ -1579,6 +1583,7 @@ def test_partially_acknowledged_command_cannot_cancel_reservation():
     with pytest.raises(PhysicalReceiptError, match="partially acknowledged"):
         ledger.cancel_unsubmitted("cmd")
     assert ledger.pending_count == 1
+    assert ledger.pending_action_count("PREPARE_HOST") == 1
 
 
 def test_two_child_command_waits_for_full_reconciliation_across_acks():
@@ -1588,6 +1593,7 @@ def test_two_child_command_waits_for_full_reconciliation_across_acks():
         child(13, (13,), 10, 0, 10),
     )))
     assert ledger.observe(ack(receipt()), live_context_epochs={"ctx": 3}) == ()
+    assert ledger.pending_action_count("PREPARE_HOST") == 1
     second = ack(
         receipt(anchor=13, published=(13,), kv=1, mamba=0, total=10),
         nodes=(13,), kv=1, mamba=0,
@@ -1595,6 +1601,7 @@ def test_two_child_command_waits_for_full_reconciliation_across_acks():
     completed, = ledger.observe(second, live_context_epochs={"ctx": 3})
     assert completed.node_ids == (11, 12, 13)
     assert completed.num_bytes == 42
+    assert ledger.pending_action_count("PREPARE_HOST") == 0
 
 
 def test_partial_ack_with_no_child_credit_fails_closed():
@@ -1627,6 +1634,8 @@ def test_malformed_duplicate_unknown_and_mismatch_poison_credit(event):
     with pytest.raises(PhysicalReceiptError):
         ledger.observe(event, live_context_epochs={"ctx": 3})
     assert ledger.pending_count == 0
+    assert ledger.pending_action_count("PREPARE_HOST") == 0
+    assert ledger.pending_action_count("PREFETCH_GPU") == 0
 
 
 def test_stale_context_epoch_and_replay_do_not_credit():
@@ -1711,6 +1720,7 @@ def test_h2d_child_and_mamba_only_pool_counts():
     )
     assert completed.action == "PREFETCH_GPU"
     assert completed.pool_bytes == (("kv", 0), ("mamba", 10))
+    assert ledger.pending_action_count("PREFETCH_GPU") == 0
 
 
 def test_bounds_expiry_and_late_receipt_never_gain_credit(monkeypatch):
@@ -1725,6 +1735,7 @@ def test_bounds_expiry_and_late_receipt_never_gain_credit(monkeypatch):
     clock[0] = 2.0
     assert ledger.expire() == ("cmd",)
     assert ledger.pending_count == 0
+    assert ledger.pending_action_count("PREPARE_HOST") == 0
     with pytest.raises(PhysicalReceiptError):
         ledger.observe(ack(receipt()), live_context_epochs={"ctx": 3})
 
@@ -1742,3 +1753,52 @@ def test_missing_child_credit_with_unknown_nodes_remains_pending_then_expires(mo
     assert ledger.pending_count == 1
     clock[0] = 1.0
     assert ledger.expire() == ("cmd",)
+    assert ledger.pending_action_count("PREPARE_HOST") == 0
+
+
+def test_pending_action_counts_do_not_traverse_unrelated_transactions():
+    ledger = PhysicalTransactionLedger()
+    for index in range(8):
+        ledger.register(expected(
+            f"command-{index}",
+            action="PREPARE_HOST" if index % 2 == 0 else "PREFETCH_GPU",
+            children=(child(100 + index, (100 + index,), 10, 0, 10),),
+        ))
+
+    class NoTraversal(dict):
+        def values(self):
+            raise AssertionError("action count must not traverse transactions")
+
+        def items(self):
+            raise AssertionError("action count must not traverse transactions")
+
+        def __iter__(self):
+            raise AssertionError("action count must not traverse transactions")
+
+    original = ledger._pending
+    with patch.object(ledger, "_pending", NoTraversal(original)):
+        assert ledger.pending_action_count("PREPARE_HOST") == 4
+        assert ledger.pending_action_count("PREFETCH_GPU") == 4
+        assert ledger.pending_action_count("unknown") == 0
+        assert ledger.pending_count == 8
+    for index in range(8):
+        ledger.cancel_unsubmitted(f"command-{index}")
+        assert sum(
+            ledger.pending_action_count(action) for action in ("PREPARE_HOST", "PREFETCH_GPU")
+        ) == ledger.pending_count
+
+
+def test_invalid_merged_receipt_retires_both_action_counts():
+    ledger = PhysicalTransactionLedger()
+    ledger.register(expected("prepare"))
+    ledger.register(expected(
+        "load", action="PREFETCH_GPU",
+        children=(child(13, (13,), 10, 0, 10),),
+    ))
+    assert ledger.pending_action_count("PREPARE_HOST") == 1
+    assert ledger.pending_action_count("PREFETCH_GPU") == 1
+    with pytest.raises(PhysicalReceiptError, match="unknown"):
+        ledger.observe(ack(receipt(command="missing")), live_context_epochs={"ctx": 3})
+    assert ledger.pending_count == 0
+    assert ledger.pending_action_count("PREPARE_HOST") == 0
+    assert ledger.pending_action_count("PREFETCH_GPU") == 0

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import os
+import select
 import socket
 import tempfile
 import threading
@@ -124,13 +125,17 @@ class RuntimeEventDatagramServer:
         self._socket.bind(str(self.path))
         os.chmod(self.path, 0o600)
         self._socket.setblocking(False)
+        # Probe empty drains cheaply; recent traffic keeps the direct receive path.
+        self._receive_poller = select.poll()
+        self._receive_poller.register(self._socket, select.POLLIN)
+        self._receive_was_empty = True
 
     def drain(self, *, max_messages: int = 256) -> tuple[RuntimeEventDelivery, ...]:
         if max_messages <= 0:
             raise ValueError("max_messages must be positive")
         deliveries: list[RuntimeEventDelivery] = []
         timing = self._timing
-        for _ in range(max_messages):
+        for index in range(max_messages):
             receive_frame = None
             if timing is not None and timing.enabled:
                 if self._receive_polls % CONTROL_TIMING_SAMPLE_EVERY == 0:
@@ -138,11 +143,17 @@ class RuntimeEventDatagramServer:
                 self._receive_polls += 1
             try:
                 try:
+                    if index == 0:
+                        if self._receive_was_empty and not self._receive_poller.poll(0):
+                            break
+                        self._receive_was_empty = False
                     payload, reply_to = self._socket.recvfrom(MAX_DATAGRAM_BYTES)
                 finally:
                     if receive_frame is not None:
                         timing.finish(receive_frame)
             except BlockingIOError:
+                if index == 0:
+                    self._receive_was_empty = True
                 break
             profiled = False
             if timing is not None and timing.enabled:

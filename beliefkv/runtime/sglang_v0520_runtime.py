@@ -5362,11 +5362,11 @@ class NativeAdmissionRuntime:
                 self._tool_ticket = None
             else:
                 return
-        if self.physical_ledger.pending_action_count("PREFETCH_GPU"):
-            return
         now_ms = time.monotonic() * 1000
         if now_ms < self._tool_prefetch_next_ms:
             self.counts["tool_prefetch_scan_deferred"] += 1
+            return
+        if self.physical_ledger.pending_action_count("PREFETCH_GPU"):
             return
         self._tool_prefetch_next_ms = now_ms + SEMANTIC_FRAME_INTERVAL_MS
         self.counts["tool_prefetch_scans"] += 1

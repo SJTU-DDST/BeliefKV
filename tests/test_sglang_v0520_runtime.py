@@ -3977,6 +3977,87 @@ def test_native_fenced_prefetch_does_not_request_overlap_drain():
     assert runtime.can_prefetch_during_overlap() is False
 
 
+def test_tool_prefetch_retry_deadline_skips_unneeded_transaction_inspection():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_tool_prefetch = True
+    runtime._tool_prefetch_next_ms = 1050.
+    with (
+        patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.),
+        patch.object(
+            runtime.physical_ledger, "pending_action_count",
+            side_effect=AssertionError("the retry is not due"),
+        ),
+    ):
+        runtime.dispatch_tool_prefetch()
+    assert runtime._tool_ticket is None
+    assert runtime._tool_prefetch_next_ms == 1050.
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 1
+    assert runtime.counts["tool_prefetch_scans"] == 0
+    assert runtime.physical_ledger.pending_count == 0
+
+
+def test_tool_prefetch_scans_when_existing_retry_deadline_is_reached():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_tool_prefetch = True
+    runtime._tool_prefetch_next_ms = 1050.
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.05):
+        runtime.dispatch_tool_prefetch()
+    assert runtime.counts["tool_prefetch_scans"] == 1
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 0
+    assert runtime._tool_prefetch_next_ms > 1050.
+
+
+def test_completed_tool_prefetch_ticket_is_processed_before_retry_deadline():
+    from beliefkv.runtime.sglang_v0520_runtime import _ToolPrefetchTicket
+
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_tool_prefetch = True
+    key = PrefillCandidateKey("r", "w", "i", "c", 0, 0)
+    runtime._tool_ticket = _ToolPrefetchTicket(key, 1., command_id="acknowledged")
+    runtime.completed_physical_actions.append(
+        NS(action="PREFETCH_GPU", command_id="acknowledged"),
+    )
+    runtime._tool_prefetch_next_ms = 5000.
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.):
+        runtime.dispatch_tool_prefetch()
+    assert runtime._tool_ticket is None
+    assert runtime.counts["tool_prefetch_acked"] == 1
+    assert runtime.counts["tool_prefetch_scans"] == 1
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 0
+
+
+def test_new_tool_hint_rearms_existing_retry_without_new_delay():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_tool_prefetch = True
+    runtime.predictor_sha256 = "a" * 64
+    request = req("tool")
+    request.session_id, request.session_generation = "session-tool", 2
+    assert runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="tool", context_id="ctx-tool",
+              agent_definition_id="role", agent_instance_id="tool"),
+        event(2, RuntimeEventKind.TOOL_START, invocation_id="tool",
+              attributes={"tool_family": "shell"}),
+    ))
+    key = runtime.context_sessions["ctx-tool"]
+    runtime._model_worker = NS(disabled=False)
+    runtime._tool_timing_only = True
+    runtime._tool_prefetch_next_ms = 5000.
+    hint = NativeToolWaitHint(
+        key, 100., 300., 600., 1000., 6000., "a" * 64,
+        runtime.graph.invocations["tool"].updated_ts_ms,
+    )
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.):
+        runtime._accept_tool_wait(hint)
+        assert runtime._tool_prefetch_next_ms == 0.
+        runtime.dispatch_tool_prefetch()
+    assert runtime.counts["tool_wait_accepted"] == 1
+    assert runtime.counts["tool_prefetch_scans"] == 1
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 0
+
+
 def test_stale_attempt_and_session_fail_closed_without_blocking_native():
     runtime = NativeAdmissionRuntime()
     tagged, plain = req("tagged"), req("plain", tagged=False)

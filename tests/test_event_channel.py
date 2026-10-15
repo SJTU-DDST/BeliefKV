@@ -1,9 +1,11 @@
 import json
+import socket
 import tempfile
 import threading
 import time
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import zmq
 
@@ -65,6 +67,54 @@ class QueuedTransportFixture:
 
 
 class RuntimeEventChannelTest(unittest.TestCase):
+    def test_empty_drain_checks_readiness_without_allocating_a_receive_buffer(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with RuntimeEventDatagramServer(
+                Path(temporary) / "server.sock", lambda _: None,
+            ) as server:
+                with patch.object(server, "_socket") as receiver:
+                    self.assertEqual(server.drain(), ())
+                    receiver.recvfrom.assert_not_called()
+
+    def test_arrival_after_empty_poll_and_bounded_burst_keep_wire_order(self):
+        observed = []
+        with tempfile.TemporaryDirectory() as temporary:
+            with RuntimeEventDatagramServer(
+                Path(temporary) / "server.sock",
+                lambda events: observed.extend(item.event_id for item in events),
+            ) as server, socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as sender:
+                self.assertEqual(server.drain(), ())
+                for index in range(3):
+                    sender.sendto(_encode_event_message(
+                        str(index), ((event(
+                            str(index), RuntimeEventKind.WORKFLOW_START, ts_ms=float(index),
+                        ),),),
+                    ), str(server.path))
+                self.assertEqual(len(server.drain(max_messages=1)), 1)
+                self.assertEqual(observed, ["0"])
+                self.assertEqual(len(server.drain(max_messages=2)), 2)
+                self.assertEqual(observed, ["0", "1", "2"])
+                self.assertEqual(server.drain(), ())
+
+    def test_busy_receive_skips_readiness_probe_then_empty_drains_rearm_it(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with RuntimeEventDatagramServer(
+                Path(temporary) / "server.sock", lambda _: None,
+            ) as server, socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as sender:
+                payload = _encode_event_message("first", ((
+                    event("first", RuntimeEventKind.WORKFLOW_START, ts_ms=0.),
+                ),))
+                sender.sendto(payload, str(server.path))
+                self.assertEqual(len(server.drain(max_messages=1)), 1)
+                sender.sendto(payload, str(server.path))
+                with patch.object(server, "_receive_poller") as poller:
+                    self.assertEqual(len(server.drain(max_messages=1)), 1)
+                    poller.poll.assert_not_called()
+                self.assertEqual(server.drain(), ())
+                with patch.object(server, "_socket") as receiver:
+                    self.assertEqual(server.drain(), ())
+                    receiver.recvfrom.assert_not_called()
+
     def test_queued_batches_share_ack_without_changing_order_or_close_boundary(self):
         transport = QueuedTransportFixture(hold_second=True)
         queued = QueuedRuntimeEventSink(transport)
