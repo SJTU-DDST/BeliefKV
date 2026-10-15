@@ -27,7 +27,7 @@ Explicit COMPACT/ADVANCE invalidates credit for pending old-prefix transfers
 without cancelling submitted DMA or weakening structural receipt validation.
 All714 related checks pass; retain the original failing reproduction.
 V62/cd53d19 cold-started at2026-10-15 22:01:11 Asia/Shanghai with all latest
-code, this repair and the unchangedaca4c6a8 engine. V788/V789 bind launch and
+code available at launch, this repair and the unchangedaca4c6a8 engine. V788/V789 bind launch and
 actual service; V790 records NUMA placement. Workload, pool capacities,
 running48/context131072/prefill4096 and disabled new batching remain unchanged.
 It has passed the original failure stage with continuing JOIN/tool ACKs.
@@ -77,6 +77,30 @@ controls are near-flat, including the worst0.44% regression. This omits model
 inference, writer I/O, native allocation, DMA and GPU service. Keep V62 frozen
 and running; this conditional saving does not justify an immediate restart.
 Full JCT, throughput, quality, fairness, tails and recomputation remain unproven.
+
+At23:31 Asia/Shanghai, V62 has129 written completed outcomes, of which127
+qualify as natural/JCT outcomes. Preserve graph-budget-intervened results for
+django__django-11490 and mwaskom__seaborn-3069; do not count them as natural.
+The run remains physically enabled and incomplete. In4800-5100s, observed
+decode request steps356829/330775 exceed historical native by about7.9%,
+while worker means23.205/22.231ms remain slower. The70/73 short-prefill samples
+show selection CPU6.259/4.959ms, run_batch35.181/36.381ms and post-launch
+0.255/0.002ms. Control exclusive wall12.054s is not removable workflow JCT.
+
+V809 binds separate engine tree64641f62,157 passing checks and48 CPU cases
+inV807. Only the reclaim production method and two test files extend the
+running engine. Use native settled FULL Host duplicates when that index is
+smaller than device leaves; retain the native leaf path for dense indexes.
+No per-decode index maintenance or weakened live refs/locks/DMA checks.
+Sparse cases both reduce CPU50.4%-83.0% and recover capacity missed by the
+fresh bounded baseline; they do different valid work. Empty-index CPU falls
+74.4%-95.6%. Retain dense-index worst+1.37us and already-enough worst+0.25us.
+PreserveV805's initial dense-index regression and all initial failed receipts;
+V803's mistakenly broad masked-CUDA suite was interrupted, not qualified.
+This candidate ande62e1e7's tool-scan reduction remain undeployed. Keep V62
+frozen and do not restart a healthy full run for conditional CPU gains.
+Input/decode reservation, useful FULL conversion and end-to-end acceptance
+remain open; no GPU, DMA, JCT or throughput benefit is established here.
 
 The two development optimizations now form independent candidate45f46b7,
 directly extending V61/9e8a574. Only dispatch, its tests and that candidate's
