@@ -31,7 +31,10 @@ def _encode_event_message(
     message = {
         "schema_version": SCHEMA_VERSION,
         "message_id": message_id,
-        "events": [event.to_dict() for batch in batches for event in batch],
+        "events": [
+            {name: value for name, value in event.to_dict().items() if value is not None}
+            for batch in batches for event in batch
+        ],
     }
     if len(batches) > 1:
         message["batch_lengths"] = [len(batch) for batch in batches]
