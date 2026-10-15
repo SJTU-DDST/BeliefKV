@@ -2,6 +2,21 @@
 
 Status date: 2026-10-15 (Asia/Shanghai).
 
+V678 cold-qualifies isolated candidate9c79eee, directly extending d925278
+with only three additional production-file changes: key equality, same-call
+prefill state checks and compact event wire. AST and87 source bindings retain
+the original harness/models/budgets and f7b1942b/5262707a engine.
+All1620 unique checks across35 modules plus2 subtests pass; the sole initial
+Docker skip was rerun against an existing cached image and passed. Retain both
+receipts and count the repaired identity once. All967 inherited identities
+remain covered.
+V676 remeasures the exact candidate's equality fast path: complete CPU
+admission improves8.5%-10.9%; rebuilt identities range from0.22% slower to
+3.46% faster. Reuse source-identical V667/V671/V672/V656 evidence without
+rerunning unchanged scenes or adding component percentages. This candidate
+does not replace the existing frozen V60 reservation or claim deployment,
+GPU turnover, FULL consumption, quality or mean-JCT/throughput acceptance.
+
 Developmentf29ccb4 omits only top-level None fields from control wire events.
 V670 has215 passing checks plus2 subtests. V671 seals four V59 prefixes of
 128 events each: bytes fall23.6%-24.1%, combined encode/server CPU3.9%-4.3%,
@@ -14,7 +29,7 @@ V669 profiles actual cadence/backoff on a156-context/64-node CPU fixture.
 Closure capture dominates even without new actions; do not drop native
 checks or extend retry times without evidence. The original service-turnover,
 FULL-consumption and JCT/throughput goals remain open. V60/d925278 and
-the reservation stay unchanged; this extension is not cold-frozen/deployed.
+the reservation stay unchanged; V678 now qualifies this extension, not deployment.
 
 Development24054ca removes redundant causal-classification terminal reads
 and skips final-stage queue indexing when no stage exists. Final authorization
@@ -27,7 +42,7 @@ controls are near-flat at0.7%-1.7%. Plans, live selection, full graphs, counters
 and timing counts match. V665/V666 omit baseline parent wrappers and must not
 support performance claims; retain their receipts and source revisions.
 This excludes native residency inspection, neural inference, sockets and DMA.
-The extension is not cold-frozen/deployed, and leaves V60/d925278 untouched.
+V678 now qualifies this extension for cold observation; V60/d925278 remain untouched.
 Continue toward actual turnover, useful FULL consumption and complete JCT/
 throughput acceptance; do not substitute these CPU gains for the full goal.
 
@@ -52,7 +67,7 @@ about0.07-0.11ms per canonical-key iteration; all graph/plans/selection match.
 Rebuilt-key controls improve1.0%-3.4%, while isolated foreign-type controls
 cost6.9%-9.5% more and remain explicit. The66 contract checks overlap the
 1118 passing integration checks; one real encoder worker check lacks its
-local pinned artifact. This development extension is not cold-frozen and
+local pinned artifact. V678 subsequently cold-qualifies this extension and
 does not replace V60 or d925278. Continue addressing the remaining complete
 forward/turnover gap; CPU equality savings are not GPU/JCT acceptance.
 
@@ -139,14 +154,6 @@ then rechecks the frozen source and exclusive resources before attempting
 the existing V60 plan. The user's latest instruction allows CPU optimization,
 tests and small CPU comparisons. Do not reinstate the revoked daily rule.
 V59 collected156 client completions in8743.634s; its GPU service has exited.
-
-V628/V631 retain unaffected admission ranks across local model/tool rounds,
-while changed invocations and message/JOIN/topology/terminal or WAIT_CHILD
-ancestor transitions still invalidate.479 checks pass. Six identical CPU
-event/maintenance/admission scenes save20.6%-23.6%; message controls still
-rebuild and cost2.3%-3.5% more. The candidate is development-only, not cold
-qualified or deployed; preserve the already frozen V60 plan and measure live
-frequency, GPU, useful reuse and JCT after the reservation.
 
 Next cold observation V60 uses the V615-qualified observation cache change;
 V620/V621 retain the frozen source and actual registration. Wait for V59's

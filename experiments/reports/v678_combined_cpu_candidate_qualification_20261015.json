@@ -1,0 +1,225 @@
+{
+  "status": "qualified_for_cold_observation_not_deployed_or_gpu_accepted",
+  "observed_at_local": "2026-10-14T21:34:37.361279-07:00",
+  "candidate_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v674-combined-cpu-20261015",
+  "candidate_revision": "9c79eeeb48950af0536ac2a98f77e2b69176f8f6",
+  "inherited_revision": "d925278dcf32531c98d7aac648484244c3310e30",
+  "inherited_qualification": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v651_cpu_control_cold_qualification_20261015.json",
+    "sha256": "5d7d5d144d0ea37ce0a9b483ee290adc9295fb80d00d1591cf673702025c41b7"
+  },
+  "source_sha256": {
+    "beliefkv/control/causal_graph.py": "2b5070822d2dba1cc994b94e40245430de18edd12b2fd1dceed76e9a88d3f657",
+    "beliefkv/core/events.py": "62bbefc3f3f68fe43af8731e1a2b1197166feea6a85fcf28910f010591d634d9",
+    "beliefkv/experiments/agent_protocol.py": "89fb79de0f4d19a1de1714e736f3d57b6f26f72f1741196e500999e2b3c1ffe1",
+    "beliefkv/experiments/deepagents_swebench.py": "916d4a5cbfb0d42eb76b9f5a5a061dd3e5852aa78d438f258786e141247a6fde",
+    "beliefkv/policy/causal_frontier.py": "32e206ce1cc069c0690b05bedb0d5925b40fac3b48e1f77b4461ea51993240a4",
+    "beliefkv/runtime/event_channel.py": "c053fa25b06d3c5de5331c1118665f8a95ffb68ea430e9666648ab84213056b4",
+    "beliefkv/runtime/hotpath_timing.py": "aa554df03b5c08cc009be14f21a9c25bdb5e48eb585b5cf774601d9ae471792b",
+    "beliefkv/runtime/langchain_tool_safety.py": "ec38c5f5b2937feecc2a759c1fe4945d8c0bd1db08915a3eac2808d5d9ec71be",
+    "beliefkv/runtime/native_transfer_policy.py": "3dd8ebfcace6e3b4a1cee0abf68f8ea8baa9f7fc7d82cb6b142a34b7b24c5ff3",
+    "beliefkv/runtime/native_transfer_service.py": "7bd8f754f6aba88360afa33d2d33625f572142d8233feaa242d8060ff925525f",
+    "beliefkv/runtime/prefill_turnover_probe.py": "15201e06bae952c303405b647ac9ca069070fd86b3853e642c687ae172fadf54",
+    "beliefkv/runtime/semantic_report_worker.py": "36dfc62ec362ab2020695ff6c10b3cca09e9ff64681e8c0ac20082847afcd0ee",
+    "beliefkv/runtime/sglang_v0520_admission.py": "69034926f0f66178b43482692cecd301b4d43dc5805a8678a03c8c85456211f4",
+    "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+    "beliefkv/runtime/sglang_v0520_physical.py": "d94509b4c554e76f7a93c95ce9865d149f4c2aac5a8bddbdd5ec09e79828f606",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "b8dd8c6c15d541046d7ebe0a709192f7752bb0e56d595494fa30d06abbebf9b9",
+    "beliefkv/runtime/v0520_native_telemetry.py": "60d65ccd5d1450555e6dec2ef6fdcbea9e10563da06c2d75fa9cdb45fc586bd8",
+    "patches/sglang-v0.5.20-beliefkv-staging.patch": "f7b1942b37d7c30998dadb29e512ecc6013f1eb02dcbb65b068e0c71c92bed81",
+    "scripts/analyze_prefill_turnover.py": "4becc5d75d7be52a85848241cc8792c1153cd5fa85833766b3f486dcd1f06a7d",
+    "scripts/benchmark_compact_event_wire.py": "2cd5b08bc4ae28e8c731ca0678f72af9a387d489c837979a8d0093146b72d91d",
+    "scripts/benchmark_control_empty_poll.py": "0396154410edf6fd16c46116a20003d935e524d86e8a5426e02075adea0f85c8",
+    "scripts/benchmark_full_h2d_service_history.py": "146c43e8cc7614aad999a1d8556171d21f868bb13e1c758e88b13456c1db2429",
+    "scripts/benchmark_join_parent_projection.py": "887aef440732c57dafb1fc2b8385b5dd1105b5082d2043c57f01f7558b57125f",
+    "scripts/benchmark_local_rank_dependencies.py": "370e7b18f92806ba426bb534332c5511c7290bf5f41e71c05bc55ccdf91ddd1e",
+    "scripts/benchmark_native_prepare_path.py": "3ccb01eb8778c1fa11f5a6cdd67c03c300998085b0846a44eec76323c7e2e6a3",
+    "scripts/benchmark_native_reentry_cpu.py": "1df92051adfec888ea779a5080d67471f11c6247ea148eb64833c1a0fcf17299",
+    "scripts/benchmark_native_shared_path.py": "5105c132fa8ad4be3074019f9567b4c9800dd12960a2c44d1c2342875aa7f75c",
+    "scripts/benchmark_observation_rank_cache.py": "4be528523a5c690c9f7b24935943410e4e7db6a2c91d28d8a5a3ed290067fe7a",
+    "scripts/benchmark_prefill_key_equality.py": "6ff5b62c4e8bff497eee74b3229878f330200f530c4a1ff9ed34cff62f03737b",
+    "scripts/benchmark_prefill_key_fallback.py": "9a655bdeee5bc6e4de78ea292dd5f978375c36a989a0e97aaefdac6a7b1ed382",
+    "scripts/benchmark_prefill_live_checks.py": "20fc9e7c3f98b30d635830aa8ba0f64d83b574f56778a896b41e166d6b0a0922",
+    "scripts/benchmark_prefill_turnover_probe.py": "ca820778c724f1e87e7e5560213a1893bc4d34956a2bb7cb999cc289bddcd448",
+    "scripts/benchmark_tool_prefetch_retry.py": "67db2011f837672d71fc28b03c48855ad9bf962e2b2526577f9b5e00e860dda2",
+    "scripts/benchmark_wait_context_delta.py": "8168a6fdf30ab225258c1729e5dee4654693038eacda83cc5df205d08cc62235",
+    "scripts/benchmark_wait_prefetch_subset_service.py": "0c7378eb310820b08924f974c1006783fd3c06e5fccff9c32918626e57aa9835",
+    "scripts/compare_native_policy_runs.py": "5d8b927a10b0d308fabaabe4e97397d8d34a0b040378f55441778985bf2322f7",
+    "scripts/evaluate_online_tool_shape_survival.py": "1e5fc7e336623c8b0c352b1301a2761494fd7f3d0a7dcc1f1b8dd0e2a06f6745",
+    "scripts/evaluate_transfer_service_history.py": "2b73a5a2d352bfbc504b35b4f2079d7d9744ac1c6e68a219bf6d6fdd5108614d",
+    "scripts/launch_qwen35_native_v0520.sh": "0d166fa03c0ab82c95cd80c816301a7ad9edf3f16d3a85626d0d131191446cb4",
+    "scripts/launch_semantic_h2d_after_pair.py": "a3a5ef89af51a9bd21d7e29560ce3d37d7a50912362573121142c1e4608345d1",
+    "scripts/preflight_qwen35_host_pool.py": "ce8286e4e0c7a012faf5a7289c44893239982b64a0be56f47abdb99e5904ae30",
+    "scripts/replay_h2d_full_service_history.py": "71770530ce977544bb3f192ddb118d01ce82d006643308205662f93ff9d1aa4b",
+    "scripts/replay_native_service_cache.py": "82f062e2c997daf45fbbc85ae91d4386dad1f05daee021ad89796d65a13dc196",
+    "scripts/replay_wait_context_delta.py": "e4f72b1ea4cd08edf45ca97fd268dcb7b81b212e802e054d0a45ebc6aa2099b8",
+    "scripts/replay_wait_prefetch_subset_service.py": "eff08432ab92be55e9319d78eedcccc1e2d00fc201a3166de321fa562483c736",
+    "scripts/resume_semantic_h2d_ab.py": "271dccc313016ae3878fd75d33ca30b7fc254b32b26736e17fc8ebe7dc0a4036",
+    "scripts/run_deepagents_swebench.py": "a076e2c41db3d318ea1c8a188aaf475a169b432c09985edca0a7814204ee0754",
+    "scripts/run_qwen35_native_regime_probe.sh": "bbd2d112b0225c380335438591c33cf342c23370f994bebd6874cc5648ce9d57",
+    "scripts/run_qwen35_semantic_h2d_ab.sh": "fe020ee50755c9d4c17ccd8e60493bee5f13c014f5932cf0eae16da7e25c93a7",
+    "scripts/seal_prefill_turnover_qualification.py": "25cd4d00157dd3bef2538f332ace1716f3fc1e57d587f169a95ec40a8ee410b6",
+    "scripts/seal_reservation_cutoff.py": "f0d341a2fcf1007e0c13aca7e31595cfbb8d339d5ea89febdeac3ebeaef8d9a7",
+    "scripts/summarize_semantic_h2d_ab.py": "77a4f1babbeebbbd57fbc1fb1e0350383f723cfb1633316e849f52b34c8d0480",
+    "tests/test_analyze_prefill_turnover.py": "0d7663ed67738868c5aa177e7a82fd1ca5948d3aab3ffa24471e8ff04301615b",
+    "tests/test_audit_tool_forecast_windows.py": "73964b8e68098e0666ee8172e2077a0e10dd95844a6868106e82d1aa18b9638f",
+    "tests/test_benchmark_prefill_live_checks.py": "682a76f21239330ec6b0a83e8eee79a1065761b83158d2edb961776c7121cf71",
+    "tests/test_causal_graph.py": "8c0d0e199dad4b6b82fea193980bc7d9a2bc619d875ddebb7d9c971038e1dad7",
+    "tests/test_compare_native_policy_runs.py": "61a5bb61058af569fd1a951d8531257c085e8851795925c13f46affe498753bf",
+    "tests/test_deepagents_swebench.py": "25bb90cf6c2a76792fab0fd6b59cf5874d496b0197fbefb13e4a0d707d36519e",
+    "tests/test_event_channel.py": "807e75468b77df39757d84f15f3cd10c591ae7f85734e26f0490ffea85b4c480",
+    "tests/test_execution_handoff.py": "c26ac4407f6da8c7145acc33ba5ee75f988349c0859962fe11bf97fa4e3a898d",
+    "tests/test_frontier_belief.py": "7fddcfaa706b0abd9b4cdf582f6930e7dab9c328d9bc71ca42181869bb9c6999",
+    "tests/test_h2d_full_service_history.py": "31ee2db9e1028817aba07e06a845414ba56dff4ce5af14ed34074e9d907b85b2",
+    "tests/test_h2d_service_estimate_cache.py": "1b0c69a48780d2cc988d783650aa1bf73ce7df1fad864f1e69cf2d68a9539488",
+    "tests/test_hotpath_timing.py": "dfb1197b3036595f197563dead6e7792903dacc478a24ab080a61a09b19096bd",
+    "tests/test_launch_semantic_h2d_after_pair.py": "2b518b3c2ede2086d7c41c7d9c617ff2a52ecf6d1f12a32c9f02490a11594a4f",
+    "tests/test_native_service_cache_invalidation.py": "19952d6f3d421c30c695ebe3656a48bf5c093c1d052665750bb3adca3388ed17",
+    "tests/test_native_transfer_policy.py": "4af4e89a1b35f45c8e2a9265c94d0863775f79e4be8f6979703f706677ee9414",
+    "tests/test_native_wait_candidates.py": "8cc0c31f0be3028b81c322565b0456d09f8f23fa947e3118e485c5a716e14813",
+    "tests/test_online_tool_shape_survival.py": "c66274cf352dd0e8c6ab043758fea3d74c380a1cbade8aac5d1b98d7065f22ad",
+    "tests/test_prefill_turnover_probe.py": "f1ae46016e063991149ba6548565640a07cfca1ad00247a453de4bd2f2095155",
+    "tests/test_qwen35_host_pool.py": "9c2cbc679fee256d71eaf0191b979096f92770efa6a4c80d0ec9ab30b1ed55f2",
+    "tests/test_qwen35_native_regime_probe.py": "0a2c6e96b5fbee949bc18800d8848a26b6f1321000d9eb409a45481bb81c67d6",
+    "tests/test_restore_wait_probe.py": "1dd1e766baf6c508377fe5a305628337cf3df37b976df93d4c4d34d54edfdbe7",
+    "tests/test_resume_semantic_h2d_ab.py": "b1d8d2cc9c330db9723a85ba35c376662debe2b55c91cedfd37814330e39b54a",
+    "tests/test_session_residency_hint.py": "5381604fe714c574668f5fa4a2d8afd40b61adea969d8b0d69e0019a577b0d61",
+    "tests/test_sglang_v0520_admission.py": "97d33527cace37397557d53453a2163accfc8f9f188318aa2046ce2e4746f27f",
+    "tests/test_sglang_v0520_observer.py": "689615c9a418a5537c794b2a4c7c8111da1ea39211117bde9d0ccce8e47ea3d7",
+    "tests/test_sglang_v0520_physical.py": "63ae1f5a0364652a71b98d6c6765aacd5ef9daf55726de295bf0f357fd9662e4",
+    "tests/test_sglang_v0520_runtime.py": "3c412604a1d1f0c5f5fb7d7e1be02c6637e48d2cd8bc089ef706c997303bdb86",
+    "tests/test_summarize_semantic_h2d_ab.py": "9aa1faa63f44271170d7ed45fe15eb7256af60765c35f501517e2ac2a2efbb28",
+    "tests/test_terminal_child_capacity.py": "eb7e28ab7a3fc7ceada661662047354a96468d08baaa152355935b10d5f9e2e0",
+    "tests/test_tool_census.py": "56dcc241e53b60c0163dadf6aa574ac20cde4dfc5a4bb9476011c18edabcfa3c",
+    "tests/test_tool_predictive_transfers.py": "e89eeb469c157e0554631c2979fcef8a652680b9ecd834fe7853e559fc7bc4c2",
+    "tests/test_v0520_native_telemetry.py": "969e3eb73a6d6075418fe95d6a5663e55d66d4a096e726c65825bfe4ce6056d7",
+    "tests/test_wait_prefetch_batch.py": "9765927f9adb36962c5603a3796bcf3bb8b529844da5f3bb07bc67c5be7928f1",
+    "tests/test_wait_prefetch_partial_extent.py": "d5a0eb9c6866093df5bca5f9268d828a9e1ef039441e532201728a39360f3a62",
+    "tests/test_wait_prefetch_service_subset.py": "2db8c283d4976c07d25c7a35aeaf6baa962760e283baa7de7c5957ff7b7ca079"
+  },
+  "production_delta": {
+    "beliefkv/runtime/event_channel.py": {
+      "class": null,
+      "methods": [],
+      "functions": [
+        "_encode_event_message"
+      ]
+    },
+    "beliefkv/runtime/sglang_v0520_admission.py": {
+      "class": "PrefillCandidateKey",
+      "methods": [
+        "__eq__"
+      ],
+      "functions": []
+    },
+    "beliefkv/runtime/sglang_v0520_runtime.py": {
+      "class": "NativeAdmissionRuntime",
+      "methods": [
+        "_prefill_causal_ranks",
+        "plan_native_prefill"
+      ],
+      "functions": []
+    }
+  },
+  "cpu_evidence": [
+    {
+      "path": "/home/longhao/experiment/ops/v676_combined_candidate_key_cpu_20261015.json",
+      "sha256": "bfc09d07b49dea01cd51f64f51b1e4f6da02864a9a22bfe029619d29a277c444",
+      "status": "prefill_key_equality_cpu_evidence_not_gpu_acceptance",
+      "cases": 8,
+      "verified_historical_prefixes": 0,
+      "candidate_source_count": 6
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v667_prefill_live_checks_equal_timing_cpu_20261015.json",
+      "sha256": "28c171649b7389fb2033f0448ceac9026aee0b2b4d429d0958d55a3e6823e1cf",
+      "status": "prefill_live_check_cpu_comparison_not_gpu_or_jct_acceptance",
+      "cases": 20,
+      "verified_historical_prefixes": 0,
+      "candidate_source_count": 5
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v671_v59_compact_event_wire_cpu_20261015.json",
+      "sha256": "bc7acae42aee0bd50fe3dc87848058047176baccee9e8aa7a4252b7deb5ee592",
+      "status": "same_event_prefix_cpu_control_replay_not_gpu_or_jct_acceptance",
+      "cases": 8,
+      "verified_historical_prefixes": 4,
+      "candidate_source_count": 5
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v672_compact_event_wire_dense_controls_20261015.json",
+      "sha256": "9f45791df9a437020b17439163ec131d9e2e3af03be5e01d6304c6daa8770abd",
+      "status": "dense_message_control_not_live_workload_frequency_or_gpu_gain",
+      "cases": 2,
+      "verified_historical_prefixes": 0,
+      "candidate_source_count": 2
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v656_prefill_key_fallback_cpu_20261015.json",
+      "sha256": "cd80878d7186a4edcebc1f8b99536d6de7c109fd5e18e62c8acc034da4b76dd6",
+      "status": "isolated_equality_controls_not_admission_or_jct_gain",
+      "cases": 6,
+      "verified_historical_prefixes": 0,
+      "candidate_source_count": 3
+    }
+  ],
+  "exact_candidate_checks": {
+    "passed_unique_tests": 1620,
+    "passed_subtests": 2,
+    "remaining_failures": 0,
+    "remaining_errors": 0,
+    "remaining_skips": 0,
+    "inherited_test_identities_covered": 967,
+    "initial": {
+      "path": "/home/longhao/experiment/ops/v675_combined_candidate_cold_checks_20261015.xml",
+      "sha256": "a5cfcae12657c869462529e44a260691e7de889c7cf44a656f4df70cb612ac19",
+      "tests": 1622,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 1
+    },
+    "targeted_recheck": {
+      "path": "/home/longhao/experiment/ops/v677_combined_candidate_cached_docker_check_20261015.xml",
+      "sha256": "c52ee3a3635bdc2225639712aa9b917ae1a4c476bec820e1aeeadc888f2b8c40",
+      "tests": 1,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "resolved_test": [
+      "tests.test_deepagents_swebench",
+      "test_test_progress_shadow_in_real_sandbox"
+    ],
+    "setup": "Selected an existing cached SWE-bench image for the CPU-only Docker check; no image pull or tracked source change."
+  },
+  "engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v674-combined-cpu-20261015/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "f7b1942b37d7c30998dadb29e512ecc6013f1eb02dcbb65b068e0c71c92bed81",
+    "expected_tree": "5262707a2c17a365fd75ef44d4c96ff0f53a50c3",
+    "actual_tree": "5262707a2c17a365fd75ef44d4c96ff0f53a50c3",
+    "matches_worktree": true,
+    "covered_untracked_paths": []
+  },
+  "candidate_engine": "/home/longhao/experiment/.worktrees/sglang-v591-post-sampling-20261014",
+  "preserved_v60": {
+    "checkout": "/home/longhao/experiment/.worktrees/beliefkv-v620-v60-observation-cache-20261014",
+    "revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+    "reservation_not_before": "2026-10-15T15:00:00+08:00",
+    "registration": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v632_v60_resume_after_user_reservation_20261015.json",
+      "sha256": "43214d35c2e7d1fedfccfce5b1a6219281a6f36e24f3df8bd0e878059699a706"
+    }
+  },
+  "qualification_helper": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/scripts/qualify_combined_cpu_candidate.py",
+    "sha256": "898d5cfd011bd58a0692f6ac418ca87601ac83f7be002e2fbddd22b8ec5077b9"
+  },
+  "limits": [
+    "This extends d925278 with immutable-key equality, same-call prefill checks and compact event wire.",
+    "The original harness, models, engine, workload, physical budgets and frozen V60 remain unchanged.",
+    "V665/V666 have asymmetric timing and are excluded; V667 binds equal parent scopes.",
+    "Keep rebuilt-key, foreign-type and dense-message CPU regressions; do not add component percentages.",
+    "This is cold observation qualification, not deployment, reservation override or GPU/JCT acceptance.",
+    "Live opportunity frequency, useful FULL consumption, quality, fairness, recomputation and paired JCT/throughput remain unverified."
+  ]
+}
