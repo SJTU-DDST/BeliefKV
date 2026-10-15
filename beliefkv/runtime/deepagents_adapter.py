@@ -2925,7 +2925,8 @@ class BeliefKVChatOpenAI(ChatOpenAI):
                 execution_timeout_s=effective_timeout_s,
             )
         rid = _native_request_id(run_manager.run_id)
-        extra_body = dict(kwargs.get("extra_body") or {})
+        extra_body = dict(self.extra_body or {})
+        extra_body.update(kwargs.get("extra_body") or {})
         existing = extra_body.get("beliefkv_metadata")
         if existing is not None and existing != metadata.to_wire():
             raise RuntimeError("conflicting beliefkv_metadata in ChatOpenAI request")
