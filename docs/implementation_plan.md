@@ -1,12 +1,89 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-14 (PDT).
+Status date: 2026-10-15 (Asia/Shanghai).
 
-One-time user reservation: no experiments, tests or benchmarks before
+V651 cold-qualifies the isolated scheduling candidate d925278:80 bound
+sources, unchanged f7b1942b/5262707a engine,967 unique checks and2 subtests
+passed. Fifteen missing-engine-fixture failures were corrected by linking
+the existing engine and rerunning only those15; retain the first receipt.
+The candidate preserves the original harness and exporter; feedback5bc57d0
+and clock/reference repairbc3820e are separate commits. It does not replace
+the existing frozen V60 reservation/registration or claim GPU/JCT acceptance.
+V652 completes both historical clock_v2 timelines and the corrected native
+comparison cache. Clock-independent demand/JCT/bytes and paired JCT match
+the originals. Use the new artifact paths for offline full-window diagnosis.
+Native95.376% H2D before1800s and96.847% before the second wave establish
+nonuniform migration demand, not a counterfactual benefit or a workload change.
+
+The complete V59 event audit separates implementation loss from workload fit:
+69/162 JOIN and216/2529 tool episodes with positive pre-completion FULL plans
+achieved early verified reuse, totaling11.398GB. Continue CPU qualification
+and lower control/turnover cost before attributing losses to the workload.
+V648 adds514 passing previously uncovered cold-path checks; combined with
+V646 this is1266 passes plus2 passing subtests and1 explicit-Docker skip,
+not a cold deployment or GPU/JCT acceptance.
+Nested child delegation is an investigated hypothesis, not an enabled feature
+or a change to frozen V60. Current raw child specs lack task middleware.
+Any later depth-two harness must preserve direct-parent JOIN/RETURN identity,
+stage reset after new work, scoped cancellation, reference safety and the
+same hierarchy/quality contract in native. Grandchild completion does not
+make root runnable. Require measured queue/cache/JCT benefit, not ACK volume.
+
+The user now explicitly authorizes historical analysis and CPU validation during
+the reservation; GPU experiments remain forbidden until2026-10-15 15:00 +08:00.
+V643-V647 compare current development with frozen V60/5391a6b: local-rank
+event/maintenance/admission CPU improves20.9%-24.3%, while message controls
+cost2.0%-3.0% more. Profiled complete tool retries improve23.4%-69.1%.
+Adaptive empty-socket polling improves idle18.6% and sparse6.4%, with busy
+controls0.4%-0.5% slower. Exact graph/plans, transaction credit and real
+socket delivery/ACKs match. GC and parent timing remain enabled.
+V646 has752 passing tests plus2 passing subtests and1 explicit-Docker skip.
+CPU evidence is not cold qualification or GPU/JCT acceptance; preserve V60.
+
+V636 targets a measured repeated lookup: V59 ran2856427 tool-prefetch calls,
+2743143 deferred to the existing retry time. Development code maintains action
+counts on registration/retirement and uses O(1) reads; the original retry deadline
+now precedes pending inspection after ticket/ACK handling. Accepted hints still
+rearm immediately. Five retirement sites share one helper; partial ACK remains
+pending. Regressions pass in V646 under the new user authorization. Preserve
+frozen V60 and check action/graph equivalence plus thread CPU before qualification.
+The old84.916s self wall sum is not a promised saving. Sampling64 of writer
+processing does not sample HotpathTiming, which still measures every call.
+
+V635 quarantines old full-timeline timing evidence: the naive local winter epoch
+shifted V59's origin by one hour and collapsed all cached V58 native worker
+intervals to zero despite468433 decode/42403 prefill batches. Independent V614
+windows and original JCT/bytes remain separate evidence. The development loader
+now records an aware anchor/capture zone, checks native/client clocks, excludes
+pre-monitor service, and rejects obsolete caches; a new cache path preserves old
+artifacts. CPU regressions pass; complete traces have not been regenerated.
+Regenerate into clock_v2 paths before optimizing from full-band results.
+Frozen V60 remains unchanged; its fixed-window observer already passes both zones.
+Development launch/resume now carries explicit native-reference timeline/cache
+paths, freezes their digests and verifies them on resume. Inherit only for the
+same reference; switching references or collecting fresh native clears stale
+process environment values. Integration CPU regressions pass.
+
+V634 addresses the V58 child execution loop as a development harness change.
+The same command completed76 times with stdout `1\n`; there was no compaction,
+and child message count grew2->222. Successful nonempty results were not retained
+for repeated-result feedback. Append factual result counts/cost to tool history,
+keep source evidence separate, respect observation budgets, and clarify delegated
+deliverables/checkpoints. Existing tool availability and termination remain.
+The nine feedback cases and related CPU regressions pass; frozen V60
+does not include this candidate. After permitted validation, cold-deploy with
+matched native harness changes and measure recurrence, natural return and quality.
+This is not yet evidence that the live loop or end-to-end performance is fixed.
+The real-agent-graph regression also covers the observation budget outside
+feedback/status handling and stable earlier messages. A scripted fake model's
+final return tests message delivery, not real-model termination.
+
+One-time user reservation: no GPU experiments before
 2026-10-15 15:00 Asia/Shanghai (2026-10-15 00:00 PDT). V630 stops
 the original V60 launch/startup waiters; V632 waits for this absolute time,
 then rechecks the frozen source and exclusive resources before attempting
-the existing V60 plan. Do not reinstate the revoked daily rule.
+the existing V60 plan. The user's latest instruction allows CPU optimization,
+tests and small CPU comparisons. Do not reinstate the revoked daily rule.
 V59 collected156 client completions in8743.634s; its GPU service has exited.
 
 V628/V631 retain unaffected admission ranks across local model/tool rounds,

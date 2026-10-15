@@ -1,0 +1,268 @@
+{
+  "status": "corrected_historical_exports_validated_not_a_new_experiment",
+  "observed_at_local": "2026-10-14T19:50:55.158947-07:00",
+  "exporter_revision": "bc3820ec56225bc81a7e100000d61771a55236e3",
+  "exporter_sources": {
+    "beliefkv/metrics/execution_timeline.py": "b1dcc8f80df37f26be48edfcf49baebf56ca98bdccd2c71d313c019a818fd4d0",
+    "beliefkv/metrics/native_execution_timeline.py": "608f03b0363dfa3df3347c174aab298fefcc4294381a1550b79469f00e538582",
+    "scripts/compare_native_policy_runs.py": "9f316c7f97e9af0e9ce74a6435d7c1a42f91f81366eca6f8e02d9b78b4a46f8c",
+    "scripts/launch_semantic_h2d_after_pair.py": "22862e10238b73bfca0720fef3aa745de4abc5e98c516c4f916713faad7db06c",
+    "scripts/render_p6_execution_timeline.py": "b911f16283a305314744c499ea8034328b484721a8113d7b5a44567873dd13eb",
+    "scripts/resume_semantic_h2d_ab.py": "a3bbb82997768b4d4311a4fd2ece20ee7f8e6c09ad2b474f7551c6bb2d12ee18",
+    "scripts/run_qwen35_semantic_h2d_ab.sh": "eecedfbc5f9c815d9db5336393a7dae9a9d84d6be555992cfd6df80bfbbd5419",
+    "scripts/summarize_semantic_h2d_ab.py": "86ee36a7c0284511f71ebf61af78cb15a4ed0b2692823971420eb611439d3a25",
+    "tests/test_compare_native_policy_runs.py": "8d9ce58956c8877d6663ffad0dd27265d07c6f012084d3377be1fa520db6bc61",
+    "tests/test_launch_semantic_h2d_after_pair.py": "b952d02153ea7c759927ed581f0eb74f71dc149692c9f128bc453a9a1a2bca24",
+    "tests/test_native_execution_timeline.py": "bc7a1aae6ac563537857d379c23e68cdf682c61da278d089f59ded9c66c706e8",
+    "tests/test_resume_semantic_h2d_ab.py": "78e9bfbf5537e51a1551e02603c066b087e803cfd35ff0f1d682e1fcc596745c",
+    "tests/test_summarize_semantic_h2d_ab.py": "b5b147bdea44b0262a9aaac664ea854a0d6d67911e4ee30cad39bc42c8be4e92"
+  },
+  "cpu_regression_receipt": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v646_final_cpu_validation_20261015.xml",
+    "sha256": "38da5c542a1548ffa093fb0f26c381e4711c253340dcb8cc351416cede379655"
+  },
+  "legacy_comparison_preserved": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/native_reference_comparison.json",
+    "sha256": "a49cab7f561225e70a060722326cac5d2e8a56ff2f2375e352031f82f427c9b8"
+  },
+  "corrected_comparison": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/native_reference_comparison.clock_v2.json",
+    "sha256": "7555c50d8ac74726fef25f90bb4c466f1242ac639044ff67dabf1441b7e624f2"
+  },
+  "corrected_native_cache": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native_policy_comparison.clock_v2.json",
+    "sha256": "0addcd5626465f0c6acf7882dd7631dd8a7a658a52fec3b5fb3f580c766f310a"
+  },
+  "corrected_timelines": {
+    "predictive_h2d": {
+      "html": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/timelines/predictive_h2d.clock_v2.html",
+        "sha256": "8e65e0bf4569c3b84cfea37f885c8d67642b03fcd8f37840186a8588e6e0a1b8"
+      },
+      "json.gz": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/timelines/predictive_h2d.clock_v2.json.gz",
+        "sha256": "3c91d6fda660af7028e3a9aa769d090927a3befb41227e4b0fd7551ffccc7800"
+      }
+    },
+    "native": {
+      "html": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/timelines/native.clock_v2.html",
+        "sha256": "aef45b80172d02f606e0510d5d661d7d2c6ac2ff836c41cd2b856d2b21ea9ea2"
+      },
+      "json.gz": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/timelines/native.clock_v2.json.gz",
+        "sha256": "eb00be358a9bc29a40ad65da3d9a7705b6ed18651459fabed33b641de9970ba8"
+      }
+    }
+  },
+  "arms": {
+    "predictive_h2d": {
+      "clock_alignment": {
+        "schema_version": 2,
+        "anchor_unix_ms": 1792011537253.0,
+        "anchor_source": "first_gpu_sample_with_native_client_clock_validation",
+        "native_client_clock_validated": true,
+        "gpu_timezone": "America/Los_Angeles",
+        "timezone_selection": "explicit",
+        "gpu_csv_source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/client_156/gpu_samples.csv",
+        "raw_first_gpu_timestamp": "2026/10/14 13:58:57.253",
+        "native_wall_minus_monotonic_ms": 1785829736899.4219,
+        "client_metrics_source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/client_156/sglang_metrics.jsonl",
+        "first_client_monotonic_ms": 6181800336.897566,
+        "gpu_minus_first_client_ms": 16.6806640625,
+        "maximum_reference_difference_ms": 5000.0,
+        "semantics": "Aware captured wall time; no subtraction of a naive local Unix epoch."
+      },
+      "previous_origin": "2026-10-14T14:58:57.253000",
+      "corrected_origin": "2026-10-14T13:58:57.253000-07:00",
+      "previous_phase_statistics": {
+        "decode": {
+          "batch_count": 437945,
+          "worker_interval_seconds": 3952.303112792969,
+          "mean_worker_interval_ms": 9.024656321668175,
+          "mean_batch_size": 19.987359143271416
+        },
+        "prefill": {
+          "batch_count": 47852,
+          "worker_interval_seconds": 710.6103835449219,
+          "mean_worker_interval_ms": 14.850171017824163,
+          "mean_batch_size": 1.1291482069714955
+        }
+      },
+      "corrected_phase_statistics": {
+        "decode": {
+          "batch_count": 437945,
+          "worker_interval_seconds": 6817.8201015625,
+          "mean_worker_interval_ms": 15.567754173611982,
+          "mean_batch_size": 19.987359143271416
+        },
+        "prefill": {
+          "batch_count": 47852,
+          "worker_interval_seconds": 1407.1610375976563,
+          "mean_worker_interval_ms": 29.406525068913655,
+          "mean_batch_size": 1.1291482069714955
+        }
+      },
+      "corrected_milestones": {
+        "1800": {
+          "native_h2d_bytes_before": 2872743403520,
+          "native_h2d_fraction_before": 0.8115493182520921,
+          "native_h2d_count_before": 9247,
+          "workflow_ended": 31,
+          "workflow_active": 77,
+          "workflow_with_unfinished_join": 47
+        },
+        "3000": {
+          "native_h2d_bytes_before": 2988101672960,
+          "native_h2d_fraction_before": 0.844138001530961,
+          "native_h2d_count_before": 9878,
+          "workflow_ended": 69,
+          "workflow_active": 39,
+          "workflow_with_unfinished_join": 25
+        },
+        "3600": {
+          "native_h2d_bytes_before": 2989239828480,
+          "native_h2d_fraction_before": 0.8444595301907045,
+          "native_h2d_count_before": 9886,
+          "workflow_ended": 74,
+          "workflow_active": 34,
+          "workflow_with_unfinished_join": 16
+        },
+        "5400": {
+          "native_h2d_bytes_before": 3536607170560,
+          "native_h2d_fraction_before": 0.9990906722391667,
+          "native_h2d_count_before": 12501,
+          "workflow_ended": 119,
+          "workflow_active": 37,
+          "workflow_with_unfinished_join": 25
+        }
+      },
+      "unchanged_clock_independent_fields": [
+        "collection_duration_seconds",
+        "completed_per_hour",
+        "input_tokens",
+        "output_tokens",
+        "llm_requests",
+        "tool_calls",
+        "jct_mean_seconds",
+        "jct_p50_seconds",
+        "jct_p95_seconds",
+        "outcomes",
+        "cache_evidence",
+        "full_eviction_recompute_tokens",
+        "h2d_sources",
+        "physical_transfer_times"
+      ]
+    },
+    "native": {
+      "clock_alignment": {
+        "schema_version": 2,
+        "anchor_unix_ms": 1791995585173.0,
+        "anchor_source": "first_gpu_sample_with_native_client_clock_validation",
+        "native_client_clock_validated": true,
+        "gpu_timezone": "Asia/Shanghai",
+        "timezone_selection": "explicit",
+        "gpu_csv_source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/client_156/gpu_samples.csv",
+        "raw_first_gpu_timestamp": "2026/10/15 00:33:05.173",
+        "native_wall_minus_monotonic_ms": 1785829736899.4219,
+        "client_metrics_source": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58/native/client_156/sglang_metrics.jsonl",
+        "first_client_monotonic_ms": 6165848255.818128,
+        "gpu_minus_first_client_ms": 17.760009765625,
+        "maximum_reference_difference_ms": 5000.0,
+        "semantics": "Aware captured wall time; no subtraction of a naive local Unix epoch."
+      },
+      "previous_origin": "2026-10-15T01:33:05.173000",
+      "corrected_origin": "2026-10-15T00:33:05.173000+08:00",
+      "previous_phase_statistics": {
+        "decode": {
+          "batch_count": 468433,
+          "worker_interval_seconds": 0.0,
+          "mean_worker_interval_ms": 0.0,
+          "mean_batch_size": 17.423317742345223
+        },
+        "prefill": {
+          "batch_count": 42403,
+          "worker_interval_seconds": 0.0,
+          "mean_worker_interval_ms": 0.0,
+          "mean_batch_size": 1.1260052354786219
+        }
+      },
+      "corrected_phase_statistics": {
+        "decode": {
+          "batch_count": 468433,
+          "worker_interval_seconds": 6768.505774658203,
+          "mean_worker_interval_ms": 14.449250532430899,
+          "mean_batch_size": 17.423317742345223
+        },
+        "prefill": {
+          "batch_count": 42403,
+          "worker_interval_seconds": 1232.3536513671875,
+          "mean_worker_interval_ms": 29.062888271282397,
+          "mean_batch_size": 1.1260052354786219
+        }
+      },
+      "corrected_milestones": {
+        "1800": {
+          "native_h2d_bytes_before": 2656852131840,
+          "native_h2d_fraction_before": 0.953756370997414,
+          "native_h2d_count_before": 8892,
+          "workflow_ended": 33,
+          "workflow_active": 75,
+          "workflow_with_unfinished_join": 52
+        },
+        "3000": {
+          "native_h2d_bytes_before": 2696794378240,
+          "native_h2d_fraction_before": 0.9680948324870137,
+          "native_h2d_count_before": 9090,
+          "workflow_ended": 79,
+          "workflow_active": 29,
+          "workflow_with_unfinished_join": 18
+        },
+        "3600": {
+          "native_h2d_bytes_before": 2697835151360,
+          "native_h2d_fraction_before": 0.9684684490620826,
+          "native_h2d_count_before": 9097,
+          "workflow_ended": 90,
+          "workflow_active": 18,
+          "workflow_with_unfinished_join": 11
+        },
+        "5400": {
+          "native_h2d_bytes_before": 2784381030400,
+          "native_h2d_fraction_before": 0.9995366754525389,
+          "native_h2d_count_before": 9535,
+          "workflow_ended": 132,
+          "workflow_active": 24,
+          "workflow_with_unfinished_join": 13
+        }
+      },
+      "unchanged_clock_independent_fields": [
+        "collection_duration_seconds",
+        "completed_per_hour",
+        "input_tokens",
+        "output_tokens",
+        "llm_requests",
+        "tool_calls",
+        "jct_mean_seconds",
+        "jct_p50_seconds",
+        "jct_p95_seconds",
+        "outcomes",
+        "cache_evidence",
+        "full_eviction_recompute_tokens",
+        "h2d_sources",
+        "physical_transfer_times"
+      ]
+    }
+  },
+  "paired_jct_unchanged": true,
+  "scope": [
+    "Only offline parsing/export changed; no GPU experiment, workload change or source hot-edit.",
+    "Worker intervals are scheduler/worker observations, not isolated CUDA kernel timing.",
+    "Submit-to-ACK overlap with service does not prove hidden DMA or a causal JCT saving.",
+    "Native all-run throughput still includes the repeated-tool tail; corrected clocks do not establish predictive superiority.",
+    "The existing V60 registration remains frozen; future corrected reporting must select the new reference artifact paths explicitly."
+  ],
+  "helper": {
+    "path": "/home/longhao/experiment/ops/seal_v59_clock_reexport_20261015.py",
+    "sha256": "2316c4eb630331b2b2984968194e9740932e5d4b746226d58d4418eeb66c0725"
+  }
+}
