@@ -2,6 +2,32 @@
 
 更新日期：2026-10-15（Asia/Shanghai）。
 
+开发prefill probe现利用既有选择、launch和结果回调，补录精确
+forward±1的前一批结果处理、下一轮选择和下一launch遥测
+采时点，保存单调时钟及绝对线程CPU端点。沿用每16次prefill
+采1次、原GPU事件及有界队列，不持有请求/tensor或增加CUDA
+同步。相邻身份仍须用native service行外部核对；缺失、重复、
+错序或阶段交叠只保留未知。完整样本按非交叠阶段及间隙逐段
+计算墙钟/线程CPU，不按墙钟比例推导CPU；间隙CPU也不意味着
+GPU idle或GIL成本。独立字段adjacent_transition保留原六阶段，
+旧冻结分析器不改，历史V59不能补出从未记录的绝对CPU。
+新终点在launch回调内，晚于run_batch入口；不得直接拿新
+完整区间与v743的入口区间做差，实际入口墙钟仍另行保留。
+
+v750的212项和12个subtest、v753最终24项probe检查按同身份
+替换后为215项及12个subtest。三种密度的实际overlap循环
+AST确认除首批缺前驱外均生成完整归因，未改变批次/采样计数。
+v752首次新增循环检查误用开发third_party旧引擎，三项缺钩子
+失败；已用SGLANG_SOURCE_CHECKOUT显式绑定冻结引擎补验，
+保留失败XML而不将其计作通过。v751对同一冻结循环、旧/新
+probe均开启的10000次迭代和7组重复观察，新增线程CPU在
+prefill每1/5/16步出现时分别约1.921/0.378/0.026us/迭代。
+不含JSON写出、真实CUDA事件或GPU服务成本，仅用于诊断开销
+边界，不是提速证据。该开发诊断和1b80813的小选择优化均未
+进入已登记V61/9e8a574；预约、冻结引擎、模型和负载保持。
+先看V61此前优化的实测结果，残余仍在时再另取冷诊断资格。
+证据：`experiments/reports/v751_prefill_adjacent_attribution_incremental_cpu_20261015.json`。
+
 开发候选重排在第一次完整身份检查时保存允许重排的位置，再按
 原plan回填，省去第二次native_order遍历及重复metadata/rid读取。
 最终_request_key、revision/session/attempt复核、重复ID检查和

@@ -2,6 +2,25 @@
 
 Status date: 2026-10-15 (Asia/Shanghai).
 
+Development diagnostics now retain predecessor result processing, successor
+selection and successor launch-observer endpoints for exact adjacent forwards,
+including absolute scheduler-thread CPU clocks. Complete nonoverlapping phases
+and their gaps are additive; absent/ambiguous identities or clock overlap stay
+unknown. Native service-row identity validation is still required.
+The new endpoint is inside the launch observer, after run_batch entry;
+retain the separate actual-entry wall timestamp and do not subtract this
+new full interval from V743's entry-bounded interval.
+There are215 unique passing checks plus12 subtests after replacing the21 old probe
+cases with24 final cases. V752's three wrong-engine failures are preserved;
+V753 explicitly uses the frozen SGLANG_SOURCE_CHECKOUT and passes all24.
+V751 compares enabled old/current probes on the same frozen overlap-loop AST:
+added thread CPU is1.921/0.378/0.026us per iteration at prefill periods1/5/16.
+This excludes writer JSON and real CUDA/GPU cost, proves no throughput gain,
+and cannot recover missing old-trace clocks. Keep this future diagnostic
+change outside registeredV61/9e8a574; its19:51 launch and original source,
+engine/workload remain fixed. First inspect V61's actual residual and FULL
+consumption, then cold-qualify the diagnostics only if the residual persists.
+
 Development selection now retains permitted tagged positions during its full
 identity-validation pass and fills only those positions from the same plan.
 Native untagged positions, rejections, session/attempt checks and duplicate-ID

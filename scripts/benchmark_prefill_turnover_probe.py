@@ -11,9 +11,10 @@ import importlib.util
 import json
 from pathlib import Path
 from statistics import mean, median
+import subprocess
 import sys
 import time
-from types import SimpleNamespace as NS
+from types import ModuleType, SimpleNamespace as NS
 
 ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
@@ -29,11 +30,23 @@ def hook(engine: Path, name: str):
     return module
 
 
-def measure(module, *, iterations: int, prefill_every: int, sampled: bool):
+def historical_probe(revision: str):
+    path = "beliefkv/runtime/prefill_turnover_probe.py"
+    source = subprocess.check_output(["git", "show", f"{revision}:{path}"], cwd=ROOT)
+    module = ModuleType("_beliefkv_turnover_baseline")
+    sys.modules[module.__name__] = module
+    exec(compile(source, f"{revision}:{path}", "exec"), vars(module))
+    return module.PrefillTurnoverProbe, hashlib.sha256(source).hexdigest()
+
+
+def measure(
+    module, *, iterations: int, prefill_every: int, sampled: bool,
+    probe_class=PrefillTurnoverProbe,
+):
     scheduler, running, _ = module.idle_scheduler(overlap=True)
     calls, records = Counter(), Counter()
     probe = (
-        PrefillTurnoverProbe(lambda _domain, row: records.update([row["event"]]))
+        probe_class(lambda _domain, row: records.update([row["event"]]))
         if sampled else None
     )
     scheduler._beliefkv_prefill_turnover_probe = probe
@@ -103,6 +116,8 @@ def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-engine", type=Path, required=True)
     parser.add_argument("--candidate-engine", type=Path, required=True)
+    parser.add_argument("--baseline-probe-revision",
+                        help="Compare the pinned old probe with the current probe on the same loop.")
     parser.add_argument("--iterations", type=int, default=10000)
     parser.add_argument("--repetitions", type=int, default=7)
     parser.add_argument("--output", type=Path, required=True)
@@ -113,6 +128,10 @@ def main():
         "baseline": hook(args.baseline_engine, "turnover_baseline"),
         "candidate": hook(args.candidate_engine, "turnover_candidate"),
     }
+    baseline_probe, baseline_digest = (
+        historical_probe(args.baseline_probe_revision)
+        if args.baseline_probe_revision else (None, None)
+    )
     cases = []
     for prefill_every in (1, 5, 16):
         results = {name: [] for name in modules}
@@ -123,7 +142,9 @@ def main():
             for name in names:
                 observed = measure(
                     modules[name], iterations=args.iterations,
-                    prefill_every=prefill_every, sampled=name == "candidate",
+                    prefill_every=prefill_every,
+                    sampled=name == "candidate" or baseline_probe is not None,
+                    probe_class=baseline_probe if name == "baseline" else PrefillTurnoverProbe,
                 )
                 if repetition:
                     results[name].append(observed)
@@ -150,6 +171,9 @@ def main():
         "observed_at_local": datetime.now().astimezone().isoformat(),
         "iterations": args.iterations, "repetitions": args.repetitions,
         "sampling_interval": 16, "cases": cases,
+        "baseline_probe_revision": args.baseline_probe_revision,
+        "baseline_probe_sha256": baseline_digest,
+        "baseline_probe_enabled": baseline_probe is not None,
         "engine_sources": {
             name: {
                 "engine": str(engine.resolve()),
@@ -168,7 +192,8 @@ def main():
         "scope": (
             "Actual overlap-loop AST with stubbed forward/selection/physical work. "
             "Measures incremental CPU observation cost and preserves dispatch counts; "
-            "no CUDA events, GPU overhead, native-relative throughput or JCT proof."
+            "no CUDA events, writer JSON cost, GPU overhead, native-relative throughput "
+            "or JCT proof. A supplied baseline revision keeps the old probe enabled."
         ),
     }
     args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
