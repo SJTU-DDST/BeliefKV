@@ -213,6 +213,82 @@ def test_after_forward_planning_retains_existing_waiting_context_handlers():
     assert runtime._hotpath_timing.snapshot()["phases"]["post_launch_physical"]["count"] == 1
 
 
+def test_after_forward_skips_only_existing_backoff_work():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_tool_prefetch = True
+    runtime._hotpath_timing.enabled = True
+    runtime._tool_prefetch_next_ms = 1050.
+    runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 1050.
+    runtime.dispatch_join_prefetch = Mock()
+    runtime.dispatch_tool_prefetch = Mock(side_effect=AssertionError("tool retry not due"))
+    runtime.dispatch_join_prepare = Mock(side_effect=AssertionError("JOIN backup not due"))
+    runtime.dispatch_tool_prepare = Mock(side_effect=AssertionError("tool backup not due"))
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.):
+        runtime.dispatch_after_forward()
+    runtime.dispatch_join_prefetch.assert_called_once()
+    assert runtime.counts["physical_planning_after_forward"] == 1
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 1
+    assert runtime.physical_ledger.pending_count == 0
+    assert runtime._tool_prefetch_next_ms == 1050.
+    assert runtime._join_prepare_next_ms == runtime._tool_prepare_next_ms == 1050.
+    assert runtime._hotpath_timing.snapshot()["phases"]["post_launch_physical"]["count"] == 1
+    runtime.close()
+
+
+def test_after_forward_processes_acknowledged_ticket_before_scan_deadline():
+    from beliefkv.runtime.sglang_v0520_runtime import _ToolPrefetchTicket
+
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_tool_prefetch = True
+    runtime._tool_prefetch_next_ms = 5000.
+    runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 5000.
+    runtime.dispatch_join_prefetch = Mock()
+    key = PrefillCandidateKey("r", "w", "i", "c", 0, 0)
+    runtime._tool_ticket = _ToolPrefetchTicket(key, 1., command_id="acknowledged")
+    runtime.completed_physical_actions.append(
+        NS(action="PREFETCH_GPU", command_id="acknowledged"),
+    )
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.):
+        runtime.dispatch_after_forward()
+    assert runtime._tool_ticket is None
+    assert runtime.counts["tool_prefetch_acked"] == 1
+    assert runtime.counts["tool_prefetch_scans"] == 1
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 0
+    runtime.close()
+
+
+def test_after_forward_rechecks_clock_after_prior_handler_crosses_deadline():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_tool_prefetch = True
+    runtime._tool_prefetch_next_ms = 1050.
+    runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 1050.
+    clock = [1.]
+    runtime.dispatch_join_prefetch = lambda: clock.__setitem__(0, 1.05)
+    runtime.dispatch_join_prepare = Mock()
+    runtime.dispatch_tool_prepare = Mock()
+    queue, running = [object()], object()
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", lambda: clock[0]):
+        runtime.dispatch_after_forward(queue, running_batch=running)
+    assert runtime.counts["tool_prefetch_scans"] == 1
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 0
+    runtime.dispatch_join_prepare.assert_called_once_with(queue, running_batch=running)
+    runtime.dispatch_tool_prepare.assert_called_once_with(queue, running_batch=running)
+    runtime.close()
+
+
+def test_after_forward_prior_handler_can_rearm_tool_scan_immediately():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_tool_prefetch = True
+    runtime._tool_prefetch_next_ms = 5000.
+    runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 5000.
+    runtime.dispatch_join_prefetch = lambda: setattr(runtime, "_tool_prefetch_next_ms", 0.)
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.):
+        runtime.dispatch_after_forward()
+    assert runtime.counts["tool_prefetch_scans"] == 1
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 0
+    runtime.close()
+
+
 def test_native_ack_is_credited_only_after_live_context_reconciliation():
     runtime = NativeAdmissionRuntime()
     tagged = req("a")

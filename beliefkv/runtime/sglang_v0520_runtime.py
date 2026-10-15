@@ -778,9 +778,20 @@ class NativeAdmissionRuntime:
         """Plan immutable waiting contexts after native forward submission."""
         self.counts["physical_planning_after_forward"] += 1
         self.dispatch_join_prefetch()
-        self.dispatch_tool_prefetch()
-        self.dispatch_join_prepare(waiting_queue, running_batch=running_batch)
-        self.dispatch_tool_prepare(waiting_queue, running_batch=running_batch)
+        if (
+            self.enable_tool_prefetch and not self.physical_disabled
+            and self._tool_ticket is None
+            and time.monotonic() * 1000. < self._tool_prefetch_next_ms
+        ):
+            self.counts["tool_prefetch_scan_deferred"] += 1
+        else:
+            self.dispatch_tool_prefetch()
+        # Earlier handlers can cross a deadline or rearm another source.
+        # Read each existing deadline at its original dispatch position.
+        if time.monotonic() * 1000. >= self._join_prepare_next_ms:
+            self.dispatch_join_prepare(waiting_queue, running_batch=running_batch)
+        if time.monotonic() * 1000. >= self._tool_prepare_next_ms:
+            self.dispatch_tool_prepare(waiting_queue, running_batch=running_batch)
 
     def predictor_fileno(self) -> int | None:
         if self._semantic_worker is not None:

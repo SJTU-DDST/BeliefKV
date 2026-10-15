@@ -26,6 +26,18 @@ whole-scheduler, GPU or JCT result and does not replace V61's registration/
 capacity repairs. V767 binds sources, receipts and the separate overlay;
 the default staging patch, frozen V61/9e8a574 and19:51 registration are intact.
 
+Development dispatch now skips calls already deferred by existing retry
+deadlines. An existing tool ticket always reaches its handler; each PREPARE
+deadline is read at its original position, after preceding handlers can rearm
+or cross it. No deadline, event/ACK handling or observation configuration changes.
+V771 binds557 final checks and12 complete CPU-cycle cases with equal actions,
+counters, deadlines, native reads, publication and observations. High-frequency
+1/3ms scenes improve0.2%-19.5% thread CPU;3ms profiling-enabled24/156-workflow
+scenes improve11.2%/5.2%. The60ms scenes are near-flat. Parent timing counts
+match; child counts now omit actual skipped no-ops, so per-child means are not
+directly comparable. No trace-frequency weighting or GPU/JCT claim, and this
+development change is not in registered V61 or its frozen engine.
+
 Independent quality export now retains all156 tasks in both V59/V58 inputs,
 including native's154 completed, one error and one incomplete. Export requires
 the saved patch, frozen task identity and matching hashes; empty patches remain
