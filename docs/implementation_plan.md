@@ -2,6 +2,20 @@
 
 Status date: 2026-10-15 (Asia/Shanghai).
 
+Developmentf29ccb4 omits only top-level None fields from control wire events.
+V670 has215 passing checks plus2 subtests. V671 seals four V59 prefixes of
+128 events each: bytes fall23.6%-24.1%, combined encode/server CPU3.9%-4.3%,
+with identical graph/counters/exact ACKs/timing counts. V672's all-fields
+control costs2.2%-2.7% more CPU; retain it and avoid universal speedup claims.
+Raw wire batching is unavailable; per-record CPU replay does not establish
+socket waiting, online coalescing or GPU/JCT gains. Authoritative logs and
+decoded event contents remain complete.
+V669 profiles actual cadence/backoff on a156-context/64-node CPU fixture.
+Closure capture dominates even without new actions; do not drop native
+checks or extend retry times without evidence. The original service-turnover,
+FULL-consumption and JCT/throughput goals remain open. V60/d925278 and
+the reservation stay unchanged; this extension is not cold-frozen/deployed.
+
 Development24054ca removes redundant causal-classification terminal reads
 and skips final-stage queue indexing when no stage exists. Final authorization
 and live native identity checks remain. V664 has231 passing runtime/admission/

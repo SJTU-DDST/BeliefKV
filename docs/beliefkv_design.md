@@ -2,6 +2,14 @@
 
 更新日期：2026-10-15（Asia/Shanghai）
 
+f29ccb4仅压缩控制event传输中的顶层None字段；权威to_dict日志
+和from_dict解码含义保持，嵌套null与零值不删除。v671在四份
+V59封存前缀中确认图/计数/ACK/计时次数一致，CPU合计少约
+3.9%–4.3%；v672完整字段控制合计多2.2%–2.7%的成本保留。
+这不是原始批次/socket或GPU/JCT对照。v669的无动作PREPARE
+夹具仍以完整闭包观测为主要成本，不能用跳过物理验证或盲目
+延长backoff换取表面提速。当前扩展未冷冻结，不改V60。
+
 24054ca只合并同次分类中重复的图状态判断，并在没有收尾候选
 时跳过队列索引。invocation的READY/RUNNING、context身份/
 epoch以及workflow结束条件共同决定分类；最终授权仍重新读
