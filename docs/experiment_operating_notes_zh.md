@@ -5,12 +5,27 @@ guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
 用户最新指令已允许GPU空闲时立即启动，覆盖此前19:51等待。
-旧等待器4030423已退出，不得重新启动旧预约。当前实际运行
-V61/824cd44，包含全部最新开发代码和aca4c6a8回收引擎；
-启动19:40:03，记录v780，真实配置/服务验证v782，NUMA记录v783。
-1984项及2个subtest通过。后续优先看本轮新trace，运行源码、
-引擎和启动帮助脚本保持冻结；修改继续在独立开发分支进行。
-窗口观察器140211的状态在ops/v61_latest_observer_20261015.state.json。
+旧等待器4030423已退出，不得重新启动旧预约。V61已结束，
+但约582秒后physical_disabled=true，只能保留降级诊断，不能
+当作完整predictive性能实验。155 completed与1 incomplete均保留。
+当前实际运行V62/cd53d19，2026-10-15北京时间22:01:11启动，
+包含全部最新代码、a63d524 JOIN ACK修复和原aca4c6a8引擎；
+启动/真实服务见v788/v789，NUMA见v790，714项相关检查通过。
+已跨过原故障阶段；实际FULL消费与端到端收益仍待验证。
+运行源码、引擎和启动帮助脚本保持冻结，修改在独立开发分支。
+状态见ops/v62_join_ack_20261015.state.json；观察器1639353
+见ops/v62_join_ack_observer_20261015.state.json。若权威runtime
+置physical_disabled，supervisor停止自身实验组后再诊断修复，
+不能继续长时间占GPU采集失效predictive；不新增workflow guard。
+ACK在客户端提交与原生请求登记之间到达是合法竞态，必须凭有效
+JOIN ticket及真实session/generation/anchor核对，不能直接放宽
+receipt或伪造live session。显式前缀替换须使旧在途归因失效。
+离线HTML等工具须导入对应checkout包，避免editable Main覆盖
+冻结脚本依赖。运行中不热改导出入口，结束后显式PYTHONPATH补导。
+本轮补导观察器1851300只等待原driver退出，不启动GPU工作；
+状态在ops/v62_offline_exports_20261015.state.json。仅当确认
+是该导入错误、物理runtime正常且完整summary已保存时补导；
+原driver失败记录保留，其他错误不自动掩盖或重新启动实验。
 V58须用clock_v2导出/cache作开发参考；最新harness已含反馈和
 压缩交付修复，不能将历史单轮差异直接宣称正式同版本因果收益。
 下文旧候选、19:51或未部署状态均保留为历史，不覆盖本段现状。

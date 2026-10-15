@@ -7,24 +7,39 @@
 打通恢复、KV生命周期与首次执行。三项仍未解决，CPU检查、
 局部提速、ACK或传输量增加均不代表达标。开发先复用V58参考，
 正式验收仍需匹配配置多轮对照及任务质量、完成率、公平性、
-长尾与重算检查。当前观察实际运行的V61/824cd44，不热改。
+长尾与重算检查。当前观察实际运行的V62/cd53d19，不热改。
 预约期间继续根据最新trace实施可由CPU验证的修复；新GPU实验
 用于验收真实性能收益，不是继续定位、修改或CPU验证的前置条件。
 
-用户随后明确GPU已空闲、立即验证全部最新代码，覆盖原19:51
-等待安排。旧等待器4030423已按身份核对后退出；旧冻结与资格
-文件保留为历史。V61于北京时间2026-10-15 19:40:03启动，
-执行快照824cd44继承当前开发3be7564，并绑定完整aca4c6a8
-回收引擎，不是只运行先前45f46b7子集。Main与旧执行树未合并。
-v780记录启动；v782确认真实workflow GPU服务、同V59的池容量、
-running48、context131072、prefill4096及未启用新的凑批。
-最新组合1984项及2个subtest通过；v783保留实际NUMA分布。
-观察器140211按120–300/600–900/1800–2100/3600–3900秒
-自动对照V58，实际状态见ops/v61_latest_observer_20261015.state.json。
-使用修正时钟的native.clock_v2及cache。最新harness也含反馈和
-压缩交付修复，历史native仅供开发比较，不能当正式同版本因果
-对照。实际JCT、吞吐、质量和预取收益仍未验收。下文的旧候选、
-19:51等待及未部署描述均是此前记录，不再决定本轮启动。
+用户明确GPU已空闲、立即验证全部最新代码，覆盖原19:51等待；
+旧等待器4030423已按身份核对后退出，不得重启旧预约。
+V61/824cd44已结束：155 completed、1 incomplete、7541.539秒，
+但约第582秒一次confirmed JOIN H2D ACK在parent新请求原生
+登记前被错误拒绝，physical_disabled随即置真。该轮只保留
+degraded_diagnostic，comparison_eligible=false，不能作为完整
+predictive性能结果。未完成项django__django-12125继续保留原终态。
+
+根因是ACK只兼容旧epoch到下一epoch的登记间隙，未兼容已绑定
+下一consumer epoch但context_sessions仍空的合法JOIN ticket。
+开发a63d524补齐同epoch的有效ticket、session/generation及真实
+原生anchor证明；显式COMPACT/ADVANCE另使在途旧前缀归因失效，
+不取消已提交DMA或放宽损坏receipt校验。714项相关检查通过，
+原始失败复现保留。V62执行快照cd53d19于北京时间2026-10-15
+22:01:11冷启动，包含全部最新代码、该修复及同一aca4c6a8引擎。
+v788/v789绑定源码和真实服务，v790保留NUMA；原负载、池容量、
+running48、context131072、prefill4096及禁用新凑批配置保持。
+本轮已跨过原故障阶段并持续产生JOIN/tool ACK，收益仍待验证。
+
+当前状态在ops/v62_join_ack_20261015.state.json，窗口观察器
+1639353的状态在ops/v62_join_ack_observer_20261015.state.json，
+按120–300/600–900/1800–2100/3600–3900秒自动对照V58。
+supervisor若观察到physical_disabled会停止自身实验进程组，
+避免继续占用GPU运行已失效的预测系统；这不是workflow终态guard。
+使用修正时钟的native.clock_v2及cache。历史native的harness较旧，
+仅供开发比较；实际JCT、吞吐、质量和有效FULL消费尚未验收。
+离线HTML导出须显式使用对应checkout的Python包；开发入口已
+补齐导入根目录，运行冻结源码保持。下文旧候选、19:51等待及
+未部署描述均是历史记录，不再决定当前启动或实际部署状态。
 
 两项开发优化现已组合为独立后续候选45f46b7，直接继承V61的
 9e8a574。相对该基线只改runtime派发入口、对应测试及独立候选

@@ -8,26 +8,41 @@ recomputation checked. All three workstreams remain open: actual short-prefill
 and high-frequency control cost; useful JOIN/tool FULL prefetch conversion;
 recovery, KV lifecycle and first-service coordination. CPU checks, local
 microseconds, ACK counts and transferred bytes are not acceptance. Inspect
-running V61/824cd44; use V58 for development and matched repeated formal controls.
+running V62/cd53d19; use V58 for development and matched repeated formal controls.
 Continue trace-supported implementation and CPU validation during the GPU
 reservation. A new GPU run is required for end-to-end benefit acceptance,
 not as a prerequisite for fixing identifiable control or lifecycle defects.
 
-The user's subsequent free-GPU instruction supersedes the19:51 reservation.
-The exact old waiter4030423 has exited, with old frozen records retained.
-V61 started at2026-10-15 19:40:03 Asia/Shanghai using824cd44: the complete
-latest development3be7564 plus the fullaca4c6a8 reclamation engine patch.
-This is broader than45f46b7. Main and the old execution checkout stay intact.
-V780 binds launch provenance; V782 verifies actual workflow service, matching
-V59 pool capacities, running48/context131072/prefill4096 and disabled new
-batch-delay settings. All1984 integrated checks and2 subtests pass.
-V783 retains actual NUMA placement. Observer140211 checks120-300,600-900,
-1800-2100 and3600-3900s windows against V58 using the preserved analyzers.
-Use corrected native.clock_v2 and its cache. The latest harness also includes
-feedback and compaction-delivery repairs, so historical native is only a
-development reference, not a matched causal performance control. JCT,
-throughput, quality and useful-prefetch acceptance remain open. Subsequent
-references below to19:51 or unstarted candidates are earlier historical records.
+The free-GPU instruction supersedes the19:51 reservation. The identity-checked
+old waiter4030423 has exited and must not restart. V61/824cd44 has finished:
+155 completed, one incomplete,7541.539s. At approximately582s, a valid confirmed
+JOIN ACK reached the runtime before native registration of its next consumer;
+the same-epoch session bridge was missing and physical migration was disabled.
+Retain this run as degraded_diagnostic with comparison_eligible=false.
+Preserve django__django-12125's incomplete outcome and all failure evidence.
+
+Repair a63d524 requires a live confirmed client-bound ticket, matching session/
+generation and actual native anchors for the same-epoch registration gap.
+Explicit COMPACT/ADVANCE invalidates credit for pending old-prefix transfers
+without cancelling submitted DMA or weakening structural receipt validation.
+All714 related checks pass; retain the original failing reproduction.
+V62/cd53d19 cold-started at2026-10-15 22:01:11 Asia/Shanghai with all latest
+code, this repair and the unchangedaca4c6a8 engine. V788/V789 bind launch and
+actual service; V790 records NUMA placement. Workload, pool capacities,
+running48/context131072/prefill4096 and disabled new batching remain unchanged.
+It has passed the original failure stage with continuing JOIN/tool ACKs.
+
+Observe ops/v62_join_ack_20261015.state.json and the window observer1639353
+in ops/v62_join_ack_observer_20261015.state.json. The supervisor stops only
+its owned experiment group if authoritative physical_disabled becomes true,
+avoiding a long degraded GPU run; no workflow completion guard is added.
+Compare120-300,600-900,1800-2100 and3600-3900s using the unchanged analyzers and
+corrected native.clock_v2/cache. Historical native has an older harness and
+is a development reference only. JCT, throughput, quality and useful FULL
+consumption remain unverified. Offline exporters must import their matching
+checkout package; the development CLI now inserts its own root. Keep running
+sources frozen. Subsequent old candidate,19:51 and deployment statements below
+are historical and do not override the current state.
 
 The two development optimizations now form independent candidate45f46b7,
 directly extending V61/9e8a574. Only dispatch, its tests and that candidate's
