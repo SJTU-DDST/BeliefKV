@@ -1,0 +1,5 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.282" timestamp="2026-10-14T21:58:56.741578-07:00" hostname="ddst-12"><testcase classname="tests.test_wait_prefetch_partial_extent" name="test_zero_native_byte_budget_rechecks_actual_capacity_after_backed_probe[reclaimed-1-join_ticket]" time="0.003"><failure message="AssertionError: Expected 'mock' to have been called once. Called 0 times.">tests/test_wait_prefetch_partial_extent.py:301: in test_zero_native_byte_budget_rechecks_actual_capacity_after_backed_probe
+    cache.reclaim_beliefkv_handoff_capacity.assert_called_once()
+../../../miniconda3/envs/beliefkv-next/lib/python3.11/unittest/mock.py:918: in assert_called_once
+    raise AssertionError(msg)
+E   AssertionError: Expected 'mock' to have been called once. Called 0 times.</failure></testcase></testsuite></testsuites>

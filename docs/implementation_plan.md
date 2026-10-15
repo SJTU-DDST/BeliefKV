@@ -2,6 +2,23 @@
 
 Status date: 2026-10-15 (Asia/Shanghai).
 
+V679 seals the complete V59 tool-window audit; last-second conditional
+absolute error P50/P90 is69.06/542.66ms over25321 rounds. V685 binds
+the same1457985716-byte opportunity prefix:10099 plan snapshots retain
+an unsatisfied FULL reclaim target,10096 without a published waiting
+candidate. These observations can repeat attempts and do not prove a
+safe cold victim existed; no native zero-byte budget was recorded.
+Development2e37ed2 repairs the independently reproduced zero-byte probe
+boundary. Developmentc7bd6ee retains already-backed safe input leaf/state
+identities when new Host backup cannot fit, without a second closure scan.
+Native publication/reclaim still validates ownership, locks and inflight state.
+V688 passes881 checks across10 modules. V689's unchanged-action control
+costs0.0195ms/iteration at the original cadence,0.0463ms with forced probes;
+retain the added CPU cost. V690 binds the receipts and source versions.
+Neither repair changes qualified9c79eee, frozenV60, the reservation or workload.
+Next qualify separately and measure actual candidate/reclaim/consumption
+coverage alongside the unresolved short-prefill turnover and full JCT goal.
+
 V678 cold-qualifies isolated candidate9c79eee, directly extending d925278
 with only three additional production-file changes: key equality, same-call
 prefill state checks and compact event wire. AST and87 source bindings retain

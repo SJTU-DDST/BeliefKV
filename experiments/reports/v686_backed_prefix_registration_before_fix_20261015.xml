@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="0.564" timestamp="2026-10-14T22:10:50.158168-07:00" hostname="ddst-12"><testcase classname="tests.test_sglang_v0520_runtime" name="test_prepare_host_shortfall_keeps_existing_safe_backed_nodes_for_reclaim" time="0.009"><failure message="AssertionError: assert {} == {1: (PrefillC...tion=1), 5.0)}&#10;  &#10;  Right contains 2 more items:&#10;  {1: (PrefillCandidateKey(request_id='parent',&#10;                           root_workflow_id='wf',&#10;                           invocation_id='parent',&#10;                           context_id='ctx-parent',&#10;                           context_epoch=0,...&#10;  &#10;  ...Full output truncated (14 lines hidden), use '-vv' to show">tests/test_sglang_v0520_runtime.py:3677: in test_prepare_host_shortfall_keeps_existing_safe_backed_nodes_for_reclaim
+    assert runtime._parent_pressure_candidates == {
+E   AssertionError: assert {} == {1: (PrefillC...tion=1), 5.0)}
+E     
+E     Right contains 2 more items:
+E     {1: (PrefillCandidateKey(request_id='parent',
+E                              root_workflow_id='wf',
+E                              invocation_id='parent',
+E                              context_id='ctx-parent',
+E                              context_epoch=0,...
+E     
+E     ...Full output truncated (14 lines hidden), use '-vv' to show</failure></testcase></testsuite></testsuites>
