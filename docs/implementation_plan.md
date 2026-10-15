@@ -2,6 +2,22 @@
 
 Status date: 2026-10-15 (Asia/Shanghai).
 
+V743 accounts for per-sample measured interval unions in the same four
+V59/V58 windows. In the decode47 -> short-prefill1 -> decode48 subset,
+the mean residual after the previous telemetry-observer entry and before
+the next run_batch entry is2.614-3.310ms predictive versus1.201-1.579ms
+native, after excluding measured physical/barrier intervals. Therefore
+physical planning alone cannot explain the remaining turnover gap.
+The residual mixes telemetry tail, sampling, ingest, next maintenance/
+selection and waits; it is not measured thread CPU or removable JCT.
+New audit19 checks and inherited24 checks pass; replace overlapping
+V741/V742 identities rather than adding them. Compare V61's residual and
+actual next-consumer FULL against this baseline. If the gap persists,
+separate those remaining stages in a future cold diagnostic candidate.
+This is offline evidence only: retain the frozen V61/9e8a574, engine,
+four registered analyzers, workload and19:51 deadline. Full turnover,
+quality/fairness, mean-JCT and completion-throughput acceptance stays open.
+
 V736 cold-qualifies9e8a574 directly on73518: only runtime and JOIN tests
 change, with89 source bindings and the same engine. All1691 unique checks
 plus2 subtests pass across36 inherited modules, covering1662 old identities.
