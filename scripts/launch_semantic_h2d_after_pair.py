@@ -37,15 +37,38 @@ def fresh_pair_environment(
     host_numa_memory_policy: str | None = None,
     arm_order: str = "predictive_h2d",
     native_reference_run: Path | None = None,
+    native_reference_timeline: Path | None = None,
+    native_reference_cache: Path | None = None,
 ) -> dict[str, str]:
+    if (
+        native_reference_timeline is not None or native_reference_cache is not None
+    ) and native_reference_run is None:
+        raise ValueError("native reference artifacts require a native reference run")
+    if native_reference_run is not None and arm_order != "predictive_h2d":
+        raise ValueError("historical native references apply to predictive-only runs")
     environment = resume_environment(plan, run_root, python=python, port=port)
     environment.update(RESUME_PENDING="0", ARM_ORDER=arm_order)
     environment["HOST_NUMA_MEMORY_POLICY"] = (
         host_numa_memory_policy or plan.get("host_numa_memory_policy", "preferred")
     )
-    environment.pop("NATIVE_REFERENCE_RUN", None)
+    # Empty values also clear reference paths inherited by the launching process.
+    for field in (
+        "NATIVE_REFERENCE_RUN", "NATIVE_REFERENCE_TIMELINE", "NATIVE_REFERENCE_CACHE",
+    ):
+        environment[field] = ""
     if native_reference_run is not None:
         environment["NATIVE_REFERENCE_RUN"] = str(native_reference_run)
+        same_reference = bool(plan.get("native_reference_run")) and (
+            Path(plan["native_reference_run"]).resolve() == native_reference_run.resolve()
+        )
+        for field, override in (
+            ("native_reference_timeline", native_reference_timeline),
+            ("native_reference_cache", native_reference_cache),
+        ):
+            if override is not None:
+                environment[field.upper()] = str(override)
+            elif same_reference:
+                environment[field.upper()] = str(plan.get(field) or "")
     if prefetch_lead_ms is not None:
         environment["PREFETCH_LEAD_MS"] = str(prefetch_lead_ms)
     if execution_handoff is not None:
@@ -168,6 +191,14 @@ def main() -> None:
         help="Completed run containing the fixed native reference; defaults to the previous reference.",
     )
     parser.add_argument(
+        "--native-reference-timeline", type=Path,
+        help="Select a corrected native timeline without replacing the sealed original.",
+    )
+    parser.add_argument(
+        "--native-reference-cache", type=Path,
+        help="Select a corrected comparison cache; its path and digest enter the new frozen plan.",
+    )
+    parser.add_argument(
         "--prefetch-lead-ms", type=int,
         help="Explicitly override the next pair's residency lead while preserving the previous plan.",
     )
@@ -184,6 +215,13 @@ def main() -> None:
         default="/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
     )
     args = parser.parse_args()
+    if args.arm_order != "predictive_h2d" and any(
+        value is not None for value in (
+            args.native_reference_run, args.native_reference_timeline,
+            args.native_reference_cache,
+        )
+    ):
+        parser.error("historical native references apply to predictive-only runs")
     repo, previous, target, run_root, state_path = (
         path.resolve() for path in (
             args.repo, args.previous_run, args.target_checkout, args.run_root, args.state,
@@ -218,6 +256,14 @@ def main() -> None:
         ),
         host_numa_memory_policy=args.host_numa_memory_policy,
         arm_order=args.arm_order, native_reference_run=native_reference,
+        native_reference_timeline=(
+            args.native_reference_timeline.resolve()
+            if args.native_reference_timeline is not None else None
+        ),
+        native_reference_cache=(
+            args.native_reference_cache.resolve()
+            if args.native_reference_cache is not None else None
+        ),
     )
     state = {
         "status": (
@@ -239,6 +285,8 @@ def main() -> None:
         "wait_process_identities": identities,
         "environment": environment,
         "native_reference_run": str(native_reference) if native_reference else None,
+        "native_reference_timeline": environment["NATIVE_REFERENCE_TIMELINE"] or None,
+        "native_reference_cache": environment["NATIVE_REFERENCE_CACHE"] or None,
         "registered_at_utc": datetime.now(timezone.utc).isoformat(),
     }
     state_path.parent.mkdir(parents=True, exist_ok=True)

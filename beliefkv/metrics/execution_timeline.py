@@ -4,7 +4,7 @@ from bisect import bisect_left
 import base64
 import csv
 from dataclasses import asdict, dataclass
-from datetime import datetime
+from datetime import datetime, tzinfo
 from html import escape
 import gzip
 import json
@@ -53,6 +53,7 @@ def load_execution_timeline(
     arm: str,
     gpu_busy_threshold: float = 10.0,
     end_offset_ms: float | None = None,
+    gpu_timezone: str | None = None,
 ) -> ExecutionTimeline:
     run_dir = run_dir.resolve()
     if (run_dir / "server/native_capacity_census.json").exists():
@@ -63,7 +64,10 @@ def load_execution_timeline(
             arm=arm,
             gpu_busy_threshold=gpu_busy_threshold,
             end_offset_ms=end_offset_ms,
+            gpu_timezone=gpu_timezone,
         )
+    if gpu_timezone is not None:
+        raise ValueError("gpu_timezone applies to native timelines")
     audit_path = run_dir / "server/runtime_audit.jsonl"
     transfer_path = run_dir / "server/transfer_telemetry.jsonl"
     runtime_events_path = run_dir / "server/runtime_events.sglang.jsonl"
@@ -402,7 +406,9 @@ def _load_service_observations(
     return observations, decode_windows
 
 
-def _load_gpu_samples(path: Path, *, wall_anchor: datetime) -> list[dict[str, object]]:
+def _load_gpu_samples(
+    path: Path, *, wall_anchor: datetime, timestamp_timezone: tzinfo | None = None,
+) -> list[dict[str, object]]:
     if not path.exists():
         return []
     samples: list[dict[str, object]] = []
@@ -410,6 +416,8 @@ def _load_gpu_samples(path: Path, *, wall_anchor: datetime) -> list[dict[str, ob
         for row in csv.DictReader(stream):
             try:
                 timestamp = datetime.strptime(row["timestamp"].strip(), _GPU_TS_FORMAT)
+                if timestamp_timezone is not None:
+                    timestamp = timestamp.replace(tzinfo=timestamp_timezone)
                 samples.append(
                     {
                         "t_ms": max(

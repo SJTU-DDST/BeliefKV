@@ -453,12 +453,19 @@ def main() -> None:
     parser.add_argument("--enable-tool-timing", type=int, choices=(0, 1), default=0)
     parser.add_argument("--prefetch-lead-ms", type=int, default=1000)
     parser.add_argument("--native-reference-run", type=Path)
+    parser.add_argument("--native-reference-timeline", type=Path)
+    parser.add_argument("--native-reference-cache", type=Path)
     parser.add_argument("--semantic-work-statistic", choices=("upper", "center"), default="upper")
     parser.add_argument("--eos-protocol-window-ms", type=int, default=50)
     parser.add_argument("--transfer-service-seed", type=Path)
     parser.add_argument("--sampling-seed", type=int, default=21)
     parser.add_argument("--repetition-id", type=int, default=0)
     args = parser.parse_args()
+    if (
+        args.native_reference_timeline is not None
+        or args.native_reference_cache is not None
+    ) and args.native_reference_run is None:
+        parser.error("native reference artifacts require --native-reference-run")
     if args.verify_frozen_plan:
         root = Path(__file__).resolve().parents[1]
         plan = json.loads((args.run_root / "ab_plan.json").read_text())
@@ -472,6 +479,8 @@ def main() -> None:
             ("h2d_seed_artifact", "h2d_seed_sha256"),
             ("tool_timing_artifact", "tool_timing_sha256"),
             ("transfer_service_seed", "transfer_service_seed_sha256"),
+            ("native_reference_timeline", "native_reference_timeline_sha256"),
+            ("native_reference_cache", "native_reference_cache_sha256"),
         ):
             if plan.get(digest):
                 paths.append((plan[field], plan[digest]))
@@ -527,6 +536,16 @@ def main() -> None:
         )
         native_pair = "native" in order
         patch = root / "patches/sglang-v0.5.20-beliefkv-staging.patch"
+        reference_artifacts = {}
+        for field, path in (
+            ("native_reference_timeline", args.native_reference_timeline),
+            ("native_reference_cache", args.native_reference_cache),
+        ):
+            if path is not None:
+                reference_artifacts[field] = str(path.resolve())
+                reference_artifacts[f"{field}_sha256"] = hashlib.sha256(
+                    path.read_bytes()
+                ).hexdigest()
         plan = {
             "prefetch_lead_ms": args.prefetch_lead_ms,
             "semantic_work_statistic": args.semantic_work_statistic,
@@ -568,6 +587,7 @@ def main() -> None:
             "native_reference_run": (
                 str(args.native_reference_run.resolve()) if args.native_reference_run else None
             ),
+            **reference_artifacts,
             "code_commit": subprocess.check_output(
                 ["git", "rev-parse", "HEAD"], cwd=root, text=True,
             ).strip(),

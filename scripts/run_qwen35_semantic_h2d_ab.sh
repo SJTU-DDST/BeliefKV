@@ -27,9 +27,22 @@ SEMANTIC_WORK_STATISTIC="${SEMANTIC_WORK_STATISTIC:-center}"
 EOS_PROTOCOL_WINDOW_MS="${EOS_PROTOCOL_WINDOW_MS:-250}"
 FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_2to4}"
 NATIVE_REFERENCE_RUN="${NATIVE_REFERENCE_RUN:-}"
+NATIVE_REFERENCE_TIMELINE="${NATIVE_REFERENCE_TIMELINE:-}"
+NATIVE_REFERENCE_CACHE="${NATIVE_REFERENCE_CACHE:-}"
 reference_args=()
+reference_comparison_args=()
 if [[ -n "$NATIVE_REFERENCE_RUN" ]]; then
   reference_args=(--native-reference-run "$NATIVE_REFERENCE_RUN")
+  if [[ -n "$NATIVE_REFERENCE_TIMELINE" ]]; then
+    reference_args+=(--native-reference-timeline "$NATIVE_REFERENCE_TIMELINE")
+  fi
+  if [[ -n "$NATIVE_REFERENCE_CACHE" ]]; then
+    reference_args+=(--native-reference-cache "$NATIVE_REFERENCE_CACHE")
+    reference_comparison_args+=(--native-reference-cache "$NATIVE_REFERENCE_CACHE")
+  fi
+elif [[ -n "$NATIVE_REFERENCE_TIMELINE" || -n "$NATIVE_REFERENCE_CACHE" ]]; then
+  printf 'Native reference artifacts require NATIVE_REFERENCE_RUN\n' >&2
+  exit 2
 fi
 
 if [[ $# -ne 0 || ! -f "$ARTIFACT" ]] \
@@ -138,8 +151,9 @@ if [[ "$ARM_ORDER" == "predictive_h2d" ]]; then
       --arm "predictive_h2d=$RUN_ROOT/predictive_h2d" \
       --arm "native=$NATIVE_REFERENCE_RUN/native" \
       --timeline "predictive_h2d=$RUN_ROOT/timelines/predictive_h2d.json.gz" \
-      --timeline "native=$NATIVE_REFERENCE_RUN/timelines/native.json.gz" \
+      --timeline "native=${NATIVE_REFERENCE_TIMELINE:-$NATIVE_REFERENCE_RUN/timelines/native.json.gz}" \
       --native-reference-run "$NATIVE_REFERENCE_RUN" \
+      "${reference_comparison_args[@]}" \
       --output "$RUN_ROOT/native_reference_comparison.json"
   fi
 else

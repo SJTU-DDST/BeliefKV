@@ -46,8 +46,10 @@ def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) ->
         "CHILD_FINAL_REPORT_SHADOW": int(plan["child_final_report_shadow"]),
         "WORKLOAD_MANIFEST": plan["workload_manifest"],
     }
-    if plan.get("native_reference_run"):
-        values["NATIVE_REFERENCE_RUN"] = plan["native_reference_run"]
+    for field in (
+        "native_reference_run", "native_reference_timeline", "native_reference_cache",
+    ):
+        values[field.upper()] = plan.get(field) or ""
     return {name: str(value) for name, value in values.items()}
 
 

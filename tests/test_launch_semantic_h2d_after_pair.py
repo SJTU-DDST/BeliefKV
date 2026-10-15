@@ -112,6 +112,83 @@ def test_development_defaults_to_predictive_and_keeps_fixed_reference():
     assert json.dumps(configuration, sort_keys=True) == snapshot
 
 
+@pytest.mark.parametrize("reference", ("/old-native-run", "/different-native-run", None))
+def test_reference_artifact_inheritance_depends_on_the_selected_native_run(reference):
+    configuration = {
+        **plan(),
+        "native_reference_run": "/old-native-run",
+        "native_reference_timeline": "/old-native-run/timelines/native.clock_v2.json.gz",
+        "native_reference_cache": "/old-native-run/native.clock_v2.json",
+    }
+    snapshot = json.dumps(configuration, sort_keys=True)
+    environment = launcher.fresh_pair_environment(
+        configuration, Path("/fresh-run"), python="/python", port=18454,
+        native_reference_run=Path(reference) if reference else None,
+    )
+    assert environment["NATIVE_REFERENCE_RUN"] == (reference or "")
+    for field in ("native_reference_timeline", "native_reference_cache"):
+        assert environment[field.upper()] == (
+            configuration[field] if reference == "/old-native-run" else ""
+        )
+    assert json.dumps(configuration, sort_keys=True) == snapshot
+
+
+def test_reference_artifact_overrides_are_explicit_and_do_not_change_the_previous_plan():
+    configuration = {
+        **plan(),
+        "native_reference_run": "/old-native-run",
+        "native_reference_timeline": "/old-native-run/old-timeline.json.gz",
+        "native_reference_cache": "/old-native-run/old-cache.json",
+    }
+    snapshot = json.dumps(configuration, sort_keys=True)
+    environment = launcher.fresh_pair_environment(
+        configuration, Path("/fresh-run"), python="/python", port=18454,
+        native_reference_run=Path("/different-native-run"),
+        native_reference_timeline=Path("/corrected/native.json.gz"),
+        native_reference_cache=Path("/corrected/native-cache.json"),
+    )
+    assert environment["NATIVE_REFERENCE_RUN"] == "/different-native-run"
+    assert environment["NATIVE_REFERENCE_TIMELINE"] == "/corrected/native.json.gz"
+    assert environment["NATIVE_REFERENCE_CACHE"] == "/corrected/native-cache.json"
+    assert json.dumps(configuration, sort_keys=True) == snapshot
+
+
+def test_fresh_native_pair_clears_all_historical_reference_environment():
+    configuration = {
+        **plan(),
+        "native_reference_run": "/old-native-run",
+        "native_reference_timeline": "/old-native-run/timeline.json.gz",
+        "native_reference_cache": "/old-native-run/cache.json",
+    }
+    environment = launcher.fresh_pair_environment(
+        configuration, Path("/fresh-run"), python="/python", port=18454,
+        arm_order="predictive_h2d native",
+    )
+    inherited = {
+        "NATIVE_REFERENCE_RUN": "/unrelated-run",
+        "NATIVE_REFERENCE_TIMELINE": "/unrelated-timeline",
+        "NATIVE_REFERENCE_CACHE": "/unrelated-cache",
+        **environment,
+    }
+    assert all(inherited[field] == "" for field in (
+        "NATIVE_REFERENCE_RUN", "NATIVE_REFERENCE_TIMELINE", "NATIVE_REFERENCE_CACHE",
+    ))
+
+
+def test_explicit_reference_artifacts_need_a_predictive_only_reference_run():
+    arguments = {"python": "/python", "port": 18454}
+    with pytest.raises(ValueError, match="require a native reference run"):
+        launcher.fresh_pair_environment(
+            plan(), Path("/fresh-run"), **arguments,
+            native_reference_cache=Path("/corrected/cache.json"),
+        )
+    with pytest.raises(ValueError, match="predictive-only"):
+        launcher.fresh_pair_environment(
+            plan(), Path("/fresh-run"), **arguments,
+            arm_order="predictive_h2d native", native_reference_run=Path("/old-native-run"),
+        )
+
+
 def test_completed_single_arm_needs_no_local_native_but_preserves_reference_report(tmp_path):
     configuration = completed_pair(tmp_path)
     configuration["order"] = ["predictive_h2d"]

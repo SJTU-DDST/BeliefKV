@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from collections import Counter
-from datetime import datetime
+import csv
+from datetime import datetime, timezone
 import json
 import math
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 from beliefkv.metrics.execution_timeline import (
     ExecutionTimeline,
@@ -26,6 +28,7 @@ def load_native_execution_timeline(
     arm: str,
     gpu_busy_threshold: float,
     end_offset_ms: float | None,
+    gpu_timezone: str | None = None,
 ) -> ExecutionTimeline:
     clients = sorted(run_dir.glob("client_*"))
     clients = [path for path in clients if path.is_dir()]
@@ -37,15 +40,37 @@ def load_native_execution_timeline(
     services, decode, clock_offset = _services(server / "runtime_audit.jsonl")
     if not services:
         raise ValueError(f"no native GPU service intervals in {run_dir}")
-    epoch = datetime.fromtimestamp(0)
-    gpu = _load_gpu_samples(client / "gpu_samples.csv", wall_anchor=epoch)
-    anchor = min(float(row["t_ms"]) for row in gpu) if gpu else services[0]["start_ms"]
+    gpu_path = client / "gpu_samples.csv"
+    if gpu_path.exists():
+        zone, anchor, clock_evidence = resolve_native_gpu_clock(
+            gpu_path, client / "sglang_metrics.jsonl",
+            clock_offset_ms=clock_offset, timezone_name=gpu_timezone,
+        )
+        gpu = _load_gpu_samples(
+            gpu_path, wall_anchor=datetime.fromtimestamp(0, timezone.utc),
+            timestamp_timezone=zone,
+        )
+    else:
+        zone, anchor, gpu = ZoneInfo("UTC"), services[0]["start_ms"], []
+        clock_evidence = {
+            "schema_version": 2, "anchor_unix_ms": anchor,
+            "anchor_source": "first_native_service_without_gpu_monitor",
+            "gpu_timezone": "UTC", "native_wall_minus_monotonic_ms": clock_offset,
+        }
     for row in gpu:
         row["t_ms"] = max(0.0, float(row["t_ms"]) - anchor)
-    for row in services + decode:
-        for key in ("t_ms", "start_ms", "end_ms"):
-            if key in row:
-                row[key] = max(0.0, float(row[key]) - anchor)
+    # Pre-monitor service must not become zero-duration batches at the origin.
+    services, decode = [
+        [
+            {
+                **row,
+                **{key: max(0.0, float(row[key]) - anchor)
+                   for key in ("t_ms", "start_ms", "end_ms")},
+            }
+            for row in rows if row["end_ms"] > anchor
+        ]
+        for rows in (services, decode)
+    ]
 
     resources, queues = _resources(
         run_dir, client, capacity, anchor=anchor, clock_offset=clock_offset,
@@ -109,6 +134,7 @@ def load_native_execution_timeline(
     )
     physical = [row["hbm_ratio"] for row in resources if row.get("physical_occupancy")]
     summary.update({
+        "clock_alignment": clock_evidence,
         "telemetry_format": "native_v0520",
         "service_timing_semantics": "scheduler_worker_intervals_not_cuda_kernel_time",
         "native_decode_interval_count": len(decode),
@@ -136,7 +162,7 @@ def load_native_execution_timeline(
     })
     return ExecutionTimeline(
         arm=arm, run_dir=str(run_dir),
-        start_anchor=datetime.fromtimestamp(anchor / 1000).isoformat(),
+        start_anchor=datetime.fromtimestamp(anchor / 1000, zone).isoformat(),
         duration_ms=duration, gpu_samples=tuple(_downsample(gpu, 5000)),
         service_observations=tuple(_coalesce_services(services)),
         queue_samples=tuple(_downsample(queues, 5000)),
@@ -145,6 +171,65 @@ def load_native_execution_timeline(
         external_waits=tuple(_downsample(waits, 5000)), event_bins=tuple(bins),
         summary=summary,
     )
+
+
+def resolve_native_gpu_clock(
+    gpu_path: Path, metrics_path: Path, *,
+    clock_offset_ms: float, timezone_name: str | None = None,
+) -> tuple[ZoneInfo, float, dict]:
+    """Resolve captured GPU wall strings against a native monotonic reference."""
+    if _finite_float(clock_offset_ms) is None:
+        raise ValueError("native wall/monotonic clock offset must be finite")
+    with gpu_path.open(newline="") as stream:
+        first = next(csv.DictReader(stream), None)
+    if first is None:
+        raise ValueError(f"GPU monitor is empty: {gpu_path}")
+    timestamp = datetime.strptime(first["timestamp"].strip(), "%Y/%m/%d %H:%M:%S.%f")
+    reference_rows = _read_jsonl(metrics_path) if metrics_path.exists() else ()
+    reference = next((
+        row for row in reference_rows
+        if type(row.get("monotonic_ts_ms")) in (int, float)
+        and _finite_float(row["monotonic_ts_ms"]) is not None and "error" not in row
+    ), None)
+    reference_ms = (
+        reference["monotonic_ts_ms"] + clock_offset_ms if reference is not None else None
+    )
+    if timezone_name is None and reference_ms is None:
+        raise ValueError("native GPU timezone requires an explicit zone or a client clock reference")
+    names = (timezone_name,) if timezone_name is not None else (
+        "Asia/Shanghai", "America/Los_Angeles", "UTC",
+    )
+    candidates = []
+    for name in names:
+        zone = ZoneInfo(name)
+        anchor = timestamp.replace(tzinfo=zone).timestamp() * 1000.
+        residual = anchor - reference_ms if reference_ms is not None else None
+        candidates.append((abs(residual) if residual is not None else 0., zone, anchor, residual))
+    _, zone, anchor, residual = min(candidates, key=lambda item: item[0])
+    if residual is not None and abs(residual) > 5_000.:
+        raise ValueError(
+            f"GPU monitor and native/client clock differ by {residual:.3f}ms; "
+            "inspect capture timezone and monitor start before analysis"
+        )
+    return zone, anchor, {
+        "schema_version": 2, "anchor_unix_ms": anchor,
+        "anchor_source": (
+            "first_gpu_sample_with_native_client_clock_validation"
+            if reference_ms is not None else "first_gpu_sample_with_explicit_capture_timezone"
+        ),
+        "native_client_clock_validated": reference_ms is not None,
+        "gpu_timezone": str(zone), "timezone_selection": (
+            "explicit" if timezone_name is not None else "native_client_clock_validated"
+        ),
+        "gpu_csv_source": str(gpu_path.resolve()),
+        "raw_first_gpu_timestamp": first["timestamp"].strip(),
+        "native_wall_minus_monotonic_ms": clock_offset_ms,
+        "client_metrics_source": str(metrics_path.resolve()),
+        "first_client_monotonic_ms": reference.get("monotonic_ts_ms") if reference else None,
+        "gpu_minus_first_client_ms": residual,
+        "maximum_reference_difference_ms": 5_000.,
+        "semantics": "Aware captured wall time; no subtraction of a naive local Unix epoch.",
+    }
 
 
 def _coalesce_services(rows: list[dict]) -> list[dict]:

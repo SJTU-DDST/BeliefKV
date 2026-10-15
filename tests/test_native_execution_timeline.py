@@ -1,6 +1,9 @@
 import csv
+from datetime import datetime
 import json
 from pathlib import Path
+import time
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -12,7 +15,9 @@ def _jsonl(path: Path, rows: list[dict]) -> None:
     path.write_text("".join(json.dumps(row) + "\n" for row in rows))
 
 
-def _native_run(tmp_path: Path) -> Path:
+def _native_run(
+    tmp_path: Path, *, anchor: int = 1_700_000_000_000, capture_timezone: str = "UTC",
+) -> Path:
     run = tmp_path / "native"
     server = run / "server"
     client = run / "client_2"
@@ -23,7 +28,6 @@ def _native_run(tmp_path: Path) -> Path:
         "device_mamba_slots": 10, "device_mamba_bytes": 2000,
         "device_total_bytes": 3000,
     }}))
-    anchor = 1_700_000_000_000
     offset = anchor - 1000
     _jsonl(server / "runtime_audit.jsonl", [
         {"event": "gpu_service_sample", "phase": phase, "batch_size": 2,
@@ -34,11 +38,11 @@ def _native_run(tmp_path: Path) -> Path:
     with (client / "gpu_samples.csv").open("w", newline="") as stream:
         writer = csv.writer(stream)
         writer.writerow(["timestamp", "gpu_utilization_percent", "memory_utilization_percent"])
-        from datetime import datetime
-
         for t in (0, 100, 500):
             writer.writerow([
-                datetime.fromtimestamp((anchor + t) / 1000).strftime("%Y/%m/%d %H:%M:%S.%f"),
+                datetime.fromtimestamp(
+                    (anchor + t) / 1000, ZoneInfo(capture_timezone),
+                ).strftime("%Y/%m/%d %H:%M:%S.%f"),
                 90, 10,
             ])
     _jsonl(client / "sglang_metrics.jsonl", [
@@ -118,3 +122,80 @@ def test_native_timeline_reads_separate_device_occupancy_and_truncates(tmp_path:
     assert timeline.summary["peak_hbm_ratio"] == pytest.approx(.6)
     assert all(row["end_ms"] <= 320 for row in timeline.service_observations)
     assert all(row["end_ms"] <= 320 for row in timeline.transfers)
+
+
+@pytest.mark.skipif(not hasattr(time, "tzset"), reason="requires process timezone support")
+@pytest.mark.parametrize("capture_timezone,processing_timezone,anchor_text", [
+    ("America/Los_Angeles", "America/Los_Angeles", "2026-10-14T20:00:00+00:00"),
+    ("Asia/Shanghai", "America/Los_Angeles", "2026-10-14T20:00:00+00:00"),
+    ("America/Los_Angeles", "UTC", "2026-10-14T20:00:00+00:00"),
+    ("UTC", "Asia/Shanghai", "2026-10-14T20:00:00+00:00"),
+    ("America/Los_Angeles", "America/Los_Angeles", "2026-01-14T20:00:00+00:00"),
+])
+def test_native_timeline_keeps_worker_and_transfer_intervals_across_capture_timezones(
+    tmp_path, monkeypatch, capture_timezone, processing_timezone, anchor_text,
+):
+    anchor = int(datetime.fromisoformat(anchor_text).timestamp() * 1000)
+    run = _native_run(tmp_path, anchor=anchor, capture_timezone=capture_timezone)
+    try:
+        with monkeypatch.context() as environment:
+            environment.setenv("TZ", processing_timezone)
+            time.tzset()
+            timeline = load_execution_timeline(run, arm="native")
+    finally:
+        time.tzset()
+
+    clock = timeline.summary["clock_alignment"]
+    assert clock["anchor_unix_ms"] == anchor
+    assert clock["gpu_timezone"] == capture_timezone
+    assert clock["gpu_minus_first_client_ms"] == pytest.approx(-100)
+    assert clock["native_client_clock_validated"] is True
+    assert datetime.fromisoformat(timeline.start_anchor).timestamp() * 1000 == anchor
+    assert timeline.service_observations[0]["start_ms"] == pytest.approx(100)
+    assert timeline.service_observations[0]["end_ms"] == pytest.approx(300)
+    assert timeline.decode_windows[0]["start_ms"] == pytest.approx(300)
+    assert timeline.decode_windows[0]["end_ms"] == pytest.approx(500)
+    assert timeline.queue_samples[0]["t_ms"] == pytest.approx(100)
+    assert min(row["start_ms"] for row in timeline.transfers) == pytest.approx(200)
+    assert max(row["end_ms"] for row in timeline.transfers) == pytest.approx(350)
+    assert timeline.duration_ms == pytest.approx(500)
+
+
+def test_native_timeline_rejects_wrong_explicit_capture_timezone(tmp_path):
+    run = _native_run(tmp_path, capture_timezone="Asia/Shanghai")
+    with pytest.raises(ValueError, match="native/client clock differ"):
+        load_execution_timeline(run, arm="native", gpu_timezone="UTC")
+
+
+def test_native_timeline_requires_explicit_zone_without_client_clock_reference(tmp_path):
+    run = _native_run(tmp_path, capture_timezone="Asia/Shanghai")
+    (run / "client_2/sglang_metrics.jsonl").unlink()
+    with pytest.raises(ValueError, match="explicit zone or a client clock reference"):
+        load_execution_timeline(run, arm="native")
+    timeline = load_execution_timeline(run, arm="native", gpu_timezone="Asia/Shanghai")
+    assert timeline.service_observations[0]["start_ms"] == pytest.approx(100)
+    clock = timeline.summary["clock_alignment"]
+    assert clock["gpu_timezone"] == "Asia/Shanghai"
+    assert clock["native_client_clock_validated"] is False
+    assert clock["anchor_source"] == "first_gpu_sample_with_explicit_capture_timezone"
+
+
+def test_native_timeline_discards_pre_monitor_service_and_clips_crossing_service(tmp_path):
+    run = _native_run(tmp_path)
+    anchor = 1_700_000_000_000
+    audit = run / "server/runtime_audit.jsonl"
+    existing = [json.loads(line) for line in audit.read_text().splitlines()]
+    _jsonl(audit, [
+        {
+            "event": "gpu_service_sample", "phase": "decode", "batch_size": 1,
+            "service_start_ts_ms": anchor + begin, "complete_ts_ms": anchor + end,
+            "complete_monotonic_ms": 1000 + end,
+        }
+        for begin, end in [(-200, -100), (-50, 50)]
+    ] + existing)
+    timeline = load_execution_timeline(run, arm="native")
+    assert timeline.service_observations[0]["start_ms"] == 0
+    assert timeline.service_observations[0]["end_ms"] == 50
+    assert all(row["end_ms"] > row["start_ms"] for row in timeline.service_observations)
+    assert sum(row["observation_count"] for row in timeline.service_observations) == 3
+    assert sum(row["end_ms"] - row["start_ms"] for row in timeline.service_observations) == 450

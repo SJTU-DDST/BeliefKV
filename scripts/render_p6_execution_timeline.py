@@ -28,6 +28,10 @@ def main() -> int:
     parser.add_argument("--poll-seconds", type=float, default=30.0)
     parser.add_argument("--gpu-busy-threshold", type=float, default=10.0)
     parser.add_argument(
+        "--gpu-timezone",
+        help="Native GPU CSV capture timezone; otherwise validate known zones against the native/client clock.",
+    )
+    parser.add_argument(
         "--end-offset-ms",
         type=float,
         help="Truncate the timeline relative to runtime initialization.",
@@ -45,6 +49,7 @@ def main() -> int:
         arm=args.arm,
         gpu_busy_threshold=args.gpu_busy_threshold,
         end_offset_ms=args.end_offset_ms,
+        gpu_timezone=args.gpu_timezone,
     )
     html_path, data_path = render_execution_timeline(
         timeline,
