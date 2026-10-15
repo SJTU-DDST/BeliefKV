@@ -327,9 +327,8 @@ def test_zero_native_byte_budget_rechecks_actual_capacity_after_backed_probe(
 
 
 @pytest.mark.parametrize("blocked", ("not_cold", "excluded", "before_start_window"))
-@pytest.mark.parametrize("native_zero_bytes", (False, True))
 def test_zero_budget_reclaim_probe_does_not_evict_without_a_live_timed_opportunity(
-    blocked, native_zero_bytes,
+    blocked, native_zero_bytes=False,
 ):
     runtime, key, opportunity, cache, _ = batch_fixture("tool_wait")
     runtime._h2d_samples.extend(((40, 10.),) * 3)
@@ -360,6 +359,13 @@ def test_zero_budget_reclaim_probe_does_not_evict_without_a_live_timed_opportuni
         assert runtime.physical_ledger.pending_count == 0
     finally:
         runtime.close()
+
+
+@pytest.mark.parametrize("blocked", ("not_cold", "excluded", "before_start_window"))
+def test_native_zero_byte_probe_rejects_nonlive_or_untimed_victims(blocked):
+    test_zero_budget_reclaim_probe_does_not_evict_without_a_live_timed_opportunity(
+        blocked, native_zero_bytes=True,
+    )
 
 
 @pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
