@@ -1,84 +1,105 @@
 {
-  "checked_at": "2026-10-14T22:48:41.253356+08:00",
-  "architecture_date": "2026-10-14",
-  "source_revision": "1e72ae0aeeedea7381bfae84d54994495574e544",
-  "generator_sha256": "755bacfdb365ea6837cfe206e889266a2cdf781c3903bfd859466d93c0232cd3",
+  "checked_at": "2026-10-15T03:20:32.711841+00:00",
+  "architecture_date": "2026-10-15",
+  "source_revision": "c6d30be1d56fd2393808d2fd33c29cea2c6592d6",
+  "generator_sha256": "9359c4594ad491fd7c741550c252bce255fc4df4c3a106a1dc3a220248b45a52",
+  "validator_sha256": "2b734bfa0179b384ef4543ffde1f9b994139e4e8cbb2f2ef1f7c680cdbaddeba",
   "powerpoints": [
     {
       "file": "beliefkv_architecture_editable_zh.pptx",
-      "sha256": "c57290857a6cd85c6a196c90af86355a9a128307781e827436f88d8197c9b66f",
+      "sha256": "7cef962c4110e0fd32f3b252db1e9d689ba071e63790209c9545d7f82a21023d",
       "slides": [
         {
-          "editable_objects": 169,
-          "editable_text_objects": 65,
+          "editable_objects": 375,
+          "editable_text_objects": 78,
+          "editable_math_text_objects": 12,
+          "italic_math_variables": 4,
           "text_matches_svg": true,
+          "font_and_italic_styles_match_svg": true,
           "all_objects_within_slide": true,
           "unique_shape_ids": true,
           "notes_present": true,
           "picture_objects": 0
         },
         {
-          "editable_objects": 155,
-          "editable_text_objects": 53,
+          "editable_objects": 284,
+          "editable_text_objects": 123,
+          "editable_math_text_objects": 88,
+          "italic_math_variables": 40,
           "text_matches_svg": true,
+          "font_and_italic_styles_match_svg": true,
           "all_objects_within_slide": true,
           "unique_shape_ids": true,
           "notes_present": true,
           "picture_objects": 0
         },
         {
-          "editable_objects": 221,
-          "editable_text_objects": 91,
+          "editable_objects": 367,
+          "editable_text_objects": 113,
+          "editable_math_text_objects": 30,
+          "italic_math_variables": 13,
           "text_matches_svg": true,
+          "font_and_italic_styles_match_svg": true,
           "all_objects_within_slide": true,
           "unique_shape_ids": true,
           "notes_present": true,
           "picture_objects": 0
         }
       ],
-      "office_render_pdf_sha256": "4ca49bc68ee29689cb7b975fa8e9502d2e532467c3e27aecdef3a599b4853eb8",
+      "office_render_pdf_sha256": "a531847f2779867015b673cd16f5b4b8a5ee14919fa31fa176e3640d90b4b76b",
       "office_render_pages": 3
     },
     {
       "file": "beliefkv_architecture_editable_en.pptx",
-      "sha256": "accc26c1f164a3563ea0626acbe906b98bf8e7ad90a9d56d58e842b48b3aa214",
+      "sha256": "34574b0d354dac637698e02d7dd5ca96f3b7725484c5e7d2504793b145dc1bcc",
       "slides": [
         {
-          "editable_objects": 169,
-          "editable_text_objects": 65,
+          "editable_objects": 375,
+          "editable_text_objects": 78,
+          "editable_math_text_objects": 12,
+          "italic_math_variables": 4,
           "text_matches_svg": true,
+          "font_and_italic_styles_match_svg": true,
           "all_objects_within_slide": true,
           "unique_shape_ids": true,
           "notes_present": true,
           "picture_objects": 0
         },
         {
-          "editable_objects": 155,
-          "editable_text_objects": 53,
+          "editable_objects": 284,
+          "editable_text_objects": 123,
+          "editable_math_text_objects": 88,
+          "italic_math_variables": 40,
           "text_matches_svg": true,
+          "font_and_italic_styles_match_svg": true,
           "all_objects_within_slide": true,
           "unique_shape_ids": true,
           "notes_present": true,
           "picture_objects": 0
         },
         {
-          "editable_objects": 221,
-          "editable_text_objects": 91,
+          "editable_objects": 367,
+          "editable_text_objects": 113,
+          "editable_math_text_objects": 30,
+          "italic_math_variables": 13,
           "text_matches_svg": true,
+          "font_and_italic_styles_match_svg": true,
           "all_objects_within_slide": true,
           "unique_shape_ids": true,
           "notes_present": true,
           "picture_objects": 0
         }
       ],
-      "office_render_pdf_sha256": "37fcc96fc5d5bb5a6ff17c0b9a1433fa05c03aca539caf9cf9945aa44cb0db59",
+      "office_render_pdf_sha256": "a61a53f06a37762905c862221471de6745796fa58413f077fe9cc3e44d29efde",
       "office_render_pages": 3
     }
   ],
   "png_count": 6,
   "png_dpi": 600,
   "vector_pdf_pages": 6,
+  "vector_pdf_raster_images": 0,
   "office_renderer": "LibreOffice 24.2.7 in isolated temporary directory",
-  "office_render_check": "passed: all six slides rendered and visually reviewed",
-  "figure_scope": "2026-10-14 development mechanisms, schematic not empirical performance"
+  "office_render_check": "all six slides rendered",
+  "visual_review_complete": true,
+  "figure_scope": "2026-10-15 development mechanisms; diagrams and timing are schematic"
 }

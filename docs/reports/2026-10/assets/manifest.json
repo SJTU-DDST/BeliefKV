@@ -1,6 +1,6 @@
 {
-  "source_revision": "1e72ae0aeeedea7381bfae84d54994495574e544",
-  "architecture_date": "2026-10-14",
+  "source_revision": "c6d30be1d56fd2393808d2fd33c29cea2c6592d6",
+  "architecture_date": "2026-10-15",
   "source_revision_scope": "latest development implementation, not every frozen experiment; source files and drawing generator are individually fingerprinted",
   "architecture_source_sha256": {
     "beliefkv/control/causal_graph.py": "2b5070822d2dba1cc994b94e40245430de18edd12b2fd1dceed76e9a88d3f657",
@@ -10,15 +10,27 @@
     "beliefkv/runtime/semantic_report_worker.py": "36dfc62ec362ab2020695ff6c10b3cca09e9ff64681e8c0ac20082847afcd0ee",
     "beliefkv/runtime/sglang_v0520_prediction.py": "d5df0cea204ed5d50c61427c551e4b670a1ad39fe431dacdfd288f24e2a79d07",
     "beliefkv/runtime/sglang_v0520_runtime.py": "fe04ad26466bb22456df2cf813843053a66d410693c4d7acc31baa2095406041",
-    "beliefkv/runtime/sglang_v0520_physical.py": "f53b15523badf3f31123f14300b3fda60a503d3c0cf1cfbf71df19713e112ec5",
+    "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
     "beliefkv/runtime/sglang_v0520_admission.py": "092d0f2814402e2a8a8211ba6afa6fad273b2c85323d73cc5bf8f89f29cc5ecd",
     "beliefkv/runtime/native_transfer_policy.py": "3dd8ebfcace6e3b4a1cee0abf68f8ea8baa9f7fc7d82cb6b142a34b7b24c5ff3",
     "beliefkv/runtime/native_transfer_service.py": "7bd8f754f6aba88360afa33d2d33625f572142d8233feaa242d8060ff925525f",
-    "patches/sglang-v0.5.20-beliefkv-staging.patch": "ebdbc183d95b925e40064c9d2ca4611f5f22c1797a3c926e994fcf4a90403417"
+    "patches/sglang-v0.5.20-beliefkv-staging.patch": "f7b1942b37d7c30998dadb29e512ecc6013f1eb02dcbb65b068e0c71c92bed81"
   },
-  "generator_sha256": "755bacfdb365ea6837cfe206e889266a2cdf781c3903bfd859466d93c0232cd3",
+  "generator_sha256": "9359c4594ad491fd7c741550c252bce255fc4df4c3a106a1dc3a220248b45a52",
   "drawing_helpers_sha256": "656ff099ec8617dde72d7b33122e136b073f5879bbecc81530b9d31917b6602b",
   "schematic_not_empirical_performance": true,
+  "visual_style": "gray backplates, black outlines, semantic ownership colors",
+  "palette": {
+    "ink": "#181818",
+    "gray_backplate": "#eeeeee",
+    "blue_section": "#a9cee8",
+    "parent": "#e9a6bf",
+    "child_1": "#b5d68b",
+    "child_2": "#f2bd7d",
+    "transfer_engine": "#f5d460",
+    "control_action": "#bf3335"
+  },
+  "math_typography": "editable Liberation Serif italic variables; positioned upright subscripts and superscripts; editable fraction bars; no rasterized equations",
   "renderer": "CairoSVG / Pillow / python-pptx",
   "figures": [
     {
@@ -35,7 +47,8 @@
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 65
+      "text_objects": 78,
+      "editable_math_text_objects": 12
     },
     {
       "stem": "01_system_overview_zh",
@@ -51,7 +64,8 @@
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 65
+      "text_objects": 78,
+      "editable_math_text_objects": 12
     },
     {
       "stem": "02_prediction_and_overlap_en",
@@ -67,7 +81,8 @@
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 53
+      "text_objects": 123,
+      "editable_math_text_objects": 88
     },
     {
       "stem": "02_prediction_and_overlap_zh",
@@ -83,7 +98,8 @@
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 53
+      "text_objects": 123,
+      "editable_math_text_objects": 88
     },
     {
       "stem": "03_pages_and_capacity_handoff_en",
@@ -99,7 +115,8 @@
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 91
+      "text_objects": 113,
+      "editable_math_text_objects": 30
     },
     {
       "stem": "03_pages_and_capacity_handoff_zh",
@@ -115,7 +132,8 @@
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 91
+      "text_objects": 113,
+      "editable_math_text_objects": 30
     }
   ],
   "powerpoints": [
@@ -124,18 +142,18 @@
       "language": "zh",
       "slides": [
         {
-          "objects": 169,
-          "text_objects": 65,
+          "objects": 375,
+          "text_objects": 78,
           "picture_objects": 0
         },
         {
-          "objects": 155,
-          "text_objects": 53,
+          "objects": 284,
+          "text_objects": 123,
           "picture_objects": 0
         },
         {
-          "objects": 221,
-          "text_objects": 91,
+          "objects": 367,
+          "text_objects": 113,
           "picture_objects": 0
         }
       ]
@@ -145,18 +163,18 @@
       "language": "en",
       "slides": [
         {
-          "objects": 169,
-          "text_objects": 65,
+          "objects": 375,
+          "text_objects": 78,
           "picture_objects": 0
         },
         {
-          "objects": 155,
-          "text_objects": 53,
+          "objects": 284,
+          "text_objects": 123,
           "picture_objects": 0
         },
         {
-          "objects": 221,
-          "text_objects": 91,
+          "objects": 367,
+          "text_objects": 113,
           "picture_objects": 0
         }
       ]
