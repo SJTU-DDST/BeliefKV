@@ -297,3 +297,37 @@ def test_compiler_reuses_bound_keys_but_selection_rechecks_live_identity(changed
         compile_native_prefill_plan((bound[0], bound[0]), semantic_revision=7)
     with pytest.raises(ValueError, match="exceeds bound"):
         compile_native_prefill_plan(bound, semantic_revision=7, max_candidates=1)
+
+
+def test_mixed_rejections_preserve_every_surviving_native_position_and_request_identity():
+    denied, first, changed, second = (_req(name) for name in ("denied", "first", "changed", "second"))
+    native_first, native_last = _req("native", tagged=False), _req("native", tagged=False)
+    native = [denied, None, first, native_first, changed, second, None, native_last]
+    original = tuple(id(request) for request in native)
+    plan = NativePrefillPlan(3, (_key(second), _key(changed), _key(first)))
+    changed.beliefkv_metadata["context_epoch"] += 1
+    selection = select_native_prefill_candidates(
+        native, plan=plan, current_semantic_revision=3,
+    )
+    assert tuple(id(request) for request in selection.candidates) == tuple(
+        id(request) for request in (None, second, native_first, first, None, native_last)
+    )
+    assert selection.rejected == (
+        ("denied", "no_authorization"), ("changed", "identity_changed"),
+    )
+    assert tuple(id(request) for request in native) == original
+
+
+@pytest.mark.parametrize("stale", (False, True))
+def test_empty_or_all_native_queue_retains_objects_even_with_absent_authorizations(stale):
+    native = [None, _req("same-native-id", tagged=False), _req("same-native-id", tagged=False)]
+    plan = NativePrefillPlan(1, (_key(_req("not-enqueued")),))
+    selection = select_native_prefill_candidates(
+        native, plan=plan, current_semantic_revision=1 + int(stale),
+    )
+    assert tuple(id(request) for request in selection.candidates) == tuple(map(id, native))
+    assert not selection.rejected
+    empty = select_native_prefill_candidates(
+        (), plan=plan, current_semantic_revision=1 + int(stale),
+    )
+    assert not empty.candidates and not empty.rejected

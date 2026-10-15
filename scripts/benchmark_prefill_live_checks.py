@@ -23,11 +23,14 @@ from beliefkv.runtime.sglang_v0520_admission import (
 )
 from beliefkv.runtime.sglang_v0520_runtime import NativeAdmissionRuntime, _ChildFinalStage
 from scripts.benchmark_native_shared_path import (
-    baseline_classes, distribution, synthetic_runtime,
+    baseline_classes, baseline_selector, distribution, synthetic_runtime,
 )
 
 
-def measure(baseline, baseline_frontier, *, workflows, profiling, scenario, iterations):
+def measure(
+    baseline, baseline_frontier, *, workflows, profiling, scenario, iterations,
+    baseline_selection=None,
+):
     variants = {
         "baseline": synthetic_runtime(
             baseline, baseline_frontier, workflows, 2, profiling=profiling,
@@ -100,7 +103,11 @@ def measure(baseline, baseline_frontier, *, workflows, profiling, scenario, iter
                 plan = runtime.plan_native_prefill(
                     queue, running_batch=running, adder=adder,
                 )
-                selection = select_native_prefill_candidates(
+                selector = (
+                    baseline_selection if name == "baseline" and baseline_selection is not None
+                    else select_native_prefill_candidates
+                )
+                selection = selector(
                     queue, plan=plan,
                     current_semantic_revision=runtime.semantic_revision,
                 )
@@ -159,6 +166,8 @@ def measure(baseline, baseline_frontier, *, workflows, profiling, scenario, iter
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--baseline-revision", required=True)
+    parser.add_argument("--compare-selection", action="store_true",
+                        help="Use the pinned baseline selector in the baseline arm.")
     parser.add_argument("--iterations", type=int, default=300)
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
@@ -168,10 +177,14 @@ def main():
     # The AST loader removes decorators; restore the measured parent scopes.
     baseline.scheduler_step = timed_runtime("scheduler_maintenance")(baseline.scheduler_step)
     baseline.plan_native_prefill = timed_runtime("admission_plan")(baseline.plan_native_prefill)
+    baseline_selection, selection_digest = (
+        baseline_selector(args.baseline_revision) if args.compare_selection else (None, None)
+    )
     cases = [
         measure(
             baseline, frontier, workflows=workflows, profiling=profiling,
             scenario=scenario, iterations=args.iterations,
+            baseline_selection=baseline_selection,
         )
         for workflows in (108, 156)
         for profiling in (False, True)
@@ -186,11 +199,14 @@ def main():
         "beliefkv/runtime/hotpath_timing.py",
         "beliefkv/policy/causal_frontier.py",
         "scripts/benchmark_prefill_live_checks.py",
+        "scripts/benchmark_native_shared_path.py",
     )
     report = {
         "status": "prefill_live_check_cpu_comparison_not_gpu_or_jct_acceptance",
         "observed_at_local": datetime.now().astimezone().isoformat(),
         "baseline_revision": args.baseline_revision, "baseline_sources": sources,
+        "compare_selection": args.compare_selection,
+        "baseline_selection_source_sha256": selection_digest,
         "equal_parent_timing_scopes": True,
         "candidate_sources": {
             path: hashlib.sha256((ROOT / path).read_bytes()).hexdigest() for path in paths

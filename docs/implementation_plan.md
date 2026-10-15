@@ -2,6 +2,21 @@
 
 Status date: 2026-10-15 (Asia/Shanghai).
 
+Development selection now retains permitted tagged positions during its full
+identity-validation pass and fills only those positions from the same plan.
+Native untagged positions, rejections, session/attempt checks and duplicate-ID
+failures stay unchanged. V746 passes254 admission/runtime/prediction/benchmark
+checks, replacing the overlapping55 V744 checks. V745 checks four queue sizes
+and matching/mixed/changed/stale cases. V747 explicitly loads the old3d5f5c4
+selector in the baseline arm:20 complete CPU-cycle cases retain equal graph,
+plan, selection, counters and timing counts, with no physical actions.
+Observed thread-CPU means improve only0.7-19.3us (0.07%-2.96%); near-flat
+cases remain near-flat and this does not explain the millisecond residual.
+Keep this small change in development. RegisteredV61/9e8a574, the engine,
+workload and19:51 launch stay fixed; inspect its actual turnover and next
+consumer FULL before further cold changes. GPU/JCT/throughput acceptance
+remains open.
+
 V743 accounts for per-sample measured interval unions in the same four
 V59/V58 windows. In the decode47 -> short-prefill1 -> decode48 subset,
 the mean residual after the previous telemetry-observer entry and before

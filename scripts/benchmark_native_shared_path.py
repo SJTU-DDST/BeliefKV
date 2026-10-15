@@ -158,7 +158,7 @@ def distribution(samples: list[float]) -> dict:
     }
 
 
-def benchmark_selection(*, revision: str, iterations: int) -> dict:
+def baseline_selector(revision: str):
     from beliefkv.runtime import sglang_v0520_admission as admission
 
     path = "beliefkv/runtime/sglang_v0520_admission.py"
@@ -176,8 +176,15 @@ def benchmark_selection(*, revision: str, iterations: int) -> dict:
             module="__future__", names=[ast.alias(name="annotations")], level=0,
         ), *definitions,
     ], type_ignores=[])), f"{revision}:{path}", "exec"), namespace)
+    return namespace["select_native_prefill_candidates"], hashlib.sha256(before.encode()).hexdigest()
+
+
+def benchmark_selection(*, revision: str, iterations: int) -> dict:
+    from beliefkv.runtime import sglang_v0520_admission as admission
+
+    baseline, digest = baseline_selector(revision)
     selectors = {
-        "baseline": namespace["select_native_prefill_candidates"],
+        "baseline": baseline,
         "optimized": admission.select_native_prefill_candidates,
     }
     cases = []
@@ -263,8 +270,10 @@ def benchmark_selection(*, revision: str, iterations: int) -> dict:
             "measured separately. No native allocator, DMA, GPU or JCT measurement."
         ),
         "baseline_revision": revision,
-        "baseline_source_sha256": hashlib.sha256(before.encode()).hexdigest(),
-        "optimized_source_sha256": hashlib.sha256((ROOT / path).read_bytes()).hexdigest(),
+        "baseline_source_sha256": digest,
+        "optimized_source_sha256": hashlib.sha256(
+            (ROOT / "beliefkv/runtime/sglang_v0520_admission.py").read_bytes(),
+        ).hexdigest(),
         "cases": cases,
     }
 
