@@ -1862,7 +1862,7 @@ class NativeAdmissionRuntime:
                     else self.enable_admission_prefetch or self.enable_final_stage_prefetch
                 ),
                 "prepare_host": self.enable_prepare_host,
-                "prepare_pool_scope": "missing_full_prefix",
+                "prepare_pool_scope": "missing_full_session_path",
                 "resident_first": self.enable_resident_first,
                 "execution_handoff": self.enable_execution_handoff,
                 "overlap_prefetch_supported": self.can_prefetch_during_overlap(),
