@@ -2,6 +2,25 @@
 
 Status date: 2026-10-15 (Asia/Shanghai).
 
+The active goal requires measured mean-workflow-JCT and completion-throughput
+improvements over native, with task quality, completion, fairness, tails and
+recomputation checked. All three workstreams remain open: actual short-prefill
+and high-frequency control cost; useful JOIN/tool FULL prefetch conversion;
+recovery, KV lifecycle and first-service coordination. CPU checks, local
+microseconds, ACK counts and transferred bytes are not acceptance. Inspect
+registered V61/9e8a574 after the existing 19:51 resource checks before further
+cold changes; use V58 for development and matched repeated formal controls.
+
+Independent quality export now retains all156 tasks in both V59/V58 inputs,
+including native's154 completed, one error and one incomplete. Export requires
+the saved patch, frozen task identity and matching hashes; empty patches remain
+in the denominator. Preserve original terminal outcomes and report officially
+resolved partial patches separately from correctly completed workflows.
+The existing JCT-eligibility and comparable-rate completeness rules remain.
+All23 checks pass (V754); V755/V756 are ungraded inputs, with source bindings
+and semantics in V757. No official score or performance gain is established,
+and no raw outcome, frozen V61 source or launch setting changes.
+
 Development diagnostics now retain predecessor result processing, successor
 selection and successor launch-observer endpoints for exact adjacent forwards,
 including absolute scheduler-thread CPU clocks. Complete nonoverlapping phases

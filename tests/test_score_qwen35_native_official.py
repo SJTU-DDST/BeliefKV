@@ -116,3 +116,25 @@ def test_rejects_mismatched_or_stale_evidence(tmp_path, changed):
         _write(path, {"repo__code-1": {"resolved": False}})
     with pytest.raises(ValueError):
         score_run(client, evaluation, "grade")
+
+
+@pytest.mark.parametrize("outcome", ("incomplete", "error", "administratively_censored"))
+def test_officially_resolved_partial_patch_is_not_a_completed_workflow(tmp_path, outcome):
+    client, evaluation = _inputs(tmp_path)
+    summary_path = client / "summary.json"
+    summary = json.loads(summary_path.read_text())
+    summary["workflows"][0]["outcome"] = outcome
+    _write(summary_path, summary)
+    manifest_path = evaluation / "manifest.json"
+    manifest = json.loads(manifest_path.read_text())
+    manifest["source_summary_sha256"] = _sha(summary_path)
+    _write(manifest_path, manifest)
+    result = score_run(client, evaluation, "grade")
+    assert result["workflow_count"] == 3
+    assert result["resolved_ids"] == result["resolved_non_completed_ids"] == ["repo__code-1"]
+    assert result["native_non_completed_ids"] == ["repo__code-1"]
+    assert result["native_workflow_outcome_counts"] == {outcome: 1, "completed": 2}
+    assert result["correctly_completed_ids"] == []
+    assert result["complete_official_grading"]
+    assert not result["measurement_complete"]
+    assert result["correctly_completed_workflows_per_hour"] is None

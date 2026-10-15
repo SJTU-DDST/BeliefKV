@@ -62,6 +62,7 @@ def export_predictions(
 
     predictions: dict[str, dict[str, str]] = {}
     patches: dict[str, str] = {}
+    outcomes: dict[str, str] = {}
     for row in rows:
         if not isinstance(row, dict):
             raise ValueError("invalid workflow result")
@@ -73,7 +74,8 @@ def export_predictions(
             row.get("base_commit") != task.get("base_commit")
             or row.get("repo") != task.get("repo")
             or row.get("docker_image") != task.get("docker_image")
-            or row.get("outcome") != "completed"
+            or not isinstance(row.get("outcome"), str)
+            or not row["outcome"]
         ):
             raise ValueError(f"workflow identity or outcome changed: {instance_id}")
         patch_path = client_dir / "workflows" / instance_id / "model.patch"
@@ -88,6 +90,7 @@ def export_predictions(
             "model_patch": patch,
         }
         patches[instance_id] = _sha256(patch_path)
+        outcomes[instance_id] = row["outcome"]
 
     if set(predictions) != set(ids):
         raise ValueError("incomplete native workflow results")
@@ -100,9 +103,14 @@ def export_predictions(
         encoding="utf-8",
     )
     manifest = {
-        "schema_version": 1,
+        "schema_version": 2,
         "run_id": run_id,
         "instance_ids": ids,
+        "evaluation_denominator": len(ids),
+        "workflow_outcome_by_instance": outcomes,
+        "native_non_completed_ids": [
+            instance_id for instance_id in ids if outcomes[instance_id] != "completed"
+        ],
         "dataset": client["dataset"],
         "dataset_revision": client["dataset_revision"],
         "source_summary_sha256": _sha256(summary_path),
