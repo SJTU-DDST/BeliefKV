@@ -74,6 +74,7 @@ from beliefkv.runtime.context_lifecycle import (
     CompletionBudgetMiddleware,
     ContextLifecycleMiddleware,
     ContextLifecyclePolicy,
+    make_summary_model,
 )
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.stream_content_shadow import StreamContentShadow
@@ -3117,8 +3118,8 @@ def _build_autonomous_agent(
     delegation_enabled: bool = True,
 ) -> Any:
     model = _model(config, adapter, deadline_controller)
-    summary_model = model.model_copy(
-        update={"max_tokens": config.context_lifecycle.summary_output_tokens}
+    summary_model = make_summary_model(
+        model, output_tokens=config.context_lifecycle.summary_output_tokens,
     )
     deadline_controller.register_model(summary_model)
     middleware: list[Any] = [
@@ -3397,8 +3398,8 @@ def _run_planned_child(
             if config.child_return_intent_shadow else []
         )
         child_model = _model(config, adapter, deadline_controller)
-        summary_model = child_model.model_copy(
-            update={"max_tokens": config.context_lifecycle.summary_output_tokens}
+        summary_model = make_summary_model(
+            child_model, output_tokens=config.context_lifecycle.summary_output_tokens,
         )
         deadline_controller.register_model(summary_model)
         child = create_agent(

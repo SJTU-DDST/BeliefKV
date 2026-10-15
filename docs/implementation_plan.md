@@ -42,10 +42,15 @@ Tagged native also changes, so formal controls need this same engine.
 
 V894 freezes candidate2d1d75e with engine treededbe1a0 and canonical patch
 SHA256640ab9281cbcb4b95732ff005854a73b4e8901b250240dc51c32c304d797d35c.
-V895 registers V65_full_latest, supervisor1770086, port18469, state
-ops/v65_full_latest_20261015.state.json. It waits for complete V64,
-driver/scheduler exit and free GPU0; failure pauses succession for diagnosis.
-Predictive only, same workload, no old reservation rule. V65 is not running.
+V895's original V65_full_latest waiter1770086 was identity-checked and
+stopped before GPU launch in V907; preserve its registration/state and absent
+run directory. The latest tail contains empty length-limited summaries.
+A shared summary-model factory now explicitly disables summary thinking,
+retaining2048 summary output,8192 agent output, prompts, retry/fallback,
+guards and eligibility. Root/in-graph/planned-child and peer paths use it.
+184 related checks pass,one Docker check skips; merged qualification is1453
+passed/two skipped. Prepare a new frozen candidate; actual summary quality,
+failure reduction and GPU benefit remain unverified.
 V64's3600-3900s window has325909/388781 steps, mean decode batch30.95/
 41.96, contexts16207/17278 and20.070s control exclusive wall. Short-prefill
 63/75 samples run_batch47.227/39.102ms; service cost remains an open issue,
@@ -73,6 +78,23 @@ error improves, but1195 positive-FULL-plan waits worsen P90 from720.6 to
 select a predictor from the favorable pooled median. V65 stays registered
 with unchanged runtime/model/source. Replay windows are not feasible H2D
 actions or end-to-end benefit.
+
+V905 seals the later V64 prefix:189 JOIN waits,three unknown boundaries,
+83 early-started next-request FULL reuse events/1.648GB;18432 tool waits,
+120 such events/6.836GB. Explicit wait_prefetch_plan rows show150/1175
+pre-completion positive plans and100/149 pre-completion submits. These
+denominators differ from155/1234 classifications including opportunity
+snapshots. JOIN/tool final-ACK-to-service P90 is10.332/27.895s, retaining
+pre-completion residence, summaries and service waits as distinct causes.
+
+V906 verifies V58's complete156 quality denominator:90 resolved,62
+unresolved,four empty patches. All152 nonempty-patch reports agree with the
+official summary; no missing nonempty reports or grading infrastructure
+errors.152 container receipts retain1 CPU/8GiB/runc/no GPU. Source workflow
+outcomes are154 completed,one incomplete,one error; grading completion is
+separate. All90 resolved workflows are completed and JCT eligible. The
+all156 resolved fraction is57.69%. V63 grading is now running; do not
+compare its partial results or claim quality/performance acceptance.
 
 The first two V64 windows are complete. Steps228359/246021 at120-300s;
 365786/386707 at600-900s,2.6% above V63 but5.4% below historical native.

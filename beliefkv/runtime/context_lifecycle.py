@@ -61,6 +61,18 @@ invent progress or a terminal outcome.
 """
 
 
+def make_summary_model(model: BaseChatModel, *, output_tokens: int) -> BaseChatModel:
+    """Use the checkpoint budget for visible text on the serving endpoint."""
+    extra_body = dict(getattr(model, "extra_body", None) or {})
+    template = dict(extra_body.get("chat_template_kwargs") or {})
+    template["enable_thinking"] = False
+    extra_body["chat_template_kwargs"] = template
+    return model.model_copy(update={
+        "max_tokens": output_tokens,
+        "extra_body": extra_body,
+    })
+
+
 @dataclass(frozen=True)
 class ContextLifecyclePolicy:
     """Runtime-owned text context limits; independent of the SGLang KV pool."""
