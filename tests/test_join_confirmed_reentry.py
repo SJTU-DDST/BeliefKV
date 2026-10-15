@@ -358,6 +358,133 @@ def test_client_bound_snapshot_uses_original_native_session_and_input_limit():
         runtime.close()
 
 
+@pytest.mark.parametrize("native_arrival", (False, True))
+def test_client_bound_restore_ack_survives_before_or_after_native_registration(native_arrival):
+    runtime, origin, opportunity, cache, _ = continuing_join_fixture()
+    snapshots = []
+
+    def snapshot(session, generation, **kwargs):
+        snapshots.append((session, generation, kwargs))
+        return opportunity.anchors.component_leaves
+
+    cache.session_refs = NS(
+        snapshot_latest_session_leaf_anchors=snapshot,
+        snapshot_session_leaf_anchors=snapshot,
+    )
+    try:
+        complete_join(runtime)
+        runtime.on_events((client_submit(),))
+        ticket = runtime._join_ticket
+        steps = tuple(replace(step, key=ticket.key) for step in opportunity.steps)
+        anchors = replace(opportunity.anchors, key=ticket.key)
+        opportunity = replace(
+            opportunity, anchors=anchors,
+            candidate=replace(opportunity.candidate, anchors=anchors),
+            step=steps[0], steps=steps,
+        )
+        with patch.object(
+            runtime, "inspect_context_h2d_opportunity", return_value=opportunity,
+        ):
+            runtime.dispatch_join_prefetch()
+        commands = ticket.command_ids
+        assert len(commands) == 4
+        assert runtime.context_sessions.get("ctx-parent") is None
+        if native_arrival:
+            target = req("parent-next")
+            target.beliefkv_metadata.update(
+                invocation_id="parent", context_id="ctx-parent", context_epoch=1,
+            )
+            target.session_id, target.session_generation = (
+                origin.session_id, origin.session_generation,
+            )
+            assert runtime.register_visible_request(target)
+        for node, command in enumerate(commands, 1):
+            state = node == 4
+            pools = (("kv", 4),) + ((("mamba", 1),) if state else ())
+            completed = runtime.on_native_transfer_commit(NS(
+                direction="h2d", status="completed", node_ids=(node,),
+                num_tokens_by_pool=pools,
+                child_commits=(NS(
+                    command_id=command, anchor_node_id=node, published_node_ids=(node,),
+                    num_tokens_by_pool=pools, num_bytes=40 + 20 * state,
+                ),),
+            ))
+            assert len(completed) == 1
+            assert completed[0].context_epoch == 1
+            assert completed[0].source == "join_ticket"
+            assert not runtime.physical_disabled
+        assert runtime.physical_ledger.pending_count == 0
+        assert runtime.counts["native_physical_completed"] == 4
+        assert bool(snapshots) != native_arrival
+        assert all(
+            (session, generation) == (origin.session_id, origin.session_generation)
+            for session, generation, _ in snapshots
+        )
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("invalid", (
+    "missing_ticket", "changed_session", "changed_generation", "missing_snapshot",
+    "compact", "cancel", "damaged_receipt",
+))
+def test_bound_ack_does_not_accept_unproven_session_or_damaged_native_receipt(invalid):
+    runtime, _, opportunity, cache, _ = continuing_join_fixture()
+    cache.session_refs = NS(
+        snapshot_latest_session_leaf_anchors=lambda *_args, **_kwargs: (
+            None if invalid == "missing_snapshot" else opportunity.anchors.component_leaves
+        ),
+        snapshot_session_leaf_anchors=lambda *_args, **_kwargs: None,
+    )
+    try:
+        complete_join(runtime)
+        runtime.on_events((client_submit(),))
+        ticket = runtime._join_ticket
+        key = ticket.key
+        from beliefkv.runtime.sglang_v0520_physical import (
+            PhysicalActionExpectation, PhysicalChildExpectation,
+        )
+        runtime.physical_ledger.register(PhysicalActionExpectation(
+            "ack-proof", "PREFETCH_GPU", key.context_id, key.context_epoch,
+            (PhysicalChildExpectation(1, (1,), (("kv", 40),), 40),),
+            (("kv", 10),), session_id=key.session_id,
+            session_generation=key.session_generation,
+        ))
+        if invalid == "missing_ticket":
+            runtime._discard_join_ticket("test_invalidated", ticket=ticket)
+        elif invalid in ("changed_session", "changed_generation"):
+            ticket.key = replace(
+                key, **(
+                    {"session_id": "different"} if invalid == "changed_session"
+                    else {"session_generation": key.session_generation + 1}
+                ),
+            )
+        elif invalid == "compact":
+            runtime.on_events((event(
+                23, RuntimeEventKind.CONTEXT_COMPACT, invocation_id="parent",
+                context_id="ctx-parent", context_epoch=2,
+            ),))
+        elif invalid == "cancel":
+            runtime.on_events((event(
+                23, RuntimeEventKind.INVOCATION_CANCEL, invocation_id="parent",
+            ),))
+        completed = runtime.on_native_transfer_commit(NS(
+            direction="h2d", status="completed", node_ids=(1,),
+            num_tokens_by_pool=(("kv", 4),),
+            child_commits=(NS(
+                command_id="ack-proof", anchor_node_id=1, published_node_ids=(1,),
+                num_tokens_by_pool=(("kv", 4),),
+                num_bytes=41 if invalid == "damaged_receipt" else 40,
+            ),),
+        ))
+        assert completed == ()
+        assert runtime.physical_disabled
+        assert runtime.counts["physical_receipt_failed"] == 1
+        assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
+
+
 def test_client_bound_live_planner_excludes_prior_decode_output_beyond_safe_input():
     from tests.test_sglang_v0520_physical import prepare_prefix_fixture
 

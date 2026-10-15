@@ -1282,6 +1282,12 @@ class NativeAdmissionRuntime:
                 elif event.kind in (
                     RuntimeEventKind.CONTEXT_COMPACT, RuntimeEventKind.CONTEXT_ADVANCE,
                 ):
+                    invocation = self.graph.invocations.get(event.invocation_id)
+                    context_id = event.context_id or (
+                        invocation.context_id if invocation is not None else None
+                    )
+                    if context_id is not None:
+                        self.physical_ledger.invalidate_context(context_id)
                     self._advance_join_ticket(event)
                     self._child_report_notices.pop(event.invocation_id, None)
                     self._parent_capacity_handoffs.pop(event.context_id, None)
@@ -7778,12 +7784,19 @@ class NativeAdmissionRuntime:
             and key.session_id is not None
             and key.session_generation is not None
         }
-        # A client LLM_SUBMIT can advance the causal epoch before its HTTP request
-        # registers a new visible key. Native session generation is the authority
-        # for accepting the outstanding old-prefix H2D ACK across that one step.
+        # HTTP registration can lag both an old-epoch transfer and a confirmed
+        # JOIN transfer already bound to its next consumer's epoch.
         cache = self._native_cache
         for context_id, epoch, session_id, generation in self.physical_ledger.pending_transfer_sessions:
-            if context_id in live_sessions or live_epochs.get(context_id) != epoch + 1:
+            if context_id in live_sessions:
+                continue
+            if live_epochs.get(context_id) == epoch:
+                ticket = self._pending_confirmed_join_ticket(context_id, epoch)
+                if ticket is None or (
+                    ticket.key.session_id, ticket.key.session_generation,
+                ) != (session_id, generation):
+                    continue
+            elif live_epochs.get(context_id) != epoch + 1:
                 continue
             context = self.graph.contexts.get(context_id)
             workflow = self.graph.workflows.get(context.workflow_id) if context else None

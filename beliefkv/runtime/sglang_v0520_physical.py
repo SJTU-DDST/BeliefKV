@@ -1331,6 +1331,7 @@ class PhysicalTransactionLedger:
         self.max_age_s = max_age_s
         self._pending: dict[str, tuple[PhysicalActionExpectation, float, set[int]]] = {}
         self._pending_action_counts: dict[str, int] = {}
+        self._context_invalidated_commands: set[str] = set()
         self._history: deque[str] = deque()
         self._seen: set[str] = set()
         self._published_by_command: dict[str, dict[int, tuple[int, ...]]] = {}
@@ -1386,6 +1387,7 @@ class PhysicalTransactionLedger:
 
     def _retire(self, command_id: str) -> None:
         expected, _, _ = self._pending.pop(command_id)
+        self._context_invalidated_commands.discard(command_id)
         remaining = self._pending_action_counts[expected.action] - 1
         if remaining:
             self._pending_action_counts[expected.action] = remaining
@@ -1493,6 +1495,13 @@ class PhysicalTransactionLedger:
             )
         self._retire(command_id)
 
+    def invalidate_context(self, context_id: str) -> None:
+        """Keep submitted DMA pending, but forbid credit after prefix replacement."""
+        self._context_invalidated_commands.update(
+            command_id for command_id, (expected, _, _) in self._pending.items()
+            if expected.context_id == context_id
+        )
+
     def _reject(self, message: str) -> None:
         # An invalid merged event cannot safely be attributed to any subset.
         for command_id in tuple(self._pending):
@@ -1580,7 +1589,8 @@ class PhysicalTransactionLedger:
                 and same_session and live_epoch == expected.context_epoch + 1
             )
             if (
-                direction != ("d2h" if expected.action == "PREPARE_HOST" else "h2d")
+                command_id in self._context_invalidated_commands
+                or direction != ("d2h" if expected.action == "PREPARE_HOST" else "h2d")
                 or type(live_epoch) is not int
                 or not epoch_matches
                 or (
