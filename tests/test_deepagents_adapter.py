@@ -913,7 +913,7 @@ def test_semantic_periodic_frame_does_not_wait_for_punctuation_or_128_chars(monk
     assert rows[-1]["sampling_reason"] == "periodic_content"
 
 
-def test_semantic_tool_chunks_emit_first_negative_and_finish_without_repeats(monkeypatch, tmp_path):
+def test_semantic_tool_chunks_keep_first_negative_and_local_finish(monkeypatch, tmp_path):
     monkeypatch.setenv("BELIEFKV_EMIT_SEMANTIC_TEXT", "1")
     now = [1000.]
     received = []
@@ -957,16 +957,79 @@ def test_semantic_tool_chunks_emit_first_negative_and_finish_without_repeats(mon
     control.close()
     assert shadow.close()["complete"]
     frames = [row for row in received if row.attributes.get("beliefkv_semantic_child_text")]
-    assert len(frames) == 3
+    assert len(frames) == 2
     assert frames[1].ts_ms == 1001.
     assert frames[1].attributes["tool_chunk"] is True
     assert frames[1].attributes["content_tail"] == "I will inspect this."
-    assert frames[-1].ts_ms == now[0]
+    assert frames[-1].ts_ms == 1001.
     observations = [
         json.loads(line) for line in shadow.path.read_text().splitlines()
     ]
     assert len(observations) == 3
     assert observations[-1]["finish_reason"] == "tool_calls"
+
+
+def test_post_tool_control_skips_keep_local_cadence_and_next_request_frames(monkeypatch, tmp_path):
+    monkeypatch.setenv("BELIEFKV_EMIT_SEMANTIC_TEXT", "1")
+    now = [1000.]
+    received = []
+    control = QueuedRuntimeEventSink(SimpleNamespace(
+        emit_batch=lambda events: received.extend(events), close=lambda: None,
+    ))
+    shadow = StreamContentShadow(tmp_path / "post-tool.jsonl", capacity=32)
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(), BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=control, stream_content_shadow=shadow, clock_ms=lambda: now[0],
+    )
+    adapter.start()
+    task = adapter.declare_runtime_tasks([("explorer", "inspect")])[0]
+    chain, run = uuid4(), uuid4()
+    adapter.on_chain_start({}, {}, run_id=chain, metadata=adapter.invocation_scope(task))
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="prompt")]], run_id=run, parent_run_id=chain,
+    )
+
+    def chunk(when, text, *, tools=False, finish=None, generation=run):
+        now[0] = when
+        adapter.on_llm_new_token(
+            text, run_id=generation, chunk=SimpleNamespace(
+                message=SimpleNamespace(
+                    content=text, tool_call_chunks=[{"args": "x"}] if tools else [],
+                ),
+                generation_info={"finish_reason": finish} if finish else None,
+            ),
+        )
+
+    chunk(1000., "body")
+    chunk(1001., "", tools=True)
+    chunk(1102., "a")
+    chunk(1103., "b")
+    chunk(1205., "c")
+    chunk(1206., "", finish="tool_calls")
+    adapter.on_llm_end(_natural_child_result("bodyabc"), run_id=run)
+    following = uuid4()
+    adapter.on_chat_model_start(
+        {}, [[HumanMessage(content="next prompt")]], run_id=following, parent_run_id=chain,
+    )
+    chunk(1400., "Final evidence is ready.", generation=following)
+    chunk(1401., "", finish="stop", generation=following)
+    control.close()
+    assert shadow.close()["complete"]
+    frames = [row for row in received if row.attributes.get("beliefkv_semantic_child_text")]
+    previous = [row for row in frames if row.attributes["request_id"] == f"beliefkv:{run}"]
+    assert [row.ts_ms for row in previous] == [1000., 1001.]
+    assert previous[-1].attributes["tool_chunk"] is True
+    fresh = [row for row in frames if row.attributes["request_id"] == f"beliefkv:{following}"]
+    assert [row.ts_ms for row in fresh] == [1400., 1401.]
+    assert all(row.attributes["tool_chunk"] is False for row in fresh)
+    observations = [
+        json.loads(line) for line in shadow.path.read_text().splitlines()
+    ]
+    previous_local = [
+        row for row in observations
+        if row["event"] == "child_stream_content" and row["request_id"] == f"beliefkv:{run}"
+    ]
+    assert [row["ts_ms"] for row in previous_local] == [1000., 1001., 1102., 1205., 1206.]
 
 
 def test_child_content_shadow_early_milestones_preserve_identity(tmp_path) -> None:

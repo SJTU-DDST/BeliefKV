@@ -910,6 +910,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         eos_events: list[float] = []
         first_top_hit = False
         first_tool_chunk = False
+        semantic_control_useful = False
         content_observation: dict[str, Any] | None = None
         with self._lock:
             if (
@@ -931,6 +932,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             self._child_stream_last_chunk[key] = chunk
             first_tool_chunk = (
                 tool_seen and key not in self._child_first_tool_chunk_shadow_runs
+            )
+            semantic_control_useful = (
+                key not in self._child_first_tool_chunk_shadow_runs
             )
             if self._stream_content_shadow is not None:
                 count, tail, next_at, last_emitted = self._stream_content_state.get(
@@ -1098,21 +1102,23 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 or when - self._semantic_text_last_ms.get(key, 0.) >= SEMANTIC_FRAME_INTERVAL_MS
             ):
                 self._semantic_text_last_ms[key] = when
-                self._publish((self._event(
-                    RuntimeEventKind.STRUCTURED_ACTION,
-                    ts_ms=when, invocation_id=invocation_id,
-                    context_id=metadata.context_id, context_epoch=metadata.context_epoch,
-                    join_id=pending.join_id, confidence=EventConfidence.OBSERVED_EXACT,
-                    attributes={
-                        "source": "deepagents_semantic_text",
-                        "beliefkv_semantic_child_text": True,
-                        "request_id": _native_request_id(run_id),
-                        "content_chars": content_observation["content_chars"],
-                        "content_tail": content_observation["semantic_content_tail"],
-                        "tool_chunk": tool_seen,
-                        "monotonic_clock_domain": self._monotonic_clock_domain,
-                    },
-                ),), control=True, async_control=True)
+                # Runtime ignores later text after this request's first tool marker.
+                if semantic_control_useful:
+                    self._publish((self._event(
+                        RuntimeEventKind.STRUCTURED_ACTION,
+                        ts_ms=when, invocation_id=invocation_id,
+                        context_id=metadata.context_id, context_epoch=metadata.context_epoch,
+                        join_id=pending.join_id, confidence=EventConfidence.OBSERVED_EXACT,
+                        attributes={
+                            "source": "deepagents_semantic_text",
+                            "beliefkv_semantic_child_text": True,
+                            "request_id": _native_request_id(run_id),
+                            "content_chars": content_observation["content_chars"],
+                            "content_tail": content_observation["semantic_content_tail"],
+                            "tool_chunk": tool_seen,
+                            "monotonic_clock_domain": self._monotonic_clock_domain,
+                        },
+                    ),), control=True, async_control=True)
         self._publish(tuple(
             self._event(
                 RuntimeEventKind.STRUCTURED_ACTION,

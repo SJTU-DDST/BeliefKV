@@ -8,11 +8,31 @@ recomputation checked. All three workstreams remain open: actual short-prefill
 and high-frequency control cost; useful JOIN/tool FULL prefetch conversion;
 recovery, KV lifecycle and first-service coordination. CPU checks, local
 microseconds, ACK counts and transferred bytes are not acceptance. Inspect
-running V63 retry1/a297462 and completed V62; use V58 for development and
+running V64_latest/5229d98 and completed V63 retry1; use V58 for development and
 matched repeated formal controls. Keep running source and engine frozen.
-Continue trace-supported implementation and CPU validation during the GPU
-reservation. A new GPU run is required for end-to-end benefit acceptance,
-not as a prerequisite for fixing identifiable control or lifecycle defects.
+GPU use is now authorized. V64 cold-started at2026-10-15 11:38:12 PDT
+(2026-10-16 02:38:12 Asia/Shanghai), driver570404, port18468. Continue
+trace-supported CPU fixes without delaying or hot-editing this collection.
+V860/V861 verify actual GPU service, source/engine/configuration and unchanged
+V63 pool capacities. Scheduler570674 and observer494540 are live; physical
+migration remains enabled. Collect the registered fixed workload windows.
+
+V870 binds completed V63:156 completed,145 native-agent-JCT eligible,
+8002.294s and physical migration enabled throughout. Outer driver exit0 does
+not erase the inner client's exit1 for eleven eligibility exclusions. On143
+explicitly eligible historical pairs, means2000.953/2240.077s differ10.67%,
+but LLM requests31073/36896 and different harness/engine prevent attribution.
+Pre-completion next-request FULL reuse: JOIN75 events/1.542GB and tool140/
+8.700GB. ACK-to-service P90 remains12.552/19.516s. All workstreams stay open.
+
+Independent official CPU quality grading is running serially for V58/V63
+with one worker,1 CPU,8GiB and no GPU. Bind V864 and resource overlap with V64;
+audit missing reports and infrastructure errors before interpreting quality.
+Separate Dev repair V871 suppresses only semantic control frames after a
+generation's first tool-negative marker, retaining local snapshots, cadence
+and following final-report generations. Old code fails two reproductions;
+239 checks pass and two skip. V866's29390/140532 historical prefix frames
+show applicability, not saved CPU or JCT. This repair is not in frozen V64.
 
 Current facts override later historical scheduling notes. V62 collected156
 workflows in7653.886s:154 completed/two incomplete,148 natural terminal and
@@ -94,11 +114,11 @@ remain unverified; total distinct passing checks1028.
 V859 verifies the old queue was still unlaunched, stops only launcher238495
 and observer275192, and preserves V845 plus original state snapshots.
 V64_latest is registered inV857 with launcher493245 and observer494540,
-waiting for complete successful V63, its driver/scheduler exit and free GPU0.
+V63 has completed and released GPU0; V858 binds the actual cold V64 launch.
 Keep the156-workflow setup and V58 development reference. The shared harness
 change can alter trajectories, JOIN timing and pressure: formal native controls
 must use the same harness and resources, and gains cannot be assigned to
-scheduling from the historical comparison. V63 source remains frozen.
+scheduling from the historical comparison. V63 and V64 source remain frozen.
 
 The fifth4800-5100s window is complete:343212/330775 request steps,
 mean context23055/23153 and worker interval22.367/22.231ms. Short-prefill
