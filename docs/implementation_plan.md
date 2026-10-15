@@ -17,9 +17,13 @@ the saved patch, frozen task identity and matching hashes; empty patches remain
 in the denominator. Preserve original terminal outcomes and report officially
 resolved partial patches separately from correctly completed workflows.
 The existing JCT-eligibility and comparable-rate completeness rules remain.
-All23 checks pass (V754); V755/V756 are ungraded inputs, with source bindings
-and semantics in V757. No official score or performance gain is established,
-and no raw outcome, frozen V61 source or launch setting changes.
+All23 checks pass (V754); V755/V756 retain the inputs, with source bindings
+and semantics in V757. V758/V759 bind the pinned official harness and156
+cached images and start CPU grading: one worker, one CPU,8GiB, no GPU device
+requests. Stop admitting tasks at19:13 and stop/clean owned containers at19:45,
+preserving completed logs before V61. Unattempted/interrupted grading is
+missing evaluation evidence, not a model failure. No complete official score
+or performance gain is established; raw outcomes and frozen V61 stay unchanged.
 
 Development diagnostics now retain predecessor result processing, successor
 selection and successor launch-observer endpoints for exact adjacent forwards,
