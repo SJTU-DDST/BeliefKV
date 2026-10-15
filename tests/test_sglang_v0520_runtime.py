@@ -3942,6 +3942,94 @@ def test_admission_plans_only_queued_invocations_without_whole_graph_scan():
     assert describe.call_count == 1
 
 
+@pytest.mark.parametrize("invalid", (
+    "workflow_ended", "workflow_missing", "invocation_missing",
+    "invocation_done", "invocation_cancelled", "invocation_waiting",
+    "invocation_workflow_changed", "invocation_context_changed",
+    "context_missing", "context_workflow_changed", "context_advanced",
+    "context_behind", "running_session_changed",
+))
+def test_prefill_classification_does_not_promote_invalid_live_state(invalid):
+    from beliefkv.control.causal_graph import InvocationState
+
+    runtime = NativeAdmissionRuntime()
+    request = req("a")
+    request.session_id, request.session_generation = "s-a", 1
+    runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="a", context_id="ctx-a"),
+    ))
+    invocation = runtime.graph.invocations["a"]
+    context = runtime.graph.contexts["ctx-a"]
+    if invalid == "workflow_ended":
+        runtime.graph.workflows["wf"].end_ts_ms = 2.
+    elif invalid == "workflow_missing":
+        del runtime.graph.workflows["wf"]
+    elif invalid == "invocation_missing":
+        del runtime.graph.invocations["a"]
+    elif invalid == "invocation_done":
+        invocation.state = InvocationState.DONE
+    elif invalid == "invocation_cancelled":
+        invocation.state = InvocationState.CANCELLED
+    elif invalid == "invocation_waiting":
+        invocation.state = InvocationState.WAIT_TOOL
+    elif invalid == "invocation_workflow_changed":
+        invocation.workflow_id = "other"
+    elif invalid == "invocation_context_changed":
+        invocation.context_id = "other"
+    elif invalid == "context_missing":
+        del runtime.graph.contexts["ctx-a"]
+    elif invalid == "context_workflow_changed":
+        context.workflow_id = "other"
+    elif invalid == "context_advanced":
+        context.epoch = 1
+    elif invalid == "context_behind":
+        key = replace(runtime.visible["a"], context_epoch=1)
+        runtime.visible["a"] = runtime.context_sessions["ctx-a"] = key
+    else:
+        invocation.state = InvocationState.RUNNING_LLM
+        runtime.context_sessions.pop("ctx-a")
+    key = runtime.visible["a"]
+    try:
+        with patch.object(
+            runtime.frontier, "admission_rank",
+            side_effect=AssertionError("invalid state must not obtain a causal rank"),
+        ):
+            assert runtime._prefill_causal_ranks(
+                [(0, request)], {0: key},
+            ) == {0: (5, 0, 0)}
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("transition", ("workflow_end", "context_advance"))
+def test_prefill_final_authorization_rechecks_changes_after_classification(transition):
+    runtime = NativeAdmissionRuntime()
+    tagged, plain = req("a"), req("plain", tagged=False)
+    runtime.register_visible_request(tagged)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="a", context_id="ctx-a"),
+    ))
+
+    def change_state(*args):
+        if transition == "workflow_end":
+            runtime.graph.workflows["wf"].end_ts_ms = 2.
+        else:
+            runtime.graph.contexts["ctx-a"].epoch += 1
+
+    try:
+        with patch.object(runtime, "_submit_local_predictions", side_effect=change_state):
+            result = select(runtime, [tagged, plain])
+        assert result.candidates == (plain,)
+        assert result.rejected == (("a", "no_authorization"),)
+    finally:
+        runtime.close()
+
+
 def test_shared_path_timing_is_persisted_without_per_call_rows(tmp_path):
     runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
     runtime.on_events((event(0, RuntimeEventKind.WORKFLOW_START),))

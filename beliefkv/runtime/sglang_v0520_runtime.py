@@ -7714,9 +7714,10 @@ class NativeAdmissionRuntime:
                 key is None
                 or key.invocation_id in ready_ranks
                 or self.visible.get(key.request_id) != key
-                or self._terminal(key)
-                or key.root_workflow_id not in self.graph.workflows
             ):
+                continue
+            workflow = self.graph.workflows.get(key.root_workflow_id)
+            if workflow is None or workflow.end_ts_ms is not None:
                 continue
             invocation = self.graph.invocations.get(key.invocation_id)
             context = self.graph.contexts.get(key.context_id)
@@ -8084,6 +8085,7 @@ class NativeAdmissionRuntime:
                 if self.enable_final_stage_priority is not None
                 else self.enable_admission_prefetch or self.enable_final_stage_prefetch
             )
+            and self._final_stages
             and self._final_priority_normal_admissions >= 4
             and self._prefetch_priority_normal_admissions >= 4
             and self._prefetch_priority_promoted is None

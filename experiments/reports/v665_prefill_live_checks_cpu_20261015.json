@@ -1,0 +1,556 @@
+{
+  "status": "prefill_live_check_cpu_comparison_not_gpu_or_jct_acceptance",
+  "observed_at_local": "2026-10-14T20:56:33.442599-07:00",
+  "baseline_revision": "60275db",
+  "baseline_sources": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "4313cbe326bb3491726eb8cb439d9ba890e8e1df0cc3c1edea0d98b990222c68",
+    "beliefkv/policy/causal_frontier.py": "32e206ce1cc069c0690b05bedb0d5925b40fac3b48e1f77b4461ea51993240a4",
+    "beliefkv/runtime/sglang_v0520_admission.py": "69034926f0f66178b43482692cecd301b4d43dc5805a8678a03c8c85456211f4"
+  },
+  "candidate_sources": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "b8dd8c6c15d541046d7ebe0a709192f7752bb0e56d595494fa30d06abbebf9b9",
+    "beliefkv/runtime/sglang_v0520_admission.py": "69034926f0f66178b43482692cecd301b4d43dc5805a8678a03c8c85456211f4",
+    "beliefkv/runtime/hotpath_timing.py": "aa554df03b5c08cc009be14f21a9c25bdb5e48eb585b5cf774601d9ae471792b",
+    "beliefkv/policy/causal_frontier.py": "32e206ce1cc069c0690b05bedb0d5925b40fac3b48e1f77b4461ea51993240a4",
+    "scripts/benchmark_prefill_live_checks.py": "f0347ee72c64772ec788147fd2c55f985b453deeaed55944ffe3eff173d3a811"
+  },
+  "cases": [
+    {
+      "workflows": 108,
+      "scenario": "stable",
+      "profiling_enabled": false,
+      "iterations": 400,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.51213512,
+            "p50_ms": 0.489233,
+            "p99_ms": 0.733686,
+            "max_ms": 0.744825
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.513585,
+            "p50_ms": 0.490639,
+            "p99_ms": 0.736562,
+            "max_ms": 0.747113
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.489415605,
+            "p50_ms": 0.466592,
+            "p99_ms": 0.694457,
+            "max_ms": 0.70131
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.4908879725,
+            "p50_ms": 0.467923,
+            "p99_ms": 0.697196,
+            "max_ms": 0.703919
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.04436234523420324,
+      "plan_selection_graph_and_counters_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 108,
+      "scenario": "local_round",
+      "profiling_enabled": false,
+      "iterations": 400,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.8069157299999999,
+            "p50_ms": 0.805826,
+            "p99_ms": 0.84369,
+            "max_ms": 0.847843
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.808444885,
+            "p50_ms": 0.807165,
+            "p99_ms": 0.845336,
+            "max_ms": 0.849338
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.718304485,
+            "p50_ms": 0.717679,
+            "p99_ms": 0.756271,
+            "max_ms": 0.938609
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.719976145,
+            "p50_ms": 0.719186,
+            "p99_ms": 0.760308,
+            "max_ms": 0.940807
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.109814744843306,
+      "plan_selection_graph_and_counters_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 108,
+      "scenario": "message_control",
+      "profiling_enabled": false,
+      "iterations": 400,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.9391407825,
+            "p50_ms": 0.939259,
+            "p99_ms": 0.97171,
+            "max_ms": 0.97921
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.940678005,
+            "p50_ms": 0.940653,
+            "p99_ms": 0.973055,
+            "max_ms": 0.981013
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.863270775,
+            "p50_ms": 0.863577,
+            "p99_ms": 0.893559,
+            "max_ms": 0.895338
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.8649060775,
+            "p50_ms": 0.865272,
+            "p99_ms": 0.894907,
+            "max_ms": 0.896837
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.08078661784661656,
+      "plan_selection_graph_and_counters_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 108,
+      "scenario": "stable",
+      "profiling_enabled": true,
+      "iterations": 400,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.493306045,
+            "p50_ms": 0.492607,
+            "p99_ms": 0.519438,
+            "max_ms": 0.536825
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.4948150075,
+            "p50_ms": 0.493938,
+            "p99_ms": 0.521718,
+            "max_ms": 0.565923
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.481699095,
+            "p50_ms": 0.481992,
+            "p99_ms": 0.506114,
+            "max_ms": 0.510425
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.4830278925,
+            "p50_ms": 0.483296,
+            "p99_ms": 0.507527,
+            "max_ms": 0.512262
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.02352890283353415,
+      "plan_selection_graph_and_counters_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 108,
+      "scenario": "local_round",
+      "profiling_enabled": true,
+      "iterations": 400,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.81559434,
+            "p50_ms": 0.815362,
+            "p99_ms": 0.845684,
+            "max_ms": 0.861574
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.817164835,
+            "p50_ms": 0.816772,
+            "p99_ms": 0.852163,
+            "max_ms": 0.871101
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.744155595,
+            "p50_ms": 0.744176,
+            "p99_ms": 0.774398,
+            "max_ms": 0.776351
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.745784415,
+            "p50_ms": 0.745935,
+            "p99_ms": 0.777121,
+            "max_ms": 0.798208
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.08759102595047441,
+      "plan_selection_graph_and_counters_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 108,
+      "scenario": "message_control",
+      "profiling_enabled": true,
+      "iterations": 400,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.946570105,
+            "p50_ms": 0.945897,
+            "p99_ms": 0.97991,
+            "max_ms": 1.000114
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.94804627,
+            "p50_ms": 0.947233,
+            "p99_ms": 0.981313,
+            "max_ms": 1.001549
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.8804703925,
+            "p50_ms": 0.879257,
+            "p99_ms": 0.921924,
+            "max_ms": 0.937648
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.881933095,
+            "p50_ms": 0.880605,
+            "p99_ms": 0.923511,
+            "max_ms": 0.939157
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.06983076282553846,
+      "plan_selection_graph_and_counters_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 156,
+      "scenario": "stable",
+      "profiling_enabled": false,
+      "iterations": 400,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.68494204,
+            "p50_ms": 0.684417,
+            "p99_ms": 0.716215,
+            "max_ms": 0.72468
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.6864665975,
+            "p50_ms": 0.685942,
+            "p99_ms": 0.717946,
+            "max_ms": 0.72622
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.661972785,
+            "p50_ms": 0.661551,
+            "p99_ms": 0.689573,
+            "max_ms": 0.715222
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.66353885,
+            "p50_ms": 0.662989,
+            "p99_ms": 0.691182,
+            "max_ms": 0.717023
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.03353459659155977,
+      "plan_selection_graph_and_counters_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 156,
+      "scenario": "local_round",
+      "profiling_enabled": false,
+      "iterations": 400,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 1.11866636,
+            "p50_ms": 1.117968,
+            "p99_ms": 1.149655,
+            "max_ms": 1.350361
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 1.1203759175,
+            "p50_ms": 1.119338,
+            "p99_ms": 1.154136,
+            "max_ms": 1.352348
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 1.00462915,
+            "p50_ms": 1.003672,
+            "p99_ms": 1.045684,
+            "max_ms": 1.158086
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 1.0062268025,
+            "p50_ms": 1.005235,
+            "p99_ms": 1.047139,
+            "max_ms": 1.15999
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.10194032293954025,
+      "plan_selection_graph_and_counters_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 156,
+      "scenario": "message_control",
+      "profiling_enabled": false,
+      "iterations": 400,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 1.3168582325,
+            "p50_ms": 1.315583,
+            "p99_ms": 1.351624,
+            "max_ms": 1.358594
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 1.3184148975,
+            "p50_ms": 1.317226,
+            "p99_ms": 1.353183,
+            "max_ms": 1.36038
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 1.20920485,
+            "p50_ms": 1.208439,
+            "p99_ms": 1.240737,
+            "max_ms": 1.245582
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 1.2110557325,
+            "p50_ms": 1.21014,
+            "p99_ms": 1.24703,
+            "max_ms": 1.274364
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.08175016857784645,
+      "plan_selection_graph_and_counters_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 156,
+      "scenario": "stable",
+      "profiling_enabled": true,
+      "iterations": 400,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.688102765,
+            "p50_ms": 0.687468,
+            "p99_ms": 0.718298,
+            "max_ms": 0.727945
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.6895998125,
+            "p50_ms": 0.688901,
+            "p99_ms": 0.720755,
+            "max_ms": 0.729557
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 0.673921865,
+            "p50_ms": 0.673454,
+            "p99_ms": 0.70301,
+            "max_ms": 0.710369
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 0.6752439625,
+            "p50_ms": 0.674739,
+            "p99_ms": 0.704418,
+            "max_ms": 0.711763
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.020608694981773645,
+      "plan_selection_graph_and_counters_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 156,
+      "scenario": "local_round",
+      "profiling_enabled": true,
+      "iterations": 400,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 1.1239394925,
+            "p50_ms": 1.123277,
+            "p99_ms": 1.159928,
+            "max_ms": 1.166609
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 1.1253986525,
+            "p50_ms": 1.12479,
+            "p99_ms": 1.161499,
+            "max_ms": 1.167978
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 1.02397341,
+            "p50_ms": 1.023588,
+            "p99_ms": 1.057013,
+            "max_ms": 1.060493
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 1.025442655,
+            "p50_ms": 1.024958,
+            "p99_ms": 1.058561,
+            "max_ms": 1.072594
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.08894258380194786,
+      "plan_selection_graph_and_counters_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 156,
+      "scenario": "message_control",
+      "profiling_enabled": true,
+      "iterations": 400,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 1.3207231275,
+            "p50_ms": 1.320604,
+            "p99_ms": 1.362558,
+            "max_ms": 1.370918
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 1.3223737725,
+            "p50_ms": 1.322407,
+            "p99_ms": 1.36404,
+            "max_ms": 1.372207
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 400,
+            "mean_ms": 1.2222722975,
+            "p50_ms": 1.221607,
+            "p99_ms": 1.259128,
+            "max_ms": 1.261829
+          },
+          "wall_ms": {
+            "count": 400,
+            "mean_ms": 1.2237527,
+            "p50_ms": 1.223065,
+            "p99_ms": 1.261802,
+            "max_ms": 1.274393
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.07454312561812848,
+      "plan_selection_graph_and_counters_equal": true,
+      "physical_actions": 0
+    }
+  ],
+  "limits": [
+    "Synthetic same-input CPU queues do not establish live frequency, GPU or JCT gains.",
+    "Timing includes causal events, scheduler maintenance, complete planning and live selection.",
+    "Resident-first is disabled, final priority is enabled with no final-stage candidates.",
+    "Message control invalidates causal ranks; stable cases retain the prior causal cache.",
+    "All identity parsing and final terminal checks remain; GC and timing stay enabled.",
+    "Native allocator, neural workers, socket IPC and DMA are outside this fixture.",
+    "V60, the qualified d925278 candidate and the reservation waiter remain unchanged."
+  ]
+}
