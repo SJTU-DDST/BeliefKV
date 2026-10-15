@@ -17,6 +17,24 @@ V860/V861 verify actual GPU service, source/engine/configuration and unchanged
 V63 pool capacities. Scheduler570674 and observer494540 are live; physical
 migration remains enabled. Collect the registered fixed workload windows.
 
+The first two V64 windows are complete. Steps228359/246021 at120-300s;
+365786/386707 at600-900s,2.6% above V63 but5.4% below historical native.
+Contexts24319/23674 differ. Matched full48 worker ratios are0.997-1.002,
+yet control exclusive wall remains33.956s; short-prefill selection/run_batch
+20.720/39.403ms compare with17.794/37.587ms. V879 binds the evidence.
+V872's sealed prefixes confirm JOIN3/21.26MB and tool16/408.99MB early
+next-request FULL reuse, with91 JOIN boundaries still unknown.
+V874/V876 active/GIL samples were collected outside fixed windows; preserve
+155/121 read errors and avoid converting sample shares into CPU/GPU savings.
+Dev PREPARE now reuses a validated single-leaf root-first ancestry, following
+the existing H2D pattern. Generic multi-leaf handling, tail proof and enqueue
+checks remain. V877 passes443 checks; V878's depth64 complete CPU plan is
+0.510/0.486ms with identical output. Small local repair, not deployed in V64
+and not a reason to restart the live GPU collection. All workstreams stay open.
+V882 supplements16 real native CPU radix/allocator/tail-reclaim checks over
+the qualified engine,459 unique passing checks total. Preserve the initial16
+optional skips without an engine path; the configured rerun passed all16.
+
 V870 binds completed V63:156 completed,145 native-agent-JCT eligible,
 8002.294s and physical migration enabled throughout. Outer driver exit0 does
 not erase the inner client's exit1 for eleven eligibility exclusions. On143

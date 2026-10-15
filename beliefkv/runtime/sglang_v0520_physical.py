@@ -776,6 +776,8 @@ def shadow_backup_steps(
     paths: set[int] = set()
     provenance: dict[int, int] = {}
     depth: dict[int, int] = {}
+    single_leaf_path = None
+    ordered_nodes = None
     for leaf in sorted(leaves):
         current = leaf
         chain: list[int] = []
@@ -786,11 +788,17 @@ def shadow_backup_steps(
             seen.add(current)
             chain.append(current)
             current = nodes[current].parent_id
-        for distance, node_id in enumerate(reversed(chain)):
-            paths.add(node_id)
-            provenance.setdefault(node_id, leaf)
-            depth[node_id] = distance
-    ordered_nodes = sorted(paths, key=lambda value: (depth[value], value))
+        if len(leaves) == 1 and len(seen) == len(nodes):
+            paths = seen
+            single_leaf_path = leaf
+            ordered_nodes = chain[::-1]
+        else:
+            for distance, node_id in enumerate(reversed(chain)):
+                paths.add(node_id)
+                provenance.setdefault(node_id, leaf)
+                depth[node_id] = distance
+    if ordered_nodes is None:
+        ordered_nodes = sorted(paths, key=lambda value: (depth[value], value))
     selected = _checkpoint_paths(
         candidate.anchors, nodes, leaves, depth,
         ordered_nodes=ordered_nodes if len(paths) == len(nodes) else None,
@@ -829,7 +837,8 @@ def shadow_backup_steps(
     for node_id in ordered_nodes:
         node = nodes[node_id]
         if node_id not in eligible_paths or (
-            leaf_id is not None and provenance[node_id] != leaf_id
+            leaf_id is not None
+            and (single_leaf_path if single_leaf_path is not None else provenance[node_id]) != leaf_id
         ):
             continue
         parent = nodes.get(node.parent_id)
@@ -849,7 +858,7 @@ def shadow_backup_steps(
         ):
             continue
         if node.full_device_tokens > node.full_host_tokens:
-            leaf_id = provenance[node_id]
+            leaf_id = single_leaf_path if single_leaf_path is not None else provenance[node_id]
             steps.append(ShadowBackupStep(
                 key=candidate.anchors.key,
                 leaf_node_id=leaf_id,

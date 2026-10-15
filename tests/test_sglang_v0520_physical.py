@@ -1303,6 +1303,34 @@ def test_prepare_burst_stays_on_one_leaf_and_excludes_generated_output():
     assert [(step.node_id, step.leaf_node_id) for step in steps] == [(11, 13), (12, 13)]
 
 
+@pytest.mark.parametrize("include_tail", (False, True))
+def test_prepare_single_leaf_uses_ancestry_order_with_nonmonotone_node_ids(include_tail):
+    cache, anchors, nodes = prepare_prefix_fixture()
+    remapped = {0: 42, 1: 17, 2: 3, 3: 9, 4: 99}
+    for previous_id, node in nodes.items():
+        node.id = remapped[previous_id]
+    current = {node.id: node for node in nodes.values()}
+    cache.tree_core.node_by_id = current.__getitem__
+    anchors = replace(
+        anchors, component_leaves=((0, ((9, 4.),)), (2, ((9, 4.),))),
+    )
+    candidate = capture_action_local_shadow(cache, anchors)
+    assert candidate is not None
+    before = [(node.id, node.component_data[0].host_value) for node in nodes.values()]
+    steps = shadow_backup_steps(
+        candidate, reclaim_tail_leaves=frozenset({9}) if include_tail else frozenset(),
+    )
+    assert [(step.node_id, step.missing_full_prefix_tokens) for step in steps] == (
+        [(17, 7), (3, 6), (9, 4)] if include_tail else [(17, 3), (3, 2)]
+    )
+    assert all(step.leaf_node_id == 9 and not step.include_mamba for step in steps)
+    assert shadow_backup_steps(
+        candidate, max_steps=1,
+        reclaim_tail_leaves=frozenset({9}) if include_tail else frozenset(),
+    ) == steps[:1]
+    assert [(node.id, node.component_data[0].host_value) for node in nodes.values()] == before
+
+
 def test_prepare_prefix_budget_excludes_generation_after_reusable_checkpoint():
     anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
     root = prefetch_node(0, None, 1, key_tokens=0)
