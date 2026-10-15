@@ -65,6 +65,37 @@ are native CPU paths. Applicability is not quantified because historical
 waiting rows lack device-leaf topology. Validate that and GPU benefit on a
 later cold candidate; do not hot-editV63 or restart solely for a CPU pass.
 
+V841/V842 partition the same691624950-byte V63 opportunity prefix. Tool
+FULL capacity refusals affect1635 recorded waits in600-1200s; positive FULL
+plans almost disappear after1800s, with zero missing Host-backed FULL in the
+tool opportunity samples after2400s. These are distinct mechanisms. Native
+full-token usage subtracts both free and evictable cache, so19% usage does
+not mean81% physical allocator headroom. Keep these capacity views separate.
+
+The3600-3900s window has364157/388781 request steps and10094/9266 decode
+batches: mean requests per batch36.08/41.96. Short-prefill70/75 samples have
+run_batch wall38.973/39.102ms; control exclusive wall remains18.291s.
+V844 fixes all108 original first-wave identities, keeping unfinished and
+ineligible outcomes censored. At3000s, eligible completions84/78 and restricted
+root-completion time2118.599/2166.941s favor predictive by2.23%. This is not
+complete result.duration_seconds mean JCT, matched trajectories or quality.
+
+The next cold candidate is24a83c9/V849, superseding unlaunchedV843/deccbf3.
+It also fixes runtime prepare_pool_scope to match the actual incremental
+FULL session path. V847 reruns703 checks; unchanged reporting136 and engine157
+give996 unique identities. V64 is registered inV845 and queued only after
+successful complete V63, its driver/scheduler exit and exclusive free GPU0.
+Launcher238495 and observer275192 are live; V64 GPU collection has not begun.
+Keep the156-workflow setup and V58 development reference. Stop the sequence
+for prior physical disablement or driver failure and diagnose before resuming.
+
+The fifth4800-5100s window is complete:343212/330775 request steps,
+mean context23055/23153 and worker interval22.367/22.231ms. Short-prefill
+58/73 samples have run_batch wall38.142/37.723ms and selection CPU
+5.318/4.959ms; control exclusive wall is14.569s. All five windows have
+mixed outcomes. At01:46 Asia/Shanghai,132 results are completed and130
+eligible, with physical migration enabled; full-run acceptance stays open.
+
 V819/V820 bind a recent sealed prefix: JOIN/tool early verified FULL reuse
 1.570/8.594GB. Tool's last submit is1835.983s after first GPU service. Among
 zero-size pre-completion FULL plans,1809 later tool requests restore449.164GB
