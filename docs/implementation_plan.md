@@ -2,6 +2,16 @@
 
 Status date: 2026-10-15 (Asia/Shanghai).
 
+V658 binds7386610's immutable-key identity equality fast path. Complete CPU
+event/maintenance/planning/live-selection fixtures improve7.5%-8.5%,
+about0.07-0.11ms per canonical-key iteration; all graph/plans/selection match.
+Rebuilt-key controls improve1.0%-3.4%, while isolated foreign-type controls
+cost6.9%-9.5% more and remain explicit. The66 contract checks overlap the
+1118 passing integration checks; one real encoder worker check lacks its
+local pinned artifact. This development extension is not cold-frozen and
+does not replace V60 or d925278. Continue addressing the remaining complete
+forward/turnover gap; CPU equality savings are not GPU/JCT acceptance.
+
 V651 cold-qualifies the isolated scheduling candidate d925278:80 bound
 sources, unchanged f7b1942b/5262707a engine,967 unique checks and2 subtests
 passed. Fifteen missing-engine-fixture failures were corrected by linking

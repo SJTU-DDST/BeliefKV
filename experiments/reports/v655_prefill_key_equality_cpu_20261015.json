@@ -1,0 +1,386 @@
+{
+  "status": "prefill_key_equality_cpu_evidence_not_gpu_acceptance",
+  "observed_at_local": "2026-10-14T20:04:42.213890-07:00",
+  "baseline_revision": "d925278",
+  "baseline_sources": {
+    "beliefkv/runtime/sglang_v0520_admission.py": "092d0f2814402e2a8a8211ba6afa6fad273b2c85323d73cc5bf8f89f29cc5ecd"
+  },
+  "candidate_sources": {
+    "beliefkv/runtime/sglang_v0520_admission.py": "69034926f0f66178b43482692cecd301b4d43dc5805a8678a03c8c85456211f4",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "4313cbe326bb3491726eb8cb439d9ba890e8e1df0cc3c1edea0d98b990222c68",
+    "beliefkv/runtime/hotpath_timing.py": "aa554df03b5c08cc009be14f21a9c25bdb5e48eb585b5cf774601d9ae471792b",
+    "beliefkv/policy/causal_frontier.py": "32e206ce1cc069c0690b05bedb0d5925b40fac3b48e1f77b4461ea51993240a4",
+    "scripts/benchmark_native_shared_path.py": "5105c132fa8ad4be3074019f9567b4c9800dd12960a2c44d1c2342875aa7f75c",
+    "scripts/benchmark_prefill_key_equality.py": "6ff5b62c4e8bff497eee74b3229878f330200f530c4a1ff9ed34cff62f03737b"
+  },
+  "cases": [
+    {
+      "workflows": 108,
+      "join_rounds_per_workflow": 2,
+      "profiling_enabled": false,
+      "forced_rebuilt_keys": false,
+      "iterations": 500,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.902023276,
+            "p50_ms": 0.892795,
+            "p99_ms": 1.138019,
+            "max_ms": 1.160459
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.903703444,
+            "p50_ms": 0.894476,
+            "p99_ms": 1.13993,
+            "max_ms": 1.162682
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.831415646,
+            "p50_ms": 0.82246,
+            "p99_ms": 1.043502,
+            "max_ms": 1.061099
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.833056214,
+            "p50_ms": 0.824306,
+            "p99_ms": 1.045144,
+            "max_ms": 1.062888
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.07827694903074767,
+      "plans_live_selection_and_complete_graph_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 108,
+      "join_rounds_per_workflow": 2,
+      "profiling_enabled": false,
+      "forced_rebuilt_keys": true,
+      "iterations": 500,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 1.008767536,
+            "p50_ms": 1.007658,
+            "p99_ms": 1.073798,
+            "max_ms": 1.093872
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 1.010433616,
+            "p50_ms": 1.009234,
+            "p99_ms": 1.075657,
+            "max_ms": 1.095563
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.985742502,
+            "p50_ms": 0.984645,
+            "p99_ms": 1.050501,
+            "max_ms": 1.064189
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.987385584,
+            "p50_ms": 0.986226,
+            "p99_ms": 1.052188,
+            "max_ms": 1.066165
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.02282491572964329,
+      "plans_live_selection_and_complete_graph_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 108,
+      "join_rounds_per_workflow": 2,
+      "profiling_enabled": true,
+      "forced_rebuilt_keys": false,
+      "iterations": 500,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.981028076,
+            "p50_ms": 0.926307,
+            "p99_ms": 1.226295,
+            "max_ms": 1.466407
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.98270613,
+            "p50_ms": 0.927944,
+            "p99_ms": 1.22811,
+            "max_ms": 1.470211
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.903009966,
+            "p50_ms": 0.85321,
+            "p99_ms": 1.109824,
+            "max_ms": 1.150015
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.904563734,
+            "p50_ms": 0.854692,
+            "p99_ms": 1.111463,
+            "max_ms": 1.151728
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.07952688807654462,
+      "plans_live_selection_and_complete_graph_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 108,
+      "join_rounds_per_workflow": 2,
+      "profiling_enabled": true,
+      "forced_rebuilt_keys": true,
+      "iterations": 500,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 1.071121582,
+            "p50_ms": 1.033865,
+            "p99_ms": 1.314737,
+            "max_ms": 1.361575
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 1.07267126,
+            "p50_ms": 1.035387,
+            "p99_ms": 1.316806,
+            "max_ms": 1.36481
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 1.044097764,
+            "p50_ms": 1.006215,
+            "p99_ms": 1.289791,
+            "max_ms": 1.335466
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 1.0456781019999999,
+            "p50_ms": 1.007755,
+            "p99_ms": 1.29162,
+            "max_ms": 1.337267
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.025229458965378204,
+      "plans_live_selection_and_complete_graph_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 156,
+      "join_rounds_per_workflow": 2,
+      "profiling_enabled": false,
+      "forced_rebuilt_keys": false,
+      "iterations": 500,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 1.250307368,
+            "p50_ms": 1.245287,
+            "p99_ms": 1.338131,
+            "max_ms": 1.388975
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 1.252085776,
+            "p50_ms": 1.246955,
+            "p99_ms": 1.340035,
+            "max_ms": 1.390716
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 1.156053914,
+            "p50_ms": 1.150334,
+            "p99_ms": 1.24971,
+            "max_ms": 1.286617
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 1.157761094,
+            "p50_ms": 1.152034,
+            "p99_ms": 1.251623,
+            "max_ms": 1.288449
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.07538422664082078,
+      "plans_live_selection_and_complete_graph_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 156,
+      "join_rounds_per_workflow": 2,
+      "profiling_enabled": false,
+      "forced_rebuilt_keys": true,
+      "iterations": 500,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 1.491552172,
+            "p50_ms": 1.420368,
+            "p99_ms": 1.998328,
+            "max_ms": 10.752045
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 1.493315882,
+            "p50_ms": 1.422384,
+            "p99_ms": 1.999918,
+            "max_ms": 10.753545
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 1.441403498,
+            "p50_ms": 1.387576,
+            "p99_ms": 1.977976,
+            "max_ms": 10.718402
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 1.443315142,
+            "p50_ms": 1.389632,
+            "p99_ms": 1.979541,
+            "max_ms": 10.720257
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.0336218034752056,
+      "plans_live_selection_and_complete_graph_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 156,
+      "join_rounds_per_workflow": 2,
+      "profiling_enabled": true,
+      "forced_rebuilt_keys": false,
+      "iterations": 500,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 1.27601828,
+            "p50_ms": 1.271784,
+            "p99_ms": 1.356203,
+            "max_ms": 1.398363
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 1.277777142,
+            "p50_ms": 1.273233,
+            "p99_ms": 1.362085,
+            "max_ms": 1.400176
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 1.168139666,
+            "p50_ms": 1.163099,
+            "p99_ms": 1.271249,
+            "max_ms": 1.296133
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 1.169996886,
+            "p50_ms": 1.164868,
+            "p99_ms": 1.277502,
+            "max_ms": 1.297801
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.08454315717169814,
+      "plans_live_selection_and_complete_graph_equal": true,
+      "physical_actions": 0
+    },
+    {
+      "workflows": 156,
+      "join_rounds_per_workflow": 2,
+      "profiling_enabled": true,
+      "forced_rebuilt_keys": true,
+      "iterations": 500,
+      "warmup_iterations": 20,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 1.49399174,
+            "p50_ms": 1.437136,
+            "p99_ms": 2.038305,
+            "max_ms": 10.831988
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 1.495842188,
+            "p50_ms": 1.438538,
+            "p99_ms": 2.039985,
+            "max_ms": 10.833675
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 1.47834259,
+            "p50_ms": 1.40186,
+            "p99_ms": 2.015401,
+            "max_ms": 11.405492
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 1.480214876,
+            "p50_ms": 1.403563,
+            "p99_ms": 2.035055,
+            "max_ms": 11.407222
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.010474723240437744,
+      "plans_live_selection_and_complete_graph_equal": true,
+      "physical_actions": 0
+    }
+  ],
+  "limitations": [
+    "Only the baseline equality method is substituted; both variants otherwise use the current complete runtime and key hash.",
+    "Timed calls include events, maintenance, full prefill planning and live native selection, with profiling enabled and disabled.",
+    "Rebuilt-key controls force a distinct parsed identity during planning; live selection still validates all request/session fields.",
+    "The same-order graph/plan/selection assertions run outside timing; GC stays enabled and fixtures do not accumulate graph histories.",
+    "These queues are CPU fixtures, not observed V59 frequencies, native allocator timing or JCT/GPU evidence.",
+    "The existing frozen V60 and qualified d925278 candidate are untouched."
+  ]
+}

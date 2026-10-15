@@ -1,0 +1,345 @@
+{
+  "status": "additional_development_cpu_optimization_not_cold_frozen_or_gpu_accepted",
+  "observed_at_local": "2026-10-14T20:18:07.458392-07:00",
+  "source_revision": "73866100c68a9137445f61cd37b66aacfad8eb36",
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_admission.py": "69034926f0f66178b43482692cecd301b4d43dc5805a8678a03c8c85456211f4",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "4313cbe326bb3491726eb8cb439d9ba890e8e1df0cc3c1edea0d98b990222c68",
+    "beliefkv/runtime/hotpath_timing.py": "aa554df03b5c08cc009be14f21a9c25bdb5e48eb585b5cf774601d9ae471792b",
+    "beliefkv/policy/causal_frontier.py": "32e206ce1cc069c0690b05bedb0d5925b40fac3b48e1f77b4461ea51993240a4",
+    "scripts/benchmark_native_shared_path.py": "5105c132fa8ad4be3074019f9567b4c9800dd12960a2c44d1c2342875aa7f75c",
+    "scripts/benchmark_prefill_key_equality.py": "6ff5b62c4e8bff497eee74b3229878f330200f530c4a1ff9ed34cff62f03737b",
+    "scripts/benchmark_prefill_key_fallback.py": "9a655bdeee5bc6e4de78ea292dd5f978375c36a989a0e97aaefdac6a7b1ed382"
+  },
+  "baseline_profile": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v653_current_admission_cpu_profile_20261015.prof",
+    "sha256": "44a88e3f15415513e3ab797920c6ffea8caa726e0971de2a9de1a2ca309bb445",
+    "iterations": 300,
+    "workflows": 156,
+    "join_rounds_per_workflow": 2,
+    "profiling_enabled": true,
+    "scope": "Before the key change: LLM event pair, scheduler maintenance and complete admission plan; cProfile timings are diagnostic, not benchmark CPU savings.",
+    "selected_functions": [
+      {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/sglang_v0520_runtime.py",
+        "line": 7595,
+        "function": "_terminal",
+        "calls": 94200,
+        "own_profiled_seconds": 0.111579959,
+        "cumulative_profiled_seconds": 0.15948904500000002,
+        "callers": [
+          {
+            "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/sglang_v0520_runtime.py",
+            "line": 800,
+            "function": "on_events",
+            "profile": [
+              600,
+              600,
+              0.0010134970000000001,
+              0.001397297
+            ]
+          },
+          {
+            "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/sglang_v0520_runtime.py",
+            "line": 7695,
+            "function": "_prefill_causal_ranks",
+            "profile": [
+              46800,
+              46800,
+              0.057174014,
+              0.08187137800000001
+            ]
+          },
+          {
+            "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/sglang_v0520_runtime.py",
+            "line": 8139,
+            "function": "<listcomp>",
+            "profile": [
+              46800,
+              46800,
+              0.053392448,
+              0.07622037000000001
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/sglang_v0520_runtime.py",
+        "line": 7695,
+        "function": "_prefill_causal_ranks",
+        "calls": 300,
+        "own_profiled_seconds": 0.119235109,
+        "cumulative_profiled_seconds": 0.36511546300000003,
+        "callers": [
+          {
+            "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/sglang_v0520_runtime.py",
+            "line": 7825,
+            "function": "plan_native_prefill",
+            "profile": [
+              300,
+              300,
+              0.119235109,
+              0.36511546300000003
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/sglang_v0520_runtime.py",
+        "line": 7825,
+        "function": "plan_native_prefill",
+        "calls": 300,
+        "own_profiled_seconds": 0.028911086000000003,
+        "cumulative_profiled_seconds": 0.824297936,
+        "callers": [
+          {
+            "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/hotpath_timing.py",
+            "line": 100,
+            "function": "measured",
+            "profile": [
+              300,
+              300,
+              0.028911086000000003,
+              0.824297936
+            ]
+          }
+        ]
+      },
+      {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/sglang_v0520_admission.py",
+        "line": 41,
+        "function": "_request_key",
+        "calls": 46800,
+        "own_profiled_seconds": 0.12082585300000001,
+        "cumulative_profiled_seconds": 0.161279153,
+        "callers": [
+          {
+            "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/sglang_v0520_runtime.py",
+            "line": 7841,
+            "function": "<dictcomp>",
+            "profile": [
+              46800,
+              46800,
+              0.12082585300000001,
+              0.161279153
+            ]
+          }
+        ]
+      },
+      {
+        "path": "<string>",
+        "line": 2,
+        "function": "__eq__",
+        "calls": 93600,
+        "own_profiled_seconds": 0.050109821000000006,
+        "cumulative_profiled_seconds": 0.050109821000000006,
+        "callers": [
+          {
+            "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/sglang_v0520_runtime.py",
+            "line": 7695,
+            "function": "_prefill_causal_ranks",
+            "profile": [
+              46800,
+              46800,
+              0.025798471,
+              0.025798471
+            ]
+          },
+          {
+            "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/sglang_v0520_runtime.py",
+            "line": 8139,
+            "function": "<listcomp>",
+            "profile": [
+              46800,
+              46800,
+              0.024311350000000002,
+              0.024311350000000002
+            ]
+          }
+        ]
+      }
+    ]
+  },
+  "complete_path_benchmark": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v655_prefill_key_equality_cpu_20261015.json",
+    "sha256": "e0b1e875699690e663feef70c947765bc07435f1a8fb2baa18ada80d7ece3de6",
+    "canonical_thread_cpu_reduction_range": [
+      0.07538422664082078,
+      0.08454315717169814
+    ],
+    "rebuilt_control_thread_cpu_reduction_range": [
+      0.010474723240437744,
+      0.0336218034752056
+    ]
+  },
+  "scalar_controls": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v656_prefill_key_fallback_cpu_20261015.json",
+    "sha256": "cd80878d7186a4edcebc1f8b99536d6de7c109fd5e18e62c8acc034da4b76dd6",
+    "cases": [
+      {
+        "kind": "identical_object",
+        "thread_cpu_ms_per_comparison": {
+          "baseline": {
+            "count": 500,
+            "mean_ms": 0.000274438886,
+            "p50_ms": 0.000274098,
+            "p99_ms": 0.00029013600000000003,
+            "max_ms": 0.00029663099999999995
+          },
+          "candidate": {
+            "count": 500,
+            "mean_ms": 8.0274168e-05,
+            "p50_ms": 7.998099999999999e-05,
+            "p99_ms": 8.5009e-05,
+            "max_ms": 9.7315e-05
+          }
+        },
+        "expected_equal": true,
+        "all_results_equal": true,
+        "thread_cpu_mean_reduction_fraction": 0.707497107388783
+      },
+      {
+        "kind": "equal_distinct_objects",
+        "thread_cpu_ms_per_comparison": {
+          "baseline": {
+            "count": 500,
+            "mean_ms": 0.000298551978,
+            "p50_ms": 0.00030389800000000004,
+            "p99_ms": 0.000323985,
+            "max_ms": 0.000328222
+          },
+          "candidate": {
+            "count": 500,
+            "mean_ms": 0.000297056492,
+            "p50_ms": 0.000301362,
+            "p99_ms": 0.00031671600000000004,
+            "max_ms": 0.000320049
+          }
+        },
+        "expected_equal": true,
+        "all_results_equal": true,
+        "thread_cpu_mean_reduction_fraction": 0.005009131106811671
+      },
+      {
+        "kind": "equal_deserialized_fields",
+        "thread_cpu_ms_per_comparison": {
+          "baseline": {
+            "count": 500,
+            "mean_ms": 0.000269508674,
+            "p50_ms": 0.00026911599999999996,
+            "p99_ms": 0.00028624900000000003,
+            "max_ms": 0.000343676
+          },
+          "candidate": {
+            "count": 500,
+            "mean_ms": 0.000270080232,
+            "p50_ms": 0.000270232,
+            "p99_ms": 0.00028165,
+            "max_ms": 0.000285599
+          }
+        },
+        "expected_equal": true,
+        "all_results_equal": true,
+        "thread_cpu_mean_reduction_fraction": -0.0021207406482210978
+      },
+      {
+        "kind": "changed_session_generation",
+        "thread_cpu_ms_per_comparison": {
+          "baseline": {
+            "count": 500,
+            "mean_ms": 0.000242316592,
+            "p50_ms": 0.00024236,
+            "p99_ms": 0.000258415,
+            "max_ms": 0.000265388
+          },
+          "candidate": {
+            "count": 500,
+            "mean_ms": 0.000240759652,
+            "p50_ms": 0.000240702,
+            "p99_ms": 0.000253198,
+            "max_ms": 0.000256209
+          }
+        },
+        "expected_equal": false,
+        "all_results_equal": true,
+        "thread_cpu_mean_reduction_fraction": 0.00642523067508316
+      },
+      {
+        "kind": "foreign_tuple",
+        "thread_cpu_ms_per_comparison": {
+          "baseline": {
+            "count": 500,
+            "mean_ms": 7.569855e-05,
+            "p50_ms": 7.5245e-05,
+            "p99_ms": 8.1822e-05,
+            "max_ms": 8.4759e-05
+          },
+          "candidate": {
+            "count": 500,
+            "mean_ms": 8.0903628e-05,
+            "p50_ms": 8.057e-05,
+            "p99_ms": 8.699800000000001e-05,
+            "max_ms": 9.0759e-05
+          }
+        },
+        "expected_equal": false,
+        "all_results_equal": true,
+        "thread_cpu_mean_reduction_fraction": -0.0687606037367956
+      },
+      {
+        "kind": "foreign_subclass",
+        "thread_cpu_ms_per_comparison": {
+          "baseline": {
+            "count": 500,
+            "mean_ms": 0.000131887828,
+            "p50_ms": 0.000131267,
+            "p99_ms": 0.000139845,
+            "max_ms": 0.000153659
+          },
+          "candidate": {
+            "count": 500,
+            "mean_ms": 0.000144406232,
+            "p50_ms": 0.000143915,
+            "p99_ms": 0.000152118,
+            "max_ms": 0.00016465299999999998
+          }
+        },
+        "expected_equal": false,
+        "all_results_equal": true,
+        "thread_cpu_mean_reduction_fraction": -0.09491705330077926
+      }
+    ]
+  },
+  "contract_checks": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v654_prefill_key_contract_checks_20261015.xml",
+    "sha256": "12222dc27fa7ca9eec87f385278a0eaa0def2948ab5c78b749e350be29ed4181",
+    "passed": 66,
+    "skipped": []
+  },
+  "runtime_integration_checks": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v657_prefill_key_runtime_integration_20261015.xml",
+    "sha256": "f56dc639dda63b46fd16dc8d1f2026a12775e22c2a6c1e6b5fa8e58bdc9a3550",
+    "passed": 1118,
+    "skipped": [
+      {
+        "classname": "tests.test_semantic_report_worker",
+        "name": "test_process_worker_loads_pinned_model_and_wakes_without_scheduler_inference",
+        "reason": "local pinned encoder artifact required"
+      }
+    ]
+  },
+  "constraints": [
+    "The production change only adds an identical-object equality fast path to the immutable PrefillCandidateKey.",
+    "Different objects retain all eight field comparisons and strict-class/NotImplemented behavior; the generated field hash remains covered by dictionary/set tests.",
+    "Live request/session field validation, final native selection, physical budgets and scheduler priorities are unchanged.",
+    "Full-path savings are about0.07-0.11ms per canonical fixture iteration and do not explain the entire live short-prefill gap.",
+    "Foreign tuple/subclass comparisons are slower by about6.9%-9.5%; these unfavorable controls remain explicit.",
+    "The contract and integration scopes overlap and must not be added.",
+    "The skipped real semantic encoder process check requires its local pinned model; queue exchange and identity integration checks passed.",
+    "Frozen V60, the qualified d925278 checkout and its existing reservation waiter are unchanged; no GPU experiment or eligibility change."
+  ],
+  "helper": {
+    "path": "/home/longhao/experiment/ops/summarize_prefill_key_cpu_20261015.py",
+    "sha256": "602eb8ad785c8fc0eb81a8c57e3f415be874dead4bd426c3ed9e25d3f0478756"
+  }
+}
