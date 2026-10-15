@@ -196,6 +196,7 @@ def _canonical_tool_call(tool_call: dict[str, Any]) -> str:
 class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
     """Report repeated execution results and optionally suppress inert work."""
 
+    _RESULT_HISTORY_TOOLS = frozenset({"execute", "read_file", "grep", "glob", "ls"})
     _COMMAND_SUCCESS_ONLY = re.compile(
         r"^\s*\[Command succeeded with exit code 0\]\s*$"
     )
@@ -494,7 +495,7 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
         source_text = result.content if isinstance(result.content, str) else None
         source_digest = (
             hashlib.sha256(source_text.encode("utf-8", errors="replace")).hexdigest()
-            if tool_name == "execute" and source_text is not None else None
+            if tool_name in self._RESULT_HISTORY_TOOLS and source_text is not None else None
         )
         fingerprint = (
             f"{outcome.status}:{outcome.error_class or ''}:{source_digest}"
@@ -554,14 +555,22 @@ class ToolCircuitBreakerMiddleware(AgentMiddleware[Any, Any, Any]):
                 identical_result_elapsed_ms = elapsed_ms
         feedback = None
         if fingerprint is not None and identical_result_count > 1:
+            operation = "command" if tool_name == "execute" else "tool call"
+            next_step = (
+                "evidence for the assigned deliverable, or inspect missing subprocess "
+                "diagnostics with a focused probe. Shell success alone does not "
+                "establish task success."
+                if tool_name == "execute" else
+                "observation for the assigned deliverable. If evidence is missing, "
+                "change the query or inspect the relevant source instead of repeating "
+                "an unchanged observation."
+            )
             feedback = (
-                "\n\n[Execution history: identical command and visible result "
+                f"\n\n[Execution history: identical {operation} and visible result "
                 f"{identical_result_count} times; total tool wall time "
                 f"{identical_result_elapsed_ms / 1000.0:.3f}s. "
                 "This does not prove files or external state are unchanged. Use this "
-                "evidence for the assigned deliverable, or inspect missing subprocess "
-                "diagnostics with a focused probe. Shell success alone does not "
-                "establish task success. When the assigned deliverable is supported, "
+                f"{next_step} When the assigned deliverable is supported, "
                 "report the result or the concrete blocker.]"
             )
             self._emit(
