@@ -141,3 +141,41 @@ def test_initial_prediction_upper_deadline_does_not_move_with_new_forecasts():
     assert row["empirical_frames"] == 1
     assert row["last_pre_completion_frame"]["candidate_ms"] == 179_399.
     assert row["original_p90_deadline_mono_ms"] == 200_600.
+
+
+@pytest.mark.parametrize("include_roots", (False, True))
+def test_root_pilot_is_explicit_and_keeps_role_specific_past_history(include_roots):
+    current = call(
+        start=200_000., duration=10_000., is_child=False,
+        workflow_id="w", invocation_id="i", context_id="c", context_epoch=2,
+    )
+    label = {
+        "source": "tool_wait", "workflow_id": "w", "invocation_id": "i",
+        "context_id": "c", "context_epoch": 2,
+        "completion_evidence": "whole_tool_request_round",
+        "observed_tool_call_count": 1, "completion_ts_ms": current["end_ms"],
+    }
+    forecasts = [{
+        "workflow_id": "w", "invocation_id": "i", "context_id": "c",
+        "context_epoch": 2, "ts_ms": 200_100., "observed_monotonic_ms": 200_100.,
+        "p10_ms": 50., "p50_ms": 100., "p90_ms": 500.,
+    }]
+    past = [call(duration=100.) for _ in range(4)]
+    root_past = [call(duration=180_000., is_child=False) for _ in range(4)]
+    result = evaluate(
+        past + root_past + [current], [label], forecasts,
+        offset_ms=0., include_roots=include_roots,
+    )
+    assert len(result["rows"]) == int(include_roots)
+    assert result["summary"]["independent_single_execute_child_waits"] == 0
+    assert result["summary"]["independent_single_execute_root_waits"] == int(include_roots)
+    if include_roots:
+        row = result["rows"][0]
+        assert row["last_pre_completion_frame"]["support"] == 4
+        assert row["last_pre_completion_frame"]["candidate_ms"] == 179_900.
+        assert result["by_role"]["root"]["waits_with_empirical_support"] == 1
+        missing = evaluate(
+            past + [current], [label], forecasts, offset_ms=0., include_roots=True,
+        )
+        assert missing["rows"][0]["empirical_frames"] == 0
+        assert missing["rows"][0]["last_pre_completion_frame"]["candidate_ms"] == 100.

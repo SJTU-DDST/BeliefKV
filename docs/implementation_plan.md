@@ -51,6 +51,29 @@ V64's3600-3900s window has325909/388781 steps, mean decode batch30.95/
 63/75 samples run_batch47.227/39.102ms; service cost remains an open issue,
 and different batch sizes do not explain away every performance gap.
 
+All five V64 windows are now collected. At4800-5100s, steps279568/330775,
+mean decode batch21.01/30.92, contexts23335/23139 and control exclusive
+wall13.453s. Short-prefill44/73 samples run_batch38.967/37.723ms and
+selection thread CPU7.151/4.959ms. Full JCT/quality acceptance remains open.
+V903/V904 samples native stacks for20s after5110s:955 main-thread samples,
+427 launch and341 result. Model execution/graph replay remain in launch;
+thread CPU is not all extra control, and _execute_body_capture is a replay
+wrapper, not evidence of repeated capture. Sampling can briefly pause threads;
+exclude that diagnostic interval from unperturbed fixed-window claims.
+
+V899 links24 selected tool residence tails to their exact completed calls.
+All five client gaps over5s contain internal summaries:265.575s aggregate
+summary call span within266.292s aggregate gap. These spans include model
+queue/service and callbacks, not plain client idle or tool-return error.
+A180.098s test call initially predicts a conditional median of669.5ms.
+V901 tests causal shape/project/role history on4383 independent single-execute
+waits,997 roots and3386 children. Ten checks pass. Overall last-second median
+error improves, but1195 positive-FULL-plan waits worsen P90 from720.6 to
+772.8ms and over10s premature windows from25 to35. Keep it offline; do not
+select a predictor from the favorable pooled median. V65 stays registered
+with unchanged runtime/model/source. Replay windows are not feasible H2D
+actions or end-to-end benefit.
+
 The first two V64 windows are complete. Steps228359/246021 at120-300s;
 365786/386707 at600-900s,2.6% above V63 but5.4% below historical native.
 Contexts24319/23674 differ. Matched full48 worker ratios are0.997-1.002,

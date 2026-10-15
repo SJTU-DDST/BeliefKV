@@ -128,14 +128,18 @@ class CausalShapeHistory:
         )
 
 
-def eligible_call(call: dict, label: dict, *, now_ms: float, offset_ms: float) -> bool:
+def eligible_call(call: dict, label: dict, *, now_ms: float, offset_ms: float,
+                  include_roots: bool = False) -> bool:
     completion = label.get("completion_ts_ms")
     return bool(
         label.get("completion_evidence") == "whole_tool_request_round"
         and label.get("observed_tool_call_count") == 1
         and completion is not None
         and call["tool_name"] == "execute"
-        and call["is_child"] is True
+        and (
+            call["is_child"] is True
+            or include_roots and call["is_child"] is False
+        )
         and call["status"] in ("success", "error")
         and call["exception_type"] not in ("CancelledError", "ActivationDeadlineExceeded")
         and call["start_ms"] <= now_ms < call["end_ms"]
@@ -156,7 +160,13 @@ def summarize(rows: list[dict]) -> dict:
             "no_pre_completion_1s_window": len(rows) - len(leads),
         }
     return {
-        "independent_single_execute_child_waits": len(rows),
+        "independent_single_execute_waits": len(rows),
+        "independent_single_execute_child_waits": sum(
+            row["is_child"] is True for row in rows
+        ),
+        "independent_single_execute_root_waits": sum(
+            row["is_child"] is False for row in rows
+        ),
         "waits_with_empirical_support": sum(row["empirical_frames"] > 0 for row in rows),
         "waits_with_last_second_empirical_support": sum(
             row["last_second_empirical_frames"] > 0 for row in rows
@@ -173,7 +183,8 @@ def summarize(rows: list[dict]) -> dict:
 
 def evaluate(calls: list[dict], labels: list[dict], forecasts: list[dict], *,
              offset_ms: float, window: int = 64, minimum_support: int = 4,
-             include_errors: bool = True, after_initial_p90: bool = False) -> dict:
+             include_errors: bool = True, after_initial_p90: bool = False,
+             include_roots: bool = False) -> dict:
     if window < 1 or not 1 <= minimum_support <= window:
         raise ValueError("history support must be positive and bounded by the window")
     waits = {identity(row): row for row in labels if row["source"] == "tool_wait"}
@@ -191,7 +202,9 @@ def evaluate(calls: list[dict], labels: list[dict], forecasts: list[dict], *,
             continue
         call = candidates[0]
         now = forecast["ts_ms"] - offset_ms
-        if not eligible_call(call, label, now_ms=now, offset_ms=offset_ms):
+        if not eligible_call(
+            call, label, now_ms=now, offset_ms=offset_ms, include_roots=include_roots,
+        ):
             counts["unproven_or_outside_single_execute_child_call"] += 1
             continue
         issued = forecast.get("observed_monotonic_ms")
@@ -230,6 +243,7 @@ def evaluate(calls: list[dict], labels: list[dict], forecasts: list[dict], *,
             "workflow_id": call["workflow_id"], "invocation_id": call["invocation_id"],
             "context_id": call["context_id"], "context_epoch": call["context_epoch"],
             "project": call["project"], "shape": call["shape"],
+            "is_child": call["is_child"],
             "command_class": call["command_class"], "status": call["status"],
             "actual_duration_ms": call["duration_ms"], "forecast_frames": len(values),
             "empirical_frames": sum(item["empirical"] for item in values),
@@ -253,6 +267,10 @@ def evaluate(calls: list[dict], labels: list[dict], forecasts: list[dict], *,
     return {
         "counts": dict(counts), "summary": summarize(rows),
         "positive_full_plan_summary": summarize([row for row in rows if row["positive_full_plan"]]),
+        "by_role": {
+            role: summarize([row for row in rows if row["is_child"] is is_child])
+            for role, is_child in (("child", True), ("root", False))
+        },
         "rows": rows,
     }
 
@@ -265,6 +283,10 @@ def main():
     parser.add_argument("--window", type=int, default=64)
     parser.add_argument("--successful-history-only", action="store_true")
     parser.add_argument("--after-initial-p90", action="store_true")
+    parser.add_argument(
+        "--include-roots", action="store_true",
+        help="Score root calls too, retaining separate same-role causal histories.",
+    )
     args = parser.parse_args()
     if args.output.exists():
         raise ValueError("preserve existing pilot evidence")
@@ -312,6 +334,7 @@ def main():
         window=args.window, minimum_support=args.minimum_support,
         include_errors=not args.successful_history_only,
         after_initial_p90=args.after_initial_p90,
+        include_roots=args.include_roots,
     )
     result.update({
         "status": "offline_causal_shape_survival_pilot_not_online_or_calibrated",
@@ -321,6 +344,7 @@ def main():
         "source_prefixes": used, "client_monotonic_to_wall_offset_ms": offset,
         "history_window": args.window, "minimum_history_support": args.minimum_support,
         "history_statuses": ["success"] if args.successful_history_only else ["success", "error"],
+        "evaluated_roles": ["child", "root"] if args.include_roots else ["child"],
         "history_activation": (
             "after_the_first_accepted_forecast_p90_deadline"
             if args.after_initial_p90 else "every_supported_forecast"
