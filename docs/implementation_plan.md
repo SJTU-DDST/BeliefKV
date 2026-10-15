@@ -2,6 +2,22 @@
 
 Status date: 2026-10-15 (Asia/Shanghai).
 
+V695 cold-qualifies isolated43b6310 in the V691 worktree: two capacity
+repairs plus a test-identity-only commit extend9c79eee. Production AST
+diff is restricted to two runtime methods and one physical function;
+88 sources and the unchanged engine are bound. All1645 checks across
+35 modules plus2 subtests pass, covering all1620 inherited identities.
+Replace the64 renamed-module checks with their targeted final recheck,
+without double counting. Existing cached Docker validation passed.
+This does not deploy the candidate or replace registeredV60/9c79eee.
+V693 partitions85 JOIN and267 tool restore events in completeV59.
+Outcome-conditioned early-FULL cohorts have post-native-arrival P90
+292.48/337.52ms, versus10604.85/10222.71ms in all restore events.
+JOIN pre-completion residence still has2286.62ms P50 in that successful
+cohort. Do not infer causal admission success from selected survivors;
+next distinguish early restoration, residency loss and incomplete
+checkpoints while retaining the original turnover/JCT/throughput goal.
+
 V679 seals the complete V59 tool-window audit; last-second conditional
 absolute error P50/P90 is69.06/542.66ms over25321 rounds. V685 binds
 the same1457985716-byte opportunity prefix:10099 plan snapshots retain
@@ -16,8 +32,8 @@ V688 passes881 checks across10 modules. V689's unchanged-action control
 costs0.0195ms/iteration at the original cadence,0.0463ms with forced probes;
 retain the added CPU cost. V690 binds the receipts and source versions.
 Neither repair changes qualified9c79eee, frozenV60, the reservation or workload.
-Next qualify separately and measure actual candidate/reclaim/consumption
-coverage alongside the unresolved short-prefill turnover and full JCT goal.
+V695 now qualifies them separately as43b6310; actual candidate/reclaim/
+consumption coverage and unresolved turnover/full-JCT acceptance remain open.
 
 V678 cold-qualifies isolated candidate9c79eee, directly extending d925278
 with only three additional production-file changes: key equality, same-call
