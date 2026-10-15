@@ -8,11 +8,21 @@ recomputation checked. All three workstreams remain open: actual short-prefill
 and high-frequency control cost; useful JOIN/tool FULL prefetch conversion;
 recovery, KV lifecycle and first-service coordination. CPU checks, local
 microseconds, ACK counts and transferred bytes are not acceptance. Inspect
-running V65_tagged_summary_latest/614069b and completed V63 retry1; use V58
+running V66_restore_cost/2374925 and completed V63 retry1; use V58
 for development and matched repeated formal controls. Keep source/engine frozen.
-V950 now registers V66_restore_cost, waiter3745107/start_ticks627491372,
-port18470, to cold-start2374925 only after complete V65 collection,
-verified old-process exit and free GPU resources. V949 binds1615 unique
+V66 cold-started at2026-10-15 16:10:48 PDT, port18470, supervisor3804658/
+start_ticks627607837 and driver3804888. V956/V957 bind registration/launch;
+ops/v66_restore_cost_after_tail_20261015.state.json is authoritative.
+V958/V959 verify actual first GPU service,2374925 source,dedbe1a0 engine,
+settings and unchanged physical pool capacities; scheduler3805292 serves
+with physical migration enabled and no observer errors. NUMA is preferred,
+not a hard all-Host-memory binding.
+The unlaunched V950 waiter was superseded to prioritize the latest qualified
+candidate within limited GPU availability. V955 explicitly censors V65 after
+all five fixed windows:152 completed,one incomplete,three without terminal
+results. Preserve every raw source,result,driver exit-15 and censored identity;
+do not synthesize a complete summary or full-run JCT. Verified old processes/
+containers exited and GPU resources were released. V949 binds1615 unique
 passes/two skips; V948 freshly passes592 checks in the frozen checkout
 against the unchanged dedbe1a0 engine. Includes73a4a33 missing-FULL+Mamba
 byte ordering within existing non-aged causal groups, plus the previously
@@ -20,20 +30,28 @@ checked250ms tool planning slack. Keep V65 model/harness/workload/budgets.
 Unknown pool geometry retains old ordering; ordering grants no DMA or
 execution authorization. V947 adds no native inspections and48/156-queue
 CPU plans are near flat, not GPU benefit. Registration is not launch.
-V65 cold-started at2026-10-15 14:00:16 PDT (2026-10-16 05:00:16
+Historical V65 cold-started at2026-10-15 14:00:16 PDT (2026-10-16 05:00:16
 Asia/Shanghai), supervisor2241585,driver2241737,port18469. V920 binds1455
 unique passing checks/two skips; V921/V922/V923 bind release, registration
 and actual launch. V924/V925 verify actual GPU service,614069b source,
 dedbe1a0 engine,configuration and unchanged V64 physical pool capacities.
-Scheduler2241980 is serving, physical migration remains enabled and the
-telemetry writer has no error. FULL branch-retirement counts increase;
+Scheduler2241980 served with physical migration enabled and no
+telemetry writer error. FULL branch-retirement counts increased;
 these are not freed-byte, prefetch-use or benefit evidence. The observer
-continues the five fixed windows; end-to-end acceptance remains open.
+collected all five fixed windows; end-to-end acceptance remains open.
 Keep156 workflows,108+48 arrivals,running48,131072 context,8192 output,
 180s tools,200GB Host80:20,HBM Mamba/FULL=.9 and NUMA preferred.
 V64 was intentionally interrupted after155 completed in V916; retain
 django__django-12273 as censored with no terminal result and all five
 fixed windows. Do not invent a complete summary or full-run JCT comparison.
+
+V954 reuses the exact V944 prefixes for three selected large tool restores.
+Native-arrival-to-service is12.891-13.816s; observations still show zero
+missing FULL after arrival, then two show loss. Native batches including
+the served Host leaf take42.008-55.048ms submit-to-ACK and may include
+other requests. Sparse observations only bracket loss, not its cause or
+removable JCT. V66 tests missing-byte ordering; no ordinary ready-request
+residency lock or blanket lease extension has been added.
 
 V65's first three windows are collected. At600-900s, request steps370969/
 386707 exceed V64's365786 but retain different versions/realized work.
