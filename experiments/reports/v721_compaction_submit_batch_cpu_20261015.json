@@ -7,7 +7,7 @@
     "DeepAgentsRuntimeAdapter._publish",
     "DeepAgentsRuntimeAdapter.on_chat_model_start"
   ],
-  "base_file_sha256": "0257fe822f54b5598d2c5acb021bf7260c8d9285eb74c4076ea13ecc923b994b",
+  "base_file_sha256": "a00d2d41ab7d58e5b29c6f972a146f41aedb210a130724fdff116423d727916a",
   "sources": {
     "beliefkv/runtime/deepagents_adapter.py": {
       "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/deepagents_adapter.py",
@@ -57,5 +57,6 @@
       "scripts/audit_prefetch_lifecycle.py": true,
       "scripts/audit_wait_service_phases.py": true
     }
-  }
+  },
+  "source_binding_note": "Base hash covers the exact Git blob bytes, including its final newline."
 }

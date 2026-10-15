@@ -151,13 +151,13 @@
     {
       "development": {
         "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v721_compaction_submit_batch_cpu_20261015.json",
-        "sha256": "9299fe76bd15345d96bd63cf96dd9195fa3ae2dbaa327754c5c47712aba1272b",
-        "bytes": 2942
+        "sha256": "4220bcdf52739bc53e02fc120cf0c44283f4872bc597b22e81456f230813c16c",
+        "bytes": 3042
       },
       "main": {
         "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v721_compaction_submit_batch_cpu_20261015.json",
-        "sha256": "9299fe76bd15345d96bd63cf96dd9195fa3ae2dbaa327754c5c47712aba1272b",
-        "bytes": 2942
+        "sha256": "4220bcdf52739bc53e02fc120cf0c44283f4872bc597b22e81456f230813c16c",
+        "bytes": 3042
       }
     }
   ],
@@ -166,5 +166,6 @@
     "not_before": "2026-10-15T19:51:00+08:00",
     "live_pid": 3948539
   },
-  "goal": "active; cold GPU turnover, FULL consumption and causal JCT/throughput acceptance remain unachieved"
+  "goal": "active; cold GPU turnover, FULL consumption and causal JCT/throughput acceptance remain unachieved",
+  "artifact_binding_updated_at_local": "2026-10-15T00:27:05.930593-07:00"
 }
