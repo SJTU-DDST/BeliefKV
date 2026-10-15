@@ -1,0 +1,221 @@
+{
+  "status": "latest_qualified_client_bound_join_registered_and_documents_synced_not_gpu_accepted",
+  "observed_at_local": "2026-10-15T01:38:04.079217-07:00",
+  "candidate_revision": "9e8a5747b9b0de20b460403d1940ce1efedaaae0",
+  "candidate_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v731-client-bound-join-20261015",
+  "live_waiter": {
+    "pid": 4030423,
+    "state": "S",
+    "ppid": 1,
+    "start_ticks": "622321377",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/ops/resume_v61_client_bound_join_1951_20261015.py",
+      "--watch"
+    ]
+  },
+  "waiter_nice": 0,
+  "not_before": "2026-10-15T19:51:00+08:00",
+  "gpu_driver_cuda_override": "0 in unchanged registered launch.watch; verification-only 999 is overwritten",
+  "current_state": {
+    "path": "/home/longhao/experiment/ops/v61_client_bound_join_1951_20261015.state.json",
+    "bytes": 555,
+    "sha256": "3ae0d5b2a2d86881bceb12b5639c8a39451729af5bf5f58a3d7164f7615133b9"
+  },
+  "old_waiter_alive": false,
+  "old_dynamic_state_marked_superseded": {
+    "path": "/home/longhao/experiment/ops/v61_user_reservation_1951_20261015.state.json",
+    "bytes": 920,
+    "sha256": "5c0e82e6bd9263c375acf0b60c5d9b416fd45c2d953e35f9f0043ae971e88c99"
+  },
+  "frozen_source_bindings_unchanged": 89,
+  "registered_analysis_sources_unchanged": {
+    "scripts/analyze_busy_context_control.py": "032b6c61d41c29692c7ba474882aa46ce149373142838c63d33c5123519cc789",
+    "scripts/analyze_prefill_turnover.py": "4becc5d75d7be52a85848241cc8792c1153cd5fa85833766b3f486dcd1f06a7d",
+    "scripts/audit_prefetch_lifecycle.py": "bf917de2f29c05f2cb77f5d978877dcce80b0c2dcff91271c1342e14d70f64ad",
+    "scripts/audit_wait_service_phases.py": "e2bbda658300ea6970529861dd3cc8fc68d544445ab44192dfb831c214813d21"
+  },
+  "documents": [
+    {
+      "name": "README_zh.md",
+      "development": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/docs/README_zh.md",
+        "bytes": 32477,
+        "sha256": "a1e4e8085b82c9ccd1b6e7830a024223bb5580072bf6833f9aac22bcd7cdc6ed"
+      },
+      "main": {
+        "path": "/home/longhao/experiment/BeliefKV/docs/README_zh.md",
+        "bytes": 32477,
+        "sha256": "a1e4e8085b82c9ccd1b6e7830a024223bb5580072bf6833f9aac22bcd7cdc6ed"
+      },
+      "new_opening_matches": true
+    },
+    {
+      "name": "architecture_status_zh.md",
+      "development": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/docs/architecture_status_zh.md",
+        "bytes": 533809,
+        "sha256": "dd8954b0e45cf41fee579c1af53c5d1f7d6873aa019e77ea3b44d455f330fb08"
+      },
+      "main": {
+        "path": "/home/longhao/experiment/BeliefKV/docs/architecture_status_zh.md",
+        "bytes": 533809,
+        "sha256": "dd8954b0e45cf41fee579c1af53c5d1f7d6873aa019e77ea3b44d455f330fb08"
+      },
+      "new_opening_matches": true
+    },
+    {
+      "name": "beliefkv_design.md",
+      "development": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/docs/beliefkv_design.md",
+        "bytes": 199816,
+        "sha256": "569dcb3b8cc25954ad9700bf536092b25c69b02f481701c4f09d02c58845391e"
+      },
+      "main": {
+        "path": "/home/longhao/experiment/BeliefKV/docs/beliefkv_design.md",
+        "bytes": 199816,
+        "sha256": "569dcb3b8cc25954ad9700bf536092b25c69b02f481701c4f09d02c58845391e"
+      },
+      "new_opening_matches": true
+    },
+    {
+      "name": "implementation_plan.md",
+      "development": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/docs/implementation_plan.md",
+        "bytes": 528057,
+        "sha256": "b5e298cc8631f8d93fd3336330d7864b7074986fbcc5d5bc8b8a39a25f8701ca"
+      },
+      "main": {
+        "path": "/home/longhao/experiment/BeliefKV/docs/implementation_plan.md",
+        "bytes": 528057,
+        "sha256": "b5e298cc8631f8d93fd3336330d7864b7074986fbcc5d5bc8b8a39a25f8701ca"
+      },
+      "new_opening_matches": true
+    },
+    {
+      "name": "experiment_operating_notes_zh.md",
+      "development": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/docs/experiment_operating_notes_zh.md",
+        "bytes": 268986,
+        "sha256": "386ba64614f06754c9cff49b90d79f5974ddb880150a69e05920cf27d1be8d9b"
+      },
+      "main": {
+        "path": "/home/longhao/experiment/BeliefKV/docs/experiment_operating_notes_zh.md",
+        "bytes": 268986,
+        "sha256": "386ba64614f06754c9cff49b90d79f5974ddb880150a69e05920cf27d1be8d9b"
+      },
+      "new_opening_matches": true
+    },
+    {
+      "name": "v0520_scheduler_redesign_zh.md",
+      "development": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/docs/v0520_scheduler_redesign_zh.md",
+        "bytes": 124960,
+        "sha256": "037084ac24c2d5cdadb8fa12c59d863c31a10ac2e9387fa6dac1e8bf9c047440"
+      },
+      "main": {
+        "path": "/home/longhao/experiment/BeliefKV/docs/v0520_scheduler_redesign_zh.md",
+        "bytes": 124960,
+        "sha256": "037084ac24c2d5cdadb8fa12c59d863c31a10ac2e9387fa6dac1e8bf9c047440"
+      },
+      "new_opening_matches": true
+    }
+  ],
+  "artifacts": [
+    {
+      "development": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v734_client_bound_join_final_idle_cpu_20261015.json",
+        "bytes": 3081,
+        "sha256": "699c86f1f82417dc1f2ab9d455cc99bbbdf61c4a1f3f643ecf7bafcbba75b8c0"
+      },
+      "main": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v734_client_bound_join_final_idle_cpu_20261015.json",
+        "bytes": 3081,
+        "sha256": "699c86f1f82417dc1f2ab9d455cc99bbbdf61c4a1f3f643ecf7bafcbba75b8c0"
+      }
+    },
+    {
+      "development": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v736_client_bound_join_candidate_qualification_20261015.json",
+        "bytes": 14912,
+        "sha256": "c14ed7f56404554a2b68890c395f0e11bce4f26cd0298fc178d7b8b209661db4"
+      },
+      "main": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v736_client_bound_join_candidate_qualification_20261015.json",
+        "bytes": 14912,
+        "sha256": "c14ed7f56404554a2b68890c395f0e11bce4f26cd0298fc178d7b8b209661db4"
+      }
+    },
+    {
+      "development": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v737_v61_client_bound_join_frozen_20261015.json",
+        "bytes": 4476,
+        "sha256": "be62bafb8c0f26d45376c65cfcb0dff8113479a3ad33df5d75438827800c60db"
+      },
+      "main": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v737_v61_client_bound_join_frozen_20261015.json",
+        "bytes": 4476,
+        "sha256": "be62bafb8c0f26d45376c65cfcb0dff8113479a3ad33df5d75438827800c60db"
+      }
+    },
+    {
+      "development": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v738_v61_client_bound_join_registration_20261015.json",
+        "bytes": 2115,
+        "sha256": "d32139b46d98624bc57c77795c90e9eb778a9dd3a47ce1a4cb15a18b2f22fb2b"
+      },
+      "main": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v738_v61_client_bound_join_registration_20261015.json",
+        "bytes": 2115,
+        "sha256": "d32139b46d98624bc57c77795c90e9eb778a9dd3a47ce1a4cb15a18b2f22fb2b"
+      }
+    },
+    {
+      "development": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v739_v61_client_bound_join_waiter_handoff_20261015.json",
+        "bytes": 1318,
+        "sha256": "141c827be37c9ac0f7e14e72e4cd2d31225b281756453858979747dd95965562"
+      },
+      "main": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v739_v61_client_bound_join_waiter_handoff_20261015.json",
+        "bytes": 1318,
+        "sha256": "141c827be37c9ac0f7e14e72e4cd2d31225b281756453858979747dd95965562"
+      }
+    }
+  ],
+  "external_reuse_audit_checks": {
+    "raw": {
+      "path": "/home/longhao/experiment/ops/v729_client_bound_join_final_module_checks_20261015.xml",
+      "bytes": 19730,
+      "sha256": "339879ef62b4a15cc67c342caa98603765fc2290a431f5cb6747808c460e60ef"
+    },
+    "module": "tests.test_prefetch_lifecycle_audit",
+    "passed_cases": 77,
+    "new_client_bound_cases": [
+      "test_client_bound_join_keeps_immediate_consumer_and_post_submit_phase[next]",
+      "test_client_bound_join_keeps_immediate_consumer_and_post_submit_phase[later]",
+      "test_client_bound_join_keeps_immediate_consumer_and_post_submit_phase[None]"
+    ],
+    "source": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/scripts/audit_prefetch_lifecycle.py",
+      "bytes": 96804,
+      "sha256": "bf917de2f29c05f2cb77f5d978877dcce80b0c2dcff91271c1342e14d70f64ad"
+    },
+    "tests": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/tests/test_prefetch_lifecycle_audit.py",
+      "bytes": 76708,
+      "sha256": "838b4672e0ae33b03798dd0066215a16a86e50d385e7ab9d7927670124b2f7e7"
+    },
+    "scope": "Use the unchanged registered external analyzer; this is not an active GPU result."
+  },
+  "earlier_development_checks_not_added_to_exact_candidate_total": [
+    "/home/longhao/experiment/ops/v723_confirmed_join_client_handoff_initial_checks_20261015.xml",
+    "/home/longhao/experiment/ops/v724_confirmed_join_client_handoff_checks_20261015.xml",
+    "/home/longhao/experiment/ops/v725_confirmed_join_client_handoff_expanded_checks_20261015.xml",
+    "/home/longhao/experiment/ops/v726_client_bound_join_reuse_checks_20261015.xml",
+    "/home/longhao/experiment/ops/v727_client_bound_safe_input_planner_20261015.xml",
+    "/home/longhao/experiment/ops/v733_client_bound_join_cached_docker_check_20261015.xml"
+  ],
+  "main_head_preserved": "7d45a2cb1bfa6edb2dd311d73a4978b39bfd0a29",
+  "goal_status": "active; short-prefill turnover, busy service volume, FULL reuse and causal mean-JCT/throughput acceptance remain unachieved"
+}

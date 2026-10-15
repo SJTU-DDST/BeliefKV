@@ -1,0 +1,37 @@
+{
+  "status": "owned_unstarted_v61_waiter_superseded_by_qualified_client_bound_join",
+  "observed_at_local": "2026-10-15T01:29:11.076037-07:00",
+  "old_waiter": {
+    "pid": 3948539,
+    "state": "R",
+    "ppid": 3948466,
+    "start_ticks": "621747474",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/ops/resume_v61_after_user_reservation_1951_20261015.py",
+      "--watch"
+    ]
+  },
+  "old_waiter_alive": false,
+  "new_waiter": {
+    "pid": 4030423,
+    "state": "S",
+    "ppid": 4030346,
+    "start_ticks": "622321377",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/ops/resume_v61_client_bound_join_1951_20261015.py",
+      "--watch"
+    ]
+  },
+  "not_before": "2026-10-15T19:51:00+08:00",
+  "experiment_directory_absent": true,
+  "old_registration": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v715_v61_user_reservation_1951_registration_20261015.json",
+    "sha256": "1f9ee576aad7bd52e7e03fab6543d46f500c5fe0b184a3c8779d79d88298ef4b"
+  },
+  "new_frozen": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v737_v61_client_bound_join_frozen_20261015.json",
+    "sha256": "be62bafb8c0f26d45376c65cfcb0dff8113479a3ad33df5d75438827800c60db"
+  }
+}

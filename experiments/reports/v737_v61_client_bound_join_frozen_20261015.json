@@ -1,0 +1,89 @@
+{
+  "status": "qualified_isolated_v61_not_started",
+  "observed_at_local": "2026-10-15T01:29:10.669116-07:00",
+  "target_revision": "9e8a5747b9b0de20b460403d1940ce1efedaaae0",
+  "target_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v731-client-bound-join-20261015",
+  "execution_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v709-v61-execution-20261015",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261015_v61",
+  "qualification": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v736_client_bound_join_candidate_qualification_20261015.json",
+    "sha256": "c14ed7f56404554a2b68890c395f0e11bce4f26cd0298fc178d7b8b209661db4"
+  },
+  "previous_plan": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/ab_plan.json",
+    "sha256": "ed7b32abf59c0535ee7a07a0b7f78e7ef6bfff5e8e8a5a6c07e6f34e3af5a4e8"
+  },
+  "previous_execution": {
+    "collection_code_commit": "d1c3f1407d8841bde1e3aff3d4fc37559bcc8247",
+    "verification_code_commit": "d1c3f1407d8841bde1e3aff3d4fc37559bcc8247",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "engine": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v731-client-bound-join-20261015/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "sha256": "f7b1942b37d7c30998dadb29e512ecc6013f1eb02dcbb65b068e0c71c92bed81",
+    "expected_tree": "5262707a2c17a365fd75ef44d4c96ff0f53a50c3",
+    "actual_tree": "5262707a2c17a365fd75ef44d4c96ff0f53a50c3",
+    "matches_worktree": true,
+    "covered_untracked_paths": []
+  },
+  "launch_arguments": [
+    "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "/home/longhao/experiment/.worktrees/beliefkv-v731-client-bound-join-20261015/scripts/launch_semantic_h2d_after_pair.py",
+    "--repo",
+    "/home/longhao/experiment/.worktrees/beliefkv-v709-v61-execution-20261015",
+    "--previous-run",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59",
+    "--target-checkout",
+    "/home/longhao/experiment/.worktrees/beliefkv-v731-client-bound-join-20261015",
+    "--run-root",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261015_v61",
+    "--state",
+    "/home/longhao/experiment/BeliefKV/experiments/reports/v61_launch_after_v59_confirmed_join_20261015.json",
+    "--wait-pid",
+    "1518675",
+    "--port",
+    "18465",
+    "--arm-order",
+    "predictive_h2d",
+    "--native-reference-run",
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v58",
+    "--execution-handoff",
+    "0",
+    "--host-numa-memory-policy",
+    "preferred"
+  ],
+  "not_before": "2026-10-15T19:51:00+08:00",
+  "helper": {
+    "path": "/home/longhao/experiment/ops/register_v61_confirmed_join.py",
+    "sha256": "dc853d0913fdcc63dbc785aa335ad69c1293e0e91dd5ab87dbf348bec2f85f54"
+  },
+  "main_head_observed": "7d45a2cb1bfa6edb2dd311d73a4978b39bfd0a29",
+  "analysis_sources": {
+    "scripts/analyze_busy_context_control.py": "032b6c61d41c29692c7ba474882aa46ce149373142838c63d33c5123519cc789",
+    "scripts/analyze_prefill_turnover.py": "4becc5d75d7be52a85848241cc8792c1153cd5fa85833766b3f486dcd1f06a7d",
+    "scripts/audit_prefetch_lifecycle.py": "bf917de2f29c05f2cb77f5d978877dcce80b0c2dcff91271c1342e14d70f64ad",
+    "scripts/audit_wait_service_phases.py": "e2bbda658300ea6970529861dd3cc8fc68d544445ab44192dfb831c214813d21"
+  },
+  "reservation_wrapper": {
+    "path": "/home/longhao/experiment/ops/resume_v61_client_bound_join_1951_20261015.py",
+    "sha256": "2a1391863ebd32bd0312829fe53846a517795f86570c2d2abe9835b0cfc23ec7"
+  },
+  "superseded_registration": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v715_v61_user_reservation_1951_registration_20261015.json",
+    "sha256": "1f9ee576aad7bd52e7e03fab6543d46f500c5fe0b184a3c8779d79d88298ef4b"
+  }
+}

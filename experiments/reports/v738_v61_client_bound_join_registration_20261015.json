@@ -1,0 +1,42 @@
+{
+  "status": "registered_v61_client_bound_join_wait_until_user_1951",
+  "registered_at_local": "2026-10-15T01:29:10.673505-07:00",
+  "not_before": "2026-10-15T19:51:00+08:00",
+  "not_before_los_angeles": "2026-10-15T04:51:00-07:00",
+  "target_revision": "9e8a5747b9b0de20b460403d1940ce1efedaaae0",
+  "frozen": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v737_v61_client_bound_join_frozen_20261015.json",
+    "sha256": "be62bafb8c0f26d45376c65cfcb0dff8113479a3ad33df5d75438827800c60db"
+  },
+  "qualification": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v736_client_bound_join_candidate_qualification_20261015.json",
+    "sha256": "c14ed7f56404554a2b68890c395f0e11bce4f26cd0298fc178d7b8b209661db4"
+  },
+  "supersedes": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v715_v61_user_reservation_1951_registration_20261015.json",
+    "sha256": "1f9ee576aad7bd52e7e03fab6543d46f500c5fe0b184a3c8779d79d88298ef4b"
+  },
+  "wrapper": {
+    "path": "/home/longhao/experiment/ops/resume_v61_client_bound_join_1951_20261015.py",
+    "sha256": "2a1391863ebd32bd0312829fe53846a517795f86570c2d2abe9835b0cfc23ec7"
+  },
+  "state": "/home/longhao/experiment/ops/v61_client_bound_join_1951_20261015.state.json",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261015_v61",
+  "execution_root": "/home/longhao/experiment/.worktrees/beliefkv-v709-v61-execution-20261015",
+  "scope": "Latest CPU-qualified source; retain 19:51, workload, models and exclusive-resource checks.",
+  "watcher": {
+    "pid": 4030423,
+    "state": "S",
+    "ppid": 4030346,
+    "start_ticks": "622321377",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/ops/resume_v61_client_bound_join_1951_20261015.py",
+      "--watch"
+    ]
+  },
+  "handoff": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v739_v61_client_bound_join_waiter_handoff_20261015.json",
+    "sha256": "141c827be37c9ac0f7e14e72e4cd2d31225b281756453858979747dd95965562"
+  }
+}

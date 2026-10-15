@@ -2,6 +2,34 @@
 
 Status date: 2026-10-15 (Asia/Shanghai).
 
+V736 cold-qualifies9e8a574 directly on73518: only runtime and JOIN tests
+change, with89 source bindings and the same engine. All1691 unique checks
+plus2 subtests pass across36 inherited modules, covering1662 old identities.
+The single initial Docker skip is replaced by a passing check using an
+existing cached image; preserve both receipts without adding duplicate counts.
+V734 empty-dispatch CPU delta ranges from-0.03175 to+0.00758us/call.
+This is near-flat idle cost, not active-event, GPU or JCT evidence.
+
+Development2d78ab1 keeps a separately bound submitted consumer when an old
+parent request retires on epoch advancement. Only explicit prefix continuity,
+complete JOIN, known prior input and the same native session/generation permit
+continuation. Target epoch matches the graph; old checkpoint bytes remain
+bounded by their original input. Compaction, cancellation, expiry and native
+visibility invalidate continuation. Completed restores retain consumer identity
+for residency checks while another JOIN can progress. Three additional audit
+cases retain immediate-consumer and post-submit attribution without changing
+registered analysis sources. Internal visibility does not establish HTTP
+arrival order; use actual submit/arrival/first-service FULL evidence.
+
+V737-V739 now register this candidate for the still-unstarted V61, superseding
+the exact73518 waiter and retaining its frozen records. The user deadline stays
+2026-10-15 19:51 Asia/Shanghai, followed by exclusive-resource checks. New waiter
+PID4030423 is live; isolated execution remains at exactV59 until cold launch.
+Model/workload/engine/budgets and disabled new prefill batching settings stay
+fixed. The separate V721 adapter coalescing patch is not included. Do not count
+post-completion recovery as pre-RETURN prediction or declare turnover,
+FULL-consumption, quality/fairness or mean-JCT/throughput acceptance before GPU evidence.
+
 V718-V720 audit all156 V59 and156 V58-native client sources. There are
 786/749 internal summary requests, with71/77 empty length responses.
 Their request spans include queueing, generation and transport, not pure

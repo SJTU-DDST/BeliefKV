@@ -897,6 +897,62 @@ def test_late_tool_observation_keeps_the_immediate_next_request(tmp_path, sample
     ] == 1
 
 
+@pytest.mark.parametrize("reused_by", ("next", "later", None))
+def test_client_bound_join_keeps_immediate_consumer_and_post_submit_phase(tmp_path, reused_by):
+    identity = {
+        "source": "join_ticket", "workflow_id": "w", "invocation_id": "parent",
+        "context_id": "p", "context_epoch": 3, "join_id": "join",
+        "confirmed_parent_request_id": "next",
+        "checkpoint_context_epoch": 2, "target_context_epoch": 3,
+    }
+    observations = [{
+        **identity, "event": "wait_prefetch_plan", "ts_ms": 125.,
+        "reason": "submitted", "planned_full_tokens": 2,
+    }]
+    issues = {"load": {**identity, "event": "prefetch_native_issued", "ts_ms": 125.}}
+    actions = [{
+        **identity, "command_id": "load", "submit_ts_ms": 125., "ack_ts_ms": 130.,
+        "pool_bytes": {"kv": 20}, "full_first_service_reused": reused_by is not None,
+        "first_service_request_id": reused_by,
+        "first_service_context_epoch": 4 if reused_by == "later" else 3,
+    }]
+    requests = [
+        {"kind": "llm_submit", "workflow_id": "w", "invocation_id": "parent",
+         "context_id": "p", "context_epoch": epoch, "ts_ms": when,
+         "attributes": {"request_id": rid}}
+        for epoch, when, rid in ((2, 10., "origin"), (3, 120., "next"), (4, 200., "later"))
+    ]
+    write_rows(
+        tmp_path / "client_1/workflows/example/runtime_events.deepagents.jsonl",
+        requests + [{
+            "kind": "join_satisfied", "workflow_id": "w", "join_id": "join", "ts_ms": 100.,
+        }],
+    )
+    write_rows(tmp_path / "server/runtime_events.sglang.jsonl", [
+        {**requests[1], "ts_ms": 140., "attributes": {
+            "request_id": "next", "cached_tokens_host": 8,
+        }},
+    ])
+    write_rows(tmp_path / "server/runtime_audit.jsonl", [{
+        "event": "gpu_service_sample", "service_start_ts_ms": 160.,
+        "request_samples": [{
+            "request_id": "next", "workflow_id": "w", "context_id": "p", "context_epoch": 3,
+        }],
+    }])
+    result = wait_event_attribution(tmp_path, observations, issues, actions, 0.)
+    row, = result["rows"]
+    assert row["next_request_id"] == "next"
+    assert row["client_submit_ts_ms"] == 120.
+    assert row["native_arrival_ts_ms"] == 140.
+    assert row["early_started_and_reused_full_bytes"] == 0
+    phases = row["post_completion_reused_full_by_phase"]
+    assert phases["completion_to_client_submit"]["full_bytes"] == 0
+    assert phases["client_submit_to_native_arrival"]["full_bytes"] == (
+        20 if reused_by == "next" else 0
+    )
+    assert phases["native_arrival_to_first_service"]["full_bytes"] == 0
+
+
 def test_lifecycle_keeps_expired_but_reused_and_missing_use_distinct(tmp_path):
     write_rows(tmp_path / "opportunities/admission_opportunities.jsonl", [
         {"event": "prefetch_native_issued", "command_id": "prefetch1",
