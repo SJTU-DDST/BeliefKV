@@ -8,11 +8,26 @@ recomputation checked. All three workstreams remain open: actual short-prefill
 and high-frequency control cost; useful JOIN/tool FULL prefetch conversion;
 recovery, KV lifecycle and first-service coordination. CPU checks, local
 microseconds, ACK counts and transferred bytes are not acceptance. Inspect
-registered V61/9e8a574 after the existing 19:51 resource checks before further
-cold changes; use V58 for development and matched repeated formal controls.
+running V61/824cd44; use V58 for development and matched repeated formal controls.
 Continue trace-supported implementation and CPU validation during the GPU
 reservation. A new GPU run is required for end-to-end benefit acceptance,
 not as a prerequisite for fixing identifiable control or lifecycle defects.
+
+The user's subsequent free-GPU instruction supersedes the19:51 reservation.
+The exact old waiter4030423 has exited, with old frozen records retained.
+V61 started at2026-10-15 19:40:03 Asia/Shanghai using824cd44: the complete
+latest development3be7564 plus the fullaca4c6a8 reclamation engine patch.
+This is broader than45f46b7. Main and the old execution checkout stay intact.
+V780 binds launch provenance; V782 verifies actual workflow service, matching
+V59 pool capacities, running48/context131072/prefill4096 and disabled new
+batch-delay settings. All1984 integrated checks and2 subtests pass.
+V783 retains actual NUMA placement. Observer140211 checks120-300,600-900,
+1800-2100 and3600-3900s windows against V58 using the preserved analyzers.
+Use corrected native.clock_v2 and its cache. The latest harness also includes
+feedback and compaction-delivery repairs, so historical native is only a
+development reference, not a matched causal performance control. JCT,
+throughput, quality and useful-prefetch acceptance remain open. Subsequent
+references below to19:51 or unstarted candidates are earlier historical records.
 
 The two development optimizations now form independent candidate45f46b7,
 directly extending V61/9e8a574. Only dispatch, its tests and that candidate's
