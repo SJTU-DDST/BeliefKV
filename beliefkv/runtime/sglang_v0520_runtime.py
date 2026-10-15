@@ -1863,6 +1863,13 @@ class NativeAdmissionRuntime:
                 ),
                 "prepare_host": self.enable_prepare_host,
                 "prepare_pool_scope": "missing_full_session_path",
+                "latest_full_session_branches_retired": getattr(
+                    getattr(
+                        getattr(self._native_cache, "tree_core", None),
+                        "components_by_type", {},
+                    ).get(0),
+                    "latest_session_branch_retirements", None,
+                ),
                 "resident_first": self.enable_resident_first,
                 "execution_handoff": self.enable_execution_handoff,
                 "overlap_prefetch_supported": self.can_prefetch_during_overlap(),

@@ -17,6 +17,29 @@ V860/V861 verify actual GPU service, source/engine/configuration and unchanged
 V63 pool capacities. Scheduler570674 and observer494540 are live; physical
 migration remains enabled. Collect the registered fixed workload windows.
 
+V64's1800-2100s window has392903/381775 request steps,23.081s control
+exclusive wall and39.240/40.419ms short-prefill run_batch. Mixed windows,
+different contexts and work leave end-to-end acceptance open.
+V883 sealed prefixes confirm early next-request FULL reuse on39 JOIN/
+118 tool events,0.811/6.754GB;23 JOIN completion boundaries stay unknown.
+V884 audits31 JOIN starts without pre-boundary submit:29 positive FULL
+plans and2 recorded slot changes. Reclaim often rejects session-referenced
+leaves; aggregate native evictable tokens are not safely reclaimable tokens.
+Tool ACK residence is decomposed per event: median pre-completion/client/
+delivery/native-to-service intervals250.8/14.8/195.3/160.8ms; tails differ.
+
+The next independent candidate retires obsolete FULL branch session coverage
+after a tagged BeliefKV continuation registers its latest path. Cached data,
+Host copies, other sessions and active locks remain native-owned. Real CPU
+radix/allocator checks demonstrate that an obsolete backed branch becomes
+reclaimable. V887-V891 merge1420 unique passing identities and two skips;
+retain V889's fixture-only missing-load_fence_stream failure and replace
+those six identities with V891. CPU Host-copy stand-ins do not establish
+GPU applicability, DMA performance, recomputation or benefit.
+Combine this repair with the checked semantic-delivery and single-leaf
+PREPARE work in a new frozen cold candidate; do not hot-edit V64.
+Tagged native also changes, so formal controls need this same engine.
+
 The first two V64 windows are complete. Steps228359/246021 at120-300s;
 365786/386707 at600-900s,2.6% above V63 but5.4% below historical native.
 Contexts24319/23674 differ. Matched full48 worker ratios are0.997-1.002,
