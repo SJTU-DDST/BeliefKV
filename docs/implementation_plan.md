@@ -40,6 +40,17 @@ Combine this repair with the checked semantic-delivery and single-leaf
 PREPARE work in a new frozen cold candidate; do not hot-edit V64.
 Tagged native also changes, so formal controls need this same engine.
 
+V894 freezes candidate2d1d75e with engine treededbe1a0 and canonical patch
+SHA256640ab9281cbcb4b95732ff005854a73b4e8901b250240dc51c32c304d797d35c.
+V895 registers V65_full_latest, supervisor1770086, port18469, state
+ops/v65_full_latest_20261015.state.json. It waits for complete V64,
+driver/scheduler exit and free GPU0; failure pauses succession for diagnosis.
+Predictive only, same workload, no old reservation rule. V65 is not running.
+V64's3600-3900s window has325909/388781 steps, mean decode batch30.95/
+41.96, contexts16207/17278 and20.070s control exclusive wall. Short-prefill
+63/75 samples run_batch47.227/39.102ms; service cost remains an open issue,
+and different batch sizes do not explain away every performance gap.
+
 The first two V64 windows are complete. Steps228359/246021 at120-300s;
 365786/386707 at600-900s,2.6% above V63 but5.4% below historical native.
 Contexts24319/23674 differ. Matched full48 worker ratios are0.997-1.002,
