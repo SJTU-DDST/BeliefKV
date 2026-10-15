@@ -179,6 +179,125 @@ def test_residency_hint_feedback_keeps_aborted_request_unserved():
     assert runtime.counts["residency_ordering_hint_native_observed"] == 0
     runtime.close()
 
+def _aged_warm_fixture(names=("head", "warm")):
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_resident_first = True
+    runtime.enable_final_stage_priority = False
+    runtime.on_events((event(0, RuntimeEventKind.WORKFLOW_START),))
+    requests, observations = [], {}
+    for index, name in enumerate(names):
+        request = req(name)
+        request.session_id, request.session_generation = f"session-{name}", 1
+        request.origin_input_ids = range(8321)
+        request.output_ids = []
+        runtime.on_events((event(
+            index + 1, RuntimeEventKind.INVOCATION_CREATE,
+            invocation_id=name, context_id=f"ctx-{name}",
+        ),))
+        assert runtime.register_visible_request(request)
+        runtime._visible_since[name] = time.monotonic() - 20. + index / 100.
+        requests.append(request)
+        warm = name.startswith("warm")
+        observations[name] = {
+            "checkpoint_tokens": 8192,
+            "missing_full_tokens": 0 if warm else 4096,
+            "missing_mamba_slots": int(warm),
+            "device_checkpoint_tokens": 0 if warm else 4096,
+        }
+    cache = NS(
+        inspect_beliefkv_reentry=Mock(
+            side_effect=lambda request: observations[request.rid],
+        ),
+        host_pool_group=NS(entry_map={
+            "kv": NS(host_pool=NS(size_per_token=20480)),
+            "mamba": NS(host_pool=NS(size_per_token=64389120)),
+        }),
+        prefetch_gpu_session_nodes=Mock(side_effect=AssertionError("ordering issued DMA")),
+    )
+    runtime.attach_native_cache(cache)
+    return runtime, requests, observations, cache
+
+
+def test_aged_warm_bypass_consumes_one_existing_ordinary_admission_quota():
+    names = ("head", "cold1", "cold2", "cold3", "warm0", "warm1")
+    runtime, queue, _, cache = _aged_warm_fixture(names)
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    chosen = select(runtime, queue).candidates[0]
+    assert chosen.rid == "warm0"
+    runtime.on_prefill_candidate_result(chosen, admitted=True, result="CONTINUE")
+    queue.remove(chosen)
+    assert runtime._prefetch_priority_normal_admissions == 0
+    for expected in names[:4]:
+        chosen = select(runtime, queue).candidates[0]
+        assert chosen.rid == expected
+        runtime.on_prefill_candidate_result(chosen, admitted=True, result="CONTINUE")
+        queue.remove(chosen)
+    assert runtime.counts["resident_aged_priority_ordered"] == 1
+    assert runtime.counts["resident_aged_priority_admitted"] == 1
+    recorded = next(row for row in records if row["event"] == "resident_aged_priority_admitted")
+    assert recorded["head_restore_bytes"] == 4096 * 20480
+    assert recorded["selected_restore_bytes"] == 64389120
+    assert recorded["head_next_input_tokens"] == recorded["selected_next_input_tokens"] == 129
+    assert not runtime.physical_ledger.pending_count
+    assert not runtime._prefetch_service_leases
+    cache.prefetch_gpu_session_nodes.assert_not_called()
+    runtime.close()
+
+
+@pytest.mark.parametrize("change", (
+    "quota", "unknown_geometry", "already_resident_head", "missing_full",
+    "larger_new_input", "invalid_observation", "unknown_head",
+))
+def test_aged_warm_bypass_requires_known_lower_restore_cost_without_more_prefill(change):
+    runtime, queue, observations, cache = _aged_warm_fixture()
+    if change == "quota":
+        runtime._prefetch_priority_normal_admissions = 3
+    elif change == "unknown_geometry":
+        runtime._residency_pool_bytes = None
+    elif change == "already_resident_head":
+        observations["head"]["missing_full_tokens"] = 0
+    elif change == "missing_full":
+        observations["warm"]["missing_full_tokens"] = 1
+    elif change == "larger_new_input":
+        queue[1].origin_input_ids = range(9000)
+    elif change == "invalid_observation":
+        observations["warm"]["missing_mamba_slots"] = True
+    elif change == "unknown_head":
+        observations["head"] = None
+    assert select(runtime, queue).candidates[0].rid == "head"
+    assert runtime.counts["resident_aged_priority_ordered"] == 0
+    assert not runtime.physical_ledger.pending_count
+    assert not runtime._prefetch_service_leases
+    if change in ("quota", "unknown_geometry"):
+        cache.inspect_beliefkv_reentry.assert_not_called()
+    runtime.close()
+
+
+def test_aged_warm_bypass_preserves_untagged_positions_and_native_decline_quota():
+    runtime, queue, _, _ = _aged_warm_fixture()
+    plain = req("plain", tagged=False)
+    queue.insert(1, plain)
+    selected = select(runtime, queue).candidates
+    assert tuple(request.rid for request in selected) == ("warm", "plain", "head")
+    runtime.on_prefill_candidate_result(selected[0], admitted=False, result="NO_TOKEN")
+    assert runtime._prefetch_priority_normal_admissions == 4
+    assert runtime.counts["resident_aged_priority_admitted"] == 0
+    runtime.close()
+
+
+def test_aged_warm_bypass_does_not_displace_a_stronger_causal_head():
+    runtime, queue, _, _ = _aged_warm_fixture()
+    runtime.on_events((
+        event(20, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="waiter", context_id="ctx-waiter"),
+        event(21, RuntimeEventKind.JOIN_CREATE, join_id="join", member_invocation_ids=("head",)),
+        event(22, RuntimeEventKind.JOIN_WAIT, invocation_id="waiter", join_id="join"),
+    ))
+    assert select(runtime, queue).candidates[0].rid == "head"
+    assert runtime.counts["resident_aged_priority_ordered"] == 0
+    runtime.close()
+
 
 def test_waiting_migration_deferral_requires_overlap_and_native_demand_recovery():
     runtime = NativeAdmissionRuntime()

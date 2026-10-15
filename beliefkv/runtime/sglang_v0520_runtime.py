@@ -413,6 +413,8 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_native_rank: int | None = None
         self._prefetch_priority_aged_head_bypassed = False
         self._prefetch_priority_complete_ready_quota: int | None = None
+        self._resident_priority_promoted: str | None = None
+        self._resident_priority_details: dict | None = None
         self._native_running_batch: object | None = None
         self._native_max_running: int | None = None
         self._native_prefill_slots: int | None = None
@@ -8287,6 +8289,72 @@ class NativeAdmissionRuntime:
             return float(remaining), "notice_budget"
         return None, "unknown"
 
+    def _resident_aged_bypass(
+        self, ordered: list[tuple[int, object]],
+        keys: dict[int, PrefillCandidateKey | None],
+        ranks: dict[int, tuple[int, int, int]],
+    ) -> tuple[tuple[int, object], dict] | None:
+        if self._residency_pool_bytes is None:
+            return None
+        head_index, head = ordered[0]
+        head_key = keys[head_index]
+        if head_key is None:
+            return None
+        full_unit, mamba_unit = self._residency_pool_bytes
+        chunk = self._native_chunk_input_reserve
+
+        def cost(request: object, observation: dict | None) -> tuple[int, int] | None:
+            if observation is None:
+                return None
+            values = tuple(observation.get(name) for name in (
+                "checkpoint_tokens", "missing_full_tokens", "missing_mamba_slots",
+            ))
+            if any(type(value) is not int or value < 0 for value in values):
+                return None
+            checkpoint, full, mamba = values
+            inputs = getattr(request, "origin_input_ids", ())
+            if not 0 < checkpoint < len(inputs):
+                return None
+            new_input = len(inputs) - checkpoint
+            if type(chunk) is int and chunk > 0:
+                new_input = min(new_input, chunk)
+            return full * full_unit + mamba * mamba_unit, new_input
+
+        head_observation = self._read_request_residency_hint(head, key=head_key)
+        head_cost = cost(head, head_observation)
+        if head_cost is None or head_cost[0] == 0:
+            return None
+        candidates = []
+        for pair in self._resident_prefill_scan(ordered, keys):
+            index, request = pair
+            key = keys[index]
+            if (
+                index == head_index or key is None
+                or ranks[index][:2] > ranks[head_index][:2]
+            ):
+                continue
+            observation = self._read_request_residency_hint(request, key=key)
+            candidate_cost = cost(request, observation)
+            if (
+                candidate_cost is None or observation["missing_full_tokens"] != 0
+                or candidate_cost[0] >= head_cost[0]
+                or candidate_cost[1] > head_cost[1]
+            ):
+                continue
+            candidates.append((candidate_cost, index, pair))
+        if not candidates:
+            return None
+        selected_cost, _, selected = min(candidates, key=lambda item: item[:2])
+        return selected, {
+            "head_request_id": head.rid,
+            "head_restore_bytes": head_cost[0],
+            "selected_restore_bytes": selected_cost[0],
+            "head_next_input_tokens": head_cost[1],
+            "selected_next_input_tokens": selected_cost[1],
+            "ordinary_admission_quota": 4,
+            "evidence": "advisory_session_hint;native_input_and_capacity_checks_remain",
+        }
+
     @timed_runtime("admission_plan")
     def plan_native_prefill(
         self, native_order: Sequence[object], *, running_batch: object, adder: object
@@ -8439,6 +8507,8 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_native_rank = None
         self._prefetch_priority_aged_head_bypassed = False
         self._prefetch_priority_complete_ready_quota = None
+        self._resident_priority_promoted = None
+        self._resident_priority_details = None
         priority_candidates = []
         ready_restores = len({
             lease.key for lease in self._prefetch_service_leases.values()
@@ -8612,6 +8682,23 @@ class NativeAdmissionRuntime:
                     self._final_priority_promoted = candidate[1].rid
                     self._final_priority_native_rank = native_rank
                     self.counts["final_priority_ordered"] += 1
+        if (
+            self.enable_resident_first and len(ordered) > 1
+            and self._prefetch_priority_normal_admissions >= 4
+            and self._prefetch_priority_promoted is None
+            and self._parent_handoff_priority_promoted is None
+            and self._final_priority_promoted is None
+            and waiting_ranks[ordered[0][0]][0] == -1
+        ):
+            selected = self._resident_aged_bypass(ordered, keys, ranks)
+            if selected is not None:
+                candidate, details = selected
+                details["tagged_displaced"] = ordered.index(candidate)
+                ordered.remove(candidate)
+                ordered.insert(0, candidate)
+                self._resident_priority_promoted = candidate[1].rid
+                self._resident_priority_details = details
+                self.counts["resident_aged_priority_ordered"] += 1
         return compile_native_prefill_plan(
             [
                 key for index, _ in ordered
@@ -8706,9 +8793,18 @@ class NativeAdmissionRuntime:
                 self.demand_hints.pop(req.rid, None)
                 if req.rid in (
                     self._prefetch_priority_promoted, self._final_priority_promoted,
-                    self._parent_handoff_priority_promoted,
+                    self._parent_handoff_priority_promoted, self._resident_priority_promoted,
                 ):
                     self._prefetch_priority_normal_admissions = 0
+                    if req.rid == self._resident_priority_promoted:
+                        self.counts["resident_aged_priority_admitted"] += 1
+                        if self._opportunity_writer is not None:
+                            self._opportunity_writer.record({
+                                "event": "resident_aged_priority_admitted",
+                                "ts_ms": time.time() * 1000.,
+                                "request_id": req.rid,
+                                **(self._resident_priority_details or {}),
+                            })
                     if req.rid == self._parent_handoff_priority_promoted:
                         self.counts["parent_handoff_priority_admitted"] += 1
                     if req.rid == self._prefetch_priority_promoted:
