@@ -10,6 +10,21 @@ recovery, KV lifecycle and first-service coordination. CPU checks, local
 microseconds, ACK counts and transferred bytes are not acceptance. Inspect
 registered V61/9e8a574 after the existing 19:51 resource checks before further
 cold changes; use V58 for development and matched repeated formal controls.
+Continue trace-supported implementation and CPU validation during the GPU
+reservation. A new GPU run is required for end-to-end benefit acceptance,
+not as a prerequisite for fixing identifiable control or lifecycle defects.
+
+The new development engine defers native leaf census until known waiting
+victims and their safely exposed ancestors leave a real capacity deficit.
+Only the reclaim method and two engine test files differ from the frozen tree;
+the separate overlay reproduces the entire development tree. All143 unique
+checks pass, including80 real CPU radix/allocator cases. V765 compares60
+identical CPU scenes: sufficient known victims reduce thread CPU76.9%-82.9%;
+worst no-waiter/invalid/partial controls regress1.74%/1.45%/2.87%.
+Preserve V764's earlier nested-function regressions as well. This is not a
+whole-scheduler, GPU or JCT result and does not replace V61's registration/
+capacity repairs. V767 binds sources, receipts and the separate overlay;
+the default staging patch, frozen V61/9e8a574 and19:51 registration are intact.
 
 Independent quality export now retains all156 tasks in both V59/V58 inputs,
 including native's154 completed, one error and one incomplete. Export requires
