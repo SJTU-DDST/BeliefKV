@@ -742,18 +742,24 @@ def plan_prefetch_gpu_steps(
 
 def next_shadow_backup_step(
     candidate: ActionLocalShadowCandidate,
+    *,
+    reclaim_tail_leaves: frozenset[int] = frozenset(),
 ) -> ShadowBackupStep | None:
-    steps = shadow_backup_steps(candidate, max_steps=1)
+    steps = shadow_backup_steps(
+        candidate, max_steps=1, reclaim_tail_leaves=reclaim_tail_leaves,
+    )
     return steps[0] if steps else None
 
 
 def shadow_backup_steps(
     candidate: ActionLocalShadowCandidate, *, max_steps: int = 8,
+    reclaim_tail_leaves: frozenset[int] = frozenset(),
 ) -> tuple[ShadowBackupStep, ...]:
-    """Plan one ancestor-first burst of missing FULL extents on one input path.
+    """Plan one ancestor-first burst of missing FULL extents on one session path.
 
     Existing Host extents are retained. Mamba snapshots stay with native
-    demand write-back; speculative PREPARE does not copy them.
+    demand write-back. The runtime may additionally prove idle device leaves
+    whose FULL tail must be backed before native can reclaim their ancestors.
     """
     if type(max_steps) is not int or not 1 <= max_steps <= 16:
         raise ValueError("shadow burst must contain one to sixteen extents")
@@ -792,6 +798,25 @@ def shadow_backup_steps(
     if selected is None:
         return ()
     eligible_paths, _ = selected
+    for leaf in leaves.keys() & reclaim_tail_leaves:
+        if nodes[leaf].full_session_leaf_count != 1:
+            continue
+        current, tail = leaf, set()
+        while current not in eligible_paths:
+            node = nodes[current]
+            if (
+                node.parent_id is None or node.full_device_tokens <= 0
+                or node.full_session_refs != 1 or node.mamba_session_refs > 1
+                or node.full_device_locks or node.full_host_locks
+                or node.mamba_device_locks or node.mamba_host_locks
+                or node.pending_write_id is not None
+                or node.pending_load_id is not None
+            ):
+                break
+            tail.add(current)
+            current = node.parent_id
+        else:
+            eligible_paths.update(tail)
     steps = []
     staged_full = set()
     leaf_id = None

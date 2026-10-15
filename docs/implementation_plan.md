@@ -42,6 +42,29 @@ exclusive wall falls33.710 to31.284s. Mean context23794/23674 is close,
 yet decode worker intervals34.078/31.212ms remain different. Continue
 actual CUDA-graph, batch-geometry and adjacent-phase attribution.
 
+The1800-2100s window has398898/381775 request steps. Short-prefill59/64
+samples have run_batch wall38.669/40.419ms and thread CPU37.977/39.234ms;
+control exclusive wall is21.409s. Full48 matched graph cohorts differ by
+about1.0%-2.3%, while47-decode to one-prefill intervals are shorter here.
+Do not infer a fixed decode-kernel regression or overall policy success.
+V839 binds these windows and V834's independently sealed live prefixes:
+JOIN/tool early-started and next-request-reused FULL1.070/8.686GB across
+38/139 waits. Tool's last submit is1777.130s after first service; capacity
+and weak conversion remain unresolved.
+
+The cold-output-tail hypothesis is now reproduced and repaired in development,
+not deployed in frozenV63. Real CPU radix/session/allocator checks show that
+an unbacked2-token FULL output leaf can block reclaim of32 backed input tokens.
+PREPARE may back up a proven current private idle device leaf's missing FULL
+tail; already-backed tails join cold candidates with live owner revalidation.
+Native reclaim frees34 FULL tokens while preserving live input Mamba, and
+H2D still restores only the32-token safe input checkpoint. No speculative
+Mamba backup. V838/V840 pass839 unique checks. Host metadata/copies are
+stand-ins; actual tree, allocation, reference tracking, reclaim and reentry
+are native CPU paths. Applicability is not quantified because historical
+waiting rows lack device-leaf topology. Validate that and GPU benefit on a
+later cold candidate; do not hot-editV63 or restart solely for a CPU pass.
+
 V819/V820 bind a recent sealed prefix: JOIN/tool early verified FULL reuse
 1.570/8.594GB. Tool's last submit is1835.983s after first GPU service. Among
 zero-size pre-completion FULL plans,1809 later tool requests restore449.164GB
@@ -51,11 +74,9 @@ show arrival-to-service P90 0.388/0.988s while ACK-to-service remains6.846/
 7.101s; early residence must not be mislabeled pure GPU queueing. Investigate
 capacity/reserve, cold-candidate registration and admission using these
 separate boundaries; this prefix is not a complete-run oracle bound.
-Next reproduce, on the real CPU radix path, whether an unbacked output leaf
-prevents reclaim of an already-backed input ancestor for a waiting context.
-Check FULL/Mamba ownership and checkpoint reuse before changing PREPARE scope;
-the live indexed scan's235 duplicate entries with zero candidate leaves is
-diagnostic motivation, not proof that such a tail is safe to discard.
+The live indexed scan's235 duplicate entries with zero candidate leaves was
+diagnostic motivation, not proof of tail eligibility or permission to discard
+unbacked output. The subsequent repair preserves it with incremental backup.
 
 The free-GPU instruction supersedes the19:51 reservation. The identity-checked
 old waiter4030423 has exited and must not restart. V61/824cd44 has finished:

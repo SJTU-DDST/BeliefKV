@@ -1000,7 +1000,10 @@ def test_backed_full_without_mamba_is_available_for_pressure_demotion():
     runtime = final_stage_runtime()
     runtime.enable_prepare_host = True
     key = runtime.context_sessions["ctx-parent"]
-    anchors = NS(reusable_input_tokens=100)
+    anchors = NS(key=key, reusable_input_tokens=100, component_leaves=())
+    runtime._native_cache = NS(tree_core=NS(node_by_id=lambda _: NS(
+        creation_time=4, component_data={0: NS(session_ids=None)},
+    )))
     node = NS(
         node_id=11, creation_time=4, parent_id=None, key_tokens=10,
         full_device_tokens=10, full_host_tokens=10,
@@ -1008,7 +1011,7 @@ def test_backed_full_without_mamba_is_available_for_pressure_demotion():
     )
     with patch.object(runtime, "snapshot_session_anchors", return_value=anchors), patch(
         "beliefkv.runtime.sglang_v0520_runtime.capture_action_local_shadow",
-        return_value=NS(nodes=(node,)),
+        return_value=NS(anchors=anchors, nodes=(node,)),
     ):
         runtime._register_backed_pressure_nodes(key)
     assert runtime._parent_pressure_candidates[11] == (key, 4)
@@ -1028,6 +1031,9 @@ def test_join_cold_candidate_remains_protected_during_live_restore_window():
     runtime = final_stage_runtime()
     runtime.enable_prepare_host = True
     key = runtime.context_sessions["ctx-parent"]
+    runtime._native_cache = NS(tree_core=NS(node_by_id=lambda _: NS(
+        creation_time=4, component_data={0: NS(session_ids=None)},
+    )))
     try:
         runtime._parent_pressure_candidates[11] = (key, 4)
         assert runtime._live_parent_pressure_node(11, 4)
@@ -1213,7 +1219,10 @@ def test_partial_prepare_registers_settled_input_copies_before_remaining_backup(
         id=11, creation_time=4, backuped=True,
         write_through_pending_id=None, load_back_pending_id=None,
         component_data={
-            0: NS(value=[1] * 10, host_value=[1] * 10, lock_ref=0, session_ref=1),
+            0: NS(
+                value=[1] * 10, host_value=[1] * 10, lock_ref=0, session_ref=1,
+                session_ids=None,
+            ),
             2: NS(value=[2], host_value=[2], lock_ref=0, session_ref=1),
         },
     )
@@ -1323,7 +1332,10 @@ def test_join_prepare_publishes_current_pressure_state_once(case):
         id=11, creation_time=4, backuped=True,
         write_through_pending_id=None, load_back_pending_id=None,
         component_data={
-            0: NS(value=[1], host_value=[1], lock_ref=0, session_ref=1),
+            0: NS(
+                value=[1], host_value=[1], lock_ref=0, session_ref=1,
+                session_ids=None,
+            ),
             2: NS(value=None, host_value=None, lock_ref=0, session_ref=0),
         },
     )

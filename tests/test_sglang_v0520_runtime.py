@@ -3654,7 +3654,9 @@ def test_join_prepare_is_selective_and_invalidates_on_parent_reentry():
     runtime = final_stage_runtime()
     runtime._clear_final_stage("join")
     runtime.enable_prepare_host = True
-    runtime.attach_native_cache(NS())
+    runtime.attach_native_cache(NS(tree_core=NS(node_by_id=lambda _: NS(
+        creation_time=4, component_data={0: NS(session_ids=None)},
+    ))))
     key = runtime.context_sessions["ctx-parent"]
     step = ShadowBackupStep(key, 11, 4, 11, 4)
     from beliefkv.runtime.sglang_v0520_observer import StaticPoolHeadroomObservation

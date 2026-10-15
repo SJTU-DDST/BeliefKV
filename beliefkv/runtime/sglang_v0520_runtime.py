@@ -2128,7 +2128,9 @@ class NativeAdmissionRuntime:
         if not isinstance(candidate, ActionLocalShadowCandidate):
             row["prepare_reason"] = "no_observable_shadow_closure"
             return
-        step = next_shadow_backup_step(candidate)
+        tail_leaves = self._shadow_reclaim_tail_leaves(candidate)
+        row["prepare_full_tail_leaf_candidates"] = len(tail_leaves)
+        step = next_shadow_backup_step(candidate, reclaim_tail_leaves=tail_leaves)
         if step is None:
             row["prepare_reason"] = "no_eligible_shadow_step"
             return
@@ -4893,11 +4895,16 @@ class NativeAdmissionRuntime:
             context_id=context_id, source=source,
             host_full_free_tokens=host_full_free_tokens,
         )
-        step = next_shadow_backup_step(candidate) if candidate is not None else None
+        step = None
         if candidate is not None:
+            tail_leaves = self._shadow_reclaim_tail_leaves(candidate)
+            step = next_shadow_backup_step(candidate, reclaim_tail_leaves=tail_leaves)
             # Settled cold copies remain reclaimable while other extents still
             # need PREPARE; publication rechecks native locks and ownership.
-            self._register_backed_pressure_nodes(candidate.anchors.key, candidate=candidate)
+            self._register_backed_pressure_nodes(
+                candidate.anchors.key, candidate=candidate,
+                reclaim_tail_leaves=tail_leaves,
+            )
         return step
 
     def _refreshed_shadow_backup_candidate(
@@ -5017,7 +5024,7 @@ class NativeAdmissionRuntime:
                 "context_id": step.key.context_id,
                 "context_epoch": step.key.context_epoch,
                 "include_mamba": step.include_mamba,
-                "backup_scope": "missing_full_prefix",
+                "backup_scope": "missing_full_extent",
                 "node_id": step.node_id, "leaf_node_id": step.leaf_node_id,
                 "node_creation_time": step.creation_time,
                 "leaf_creation_time": step.leaf_creation_time,
@@ -5045,7 +5052,11 @@ class NativeAdmissionRuntime:
         candidate = self._refreshed_shadow_backup_candidate(
             context_id=step.key.context_id, source=source,
         )
-        steps = shadow_backup_steps(candidate) if candidate is not None else ()
+        steps = (
+            shadow_backup_steps(
+                candidate, reclaim_tail_leaves=self._shadow_reclaim_tail_leaves(candidate),
+            ) if candidate is not None else ()
+        )
         if not steps or steps[0] != step:
             self.counts["shadow_step_stale"] += 1
             return ()
@@ -5104,7 +5115,7 @@ class NativeAdmissionRuntime:
                     "command_id": command, "source": source,
                     "context_id": item.key.context_id,
                     "context_epoch": item.key.context_epoch,
-                    "include_mamba": False, "backup_scope": "missing_full_prefix",
+                    "include_mamba": False, "backup_scope": "missing_full_extent",
                     "node_id": item.node_id, "leaf_node_id": item.leaf_node_id,
                     "node_creation_time": item.creation_time,
                     "leaf_creation_time": item.leaf_creation_time,
@@ -5127,6 +5138,15 @@ class NativeAdmissionRuntime:
             for lease in self._prefetch_service_leases.values()
         ):
             self.counts["prefetch_residency_pressure_protected"] += 1
+            return False
+        try:
+            node = self._native_cache.tree_core.node_by_id(node_id)
+            if node.creation_time != creation_time:
+                return False
+            owners = node.component_data[0].session_ids
+            if owners is not None and record[0].session_id not in owners:
+                return False
+        except (AttributeError, IndexError, KeyError, RuntimeError, TypeError, ValueError):
             return False
         return self._live_parent_pressure_key(record[0])
 
@@ -5323,6 +5343,7 @@ class NativeAdmissionRuntime:
     def _register_backed_pressure_nodes(
         self, key: PrefillCandidateKey,
         *, candidate: ActionLocalShadowCandidate | ActionLocalPrefetchCandidate | None = None,
+        reclaim_tail_leaves: frozenset[int] | None = None,
     ) -> None:
         if candidate is None:
             cache = self._native_cache
@@ -5339,6 +5360,8 @@ class NativeAdmissionRuntime:
         if candidate is None or anchors.reusable_input_tokens is None:
             return
         nodes = {node.node_id: node for node in candidate.nodes}
+        if reclaim_tail_leaves is None:
+            reclaim_tail_leaves = self._shadow_reclaim_tail_leaves(candidate)
         prefix_lengths: dict[int, int] = {}
         for node in candidate.nodes:
             if not (
@@ -5354,8 +5377,55 @@ class NativeAdmissionRuntime:
             for ancestor in reversed(chain):
                 prefix += ancestor.key_tokens or 0
                 prefix_lengths[ancestor.node_id] = prefix
-            if prefix_lengths[node.node_id] <= anchors.reusable_input_tokens:
+            if (
+                prefix_lengths[node.node_id] <= anchors.reusable_input_tokens
+                or node.node_id in reclaim_tail_leaves
+            ):
+                if (
+                    node.node_id in reclaim_tail_leaves
+                    and prefix_lengths[node.node_id] > anchors.reusable_input_tokens
+                    and self._parent_pressure_candidates.get(node.node_id)
+                    != (key, node.creation_time)
+                ):
+                    self.counts["prepare_backed_full_tail_registered"] += 1
                 self._parent_pressure_candidates[node.node_id] = (key, node.creation_time)
+
+    def _shadow_reclaim_tail_leaves(
+        self, candidate: ActionLocalShadowCandidate | ActionLocalPrefetchCandidate,
+    ) -> frozenset[int]:
+        """Prove current private device leaves; H2D keeps its input checkpoint."""
+        key, cache = candidate.anchors.key, self._native_cache
+        if not self._live_parent_pressure_key(key):
+            return frozenset()
+        tree = getattr(cache, "tree_core", None)
+        device_leaves = getattr(tree, "evictable_device_leaves", ())
+        eligible = set()
+        for node_id, created in dict(candidate.anchors.component_leaves).get(0, ()):
+            try:
+                node = tree.node_by_id(node_id)
+                full = node.component_data[0]
+                if (
+                    node.id == node_id and node.creation_time == created
+                    and node in device_leaves
+                    and full.value is not None and full.session_ref == 1
+                    and full.session_ids == {key.session_id}
+                    and node.write_through_pending_id is None
+                    and node.load_back_pending_id is None
+                    and node_id not in getattr(cache, "ongoing_write_through", {})
+                    and all(
+                        data.lock_ref == 0 and data.host_lock_ref == 0
+                        and data.session_ref <= 1
+                        for data in (
+                            node.component_data.values()
+                            if isinstance(node.component_data, dict)
+                            else node.component_data
+                        )
+                    )
+                ):
+                    eligible.add(node_id)
+            except (AttributeError, IndexError, KeyError, RuntimeError, TypeError, ValueError):
+                continue
+        return frozenset(eligible)
 
     def _prepare_step_rank(
         self, step: ShadowBackupStep, headroom: object,

@@ -10,6 +10,16 @@ V824/V826已核对真实服务、源码/引擎、配置及与V62相同池容量�
 观察器3208346读冻结分析器，不热改。当前NUMA是preferred，
 不能写成全部Host内存均硬绑定同节点。后续旧V62运行描述为历史。
 
+V839绑定最新V63三窗及V834固定前缀。1800–2100秒请求步数多
+约4.5%，不代表全程JCT/质量验收；600–900秒仍落后。worker
+区间包含邻接/重叠阶段，须按相同batch/context/CUDA graph比较，
+不能直接称纯kernel或GPU idle。命令ACK与独立等待事件继续分列。
+开发冷FULL尾页修复已通过v838/v840共839项，未进入冻结V63。
+仅可对当前独占、无锁/在途、真实设备叶的FULL尾段增量备份；
+不能通过丢弃未备份输出、放宽H2D安全输入checkpoint或复制更新中
+的Mamba状态来释放容量。CPU Host元数据/拷贝替身不是真实DMA；
+不得将终态child快照当作当时等待agent的可回收拓扑证据。
+
 V63首试在GPU前被遗留/tmp/bkv-regime-18467.sock拒绝。启动
 预检须同时核对TCP端口与Unix控制socket；仅在确认属于当前用户、
 connect返回ConnectionRefused且无服务时删除旧socket，活跃端点

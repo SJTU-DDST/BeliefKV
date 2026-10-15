@@ -661,10 +661,11 @@ def main() -> None:
             "prepare_policy": (
                 "next_prefill_slots_and_active_decode_page_growth;"
                 "exhausted_probe_backoff_1000ms;host_no_reclaim;real_allocator_pressure;"
-                "missing_full_prefix_only;reuse_valid_host_extents;"
-                "budget_all_missing_reusable_checkpoint_full_extents"
+                "missing_full_extents_only;reuse_valid_host_extents;"
+                "safe_input_prefix_and_proven_private_idle_full_tail;"
+                "budget_all_selected_full_extents;no_speculative_mamba_backup"
             ),
-            "prepare_pool_scope": "missing_full_prefix",
+            "prepare_pool_scope": "missing_full_session_path",
             "wait_prefetch_policy": (
                 "safe_next_input_checkpoint_missing_prefix;ancestor_first;"
                 "up_to_16_extents;pool_capacity_and_prefill_reserve;"
