@@ -8,14 +8,47 @@ recomputation checked. All three workstreams remain open: actual short-prefill
 and high-frequency control cost; useful JOIN/tool FULL prefetch conversion;
 recovery, KV lifecycle and first-service coordination. CPU checks, local
 microseconds, ACK counts and transferred bytes are not acceptance. Inspect
-running V64_latest/5229d98 and completed V63 retry1; use V58 for development and
-matched repeated formal controls. Keep running source and engine frozen.
-GPU use is now authorized. V64 cold-started at2026-10-15 11:38:12 PDT
-(2026-10-16 02:38:12 Asia/Shanghai), driver570404, port18468. Continue
-trace-supported CPU fixes without delaying or hot-editing this collection.
-V860/V861 verify actual GPU service, source/engine/configuration and unchanged
-V63 pool capacities. Scheduler570674 and observer494540 are live; physical
-migration remains enabled. Collect the registered fixed workload windows.
+running V65_tagged_summary_latest/614069b and completed V63 retry1; use V58
+for development and matched repeated formal controls. Keep source/engine frozen.
+V65 cold-started at2026-10-15 14:00:16 PDT (2026-10-16 05:00:16
+Asia/Shanghai), supervisor2241585,driver2241737,port18469. V920 binds1455
+unique passing checks/two skips; V921/V922/V923 bind release, registration
+and actual launch. V924/V925 verify actual GPU service,614069b source,
+dedbe1a0 engine,configuration and unchanged V64 physical pool capacities.
+Scheduler2241980 is serving, physical migration remains enabled and the
+telemetry writer has no error. FULL branch-retirement counts increase;
+these are not freed-byte, prefetch-use or benefit evidence. The observer
+continues the five fixed windows; end-to-end acceptance remains open.
+Keep156 workflows,108+48 arrivals,running48,131072 context,8192 output,
+180s tools,200GB Host80:20,HBM Mamba/FULL=.9 and NUMA preferred.
+V64 was intentionally interrupted after155 completed in V916; retain
+django__django-12273 as censored with no terminal result and all five
+fixed windows. Do not invent a complete summary or full-run JCT comparison.
+
+V65's first two windows are collected. At600-900s, request steps370969/
+386707 exceed V64's365786 but retain different versions/realized work.
+Control exclusive wall is28.203s versus V64's33.956s. Matched full48
+worker intervals approach native; short-prefill63/62 samples run_batch
+37.750/37.587ms and selection thread CPU18.432/17.141ms. At120-300s,
+steps219559/246021 remain behind. These are not stable end-to-end gains.
+V928's20s out-of-window GIL sample retains102 read errors and285 main
+samples; sample counts are not CPU duration or removable control cost.
+V929's independently fixed prefix has13/40 explicit pre-completion positive
+FULL JOIN/tool plans,10/4 pre-completion submissions,8/4 early next-request
+reuse events and0.109/0.323GB FULL;92 JOIN boundaries remain unknown.
+V932's separate prefix has85 internal summaries:82 nonempty stop results,
+three pending,zero empty length. The48.641s median model span includes
+queue/service; it is not client idle or saved JCT. Content/task quality is open.
+
+The separate Dev candidate adds250ms runtime planning slack only for live
+tool H2D. Report planning_slack_ms independently from prediction uncertainty;
+preserve the existing2s maximum lead, all capacity/identity/dependency/enqueue
+checks and the existing scan/model cadence. V930 observes725 additional
+timing candidates in V64,658 within1s, and13 in V65,all within1s.
+Most lack observed free capacity; no achievable prefetch or benefit follows.
+Do not widen JOIN's already-premature signals. V931/V933 pass448 related
+checks and V934 binds the source/evidence. Not GPU-deployed or a replacement
+for full qualification; do not hot-edit or restart the live V65 for this alone.
 
 V64's1800-2100s window has392903/381775 request steps,23.081s control
 exclusive wall and39.240/40.419ms short-prefill run_batch. Mixed windows,
@@ -37,8 +70,8 @@ retain V889's fixture-only missing-load_fence_stream failure and replace
 those six identities with V891. CPU Host-copy stand-ins do not establish
 GPU applicability, DMA performance, recomputation or benefit.
 Combine this repair with the checked semantic-delivery and single-leaf
-PREPARE work in a new frozen cold candidate; do not hot-edit V64.
-Tagged native also changes, so formal controls need this same engine.
+PREPARE work in current frozen V65; none was hot-edited into V64.
+Tagged native also changes, so formal controls need this same new engine.
 
 V894 freezes candidate2d1d75e with engine treededbe1a0 and canonical patch
 SHA256640ab9281cbcb4b95732ff005854a73b4e8901b250240dc51c32c304d797d35c.
@@ -48,9 +81,13 @@ run directory. The latest tail contains empty length-limited summaries.
 A shared summary-model factory now explicitly disables summary thinking,
 retaining2048 summary output,8192 agent output, prompts, retry/fallback,
 guards and eligibility. Root/in-graph/planned-child and peer paths use it.
-184 related checks pass,one Docker check skips; merged qualification is1453
-passed/two skipped. Prepare a new frozen candidate; actual summary quality,
-failure reduction and GPU benefit remain unverified.
+The first184 checks did not cover final identity tagging. V917's two failing
+checks expose dropped thinking defaults;5be126e merges model extra_body defaults
+with per-call overrides. V918 passes247/skips one; final V920 binds1455 unique
+passes/two skips. Preserve the failures and V912 registration: that intermediate
+waiter exited on nvidia-smi timeout before GPU launch, with no run directory.
+Final V65 includes tagged-summary and retryable observation repairs. Actual
+summary quality, failure reduction and GPU benefit remain unverified.
 V64's3600-3900s window has325909/388781 steps, mean decode batch30.95/
 41.96, contexts16207/17278 and20.070s control exclusive wall. Short-prefill
 63/75 samples run_batch47.227/39.102ms; service cost remains an open issue,

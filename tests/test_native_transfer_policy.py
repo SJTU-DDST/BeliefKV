@@ -175,6 +175,28 @@ def test_invalid_completion_uncertainty_is_not_a_transfer_window(early):
     ) is None
 
 
+@pytest.mark.parametrize("slack,horizon", [(0., 165.), (250., 415.), (1000., 500.)])
+def test_planning_slack_preserves_prediction_and_service_estimates(slack, horizon):
+    estimate = NativeServiceEstimate(10., 15., 0., 8, "matched_pool_shape_and_size")
+    window = transfer_start_window(
+        estimate, max_lead_ms=500., observation_spacing_ms=100.,
+        prediction_early_ms=50., planning_slack_ms=slack,
+    )
+    assert window.horizon_ms == horizon
+    assert window.prediction_early_ms == 50.
+    assert window.planning_slack_ms == slack
+    assert window.service_ms == 15.
+
+
+@pytest.mark.parametrize("slack", [-1., float("inf"), float("nan")])
+def test_invalid_planning_slack_is_not_a_transfer_window(slack):
+    estimate = NativeServiceEstimate(10., 15., 0., 8, "matched_pool_shape_and_size")
+    assert transfer_start_window(
+        estimate, max_lead_ms=500., observation_spacing_ms=100.,
+        planning_slack_ms=slack,
+    ) is None
+
+
 def test_runtime_reads_native_limits_instead_of_treating_idle_memory_as_slots():
     runtime, *_ = locked_runtime()
     runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
@@ -1871,11 +1893,16 @@ def test_full_only_pressure_candidate_can_save_missing_mamba_at_actual_eviction(
     assert node.component_data[2].host_value is None
 
 
-def test_tool_latest_start_waits_until_measured_small_transfer_window():
+@pytest.mark.parametrize("remaining,advance", [(300., 0.), (600., .25)])
+def test_tool_planning_slack_reaches_nearby_returns_without_starting_long_waits(
+    remaining, advance,
+):
     from dataclasses import replace
 
     runtime, hint = tool_runtime()
-    hint = replace(hint, wait_p10_ms=300., wait_p90_ms=300.)
+    hint = replace(
+        hint, wait_p10_ms=remaining, wait_p50_ms=remaining, wait_p90_ms=remaining,
+    )
     runtime.tool_wait_hints[hint.key.context_id] = hint
     runtime._native_cache = NS(cache_controller=NS(mem_pool_host=NS(entry_map={
         "kv": NS(host_pool=NS(size_per_token=10)),
@@ -1894,11 +1921,37 @@ def test_tool_latest_start_waits_until_measured_small_transfer_window():
         patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic") as clock:
         clock.return_value = hint.issued_monotonic_ms / 1000.
         runtime.dispatch_tool_prefetch()
-        issue.assert_not_called()
-        clock.return_value += .2
-        runtime.dispatch_tool_prefetch()
+        if advance:
+            issue.assert_not_called()
+            clock.return_value += advance
+            runtime.dispatch_tool_prefetch()
         issue.assert_called_once()
-    assert runtime._tool_ticket.start_window_ms == pytest.approx(130.)
+    assert runtime._tool_ticket.start_window_ms == pytest.approx(380.)
+    runtime.close()
+
+
+@pytest.mark.parametrize("live", [True, False])
+def test_planning_slack_requires_a_live_tool_wait_and_does_not_widen_join(live):
+    runtime, hint = tool_runtime()
+    runtime._native_cache = NS(cache_controller=NS(mem_pool_host=NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=10)),
+        "mamba": NS(host_pool=NS(size_per_token=100)),
+    })))
+    opportunity = NS(
+        step=PrefetchLoadStep(hint.key, 11, 4, 11, 4),
+        required_full_tokens=10, required_mamba_slots=0,
+    )
+    estimate = NativeServiceEstimate(10., 20., 10., 3, "matched_pool_shape_and_size")
+    try:
+        with patch.object(runtime, "_live_tool_hint", return_value=hint if live else None), \
+            patch.object(runtime, "_tool_prefetch_remaining", return_value=300.), \
+            patch.object(runtime, "_estimate_h2d_service", return_value=estimate):
+            window = runtime._h2d_start_window(opportunity)
+        assert window.planning_slack_ms == (250. if live else 0.)
+        assert window.prediction_early_ms == 0.
+        assert window.horizon_ms == (380. if live else 130.)
+    finally:
+        runtime.close()
 
 
 def test_tool_starts_long_transfer_with_only_one_hundred_ms_remaining():

@@ -105,6 +105,7 @@ if TYPE_CHECKING:
 
 
 TOOL_OFFLOAD_WAIT_MS = 1000.
+TOOL_PREFETCH_PLANNING_SLACK_MS = 250.
 
 
 @dataclass
@@ -1883,6 +1884,7 @@ class NativeAdmissionRuntime:
                     self._model_worker is not None and self._model_worker.disabled
                 ),
                 "tool_prefetch": self.enable_tool_prefetch,
+                "tool_prefetch_planning_slack_ms": TOOL_PREFETCH_PLANNING_SLACK_MS,
                 "prefetch_lead_ms": self.prefetch_lead_ms,
                 "semantic_work_statistic": self.semantic_work_statistic,
                 "final_admission_policy": "remaining_report_work",
@@ -4569,6 +4571,7 @@ class NativeAdmissionRuntime:
                 "h2d_service_ceiling_shape": window.service_ceiling_shape,
             } if window is not None and window.service_ceiling_bytes is not None else {}),
             "prediction_early_ms": window.prediction_early_ms if window else None,
+            "planning_slack_ms": window.planning_slack_ms if window else None,
             "scope": "bounded reusable checkpoint plan; not a reservation or oracle",
         })
 
@@ -5924,6 +5927,7 @@ class NativeAdmissionRuntime:
                     "h2d_ms": window.service_ms,
                     "enqueue_to_submit_p90_ms": window.enqueue_ms,
                     "prediction_early_ms": window.prediction_early_ms,
+                    "planning_slack_ms": window.planning_slack_ms,
                 })
             return None if from_cache else opportunity
 
@@ -6074,6 +6078,9 @@ class NativeAdmissionRuntime:
             estimate, max_lead_ms=self.prefetch_lead_ms,
             observation_spacing_ms=SEMANTIC_FRAME_INTERVAL_MS,
             prediction_early_ms=prediction_early_ms,
+            # A narrow tool distribution can still overestimate the last few
+            # hundred milliseconds. Keep this runtime allowance separate from it.
+            planning_slack_ms=TOOL_PREFETCH_PLANNING_SLACK_MS if hint is not None else 0.,
         )
         return (
             replace(
