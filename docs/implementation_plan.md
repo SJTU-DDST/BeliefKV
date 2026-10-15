@@ -23,7 +23,9 @@ unstarted V60 wait process. Retain all V60 frozen files and qualifications.
 Use isolatedV709 execution, initially at exactV59 and then fast-forwarded
 to the candidate: Main has newer document commits, so its old fast-forward
 assumption no longer holds. Do not modify Main or its local documents.
-Wait until2026-10-15 15:00 Asia/Shanghai and confirm exclusive resources
+The user moved the start to2026-10-15 19:51 Asia/Shanghai. V713-V715
+stop the old15:00 waiter and register the revised one-time deadline.
+Wait until that deadline and confirm exclusive resources
 before starting predictive only with the historicalV58 reference. The new
 wait process is live; actual service and full JCT/throughput remain pending.
 
