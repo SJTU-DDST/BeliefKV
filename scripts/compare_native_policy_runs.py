@@ -134,7 +134,7 @@ def native_reference_metadata(current_run: Path, reference_run: Path) -> dict:
     return {
         "kind": "historical_native_reference",
         "selection": (
-            "fixed reference recorded in predictive collection plan"
+            "fixed reference recorded in collection plan"
             if current.get("native_reference_run") == str(reference_run.resolve())
             else "reference supplied to retrospective analysis"
         ),
@@ -158,6 +158,21 @@ def native_reference_metadata(current_run: Path, reference_run: Path) -> dict:
             "does not prove every native/client path unchanged."
         ),
     }
+
+
+def historical_reference_current_run(arms: dict[str, str], reference_run: Path) -> Path:
+    native = arms.get("native")
+    current_roots = {
+        Path(path).resolve().parent for name, path in arms.items() if name != "native"
+    }
+    if (
+        native is None or Path(native).resolve() != reference_run.resolve() / "native"
+        or len(current_roots) != 1
+    ):
+        raise ValueError(
+            "historical reference requires its native arm and current arms from one run directory"
+        )
+    return current_roots.pop()
 
 
 def aligned_native_clock(evidence: dict, *, anchor_text: str | None = None) -> tuple[float, ZoneInfo]:
@@ -958,12 +973,11 @@ def main() -> None:
     reference = None
     if args.native_reference_run is not None:
         reference_run = args.native_reference_run.resolve()
-        if (
-            "native" not in arms or "predictive_h2d" not in arms
-            or Path(arms["native"]).resolve() != reference_run / "native"
-        ):
-            parser.error("historical reference requires predictive_h2d and its referenced native arm")
-        reference = native_reference_metadata(Path(arms["predictive_h2d"]).parent, reference_run)
+        try:
+            current_run = historical_reference_current_run(arms, reference_run)
+        except ValueError as error:
+            parser.error(str(error))
+        reference = native_reference_metadata(current_run, reference_run)
         cache_path = args.native_reference_cache or reference_run / "native_policy_comparison.json"
         cached_native = cached_native_reference(
             reference_run, args.bin_seconds, cache_path=cache_path,

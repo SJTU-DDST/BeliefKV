@@ -10,7 +10,30 @@ from scripts.compare_native_policy_runs import (
     interval_milliseconds, last_runtime_state, percentile,
     paired_workflow_jct, phase_statistics, transfer_parts, restore_wait_statistics,
     aligned_native_clock, cached_native_reference, native_reference_metadata,
+    historical_reference_current_run,
 )
+
+
+@pytest.mark.parametrize("names", [("reactive",), ("predictive_h2d",), ("reactive", "predictive_h2d")])
+def test_historical_reference_keeps_real_current_arm_names(tmp_path, names):
+    reference, current = tmp_path / "reference", tmp_path / "current"
+    arms = {"native": str(reference / "native")}
+    arms.update({name: str(current / name) for name in names})
+    assert historical_reference_current_run(arms, reference) == current
+
+
+@pytest.mark.parametrize("invalid", ["wrong_native", "native_only", "different_current_runs"])
+def test_historical_reference_rejects_ambiguous_or_unmatched_runs(tmp_path, invalid):
+    reference, current = tmp_path / "reference", tmp_path / "current"
+    arms = {"native": str(reference / "native"), "reactive": str(current / "reactive")}
+    if invalid == "wrong_native":
+        arms["native"] = str(tmp_path / "wrong" / "native")
+    elif invalid == "native_only":
+        arms.pop("reactive")
+    else:
+        arms["predictive_h2d"] = str(tmp_path / "other" / "predictive_h2d")
+    with pytest.raises(ValueError, match="historical reference"):
+        historical_reference_current_run(arms, reference)
 
 
 def test_historical_reference_records_configuration_differences_without_claiming_pair(tmp_path):
