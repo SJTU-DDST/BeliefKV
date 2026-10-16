@@ -2,6 +2,31 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 latest necessary-condition evidence: V1301/V1306 associate sampled
+short-prefill selection cost with exact native Host counters. In V77, 11/98
+positive FULL Host samples account for 79.07% of sampled selection-thread CPU:
+158.750ms mean versus 5.314ms for 87 known-zero samples. V76's positive group
+accounts for 86.41%. Native-close has no workflow controller, so extra ordering
+alone cannot explain this concentration. Comparable full-48 decode/context/
+replay cohorts remain close. Next inspect demand restore, capacity eviction
+and synchronous paths; request association is not function-level attribution,
+an extrapolated cost or removable JCT. Reported resident_pressure excludes
+evictable cached pages and cannot establish available HBM capacity.
+
+V1302/V1304 cover 3600-4200s: V77/native H2D drops to 2.763/1.108GB, while
+their decode rates are 1307.888/1212.677 token/s with different backlog and
+weighted batch sizes 46.77/38.55. V1307 keeps all 156 tasks at 4200s:
+116/124 completed, capped runner sojourn 1522.430/1426.191s. The later raw
+rate does not establish workflow benefit. V76's official grading now covers
+101 resolved, 54 unresolved and one empty patch. Eleven original native-JCT
+ineligibility labels remain; the frozen scorer correctly leaves complete
+useful-throughput measurement false. Native grading is actually running,
+with V77 and V78 queues unchanged. V1308 binds these receipts and verified
+process incarnations. Fifty-three offline CPU cases pass across the two
+new auditors and their existing geometry/phase helpers. Do not modify the
+frozen GPU candidates or treat these engineering observations as a new paper
+mechanism. Screening 4.33/4.34 records the limits and next attribution step.
+
 2026-10-16 V78 is now registered as the independent native-order ablation.
 Freeze application56f2c5e in the separate V1278 checkout, retaining the complete
 53020ce3 engine and V76 workload, PREPARE, tool timing and terminal lifecycle.

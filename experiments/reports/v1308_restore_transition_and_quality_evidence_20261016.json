@@ -1,0 +1,374 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-16T23:48:23.572395+00:00",
+  "inputs": [
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1298_native_restore_pressure_cpu_20261016.xml",
+      "bytes": 1268,
+      "sha256": "7912a7f43cbc49d64956a7165697c9c9ed3f9ea8e2e2eb3f1c07566407d0721f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1299_v77_restore_pressure_2400_3000_20261016.json",
+      "bytes": 694874,
+      "sha256": "885e0adaf6e0521f1e0efcfc5b98df2c21b96781a9b5bdbbe821b7bac8d80b3d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1300_native_restore_pressure_final_cpu_20261016.xml",
+      "bytes": 4945,
+      "sha256": "820d5d2ec4cd280b6e6623fbc7caf02c963a9fe094f65d647e90d311631707df"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1301_v77_restore_pressure_corrected_2400_3000_20261016.json",
+      "bytes": 695093,
+      "sha256": "f1905c5c2f4d458c55835f0806cc0896824112799c1dd6e816af08d68036ee42"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1302_v77_native_close_service_3000_4200_20261016.json",
+      "bytes": 8944,
+      "sha256": "ec010bde344ca6beca1363f38f2e9b9d910c3b433ead596ce82557fe7db3f62f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1303_v77_restore_transition_phases_2400_3000_20261016.json",
+      "bytes": 4634126,
+      "sha256": "d56a8d7716659b68be36875ccb294826ec77f775060f10ce9a790cdd98438068"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1304_v75_v76_reference_service_3600_4200_20261016.json",
+      "bytes": 11709,
+      "sha256": "7e8c39c016474d4acd1aa0e2909a60743066b84c9872235f72092fefaa5aaeb5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1305_restore_transition_phases_cpu_20261016.xml",
+      "bytes": 4122,
+      "sha256": "a0e8ef953bf753413ee3743884a86ec38270d98de36dbf43a0d33596f6a7132c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1306_v77_restore_transition_attribution_2400_3000_20261016.json",
+      "bytes": 5165414,
+      "sha256": "c355f22ac794d2d282f566f5ee9da74fa4c2e9197aab879a837dddee94bc00a5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1307_v77_completion_cohorts_3600_4200_20261016.json",
+      "bytes": 782775,
+      "sha256": "f8e0b5c7962d1515d15922ed2c0b09fc787655117c34c3134dde014e3f201b27"
+    }
+  ],
+  "correction": {
+    "superseded": "v1299_v77_restore_pressure_2400_3000_20261016.json",
+    "replacement": "v1301_v77_restore_pressure_corrected_2400_3000_20261016.json",
+    "reason": "First pressure receipt counted interleaved eviction records as unknown occupancy samples. Corrected reader selects host_pool_usage before clock/field sampling. Geometry and known occupancy values are unchanged; neither result is erased."
+  },
+  "short_prefill_restore_association_2400_3000": {
+    "native_close": {
+      "known_zero_host_counters": {
+        "samples": 87,
+        "selection_thread_cpu_mean_ms": 5.314219724137931,
+        "selection_thread_cpu_sum_ms": 462.33711599999987,
+        "fraction_of_sampled_selection_thread_cpu": 0.20933614561390684,
+        "run_batch_thread_cpu_mean_ms": 54.39769790804598
+      },
+      "positive_full_host": {
+        "samples": 11,
+        "selection_thread_cpu_mean_ms": 158.75000081818183,
+        "selection_thread_cpu_sum_ms": 1746.250009,
+        "fraction_of_sampled_selection_thread_cpu": 0.7906638543860931,
+        "run_batch_thread_cpu_mean_ms": 61.100584454545455
+      }
+    },
+    "native": {
+      "known_zero_host_counters": {
+        "samples": 124,
+        "selection_thread_cpu_mean_ms": 3.6935697661290323,
+        "selection_thread_cpu_sum_ms": 458.002651,
+        "fraction_of_sampled_selection_thread_cpu": 1.0,
+        "run_batch_thread_cpu_mean_ms": 39.537536048387096
+      }
+    },
+    "reactive": {
+      "known_zero_host_counters": {
+        "samples": 75,
+        "selection_thread_cpu_mean_ms": 6.91895464,
+        "selection_thread_cpu_sum_ms": 518.921598,
+        "fraction_of_sampled_selection_thread_cpu": 0.1358937428277314,
+        "run_batch_thread_cpu_mean_ms": 40.534406106666665
+      },
+      "positive_full_host": {
+        "samples": 37,
+        "selection_thread_cpu_mean_ms": 89.18005018918919,
+        "selection_thread_cpu_sum_ms": 3299.661857,
+        "fraction_of_sampled_selection_thread_cpu": 0.8641062571722686,
+        "run_batch_thread_cpu_mean_ms": 37.65431535135135
+      }
+    }
+  },
+  "latest_service_window_3600_4200": {
+    "native_close": {
+      "decode_output_tokens_per_second": 1307.8883333333333,
+      "decode_time_weighted_batch_size": 46.765299121492454,
+      "waiting_mean": 9.381555153707053,
+      "gpu_utilization_mean": 94.21187854521187,
+      "native_h2d_bytes": 2762629120,
+      "native_d2h_bytes": 154155274240
+    },
+    "native": {
+      "decode_output_tokens_per_second": 1212.6766666666667,
+      "decode_time_weighted_batch_size": 38.553476986105274,
+      "waiting_mean": 0.6744604316546763,
+      "gpu_utilization_mean": 96.73306639973306,
+      "native_h2d_bytes": 1108459520,
+      "native_d2h_bytes": 207155302400
+    },
+    "reactive": {
+      "decode_output_tokens_per_second": 1268.59,
+      "decode_time_weighted_batch_size": 46.29262061578447,
+      "waiting_mean": 15.53061224489796,
+      "gpu_utilization_mean": 94.69546364242828,
+      "native_h2d_bytes": 5197352960,
+      "native_d2h_bytes": 166705438720
+    }
+  },
+  "v76_first_official_quality": {
+    "official_summary": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1181_v76_quality_inputs_20261016/official_quality_summary.json",
+      "bytes": 12664,
+      "sha256": "e67eae48a6934fbe2c7e48b539ae20cf183c5f89c0a02d009a29ee7e02e46e95"
+    },
+    "native_summary": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/summary.json",
+      "bytes": 1149417,
+      "sha256": "c02846df2b1a66e42e8c86e7427c4189f7211901505c58b11d11e309346909a5"
+    },
+    "workflow_count": 156,
+    "complete_official_grading": true,
+    "category_counts": {
+      "resolved_ids": 101,
+      "unresolved_ids": 54,
+      "empty_patch_ids": 1,
+      "incomplete_ids": 0,
+      "error_ids": 0
+    },
+    "resolved_fraction_of_all_tasks": 0.6474358974358975,
+    "empty_patch_ids": [
+      "django__django-12858"
+    ],
+    "measurement_complete": false,
+    "correctly_completed_and_eligible_count": 97,
+    "correctly_completed_workflows_per_hour": null,
+    "eligibility_counts": {
+      "True": 145,
+      "False": 11
+    },
+    "ineligible": [
+      {
+        "instance_id": "django__django-11265",
+        "outcome": "completed",
+        "native_agent_jct_eligible": false,
+        "native_agent_jct_exclusion_reasons": [
+          "missing_semantic_completion",
+          "guard_intervened_completion"
+        ]
+      },
+      {
+        "instance_id": "django__django-11734",
+        "outcome": "completed",
+        "native_agent_jct_eligible": false,
+        "native_agent_jct_exclusion_reasons": [
+          "missing_semantic_completion",
+          "guard_intervened_completion"
+        ]
+      },
+      {
+        "instance_id": "django__django-11885",
+        "outcome": "completed",
+        "native_agent_jct_eligible": false,
+        "native_agent_jct_exclusion_reasons": [
+          "missing_semantic_completion",
+          "guard_intervened_completion"
+        ]
+      },
+      {
+        "instance_id": "django__django-12708",
+        "outcome": "completed",
+        "native_agent_jct_eligible": false,
+        "native_agent_jct_exclusion_reasons": [
+          "guard_intervened_completion"
+        ]
+      },
+      {
+        "instance_id": "django__django-13033",
+        "outcome": "completed",
+        "native_agent_jct_eligible": false,
+        "native_agent_jct_exclusion_reasons": [
+          "missing_semantic_completion",
+          "guard_intervened_completion"
+        ]
+      },
+      {
+        "instance_id": "django__django-13964",
+        "outcome": "completed",
+        "native_agent_jct_eligible": false,
+        "native_agent_jct_exclusion_reasons": [
+          "missing_semantic_completion",
+          "guard_intervened_completion"
+        ]
+      },
+      {
+        "instance_id": "django__django-16938",
+        "outcome": "completed",
+        "native_agent_jct_eligible": false,
+        "native_agent_jct_exclusion_reasons": [
+          "guard_intervened_completion"
+        ]
+      },
+      {
+        "instance_id": "pydata__xarray-7229",
+        "outcome": "completed",
+        "native_agent_jct_eligible": false,
+        "native_agent_jct_exclusion_reasons": [
+          "guard_intervened_completion"
+        ]
+      },
+      {
+        "instance_id": "pytest-dev__pytest-6197",
+        "outcome": "completed",
+        "native_agent_jct_eligible": false,
+        "native_agent_jct_exclusion_reasons": [
+          "missing_semantic_completion",
+          "guard_intervened_completion"
+        ]
+      },
+      {
+        "instance_id": "pytest-dev__pytest-6202",
+        "outcome": "completed",
+        "native_agent_jct_eligible": false,
+        "native_agent_jct_exclusion_reasons": [
+          "guard_intervened_completion"
+        ]
+      },
+      {
+        "instance_id": "pytest-dev__pytest-7324",
+        "outcome": "completed",
+        "native_agent_jct_eligible": false,
+        "native_agent_jct_exclusion_reasons": [
+          "missing_semantic_completion",
+          "guard_intervened_completion"
+        ]
+      }
+    ],
+    "semantics": "Official correctness includes every task. Frozen scorer requires complete native JCT eligibility and therefore keeps useful-throughput measurement incomplete. No cohort or guard labels changed; native and predictive scoring are still pending."
+  },
+  "actual_process_observations": [
+    {
+      "path": "/home/longhao/experiment/ops/v77_native_close_20261016.state.json",
+      "read_sha256": "d3086a9546387ac1fd2650ccadbbff6e870dd3114069c94754f6b3a272ba413d",
+      "status": "running_native_close",
+      "observed_at": "2026-10-16T16:48:22.243627-07:00",
+      "kernel_handles": {
+        "supervisor": {
+          "pid": 2645733,
+          "state": "S",
+          "ppid": 1,
+          "start_ticks": "635951139",
+          "argv": [
+            "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+            "/home/longhao/experiment/ops/resume_v77_after_v76_postprocess_20261016.py",
+            "--watch"
+          ],
+          "matches_recorded_incarnation": true
+        },
+        "driver": {
+          "pid": 2646017,
+          "state": "S",
+          "ppid": 2645733,
+          "start_ticks": "635951275",
+          "argv": [
+            "bash",
+            "/home/longhao/experiment/.worktrees/beliefkv-v1213-native-close-gpu-20261016/scripts/run_qwen35_native_regime_probe.sh"
+          ],
+          "matches_recorded_incarnation": true
+        }
+      }
+    },
+    {
+      "path": "/home/longhao/experiment/ops/v78_native_order_20261016.state.json",
+      "read_sha256": "73ade1690de3cdb3e0abce1030810ea02114dbe3d02f850f642596e12e4fc598",
+      "status": "waiting_for_complete_v77",
+      "observed_at": "2026-10-16T16:48:20.311089-07:00",
+      "kernel_handles": {
+        "supervisor": {
+          "pid": 3412628,
+          "state": "S",
+          "ppid": 1,
+          "start_ticks": "636206265",
+          "argv": [
+            "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+            "/home/longhao/experiment/.worktrees/beliefkv-v1278-native-order-gpu-20261016/scripts/start_v78_native_order_20261016.py",
+            "--watch"
+          ],
+          "matches_recorded_incarnation": true
+        }
+      }
+    },
+    {
+      "path": "/home/longhao/experiment/ops/quality_eval/quality_v75_v76_cpu_20261016.state.json",
+      "read_sha256": "eeca59e647ab4eab44102a63c09f5974d1e25aa70b71bfc61009a4cfd42b36ed",
+      "status": "running_official_cpu_grading",
+      "observed_at": "2026-10-16T16:48:21.677876-07:00",
+      "kernel_handles": {
+        "supervisor": {
+          "pid": 3806721,
+          "state": "S",
+          "ppid": 1,
+          "start_ticks": "634129312",
+          "argv": [
+            "/home/longhao/experiment/ops/quality_eval/venv/bin/python",
+            "/home/longhao/experiment/ops/quality_eval/run_v75_v76_quality_cpu_20261016.py",
+            "--watch"
+          ],
+          "matches_recorded_incarnation": true
+        },
+        "worker": {
+          "pid": 3802150,
+          "state": "S",
+          "ppid": 3806721,
+          "start_ticks": "636358459",
+          "argv": [
+            "/home/longhao/experiment/ops/quality_eval/venv/bin/python",
+            "/home/longhao/experiment/ops/quality_eval/run_v75_v76_quality_cpu_20261016.py",
+            "--worker",
+            "v75_native"
+          ],
+          "matches_recorded_incarnation": true
+        }
+      }
+    },
+    {
+      "path": "/home/longhao/experiment/ops/quality_eval/quality_v77_cpu_20261016.state.json",
+      "read_sha256": "1b4952d00eac135a42cf0875a27ddd900682eaf6c00cdd939a96619047ccbab1",
+      "status": "waiting_for_complete_v77_and_prior_quality",
+      "observed_at": "2026-10-16T16:48:22.955636-07:00",
+      "kernel_handles": {
+        "supervisor": {
+          "pid": 1121673,
+          "state": "S",
+          "ppid": 1,
+          "start_ticks": "634983330",
+          "argv": [
+            "/home/longhao/experiment/ops/quality_eval/venv/bin/python",
+            "/home/longhao/experiment/ops/quality_eval/run_v77_quality_cpu_20261016.py",
+            "--watch"
+          ],
+          "matches_recorded_incarnation": true
+        }
+      }
+    }
+  ],
+  "conclusions": [
+    "Large selection-thread CPU samples concentrate in requests with positive native FULL Host counters even when the workflow controller is absent. This is an association, not attribution to a particular cache function or transferable JCT.",
+    "Full 48-request decode worker cohorts remain close to native at comparable observed context and replay flag. Transition/selection and short-prefill forward costs must be separated.",
+    "Reported resident_pressure excludes evictable cached pages. It cannot prove that HBM is mostly free. Both Host pools are saturated in the onset window in all three arms.",
+    "V77 restore volume drops after the transient burst. Higher raw decode throughput in a later window with a larger remaining backlog does not imply better workflow completion.",
+    "All 156 tasks remain in finite-horizon completion denominators. V77 final JCT and official quality remain unproved; V78 stays the independent registered ordering ablation.",
+    "These are necessary-condition and engineering-cost observations. No new paper mechanism or end-to-end improvement has been established."
+  ]
+}

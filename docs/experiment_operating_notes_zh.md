@@ -4,6 +4,21 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 恢复成本审计新增约束：host_pool_telemetry同时含occupancy和eviction
+事件，只有host_pool_usage可作为占用样本与边界；其他事件不能增加采样数、
+未知占用数或补足覆盖。V1299首次报告误计这一采样数，保留原件，由V1301更正；
+已知占用值与实际geometry没有变化。V1300/V1305共53项CPU检查覆盖新审计器
+及原有geometry/phase分析。原生num_used_tokens和由其计算的resident_pressure
+排除可驱逐缓存；低数值不能证明可用HBM多，须另查available/evictable及Mamba。
+选批线程CPU与同请求Host计数的关联不能换成函数级耗时、纯拷贝等待、全部请求
+成本或可减JCT。零FULL且Mamba缺探针时保持unknown，不改称“无恢复”。
+
+官方评分的resolved、unresolved和empty_patch是不同类别，V76的101+54+1
+覆盖全部156项，空patch不能遗漏。评分完成不自动等于measurement_complete；
+原生JCT资格为false的11项保留原guard/语义终态标签，不能为获得完整有用吞吐
+而重标或从任务分母移除。原评分队列与冻结scorer继续，native/后续各臂质量
+未齐前不称质量匹配收益。V1308封存来源、修正及实际进程身份。
+
 2026-10-16 V78启动约束：只执行独立检出56f2c5e中的已登记helper，不从main替换
 导入或热改已等待代码。V1282绑定V77原登记及恢复来源、实际监督start_ticks、
 V76/V75计划、容量、324项CPU凭据与支持helper；原实验失败/恢复记录保持原样。

@@ -7,6 +7,15 @@ write-back 补丁、当前研究文档和只读审计器。日常查看和后续
 实验仍使用各自登记的独立 worktree 固定版本。V75/V76 的运行源码、引擎和
 helper 保持冻结，不随 `main` 的新提交变化。
 
+最新V1301/V1306把2400–3000s的慢选批样本关联到真实Host计数：V77短prefill
+的11/98个正FULL Host样本占采样选批线程CPU的79.07%，均值158.75ms；
+零Host组87项为5.31ms，native的124项零Host组为3.69ms。满48请求的相近
+上下文decode仍接近，不能再把所有差距归因额外排序，也不能把相关性当函数归因。
+4200s全156项完成116/124，runner截断逗留1522.430/1426.191s，V77仍无净收益
+证明。V76首轮官方评分101 resolved、54 unresolved、1空patch；11项原生JCT
+资格为false，冻结评分器仍保留measurement_complete=false。V77运行、V78等待，
+原质量队列继续评分native。详见[研究筛选4.33/4.34](research/non_scheduling_directions_20261016_zh.md#433-恢复压力实际上下文与准入阶段成本)。
+
 当前V77继续冻结运行；下一轮V78已由V1281/V1282登记，应用56f2c5e、原V75/V76
 引擎53020ce3，324项CPU检查通过。只关闭额外排序/自定义容量绕行，保留PREPARE、
 工具时长和生命周期，预取/handoff关闭；不叠加关闭回收或ReplaySSM。
