@@ -1,0 +1,129 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="4" skipped="0" tests="4" time="1.059" timestamp="2026-10-16T14:18:28.593567-07:00" hostname="ddst-12"><testcase classname="tests.test_native_transfer_policy" name="test_post_forward_restore_budget_observes_current_native_running_batch[0]" time="0.003"><failure message="assert 0 == 1&#10; +  where 0 = len([])">current_running = 0
+
+    @pytest.mark.parametrize("current_running", (0, 4, 48))
+    def test_post_forward_restore_budget_observes_current_native_running_batch(current_running):
+        runtime, *_ = locked_runtime()
+        runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
+        runtime._native_cache.host_pool_group.entry_map["mamba"].host_pool.size_per_token = 64
+        runtime._observe_native_admission_capacity(
+            running_batch=NS(reqs=[NS()] * 20),
+            adder=NS(
+                max_running_requests=48, max_prefill_bs=8, page_size=16,
+                rem_input_tokens=100,
+            ),
+        )
+        observed = []
+        try:
+            with patch(
+                "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+                return_value=StaticPoolHeadroomObservation(
+                    True, device_full_free_tokens=10_000, device_mamba_free_slots=10,
+                ),
+            ), patch.object(
+                runtime, "dispatch_join_prefetch",
+                side_effect=lambda: observed.append(runtime._current_residency_budget()),
+            ), patch.object(runtime, "dispatch_tool_prefetch"), patch.object(
+                runtime, "dispatch_join_prepare",
+            ), patch.object(runtime, "dispatch_tool_prepare"):
+                runtime.dispatch_after_forward(running_batch=NS(reqs=[NS()] * current_running))
+            expected_slots = min(6, max(1, 48 - current_running))
+&gt;           assert len(observed) == 1
+E           assert 0 == 1
+E            +  where 0 = len([])
+
+tests/test_native_transfer_policy.py:384: AssertionError</failure></testcase><testcase classname="tests.test_native_transfer_policy" name="test_post_forward_restore_budget_observes_current_native_running_batch[4]" time="0.002"><failure message="assert 0 == 1&#10; +  where 0 = len([])">current_running = 4
+
+    @pytest.mark.parametrize("current_running", (0, 4, 48))
+    def test_post_forward_restore_budget_observes_current_native_running_batch(current_running):
+        runtime, *_ = locked_runtime()
+        runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
+        runtime._native_cache.host_pool_group.entry_map["mamba"].host_pool.size_per_token = 64
+        runtime._observe_native_admission_capacity(
+            running_batch=NS(reqs=[NS()] * 20),
+            adder=NS(
+                max_running_requests=48, max_prefill_bs=8, page_size=16,
+                rem_input_tokens=100,
+            ),
+        )
+        observed = []
+        try:
+            with patch(
+                "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+                return_value=StaticPoolHeadroomObservation(
+                    True, device_full_free_tokens=10_000, device_mamba_free_slots=10,
+                ),
+            ), patch.object(
+                runtime, "dispatch_join_prefetch",
+                side_effect=lambda: observed.append(runtime._current_residency_budget()),
+            ), patch.object(runtime, "dispatch_tool_prefetch"), patch.object(
+                runtime, "dispatch_join_prepare",
+            ), patch.object(runtime, "dispatch_tool_prepare"):
+                runtime.dispatch_after_forward(running_batch=NS(reqs=[NS()] * current_running))
+            expected_slots = min(6, max(1, 48 - current_running))
+&gt;           assert len(observed) == 1
+E           assert 0 == 1
+E            +  where 0 = len([])
+
+tests/test_native_transfer_policy.py:384: AssertionError</failure></testcase><testcase classname="tests.test_native_transfer_policy" name="test_post_forward_restore_budget_observes_current_native_running_batch[48]" time="0.002"><failure message="assert 0 == 1&#10; +  where 0 = len([])">current_running = 48
+
+    @pytest.mark.parametrize("current_running", (0, 4, 48))
+    def test_post_forward_restore_budget_observes_current_native_running_batch(current_running):
+        runtime, *_ = locked_runtime()
+        runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
+        runtime._native_cache.host_pool_group.entry_map["mamba"].host_pool.size_per_token = 64
+        runtime._observe_native_admission_capacity(
+            running_batch=NS(reqs=[NS()] * 20),
+            adder=NS(
+                max_running_requests=48, max_prefill_bs=8, page_size=16,
+                rem_input_tokens=100,
+            ),
+        )
+        observed = []
+        try:
+            with patch(
+                "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+                return_value=StaticPoolHeadroomObservation(
+                    True, device_full_free_tokens=10_000, device_mamba_free_slots=10,
+                ),
+            ), patch.object(
+                runtime, "dispatch_join_prefetch",
+                side_effect=lambda: observed.append(runtime._current_residency_budget()),
+            ), patch.object(runtime, "dispatch_tool_prefetch"), patch.object(
+                runtime, "dispatch_join_prepare",
+            ), patch.object(runtime, "dispatch_tool_prepare"):
+                runtime.dispatch_after_forward(running_batch=NS(reqs=[NS()] * current_running))
+            expected_slots = min(6, max(1, 48 - current_running))
+&gt;           assert len(observed) == 1
+E           assert 0 == 1
+E            +  where 0 = len([])
+
+tests/test_native_transfer_policy.py:384: AssertionError</failure></testcase><testcase classname="tests.test_native_transfer_policy" name="test_post_forward_without_native_batch_preserves_last_observed_capacity" time="0.002"><failure message="assert 0 == 1&#10; +  where 0 = len([])">def test_post_forward_without_native_batch_preserves_last_observed_capacity():
+        runtime, *_ = locked_runtime()
+        runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
+        runtime._native_cache.host_pool_group.entry_map["mamba"].host_pool.size_per_token = 64
+        runtime._observe_native_admission_capacity(
+            running_batch=NS(reqs=[NS()] * 48),
+            adder=NS(
+                max_running_requests=48, max_prefill_bs=8, page_size=16,
+                rem_input_tokens=100,
+            ),
+        )
+        observed = []
+        try:
+            with patch(
+                "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+                return_value=StaticPoolHeadroomObservation(
+                    True, device_full_free_tokens=10_000, device_mamba_free_slots=10,
+                ),
+            ), patch.object(
+                runtime, "dispatch_join_prefetch",
+                side_effect=lambda: observed.append(runtime._current_residency_budget()),
+            ), patch.object(runtime, "dispatch_tool_prefetch"), patch.object(
+                runtime, "dispatch_join_prepare",
+            ), patch.object(runtime, "dispatch_tool_prepare"):
+                runtime.dispatch_after_forward()
+&gt;           assert len(observed) == 1
+E           assert 0 == 1
+E            +  where 0 = len([])
+
+tests/test_native_transfer_policy.py:418: AssertionError</failure></testcase></testsuite></testsuites>

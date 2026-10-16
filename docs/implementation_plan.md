@@ -2,6 +2,21 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 14:22 PDT: independent ordering candidate b698416 is now on main.
+BELIEFKV_NATIVE_PREFILL_ORDER=1 is read once at startup; default0 retains
+workflow ordering. Native mode skips extra priorities/aging and custom capacity
+bypass, retaining identity/terminal checks, native PrefillAdder, PREPARE and
+lifecycle callbacks. Low-frequency state reports prefill_ordering_mode; existing
+priority booleans remain configuration. V1250 passes599 CPU cases, including20
+new mode checks. Four initial failures reproduce on unchanged main; two test
+fixtures now explicitly enable the callback they measure, without broadening
+production dispatch. V1252 revalidates frozen apps/engines and29 registered hashes.
+No GPU registration or launch selection changed. Keep the53020ce3 engine for a
+future isolated ordering comparison; do not mix in waiting-full-only or close GC.
+V1251's full6000s cohort has149/150 V76/native recorded completions and capped
+sojourn means1943.412/1654.351s; quality remains ungraded. Finish V76/V77 and
+existing quality collection before selecting the next GPU candidate. See4.22.
+
 2026-10-16 local-main integration: preserve the two completed auditors, their
 tests and sealed V1241-V1246 evidence on main. V1247 passes all46 CPU cases.
 The all-due cohort keeps unfinished and failed tasks in the denominator:
