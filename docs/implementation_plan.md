@@ -28,6 +28,49 @@ fixtures and at most one native read;real native-tree cost remains a risk.
 Measure partial-priority consumption,ACK-to-service,reloads,batch filling,
 control CPU and actual workflow JCT before accepting this hypothesis.
 
+Latest V68 windows120-300/600-900/1800-2100s yield233896/246021,
+376399/386707 and392816/381775 request steps versus V58,with
+14.094/27.311/21.897s control exclusive wall. Third-window short-prefill
+66/64 samples have40.346/40.419ms run_batch and7.477/4.461ms return-to-result.
+V1023 scores all108 first-wave identities at the same1800s per-workflow
+horizon:1623.358/1612.092s capped time and34/32 natural completions.
+The metric still trails native;it is not full mean JCT or formal acceptance.
+Pending/ineligible outcomes count the full horizon;all V68 identities have
+passed it. This comparison does not join independent quality evidence;
+V68 quality is unverified,while V906 retains the native quality audit.
+
+V1004's503.998-525.815s native stack diagnosis is outside fixed windows;
+941 main-thread samples include50 local closure captures,not CPU duration.
+V1005 seals18/42 explicit positive pre-completion FULL JOIN/tool plans,
+13/14 submissions and9/11 early next-request reuse events,74.14MB/1.093GB.
+Eighty-nine JOIN and one tool boundaries remain unknown. ACK-to-service
+P90 remains11.656/20.339s. Of1140 zero/unobserved-positive tool waits,
+later native FULL Host hits total385.50GB;this is not an early opportunity.
+V1006's four observed large cases have zero FULL missing at their last
+pre-boundary snapshot,yet0.65-0.81GB native hits and13.31-14.63s subsequent
+arrival-to-service waits. Sparse snapshots cannot date the eviction.
+
+Devacae8a1 is frozen as c27ca37,qualified by V1013 with1850 unique
+passes/two skips and726 fresh frozen checks. Earlier locality turns use only
+existing fresh hints,then validate both candidate/head native reentry and
+cost/work dominance. Quota follows imminent native slots and eligible
+residents,with ordinary turns preserved. Separate locality accounting lets
+restore/final-stage priority credit accumulate;decline spends no quota.
+The V1008 initial extra-discovery variant is rejected:all-cold controls added
+nine native reads and128-134us. Final V1010 adds no native discovery on
+negative controls,two validation reads on eligible turns and69-78us complete
+CPU planning cost;cached all-cold controls still add42-51us. GPU benefit is
+unproven;do not hot-edit or interrupt V68 for these CPU observations.
+V1018 preserves a registration bug:the imported generic register function
+spawned its old defining-module watcher,which exited before GPU launch.
+No driver/raw collection was created;its old observer state was overwritten.
+Retain the failure and avoid inventing its unretained exit status.
+Correct V1019 registers V69_cached_resident,waiter2567402/start_ticks628810592,
+port18473,explicit ops/start_v69_cached_resident_registered_20261015.py.
+Its PID/argv are verified live;ops/v69_cached_resident_registered_20261015.state.json
+must wait for genuinely complete156 V68 results,exit0,healthy migration,
+old process exit and two free-resource polls. V69 has not launched.
+
 V998 supersedes only the unlaunched V985/6815795 waiter,retaining its source,
 registration and helper. V1002 explicitly interrupts V67 after all five
 fixed windows:135 completed,21 without terminal outcomes,driver exit-15.
