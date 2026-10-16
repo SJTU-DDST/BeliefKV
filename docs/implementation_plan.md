@@ -2,6 +2,20 @@
 
 Status date: 2026-10-16 (Asia/Shanghai).
 
+2026-10-16 09:40 PDT evidence update: V1171 separates actual terminal releases
+from ordinary retired context checkpoints. Dynamic-child/internal-summary/root
+FULL releases are12.887/236.873/4.097GB, cumulative rather than simultaneous.
+Child scheduler-observation-to-release P50 is0.573ms; faster GC itself is not
+supported as the main remaining bottleneck.87 CPU checks pass in V1172.
+The terminal_context_cache_sample name does not establish invocation RETURN;
+use schema2 checkpoint/epoch/session matching, not the superseded V1170 cohort.
+Compare lifecycle and Host-write proposals against verified Lachesis and
+EfficientAgent mechanisms (research screening4.6/4.7, sources V1173/V1174).
+Next evaluate V75's matched-batch native and queued V76 before extending
+control paths. Keep frozen applications/engine/helpers unchanged, retain all
+quality/fairness/tail requirements, and do not claim the selected contribution
+or end-to-end gains established. The broad systems goal remains active.
+
 2026-10-16 09:10 PDT next candidate: V76 b2adf481 is frozen, using the unchanged
 V75 engine53020ce3/batch32. It disables JOIN/tool H2D anticipation, semantic
 content prediction/streaming and opportunity census; retains tool timing for

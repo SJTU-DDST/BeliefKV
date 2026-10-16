@@ -1,0 +1,1352 @@
+                                         Lachesis: Lifetime-Aware KV Cache Placement for
+                                        Agent Serving across HBM and High-Bandwidth Flash
+                                                      Jaehoon Yang                              Jeongmin Lee                                Haneul Park
+                                                 Seoul National University                          KAIST                                University of Illinois,
+                                                  Seoul, Republic of Korea                Daejeon, Republic of Korea                      Urbana-Champaign
+                                                 jaehoon.yang@snu.ac.kr                     jeongminl@kaist.ac.kr                          Urbana, IL, USA
+                                                                                                                                         hnpark2@illinois.edu
+
+                                                     Seung Yul Lee                             Nam Sung Kim                                   Jae W. Lee
+                                                 Seoul National University                  University of Illinois,                    Seoul National University
+                                                  Seoul, Republic of Korea                   Urbana-Champaign                           Seoul, Republic of Korea
+arXiv:2610.08378v1 [cs.AR] 6 Oct 2026
+
+
+
+
+                                                  triomphant1@snu.ac.kr                       Urbana, IL, USA                             jaewlee@snu.ac.kr
+                                                                                          nam.sung.kim@gmail.com
+
+                                        Abstract                                                             this KV cache puts on an accelerator’s high-bandwidth mem-
+                                        Large language model (LLM) serving is increasingly domi-             ory (HBM) forces a deployment to add accelerators or serve
+                                        nated by agentic workloads, in which agents and their sub-           fewer sessions at once, either of which raises the hardware
+                                        agents accumulate context as KV cache across many requests,          cost of a served request [14, 23, 41].
+                                        consuming substantial memory. High-bandwidth flash (HBF)                High-bandwidth flash (HBF) is emerging as a promising
+                                        is a promising solution, providing an order of magnitude             class of memory for LLM inference, offering an order of mag-
+                                        greater capacity at HBM-class read bandwidth, but its finite         nitude greater capacity than HBM with HBM-class sequen-
+                                        write endurance is the key limiting factor. Our key insight is       tial read bandwidth [38]. That capacity absorbs the added
+                                        that KV cache should be placed across HBM and HBF by its             pressure and brings the cost of a served request back down.
+                                        lifetime. Placing shorter-lived data in HBM lets HBM absorb          The key limiting factor for HBF, however, is write endurance.
+                                        more of an agent run’s writes and sends less of them to HBF.         NAND flash tolerates only a finite number of program/erase
+                                        As the lifetime of KV cache in agentic serving is dictated by        (P/E) cycles, so a DRAM-like role that absorbs a large vol-
+                                        the harness, the program that orchestrates the agents, we            ume of writes can wear it out in a fraction of HBF’s required
+                                        analyze its behavior and identify three axes along which life-       service life. Early HBF designs therefore confine HBF to
+                                        time diverges, temporal, structural, and inter-worker. Guided        read-only data such as model weights and shared-prefix KV
+                                        by these observations, we present Lachesis, a lifetime-aware         caches [14, 20, 29]. As KV caches are a dominant source of
+                                        KV cache placement layer between the agent harness and the           serving-time memory pressure in agentic and large-batch
+                                        serving engine. At write time, it places each segment in HBM         workloads [25, 26, 36], recent works extend HBF to dynam-
+                                        or HBF according to its lifetime, and frees its blocks once          ically generated KV cache and select what to write to it,
+                                        the segment is no longer read. In trace-driven simulation,           mainly by its read-to-write ratio [23, 33, 47].
+                                        Lachesis extends HBF lifetime by 1.19–3.13× over HBM-first              Unlike prior work, which selects KV cache for HBF by its
+                                        placement, reaching 3.3–12.2 device-years. Even under con-           read-to-write ratio [23], we select it by its lifetime. When
+                                        tinuous 24×7 operation at the full load a tight SLO admits,          HBF is used alongside HBM, every KV block a session writes
+                                        HBF outlasts its five-year warranty on the multi-agent trace.        lands in one of the two tiers, and only the bytes that land in
+                                                                                                             HBF spend endurance. HBF therefore lasts longer the more of
+                                        1   Introduction                                                     a session’s writes HBM absorbs. The volume HBM absorbs
+                                        LLM serving is shifting toward agentic workloads, in which           over a period is its capacity multiplied by the number of
+                                        an agent works on a single user task over many LLM re-               times each block is reclaimed when the KV cache it holds is
+                                        quests and spawns sub-agents that run concurrently along-            discarded. Placing shorter-lived KV blocks in HBM therefore
+                                        side it [55]. Whereas a conventional request holds one con-          lets HBM absorb more of a session’s writes and sends less
+                                        text for the duration of one request, an agent holds the con-        of them to HBF, which requires knowing a block’s lifetime
+                                        text it has accumulated so far in the session as KV cache,           before it is written.
+                                        and that KV cache can stay live well beyond the request that            In agentic serving, KV lifetime is set by the agent harness,
+                                        wrote it, in some cases until the session ends (Figure 1, top        the program that orchestrates the session [5, 24, 37, 46], so
+                                        left). Together with the sub-agents a session spawns, this           we analyze how the harness manages it. Depending on how
+                                        longer lifetime pushes the volume of KV cache live at one            it structures the session and the sub-agents it spawns, the
+                                        time far beyond that of conventional serving. The pressure           harness keeps some KV cache for the whole session and
+
+                                                                                                         1
+                                                                                                                                                              Yang et al.
+
+
+                     Agentic AI Workload Characterization                                                                     Lachesis
+  Conventional request       Agent session               one iteration                               Deterministic path
+                    EOS                                                                                 deterministic class                            device
+                                           EOS                           EOS               EOS
+    read window ends with                                                                                reasoning-laden                                HBM
+    the request                            read window outlives every request
+
+      Temporal axis                               new user message                                     reasoning-stripped                                   HBF
+                                         Turn 𝑖                          Turn 𝑖+1
+   reasoning-stripped                                                                                          sub-agent                                HBM
+   reasoning-laden                                                                                             lead agent                                   HBF
+
+      Structural axis                                                                                Predictive path
+   lead agent                                                                                        workers ranked by predicted lifetime; shortest first
+
+   sub-agent
+                                                                                                       top-k       HBM                    rest         HBF
+      Inter-worker axis     long-lived                                      long-lived
+                                                                                                                                                     context
+                                                                                                                  long-lived segment
+                                                                                                                                                     boundary
+      worker1                worker2               worker3                     worker4                            short-lived segment                capacity cut
+
+
+Figure 1. Top left: the read window of a conventional request, and of an agent session. Left: the three axes along which
+context-segment lifetimes differ. Right: Lachesis’s two placement paths.
+
+discards the rest partway through. It makes that decision                                worker’s context. Placement can thus be decided before the
+for KV in groups, so each group shares one lifetime. We call                             KV is written along all three axes.
+such a group a context segment and the point at which it is                                 We present Lachesis, a lifetime-aware KV cache placement
+discarded a context boundary.                                                            layer that decides which KV reaches HBF before a segment
+   Our analysis shows that segment lifetimes diverge along                               is written (§4). Lachesis places along two paths (Figure 1,
+three axes of session structure, shown in the left panel of                              right). The deterministic path covers the temporal and struc-
+Figure 1. The temporal axis follows the turns of a session,                              tural axes, where the harness knows whether a segment is
+one opened by each user message. When the next message                                   discarded at the boundary or retained past it. A short-lived
+arrives, the harness strips the reasoning generated within                               context segment has priority for HBM, and a long-lived con-
+the turn and carries only its output forward. The reasoning                              text segment is placed in HBF. The predictive path covers the
+segment holds 66–83% of the KV the turn writes yet lives                                 inter-worker axis, where no context boundary separates one
+only one turn, whereas the output segment lives 7.6–17.2×                                worker’s segment from another’s. Lachesis predicts each seg-
+longer. The structural axis follows delegation within a turn.                            ment’s lifetime at spawn, ranks the segments shortest-first,
+A lead agent may, depending on the harness, delegate sub-                                and admits as many as HBM has room for, placing the rest in
+tasks to sub-agents, each running in its own context. When                               HBF. Lifetime is tracked entirely in Lachesis, and the serving
+a sub-agent returns, the harness discards its segment and                                engine sees it only through two calls. The first allocates a KV
+keeps only its result. Sub-agent segments produce most of                                block from the tier Lachesis specifies, HBM or HBF, so every
+the KV written within the turn, while the lead-agent segment                             placement decision of either path is issued as one allocation.
+lives 4.0–6.1× longer. The temporal and structural bound-                                The second frees the blocks of a segment whose lifetime has
+aries are both predetermined and known to the harness. On                                ended, at the boundary the harness reports. Across agent
+those two axes the short-lived segment, which takes large                                traces replayed through a simulated two-tier memory system,
+portion of writes, can therefore be placed in HBM at the                                 Lachesis extends HBF lifetime by 1.19–3.13× over HBM-first
+write and freed the moment the boundary arrives. The third                               placement, which allocates in HBM while it has a free block
+axis, inter-worker, follows the workers that carry out those                             and in HBF otherwise (§5). At a tight service-level objec-
+subtasks, whose lifetimes differ by when each completes.                                 tive (SLO) under continuous 24×7 operation, HBF outlasts a
+That completion time is not fixed in advance, and worker                                 five-year warranty on the multi-agent trace.
+lifetimes spread by 3.7–23.6× between p10 and p90, so seg-                                  In summary, this paper makes the following contributions:
+ments of one class carry significantly different lifetimes. Our                               • We show that the context an agent session accumu-
+key observation is that their relative order can be predicted                                    lates divides into segments of differing lifetime along
+at spawn time from the record the harness uses to build each                                     three axes, temporal, structural, and inter-worker, and
+                                                                                    2
+Lachesis: Lifetime-Aware KV Cache Placement for Agent Serving across HBM and High-Bandwidth Flash
+
+
+      that a segment’s lifetime can be determined before it                     Multi-turn
+      is written.                                                                User message        Multi-round reasoning       User message     …
+    • We design Lachesis, a lifetime-aware KV cache place-
+                                                                                Multi-round
+      ment layer between the agent harness and the serving
+                                                                                 round #1                                 round #2
+      engine. Its deterministic path places the segments the                                                                           … output
+      harness marks as short-lived in HBM, and its predic-                       reasoning    tool-call   observation
+
+      tive path admits the workers predicted to be shortest-                    Single-agent Model weights
+                                                                                                                                       Kimi-K3
+      lived, so that less KV reaches HBF and its endurance                      Multi-agent
+                                                                                 3 TB        HBM per accelerator                        Kimi-K2
+      lasts longer.                                                              Lead-agent          Llama 3.1-405B
+                                                                                1 TB                                                   GLM-5
+    • We evaluate Lachesis against HBM-first placement                        User message    Multi-round reasoning            Multi-round reasoning
+                                                                                                                                            Rubin
+      and show that it extends HBF lifetime by 1.19–3.13×,                 300 GB       sub-agent spawn
+                                                                                                  BLOOM 176B
+      and that HBF then outlasts a five-year warranty on the                         A100
+                                                                             Sub-agent
+                                                                           100 GB                                          Mixtral 8x7B
+      multi-agent trace at a tight SLO. A session writes the                                    Lead-agent message        Multi-round reasoning
+                                                                                       2021        2022      2023       2024     2025      2026
+      same KV volume under either policy; Lachesis admits
+      the shortest-lived segments to HBM and frees each                       Execution
+                                                                          (a)(a)         structure
+                                                                                 Model-footprint   of an relative
+                                                                                                 growth   agent session,  single-agent
+                                                                                                                  to per-accelerator
+      at its boundary, so the same HBM capacity absorbs                   above and multi-agentHBM
+                                                                                                 below.
+                                                                                                      capacity.
+      more of that volume and less of it reaches flash.
+                                                                                    ShareGPT 2.8K                                           Chatbot
+                                                                                LMSYS-Chat-1M 0.5K
+2    Background and Motivation                                                             ADE                             37K
+2.1 Agent Serving Intensifies the Capacity Wall                                       DABStep                                44K
+                                                                                          GAIA                             38K              Agentic
+Agentic serving is increasingly constrained by a memory-                        SWE-bench Pro                                                69K
+capacity wall, pushing up the cost of serving each request.                     Terminal Bench                                   45K
+The pressure grows from two sides, the model footprint and                  (b) Mean
+                                                                            (b) Mean peak
+                                                                                     peak context
+                                                                                          context per
+                                                                                                  per conversation
+                                                                                                      conversation or
+                                                                                                                   or agent
+                                                                                                                      agent task.
+                                                                                                                            task.
+the KV cache. The model footprint has grown faster than
+per-accelerator HBM capacity, requiring more accelerators
+                                                                                 Figure 2. Context accumulation in agent serving.
+simply to host a model [14, 41]. The other side is the KV
+cache, which grows with the context each session accumu-
+                                                                                                HBM PHY                      HBF PHY
+lates.
+    An agent session accumulates context by repeating the                  HBF       HBM                  HBM       HBF      HBM                  HBM
+reason-act-observe loop of a ReAct-style agent until the task              HBF       HBM
+                                                                                                GPU
+                                                                                                          HBM       HBF      HBM
+                                                                                                                                        GPU
+                                                                                                                                                  HBM
+is done (Figure 2(a), top). Each pass is a round, a single LLM             HBF       HBM                  HBM       HBF        HBF                HBF
+request, and it appends all three to the context every later               HBF       HBM                  HBM       HBF        HBF                HBF
+round must read [52, 55]. A session divides into turns, one
+                                                                                     (a) Cascaded (H3)                             (b) Co-located
+per user message, and a turn holds one or more rounds. An
+observation is sized by the environment rather than by a
+                                                                                 Figure 3. GPU architectures equipped with HBF.
+person, so a source file or a command’s output enters the con-
+text whole. The peak context lengths of agentic workloads
+are 29× larger than those of conventional chatbot workloads               constant factor, while KV capacity still grows linearly with
+(Figure 2(b)).                                                            context length [26, 28]. Eviction and a bounded attention win-
+    A multi-agent session holds more than one such context                dow cap the KV footprint by discarding past KV, which de-
+at a time (Figure 2(a), bottom). A lead agent carries the user’s          grades accuracy on long-context workloads [48, 57]. Sparse
+task and delegates a subtask to a sub-agent, which runs its               attention reduces the KV read per step, but the KV footprint
+own rounds in a context of its own and returns a result                   remains unchanged [43]. Thus, serving long agentic contexts
+[4, 5, 21]. The session therefore occupies the lead agent’s               still exceeds HBM capacity, demanding a substantially larger
+context and one more for every sub-agent running under                    memory tier.
+it. Many such sessions are served at once, and each holds
+                                                                          2.2     High-Bandwidth Flash: Capacity Opportunity,
+its accumulated context in HBM. Deployments must either
+                                                                                  Endurance Constraint
+spread each request across more accelerators or reduce the
+number of concurrently resident contexts, both of which                   HBF, an emerging stacked memory built from NAND flash,
+increase the hardware cost per served request [14, 23, 41].               can relieve the memory-capacity wall while providing HBM-
+    Existing KV-cache optimizations reduce memory demand,                 class sequential read bandwidth. HBF is projected to provide
+but do not eliminate the capacity wall. Quantization and                  16× the per-stack capacity of HBM, and to exploit thou-
+compression reduce the bytes per cached token only by a                   sands of NAND planes to deliver high sequential bandwidth
+                                                                      3
+                                                                                                                                Yang et al.
+
+
+Table 1. The three characterization axes. The labels name the two sides of each axis’s own comparison, not one threshold
+across axes.
+
+ Axis                Scope            What creates the      Short-lived             Long-lived                       Signal
+                     relationship     split
+ Temporal (§3.3)     session ⊃ turn   Reasoning             reasoning-laden         reasoning-stripped context       Deterministic
+                                      stripping             context segment         segment                          boundary
+ Structural (§3.4)   session ⊃        Sub-agent return      sub-agent segment       lead-agent segment               Deterministic
+                     sub-agent                                                                                       boundary
+ Inter-worker        across worker    Variation in          Early-returning         Late-returning worker’s          Predicted rank
+ (§3.5)              invocations      return time           worker’s segment        segment
+
+Table 2. Execution regimes. Each is configured so that exactly one context boundary is active. Both regimes use Gemma 4.
+
+ Regime       Harness                 Benchmarks                                    Session shape        Active boundary      Axes
+ Temporal     Harbor, OpenAI          𝜏 3 -bench [39, 51], BFCLv4 multi-turn [35]   Multi-turn, single   Turn-end             §3.3
+              message format,                                                       agent                reasoning
+              model’s own chat                                                                           stripping
+              template
+ Structural   AOrchestra (inherits    AppWorld [44], DeepSearchQA [13],             Single-turn,         Sub-agent return     §3.4, §3.5
+              Claude Code)            SWE-bench Verified [17],                      multi-round lead-
+                                      TerminalBench [27], WebArena [60]             agent/sub-agent
+
+
+[38, 40]. Its larger capacity allows more contexts to remain              For agentic serving, however, the generated KV becomes
+resident on each accelerator, while its read bandwidth is              the dominant capacity bottleneck, making write endurance
+sufficient to serve attention efficiently.                             a first-order challenge. Unlike model weights, whose foot-
+   HBF is therefore a promising alternative to HBM, and Fig-           print is fixed once the model is loaded, generated KV grows
+ure 3 shows two architectures explored by prior works that             with context length and the number of resident sessions (Fig-
+directly integrate HBF with accelerators. Daisy-chained de-            ure 2(b)). Fully exploiting HBF, therefore, requires placing
+signs connect HBF stacks behind HBM, allowing HBF traffic              the generated KV in HBF [23, 41]. The KV cache is generally
+to reach the accelerator through the HBM stacks (Figure 3(a))          well suited to NAND flash. Each entry is written once during
+[14]. Co-located designs instead attach HBF directly along-            prefill or decode and then repeatedly read by subsequent
+side the accelerator (Figure 3(b)) [23, 41]. When accessing            attention steps [22]. But short-lived KV with little reuse can
+HBF-resident data in co-located designs, the accelerator can           nonetheless quickly exhaust write endurance [41].
+utilize the aggregate memory bandwidth of all stacks through
+direct and inter-stack paths [3, 20].                                  2.3 Why Agent Sessions Require Lifetime-Aware KV
+   Prior works have addressed the main performance lim-                    Cache Placement
+itations of HBF, which are outside the scope of this work              Although Kyung et al. propose placing the KV cache with
+[14, 20, 29, 47]. First, HBF read latency is orders of magni-          a high read-to-write ratio in HBF [23], this criterion does
+tude higher than HBM. LLM inference exposes predictable                not directly apply to agentic serving. They show that output
+sequential accesses that enable aggressive prefetching to              length largely determines the read-to-write ratio because
+hide this latency. Second, sustaining HBF’s peak read band-            longer generation reuses the KV cache across more decode
+width requires accessing many flash planes in parallel; prior          steps. This relationship holds for stateless requests, where
+work achieves this through plane-balanced data layouts.                all KV is created and consumed within a single request and
+   The remaining obstacle to using HBF in LLM serving is               therefore shares the request’s lifetime. Agent sessions are
+the limited write endurance. Because NAND supports only a              stateful, however, and different parts of their context can
+finite number of P/E cycles, prior HBF designs have largely            remain useful for different lengths of time. The harness may
+focused on read-only state that is written once and then               discard some context while retaining the rest for later turns
+repeatedly read [38]. Designs such as H3 place model weights           or subtasks. We call a group of tokens that share the same
+and precomputed KV cache in HBF while retaining online-                lifetime a context segment.
+generated KV in HBM [14, 20, 29].
+
+                                                                   4
+Lachesis: Lifetime-Aware KV Cache Placement for Agent Serving across HBM and High-Bandwidth Flash
+
+
+                                                     reasoning-laden                reasoning-stripped
+                                              τ³-bench                                                           BFCLv4
+                  airline            retail             telecom                 banking                  base           long-context
+          1.0
+    CDF
+
+
+
+
+          0.5
+
+
+          0.0
+             10   100   1k    10 100 1k 10k            100 1k 10k            100 1k 10k               100 1k 10k          100     1k
+                                     (a) Tnorm, normalized seconds (log), count-weighted over segments.
+                                                     reasoning-laden             reasoning-stripped
+         100k
+          10k
+tokens
+
+
+
+
+           1k
+         100
+    10
+median 976              187     1,059     191          724     137        3,978 1,949                 446     203       1,345 1,431
+ mean 1,519             438     1,537     502          877     211        8,006 4,067                 516     103       4,271 2,051
+                                                (b) KV tokens a turn writes into each class (log).
+
+Figure 4. Temporal axis, per domain. 𝑇norm is drawn at one sampled user delay, median 120 s, and one sampled tool-call latency,
+mean 0.69 s.
+
+   HBF placement should therefore be decided per context                  A reactive policy such as least-recently-used (LRU) cannot
+segment rather than per request or session. Keeping short-                assign the class before observing subsequent accesses and
+lived segments in HBM reduces the write traffic reaching                  would require migration to correct the placement later.
+flash, thereby extending HBF lifetime. In the following sec-
+tion, we analyze agentic serving workloads to identify the                3.2    Methodology
+sources of lifetime variation and characterize which context              We isolate the turn end and sub-agent return in two execu-
+segments are short- or long-lived.                                        tion regimes, each configured so that only the context bound-
+                                                                          ary under study can close a read window (Table 2). A lifetime
+3         Context-Lifetime Analysis for Agent                             difference measured in a regime is therefore attributable to
+          Serving                                                         that regime’s boundary. The temporal regime runs on Harbor
+3.1       Analysis Overview                                               [15] and the structural regime on AOrchestra, which builds
+                                                                          each sub-agent from an explicit ⟨Instruction, Context, Tools,
+Table 1 summarizes the three characterization axes that arise             Model⟩ specification at spawn [37]. We call that specification
+in agentic serving, where each axis separates short-lived
+                                                                          the spawn record, from which §3.5 ranks worker lifetimes.
+from long-lived context segments. Along the temporal axis,
+                                                                          No harness records segments, so they are recovered from
+reasoning context is discarded at the turn end, and the re-               a per-request trace. The trace records the exactly matched
+maining reasoning-stripped context merges with the session                input-prefix length and the cache read SGLang reports [58].
+context (§3.3). Similarly, along the structural axis, sub-agent           A segment’s read window closes where the segment stops
+context excluding the result is discarded at the sub-agent                appearing in the context that later requests reuse, or at the
+return (§3.4). The discarded segment is a short-lived context
+                                                                          end of the session if no boundary closes it. Rematerialization
+segment, and what survives the boundary is a long-lived
+                                                                          produces a new segment, not an in-place rewrite, so each
+context segment. Along the inter-worker axis, the class is                segment is materialized once with its own write volume.
+constant and worker segments differ in lifetime by when                      The primary metric, normalized context lifetime, is how
+each worker returns (§3.5).                                               long a segment must remain readable on a fixed reference
+   The harness fixes a segment’s class before the segment is              clock rather than on server wall time:
+written, so the lifetime is known at the write. The first two
+                                                                                  𝑇norm (𝑠) = 𝐺 dec (𝑠) TPOTref + 𝑁 obs (𝑠) TTFTref
+splits are deterministic, fixed at the turn end and at sub-agent                                                                      (1)
+spawn. The last split, worker lifetime, is predictable from the                               + Λtool (𝑠) + Λuser (𝑠)
+metadata the harness records when it spawns each worker.
+                                                                      5
+                                                                                                                             Yang et al.
+
+
+                                                 lead agent              worker              reviewer
+                  AppWorld            DeepSearchQA            SWE-bench V.               TerminalBench              WebArena
+      1.0
+CDF
+
+
+
+
+      0.5
+
+      0.0
+            100        1k    10k 100        1k    10k         100       1k      10k       100    1k    10k         100      1k
+                                   (a) Tnorm, normalized seconds (log), count-weighted over segments.
+      1.0
+CDF
+
+
+
+
+      0.5
+
+      0.0
+                  1k        10k           1k       10k    100      1k     10k 100k              1k      10k                1k
+                                  (b) ρR/W, reads per token written (log), count-weighted over segments.
+
+             Figure 5. Structural axis, per benchmark. 𝑇norm is drawn at one sampled tool-call latency per tool class.
+
+Every term is counted while segment 𝑠 is live: 𝐺 dec (𝑠) is the         secutive turns, while the reasoning-laden context segment
+number of tokens generated on the decode node, 𝑁 obs (𝑠) the            is retained only during the single turn that generates the
+number of observation prefills, Λtool (𝑠) the tool-call latency,        context. The lifetime distributions of the two segments are
+and Λuser (𝑠) the user delay before the next message. The               clearly separated: a separability, the probability that a ran-
+clock is the decode node’s clock in a prefill–decode disaggre-          dom reasoning-stripped context segment outlives a random
+gated deployment [10, 34, 59]. Its reference point is a time            reasoning-laden context segment, is 0.96–0.99.
+per output token TPOTref = 0.2 s [8, 18, 19] and a time to first           Placing short-lived reasoning-laden context segment in
+token TTFTref = 1.0 s [7, 56]. Normalizing removes decode               HBF is particularly costly because it is much larger than the
+batching, server load, and queueing delay, which are prop-              reasoning-stripped context segment. Of the tokens written
+erties of the serving deployment rather than of the agent               by a turn, 66–83% belong to the reasoning-laden context
+session. Λtool (𝑠) and Λuser (𝑠) are modeled rather than taken          segment (Figure 4(b)). These tokens consume extensive HBF
+from the trace, because tool-call latency and user delay de-            P/E cycles even though the harness soon discards them at
+pend on the environment an agent is deployed in (§5.2). The             the next turn end. The same write budget can instead retain
+read-to-write ratio 𝜌 𝑅/𝑊 (𝑠), by which prior work selects KV           many smaller, long-lived contexts in HBF.
+for HBF [23], divides the KV read from a segment by the KV
+written to materialize it. Each session is analyzed indepen-              Takeaway 1
+dently, and no measurement aggregates across concurrent                      • The reasoning-laden context segment is short-
+sessions.                                                                      lived yet holds 66–83% of the tokens a turn writes,
+                                                                               while the reasoning-stripped context segment
+3.3    Temporal Axis: Reasoning-Content Stripping
+                                                                               that replaces it is long-lived.
+Along the temporal axis, reasoning determines how long a                     • HBM should hold the short-lived context seg-
+context segment remains live. Across multiple rounds within                    ment and HBF the long-lived context segment.
+a turn, the harness accumulates reasoning context across
+tool calls along with non-reasoning context [9, 32]. The ac-            3.4    Structural Axis: Lead-Agent/Sub-Agent Isolation
+cumulated context is read throughout the later rounds in the
+                                                                        In multi-agent sessions, the lead-agent context is retained
+same turn [55]. When the turn ends as the next user mes-
+                                                                        longer than the context created for each delegated subtask.
+sage arrives, the harness discards the reasoning context, the
+                                                                        The lead agent delegates a subtask to a sub-agent, which
+reasoning-laden context segment, and only the remaining
+                                                                        executes the task in a separate context. When the sub-agent
+reasoning-stripped context segment from the previous turn
+                                                                        returns, only its result is merged into the lead-agent segment,
+is passed to the new turn [31].
+                                                                        while the remaining sub-agent segment is discarded. This
+   Figure 4(a) shows that the reasoning-stripped context seg-
+                                                                        separation is by design of the multi-agent execution model,
+ment outlives the reasoning-laden context segment by a
+                                                                        not an optimization specific to one harness [4, 5, 21, 24, 30].
+median ratio of 7.6–17.2× across all domains. The reasoning-
+                                                                        Therefore, lead-agent segment contains session-level con-
+stripped context segment is retained across multiple con-
+                                                                        text, including the system prompt, user objective, spawn
+                                                                    6
+Lachesis: Lifetime-Aware KV Cache Placement for Agent Serving across HBM and High-Bandwidth Flash
+
+
+records, and returned sub-agent results, and sub-agent seg-                                            AppWorld
+                                                                                                       DeepSearchQA
+                                                                                                                                 SWE-bench V.
+                                                                                                                                 TerminalBench
+                                                                                                                                                                   WebArena
+
+ment contains the context of a single sub-agent, including
+its prompt, spawn instruction, and generated content. While
+
+
+
+
+                                                                                                                                     KV tokens (log)
+                                                                                                                                                       100k
+                                                                                           10k
+
+
+
+
+                                                                          Tnorm, s (log)
+lead-agent segment remains available until the session ends,
+sub-agent segment is used only until that sub-agent returns.                                1k                                                          10k
+
+   The sub-agent segment is consistently shorter-lived than
+                                                                                           100
+the lead-agent segment across all benchmarks. The lifetime                                                                                               1k
+
+of sub-agent segment varies by role: a worker actively exe-                                          d      A      V.  ch   na
+                                                                                                                                                                100      1k        10k
+                                                                                                 orl    hQ    ch lBen Are                                         Tnorm, s (log)
+cutes a delegated task through multiple rounds of tool use,                                  pW arc ben
+                                                                                           Ap pSe       E -     i n a
+                                                                                                                      W e b
+                                                                                               e      SW Term
+while a reviewer receives a completed worker trace and pro-                                 De
+                                                                                                   (a) Worker lifetime.                                      (b) Lifetime vs tokens.
+duces a review without further delegation. Figure 5(a) shows
+that the lead-agent segment outlives a worker’s segment by a                                     Figure 6. Worker heterogeneity, per benchmark.
+median ratio of 4.0–6.1× and a reviewer’s by 4.7–38.3×, with
+separability 0.90–1.00 between their lifetime distributions.                                              Q1         Q3                                       shortest k   shortest 2k
+   For HBF, placing the long-lived lead-agent segment is                                                  Q2         Q4                                          avoided longest k
+
+beneficial although its reuse is comparable to that of a worker                            1.0                                                         100
+
+
+
+
+                                                                                                                                    % of selected k
+sub-agent. After the lead agent delegates the subtasks, sub-                                                                                            75
+agent decoding, observation prefills, and tool-call latency
+
+
+                                                                          CDF
+                                                                                           0.5
+increase the lead agent’s 𝑇norm while the lead-agent segment
+                                                                                                                                                        50
+
+remains unread. This waiting period accounts for 71–88% of                                                                                              25
+
+the lead-agent lifetime. As a result, the lead agent and worker                            0.0                                                           0
+overlap in 𝜌 𝑅/𝑊 by 0.25–0.60 despite their large difference
+                                                                                                    100        1k         10k                             0        20         40         60
+                                                                                                     Tnorm, s (log)                                             k, % of workers
+in lifetime (Figure 5(b)). Reuse should therefore not be used
+as a proxy for lifetime when deciding HBF placement.                                        (a) By predicted quartile.                                        (b) What k selects.
+  Takeaway 2                                                                                        Figure 7. Spawn-time lifetime prediction.
+  • The sub-agent segment is short-lived, while the
+    lead-agent segment is long-lived yet unread for                       greatly from tool to tool, so workers that write similar
+    71–88% of that lifetime.                                              volumes can still have very different lifetimes. Published
+  • HBM should hold the sub-agent segment and                             measurements put mean call durations three to four orders
+    HBF the lead-agent segment.                                           of magnitude apart, and tool execution takes up to nearly a
+                                                                          third of end-to-end agent latency [55].
+3.5   Inter-Worker Axis: Lifetime Heterogeneity and                           A worker’s lifetime and write volume are known only after
+      Spawn-Time Predictability                                           it finishes, so we predict its lifetime rank at spawn. The target
+All worker segments belong to the sub-agent class, yet their              is the rank rather than the value, because estimating 𝑇norm
+lifetimes vary widely, and no context boundary separates                  itself is hard while recovering the order is not. Analysis of a
+them. Within a single benchmark, worker𝑇norm varies by 3.7–               stateless request identifies that request’s output length as the
+23.6× from p10 to p90 (Figure 6(a)), and worker write volume              signal [23]; the quantity ranked here is the worker’s whole
+varies by 2.8–22.5× over the same percentiles. The two corre-             lifetime. The predictor reads the spawn record’s instruction,
+late at Kendall’s 𝜏 of 0.51–0.72 per benchmark (Figure 6(b)),             context and tool list, together with where the spawn falls
+so a worker that writes more usually holds a longer-lived                 in the session; we call that set the worker’s spawn signal.
+segment. A session runs many sub-agents, so the sub-agent                 The predictor is a linear model over that signal, fitted by
+class accounts for most of what a session writes, and treating            ridge regression and read only for the order it induces. Each
+it as homogeneous ignores that within-class spread.                       element enters the model as a length, an indicator per tool,
+   Lifetime and write volume both scale with a worker’s                   a session position, or a hashed bag of its words. A single
+round count, but only lifetime also includes tool-call la-                predictor serves all five benchmarks.
+tency. A worker’s 𝑇norm is a round count times a per-round                    The predicted ranking orders workers by lifetime at
+cost, which Equation 1 splits into a generation-side term,                Kendall’s 𝜏 of 0.53, a metric that scores the order alone. The
+𝐺 dec (𝑠)TPOTref + 𝑁 obs (𝑠)TTFTref , and a tool-call latency             predictor is scored by five-fold cross-validation that keeps
+term, Λtool (𝑠). Write volume grows with the same round                   all workers of a session in the same fold, so no worker is
+count, so the two spreads share that factor. Tool-call latency            scored against training data from its own session. Figure 7(a)
+adds no tokens, so a waiting worker advances its 𝑇norm                    groups worker 𝑇norm by predicted rank, from Q1 shortest to
+without adding to its write volume. This latency differs                  Q4 longest, and the four quartiles separate across the whole
+                                                                      7
+                                                                                                                                                         Yang et al.
+
+
+range. Figure 7(b) takes the 𝑘 shortest-predicted workers at           Agent harness
+each 𝑘 and compares three shares of that selection with a                       context boundary                            worker spawn record
+random selection of the same size, the share among the 𝑘
+shortest-lived, the share among the 2𝑘 shortest-lived, and             Lachesis
+the share that avoids the 𝑘 longest-lived. At one worker in
+ten, the selection holds 62.8% of the shortest-lived tenth and          Deterministic path                             Predictive path
+none of the longest-lived tenth.                                        Temporal axis                                  Inter-worker axis
+                                                                        reasoning-laden                HBM                 worker lifetime predictor
+    Takeaway 3                                                          reasoning-stripped             HBF
+                                                                                                                           rank workers; shortest first
+                                                                        Structural axis
+    • Within the worker role, lifetime varies by 3.7–                                                                     w1     w2             w5            w6
+      23.6× from p10 to p90, and no context boundary                    sub-agent (reviewer)           HBM
+                                                                                                                          w3     w4             w7            w8
+      separates that spread.                                            lead agent                      HBF
+                                                                                                                          determined by HBM free capacity
+    • Workers are ranked by a lifetime predicted at
+      spawn, and the segments ranked first have pri-                    Segment table
+      ority for HBM.                                                     segment id     segment class           context boundary          KV block ids
+                                                                         s7             reasoning-laden         turn end                  14      8      16 …
+  On the temporal and structural axes, the segment class                 s13            sub-agent (worker)      sub-agent return          143    13      156 …
+the harness fixes is available when the segment is written.              s27            sub-agent (worker)      sub-agent return          41     35      36 …
+
+
+
+
+                                                                         …
+
+
+
+
+                                                                                                                     …
+                                                                                             …
+
+
+
+
+                                                                                                                                                  …
+Among workers, where no context boundary separates them,                 s5             lead agent              session end                23    94      76    …
+the spawn record exposes candidate signals for the variation
+inside that one class.                                                  Interface
+                                                                         alloc(tier)                allocate one block from that tier’s free block list
+                                                                         free([block ids])          free the blocks a closed segment held
+4    Lachesis Design
+Based on the three axes of §3, we present Lachesis, a lifetime-                       alloc(tier)                               free([block ids])
+aware KV cache placement layer that decides which KV                   Serving engine
+reaches HBF before a segment is written. As Figure 8 shows,              scheduler          KV allocator       HBM list        HBF list         model runner
+Lachesis lies between an agent harness such as the Open-
+Hands SDK, AOrchestra or Claude Code [5, 37, 46] and a
+serving engine such as vLLM or SGLang [22, 58]. Lachesis                                  Figure 8. Overview of Lachesis.
+receives three things from the harness, the id of the segment
+that each LLM request extends, the spawn record written at            (§3.4). The spawn separates the sub-agent segment from
+each sub-agent spawn, and the context boundary that closes            the lead-agent segment, so from that point Lachesis places
+a segment. It holds three components, a deterministic path            what the sub-agent writes in HBM and what the lead agent
+that reads the segment class that the harness fixes on the            writes in HBF. Of the two sub-agent roles, only the reviewer,
+temporal and structural axes, a predictive path that ranks            whose segments are the shorter-lived, takes that placement
+workers by a lifetime predicted at spawn on the inter-worker          unconditionally; a worker is admitted by the predictive path.
+axis, and a segment table that carries one row for each live             The predictive path ranks the workers of every session
+segment. It reaches the serving engine as two calls, one that         that the node serves by a lifetime predicted at their spawn,
+allocates a block in a named tier and one that frees the blocks       and admits the first 𝑘 to HBM, allocating the rest in HBF. In
+of a closed segment. Its placement covers KV only, leaving            a multi-agent session, every worker’s segment carries the
+§2.2’s read-only mapping for model weights unchanged and              same class, because no context boundary separates one from
+activations in HBM.                                                   another (§3.5). They all close at sub-agent return and differ
+   The deterministic path places the short-lived context seg-         only in when that return comes, so the deterministic path
+ment in HBM and the long-lived context segment in HBF,                cannot distinguish them. At each worker spawn, Lachesis
+by the segment class that the harness fixes. In a single-agent        scores that worker’s segment from its spawn signal, and the
+session, the harness reports one context boundary, the turn           segment’s place in the ranking decides its memory tier. A
+end (§3.3). Until it arrives, every request extends the turn’s        reviewer is spawned only after the worker that it reviews,
+reasoning-laden context segment, which Lachesis places in             so Lachesis reserves HBM capacity for reviewers before it
+HBM. At the boundary, the harness discards that segment               counts 𝑘. 𝑘 is determined by HBM’s free capacity rather than
+and materializes the reasoning-stripped context segment that          set as a parameter, so a fuller HBM admits fewer workers.
+carries into the next turn, which Lachesis places in HBF. In a        Only a worker’s rank among the predictions is consumed,
+multi-agent session, the harness also reports each sub-agent          never a lifetime, so the predictor must recover the order
+spawn, and the return that closes the sub-agent’s segment             rather than estimate how long a worker’s segment lives.
+                                                                  8
+Lachesis: Lifetime-Aware KV Cache Placement for Agent Serving across HBM and High-Bandwidth Flash
+
+
+Scoring the signal is one evaluation of a linear model, so it             HBF-equipped GPUs reside [23, 41]. Four GPU-memory con-
+adds no delay before the worker starts.                                   figurations split the eight stack slots of the GPU used by Son
+   Every memory tier decision is made in Lachesis, which                  et al. [41] between HBM and HBF, 1/7, 2/6, 3/5 and 4/4. A fifth
+holds one segment table row for each live segment. The                    is H3’s daisy chain, labelled 8/8* [14]. The two tiers have the
+row is keyed by the segment id and gives the segment class,               same read bandwidth and differ only in write bandwidth. The
+the context boundary that closes it, and the engine’s own                 traces are replayed against two models, Llama-4-Maverick
+identifiers for the KV blocks that it holds. Lachesis adds a              and Qwen3-235B-A22B. Each is served across eight GPUs,
+row at a segment’s first write and records in it the id of every          its attention by data parallelism and its experts by expert
+block it allocates for that segment. When the harness reports             parallelism. Every configuration is run at two SLOs on the
+the boundary that a row names, Lachesis frees that row’s                  multi-agent trace, both with a 2 s time to first token (TTFT)
+blocks and removes the row. The table’s size is proportional              [42, 50]. They differ in the 99th-percentile time per output
+to the number of blocks live at any moment. Lachesis names                token (TPOT), a tight 60 ms and a loose 100 ms [6, 42]. The
+the tier for every block it places, so it tracks how much KV              single-agent traces are run at the tight SLO alone.
+each tier holds.                                                          Workloads. Three replay traces are built from the ses-
+   The engine executes those decisions without representing               sions of §3.2 (Table 2). The temporal regime supplies the two
+a lifetime. Lachesis reaches the engine as two calls that it              single-agent traces, 𝜏 3 -bench and BFCLv4, and the structural
+issues itself, and neither names a turn, a sub-agent, or rea-             regime’s five benchmarks are mixed into one multi-agent
+soning content. alloc(tier) draws one KV block from the                   trace. The multi-agent trace is collected twice, once as the
+named tier’s free list, and free([block ids]) returns the                 harness records it and once with the reviewer disabled, and
+blocks that a closed segment held, each to the free list it               every result below is read on the first unless it names the
+came from. That second call fires at a context boundary, not              second (§5.4). The evaluation uses the latency model of §3.2,
+after the inactivity that a recency policy waits for [45]. A              and both of its terms are taken from prior serving work.
+deployed engine keeps a single free block list. Supporting                No benchmark records when a user replies, so user delay is
+a heterogeneous memory costs it one free list per tier, an                sampled from a log-normal with median 120 s [12, 49, 54],
+HBM list and an HBF list, and nothing else. A block’s tier is             and tool-call latency from a published measurement for each
+therefore the free list it was drawn from. When HBM’s free                tool class (Appendix B).
+list is empty, the allocation is served from the HBF free list.           Baseline. Lachesis is compared against HBM-first place-
+                                                                          ment, which places a KV block in HBM whenever HBM has
+5     Evaluation                                                          a free block and in HBF otherwise. It is the placement an
+5.1   Implementation                                                      engine performs without Lachesis.
+We implement Lachesis on a simulated serving engine and                   Metric. HBF lifetime is the time HBF’s P/E budget lasts at
+two-tier memory, and replay real agent traces through it.                 the mean rate at which KV is written to it, excluding the one
+Frontier supplies the engine [11]: a scheduler and request                write that loads the model weights. Each cell tolerates 100,000
+                                                                          P/E cycles at SLC density [41], over 512 GB of flash per stack
+queue, a KV-cache manager with a block-hash prefix cache,
+                                                                          [38]. KV blocks are written whole and in order, so garbage
+memory capacity expressed as a KV-block budget, and con-
+text that grows per round. LLMSimulator supplies the hard-                collection and wear leveling move few blocks and write
+ware [1], with the HBF extension prior work used [23, 41]:                amplification is 1.02, the value prior work adopts [16, 23].
+compiled operator kernels and roofline memory pricing. Its                Lifetime is measured once the write traffic has settled. A
+memory system holds KV in both tiers and prices each read                 device must outlast its five-year warranty.
+against the bandwidth of the tier it is served from. KV bound             5.3   Multi-Agent Results
+for HBF is buffered across the decoder layers and flushed
+once at the end of the decode step, so HBF’s write bandwidth              Overall results. At a tight SLO, HBF outlasts the five-year
+prices that flush rather than any decoder layer. The two meet             warranty under Lachesis at every GPU-memory configura-
+at the operator-cost call, where the engine passes an opera-              tion and on both models, and under HBM-first placement
+tor’s shape and its KV length and receives its execution time             only with Qwen3-235B-A22B on H3’s daisy chain (Figure 9,
+                                                                          top row). At the four configurations that give HBM one
+on the device. Its workload generator now replays an agent
+                                                                          to four of the eight slots, Lachesis reaches 3.3–9.3 device-
+run as per-request rows that name the segment each request
+extends. Its KV allocator now keeps a free list per tier and              years against HBM-first’s 1.9–4.8, extending HBF lifetime
+serves the two calls of §4.                                               by 1.50–2.95× at the tight SLO and 1.19–1.89× at the loose
+                                                                          one. Lachesis extends HBF lifetime over HBM-first at every
+5.2   Experimental Setup                                                  model, SLO and configuration of the multi-agent trace.
+                                                                          What sets the gain. Lachesis’s gain over HBM-first is set by
+Testbed. Lachesis is evaluated at the decode node of a prefill–
+                                                                          one ratio, HBM’s capacity against the short-lived KV live at
+decode disaggregated deployment [10, 34, 59], where the
+                                                                          one time, and the GPU-memory configuration and the SLO
+                                                                      9
+                                                                                                                                                             Yang et al.
+
+
+                                                                         HBM-first         w/o predictive path           Lachesis
+                                                            Llama-4-Maverick                                            Qwen3-235B-A22B
+                                      12
+
+
+
+
+                                                                                                                                                                    tight SLO
+                                          9
+                                          6
+HBF lifetime
+
+
+
+
+                                                                  39.1
+                                                                  39.1
+
+
+
+
+                                                                                                43.0
+                                                                                                43.0
+
+
+
+
+                                                                                                                                  42.1
+                                                                                                                                  43.6
+
+
+
+
+                                                                                                                                                             49.0
+                                                                                                                                                             54.3
+  (years)
+
+
+
+
+                                          3
+
+                                      12
+
+
+
+
+                                                                                                                                                                    loose SLO
+                                          9
+                                          6
+                                          3
+                                               1/7 2/6 3/5 4/4 8/8*      1/7 2/6 3/5 4/4 8/8*              1/7 2/6 3/5 4/4 8/8*          1/7 2/6 3/5 4/4 8/8*
+                                                   w/o reviewer              w/ reviewer                        w/o reviewer                 w/ reviewer
+
+                                          Figure 9. HBF lifetime in device-years on the multi-agent trace. The dashed line is the five-year warranty.
+
+                                                                              lead agent          worker          reviewer
+                                                             w/o reviewer                                                  w/ reviewer
+KV write bytes (% of trace total)
+
+
+
+
+                                              HBM-first    w/o predictive path       Lachesis              HBM-first   w/o predictive path        Lachesis
+                                    100
+
+
+
+
+                                                                                                                                                                 HBM
+                                    50
+
+
+                                      0
+                                    100
+
+
+
+
+                                                                                                                                                                 HBF
+                                    50
+
+
+                                     0
+                                                      8*
+
+
+
+
+                                                                        8*
+
+
+
+
+                                                                                            8*
+
+
+
+
+                                                                                                                  8*
+
+
+
+
+                                                                                                                                      8*
+
+
+
+
+                                                                                                                                                         8*
+                                          7
+                                              6
+                                                       5
+                                                       4
+
+
+
+                                                             7
+                                                                 6
+                                                                         5
+                                                                         4
+
+
+
+                                                                                 7
+                                                                                     6
+                                                                                             5
+                                                                                             4
+
+
+
+                                                                                                       7
+                                                                                                           6
+                                                                                                                   5
+                                                                                                                   4
+
+
+
+                                                                                                                          7
+                                                                                                                              6
+                                                                                                                                       5
+                                                                                                                                       4
+
+
+
+                                                                                                                                              7
+                                                                                                                                                  6
+                                                                                                                                                          5
+                                                                                                                                                          4
+                                      1/
+                                              2/
+                                                3/
+                                                    4/
+
+
+
+                                                           1/
+                                                              2/
+                                                                  3/
+                                                                      4/
+
+
+
+                                                                             1/
+                                                                                 2/
+                                                                                      3/
+                                                                                          4/
+
+
+
+                                                                                                   1/
+                                                                                                       2/
+                                                                                                             3/
+                                                                                                                4/
+
+
+
+                                                                                                                        1/
+                                                                                                                             2/
+                                                                                                                                3/
+                                                                                                                                    4/
+
+
+
+                                                                                                                                             1/
+                                                                                                                                                2/
+                                                                                                                                                    3/
+                                                                                                                                                       4/
+                                                   8/
+
+
+
+
+                                                                     8/
+
+
+
+
+                                                                                         8/
+
+
+
+
+                                                                                                               8/
+
+
+
+
+                                                                                                                                   8/
+
+
+
+
+                                                                                                                                                      8/
+                                    Figure 10. KV write bytes by segment in each tier on the multi-agent trace, with Llama-4-Maverick at the loose SLO.
+
+each move it. Moving from one HBM slot in eight to four                                                HBM capacity does not turn over. Lachesis places the lead-
+quadruples HBM capacity and removes three of the seven                                                 agent segment in HBF at the write and admits the workers
+HBF stacks, so the aggregate P/E budget falls with them. At                                            predicted to be short-lived, so HBM’s capacity turns over.
+the tight SLO, the added HBM absorbs 12% of HBM-first’s                                                The reviewer increases the short-lived KV live at one time,
+flash writes and 54–56% of Lachesis’s. Only the second offsets                                         and HBM’s capacity does not grow with it, so more of that
+the smaller P/E budget, so HBF lifetime falls under HBM-                                               KV reaches HBF and HBF lifetime falls under both placement
+first and rises under Lachesis with each slot added (Figure 9,                                         policies. Lachesis places that KV in HBM by its segment class,
+top row). The longest-lived configuration is therefore the                                             so the loss is smaller under Lachesis than under HBM-first
+smallest HBM that absorbs most of the live short-lived KV,                                             (§5.4).
+because further slots cost more P/E budget than they save in                                           H3’s daisy chain. Lachesis extends HBF lifetime by 10.06–
+flash writes. A looser SLO instead admits more concurrent                                              10.09× at the tight SLO on H3’s daisy chain, the largest
+sessions, so that ratio falls and the gain narrows (Figure 9,                                          gain at any configuration. H3 does not trade HBM capacity
+bottom row). It also moves the longest-lived configuration                                             against flash stacks, because its eight slots carry HBM and
+down to two or three HBM slots in eight.                                                               HBF together instead of dividing them, so HBM grows and
+Write composition. Lachesis writes 8.2–19.5× as much                                                   no flash stack is lost (Figure 9, 8/8*). The gain falls to 2.53×
+KV to HBM as HBM-first placement, so HBF receives less                                                 on the change of SLO alone.
+and spends less of its P/E budget (Figure 10). HBM takes
+19–51% of a run’s write bytes under Lachesis against 1–7%                                              5.4     Ablation Study
+under HBM-first, and the rest of that volume reaches HBF.                                              Lachesis’s gain over HBM-first is the product of two margins,
+HBM-first frees blocks only under memory pressure, so its                                              one from each placement path (§5.3). Lachesis without the
+
+                                                                                                  10
+Lachesis: Lifetime-Aware KV Cache Placement for Agent Serving across HBM and High-Bandwidth Flash
+
+
+predictive path places every segment by the segment class                                                                           HBM-first         Lachesis
+the harness fixes and ranks no worker. It yields 1.11–2.00×                                                         Llama-4-Maverick            Qwen3-235B-A22B
+over HBM-first on the multi-agent trace, and Lachesis adds                                                    12
+
+
+
+
+                                                                                                                                                                             τ³-bench
+1.33–1.54× over it (Figure 9). Both margins hold on both                                                       9
+models and at every configuration that splits the eight slots.                                                 6
+
+
+
+
+                                                                          HBF lifetime
+
+
+
+
+                                                                                                                                         16.5
+
+
+
+
+                                                                                                                                                                      17.4
+What the reviewer changes. The predictive path ranks                                                           3
+
+
+
+
+                                                                            (years)
+only worker segments, and what it earns is set by the HBM
+capacity that ranking keeps free for the reviewer, 1.33–1.54×                                                 12
+with a reviewer present against 1.05–1.14× without one (Fig-
+
+
+
+
+                                                                                                                                                                             BFCLv4
+                                                                                                               9
+ure 9). A reviewer’s segment is generally shorter-lived than
+                                                                                                               6
+a worker’s, so Lachesis places it in HBM by its segment class
+with or without the predictive path (§4). Without the ranking,                                                 3
+long-lived worker segments enter HBM and hold its capac-
+
+
+
+
+                                                                                                                                        8*
+
+
+
+
+                                                                                                                                                                    8*
+                                                                                                                    7
+                                                                                                                         6
+                                                                                                                              5
+                                                                                                                                   4
+
+
+
+
+                                                                                                                                                7
+                                                                                                                                                     6
+                                                                                                                                                          5
+                                                                                                                                                               4
+                                                                                                                    1/
+                                                                                                                         2/
+                                                                                                                              3/
+                                                                                                                                   4/
+
+
+
+
+                                                                                                                                                1/
+                                                                                                                                                     2/
+                                                                                                                                                          3/
+                                                                                                                                                               4/
+ity until their workers return. Lachesis instead admits the
+
+
+
+
+                                                                                                                                    8/
+
+
+
+
+                                                                                                                                                                 8/
+worker segments predicted to be short-lived, which are also
+                                                                           Figure 11. HBF lifetime in device-years on the single-agent
+the ones that write less (§3.5), so the same HBM covers more
+                                                                           traces. The dashed line is the five-year warranty.
+of the short-lived KV live at one time and usually has room
+for a reviewer. The reviewer’s own write volume reaches
+                                                                                                                     reasoning-laden            reasoning-stripped
+flash at 45–95% without the predictive path, and at 2–25%
+                                                                                                                          HBM-first                   Lachesis
+under Lachesis (Figure 10). In the sessions with no reviewer,                                                 100
+                                                                          KV write bytes (% of trace total)
+workers are the only segments HBM holds, so ranking them
+only changes which of them it holds.
+
+
+
+
+                                                                                                                                                                             HBM
+                                                                                                              50
+5.5   Single-Agent Results
+                                                                                                                0
+Overall results. HBF outlasts the five-year warranty under
+                                                                                                              100
+Lachesis at every configuration but one, and under HBM-
+first placement at some of 𝜏 3 -bench’s and none of BFCLv4’s
+
+
+
+
+                                                                                                                                                                             HBF
+(Figure 11). At the four configurations that give HBM one                                                     50
+to four of the eight slots, Lachesis reaches 4.6–12.2 device-
+years against HBM-first’s 2.1–6.4, extending HBF lifetime by                                                   0
+                                                                                                                    8/8*
+
+
+
+
+                                                                                                                                   8/8*
+
+
+
+
+                                                                                                                                                8/8*
+
+
+
+
+                                                                                                                                                               8/8*
+                                                                                                                     1/7
+                                                                                                                     2/6
+                                                                                                                     3/5
+                                                                                                                     4/4
+
+                                                                                                                                    1/7
+                                                                                                                                    2/6
+                                                                                                                                    3/5
+                                                                                                                                    4/4
+
+
+                                                                                                                                                 1/7
+                                                                                                                                                 2/6
+                                                                                                                                                 3/5
+                                                                                                                                                 4/4
+
+                                                                                                                                                                1/7
+                                                                                                                                                                2/6
+                                                                                                                                                                3/5
+                                                                                                                                                                4/4
+1.35–3.13×. These traces are single-agent, so they exercise
+the temporal axis alone and the deterministic path places
+                                                                                                                    τ³-bench       BFCLv4       τ³-bench       BFCLv4
+every segment (§4).
+What a larger HBM admits. Lachesis’s lifetime peaks at                     Figure 12. KV write bytes by segment in each tier on the
+one to three HBM slots in eight and falls with every slot                  single-agent traces, with Qwen3-235B-A22B at the tight SLO.
+added past the peak (Figure 11). A larger HBM admits no
+more KV once it holds every reasoning-laden context seg-
+ment the deployment has live at one time, and its share of                replaces the flash translation layer with a read-only one,
+a run’s write bytes flattens (Figure 12). Past the peak, every            which locates model weights and supports no writes. Nei-
+added slot costs an HBF stack and saves no flash write, and               ther design spends flash endurance on generated KV, because
+Lachesis reaches 30–31% fewer device-years on BFCLv4 at                   neither writes it. Later designs do write generated KV, and
+four HBM slots in eight than at one. Under Lachesis, H3’s                 each answers the write cost with a mechanism. FlashAccel
+daisy chain loses no flash stack and reaches the longest life-            [47] places weights and KV together in flash, Park et al. [33]
+time at every benchmark and model. The multi-agent trace                  offload a buffered write-back into a custom base die, and
+peaks later at the same SLO, because its worker segments                  DASH [20] holds decode KV in HBM until it can be written
+give Lachesis more to admit than HBM has room for (§5.3).                 to flash in whole pages. These designs lower what each write
+                                                                          costs, and DASH also decides where data goes, from its size,
+6     Related Work                                                        mutability and reuse. None of the three decides from how
+                                                                          long the data stays readable. Son et al. [41] measure what
+Lachesis places KV in flash by the lifetime of a context seg-
+                                                                          writing every generated KV block to flash costs. When HBF
+ment, which no HBF design for LLM inference has used to
+                                                                          serves as the main GPU memory, each flash block accumu-
+decide what flash holds. Early designs place only read-only
+                                                                          lates more P/E cycles than SLC NAND tolerates. Kyung et al.
+data. H3 [14] stores model weights and precomputed KV
+                                                                          [23] show that one property can decide which KV is worth
+in HBF and keeps generated KV in HBM, and FLINT [29]
+                                                                          that cost, a request’s output length (§2.3). Lachesis instead
+                                                                     11
+                                                                                                                                                     Yang et al.
+
+
+decides from a lifetime the agent harness fixes before the                                IEEE International Symposium on High-Performance Computer Archi-
+segment is written.                                                                       tecture (HPCA). https://arxiv.org/abs/2602.11530
+                                                                                      [9] DeepSeek. 2026. Thinking Mode. DeepSeek API documentation.
+                                                                                          Accessed 22 August 2026. https://api-docs.deepseek.com/guides/
+7    Conclusion                                                                           thinking_mode
+This paper presents Lachesis, a lifetime-aware KV cache                              [10] Jingqi Feng, Yukai Huang, Rui Zhang, Sicheng Liang, Ming Yan, and
+placement layer for agent serving across HBM and HBF. We                                  Jie Wu. 2025. WindServe: Efficient Phase-Disaggregated LLM Serving
+find that the context an agent session accumulates divides at                             with Stream-based Dynamic Scheduling. In 52nd ACM/IEEE Annual
+                                                                                          International Symposium on Computer Architecture (ISCA ’25). 1283–
+harness-defined context boundaries into context segments                                  1295. doi:10.1145/3695053.3730999
+whose lifetimes differ along three axes, temporal, structural                        [11] Yicheng Feng, Xin Tan, Yangtao Deng, Yimin Jiang, Yibo Zhu, and
+and inter-worker, and that each lifetime is knowable before                               Hong Xu. 2026. Frontier: Towards Comprehensive and Accurate LLM
+its segment is written. Lachesis places each segment on the                               Inference Simulation. arXiv:2605.21312 https://arxiv.org/abs/2605.
+tier its lifetime implies, along a deterministic path that reads                          21312
+                                                                                     [12] Shiwei Gao, Youmin Chen, and Jiwu Shu. 2025. Fast State Restoration
+the segment class the harness fixes and a predictive path that                            in LLM Serving with HCache. In Proceedings of the Twentieth European
+ranks worker segments at spawn. In trace-driven simulation,                               Conference on Computer Systems (EuroSys ’25). ACM, 128–143. doi:10.
+Lachesis extends HBF lifetime by 1.19–3.13× over HBM-first                                1145/3689031.3696072
+placement, and HBF outlasts a five-year warranty on the                              [13] Nikita Gupta, Riju Chatterjee, Lukas Haas, Connie Tao, Andrew Wang,
+multi-agent trace at a tight SLO even under 24×7 operation.                               Chang Liu, Hidekazu Oiwa, Elena Gribovskaya, Jan Ackermann, John
+                                                                                          Blitzer, Sasha Goldshtein, and Dipanjan Das. 2026. DeepSearchQA:
+                                                                                          Bridging the Comprehensiveness Gap for Deep Research Agents.
+Acknowledgments                                                                           arXiv:2601.20975 https://arxiv.org/abs/2601.20975
+This paper was the result of the research project supported                          [14] Minho Ha, Euiseok Kim, and Hoshik Kim. 2026. H3: Hybrid Architec-
+by SK hynix Inc. Jae W. Lee is the corresponding author. This                             ture Using High Bandwidth Memory and High Bandwidth Flash for
+                                                                                          Cost-Efficient LLM Inference. IEEE Computer Architecture Letters 25, 1
+work used Claude Code for code, language editing and text                                 (2026), 49–52. doi:10.1109/LCA.2026.3660969
+refinement. All technical content, experiments, and conclu-                          [15] Harbor Framework Team. 2026. Harbor: A framework for evaluating
+sions were verified by the authors.                                                       and optimizing agents and models in container environments. Version
+                                                                                          v0.22.0. doi:10.5281/zenodo.20953922
+References                                                                           [16] Inho Jeong, Sunghyeon Woo, Sol Namkung, and Dongsuk Jeon. 2025.
+                                                                                          HiFC: High-efficiency Flash-based KV Cache Swapping for Scaling
+ [1] 2025. LLMSimulator. Source repository. https://github.com/scale-                     LLM Inference. In Advances in Neural Information Processing Systems
+     snu/LLMSimulator                                                                     (NeurIPS). https://openreview.net/forum?id=onhjdWCxZY
+ [2] Reyna Abhyankar, Zijian He, Vikranth Srivatsa, Hao Zhang, and Yiy-              [17] Carlos E. Jimenez, John Yang, Alexander Wettig, Shunyu Yao, Kexin
+     ing Zhang. 2024. InferCept: Efficient Intercept Support for Augmented                Pei, Ofir Press, and Karthik Narasimhan. 2024. SWE-bench: Can
+     Large Language Model Inference. In Proceedings of the 41st Interna-                  Language Models Resolve Real-world Github Issues?. In The Twelfth
+     tional Conference on Machine Learning (ICML) (Proceedings of Machine                 International Conference on Learning Representations (ICLR). 54107–
+     Learning Research, Vol. 235). PMLR, 81–95. https://proceedings.mlr.                  54157.       https://proceedings.iclr.cc/paper_files/paper/2024/hash/
+     press/v235/abhyankar24a.html                                                         edac78c3e300629acfe6cbe9ca88fb84-Abstract-Conference.html
+ [3] Hyowon An, Gyeongjae Lee, Zhixian Jin, Joungho Kim, and John                    [18] Yunho Jin, Chun-Feng Wu, David Brooks, and Gu-Yeon Wei. 2023.
+     Kim. 2026. Memory Fabric: HBM Die-to-Die Interconnect for GPU                        S3 : Increasing GPU Utilization during Generative Inference for
+     Bandwidth Expansion. IEEE Computer Architecture Letters 25, 2 (2026),
+                                                                                          Higher Throughput. In Advances in Neural Information Processing
+     327–330. doi:10.1109/LCA.2026.3721758                                                Systems 36 (NeurIPS). https://proceedings.neurips.cc/paper_files/
+ [4] Anthropic. 2026. How we built our multi-agent research system.                       paper/2023/hash/3a13be0c5dae69e0f08065f113fb10b8-Abstract-
+     Anthropic Engineering. Accessed 22 August 2026. https://www.                         Conference.html
+     anthropic.com/engineering/multi-agent-research-system                           [19] Andreas Kosmas Kakolyris, Dimosthenis Masouros, Petros Vavarout-
+ [5] Anthropic. 2026. Subagents. Claude Code documentation. Accessed                      sos, Sotirios Xydis, and Dimitrios Soudris. 2025. throttLL’eM: Predic-
+     22 August 2026. https://docs.claude.com/en/docs/claude-code/sub-                     tive GPU Throttling for Energy Efficient LLM Inference Serving. In Pro-
+     agents                                                                               ceedings of the 31st IEEE International Symposium on High-Performance
+ [6] Yukang Chen, Weihao Cui, Han Zhao, Ziyi Xu, Xiaoze Fan, Xusheng                      Computer Architecture (HPCA). doi:10.1109/HPCA61900.2025.00103
+     Chen, Yangjie Zhou, Shixuan Sun, Bingsheng He, and Quan Chen. 2026.             [20] Seeyeon Kim, Juhyeong Jin, and Joo-Young Kim. 2026. Beyond Ca-
+     Towards High-Goodput LLM Serving with Prefill-decode Multiplexing.                   pacity: Scalable MoE LLM Inference via High-Bandwidth Flash with
+     In Proceedings of the 31st ACM International Conference on Architectural             Direct GPU and HBM Paths. arXiv:2608.14333 [cs.AR] doi:10.48550/
+     Support for Programming Languages and Operating Systems (ASPLOS).                    arXiv.2608.14333
+     doi:10.1145/3779212.3790236                                                     [21] Kimi Team. 2026.           Kimi K2.5: Visual Agentic Intelligence.
+ [7] Rongxin Cheng, Yuxin Lai, Xingda Wei, Rong Chen, and Haibo Chen.                     arXiv:2602.02276 https://arxiv.org/abs/2602.02276
+     2026. KunServe: Parameter-centric Memory Management for Efficient               [22] Woosuk Kwon, Zhuohan Li, Siyuan Zhuang, Ying Sheng, Lianmin
+     Memory Overloading Handling in LLM Serving. In Proceedings of the                    Zheng, Cody Hao Yu, Joseph E. Gonzalez, Hao Zhang, and Ion Stoica.
+     21st European Conference on Computer Systems (EuroSys). doi:10.1145/                 2023. Efficient Memory Management for Large Language Model
+     3767295.3769348                                                                      Serving with PagedAttention. In Proceedings of the 29th Symposium
+ [8] Eunyeong Cho, Jehyeon Bang, Ranggi Hwang, and Minsoo Rhu.                            on Operating Systems Principles (SOSP). ACM, 611–626. doi:10.1145/
+     2026. PASCAL: A Phase-Aware Scheduling Algorithm for Serving                         3600006.3613165
+     Reasoning-based Large Language Models. In Proceedings of the 32nd
+
+                                                                                12
+Lachesis: Lifetime-Aware KV Cache Placement for Agent Serving across HBM and High-Bandwidth Flash
+
+
+[23] Kwanhee Kyung, Yeon Ji Moon, Juhwan Cho, and Jung Ho Ahn. 2026.                     chitecture With Custom Base Die for Terabyte-Scale LLM Infer-
+     High-Bandwidth Flash for KV Caches: Endurance and Performance                       ence. IEEE Computer Architecture Letters 25, 2 (2026), 259–262.
+     Implications. IEEE Computer Architecture Letters 25, 1 (2026), 210–213.             doi:10.1109/LCA.2026.3703982
+     doi:10.1109/LCA.2026.3695938                                                   [34] Pratyush Patel, Esha Choukse, Chaojie Zhang, Aashaka Shah, Íñigo
+[24] LangChain. 2026.         deepagents.     Source repository, commit                  Goiri, Saeed Maleki, and Ricardo Bianchini. 2024. Splitwise: Efficient
+     23b83ad. Accessed 22 August 2026. https://github.com/langchain-                     Generative LLM Inference Using Phase Splitting. In 51st ACM/IEEE
+     ai/deepagents/blob/23b83ad50f63d241d0069a3dc426d43b211adf2e/                        Annual International Symposium on Computer Architecture (ISCA ’24).
+     README.md                                                                           118–132. doi:10.1109/ISCA59077.2024.00019
+[25] Yuhan Liu, Yihua Cheng, Jiayi Yao, Yuwei An, Xiaokun Chen, Shaot-              [35] Shishir G. Patil, Huanzhi Mao, Fanjia Yan, Charlie Cheng-Jie Ji, Vishnu
+     ing Feng, Yuyang Huang, Samuel Shen, Rui Zhang, Kuntai Du, et al.                   Suresh, Ion Stoica, and Joseph E. Gonzalez. 2025. The Berkeley Func-
+     2025. LMCache: An efficient KV cache layer for enterprise-scale LLM                 tion Calling Leaderboard (BFCL): From Tool Use to Agentic Evaluation
+     inference. arXiv:2510.09665 [cs.LG] doi:10.48550/arXiv.2510.09665                   of Large Language Models. In Proceedings of the 42nd International
+[26] Zirui Liu, Jiayi Yuan, Hongye Jin, Shaochen Zhong, Zhaozhuo Xu,                     Conference on Machine Learning (ICML) (Proceedings of Machine Learn-
+     Vladimir Braverman, Beidi Chen, and Xia Hu. 2024. KIVI: A Tuning-                   ing Research, Vol. 267). PMLR. https://proceedings.mlr.press/v267/
+     Free Asymmetric 2bit Quantization for KV Cache. In Proceedings of the               patil25a.html
+     41st International Conference on Machine Learning (ICML) (Proceedings          [36] Ruoyu Qin, Zheming Li, Weiran He, Jialei Cui, Heyi Tang, Feng Ren,
+     of Machine Learning Research, Vol. 235). PMLR, 32332–32344. https:                  Teng Ma, Shangming Cai, Yineng Zhang, Mingxing Zhang, et al. 2026.
+     //proceedings.mlr.press/v235/liu24bz.html                                           Mooncake: A KVCache-centric Disaggregated Architecture for LLM
+[27] Mike A. Merrill, Alexander G. Shaw, Nicholas Carlini, Boxuan Li,                    Serving. ACM Transactions on Storage 22, 4 (2026), 1–38. doi:10.1145/
+     Harsh Raj, Ivan Bercovich, Lin Shi, Jeong Yeon Shin, Thomas Wal-                    3773772
+     she, E. Kelly Buchanan, Junhong Shen, Guanghao Ye, Haowei Lin,                 [37] Jianhao Ruan, Zhihao Xu, Yiran Peng, Fashen Ren, Zhaoyang Yu,
+     Jason Poulos, Maoyu Wang, Marianna Nezhurina, Jenia Jitsev, Di                      Xinbing Liang, Jinyu Xiang, Yongru Chen, Bang Liu, Chenglin Wu,
+     Lu, Orfeas Menis Mastromichalakis, Zhiwei Xu, Zizhao Chen, Yue                      Yuyu Luo, and Jiayi Zhang. 2026. AOrchestra: Automating Sub-Agent
+     Liu, Robert Zhang, Leon Liangyu Chen, Anurag Kashyap, Jan-Lucas                     Creation for Agentic Orchestration. arXiv:2602.03786 https://arxiv.
+     Uslu, Jeffrey Li, Jianbo Wu, Minghao Yan, Song Bian, Vedang Sharma,                 org/abs/2602.03786
+     Ke Sun, Steven Dillmann, Akshay Anand, Andrew Lanpouthakoun,                   [38] Sandisk Corporation. 2025. Sandisk Unveils the Future of Memory
+     Bardia Koopah, Changran Hu, Etash Guha, Gabriel H. S. Dreiman,                      Architecture for AI. Introducing: High Bandwidth Flash. Tech brief,
+     Jiacheng Zhu, Karl Krauth, Li Zhong, Niklas Muennighoff, Robert                     HBF Fact Sheet. https://documents.sandisk.com/content/dam/asset-
+     Amanfu, Shangyin Tan, Shreyas Pimpalgaonkar, Tushar Aggarwal,                       library/en_us/assets/public/sandisk/collateral/company/Sandisk-
+     Xiangning Lin, Xin Lan, Xuandong Zhao, Yiqing Liang, Yuanli Wang,                   HBF-Fact-Sheet.pdf
+     Zilong Wang, Changzhi Zhou, David Heineman, Hange Liu, Harsh                   [39] Sierra Research. 2026. 𝜏 3 -bench, release v1.0.1. https://github.com/
+     Trivedi, John Yang, Junhong Lin, Manish Shetty, Michael Yang, Nabil                 sierra-research/tau2-bench/releases/tag/v1.0.1
+     Omi, Negin Raoof, Shanda Li, Terry Yue Zhuo, Wuwei Lin, Yiwei Dai,             [40] SK hynix Inc. 2026. SK hynix Unveils First HBF Standard Specifications
+     Yuxin Wang, Wenhao Chai, Shang Zhou, Dariush Wahdany, Ziyu She,                     with Sandisk, Presenting AI Memory Solutions at FMS 2026. SK hynix
+     Jiaming Hu, Zhikang Dong, Yuxuan Zhu, Sasha Cui, Ahson Saiyed,                      Newsroom. https://news.skhynix.com/en/hbf-at-fms-2026/
+     Arinbjörn Kolbeinsson, Jesse Hu, Christopher Michael Rytting, Ryan             [41] Dowon Son, Yonggon Park, Hyunuk Cho, Hyungkyu Ham, Onur
+     Marten, Yixin Wang, Alex Dimakis, Andy Konwinski, and Ludwig                        Mutlu, Sungjin Lee, Gwangsun Kim, and Jisung Park. 2026. Exploring
+     Schmidt. 2026. Terminal-Bench: Benchmarking Agents on Hard, Re-                     High-Bandwidth Flash for Modern LLM Inference: Opportunities and
+     alistic Tasks in Command Line Interfaces. arXiv:2601.11868 [cs.SE]                  Challenges. IEEE Computer Architecture Letters 25, 2 (2026), 251–254.
+     https://arxiv.org/abs/2601.11868                                                    doi:10.1109/LCA.2026.3705817
+[28] Piotr Nawrot, Adrian Łańcucki, Marcin Chochowski, David Tar-                   [42] Jovan Stojkovic, Chaojie Zhang, Íñigo Goiri, Josep Torrellas, and Esha
+     jan, and Edoardo Ponti. 2024. Dynamic Memory Compression:                           Choukse. 2025. DynamoLLM: Designing LLM Inference Clusters for
+     Retrofitting LLMs for Accelerated Inference. In Proceedings of the                  Performance and Energy Efficiency. In Proceedings of the 31st IEEE
+     41st International Conference on Machine Learning (ICML) (Proceed-                  International Symposium on High-Performance Computer Architecture
+     ings of Machine Learning Research, Vol. 235). PMLR, 37396–37412.                    (HPCA). doi:10.1109/HPCA61900.2025.00102
+     https://proceedings.mlr.press/v235/nawrot24a.html                              [43] Jiaming Tang, Yilong Zhao, Kan Zhu, Guangxuan Xiao, Baris Kasikci,
+[29] Geraldo F. Oliveira, Xiangyu Zhu, Ahmet Caner Yüzügüler, Vamanan                    and Song Han. 2024. QUEST: Query-Aware Sparsity for Efficient
+     Arulchelvan, Lukas Cavigelli, Luo Longfei, Jia Xinglei, Onur Mutlu,                 Long-Context LLM Inference. In Proceedings of the 41st International
+     Zhou Ke, Shai Bergman, Arash Tavakkol, and Ji Zhang. 2026. FLINT:                   Conference on Machine Learning (ICML) (Proceedings of Machine Learn-
+     Efficiently Exploiting High-Bandwidth Flash for Capacity-Scalable                   ing Research, Vol. 235). PMLR, 47901–47911. https://proceedings.mlr.
+     LLM Inference Acceleration. IEEE Computer Architecture Letters (2026).              press/v235/tang24l.html
+     doi:10.1109/LCA.2026.3729746                                                   [44] Harsh Trivedi, Tushar Khot, Mareike Hartmann, Ruskin Manku, Vinty
+[30] OpenAI. 2026. Agent orchestration. OpenAI Agents SDK documen-                       Dong, Edward Li, Shashank Gupta, Ashish Sabharwal, and Niranjan
+     tation. Accessed 22 August 2026. https://openai.github.io/openai-                   Balasubramanian. 2024. AppWorld: A Controllable World of Apps and
+     agents-python/multi_agent/                                                          People for Benchmarking Interactive Coding Agents. In Proceedings of
+[31] OpenAI. 2026. Better performance from reasoning models using                        the 62nd Annual Meeting of the Association for Computational Linguis-
+     the Responses API. OpenAI Cookbook. Accessed 22 August                              tics (Volume 1: Long Papers), ACL 2024. Association for Computational
+     2026. https://developers.openai.com/cookbook/examples/responses_                    Linguistics, 16022–16076. doi:10.18653/v1/2024.acl-long.850
+     api/reasoning_items                                                            [45] vLLM Project. 2026.        vLLM v1 KV-cache block management
+[32] OpenAI. 2026. Reasoning models. OpenAI API documentation. Ac-                       (vllm/v1/core/kv_cache_utils.py). Source repository, release
+     cessed 22 August 2026. https://developers.openai.com/api/docs/                      v0.27.1, commit 6e448d0. https://github.com/vllm-project/vllm/blob/
+     guides/reasoning                                                                    v0.27.1/vllm/v1/core/kv_cache_utils.py
+[33] Junho Park, Hyowon An, Haeseok Suh, Youngsu Yoon, Hyuni Lee,                   [46] Xingyao Wang, Simon Rosenberg, Juan Michelini, Calvin Smith,
+     and Joungho Kim. 2026. HBM-HBF-Centric Memory Pooling Ar-                           Hoang Tran, Engel Nyst, Rohit Malhotra, Xuhui Zhou, Valerie Chen,
+
+                                                                               13
+                                                                                                                                                Yang et al.
+
+
+     Robert Brennan, and Graham Neubig. 2025. The OpenHands Software              [59] Yinmin Zhong, Shengyu Liu, Junda Chen, Jianbo Hu, Yibo Zhu, Xu-
+     Agent SDK: A Composable and Extensible Foundation for Production                  anzhe Liu, Xin Jin, and Hao Zhang. 2024. DistServe: Disaggregating
+     Agents. arXiv:2511.03690 [cs.SE] https://arxiv.org/abs/2511.03690                 Prefill and Decoding for Goodput-optimized Large Language Model
+[47] Xinyu Wang, Yalong Xue, Xiaotian Sun, Xiaoyu Zhang, Xinjiang                      Serving. In 18th USENIX Symposium on Operating Systems Design
+     Zhang, Chunmeng Dou, Xueqi Li, and Xiaoming Chen. 2026. FlashAc-                  and Implementation (OSDI ’24). USENIX Association, 193–210. https:
+     cel: Leveraging High-Bandwidth Flash (HBF) for High-Throughput                    //www.usenix.org/conference/osdi24/presentation/zhong-yinmin
+     LLM Inference. arXiv:2607.10186 [cs.AR] doi:10.48550/arXiv.2607.             [60] Shuyan Zhou, Frank F. Xu, Hao Zhu, Xuhui Zhou, Robert Lo, Abishek
+     10186                                                                             Sridhar, Xianyi Cheng, Tianyue Ou, Yonatan Bisk, Daniel Fried,
+[48] Guangxuan Xiao, Yuandong Tian, Beidi Chen, Song Han, and                          Uri Alon, and Graham Neubig. 2024. WebArena: A Realistic Web
+     Mike Lewis. 2024. Efficient Streaming Language Models with                        Environment for Building Autonomous Agents. In The Twelfth In-
+     Attention Sinks. In The Twelfth International Conference on Learning              ternational Conference on Learning Representations (ICLR). 15585–
+     Representations (ICLR). 21875–21895. https://proceedings.iclr.cc/                 15606.      https://proceedings.iclr.cc/paper_files/paper/2024/hash/
+     paper_files/paper/2024/hash/5e5fd18f863cbe6d8ae392a93fd271c9-                     4410c0711e9154a7a2d26f9b3816d1ef-Abstract-Conference.html
+     Abstract-Conference.html
+[49] Zhiqiang Xie, Ziyi Xu, Mark Zhao, Yuwei An, Vikram Sharma
+     Mailthody, Scott Mahlke, Michael Garland, and Christos Kozyrakis.
+                                                                                  A     Workload Corpus Statistics
+     2026. Strata: Hierarchical Context Caching for Long Context Language         Harness configuration. The temporal regime runs each
+     Model Serving. In 20th USENIX Symposium on Operating Systems De-             benchmark under Harbor’s own official prompts. Each
+     sign and Implementation (OSDI 26). USENIX Association, Seattle, WA,          structural-regime benchmark’s official prompts and refer-
+     1–16. https://www.usenix.org/conference/osdi26/presentation/xie-
+     zhiqiang
+                                                                                  ence agent implementation are ported to AOrchestra.
+[50] Chuhao Xu, Zijun Li, Quan Chen, Han Zhao, Xueyan Tang, and Minyi             Token columns. Tokens processed counts every request’s
+     Guo. 2026. Towards Resource-Efficient Serverless LLM Inference with          input and output, so the context a round reuses is counted
+     SLInfer. In Proceedings of the 32nd IEEE International Symposium on          again at each round. Tokens written counts only what each
+     High-Performance Computer Architecture (HPCA). https://arxiv.org/            request newly materializes, which is the quantity §3.3 reports
+                                                                                  write volume over. The structural traces record per-segment
+     abs/2507.00507
+[51] Shunyu Yao, Noah Shinn, Pedram Razavi, and Karthik Narasimhan.
+     2024. 𝜏-bench: A Benchmark for Tool-Agent-User Interaction in Real-          sizes rather than per-request lengths, so the table reports
+     World Domains. arXiv:2406.12045 https://arxiv.org/abs/2406.12045             only the second column for them.
+[52] Shunyu Yao, Jeffrey Zhao, Dian Yu, Nan Du, Izhak Shafran, Karthik               No session is excluded from either corpus, including those
+     Narasimhan, and Yuan Cao. 2023. ReAct: Synergizing Reasoning and             that failed or timed out.
+     Acting in Language Models. In The Eleventh International Conference
+     on Learning Representations (ICLR). https://openreview.net/forum?
+     id=WE_vluYUL-X                                                               B    Trace Fields, Clock Charges, and KV
+[53] Naimeng Ye, Arnav Ahuja, Georgios Liargkovas, Yunan Lu, Kostis                    Accounting
+     Kaffes, and Tianyi Peng. 2026. Speculative Actions: A Lossless
+     Framework for Faster AI Agents. In Proceedings of the Fourteenth
+                                                                                  This appendix gives the trace fields, the clock charges and
+     International Conference on Learning Representations (ICLR). https:          the exact 𝜌 𝑅/𝑊 accounting that §3.2 states in one sentence
+     //iclr.cc/virtual/2026/poster/10009726                                       each, for reproducibility [23].
+[54] Lingfan Yu, Jinkun Lin, and Jinyang Li. 2025. Stateful Large Language           The trace records, for each request, its session, turn, and
+     Model Serving with Pensieve. In Proceedings of the Twentieth European        sub-agent lineage, its tokenized input and output, and its tool-
+     Conference on Computer Systems (EuroSys ’25). ACM, 144–158. doi:10.
+     1145/3689031.3696086
+                                                                                  call and observation boundaries, alongside the two cache
+[55] Yichao Yuan, Ankita Nayak, Souvik Kundu, and Nishil Talati. 2026.            fields §3.2 names. With the trace aligned in session order, the
+     Agentic AI Workload Characteristics. arXiv:2605.26297 [cs.DC] doi:10.        matched prefix gives the KV reused from earlier requests,
+     48550/arXiv.2605.26297                                                       and the unmatched suffix plus the generated tokens gives
+[56] Dingyan Zhang, Haotian Wang, Yang Liu, Xingda Wei, Yizhou Shan,              the KV newly materialized. A segment built over several
+     Rong Chen, and Haibo Chen. 2025. BlitzScale: Fast and Live Large
+     Model Autoscaling with O(1) Host Caching. In 19th USENIX Sympo-
+                                                                                  requests becomes live at its first write.
+     sium on Operating Systems Design and Implementation (OSDI). https:              Appending a tool result forces a partial prefill before the
+     //www.usenix.org/conference/osdi25/presentation/zhang-dingyan                next round can decode. The clock of §3.2 charges TTFTref
+[57] Zhenyu Zhang, Ying Sheng, Tianyi Zhou, Tianlong Chen, Lianmin                once per observation, whatever that observation’s length.
+     Zheng, Ruisi Cai, Zhao Song, Yuandong Tian, Christopher Ré, Clark            A prefill deployment provisioned to the reference point
+     Barrett, Zhangyang Wang, and Beidi Chen. 2023. H2O: Heavy-Hitter
+     Oracle for Efficient Generative Inference of Large Language Models.
+                                                                                  completes the prefill for any single observation within that
+     In Advances in Neural Information Processing Systems 36 (NeurIPS).           time. Λtool (𝑠) is drawn from an exponential distribution [53]
+     Curran Associates, Inc., 34661–34710. doi:10.52202/075280-1506               whose mean is the published measurement for the calling
+[58] Lianmin Zheng, Liangsheng Yin, Zhiqiang Xie, Chuyue Sun, Jeff                tool’s class [2], at the granularity each regime’s trace records
+     Huang, Cody Hao Yu, Shiyi Cao, Christos Kozyrakis, Ion Stoica,               tool identity.
+     Joseph E. Gonzalez, Clark W. Barrett, and Ying Sheng. 2024. SGLang:                   token be the per-token KV footprint of the evaluated
+     Efficient Execution of Structured Language Model Programs. In Ad-
+                                                                                     Let 𝑉KV
+     vances in Neural Information Processing Systems 37 (NeurIPS). doi:10.        attention architecture, and let 𝑁𝑊 (𝑠) be the number of to-
+     52202/079017-2000                                                            kens whose KV state is materialized for segment 𝑠 at the
+
+                                                                             14
+Lachesis: Lifetime-Aware KV Cache Placement for Agent Serving across HBM and High-Bandwidth Flash
+
+
+                                                            Table 3. Corpus scale per workload.
+
+ Regime                                Workload                                       Sessions    Requests   Tokens processed   Tokens written
+ Temporal                              𝜏 3 -bench airline                                  58          709          4,735,468          591,248
+                                       𝜏 3 -bench retail                                  114        1,387          9,593,474        1,156,112
+                                       𝜏 3 -bench telecom                                 114        2,208         20,687,494        1,407,427
+                                       𝜏 3 -bench banking                                  97        2,221         63,759,218        7,172,200
+                                       BFCLv4 base                                        200        2,063          8,865,141          800,193
+                                       BFCLv4 long-context                                200        2,066         23,312,059        5,279,265
+ Structural                            AppWorld                                           168        6,248                 —         9,738,267
+                                       DeepSearchQA                                       125       12,241                 —        37,196,143
+                                       SWE-bench Verified                                 149        8,745                 —        11,677,326
+                                       TerminalBench                                       75        3,675                 —         7,289,834
+                                       WebArena                                           106        2,190                 —         6,707,151
+
+
+decode node. Then
+                                        token
+                       𝑉𝑊 (𝑠) = 𝑁𝑊 (𝑠) 𝑉KV    .                            (2)
+   For request 𝑞 with output length 𝐿out (𝑞), let 𝑛𝑠 (𝑞, 𝑖) be the
+number of KV tokens from 𝑠 present before its 𝑖-th decode
+step. Under full-context attention,
+                               𝐿out (𝑞)
+          token
+                    ∑︁          ∑︁                                    𝑉𝑅 (𝑠)
+𝑉𝑅 (𝑠) = 𝑉KV                              𝑛𝑠 (𝑞, 𝑖),    𝜌 𝑅/𝑊 (𝑠) =          ,
+                                                                      𝑉𝑊 (𝑠)
+                  𝑞 ∈ Q (𝑠 )     𝑖=1
+                                                              (3)
+where Q (𝑠) is the set of requests whose decode stage reads
+𝑠.
+   For a stateless request this reduces to Kyung et al.’s
+request-level expression, under their decode-stage account-
+ing but computed per segment. Only decode-stage reads
+count: observation-induced partial prefill is counted in 𝑇norm
+through the TTFTref term, not 𝑉𝑅 (𝑠). Initial prefill tokens
+are counted in 𝑉𝑊 (𝑠), while initial prefill time is not counted
+in 𝑇norm .
+
+
+
+
+                                                                                 15
+

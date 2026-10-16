@@ -1,0 +1,65 @@
+{
+  "at": "2026-10-16T09:40:25-07:00",
+  "scope": "Read-only research evidence; no runtime changes or end-to-end gain claim",
+  "source": {
+    "path": "scripts/audit_terminal_cache_lifetime.py",
+    "sha256": "d24e21a8057c9128cba32920b5c955d2b323707d0cdb4e14d73d6e1dc33e6e56"
+  },
+  "tests": {
+    "source_path": "tests/test_terminal_cache_lifetime_audit.py",
+    "source_sha256": "0c9f9f1651e190d67919d9ef8334451e7080bb23126e0de28dc42480d65d9580",
+    "receipt": "experiments/reports/v1172_terminal_lifetime_scope_cpu_20261016.xml",
+    "receipt_sha256": "ca342a342079701fbec42fe2b8abd3710c9523cf2c49e2c96bbbcb43404e1fbb",
+    "passed": 87,
+    "includes_existing_prefetch_lifecycle_cases": true,
+    "gpu_exercised": false
+  },
+  "audit": {
+    "path": "experiments/reports/v1171_v75_terminal_lifetime_corrected_prefix_20261016.json",
+    "sha256": "140b36561f18649e0019d9d8135099ee7074eccd4be3bfb0a8f9e85fa1c8bb3a",
+    "schema_version": 2,
+    "input_bindings": "157 per-file complete-line prefix byte counts and SHA256 values inside the audit",
+    "supersedes": {
+      "path": "experiments/reports/v1170_v75_terminal_lifetime_prefix_20261016.json",
+      "reason": "First-pass diagnostic sample cohorts did not distinguish ordinary epoch retirement from invocation RETURN"
+    }
+  },
+  "primary_literature": {
+    "directory": "experiments/reports/v1173_related_work_primary_20261016",
+    "sha256_manifest": "experiments/reports/v1173_related_work_primary_20261016/SHA256SUMS",
+    "sha256_manifest_sha256": "01ae4aa171d2c512058f5c7431f27321b63752c1abc5e87600957694af0dbde5",
+    "verified_versions": [
+      {
+        "arxiv": "2610.08378v1",
+        "title": "Lachesis: Lifetime-Aware KV Cache Placement for Agent Serving across HBM and High-Bandwidth Flash",
+        "scope": "Lifetime-based placement and segment-boundary release; HBF-endurance simulation is not local DRAM/GPU performance evidence"
+      },
+      {
+        "arxiv": "2609.33762v1",
+        "title": "EfficientAgent: What Makes KV Cache Offloading Work for Concurrent Agents?",
+        "scope": "Reuse working-set estimation and capacity-conditioned Host write admission; preserve incremental cached-prefix writes"
+      }
+    ],
+    "rejected_identifier_associations": [
+      {
+        "arxiv": "2607.11686v1",
+        "actual_title": "Self-Healing Visual Recovery for Autonomous Ground Vehicles Using Camera-Only Visual Odometry",
+        "reason": "Not EfficientAgent"
+      },
+      {
+        "arxiv": "2607.14785",
+        "actual_title": "Enabling Cosmic Web Analysis at Gigaparsec Scales: A Multi Block Approach for DisPerSE",
+        "reason": "Not CacheScout"
+      }
+    ]
+  },
+  "limitations": [
+    "Cumulative allocator-release bytes are not simultaneous free capacity, avoided DMA, or isolated JCT savings",
+    "Terminal diagnostic samples also arise from ordinary context-epoch invalidation",
+    "A matching checkpoint sample can predate the scheduler's terminal observation; later samples are counted separately",
+    "Shared or protected ancestry is not proven exclusively dead state",
+    "Missing native runtime instrumentation is unavailable evidence, not zero cost",
+    "The last logged pending-anchor value is not a complete live retry backlog",
+    "The core paper mechanism, quality parity and end-to-end improvements remain unproven"
+  ]
+}

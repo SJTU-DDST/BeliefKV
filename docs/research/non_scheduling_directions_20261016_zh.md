@@ -1,6 +1,6 @@
 # 动态多 Agent 的系统层研究筛选与最新 Trace 证据
 
-更新：2026-10-16 09:10 PDT。研究筛选记录，尚未选定新论文贡献。
+更新：2026-10-16 09:40 PDT。研究筛选记录，尚未选定新论文贡献。
 
 ## 1. 本次调整
 
@@ -355,6 +355,80 @@ selection CPU 均值为 16.28/28.99ms，run_batch 为 39.15/34.00ms；说明不�
 终态回收或预取的因果收益。V76 尚无 GPU 服务、吞吐/JCT 或质量结果。
 该候选是选择系统主机制所需的工程消融，不因“去掉预取”就宣称论文创新成立。
 
+### 4.6 V75：终态回收与普通 checkpoint 失效必须分开
+
+V1171 在 09:37:56 PDT 完成只读前缀审计，覆盖机会日志的前 957,692,155 字节
+和 156 份客户端完整行前缀；各输入均记录实际读取长度与 SHA256。分析器为
+`scripts/audit_terminal_cache_lifetime.py`，复用既有物理释放和 parent 关联核算。
+V1172 的 87 项 CPU 检查包含原有生命周期用例，以及新作用域、时钟、epoch/
+session 精确匹配、节点身份复用和活动文件截断检查。没有增加 GPU 探针或改动
+运行中的源码。V1170 是首次审计，普通 epoch 样本的名称仍有歧义；其诊断样本
+结论由 V1171/schema2 替代，原报告保留。
+
+| 明确作用域 | 有回收记录的 context/session 数 | 累计设备 FULL 释放 | 累计设备 Mamba 释放 | 首次正释放距调度端终态观察 P50/P90 |
+| --- | ---: | ---: | ---: | ---: |
+| 真实 dynamic subagent | 330 | 12.887 GB | 60.976 GB | 0.573/0.987 ms |
+| runtime_internal，主要是上下文摘要 | 506 | 236.873 GB | 128.134 GB | 0.759/1.104 ms |
+| 已结束 workflow 的 root | 125 | 4.097 GB | 20.991 GB | 0.760/1.440 ms |
+
+以上是原生 allocator 实际释放的累计量，不是同时占用、避免的 D2H、parent
+独占容量或 JCT 收益；没有把 Mamba slot 与 FULL token 相加。该前缀未记录正
+释放 retry，节点 `(id, creation_time)` 无重复释放。最后记录的 pending 数不是
+完整实时 backlog：没有释放的 retry 可以不写日志。观察时刻是调度端墙钟，
+没有减去客户端 monotonic 事件时间，也不包含 RETURN 消息在到达调度端前的延迟。
+
+两个需要固化的口径修正：
+
+1. `terminal_child_reclaim_calls` 包括内部摘要，不能直接称为返回 child 数。
+   本次非 root 的 FULL 释放大部分来自内部摘要。只看汇总计数会误判动态 fork/
+   join 生命周期优化的覆盖和来源。
+2. `_terminal(key)` 也会在 context epoch 改变时成立，因此
+   `terminal_context_cache_sample` 不一定对应 invocation RETURN。35,751 条
+   dynamic-subagent 角色样本包含 22,692 个旧 checkpoint key，却只涉及 345 个
+   invocation。与真实终态回收匹配同 workflow/invocation/context/epoch/session
+   的仅 348 条、159 个 checkpoint，其中 189 条发生在调度端终态观察后。
+   普通旧 checkpoint 仍可包含后续会复用的共享前缀，不能称为“已结束 agent
+   的无用 KV”。匹配的终态样本也有共享祖先，仍不能全部按可回收字节求和。
+
+166 个已有 parent 首次服务记录的 RETURN 观察→首个完成 GPU batch 的 P50/
+P90 为 268.79/7157.13 ms，请求可见→服务为 153.62/7098.16 ms。它们是已经
+发生的关联，不是 GC、恢复或优先级各自的因果收益。结合亚毫秒的回收，现有
+证据不支持继续把“更快执行终态释放”当成主要剩余瓶颈；较长的续接尾部仍需
+按实际容量、依赖、排队和执行拆开。诊断也有成本，但 V1163 的 300 秒窗口里，
+已计时 `terminal_sampling` self 仅累计 0.586 秒；初始观察包含于事件路径，
+不能把所有控制成本归给这个采样器。
+
+原生客户端本身也通过 executor 关闭 session；关闭引用与实际丢弃私有缓存是
+两件事，不能声称 native 从不关闭 session。下一步先使用 V75 同 batch native
+和 V76 隔离额外控制/状态策略的净效果，再判断这些累计释放实际改变了哪些
+备份、重算和服务等待。容量释放的存在本身不证明有论文级收益。
+
+### 4.7 追加已有工作约束：生命周期与 Host 写入准入
+
+本轮核对落盘的版本化 arXiv PDF/摘要页，不把搜索结果的题名或相似编号直接
+当作已读论文。原始来源与摘要、正文抽取的 SHA256 保存在
+`experiments/reports/v1173_related_work_primary_20261016/`；绑定见 V1174。
+
+- Lachesis [R9] 已利用 harness 的 segment 身份、spawn 记录和关闭边界，按
+  生命周期选择 HBM/HBF，并在边界到达后释放对应 block；worker 的生命周期
+  排名也是其已有机制。故“识别已结束 child、即时 GC、按生命周期选 tier”
+  不能独立主张新颖性。其评估是 HBF 耐久性的 trace-driven 模拟，不能将该
+  结果当作当前 HBM/DRAM 机器的 JCT 或传输收益。
+- EfficientAgent [R10] 已建立 agent 的 Host reuse working set/stack-distance
+  估计，并在容量不足时拒绝大块 refill、保留已缓存前缀的增量写入，容量充足
+  时恢复完整准入。“少做无消费备份”或“一律过滤 Host 写入”不能再单独作为
+  新机制。若研究 PREPARE/写回，必须与这种容量感知准入合理适配后比较。
+
+本轮检索中，候选题名对应的 `2607.11686` 和 `2607.14785` 实际分别是机器人/
+宇宙网论文，已排除，不作为 EfficientAgent 或 CacheScout 的证据。后者尚未
+匹配到可核对的原始来源，不据此断言它具有或缺少某种能力。正式论证以本节
+已经核对的版本为准。
+
+当前更强的对照约束是：保留共用修复的 native、使用同一生命周期信息的简单
+回收、合理适配的 Host 容量感知写入准入，以及将来选出的系统机制。前两项
+工程修复和后两项研究差异分别归因。若简单方法已覆盖全部剩余收益，应撤销
+该候选，而不是追加控制概念；核心系统机制与质量匹配的端到端收益仍未成立。
+
 ## 5. 既有候选一：降低上下文摘要和重建的计算量
 
 这是目前最有规模证据的性能对象。当前 `_summary_input` 把历史消息转成 XML，
@@ -497,3 +571,11 @@ agent 相关草稿长度控制；其生成吞吐结果不能直接当本项目 J
   Segment-Parallelism for Long Prompts on Multicore CPUs，2026-10-14 提交；
   本次核对摘要，尚未复现实验或通读其全部实现。
   `https://arxiv.org/abs/2610.19801`
+- [R9] Lachesis: Lifetime-Aware KV Cache Placement for Agent Serving across
+  HBM and High-Bandwidth Flash，arXiv:2610.08378v1，2026-10-06；
+  本次核对原始摘要和 PDF 第 4/5 节，区分 HBF 模拟与实机性能。
+  `https://arxiv.org/abs/2610.08378v1`
+- [R10] EfficientAgent: What Makes KV Cache Offloading Work for Concurrent
+  Agents?，arXiv:2609.33762v1，2026-09-27；本次核对原始摘要和 PDF
+  第 3/4 节的 working-set 估计、容量条件写入规则与去重边界。
+  `https://arxiv.org/abs/2609.33762v1`

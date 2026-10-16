@@ -4,6 +4,17 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 09:40 PDT 新增统计约束：terminal_child_reclaim_calls 包含内部摘要，
+必须按 invocation_create 元数据或明确 invocation_scope 拆分，不能由名称猜角色。
+terminal_context_cache_sample 也会在普通 context epoch 失效时产生；旧 checkpoint
+数量不是返回 agent 数，更不是独占死 KV 容量。真实终态子集按同 workflow/
+invocation/context/epoch/session 与释放记录连接，且另分调度端终态观察前后。
+以 V1171/schema2、V1172/V1174 为当前审计口径，V1170 的样本分类已被替代。
+不得减客户端 monotonic 与调度端 wall 时间；累计 allocator 释放不是同时容量、
+避免 DMA 或 JCT 收益。最后记录的 pending 数也不保证当前 retry backlog。
+Lachesis/EfficientAgent 的正式比较以 V1173 的版本化原文与研究筛选4.7为准；
+搜索题名/编号未匹配到原始来源时保留未核验，不据此宣称已有方法的能力或空白。
+
 2026-10-16 09:10 PDT：V75仍按冻结计划运行；V76 b2adf481已准备且等待完整V75
 结束后单独跑reactive。该模式关闭JOIN/tool预取、语义模型/正文流及H2D机会扫描，
 保留工具时长模型、PREPARE/终态回收/驻留准入和原生需求H2D。

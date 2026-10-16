@@ -7,6 +7,11 @@ write-back 补丁、当前研究文档和只读审计器。日常查看和后续
 实验仍使用各自登记的独立 worktree 固定版本。V75/V76 的运行源码、引擎和
 helper 保持冻结，不随 `main` 的新提交变化。
 
+最新只读证据 V1171/V1172：已区分真实 child、内部摘要和普通 checkpoint 失效，
+87 项 CPU 检查通过；真实 child 的终态释放本身已很快，不能由累计回收量宣称
+性能收益。新增 Lachesis/EfficientAgent 原始来源约束，见
+[研究筛选第 4.6/4.7 节](research/non_scheduling_directions_20261016_zh.md#46-v75终态回收与普通-checkpoint-失效必须分开)。
+
 当前 GPU 仍为 V75。无预取候选 V76/b2adf481 已通过 343 项不同 CPU 用例，
 等待完整 V75 结束后仅跑同表 reactive，保留 PREPARE、工具时长预测和运行时
 优化，复用 V75 native 参考。资格 V1164、登记 V1165，尚无新 GPU 性能结果；

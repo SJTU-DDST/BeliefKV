@@ -2,6 +2,15 @@
 
 更新日期：2026-10-16（Asia/Shanghai）
 
+2026-10-16 09:40 PDT：生命周期证据须区分真实 invocation RETURN、内部摘要和
+普通 context epoch 失效。V1171 实测真实 child330个、累计 FULL释放12.887GB，
+内部摘要506个、236.873GB；child调度端终态观察到释放P50为0.573ms。
+这些不证明独占容量或避免D2H，旧checkpoint的共享祖先也不是无用KV。
+Lachesis已有生命周期placement/边界释放，EfficientAgent已有Host working-set/
+容量感知写入准入；因此简单GC或减少备份不是新的选定贡献。以研究筛选4.6/4.7
+和V1171/schema2为当前口径，87项CPU检查通过。运行中V75及排队V76继续冻结，
+先检验同配置native与无预取消融的净成本，再选择有剩余规模的系统机制。
+
 2026-10-16 09:10 PDT：独立无预取候选 V76/b2adf481 已冻结，等待 V75 完整对照
 结束后执行。关闭 JOIN/tool 提前 H2D、语义模型/正文流和 H2D 机会枚举，保留
 工具时长预测与 PREPARE/冷页管理、终态回收、驻留/因果准入及原生需求恢复。

@@ -2,6 +2,17 @@
 
 更新日期：2026-10-16（Asia/Shanghai）。
 
+2026-10-16 09:40 PDT：主目录 main 已整合 V76 与只读审计器。最新 V1171
+前缀将终态回收拆成真实 subagent330/内部摘要506/root125，累计 FULL 分别
+12.887/236.873/4.097GB；真实 child 回收距调度端终态观察 P50 仅0.573ms。
+普通 context epoch 失效也会产生 terminal_context_cache_sample，不能把其
+22,692个旧 child checkpoint 当作已返回 agent。V1172 的87项CPU检查通过；
+旧 V1170 诊断样本口径由 schema2 替代。原生也关闭 session，不能以累计释放
+或日志命名证明净收益。Lachesis 已覆盖生命周期 placement/边界释放，
+EfficientAgent 已覆盖 Host working-set/容量感知写入准入；正式比较与限制见
+研究筛选4.6/4.7及版本化来源V1173/V1174。尚未选定新的系统贡献；
+V75仍实际运行、V76等待完整对照，二者源码/引擎/helper冻结。
+
 2026-10-16 09:10 PDT：下一候选 V76 已冻结为 b2adf481，保留 V75 同一引擎
 53020ce3/batch32，关闭 JOIN/tool 预取、child 语义模型/正文上送与 H2D 机会扫描。
 工具时长预测、PREPARE/冷页管理、终态回收、驻留/因果准入与原生需求恢复保留。
