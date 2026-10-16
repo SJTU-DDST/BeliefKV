@@ -18,6 +18,10 @@ V1082/V1083 verify actual GPU service,source/settings,identical pools and
 NUMA. The00:31 PDT snapshot has108 work accounts,47719 charged output
 tokens,84 work-induced head changes and83 admissions,with healthy migration
 and no observer errors. This is activation,not measured performance gain.
+The first120-300s window has219279/246021 request steps,-10.87%,and17.632s
+control self-wall. Short-prefill37/51 samples select at5.392/2.734ms CPU,
+run_batch41.563/35.072ms and return-to-result11.087/6.013ms. Keep this
+negative evidence;inspect later fixed windows and full quality/JCT outcomes.
 
 V71 failed at00:12:53 PDT with loading_check KeyError:364,driver exit1.
 V1075 preserves83 completed,13 connection-interruption errors and60 missing
