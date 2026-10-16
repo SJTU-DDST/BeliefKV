@@ -324,6 +324,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._stream_content_state: dict[str, tuple[int, str, int, int]] = {}
         self._semantic_text_enabled = os.environ.get("BELIEFKV_EMIT_SEMANTIC_TEXT") == "1"
         self._semantic_text_last_ms: dict[str, float] = {}
+        self._semantic_multi_member_frames_coalesced = 0
         self._eos_snapshot_accum: dict[str, tuple[float | None, int, int]] = {}
         self._eos_shadow = eos_shadow
         self._eos_top_hit_shadow = eos_top_hit_shadow
@@ -997,6 +998,23 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 self._stream_content_state[key] = (
                     count, tail, next_at, last_emitted
                 )
+                if (
+                    content_observation is not None and self._semantic_text_enabled
+                    and semantic_control_useful and not first_content
+                    and not first_tool_chunk and not finish
+                    and when - self._semantic_text_last_ms.get(key, 0.)
+                    >= SEMANTIC_FRAME_INTERVAL_MS
+                ):
+                    members = self._join_members.get(pending.join_id)
+                    completed = self._join_completed.get(pending.join_id)
+                    if (
+                        members is not None and completed is not None
+                        and invocation_id in members and len(members - completed) > 1
+                    ):
+                        # The runtime uses body forecasts for the last ALL member.
+                        # Local history, initial/final frames and notices stay intact.
+                        semantic_control_useful = False
+                        self._semantic_multi_member_frames_coalesced += 1
             if (
                 self._eos_shadow
                 and logprobs
@@ -2641,6 +2659,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "failure_count": self._control_delivery_failure_count,
                 "late_terminal_event_suppressed_count": (
                     self._late_terminal_control_event_count
+                ),
+                "semantic_multi_member_frames_coalesced": (
+                    self._semantic_multi_member_frames_coalesced
                 ),
                 "first_failure": payload(first),
                 "last_failure": payload(last),

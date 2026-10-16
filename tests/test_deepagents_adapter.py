@@ -913,7 +913,8 @@ def test_semantic_periodic_frame_does_not_wait_for_punctuation_or_128_chars(monk
     assert rows[-1]["sampling_reason"] == "periodic_content"
 
 
-def test_semantic_tool_chunks_keep_first_negative_and_local_finish(monkeypatch, tmp_path):
+@pytest.mark.parametrize("fanout", (1, 2))
+def test_semantic_tool_chunks_keep_first_negative_and_local_finish(monkeypatch, tmp_path, fanout):
     monkeypatch.setenv("BELIEFKV_EMIT_SEMANTIC_TEXT", "1")
     now = [1000.]
     received = []
@@ -926,7 +927,7 @@ def test_semantic_tool_chunks_keep_first_negative_and_local_finish(monkeypatch, 
         control_sink=control, stream_content_shadow=shadow, clock_ms=lambda: now[0],
     )
     adapter.start()
-    task = adapter.declare_runtime_tasks([("explorer", "inspect")])[0]
+    task = adapter.declare_runtime_tasks([("explorer", "inspect")] * fanout)[0]
     chain, run = uuid4(), uuid4()
     adapter.on_chain_start({}, {}, run_id=chain, metadata=adapter.invocation_scope(task))
     adapter.on_chat_model_start(
@@ -967,6 +968,80 @@ def test_semantic_tool_chunks_keep_first_negative_and_local_finish(monkeypatch, 
     ]
     assert len(observations) == 3
     assert observations[-1]["finish_reason"] == "tool_calls"
+
+
+def test_multi_member_body_coalescing_keeps_notices_and_resumes_last_child(
+    monkeypatch, tmp_path,
+):
+    monkeypatch.setenv("BELIEFKV_EMIT_SEMANTIC_TEXT", "1")
+    now = [900.]
+    received = CollectingSink()
+    queued = QueuedRuntimeEventSink(received)
+    shadow = StreamContentShadow(tmp_path / "multi-member.jsonl", capacity=32)
+    adapter = DeepAgentsRuntimeAdapter(
+        CollectingSink(), BeliefKVRequestMetadata("wf", "root", "ctx", 0),
+        control_sink=queued, stream_content_shadow=shadow,
+        clock_ms=lambda: now[0],
+    )
+    adapter.start()
+    tasks = adapter.declare_runtime_tasks([("explorer", "left"), ("explorer", "right")])
+    runs = []
+    for task in tasks:
+        chain, run, stage = uuid4(), uuid4(), uuid4()
+        adapter.on_chain_start({}, {}, run_id=chain, metadata=adapter.invocation_scope(task))
+        adapter.on_tool_start(
+            {"name": "announce_completion_intent"}, "", run_id=stage, parent_run_id=chain,
+            inputs={"estimated_final_report_tokens": 256},
+        )
+        adapter.on_tool_end("Completion stage recorded.", run_id=stage, parent_run_id=chain)
+        adapter.on_chat_model_start(
+            {}, [[HumanMessage(content="report")]], run_id=run, parent_run_id=chain,
+        )
+        runs.append(run)
+
+    def chunk(index, when, text, finish=None):
+        now[0] = when
+        adapter.on_llm_new_token(
+            text, run_id=runs[index], chunk=SimpleNamespace(
+                message=SimpleNamespace(content=text, tool_call_chunks=[]),
+                generation_info={"finish_reason": finish} if finish else None,
+            ),
+        )
+        queued.flush()
+
+    queued.flush()
+    chunk(0, 1000., "left ")
+    chunk(1, 1001., "right ")
+    chunk(0, 1120., "middle")
+    chunk(1, 1121., "middle")
+    chunk(0, 1240., "", "stop")
+    adapter.on_llm_end(_natural_child_result("left middle"), run_id=runs[0])
+    adapter.complete_runtime_task(tasks[0])
+    queued.flush()
+    chunk(1, 1421., " single")
+    chunk(1, 1541., "", "stop")
+    adapter.on_llm_end(_natural_child_result("right middle single"), run_id=runs[1])
+    adapter.complete_runtime_task(tasks[1])
+    queued.flush()
+    queued.close()
+    assert shadow.close()["complete"]
+    frames = [
+        row for row in received.events if row.attributes.get("beliefkv_semantic_child_text")
+    ]
+    assert [row.ts_ms for row in frames] == [1000., 1001., 1240., 1421., 1541.]
+    assert frames[-2].attributes["content_tail"] == "right middle single"
+    stages = [
+        row for row in received.events
+        if row.attributes.get("child_completion_signal_kind") == "stage"
+    ]
+    assert {row.invocation_id for row in stages} == {task.invocation_id for task in tasks}
+    assert sum(row.kind is RuntimeEventKind.RETURN for row in received.events) == 2
+    assert sum(row.kind is RuntimeEventKind.JOIN_SATISFIED for row in received.events) == 1
+    local = [json.loads(line) for line in shadow.path.read_text().splitlines()]
+    assert [row["ts_ms"] for row in local if row["event"] == "child_stream_content"] == [
+        1000., 1001., 1120., 1121., 1240., 1421., 1541.,
+    ]
+    assert adapter.control_delivery_summary()["semantic_multi_member_frames_coalesced"] == 2
 
 
 def test_post_tool_control_skips_keep_local_cadence_and_next_request_frames(monkeypatch, tmp_path):
