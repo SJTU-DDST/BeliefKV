@@ -2,6 +2,18 @@
 
 Status date: 2026-10-16 (Asia/Shanghai).
 
+2026-10-16 10:20 PDT: V1179 verifies the latest V75 reuse prefix. Only22 of768
+large FULL gaps are ordinary continuations (24,741 tokens); two client identities
+and one service identity remain unknown. Gaps/proxies are not avoidable FLOPs.
+The official-quality queue is now registered (V1185/V1186), with live supervisor
+3806721/start_ticks634129312 waiting for all recorded V75/V76 processes to exit.
+It then validates complete156-task summaries and grades V76 reactive, V75 native
+and V75 predictive, one CPU worker/1 core/8GiB/no GPU.29 CPU cases pass in V1180.
+Keep the registered ops helper, core/exporter/scorer and GPU sources frozen;
+retain error/incomplete/empty patches and independently audit official reports.
+V1181-V1184 are future outputs, not completed grading. No old daily reservation
+rule is restored. Research selection and quality-matched performance remain open.
+
 2026-10-16 10:04 PDT: V1175/V1176 audit the current V75 prefix and complete
 V73 native with sealed input hashes.27/89 load-consuming samples pair exactly;
 10/8 show the pre-forward Mamba fence. Native's42 short samples have0.075ms

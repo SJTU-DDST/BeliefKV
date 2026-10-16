@@ -4,6 +4,14 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 10:20 PDT：官方质量等待器V1185已登记，实际进程3806721等待V75/V76
+全部退出后再启动单CPU worker；顺序V76 reactive、V75 native、V75 predictive。
+新ops helper及登记core/exporter/scorer冻结，不因main更新而热改；必须保留三侧
+完整summary、manifest、model.patch及其数据源，直到全量质量核验结束。V1180
+29项CPU检查通过；当前仅等待，V1181–V1184未产生，不能声称已评分。原始失败、
+incomplete、空补丁和evaluator error分开，保留全部156项。后续新GPU实验若与
+CPU评分重叠须记录资源条件，不能冒充正式匹配对照；不恢复旧的每日预约规则。
+
 2026-10-16 10:04 PDT：恢复依赖探针只覆盖每16个load-consuming prefill中的一个，
 不能把其累计等待或屏障比例推广到整轮请求/JCT。混合Host-hit/no-Host请求并不
 证明COW源槽没有在途依赖。V1175/V1176保留原量测，旧工具残留状态文字由V1178

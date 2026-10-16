@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "observed_at": "2026-10-16T10:20:53-07:00",
+  "scope": "CPU validation and live quality-supervisor registration; no grading or GPU-performance claim",
+  "sources": [
+    {
+      "path": "scripts/run_official_quality_after_series.py",
+      "sha256": "fe32d22eac0ae6098b7931664a66632d67633e3bc82a3f1fb22e9be4a9159a4d"
+    },
+    {
+      "path": "/home/longhao/experiment/ops/quality_eval/run_v75_v76_quality_cpu_20261016.py",
+      "sha256": "fe32d22eac0ae6098b7931664a66632d67633e3bc82a3f1fb22e9be4a9159a4d",
+      "frozen_registered_copy": true
+    },
+    {
+      "path": "tests/test_official_quality_after_series.py",
+      "sha256": "cdfe90005210f3c9857460e64ce7303d3104deb43d6c19a39637f9f93a1dce1f"
+    }
+  ],
+  "checks": {
+    "path": "experiments/reports/v1180_quality_after_series_cpu_20261016.xml",
+    "sha256": "6a27be2a83468ea0d2481b35ac48e54583b340adefb9244f48b5f88ded7ff333",
+    "passed": 29,
+    "new_queue_cases": 6,
+    "existing_export_and_official_score_cases": 23,
+    "official_venv_cli_checked": true,
+    "registered_copy_equals_tested_source": true
+  },
+  "quality_queue": {
+    "registration": {
+      "path": "experiments/reports/v1185_v75_v76_quality_registration_20261016.json",
+      "sha256": "45ada3946d1ffbb744198f820881e260547e12cdee0126c7e9269ee4c0a1ab85"
+    },
+    "state_path": "/home/longhao/experiment/ops/quality_eval/quality_v75_v76_cpu_20261016.state.json",
+    "actual_process": {
+      "pid": 3806721,
+      "start_ticks": "634129312",
+      "ppid": 1,
+      "argv": [
+        "/home/longhao/experiment/ops/quality_eval/venv/bin/python",
+        "/home/longhao/experiment/ops/quality_eval/run_v75_v76_quality_cpu_20261016.py",
+        "--watch"
+      ]
+    },
+    "observed_status": "waiting_for_complete_v75_v76",
+    "grading_started": false,
+    "order": ["v76_reactive", "v75_native", "v75_predictive"],
+    "wait_processes": [
+      {"pid": 2137139, "start_ticks": "633401785"},
+      {"pid": 2137208, "start_ticks": "633401841"},
+      {"pid": 3035460, "start_ticks": "633722974"}
+    ],
+    "denominator_per_arm": 156,
+    "limits": {
+      "workers": 1,
+      "nano_cpus": 1000000000,
+      "memory_bytes": 8589934592,
+      "gpu_devices": false
+    },
+    "future_outputs": {
+      "v76_reactive": "experiments/reports/v1181_v76_quality_inputs_20261016",
+      "v75_native": "experiments/reports/v1182_v75_native_quality_inputs_20261016",
+      "v75_predictive": "experiments/reports/v1183_v75_predictive_quality_inputs_20261016",
+      "environment": "experiments/reports/v1184_v75_v76_quality_environment_20261016.json"
+    }
+  },
+  "latest_reuse_audit": {
+    "path": "experiments/reports/v1179_v75_hybrid_reuse_prefix_20261016.json",
+    "sha256": "ba5b95c5cc5a8e1fdbef6bfb6b65d336ef1938c7631df2223b9efe4acc50a5f7",
+    "native_first_service_requests": 39216,
+    "requests_without_client_identity": 2,
+    "prefill_batches": 40093,
+    "prefill_samples_without_native_identity": 1,
+    "observed_extend_tokens": 44036091,
+    "observed_full_match_gap_extend_tokens": 3183465,
+    "large_gap_requests": 768,
+    "large_gap_first_or_after_compaction_requests": 746,
+    "large_gap_ordinary_continuation_requests": 22,
+    "large_gap_ordinary_continuation_tokens": 24741,
+    "same_session_missing_input_proxy_tokens": 1201683,
+    "same_session_missing_input_proxy_p50_tokens": 31
+  },
+  "limitations": [
+    "Current quality evidence is a live waiting supervisor and validated code, not completed official grading",
+    "All source outcomes including errors, incomplete and empty patches remain in the task denominator",
+    "The frozen GPU experiment applications, engine and launch helpers were not changed",
+    "The quality helper, its core and registered export/score sources must remain frozen after registration",
+    "Quality summaries distinguish evaluator errors from unresolved tasks and original model non-completion",
+    "No recurring reservation rule or agent guard is introduced",
+    "Latest reuse inputs are separately sealed complete-line prefixes, not an atomic live snapshot; unknown identities remain explicit",
+    "FULL match gaps and missing-input proxies are not all avoidable recomputation or measured per-layer FLOPs",
+    "No native-relative latency, quality or throughput improvement is established; the broad goal remains active"
+  ]
+}
