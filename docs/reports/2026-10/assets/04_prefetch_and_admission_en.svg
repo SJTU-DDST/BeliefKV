@@ -1,0 +1,187 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<svg xmlns="http://www.w3.org/2000/svg" width="7.2in" height="2.790000in" viewBox="0 0 1600 620" role="img" aria-labelledby="title">
+<title id="title">Prefetch and Admission Coordination</title>
+<rect width="100%" height="100%" fill="#ffffff"/>
+<defs>
+<marker id="execution-12" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#156082"/></marker>
+<marker id="execution-18" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="18" markerHeight="18" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#156082"/></marker>
+<marker id="execution-24" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="24" markerHeight="24" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#156082"/></marker>
+<marker id="execution-32" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="32" markerHeight="32" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#156082"/></marker>
+<marker id="feedback-12" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="12" markerHeight="12" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#215f9a" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="feedback-18" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="18" markerHeight="18" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#215f9a" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="feedback-24" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="24" markerHeight="24" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#215f9a" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="feedback-32" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="32" markerHeight="32" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#215f9a" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="action-12" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0L16 8L0 16L4 8Z" fill="#275317"/></marker>
+<marker id="action-18" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="18" markerHeight="18" orient="auto"><path d="M0 0L16 8L0 16L4 8Z" fill="#275317"/></marker>
+<marker id="action-24" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="24" markerHeight="24" orient="auto"><path d="M0 0L16 8L0 16L4 8Z" fill="#275317"/></marker>
+<marker id="action-32" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="32" markerHeight="32" orient="auto"><path d="M0 0L16 8L0 16L4 8Z" fill="#275317"/></marker>
+<marker id="transfer-12" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#35505d"/></marker>
+<marker id="transfer-18" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="18" markerHeight="18" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#35505d"/></marker>
+<marker id="transfer-24" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="24" markerHeight="24" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#35505d"/></marker>
+<marker id="transfer-32" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="32" markerHeight="32" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#35505d"/></marker>
+<marker id="inactive-12" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="12" markerHeight="12" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#a6a6a6" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="inactive-18" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="18" markerHeight="18" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#a6a6a6" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="inactive-24" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="24" markerHeight="24" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#a6a6a6" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="inactive-32" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="32" markerHeight="32" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#a6a6a6" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+</defs>
+<style>text{letter-spacing:0}path,line{stroke-linejoin:round;stroke-linecap:round}</style>
+<text x="32" y="43" xml:space="preserve" font-size="31" fill="#000000" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">D3</text>
+<text x="108" y="43" xml:space="preserve" font-size="31" fill="#000000" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">Restore early, then admit for first use</text>
+<rect data-storage-band="Host" x="132" y="222" width="442" height="135" rx="8" fill="#fbe3d6" stroke="#000000" stroke-width="1.8"/>
+<rect data-storage-band="HBM" x="1097" y="222" width="478" height="135" rx="8" fill="#f2f2f2" stroke="#000000" stroke-width="1.8"/>
+<rect x="712" y="180" width="280" height="65" rx="8" fill="#dceaf7" stroke="#156082" stroke-width="1.6"/>
+<rect x="132" y="423" width="442" height="145" rx="8" fill="#f2f2f2" stroke="#a6a6a6" stroke-width="1.6"/>
+<rect x="1097" y="384" width="478" height="202" rx="8" fill="#d9f2d0" stroke="#275317" stroke-width="1.8"/>
+<circle cx="72" cy="133" r="28" fill="#f6c6ad" stroke="#000000" stroke-width="2"/>
+<text x="72" y="141.5" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">C2</text>
+<line x1="117" y1="133" x2="1000" y2="133" stroke="#a6a6a6" stroke-width="1.3"/>
+<rect x="492" y="113" width="508" height="40" rx="0" fill="#f6c6ad" stroke="#000000" stroke-width="1.5"/>
+<text x="746" y="141" xml:space="preserve" font-size="26" fill="#000000" font-weight="400" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">final report</text>
+<circle cx="420" cy="133" r="7" fill="#215f9a" stroke="#215f9a" stroke-width="1.4"/>
+<text x="378" y="98" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">NOTICE</text>
+<line x1="1000" y1="92" x2="1000" y2="568" stroke="#a6a6a6" stroke-width="1.7" stroke-dasharray="7 6"/>
+<text x="1021" y="139" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">RETURN / JOIN</text>
+<circle cx="364" cy="190" r="23" fill="#a6caec" stroke="#000000" stroke-width="1.8"/>
+<text x="364" y="196" xml:space="preserve" font-size="21" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">D1</text>
+<path d="M420.0000,157.0000 L420.0000,163.0000 C420.0000,164.6569 421.3431,166.0000 423.0000,166.0000 L715.0000,166.0000 C724.9414,166.0000 733.0000,174.0586 733.0000,184.0000 L733.0000,276.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M420.0000,157.0000 L420.0000,163.0000 C420.0000,164.6569 421.3431,166.0000 423.0000,166.0000 L715.0000,166.0000 C724.9414,166.0000 733.0000,174.0586 733.0000,184.0000 L733.0000,276.0000" fill="none" stroke="#215f9a" stroke-width="4.8" stroke-dasharray="12 8" marker-end="url(#feedback-18)" data-arrow-kind="open" data-arrow-size="18" data-flow-role="feedback" data-flow-geometry="rounded"/>
+<circle data-execution-step="1" cx="576" cy="166" r="19" fill="#000000" stroke="#ffffff" stroke-width="3"/>
+<text x="576" y="173.5" xml:space="preserve" font-size="23" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">1</text>
+<text x="779" y="221" xml:space="preserve" font-size="25" fill="#000000" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">time restore</text>
+<circle cx="963" cy="213" r="18" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<path d="M963 201.3 L963 213 L972.9 217.5" fill="none" stroke="#000000" stroke-width="2"/>
+<circle cx="72" cy="300" r="28" fill="#a6caec" stroke="#000000" stroke-width="2"/>
+<text x="72" y="308.5" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">P</text>
+<text x="148" y="253" xml:space="preserve" font-size="27" fill="#000000" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">Host</text>
+<rect data-page-tier="Host" data-page-owner="#a6caec" data-page-missing="false" x="259" y="277" width="65" height="46" rx="2" fill="#ffd579" stroke="#000000" stroke-width="1.6"/>
+<rect x="261" y="279" width="61" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="291.5" y="309.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">p2</text>
+<rect data-page-tier="Host" data-page-owner="#a6caec" data-page-missing="false" x="345" y="277" width="65" height="46" rx="2" fill="#ffd579" stroke="#000000" stroke-width="1.6"/>
+<rect x="347" y="279" width="61" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="377.5" y="309.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">p3</text>
+<path d="M259 351 L259 344 L410 344 L410 351" fill="none" stroke="#275317" stroke-width="1.6"/>
+<text x="288.42578125" y="388" xml:space="preserve" font-size="29" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">ΔFULL</text>
+<polygon points="472.0,278.0 513.25,278.0 522.25,300.125 513.25,322.25 472.0,322.25 463.0,300.125" fill="#ffd579" stroke="#000000" stroke-width="1.5"/>
+<text x="492.625" y="308.0" xml:space="preserve" font-size="24.75" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">S</text>
+<rect x="473.5" y="283.25" width="38.25" height="3.75" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="466.44921875" y="386" xml:space="preserve" font-size="28" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">s</text>
+<text x="477.34765625" y="386" xml:space="preserve" font-size="28" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
+<text x="486.671875" y="386" xml:space="preserve" font-size="28" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">c</text>
+<text x="500.1015625" y="371.44" xml:space="preserve" font-size="18.2" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">*</text>
+<text x="510.2265625" y="386" xml:space="preserve" font-size="28" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
+<text x="489" y="260" xml:space="preserve" font-size="22" fill="#000000" font-weight="400" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">if needed</text>
+<path d="M410 344 L550 344 L550 300" fill="none" stroke="#35505d" stroke-width="5"/>
+<path d="M530.0000,300.0000 L671.0000,300.0000" fill="none" stroke="#ffffff" stroke-width="10.5"/>
+<path d="M530.0000,300.0000 L671.0000,300.0000" fill="none" stroke="#35505d" stroke-width="8.5" marker-end="url(#transfer-32)" data-arrow-kind="triangle" data-arrow-size="32" data-flow-role="transfer" data-flow-geometry="straight"/>
+<polygon data-semantic-role="transfer-duration" points="679,280 1054,280 1071,300.0 1054,320 679,320" fill="#f2aa84" stroke="#275317" stroke-width="1.2"/>
+<text data-semantic-role="transfer-action" x="924" y="309" xml:space="preserve" font-size="28" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">H2D</text>
+<circle data-execution-step="3" cx="825" cy="300" r="19" fill="#000000" stroke="#ffffff" stroke-width="3"/>
+<text x="825" y="307.5" xml:space="preserve" font-size="23" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">3</text>
+<text x="1111" y="253" xml:space="preserve" font-size="27" fill="#000000" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">HBM</text>
+<rect data-page-tier="HBM" data-page-owner="#a6a6a6" data-page-missing="false" x="1112" y="278" width="56" height="45" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="1114" y="280" width="52" height="5" rx="1" fill="#a6a6a6" stroke="none" stroke-width="0"/>
+<text x="1140.0" y="309.7" xml:space="preserve" font-size="23" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">p0</text>
+<rect data-page-tier="HBM" data-page-owner="#a6caec" data-page-missing="false" x="1184" y="278" width="56" height="45" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="1186" y="280" width="52" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="1212.0" y="309.7" xml:space="preserve" font-size="23" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">p1</text>
+<rect data-page-tier="HBM" data-page-owner="#a6caec" data-page-missing="false" x="1256" y="278" width="56" height="45" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="1258" y="280" width="52" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="1284.0" y="309.7" xml:space="preserve" font-size="23" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">p2</text>
+<rect data-page-tier="HBM" data-page-owner="#a6caec" data-page-missing="false" x="1328" y="278" width="56" height="45" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="1330" y="280" width="52" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="1356.0" y="309.7" xml:space="preserve" font-size="23" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">p3</text>
+<rect data-page-tier="HBM" data-page-owner="#a6caec" data-page-missing="false" x="1400" y="278" width="56" height="45" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="1402" y="280" width="52" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="1428.0" y="309.7" xml:space="preserve" font-size="23" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">p4</text>
+<rect data-page-tier="HBM" data-page-owner="#a6caec" data-page-missing="false" x="1472" y="278" width="56" height="45" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="1474" y="280" width="52" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="1500.0" y="309.7" xml:space="preserve" font-size="23" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">p5</text>
+<path d="M1256 274 L1256 267 L1384 267 L1384 274" fill="none" stroke="#275317" stroke-width="1.6"/>
+<polygon points="1451.2,231.0 1484.2,231.0 1491.4,248.7 1484.2,266.4 1451.2,266.4 1444.0,248.7" fill="#d7aeff" stroke="#000000" stroke-width="1.5"/>
+<text x="1467.7" y="255.0" xml:space="preserve" font-size="19.8" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">S</text>
+<rect x="1452.4" y="235.2" width="30.599999999999998" height="3.0" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="1527.876953125" y="258" xml:space="preserve" font-size="29" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">c</text>
+<text x="1541.748046875" y="242.92" xml:space="preserve" font-size="18.85" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">*</text>
+<path d="M1374.25 336.45 L1374.25 329.3 L1383.35 329.3 L1383.35 336.45" fill="none" stroke="#000000" stroke-width="2"/>
+<rect x="1371" y="336.45" width="15.600000000000001" height="13.0" rx="2" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<circle cx="1378.8" cy="341.65" r="1.3" fill="#000000" stroke="#000000" stroke-width="1"/>
+<text x="1410" y="350" xml:space="preserve" font-size="22" fill="#000000" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">bounded</text>
+<circle cx="73" cy="462" r="23" fill="#84e291" stroke="#000000" stroke-width="1.8"/>
+<text x="73" y="468" xml:space="preserve" font-size="21" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">D2</text>
+<rect x="142" y="441" width="49" height="40" rx="1" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<rect x="203" y="441" width="49" height="40" rx="1" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<rect x="264" y="441" width="49" height="40" rx="1" fill="#84e291" stroke="#000000" stroke-width="1.8"/>
+<rect x="325" y="441" width="49" height="40" rx="1" fill="#d9d9d9" stroke="#000000" stroke-width="1.8"/>
+<path d="M332.0 420.8 L332.0 414.2 L340.4 414.2 L340.4 420.8" fill="none" stroke="#000000" stroke-width="2"/>
+<rect x="329" y="420.8" width="14.399999999999999" height="12.0" rx="2" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<circle cx="336.2" cy="425.6" r="1.2" fill="#000000" stroke="#000000" stroke-width="1"/>
+<text x="148" y="529" xml:space="preserve" font-size="24" fill="#000000" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">free / reclaimable / growth</text>
+<path d="M392.0000,460.0000 L582.0000,460.0000 C591.9414,460.0000 600.0000,451.9414 600.0000,442.0000 L600.0000,358.0000 C600.0000,348.0586 608.0586,340.0000 618.0000,340.0000 L686.6667,340.0000 C689.6123,340.0000 692.0000,337.6123 692.0000,334.6667 L692.0000,324.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M392.0000,460.0000 L582.0000,460.0000 C591.9414,460.0000 600.0000,451.9414 600.0000,442.0000 L600.0000,358.0000 C600.0000,348.0586 608.0586,340.0000 618.0000,340.0000 L686.6667,340.0000 C689.6123,340.0000 692.0000,337.6123 692.0000,334.6667 L692.0000,324.0000" fill="none" stroke="#275317" stroke-width="4.8" marker-end="url(#action-12)" data-arrow-kind="notched" data-arrow-size="12" data-flow-role="action" data-flow-geometry="rounded"/>
+<circle data-execution-step="2" cx="600" cy="405" r="19" fill="#000000" stroke="#ffffff" stroke-width="3"/>
+<text x="600" y="412.5" xml:space="preserve" font-size="23" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">2</text>
+<text x="681" y="449" xml:space="preserve" font-size="25" fill="#000000" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">select within budget</text>
+<text x="1111" y="414" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="start" font-family="DejaVu Sans" font-style="normal">native queue</text>
+<rect x="1112" y="427" width="217" height="32" rx="2" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<rect x="1113" y="428" width="10" height="30" rx="0" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="1160" y="449.46" xml:space="preserve" font-size="19" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">P</text>
+<rect data-page-tier="HBM" data-page-owner="#a6caec" data-page-missing="false" x="1254" y="432.0" width="15" height="22" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="1256" y="434.0" width="11" height="3.3" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<rect data-page-tier="HBM" data-page-owner="#a6caec" data-page-missing="false" x="1274" y="432.0" width="15" height="22" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="1276" y="434.0" width="11" height="3.3" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<rect data-page-tier="HBM" data-page-owner="#a6caec" data-page-missing="false" x="1294" y="432.0" width="15" height="22" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="1296" y="434.0" width="11" height="3.3" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<rect x="1112" y="471" width="217" height="32" rx="2" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<rect x="1113" y="472" width="10" height="30" rx="0" fill="#84e291" stroke="none" stroke-width="0"/>
+<text x="1160" y="493.46" xml:space="preserve" font-size="19" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">hit</text>
+<rect data-page-tier="HBM" data-page-owner="#84e291" data-page-missing="false" x="1254" y="476.0" width="15" height="22" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="1256" y="478.0" width="11" height="3.3" rx="1" fill="#84e291" stroke="none" stroke-width="0"/>
+<rect data-page-tier="HBM" data-page-owner="#84e291" data-page-missing="false" x="1274" y="476.0" width="15" height="22" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="1276" y="478.0" width="11" height="3.3" rx="1" fill="#84e291" stroke="none" stroke-width="0"/>
+<rect data-page-tier="HBM" data-page-owner="#84e291" data-page-missing="false" x="1294" y="476.0" width="15" height="22" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="1296" y="478.0" width="11" height="3.3" rx="1" fill="#84e291" stroke="none" stroke-width="0"/>
+<rect x="1112" y="515" width="217" height="32" rx="2" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<rect x="1113" y="516" width="10" height="30" rx="0" fill="#d9d9d9" stroke="none" stroke-width="0"/>
+<text x="1160" y="537.46" xml:space="preserve" font-size="19" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">old</text>
+<rect data-page-tier="HBM" data-page-owner="#d9d9d9" data-page-missing="true" x="1254" y="520.0" width="15" height="22" rx="2" fill="#ffffff" stroke="#000000" stroke-width="1.6" stroke-dasharray="6 4"/>
+<rect x="1256" y="522.0" width="11" height="3.3" rx="1" fill="#d9d9d9" stroke="none" stroke-width="0"/>
+<rect data-page-tier="HBM" data-page-owner="#d9d9d9" data-page-missing="true" x="1274" y="520.0" width="15" height="22" rx="2" fill="#ffffff" stroke="#000000" stroke-width="1.6" stroke-dasharray="6 4"/>
+<rect x="1276" y="522.0" width="11" height="3.3" rx="1" fill="#d9d9d9" stroke="none" stroke-width="0"/>
+<rect data-page-tier="HBM" data-page-owner="#d9d9d9" data-page-missing="true" x="1294" y="520.0" width="15" height="22" rx="2" fill="#ffffff" stroke="#000000" stroke-width="1.6" stroke-dasharray="6 4"/>
+<rect x="1296" y="522.0" width="11" height="3.3" rx="1" fill="#d9d9d9" stroke="none" stroke-width="0"/>
+<path d="M1030.0000,531.0000 L1056.6667,531.0000 C1064.0307,531.0000 1070.0000,525.0307 1070.0000,517.6667 L1070.0000,455.6667 C1070.0000,448.6709 1075.6709,443.0000 1082.6667,443.0000 L1108.0000,443.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M1030.0000,531.0000 L1056.6667,531.0000 C1064.0307,531.0000 1070.0000,525.0307 1070.0000,517.6667 L1070.0000,455.6667 C1070.0000,448.6709 1075.6709,443.0000 1082.6667,443.0000 L1108.0000,443.0000" fill="none" stroke="#215f9a" stroke-width="4.8" stroke-dasharray="12 8" marker-end="url(#feedback-12)" data-arrow-kind="open" data-arrow-size="12" data-flow-role="feedback" data-flow-geometry="rounded"/>
+<text x="983" y="600" xml:space="preserve" font-size="23" fill="#000000" font-weight="400" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">JOIN + request</text>
+<line x1="1457" y1="410" x2="1457" y2="420" stroke="#000000" stroke-width="2"/>
+<line x1="1457" y1="519" x2="1457" y2="529" stroke="#000000" stroke-width="2"/>
+<line x1="1477" y1="410" x2="1477" y2="420" stroke="#000000" stroke-width="2"/>
+<line x1="1477" y1="519" x2="1477" y2="529" stroke="#000000" stroke-width="2"/>
+<line x1="1497" y1="410" x2="1497" y2="420" stroke="#000000" stroke-width="2"/>
+<line x1="1497" y1="519" x2="1497" y2="529" stroke="#000000" stroke-width="2"/>
+<line x1="1517" y1="410" x2="1517" y2="420" stroke="#000000" stroke-width="2"/>
+<line x1="1517" y1="519" x2="1517" y2="529" stroke="#000000" stroke-width="2"/>
+<line x1="1537" y1="410" x2="1537" y2="420" stroke="#000000" stroke-width="2"/>
+<line x1="1537" y1="519" x2="1537" y2="529" stroke="#000000" stroke-width="2"/>
+<line x1="1433" y1="435" x2="1443" y2="435" stroke="#000000" stroke-width="2"/>
+<line x1="1559" y1="435" x2="1569" y2="435" stroke="#000000" stroke-width="2"/>
+<line x1="1433" y1="455" x2="1443" y2="455" stroke="#000000" stroke-width="2"/>
+<line x1="1559" y1="455" x2="1569" y2="455" stroke="#000000" stroke-width="2"/>
+<line x1="1433" y1="475" x2="1443" y2="475" stroke="#000000" stroke-width="2"/>
+<line x1="1559" y1="475" x2="1569" y2="475" stroke="#000000" stroke-width="2"/>
+<line x1="1433" y1="495" x2="1443" y2="495" stroke="#000000" stroke-width="2"/>
+<line x1="1559" y1="495" x2="1569" y2="495" stroke="#000000" stroke-width="2"/>
+<rect x="1443" y="420" width="116" height="99" rx="2" fill="#a6caec" stroke="#000000" stroke-width="2"/>
+<text x="1501.0" y="449" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">GPU</text>
+<rect x="1456.0" y="462.0" width="27.0" height="16.5" rx="1" fill="#a6caec" stroke="#000000" stroke-width="1.1"/>
+<rect x="1487.3333333333333" y="462.0" width="27.0" height="16.5" rx="1" fill="#84e291" stroke="#000000" stroke-width="1.1"/>
+<rect x="1518.6666666666667" y="462.0" width="27.0" height="16.5" rx="1" fill="#a6caec" stroke="#000000" stroke-width="1.1"/>
+<rect x="1456.0" y="485.0" width="27.0" height="16.5" rx="1" fill="#ffffff" stroke="#000000" stroke-width="1.1"/>
+<rect x="1487.3333333333333" y="485.0" width="27.0" height="16.5" rx="1" fill="#ffffff" stroke="#000000" stroke-width="1.1"/>
+<rect x="1518.6666666666667" y="485.0" width="27.0" height="16.5" rx="1" fill="#ffffff" stroke="#000000" stroke-width="1.1"/>
+<path d="M1336.0000,443.0000 L1430.0000,443.0000" fill="none" stroke="#ffffff" stroke-width="8"/>
+<path d="M1336.0000,443.0000 L1430.0000,443.0000" fill="none" stroke="#156082" stroke-width="6" marker-end="url(#execution-18)" data-arrow-kind="triangle" data-arrow-size="18" data-flow-role="execution" data-flow-geometry="straight"/>
+<circle data-execution-step="4" cx="1383" cy="443" r="19" fill="#000000" stroke="#ffffff" stroke-width="3"/>
+<text x="1383" y="450.5" xml:space="preserve" font-size="23" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="DejaVu Sans" font-style="normal">4</text>
+<text x="1378" y="570" xml:space="preserve" font-size="23" fill="#000000" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">data + slot</text>
+<text x="1111" y="570" xml:space="preserve" font-size="23" fill="#000000" font-weight="400" text-anchor="start" font-family="DejaVu Sans" font-style="normal">bounded + aging</text>
+</svg>

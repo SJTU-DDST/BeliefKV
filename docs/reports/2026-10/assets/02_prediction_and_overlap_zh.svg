@@ -1,420 +1,155 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="7.2in" height="4.800000in" viewBox="0 0 1800 1200" role="img" aria-labelledby="title">
-<title id="title">Event and Content-driven Execution Demand</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="7.2in" height="2.970000in" viewBox="0 0 1600 660" role="img" aria-labelledby="title">
+<title id="title">Execution-demand Inference</title>
 <rect width="100%" height="100%" fill="#ffffff"/>
 <defs>
-<marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#181818"/></marker>
-<marker id="blue-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2676b8"/></marker>
-<marker id="teal-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#528b36"/></marker>
-<marker id="amber-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#be7725"/></marker>
-<marker id="red-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#bf3335"/></marker>
-<marker id="gray-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#969696"/></marker>
+<marker id="execution-12" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#156082"/></marker>
+<marker id="execution-18" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="18" markerHeight="18" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#156082"/></marker>
+<marker id="execution-24" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="24" markerHeight="24" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#156082"/></marker>
+<marker id="execution-32" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="32" markerHeight="32" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#156082"/></marker>
+<marker id="feedback-12" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="12" markerHeight="12" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#215f9a" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="feedback-18" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="18" markerHeight="18" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#215f9a" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="feedback-24" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="24" markerHeight="24" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#215f9a" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="feedback-32" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="32" markerHeight="32" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#215f9a" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="action-12" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0L16 8L0 16L4 8Z" fill="#275317"/></marker>
+<marker id="action-18" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="18" markerHeight="18" orient="auto"><path d="M0 0L16 8L0 16L4 8Z" fill="#275317"/></marker>
+<marker id="action-24" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="24" markerHeight="24" orient="auto"><path d="M0 0L16 8L0 16L4 8Z" fill="#275317"/></marker>
+<marker id="action-32" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="32" markerHeight="32" orient="auto"><path d="M0 0L16 8L0 16L4 8Z" fill="#275317"/></marker>
+<marker id="transfer-12" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#35505d"/></marker>
+<marker id="transfer-18" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="18" markerHeight="18" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#35505d"/></marker>
+<marker id="transfer-24" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="24" markerHeight="24" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#35505d"/></marker>
+<marker id="transfer-32" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="32" markerHeight="32" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#35505d"/></marker>
+<marker id="inactive-12" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="12" markerHeight="12" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#a6a6a6" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="inactive-18" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="18" markerHeight="18" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#a6a6a6" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="inactive-24" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="24" markerHeight="24" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#a6a6a6" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="inactive-32" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="32" markerHeight="32" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#a6a6a6" stroke-width="2.5" stroke-linejoin="miter"/></marker>
 </defs>
 <style>text{letter-spacing:0}path,line{stroke-linejoin:round;stroke-linecap:round}</style>
-<text x="40" y="51" xml:space="preserve" font-size="37" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">事件与内容驱动的执行需求预测</text>
-<text x="40" y="88" xml:space="preserve" font-size="24" fill="#535353" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">已送达正文 + 服务进度 → 阶段 / 工作量双头 → Runtime 决定启动时机</text>
-<line x1="40" y1="108" x2="1760" y2="108" stroke="#181818" stroke-width="1.6"/>
-<rect x="32" y="124" width="1060" height="564" rx="2" fill="#eeeeee" stroke="#181818" stroke-width="1.8"/>
-<rect x="32" y="124" width="1060" height="38" rx="2" fill="#a9cee8" stroke="#181818" stroke-width="1.8"/>
-<text x="46" y="155.36" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">(a) 内容、事件与滚动剩余工作预测</text>
-<rect x="57" y="220" width="122" height="110" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.9"/>
-<polygon points="155,220 179,244 155,244" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<rect x="69" y="244" width="69.84" height="10" rx="0" fill="#dddddd" stroke="none" stroke-width="0"/>
-<rect x="69" y="263" width="81.48" height="10" rx="0" fill="#f2bd7d" stroke="none" stroke-width="0"/>
-<rect x="69" y="282" width="63.050000000000004" height="10" rx="0" fill="#dddddd" stroke="none" stroke-width="0"/>
-<rect x="69" y="301" width="74.69" height="10" rx="0" fill="#f2bd7d" stroke="none" stroke-width="0"/>
-<text x="91.7734375" y="202" xml:space="preserve" font-size="29" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">x</text>
-<text x="105.64453125" y="209.25" xml:space="preserve" font-size="18.85" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">t−k:t</text>
-<path d="M182 269 L232 269" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<line x1="260" y1="228" x2="310" y2="228" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="260" y1="228" x2="310" y2="271" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="260" y1="228" x2="310" y2="314" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="260" y1="271" x2="310" y2="228" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="260" y1="271" x2="310" y2="271" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="260" y1="271" x2="310" y2="314" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="260" y1="314" x2="310" y2="228" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="260" y1="314" x2="310" y2="271" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="260" y1="314" x2="310" y2="314" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="330" y1="228" x2="380" y2="228" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="330" y1="228" x2="380" y2="271" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="330" y1="228" x2="380" y2="314" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="330" y1="271" x2="380" y2="228" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="330" y1="271" x2="380" y2="271" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="330" y1="271" x2="380" y2="314" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="330" y1="314" x2="380" y2="228" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="330" y1="314" x2="380" y2="271" stroke="#a6a6a6" stroke-width="1"/>
-<line x1="330" y1="314" x2="380" y2="314" stroke="#a6a6a6" stroke-width="1"/>
-<circle cx="250" cy="228" r="10" fill="#a9cee8" stroke="#181818" stroke-width="1.4"/>
-<circle cx="250" cy="271" r="10" fill="#a9cee8" stroke="#181818" stroke-width="1.4"/>
-<circle cx="250" cy="314" r="10" fill="#a9cee8" stroke="#181818" stroke-width="1.4"/>
-<circle cx="320" cy="228" r="10" fill="#a9cee8" stroke="#181818" stroke-width="1.4"/>
-<circle cx="320" cy="271" r="10" fill="#a9cee8" stroke="#181818" stroke-width="1.4"/>
-<circle cx="320" cy="314" r="10" fill="#a9cee8" stroke="#181818" stroke-width="1.4"/>
-<circle cx="390" cy="228" r="10" fill="#b5d68b" stroke="#181818" stroke-width="1.4"/>
-<circle cx="390" cy="271" r="10" fill="#b5d68b" stroke="#181818" stroke-width="1.4"/>
-<circle cx="390" cy="314" r="10" fill="#b5d68b" stroke="#181818" stroke-width="1.4"/>
-<path d="M398.25 190.45 L398.25 183.3 L407.35 183.3 L407.35 190.45" fill="none" stroke="#181818" stroke-width="2"/>
-<rect x="395" y="190.45" width="15.600000000000001" height="13.0" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<circle cx="402.8" cy="195.65" r="1.3" fill="#181818" stroke="#181818" stroke-width="1"/>
-<text x="429" y="194" xml:space="preserve" font-size="20" fill="#535353" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">request / epoch</text>
-<text x="320" y="357" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">冻结编码器</text>
-<path d="M403 269 L453 269" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<rect x="466" y="218" width="27" height="14" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<rect x="466" y="235" width="27" height="14" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="1"/>
-<rect x="466" y="252" width="27" height="14" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<rect x="466" y="269" width="27" height="14" rx="0" fill="#b5d68b" stroke="#181818" stroke-width="1"/>
-<rect x="466" y="286" width="27" height="14" rx="0" fill="#e9a6bf" stroke="#181818" stroke-width="1"/>
-<rect x="466" y="303" width="27" height="14" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="470.751953125" y="355" xml:space="preserve" font-size="29" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">z</text>
-<text x="483.037109375" y="362.25" xml:space="preserve" font-size="18.85" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">t</text>
-<circle cx="576" cy="269" r="24" fill="#ffffff" stroke="#181818" stroke-width="1.6"/>
-<line x1="572" y1="259" x2="572" y2="279" stroke="#181818" stroke-width="1.8"/>
-<line x1="580" y1="259" x2="580" y2="279" stroke="#181818" stroke-width="1.8"/>
-<path d="M496 269 L549 269" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<polygon points="57,392 182,392 182,439 115,439 100,451 100,439 57,439" fill="#f2bd7d" stroke="#181818" stroke-width="1.8"/>
-<text x="119" y="423" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">收尾通知</text>
-<path d="M251 425 L275 425 L275 410 L300 410 L300 394 L327 394 L327 378 L351 378" fill="none" stroke="#2676b8" stroke-width="2.5"/>
-<text x="266.185546875" y="467" xml:space="preserve" font-size="28" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">N</text>
-<text x="285.861328125" y="474.0" xml:space="preserve" font-size="18.2" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">t</text>
-<text x="291.931640625" y="467" xml:space="preserve" font-size="28" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">, { }</text>
-<rect x="374" y="389" width="77" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="382" y="409.59" xml:space="preserve" font-size="19" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">notice</text>
-<rect x="451" y="389" width="80" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="459" y="409.59" xml:space="preserve" font-size="19" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">tokens</text>
-<rect x="531" y="389" width="79" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="539" y="409.59" xml:space="preserve" font-size="19" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">syntax</text>
-<rect x="374" y="418" width="77" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="382" y="438.59" xml:space="preserve" font-size="19" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">1</text>
-<rect x="451" y="418" width="80" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="459" y="438.59" xml:space="preserve" font-size="19" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">N(t)</text>
-<rect x="531" y="418" width="79" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="539" y="438.59" xml:space="preserve" font-size="19" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">{ }</text>
-<path d="M184 416 L209 416 L209 370 L576 370 L576 297" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
-<path d="M355 409 L371 409" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
-<path d="M612 435 L619 435 L619 350 L576 350 L576 297" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
-<path d="M603 269 L636 269 L636 244 L665 244" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<path d="M636 269 L636 399 L665 399" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<rect x="680" y="215" width="10" height="10" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
-<rect x="694" y="215" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="708" y="215" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="680" y="229" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="694" y="229" width="10" height="10" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
-<rect x="708" y="229" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="680" y="243" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="694" y="243" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="708" y="243" width="10" height="10" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
-<text x="735" y="246" xml:space="preserve" font-size="24" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">阶段头</text>
-<rect x="680" y="370" width="10" height="10" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
-<rect x="694" y="370" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="708" y="370" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="680" y="384" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="694" y="384" width="10" height="10" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
-<rect x="708" y="384" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="680" y="398" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="694" y="398" width="10" height="10" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="0.8"/>
-<rect x="708" y="398" width="10" height="10" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="0.8"/>
-<text x="735" y="401" xml:space="preserve" font-size="24" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">工作量头</text>
-<path d="M820 244 L862 244" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
-<path d="M839 399 L862 399" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
-<rect x="884" y="282" width="31" height="22" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1.3"/>
-<text x="899" y="335" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">W</text>
-<rect x="946" y="264" width="31" height="40" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="1.3"/>
-<text x="961" y="335" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">N</text>
-<rect x="1008" y="231" width="31" height="73" rx="0" fill="#e9a6bf" stroke="#181818" stroke-width="1.3"/>
-<text x="1023" y="335" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">F</text>
-<text x="938.40625" y="199" xml:space="preserve" font-size="29" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">p</text>
-<text x="953.90625" y="206.25" xml:space="preserve" font-size="18.85" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">phase</text>
-<line x1="881" y1="399" x2="1065" y2="399" stroke="#181818" stroke-width="2.5"/>
-<line x1="881" y1="390" x2="881" y2="408" stroke="#181818" stroke-width="2"/>
-<line x1="1065" y1="390" x2="1065" y2="408" stroke="#181818" stroke-width="2"/>
-<circle cx="977" cy="399" r="5" fill="#181818" stroke="#181818" stroke-width="1"/>
-<text x="901.693359375" y="447" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">[</text>
-<text x="910.017578125" y="447" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
-<text x="931.841796875" y="453.25" xml:space="preserve" font-size="16.25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">lo</text>
-<text x="945.482421875" y="447" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">, </text>
-<text x="957.982421875" y="447" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
-<text x="979.806640625" y="453.25" xml:space="preserve" font-size="16.25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">c</text>
-<text x="988.017578125" y="447" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">, </text>
-<text x="1000.517578125" y="447" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
-<text x="1022.341796875" y="453.25" xml:space="preserve" font-size="16.25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">hi</text>
-<text x="1035.982421875" y="447" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">]</text>
-<line x1="48" y1="484" x2="1076" y2="484" stroke="#181818" stroke-width="1.2"/>
-<text x="49" y="516" xml:space="preserve" font-size="24" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">在线快照 → 滚动修正工作端点</text>
-<text x="517.966796875" y="550" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">N</text>
-<text x="536.310546875" y="556.5" xml:space="preserve" font-size="16.900000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">t</text>
-<text x="845.6171875" y="550" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
-<text x="868.27734375" y="556.5" xml:space="preserve" font-size="16.900000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">lo</text>
-<text x="882.5" y="550" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> … </text>
-<text x="921.5" y="550" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
-<text x="944.16015625" y="556.5" xml:space="preserve" font-size="16.900000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">hi</text>
-<text x="72.875" y="582" xml:space="preserve" font-size="27" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
-<text x="81.375" y="588.75" xml:space="preserve" font-size="17.55" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">0</text>
-<rect x="124" y="563" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="158" y="563" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="192" y="563" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="226" y="563" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<path d="M271 574 L363 574" fill="none" stroke="#2676b8" stroke-width="1.8" stroke-dasharray="8 6" marker-end="url(#blue-arrow)"/>
-<rect x="397" y="565" width="110" height="18" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<path d="M666 574 L710 574" fill="none" stroke="#181818" stroke-width="1.8" marker-end="url(#arrow)"/>
-<line x1="778" y1="574" x2="1047" y2="574" stroke="#181818" stroke-width="2.5"/>
-<line x1="778" y1="565" x2="778" y2="583" stroke="#181818" stroke-width="2"/>
-<line x1="1047" y1="565" x2="1047" y2="583" stroke="#181818" stroke-width="2"/>
-<circle cx="935" cy="574" r="5" fill="#181818" stroke="#181818" stroke-width="1"/>
-<text x="72.875" y="621" xml:space="preserve" font-size="27" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
-<text x="81.375" y="627.75" xml:space="preserve" font-size="17.55" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">1</text>
-<rect x="124" y="602" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="158" y="602" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="192" y="602" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="226" y="602" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<path d="M271 613 L363 613" fill="none" stroke="#2676b8" stroke-width="1.8" stroke-dasharray="8 6" marker-end="url(#blue-arrow)"/>
-<rect x="397" y="604" width="180" height="18" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<path d="M666 613 L710 613" fill="none" stroke="#181818" stroke-width="1.8" marker-end="url(#arrow)"/>
-<line x1="725" y1="613" x2="944" y2="613" stroke="#181818" stroke-width="2.5"/>
-<line x1="725" y1="604" x2="725" y2="622" stroke="#181818" stroke-width="2"/>
-<line x1="944" y1="604" x2="944" y2="622" stroke="#181818" stroke-width="2"/>
-<circle cx="837" cy="613" r="5" fill="#181818" stroke="#181818" stroke-width="1"/>
-<text x="72.875" y="660" xml:space="preserve" font-size="27" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
-<text x="81.375" y="666.75" xml:space="preserve" font-size="17.55" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">2</text>
-<rect x="124" y="641" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="158" y="641" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="192" y="641" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="226" y="641" width="29" height="23" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<path d="M271 652 L363 652" fill="none" stroke="#2676b8" stroke-width="1.8" stroke-dasharray="8 6" marker-end="url(#blue-arrow)"/>
-<rect x="397" y="643" width="245" height="18" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<path d="M666 652 L710 652" fill="none" stroke="#181818" stroke-width="1.8" marker-end="url(#arrow)"/>
-<line x1="754" y1="652" x2="990" y2="652" stroke="#181818" stroke-width="2.5"/>
-<line x1="754" y1="643" x2="754" y2="661" stroke="#181818" stroke-width="2"/>
-<line x1="990" y1="643" x2="990" y2="661" stroke="#181818" stroke-width="2"/>
-<circle cx="901" cy="652" r="5" fill="#181818" stroke="#181818" stroke-width="1"/>
-<path d="M1066 669 L43 669 L43 272 L54 272" fill="none" stroke="#2676b8" stroke-width="1.6" stroke-dasharray="8 6" marker-end="url(#blue-arrow)"/>
-<rect x="1116" y="124" width="652" height="564" rx="2" fill="#eeeeee" stroke="#181818" stroke-width="1.8"/>
-<rect x="1116" y="124" width="652" height="38" rx="2" fill="#a9cee8" stroke="#181818" stroke-width="1.8"/>
-<text x="1130" y="155.36" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">(b) JOIN 投影与已观测服务进度</text>
-<circle cx="1176" cy="273" r="24" fill="#e9a6bf" stroke="#181818" stroke-width="2"/>
-<text x="1176" y="280.82" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">P</text>
-<circle cx="1315" cy="213" r="24" fill="#b5d68b" stroke="#181818" stroke-width="2"/>
-<text x="1315" y="220.82" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">C1</text>
-<circle cx="1315" cy="334" r="24" fill="#f2bd7d" stroke="#181818" stroke-width="2"/>
-<text x="1315" y="341.82" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">C2</text>
-<path d="M1350 201.0 L1356.3 210 L1368 192" fill="none" stroke="#181818" stroke-width="2.8"/>
-<polygon points="1518,236.0 1574.5,273 1518,310.0 1461.5,273" fill="#ffffff" stroke="#181818" stroke-width="1.5"/>
-<text x="1518" y="282" xml:space="preserve" font-size="25" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">ALL</text>
-<circle cx="1698" cy="273" r="24" fill="#e9a6bf" stroke="#181818" stroke-width="2"/>
-<text x="1698" y="280.82" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">P</text>
-<path d="M1203 263 L1288 224" fill="none" stroke="#181818" stroke-width="2.2" marker-end="url(#arrow)"/>
-<path d="M1203 286 L1288 322" fill="none" stroke="#181818" stroke-width="2.2" marker-end="url(#arrow)"/>
-<path d="M1342 213 L1404 213 L1467 257" fill="none" stroke="#969696" stroke-width="2.2" marker-end="url(#gray-arrow)"/>
-<path d="M1342 334 L1404 334 L1467 289" fill="none" stroke="#bf3335" stroke-width="2.2" marker-end="url(#red-arrow)"/>
-<path d="M1576 273 L1671 273" fill="none" stroke="#bf3335" stroke-width="2.2" marker-end="url(#red-arrow)"/>
-<rect x="1139" y="389" width="107" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="1147" y="409.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">group</text>
-<rect x="1246" y="389" width="247" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="1254" y="409.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">pending</text>
-<rect x="1493" y="389" width="248" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="1501" y="409.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">signal</text>
-<rect x="1139" y="418" width="107" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="1147" y="438.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">g</text>
-<rect x="1246" y="418" width="247" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="1254" y="438.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">{C1, C2}</text>
-<rect x="1493" y="418" width="248" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="1501" y="438.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">WAIT</text>
-<rect x="1139" y="447" width="107" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="1147" y="467.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">g</text>
-<rect x="1246" y="447" width="247" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="1254" y="467.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">{C2}</text>
-<rect x="1493" y="447" width="248" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="1501" y="467.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">NOTICE</text>
-<text x="1144" y="534" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">τ</text>
-<text x="1156.453125" y="542.0" xml:space="preserve" font-size="20.8" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">join</text>
-<text x="1189.734375" y="534" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
-<text x="1200.390625" y="534" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
-<text x="1209.28125" y="534" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">) = </text>
-<text x="1365.0" y="511" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">[</text>
-<text x="1375.65625" y="511" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
-<text x="1402.3125" y="511" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> − Δ</text>
-<text x="1455.171875" y="511" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">N</text>
-<text x="1476.515625" y="511" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">]</text>
-<text x="1489.96875" y="519.0" xml:space="preserve" font-size="20.8" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">+</text>
-<line x1="1355" y1="520" x2="1512.671875" y2="520" stroke="#181818" stroke-width="1.8"/>
-<text x="1411.6328125" y="555" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">v</text>
-<text x="1425.8359375" y="555" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
-<text x="1436.4921875" y="555" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
-<text x="1445.3828125" y="555" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
-<text x="1560" y="532" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">pending = 1</text>
-<line x1="1138" y1="579" x2="1747" y2="579" stroke="#a6a6a6" stroke-width="1"/>
-<rect x="1150" y="605" width="70" height="23" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<line x1="1225" y1="617" x2="1281" y2="617" stroke="#969696" stroke-width="1.3" stroke-dasharray="5 4"/>
-<rect x="1295" y="605" width="44" height="23" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<line x1="1344" y1="617" x2="1426" y2="617" stroke="#969696" stroke-width="1.3" stroke-dasharray="5 4"/>
-<rect x="1440" y="605" width="89" height="23" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<line x1="1534" y1="617" x2="1571" y2="617" stroke="#969696" stroke-width="1.3" stroke-dasharray="5 4"/>
-<rect x="1585" y="605" width="57" height="23" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<line x1="1647" y1="617" x2="1716" y2="617" stroke="#969696" stroke-width="1.3" stroke-dasharray="5 4"/>
-<text x="1146" y="668" xml:space="preserve" font-size="28" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">v</text>
-<text x="1158.4296875" y="668" xml:space="preserve" font-size="28" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
-<text x="1167.75390625" y="668" xml:space="preserve" font-size="28" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
-<text x="1175.53515625" y="668" xml:space="preserve" font-size="28" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
-<text x="1245" y="664" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">已获服务</text>
-<text x="1468" y="664" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">排队单独处理</text>
-<rect x="32" y="712" width="838" height="273" rx="2" fill="#eeeeee" stroke="#181818" stroke-width="1.8"/>
-<rect x="32" y="712" width="838" height="38" rx="2" fill="#a9cee8" stroke="#181818" stroke-width="1.8"/>
-<text x="46" y="743.36" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">(c) 存活条件下的工具时机</text>
-<rect x="50" y="777" width="114" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="58" y="797.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">project</text>
-<rect x="164" y="777" width="117" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="172" y="797.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">cmd</text>
-<rect x="281" y="777" width="103" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="289" y="797.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">done</text>
-<rect x="50" y="806" width="114" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="58" y="826.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">p</text>
-<rect x="164" y="806" width="117" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="172" y="826.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">k</text>
-<rect x="281" y="806" width="103" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="289" y="826.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">T1</text>
-<rect x="50" y="835" width="114" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="58" y="855.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">p</text>
-<rect x="164" y="835" width="117" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="172" y="855.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">k</text>
-<rect x="281" y="835" width="103" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="289" y="855.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">T2</text>
-<path d="M386 819 L418 819" fill="none" stroke="#181818" stroke-width="1.8" marker-end="url(#arrow)"/>
-<rect x="512" y="777" width="102" height="105" rx="0" fill="#b5d68b" stroke="none" stroke-width="0"/>
-<line x1="432" y1="882" x2="616" y2="882" stroke="#181818" stroke-width="1.4"/>
-<line x1="432" y1="882" x2="432" y2="778" stroke="#181818" stroke-width="1.4"/>
-<path d="M432 880 L464 880 L464 861 L493 861 L493 837 L528 837 L528 806 L572 806 L572 784 L615 784" fill="none" stroke="#181818" stroke-width="2.3"/>
-<line x1="511" y1="778" x2="511" y2="889" stroke="#bf3335" stroke-width="1.6" stroke-dasharray="5 4"/>
-<text x="505.0" y="907" xml:space="preserve" font-size="24" fill="#bf3335" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
-<circle cx="657" cy="792" r="20" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<path d="M657 779.0 L657 792 L668.0 797.0" fill="none" stroke="#181818" stroke-width="2"/>
-<line x1="661" y1="850" x2="836" y2="850" stroke="#181818" stroke-width="2.5"/>
-<line x1="661" y1="841" x2="661" y2="859" stroke="#181818" stroke-width="2"/>
-<line x1="836" y1="841" x2="836" y2="859" stroke="#181818" stroke-width="2"/>
-<circle cx="748" cy="850" r="5" fill="#181818" stroke="#181818" stroke-width="1"/>
-<text x="645.625" y="894" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">q</text>
-<text x="659.125" y="900.25" xml:space="preserve" font-size="16.25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">10</text>
-<text x="732.625" y="894" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">q</text>
-<text x="746.125" y="900.25" xml:space="preserve" font-size="16.25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">50</text>
-<text x="820.625" y="894" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">q</text>
-<text x="834.125" y="900.25" xml:space="preserve" font-size="16.25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">90</text>
-<text x="50" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">P(</text>
-<text x="76.67578125" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">T</text>
-<text x="93.359375" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> ≤ </text>
-<text x="124.82421875" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
-<text x="139.82421875" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + </text>
-<text x="171.7421875" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">r</text>
-<text x="183.41796875" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> | </text>
-<text x="204.42578125" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">T</text>
-<text x="221.109375" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> &gt; </text>
-<text x="253.02734375" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
-<text x="268.02734375" y="960" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
-<text x="360" y="961" xml:space="preserve" font-size="29" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> = </text>
-<text x="419.0" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">F</text>
-<text x="434.26953125" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
-<text x="442.59375" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
-<text x="455.09375" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + </text>
-<text x="481.69140625" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">r</text>
-<text x="491.421875" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">) − </text>
-<text x="526.34375" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">F</text>
-<text x="541.61328125" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
-<text x="549.9375" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
-<text x="562.4375" y="937" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
-<line x1="409" y1="946" x2="580.76171875" y2="946" stroke="#181818" stroke-width="1.8"/>
-<text x="453.123046875" y="974" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">1 − </text>
-<text x="492.220703125" y="974" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">F</text>
-<text x="507.490234375" y="974" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
-<text x="515.814453125" y="974" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">a</text>
-<text x="528.314453125" y="974" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
-<path d="M623 946 L695 946" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
-<text x="739.1328125" y="956" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">τ</text>
-<text x="751.5859375" y="964.0" xml:space="preserve" font-size="20.8" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">tool</text>
-<rect x="894" y="712" width="874" height="273" rx="2" fill="#eeeeee" stroke="#181818" stroke-width="1.8"/>
-<rect x="894" y="712" width="874" height="38" rx="2" fill="#9dc38b" stroke="#181818" stroke-width="1.8"/>
-<text x="908" y="743.36" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">(d) Runtime：成本、时机与物理校验</text>
-<rect x="914" y="769" width="103" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="922" y="789.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">dir</text>
-<rect x="1017" y="769" width="126" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="1025" y="789.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">shape</text>
-<rect x="1143" y="769" width="139" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="1151" y="789.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">bytes</text>
-<rect x="914" y="798" width="103" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="922" y="818.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">H2D</text>
-<rect x="1017" y="798" width="126" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="1025" y="818.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">extents</text>
-<rect x="1143" y="798" width="139" height="29" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="1151" y="818.59" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">B</text>
-<text x="1320" y="788" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">submit → ACK</text>
-<text x="1532" y="788" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">enqueue → submit</text>
-<rect x="1325" y="827" width="17" height="14" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<rect x="1545" y="831.2" width="17" height="9.799999999999999" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="1"/>
-<rect x="1350" y="816" width="17" height="25" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<rect x="1570" y="823.5" width="17" height="17.5" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="1"/>
-<rect x="1375" y="802" width="17" height="39" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<rect x="1595" y="813.7" width="17" height="27.299999999999997" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="1"/>
-<rect x="1400" y="811" width="17" height="30" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<rect x="1620" y="820.0" width="17" height="21.0" rx="0" fill="#f2bd7d" stroke="#181818" stroke-width="1"/>
-<text x="1457" y="837" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">S</text>
-<text x="1471.0" y="843.5" xml:space="preserve" font-size="16.900000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">90</text>
-<text x="1674" y="837" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">Q</text>
-<text x="1693.77734375" y="843.5" xml:space="preserve" font-size="16.900000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">90</text>
-<text x="916" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">H</text>
-<text x="938.38671875" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> = min(</text>
-<text x="1029.921875" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">L</text>
-<text x="1047.1640625" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">, </text>
-<text x="1062.6640625" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">S</text>
-<text x="1079.1640625" y="893.75" xml:space="preserve" font-size="20.150000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">90</text>
-<text x="1100.4140625" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + </text>
-<text x="1133.3984375" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">Q</text>
-<text x="1156.78515625" y="893.75" xml:space="preserve" font-size="20.150000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">90</text>
-<text x="1178.03515625" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + </text>
-<text x="1211.01953125" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">Δ</text>
-<text x="1230.21484375" y="893.75" xml:space="preserve" font-size="20.150000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">obs</text>
-<text x="1259.34375" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + </text>
-<text x="1292.328125" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">ε</text>
-<text x="1305.54296875" y="893.75" xml:space="preserve" font-size="20.150000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">early</text>
-<text x="1347.01171875" y="886" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
-<polygon points="1161,916.0 1250.5,944 1161,972.0 1071.5,944" fill="#ffffff" stroke="#181818" stroke-width="1.5"/>
-<text x="1128.001953125" y="953" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">τ</text>
-<text x="1139.095703125" y="953" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> ≤ </text>
-<text x="1171.611328125" y="953" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">H</text>
-<path d="M1255 944 L1320 944" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
-<circle cx="1343" cy="944" r="18" fill="#ffffff" stroke="#181818" stroke-width="1.6"/>
-<path d="M1335 950 L1343 936 L1351 950" fill="none" stroke="#181818" stroke-width="1.8"/>
-<text x="1375" y="929" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">c</text>
-<text x="1387.09765625" y="916.0" xml:space="preserve" font-size="16.25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">*</text>
-<text x="1396.22265625" y="929" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> / </text>
-<text x="1415.66796875" y="929" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">B</text>
-<path d="M1450 929 L1462 929 L1462 901 L1343 901 L1343 923" fill="none" stroke="#181818" stroke-width="1.7" marker-end="url(#arrow)"/>
-<path d="M1365 944 L1545 944" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
-<rect x="1560" y="918" width="185" height="55" rx="3" fill="#f5d460" stroke="#181818" stroke-width="2"/>
-<text x="1652.5" y="946.75" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">H2D</text>
-<path d="M1579 952.65 L1726 952.65" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
-<path d="M1726 963.1 L1579 963.1" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
-<path d="M1504 689 L1504 700 L882 700 L882 944 L1068 944" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
-<line x1="825" y1="944" x2="882" y2="944" stroke="#bf3335" stroke-width="2"/>
-<circle cx="882" cy="944" r="4" fill="#bf3335" stroke="#bf3335" stroke-width="1"/>
-<line x1="1160" y1="1029" x2="1160" y2="1190" stroke="#969696" stroke-width="1.7" stroke-dasharray="6 5"/>
-<text x="1172" y="1025" xml:space="preserve" font-size="22" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">RETURN / TOOL_END</text>
-<line x1="900" y1="1028" x2="1156" y2="1028" stroke="#bf3335" stroke-width="2"/>
-<line x1="900" y1="1022" x2="900" y2="1033" stroke="#bf3335" stroke-width="2"/>
-<text x="1008.48828125" y="1021" xml:space="preserve" font-size="25" fill="#bf3335" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">Δ</text>
-<text x="1024.56640625" y="1021" xml:space="preserve" font-size="25" fill="#bf3335" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">t</text>
-<text x="65" y="1064" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">child / tool</text>
-<line x1="360" y1="1056" x2="1760" y2="1056" stroke="#a6a6a6" stroke-width="1"/>
-<text x="65" y="1122" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">预取</text>
-<line x1="360" y1="1114" x2="1760" y2="1114" stroke="#a6a6a6" stroke-width="1"/>
-<text x="65" y="1180" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">响应式</text>
-<line x1="360" y1="1172" x2="1760" y2="1172" stroke="#a6a6a6" stroke-width="1"/>
-<rect x="360" y="1039" width="800" height="34" rx="1" fill="#f2bd7d" stroke="#181818" stroke-width="1.5"/>
-<text x="704" y="1064" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">decode / tool</text>
-<rect x="900" y="1097" width="400" height="34" rx="1" fill="#f5d460" stroke="#181818" stroke-width="1.5"/>
-<text x="1080" y="1122" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">H2D</text>
-<rect x="1300" y="1097" width="160" height="34" rx="1" fill="#dddddd" stroke="#181818" stroke-width="1.3"/>
-<rect x="1460" y="1097" width="300" height="34" rx="1" fill="#a9cee8" stroke="#181818" stroke-width="1.5"/>
-<text x="1610" y="1122" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">GPU</text>
-<text x="1304" y="1090" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">ACK</text>
-<text x="1467" y="1090" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">首次复用</text>
-<rect x="1160" y="1155" width="400" height="34" rx="1" fill="#f5d460" stroke="#181818" stroke-width="1.5"/>
-<text x="1360.0" y="1180" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">H2D</text>
-<rect x="1560" y="1155" width="200" height="34" rx="1" fill="#a9cee8" stroke="#181818" stroke-width="1.5"/>
-<text x="1660" y="1180" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">GPU</text>
+<text x="32" y="43" xml:space="preserve" font-size="31" fill="#000000" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">D1</text>
+<text x="108" y="43" xml:space="preserve" font-size="31" fill="#000000" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">从完成信号推断近期执行需求</text>
+<rect x="657" y="176" width="230" height="295" rx="8" fill="#dceaf7" stroke="#156082" stroke-width="1.6"/>
+<circle cx="64" cy="218" r="25" fill="#a6caec" stroke="#000000" stroke-width="2"/>
+<text x="64" y="226.5" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">P</text>
+<circle cx="177" cy="139" r="25" fill="#84e291" stroke="#000000" stroke-width="2"/>
+<text x="177" y="147.5" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">C1</text>
+<circle cx="177" cy="299" r="25" fill="#f6c6ad" stroke="#000000" stroke-width="2"/>
+<text x="177" y="307.5" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">C2</text>
+<path d="M207 119.5 L213.65 129 L226 110" fill="none" stroke="#000000" stroke-width="2.8"/>
+<polygon points="299,183.5 342.5,218 299,252.5 255.5,218" fill="#ffffff" stroke="#000000" stroke-width="1.5"/>
+<text x="299" y="227" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">ALL</text>
+<path d="M91.0000,200.0000 L149.0000,157.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M91.0000,200.0000 L149.0000,157.0000" fill="none" stroke="#156082" stroke-width="4.8" marker-end="url(#execution-18)" data-arrow-kind="triangle" data-arrow-size="18" data-flow-role="execution" data-flow-geometry="straight"/>
+<path d="M91.0000,237.0000 L149.0000,282.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M91.0000,237.0000 L149.0000,282.0000" fill="none" stroke="#156082" stroke-width="4.8" marker-end="url(#execution-18)" data-arrow-kind="triangle" data-arrow-size="18" data-flow-role="execution" data-flow-geometry="straight"/>
+<path d="M205.0000,139.0000 C244.0000,139.0000 241.0000,181.0000 257.0000,198.0000" fill="none" stroke="#ffffff" stroke-width="7.5"/>
+<path d="M205.0000,139.0000 C244.0000,139.0000 241.0000,181.0000 257.0000,198.0000" fill="none" stroke="#a6a6a6" stroke-width="5.5" marker-end="url(#inactive-12)" data-arrow-kind="open" data-arrow-size="12" data-flow-role="inactive" data-flow-geometry="bezier"/>
+<path d="M205.0000,299.0000 C244.0000,299.0000 241.0000,254.0000 257.0000,238.0000" fill="none" stroke="#ffffff" stroke-width="7.5"/>
+<path d="M205.0000,299.0000 C244.0000,299.0000 241.0000,254.0000 257.0000,238.0000" fill="none" stroke="#215f9a" stroke-width="5.5" stroke-dasharray="12 8" marker-end="url(#feedback-12)" data-arrow-kind="open" data-arrow-size="12" data-flow-role="feedback" data-flow-geometry="bezier"/>
+<text x="43" y="373" xml:space="preserve" font-size="23" fill="#000000" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">pending = {C2}</text>
+<path d="M345.0000,218.0000 L353.0000,218.0000 C355.2092,218.0000 357.0000,216.2092 357.0000,214.0000 L357.0000,120.0000 C357.0000,110.0586 365.0586,102.0000 375.0000,102.0000 L1377.0000,102.0000 C1386.9414,102.0000 1395.0000,110.0586 1395.0000,120.0000 L1395.0000,164.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M345.0000,218.0000 L353.0000,218.0000 C355.2092,218.0000 357.0000,216.2092 357.0000,214.0000 L357.0000,120.0000 C357.0000,110.0586 365.0586,102.0000 375.0000,102.0000 L1377.0000,102.0000 C1386.9414,102.0000 1395.0000,110.0586 1395.0000,120.0000 L1395.0000,164.0000" fill="none" stroke="#215f9a" stroke-width="4.8" stroke-dasharray="12 8" marker-end="url(#feedback-18)" data-arrow-kind="open" data-arrow-size="18" data-flow-role="feedback" data-flow-geometry="rounded"/>
+<circle data-execution-step="1" cx="710" cy="102" r="19" fill="#000000" stroke="#ffffff" stroke-width="3"/>
+<text x="710" y="109.5" xml:space="preserve" font-size="23" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">1</text>
+<text x="920" y="91" xml:space="preserve" font-size="23" fill="#000000" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">确定等待对象</text>
+<circle cx="1395" cy="196" r="28" fill="#a6caec" stroke="#000000" stroke-width="2"/>
+<text x="1395" y="204.5" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">P</text>
+<rect x="385" y="246" width="133" height="119" rx="2" fill="#ffffff" stroke="#000000" stroke-width="1.9"/>
+<polygon points="494,246 518,270 494,270" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<text x="395" y="280" xml:space="preserve" font-size="17.955000000000002" fill="#000000" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">… 证据</text>
+<text x="395" y="299" xml:space="preserve" font-size="17.955000000000002" fill="#000000" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">… 验证</text>
+<text x="395" y="318" xml:space="preserve" font-size="17.955000000000002" fill="#000000" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">… 总结</text>
+<rect x="397" y="327" width="83.16" height="10" rx="0" fill="#f6c6ad" stroke="none" stroke-width="0"/>
+<path d="M205.0000,299.0000 L379.0000,299.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M205.0000,299.0000 L379.0000,299.0000" fill="none" stroke="#156082" stroke-width="4.8" marker-end="url(#execution-18)" data-arrow-kind="triangle" data-arrow-size="18" data-flow-role="execution" data-flow-geometry="straight"/>
+<polygon points="386,397 516,397 516,434 453,434 437,447 437,434 386,434" fill="#f6c6ad" stroke="#000000" stroke-width="1.8"/>
+<text x="451" y="424" xml:space="preserve" font-size="21" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">NOTICE</text>
+<path d="M521.0000,303.0000 L576.6667,303.0000 C586.2399,303.0000 594.0000,295.2399 594.0000,285.6667 L594.0000,268.3333 C594.0000,258.7601 601.7601,251.0000 611.3333,251.0000 L661.0000,251.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M521.0000,303.0000 L576.6667,303.0000 C586.2399,303.0000 594.0000,295.2399 594.0000,285.6667 L594.0000,268.3333 C594.0000,258.7601 601.7601,251.0000 611.3333,251.0000 L661.0000,251.0000" fill="none" stroke="#156082" stroke-width="4.8" marker-end="url(#execution-18)" data-arrow-kind="triangle" data-arrow-size="18" data-flow-role="execution" data-flow-geometry="rounded"/>
+<path d="M594.0000,303.0000 L594.0000,347.0000 C594.0000,356.9414 602.0586,365.0000 612.0000,365.0000 L661.0000,365.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M594.0000,303.0000 L594.0000,347.0000 C594.0000,356.9414 602.0586,365.0000 612.0000,365.0000 L661.0000,365.0000" fill="none" stroke="#156082" stroke-width="4.8" marker-end="url(#execution-18)" data-arrow-kind="triangle" data-arrow-size="18" data-flow-role="execution" data-flow-geometry="rounded"/>
+<path d="M520.0000,414.0000 L542.6667,414.0000 C548.9261,414.0000 554.0000,408.9261 554.0000,402.6667 L554.0000,310.0000 C554.0000,306.1339 557.1339,303.0000 561.0000,303.0000 L575.0000,303.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M520.0000,414.0000 L542.6667,414.0000 C548.9261,414.0000 554.0000,408.9261 554.0000,402.6667 L554.0000,310.0000 C554.0000,306.1339 557.1339,303.0000 561.0000,303.0000 L575.0000,303.0000" fill="none" stroke="#156082" stroke-width="4.8" marker-end="url(#execution-12)" data-arrow-kind="triangle" data-arrow-size="12" data-flow-role="execution" data-flow-geometry="rounded"/>
+<circle data-execution-step="2" cx="574" cy="303" r="19" fill="#000000" stroke="#ffffff" stroke-width="3"/>
+<text x="574" y="310.5" xml:space="preserve" font-size="23" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">2</text>
+<text x="572" y="210" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">推断</text>
+<text x="738.697265625" y="218" xml:space="preserve" font-size="31" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">p</text>
+<text x="755.197265625" y="225.75" xml:space="preserve" font-size="20.150000000000002" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">final</text>
+<rect x="680" y="237" width="175" height="26" rx="0" fill="#ffffff" stroke="#a6a6a6" stroke-width="1.2"/>
+<rect x="680" y="237" width="125" height="26" rx="0" fill="#a6caec" stroke="#000000" stroke-width="1"/>
+<line x1="680" y1="365" x2="855" y2="365" stroke="#000000" stroke-width="2.5"/>
+<line x1="680" y1="356" x2="680" y2="374" stroke="#000000" stroke-width="2"/>
+<line x1="855" y1="356" x2="855" y2="374" stroke="#000000" stroke-width="2"/>
+<circle cx="776" cy="365" r="5" fill="#000000" stroke="#000000" stroke-width="1"/>
+<text x="705.5078125" y="409" xml:space="preserve" font-size="29" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
+<text x="730.6640625" y="416.25" xml:space="preserve" font-size="18.85" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">lo</text>
+<text x="746.25" y="409" xml:space="preserve" font-size="29" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> … </text>
+<text x="789.75" y="409" xml:space="preserve" font-size="29" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
+<text x="814.90625" y="416.25" xml:space="preserve" font-size="18.85" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">hi</text>
+<text x="768" y="450" xml:space="preserve" font-size="23" fill="#000000" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">终态剩余 token</text>
+<path d="M863.0000,250.0000 L912.0000,250.0000 C921.9414,250.0000 930.0000,258.0586 930.0000,268.0000 L930.0000,321.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M863.0000,250.0000 L912.0000,250.0000 C921.9414,250.0000 930.0000,258.0586 930.0000,268.0000 L930.0000,321.0000" fill="none" stroke="#275317" stroke-width="4.8" marker-end="url(#action-18)" data-arrow-kind="notched" data-arrow-size="18" data-flow-role="action" data-flow-geometry="rounded"/>
+<path d="M864.0000,365.0000 L912.0000,365.0000 C921.9414,365.0000 930.0000,356.9414 930.0000,347.0000 L930.0000,321.0000 C930.0000,311.0586 938.0586,303.0000 948.0000,303.0000 L1034.0000,303.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M864.0000,365.0000 L912.0000,365.0000 C921.9414,365.0000 930.0000,356.9414 930.0000,347.0000 L930.0000,321.0000 C930.0000,311.0586 938.0586,303.0000 948.0000,303.0000 L1034.0000,303.0000" fill="none" stroke="#275317" stroke-width="4.8" marker-end="url(#action-24)" data-arrow-kind="notched" data-arrow-size="24" data-flow-role="action" data-flow-geometry="rounded"/>
+<circle data-execution-step="3" cx="982" cy="303" r="19" fill="#000000" stroke="#ffffff" stroke-width="3"/>
+<text x="982" y="310.5" xml:space="preserve" font-size="23" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">3</text>
+<text x="1015" y="226" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">滚动更新</text>
+<circle cx="1065" cy="303" r="24" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<path d="M1065 287.4 L1065 303 L1078.2 309.0" fill="none" stroke="#000000" stroke-width="2"/>
+<path d="M1095.0000,303.0000 L1296.0000,303.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M1095.0000,303.0000 L1296.0000,303.0000" fill="none" stroke="#215f9a" stroke-width="4.8" stroke-dasharray="12 8" marker-end="url(#feedback-18)" data-arrow-kind="open" data-arrow-size="18" data-flow-role="feedback" data-flow-geometry="straight"/>
+<text x="1327.2890625" y="400" xml:space="preserve" font-size="32" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">τ</text>
+<text x="1338.7421875" y="400" xml:space="preserve" font-size="32" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> ≈ </text>
+<text x="1372.3046875" y="400" xml:space="preserve" font-size="32" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">W</text>
+<text x="1398.9609375" y="400" xml:space="preserve" font-size="32" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> / </text>
+<text x="1423.8515625" y="400" xml:space="preserve" font-size="32" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">v</text>
+<text x="1439.0546875" y="408.0" xml:space="preserve" font-size="20.8" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">eff</text>
+<rect x="1012" y="420" width="25" height="15" rx="0" fill="#a6caec" stroke="#000000" stroke-width="0.9"/>
+<rect x="1090" y="420" width="39" height="15" rx="0" fill="#a6caec" stroke="#000000" stroke-width="0.9"/>
+<rect x="1168" y="420" width="58" height="15" rx="0" fill="#a6caec" stroke="#000000" stroke-width="0.9"/>
+<text x="1138" y="481" xml:space="preserve" font-size="22" fill="#000000" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">已观测服务进度</text>
+<path d="M1065.0000,413.0000 L1065.0000,335.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M1065.0000,413.0000 L1065.0000,335.0000" fill="none" stroke="#215f9a" stroke-width="4.8" stroke-dasharray="12 8" marker-end="url(#feedback-18)" data-arrow-kind="open" data-arrow-size="18" data-flow-role="feedback" data-flow-geometry="straight"/>
+<line x1="1310" y1="303" x2="1480" y2="303" stroke="#000000" stroke-width="2.5"/>
+<line x1="1310" y1="294" x2="1310" y2="312" stroke="#000000" stroke-width="2"/>
+<line x1="1480" y1="294" x2="1480" y2="312" stroke="#000000" stroke-width="2"/>
+<circle cx="1405" cy="303" r="5" fill="#000000" stroke="#000000" stroke-width="1"/>
+<line x1="1395" y1="227" x2="1395" y2="293" stroke="#a6a6a6" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="1310" y="347" xml:space="preserve" font-size="22" fill="#000000" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">RETURN</text>
+<rect x="52" y="520" width="88" height="62" rx="3" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<line x1="53" y1="533.02" x2="139" y2="533.02" stroke="#000000" stroke-width="1"/>
+<path d="M68 546.66 L79 557.82 L68 568.98" fill="none" stroke="#000000" stroke-width="2"/>
+<line x1="90" y1="568.36" x2="126" y2="568.36" stroke="#000000" stroke-width="2"/>
+<circle cx="190" cy="550" r="25" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<path d="M190 533.75 L190 550 L203.75 556.25" fill="none" stroke="#000000" stroke-width="2"/>
+<text x="134" y="624" xml:space="preserve" font-size="24" fill="#000000" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">工具 + 已耗时</text>
+<path d="M221.0000,550.0000 L283.0000,550.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M221.0000,550.0000 L283.0000,550.0000" fill="none" stroke="#156082" stroke-width="4.8" marker-end="url(#execution-18)" data-arrow-kind="triangle" data-arrow-size="18" data-flow-role="execution" data-flow-geometry="straight"/>
+<rect x="400" y="504" width="122" height="83" rx="0" fill="#84e291" stroke="none" stroke-width="0"/>
+<path d="M293 586 L342 586 L342 569 L400 569 L400 539 L457 539 L457 511 L522 511" fill="none" stroke="#000000" stroke-width="2.5"/>
+<line x1="400" y1="502" x2="400" y2="590" stroke="#275317" stroke-width="1.5" stroke-dasharray="5 4"/>
+<text x="410" y="624" xml:space="preserve" font-size="23" fill="#000000" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">历史 | 仍未结束</text>
+<path d="M535.0000,550.0000 L735.0000,550.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M535.0000,550.0000 L735.0000,550.0000" fill="none" stroke="#275317" stroke-width="4.8" marker-end="url(#action-24)" data-arrow-kind="notched" data-arrow-size="24" data-flow-role="action" data-flow-geometry="straight"/>
+<circle cx="770" cy="550" r="24" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<path d="M770 534.4 L770 550 L783.2 556.0" fill="none" stroke="#000000" stroke-width="2"/>
+<text x="747.703125" y="605" xml:space="preserve" font-size="31" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">τ</text>
+<text x="759.796875" y="612.75" xml:space="preserve" font-size="20.150000000000002" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">tool</text>
+<path d="M800.0000,550.0000 L1296.0000,550.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M800.0000,550.0000 L1296.0000,550.0000" fill="none" stroke="#215f9a" stroke-width="4.8" stroke-dasharray="12 8" marker-end="url(#feedback-18)" data-arrow-kind="open" data-arrow-size="18" data-flow-role="feedback" data-flow-geometry="straight"/>
+<circle cx="1395" cy="481" r="27" fill="#84e291" stroke="#000000" stroke-width="2"/>
+<text x="1395" y="489.5" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">A</text>
+<line x1="1395" y1="511" x2="1395" y2="540" stroke="#a6a6a6" stroke-width="1.5" stroke-dasharray="5 4"/>
+<line x1="1310" y1="550" x2="1480" y2="550" stroke="#000000" stroke-width="2.5"/>
+<line x1="1310" y1="541" x2="1310" y2="559" stroke="#000000" stroke-width="2"/>
+<line x1="1480" y1="541" x2="1480" y2="559" stroke="#000000" stroke-width="2"/>
+<circle cx="1405" cy="550" r="5" fill="#000000" stroke="#000000" stroke-width="1"/>
+<text x="1395" y="615" xml:space="preserve" font-size="22" fill="#000000" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">TOOL_END</text>
+<path d="M1494.0000,303.0000 L1511.3333,303.0000 C1516.1199,303.0000 1520.0000,306.8801 1520.0000,311.6667 L1520.0000,420.6667 C1520.0000,424.7169 1523.2831,428.0000 1527.3333,428.0000 L1542.0000,428.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M1494.0000,303.0000 L1511.3333,303.0000 C1516.1199,303.0000 1520.0000,306.8801 1520.0000,311.6667 L1520.0000,420.6667 C1520.0000,424.7169 1523.2831,428.0000 1527.3333,428.0000 L1542.0000,428.0000" fill="none" stroke="#215f9a" stroke-width="4.8" stroke-dasharray="12 8" marker-end="url(#feedback-12)" data-arrow-kind="open" data-arrow-size="12" data-flow-role="feedback" data-flow-geometry="rounded"/>
+<path d="M1494.0000,550.0000 L1511.3333,550.0000 C1516.1199,550.0000 1520.0000,546.1199 1520.0000,541.3333 L1520.0000,435.3333 C1520.0000,431.2831 1523.2831,428.0000 1527.3333,428.0000 L1542.0000,428.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M1494.0000,550.0000 L1511.3333,550.0000 C1516.1199,550.0000 1520.0000,546.1199 1520.0000,541.3333 L1520.0000,435.3333 C1520.0000,431.2831 1523.2831,428.0000 1527.3333,428.0000 L1542.0000,428.0000" fill="none" stroke="#215f9a" stroke-width="4.8" stroke-dasharray="12 8" marker-end="url(#feedback-12)" data-arrow-kind="open" data-arrow-size="12" data-flow-role="feedback" data-flow-geometry="rounded"/>
+<circle cx="1570" cy="428" r="26" fill="#d9d9d9" stroke="#000000" stroke-width="1.8"/>
+<text x="1570" y="434" xml:space="preserve" font-size="21" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">D3</text>
+<circle data-execution-step="4" cx="1520" cy="428" r="19" fill="#000000" stroke="#ffffff" stroke-width="3"/>
+<text x="1520" y="435.5" xml:space="preserve" font-size="23" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">4</text>
 </svg>

@@ -1,0 +1,40 @@
+{
+  "source": "User-provided JANUS architecture reference image",
+  "source_sha256": "1e79b12002a6af7115cede03020ba741e4bb87c80a7c56a4ae304819baff91b5",
+  "source_size": [1080, 617],
+  "coordinate_origin": "top-left; x increases rightward, y downward",
+  "method": "Exact RGB pixel samples; no interpolated, lightened or darkened colors",
+  "samples": [
+    {"hex": "#FFFFFF", "xy": [3, 3], "source_role": "white background"},
+    {"hex": "#000000", "xy": [60, 33], "source_role": "black text"},
+    {"hex": "#156082", "xy": [29, 100], "source_role": "control plane title"},
+    {"hex": "#DCEAF7", "xy": [40, 131], "source_role": "control plane background"},
+    {"hex": "#A6CAEC", "xy": [44, 320], "source_role": "control subpanel background"},
+    {"hex": "#215F9A", "xy": [222, 206], "source_role": "blue execution arrow"},
+    {"hex": "#275317", "xy": [606, 30], "source_role": "data plane title"},
+    {"hex": "#D9F2D0", "xy": [614, 60], "source_role": "data plane background"},
+    {"hex": "#F6C6AD", "xy": [400, 158], "source_role": "request scheduler background"},
+    {"hex": "#FBE3D6", "xy": [483, 377], "source_role": "request table background"},
+    {"hex": "#F2AA84", "xy": [524, 362], "source_role": "request table highlight"},
+    {"hex": "#D7AEFF", "xy": [701, 135], "source_role": "HBM manager"},
+    {"hex": "#FFD579", "xy": [639, 170], "source_role": "model and DRAM accents"},
+    {"hex": "#84E291", "xy": [640, 223], "source_role": "green model"},
+    {"hex": "#F2F2F2", "xy": [463, 34], "source_role": "neutral panel background"},
+    {"hex": "#D9D9D9", "xy": [1003, 112], "source_role": "device panel background"},
+    {"hex": "#A6A6A6", "xy": [287, 47], "source_role": "neutral arrow"},
+    {"hex": "#35505D", "xy": [34, 279], "source_role": "control subpanel border"}
+  ],
+  "beliefkv_mapping": {
+    "control_border": "#156082",
+    "control_background": "#DCEAF7",
+    "data_border": "#275317",
+    "data_background": "#D9F2D0",
+    "hbm_header_and_page": "#D7AEFF",
+    "hbm_background": "#F2F2F2",
+    "host_header_and_page": "#FFD579",
+    "host_background": "#FBE3D6",
+    "parent_marker": "#A6CAEC",
+    "child1_marker": "#84E291",
+    "child2_marker": "#F6C6AD"
+  }
+}

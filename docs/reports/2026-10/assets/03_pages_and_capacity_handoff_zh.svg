@@ -1,401 +1,158 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<svg xmlns="http://www.w3.org/2000/svg" width="7.2in" height="4.800000in" viewBox="0 0 1800 1200" role="img" aria-labelledby="title">
-<title id="title">Workflow-aware KV Lifecycle and Admission</title>
+<svg xmlns="http://www.w3.org/2000/svg" width="7.2in" height="2.880000in" viewBox="0 0 1600 640" role="img" aria-labelledby="title">
+<title id="title">Workflow-aware KV Lifecycle</title>
 <rect width="100%" height="100%" fill="#ffffff"/>
 <defs>
-<marker id="arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#181818"/></marker>
-<marker id="blue-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#2676b8"/></marker>
-<marker id="teal-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#528b36"/></marker>
-<marker id="amber-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#be7725"/></marker>
-<marker id="red-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#bf3335"/></marker>
-<marker id="gray-arrow" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L10 5L0 10z" fill="#969696"/></marker>
+<marker id="execution-12" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#156082"/></marker>
+<marker id="execution-18" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="18" markerHeight="18" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#156082"/></marker>
+<marker id="execution-24" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="24" markerHeight="24" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#156082"/></marker>
+<marker id="execution-32" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="32" markerHeight="32" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#156082"/></marker>
+<marker id="feedback-12" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="12" markerHeight="12" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#215f9a" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="feedback-18" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="18" markerHeight="18" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#215f9a" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="feedback-24" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="24" markerHeight="24" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#215f9a" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="feedback-32" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="32" markerHeight="32" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#215f9a" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="action-12" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0L16 8L0 16L4 8Z" fill="#275317"/></marker>
+<marker id="action-18" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="18" markerHeight="18" orient="auto"><path d="M0 0L16 8L0 16L4 8Z" fill="#275317"/></marker>
+<marker id="action-24" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="24" markerHeight="24" orient="auto"><path d="M0 0L16 8L0 16L4 8Z" fill="#275317"/></marker>
+<marker id="action-32" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="32" markerHeight="32" orient="auto"><path d="M0 0L16 8L0 16L4 8Z" fill="#275317"/></marker>
+<marker id="transfer-12" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="12" markerHeight="12" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#35505d"/></marker>
+<marker id="transfer-18" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="18" markerHeight="18" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#35505d"/></marker>
+<marker id="transfer-24" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="24" markerHeight="24" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#35505d"/></marker>
+<marker id="transfer-32" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="32" markerHeight="32" orient="auto"><path d="M0 0L16 8L0 16Z" fill="#35505d"/></marker>
+<marker id="inactive-12" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="12" markerHeight="12" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#a6a6a6" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="inactive-18" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="18" markerHeight="18" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#a6a6a6" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="inactive-24" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="24" markerHeight="24" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#a6a6a6" stroke-width="2.5" stroke-linejoin="miter"/></marker>
+<marker id="inactive-32" markerUnits="userSpaceOnUse" viewBox="0 0 16 16" refX="16" refY="8" markerWidth="32" markerHeight="32" orient="auto"><path d="M2 1L16 8L2 15" fill="none" stroke="#a6a6a6" stroke-width="2.5" stroke-linejoin="miter"/></marker>
 </defs>
 <style>text{letter-spacing:0}path,line{stroke-linejoin:round;stroke-linecap:round}</style>
-<text x="40" y="51" xml:space="preserve" font-size="37" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">工作流感知的 KV 生命周期与恢复感知准入</text>
-<text x="40" y="88" xml:space="preserve" font-size="24" fill="#535353" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">稳定 FULL 前缀 · checkpoint 状态 · 缺失页恢复 · child → parent 容量交接</text>
-<line x1="40" y1="108" x2="1760" y2="108" stroke="#181818" stroke-width="1.6"/>
-<rect x="40" y="132" width="1040" height="285" rx="2" fill="#eeeeee" stroke="#181818" stroke-width="1.8"/>
-<rect x="40" y="132" width="1040" height="38" rx="2" fill="#9dc38b" stroke="#181818" stroke-width="1.8"/>
-<text x="54" y="163.36" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">(a) 稳定 FULL：增量 PREPARE_HOST</text>
-<text x="68" y="244" xml:space="preserve" font-size="28" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">HBM</text>
-<text x="68" y="327" xml:space="preserve" font-size="28" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">Host</text>
-<path d="M213 209 L213 202 L363 202 L363 209" fill="none" stroke="#181818" stroke-width="1.6"/>
-<text x="277.798828125" y="193" xml:space="preserve" font-size="24" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">e</text>
-<text x="289.451171875" y="199.0" xml:space="preserve" font-size="15.600000000000001" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">0</text>
-<path d="M385 209 L385 202 L535 202 L535 209" fill="none" stroke="#181818" stroke-width="1.6"/>
-<text x="449.798828125" y="193" xml:space="preserve" font-size="24" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">e</text>
-<text x="461.451171875" y="199.0" xml:space="preserve" font-size="15.600000000000001" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">1</text>
-<path d="M557 209 L557 202 L707 202 L707 209" fill="none" stroke="#181818" stroke-width="1.6"/>
-<text x="621.798828125" y="193" xml:space="preserve" font-size="24" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">e</text>
-<text x="633.451171875" y="199.0" xml:space="preserve" font-size="15.600000000000001" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">2</text>
-<path d="M729 209 L729 202 L879 202 L879 209" fill="none" stroke="#181818" stroke-width="1.6"/>
-<text x="793.798828125" y="193" xml:space="preserve" font-size="24" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">e</text>
-<text x="805.451171875" y="199.0" xml:space="preserve" font-size="15.600000000000001" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">3</text>
-<rect x="213" y="213" width="64" height="44" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="245.0" y="242.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p0</text>
-<rect x="213" y="296" width="64" height="44" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="245.0" y="325.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p0</text>
-<rect x="299" y="213" width="64" height="44" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="331.0" y="242.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p1</text>
-<rect x="299" y="296" width="64" height="44" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="331.0" y="325.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p1</text>
-<rect x="385" y="213" width="64" height="44" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="417.0" y="242.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p2</text>
-<rect x="385" y="296" width="64" height="44" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="417.0" y="325.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p2</text>
-<rect x="471" y="213" width="64" height="44" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="503.0" y="242.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p3</text>
-<rect x="471" y="296" width="64" height="44" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="503.0" y="325.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p3</text>
-<rect x="557" y="213" width="64" height="44" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="589.0" y="242.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p4</text>
-<rect x="557" y="296" width="64" height="44" rx="1" fill="#ffffff" stroke="#969696" stroke-width="1.8" stroke-dasharray="6 4"/>
-<text x="589.0" y="325.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p4</text>
-<path d="M589 259 L589 291" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
-<rect x="643" y="213" width="64" height="44" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="675.0" y="242.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p5</text>
-<rect x="643" y="296" width="64" height="44" rx="1" fill="#ffffff" stroke="#969696" stroke-width="1.8" stroke-dasharray="6 4"/>
-<text x="675.0" y="325.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p5</text>
-<path d="M675 259 L675 291" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
-<rect x="729" y="213" width="64" height="44" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="761.0" y="242.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p6</text>
-<rect x="729" y="296" width="64" height="44" rx="1" fill="#ffffff" stroke="#969696" stroke-width="1.8" stroke-dasharray="6 4"/>
-<text x="761.0" y="325.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p6</text>
-<path d="M761 259 L761 291" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
-<rect x="815" y="213" width="64" height="44" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="847.0" y="242.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p7</text>
-<rect x="815" y="296" width="64" height="44" rx="1" fill="#ffffff" stroke="#969696" stroke-width="1.8" stroke-dasharray="6 4"/>
-<text x="847.0" y="325.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p7</text>
-<path d="M847 259 L847 291" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
-<text x="968" y="285" xml:space="preserve" font-size="26" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">ΔFULL</text>
-<text x="68" y="389" xml:space="preserve" font-size="22" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">Host 有效位</text>
-<rect x="213" y="362" width="64" height="32" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="245.0" y="385.072" xml:space="preserve" font-size="20.8" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">1</text>
-<rect x="299" y="362" width="64" height="32" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="331.0" y="385.072" xml:space="preserve" font-size="20.8" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">1</text>
-<rect x="385" y="362" width="64" height="32" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="417.0" y="385.072" xml:space="preserve" font-size="20.8" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">1</text>
-<rect x="471" y="362" width="64" height="32" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="503.0" y="385.072" xml:space="preserve" font-size="20.8" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">1</text>
-<rect x="557" y="362" width="64" height="32" rx="1" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<text x="589.0" y="385.072" xml:space="preserve" font-size="20.8" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">0</text>
-<rect x="643" y="362" width="64" height="32" rx="1" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<text x="675.0" y="385.072" xml:space="preserve" font-size="20.8" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">0</text>
-<rect x="729" y="362" width="64" height="32" rx="1" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<text x="761.0" y="385.072" xml:space="preserve" font-size="20.8" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">0</text>
-<rect x="815" y="362" width="64" height="32" rx="1" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<text x="847.0" y="385.072" xml:space="preserve" font-size="20.8" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">0</text>
-<text x="941.31640625" y="389" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">Δ</text>
-<text x="955.98828125" y="389" xml:space="preserve" font-size="25" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> only</text>
-<rect x="1120" y="132" width="640" height="285" rx="2" fill="#eeeeee" stroke="#181818" stroke-width="1.8"/>
-<rect x="1120" y="132" width="640" height="38" rx="2" fill="#9dc38b" stroke="#181818" stroke-width="1.8"/>
-<text x="1134" y="163.36" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">(b) Checkpoint 匹配的 Mamba</text>
-<rect x="1150" y="216" width="64.78" height="48.379999999999995" rx="1" fill="#ffffff" stroke="#969696" stroke-width="1.5"/>
-<rect x="1158.2" y="224.2" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#969696" stroke-width="1"/>
-<rect x="1176.24" y="224.2" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#969696" stroke-width="1"/>
-<rect x="1194.28" y="224.2" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#969696" stroke-width="1"/>
-<rect x="1158.2" y="242.24" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#969696" stroke-width="1"/>
-<rect x="1176.24" y="242.24" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#969696" stroke-width="1"/>
-<rect x="1194.28" y="242.24" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#969696" stroke-width="1"/>
-<text x="1172.287109375" y="295" xml:space="preserve" font-size="30" fill="#969696" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">s</text>
-<text x="1184.962890625" y="302.5" xml:space="preserve" font-size="19.5" fill="#969696" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">0</text>
-<rect x="1340" y="216" width="64.78" height="48.379999999999995" rx="1" fill="#ffffff" stroke="#969696" stroke-width="1.5"/>
-<rect x="1348.2" y="224.2" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#969696" stroke-width="1"/>
-<rect x="1366.24" y="224.2" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#969696" stroke-width="1"/>
-<rect x="1384.28" y="224.2" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#969696" stroke-width="1"/>
-<rect x="1348.2" y="242.24" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#969696" stroke-width="1"/>
-<rect x="1366.24" y="242.24" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#969696" stroke-width="1"/>
-<rect x="1384.28" y="242.24" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#969696" stroke-width="1"/>
-<text x="1362.287109375" y="295" xml:space="preserve" font-size="30" fill="#969696" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">s</text>
-<text x="1374.962890625" y="302.5" xml:space="preserve" font-size="19.5" fill="#969696" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">1</text>
-<rect x="1556" y="216" width="64.78" height="48.379999999999995" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.5"/>
-<rect x="1564.2" y="224.2" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<rect x="1582.24" y="224.2" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<rect x="1600.28" y="224.2" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<rect x="1564.2" y="242.24" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<rect x="1582.24" y="242.24" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<rect x="1600.28" y="242.24" width="12.299999999999999" height="11.479999999999999" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="1578.287109375" y="295" xml:space="preserve" font-size="30" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">s</text>
-<text x="1590.962890625" y="279.4" xml:space="preserve" font-size="19.5" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">*</text>
-<path d="M1233 249 L1324 249" fill="none" stroke="#969696" stroke-width="2" marker-end="url(#gray-arrow)"/>
-<path d="M1424 249 L1541 249" fill="none" stroke="#969696" stroke-width="2" marker-end="url(#gray-arrow)"/>
-<text x="1427" y="219" xml:space="preserve" font-size="21" fill="#535353" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">decode</text>
-<text x="1683.7109375" y="257" xml:space="preserve" font-size="32" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">c</text>
-<text x="1698.9140625" y="240.36" xml:space="preserve" font-size="20.8" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">*</text>
-<line x1="1640" y1="250" x2="1668" y2="250" stroke="#181818" stroke-width="1.6"/>
-<rect x="1142" y="322" width="124" height="28" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="1150" y="341.88" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">context</text>
-<rect x="1266" y="322" width="135" height="28" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="1274" y="341.88" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">epoch</text>
-<rect x="1401" y="322" width="333" height="28" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1"/>
-<text x="1409" y="341.88" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">Host checkpoint</text>
-<rect x="1142" y="350" width="124" height="28" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="1150" y="369.88" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">P</text>
-<rect x="1266" y="350" width="135" height="28" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="1274" y="369.88" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">e</text>
-<rect x="1401" y="350" width="333" height="28" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="1409" y="369.88" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">c*</text>
-<text x="1146" y="404" xml:space="preserve" font-size="21" fill="#535353" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">PREPARE</text>
-<line x1="1260" y1="385" x2="1279" y2="404" stroke="#bf3335" stroke-width="2.8"/>
-<line x1="1260" y1="404" x2="1279" y2="385" stroke="#bf3335" stroke-width="2.8"/>
-<path d="M1697 322 L1697 287 L1640 287 L1640 243 L1623 243" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
-<text x="1500" y="405" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">只恢复匹配状态</text>
-<rect x="40" y="459" width="1720" height="326" rx="2" fill="#eeeeee" stroke="#181818" stroke-width="1.8"/>
-<rect x="40" y="459" width="1720" height="38" rx="2" fill="#9dc38b" stroke="#181818" stroke-width="1.8"/>
-<text x="54" y="490.36" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">(c) 安全输入 checkpoint → 缺失页 → 原生逐层流水线</text>
-<text x="67" y="550" xml:space="preserve" font-size="24" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">原生前缀树</text>
-<rect x="81" y="605" width="56" height="43" rx="1" fill="#dddddd" stroke="#181818" stroke-width="1.8"/>
-<text x="109.0" y="633.64" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p0</text>
-<rect x="218" y="565" width="56" height="43" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="246.0" y="593.64" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p1</text>
-<rect x="350" y="605" width="56" height="43" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="378.0" y="633.64" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p5</text>
-<rect x="218" y="682" width="56" height="43" rx="1" fill="#dddddd" stroke="#181818" stroke-width="1.8" stroke-dasharray="6 4"/>
-<text x="246.0" y="710.64" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">g</text>
-<path d="M138 621 L215 590" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<path d="M275 590 L347 620" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<path d="M131 649 L217 697" fill="none" stroke="#969696" stroke-width="2.6" stroke-dasharray="8 6" marker-end="url(#gray-arrow)"/>
-<line x1="285" y1="692" x2="305" y2="712" stroke="#969696" stroke-width="2.8"/>
-<line x1="285" y1="712" x2="305" y2="692" stroke="#969696" stroke-width="2.8"/>
-<path d="M93.25 663.45 L93.25 656.3 L102.35 656.3 L102.35 663.45" fill="none" stroke="#181818" stroke-width="2"/>
-<rect x="90" y="663.45" width="15.600000000000001" height="13.0" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<circle cx="97.8" cy="668.65" r="1.3" fill="#181818" stroke="#181818" stroke-width="1"/>
-<text x="364.05859375" y="588" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">c</text>
-<text x="378.81640625" y="571.88" xml:space="preserve" font-size="20.150000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">*</text>
-<text x="67" y="754" xml:space="preserve" font-size="23" fill="#535353" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">session / epoch</text>
-<path d="M409 625 L494 625" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<text x="511" y="571" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">Host</text>
-<text x="511" y="654" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">HBM</text>
-<rect x="625" y="543" width="51" height="42" rx="1" fill="#dddddd" stroke="#181818" stroke-width="1.8"/>
-<text x="650.5" y="571.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p0</text>
-<rect x="625" y="626" width="51" height="42" rx="1" fill="#dddddd" stroke="#181818" stroke-width="1.8"/>
-<text x="650.5" y="654.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p0</text>
-<rect x="688" y="543" width="51" height="42" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="713.5" y="571.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p1</text>
-<rect x="688" y="626" width="51" height="42" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="713.5" y="654.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p1</text>
-<rect x="751" y="543" width="51" height="42" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="776.5" y="571.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p2</text>
-<rect x="751" y="626" width="51" height="42" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="776.5" y="654.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p2</text>
-<path d="M776 589 L776 620" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
-<rect x="814" y="543" width="51" height="42" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="839.5" y="571.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p3</text>
-<rect x="814" y="626" width="51" height="42" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="839.5" y="654.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p3</text>
-<path d="M839 589 L839 620" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
-<rect x="877" y="543" width="51" height="42" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="902.5" y="571.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p4</text>
-<rect x="877" y="626" width="51" height="42" rx="1" fill="#ffffff" stroke="#969696" stroke-width="1.8" stroke-dasharray="6 4"/>
-<text x="902.5" y="654.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p4</text>
-<rect x="940" y="543" width="51" height="42" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="965.5" y="571.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p5</text>
-<rect x="940" y="626" width="51" height="42" rx="1" fill="#ffffff" stroke="#969696" stroke-width="1.8" stroke-dasharray="6 4"/>
-<text x="965.5" y="654.14" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p5</text>
-<line x1="625" y1="682" x2="739" y2="682" stroke="#181818" stroke-width="1.6"/>
-<line x1="751" y1="682" x2="865" y2="682" stroke="#bf3335" stroke-width="2.4"/>
-<text x="629" y="715" xml:space="preserve" font-size="20" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">已驻留</text>
-<text x="753" y="715" xml:space="preserve" font-size="20" fill="#bf3335" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">本次恢复</text>
-<text x="887" y="715" xml:space="preserve" font-size="20" fill="#535353" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">延后</text>
-<text x="512" y="760" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">B</text>
-<text x="530.9375" y="760" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> ≤ </text>
-<text x="563.453125" y="760" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">C</text>
-<text x="585.12890625" y="767.75" xml:space="preserve" font-size="20.150000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">free</text>
-<text x="617.58984375" y="760" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> + </text>
-<text x="650.57421875" y="760" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">C</text>
-<text x="672.25" y="767.75" xml:space="preserve" font-size="20.150000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">cold</text>
-<text x="708.11328125" y="760" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> − </text>
-<text x="741.09765625" y="760" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">G</text>
-<text x="764.484375" y="767.75" xml:space="preserve" font-size="20.150000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">next</text>
-<path d="M1006 647 L1040 647 L1040 602 L1090 602" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<rect x="1101" y="551" width="163" height="101" rx="3" fill="#f5d460" stroke="#181818" stroke-width="2"/>
-<text x="1182.5" y="584" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">HiCache</text>
-<path d="M1120 614.63 L1245 614.63" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
-<path d="M1245 633.8199999999999 L1120 633.8199999999999" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
-<rect x="1124" y="698" width="41.870000000000005" height="31.270000000000003" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.5"/>
-<rect x="1129.3" y="703.3" width="7.95" height="7.42" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<rect x="1140.96" y="703.3" width="7.95" height="7.42" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<rect x="1152.62" y="703.3" width="7.95" height="7.42" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<rect x="1129.3" y="714.96" width="7.95" height="7.42" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<rect x="1140.96" y="714.96" width="7.95" height="7.42" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<rect x="1152.62" y="714.96" width="7.95" height="7.42" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="1215" y="725" xml:space="preserve" font-size="31" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">s</text>
-<text x="1228.0625" y="708.88" xml:space="preserve" font-size="20.150000000000002" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">*</text>
-<path d="M1266 602 L1328 602 L1328 651" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<path d="M1252 715 L1328 715 L1328 683" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<circle cx="1328" cy="667" r="18" fill="#ffffff" stroke="#181818" stroke-width="1.6"/>
-<path d="M1320 673 L1328 659 L1336 673" fill="none" stroke="#181818" stroke-width="1.8"/>
-<path d="M1349 667 L1376 667 L1376 544 L1450 544 L1450 551" fill="none" stroke="#181818" stroke-width="2" marker-end="url(#arrow)"/>
-<text x="1453" y="530" xml:space="preserve" font-size="22" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">H2D</text>
-<text x="1607" y="530" xml:space="preserve" font-size="22" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">GPU</text>
-<text x="1399.2734375" y="577" xml:space="preserve" font-size="29" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">ℓ</text>
-<text x="1412.3515625" y="584.25" xml:space="preserve" font-size="18.85" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">0</text>
-<line x1="1438" y1="592" x2="1738" y2="592" stroke="#a6a6a6" stroke-width="1"/>
-<rect x="1450" y="554" width="82" height="29" rx="0" fill="#f5d460" stroke="#181818" stroke-width="1.4"/>
-<rect x="1458" y="561" width="17" height="15" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="1480" y="561" width="17" height="15" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="1502" y="561" width="17" height="15" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<path d="M1535 568 L1558 568" fill="none" stroke="#181818" stroke-width="1.7" marker-end="url(#arrow)"/>
-<rect x="1563" y="554" width="173" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1.4"/>
-<text x="1399.2734375" y="650" xml:space="preserve" font-size="29" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">ℓ</text>
-<text x="1412.3515625" y="657.25" xml:space="preserve" font-size="18.85" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">1</text>
-<line x1="1438" y1="665" x2="1738" y2="665" stroke="#a6a6a6" stroke-width="1"/>
-<rect x="1488" y="627" width="82" height="29" rx="0" fill="#f5d460" stroke="#181818" stroke-width="1.4"/>
-<rect x="1496" y="634" width="17" height="15" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="1518" y="634" width="17" height="15" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="1540" y="634" width="17" height="15" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<path d="M1573 641 L1612 641" fill="none" stroke="#181818" stroke-width="1.7" marker-end="url(#arrow)"/>
-<rect x="1617" y="627" width="119" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1.4"/>
-<path d="M1588 586 L1588 614 L1634 614 L1634 624" fill="none" stroke="#181818" stroke-width="1.6" marker-end="url(#arrow)"/>
-<text x="1399.2734375" y="723" xml:space="preserve" font-size="29" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">ℓ</text>
-<text x="1412.3515625" y="730.25" xml:space="preserve" font-size="18.85" fill="#181818" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">2</text>
-<line x1="1438" y1="738" x2="1738" y2="738" stroke="#a6a6a6" stroke-width="1"/>
-<rect x="1526" y="700" width="82" height="29" rx="0" fill="#f5d460" stroke="#181818" stroke-width="1.4"/>
-<rect x="1534" y="707" width="17" height="15" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="1556" y="707" width="17" height="15" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="1578" y="707" width="17" height="15" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<path d="M1611 714 L1666 714" fill="none" stroke="#181818" stroke-width="1.7" marker-end="url(#arrow)"/>
-<rect x="1671" y="700" width="65" height="29" rx="0" fill="#a9cee8" stroke="#181818" stroke-width="1.4"/>
-<path d="M1642 659 L1642 687 L1688 687 L1688 697" fill="none" stroke="#181818" stroke-width="1.6" marker-end="url(#arrow)"/>
-<path d="M1183 654 L1183 673 L1032 673 L1032 766 L1450 766" fill="none" stroke="#2676b8" stroke-width="1.7" stroke-dasharray="8 6" marker-end="url(#blue-arrow)"/>
-<text x="1353" y="754" xml:space="preserve" font-size="21" fill="#2676b8" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">ACK</text>
-<rect x="40" y="830" width="1070" height="326" rx="2" fill="#eeeeee" stroke="#181818" stroke-width="1.8"/>
-<rect x="40" y="830" width="1070" height="38" rx="2" fill="#a9cee8" stroke="#181818" stroke-width="1.8"/>
-<text x="54" y="861.36" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">(d) 终态 child → 原生可用容量</text>
-<circle cx="100" cy="979" r="27" fill="#e9a6bf" stroke="#181818" stroke-width="2"/>
-<text x="100" y="987.5" xml:space="preserve" font-size="25" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">P</text>
-<circle cx="253" cy="925" r="27" fill="#b5d68b" stroke="#181818" stroke-width="2"/>
-<text x="253" y="933.5" xml:space="preserve" font-size="25" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">C1</text>
-<circle cx="253" cy="1080" r="27" fill="#f2bd7d" stroke="#181818" stroke-width="2"/>
-<text x="253" y="1088.5" xml:space="preserve" font-size="25" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">C2</text>
-<path d="M128 969 L224 935" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<path d="M125 994 L226 1064" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<path d="M287 907.0 L293.3 916 L305 898" fill="none" stroke="#181818" stroke-width="2.8"/>
-<path d="M283 925 L351 925" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<rect x="359" y="876" width="80" height="22" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="367" y="891.62" xml:space="preserve" font-size="17" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">private</text>
-<rect x="439" y="876" width="80" height="22" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="447" y="891.62" xml:space="preserve" font-size="17" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">refs=0</text>
-<rect x="519" y="876" width="80" height="22" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1"/>
-<text x="527" y="891.62" xml:space="preserve" font-size="17" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">DMA=0</text>
-<rect x="361" y="906" width="36" height="34" rx="1" fill="#dddddd" stroke="#181818" stroke-width="1.8"/>
-<rect x="406" y="906" width="36" height="34" rx="1" fill="#b5d68b" stroke="#181818" stroke-width="1.8"/>
-<rect x="451" y="906" width="36" height="34" rx="1" fill="#b5d68b" stroke="#181818" stroke-width="1.8"/>
-<rect x="496" y="906" width="36" height="34" rx="1" fill="#b5d68b" stroke="#181818" stroke-width="1.8"/>
-<path d="M372.0 953.8 L372.0 947.2 L380.4 947.2 L380.4 953.8" fill="none" stroke="#181818" stroke-width="2"/>
-<rect x="369" y="953.8" width="14.399999999999999" height="12.0" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<circle cx="376.2" cy="958.6" r="1.2" fill="#181818" stroke="#181818" stroke-width="1"/>
-<text x="423" y="977" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">私有后缀</text>
-<path d="M548 923 L635 923" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<rect x="648" y="901" width="123" height="48" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.7"/>
-<rect x="657" y="913" width="20" height="24" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1.2"/>
-<rect x="685" y="913" width="20" height="24" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1.2"/>
-<rect x="713" y="913" width="20" height="24" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1.2"/>
-<rect x="741" y="913" width="20" height="24" rx="0" fill="#ffffff" stroke="#181818" stroke-width="1.2"/>
-<text x="648" y="979" xml:space="preserve" font-size="22" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">空闲列表</text>
-<path d="M776 923 L871 923" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<rect x="886" y="903" width="50" height="43" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="911.0" y="931.64" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">q0</text>
-<rect x="947" y="903" width="50" height="43" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="972.0" y="931.64" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">q1</text>
-<rect x="1008" y="903" width="50" height="43" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="1033.0" y="931.64" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">q2</text>
-<text x="894" y="977" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">Parent KV</text>
-<line x1="931" y1="1012" x2="931" y2="1140" stroke="#969696" stroke-width="1.7" stroke-dasharray="6 5"/>
-<text x="942" y="1030" xml:space="preserve" font-size="21" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">RETURN</text>
-<rect x="371" y="1102" width="560" height="32" rx="1" fill="#f2bd7d" stroke="#181818" stroke-width="1.6"/>
-<text x="628" y="1125" xml:space="preserve" font-size="23" fill="#181818" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">C2: decode</text>
-<rect x="721" y="1048" width="181" height="33" rx="1" fill="#f5d460" stroke="#181818" stroke-width="1.5"/>
-<text x="811" y="1072" xml:space="preserve" font-size="24" fill="#181818" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">H2D</text>
-<rect x="933" y="1048" width="148" height="33" rx="1" fill="#dddddd" stroke="#181818" stroke-width="1.5"/>
-<text x="1007" y="1072" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">demand</text>
-<path d="M648 941 L615 941 L615 1001 L811 1001 L811 1044" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<path d="M245.25 1122.45 L245.25 1115.3 L254.35 1115.3 L254.35 1122.45" fill="none" stroke="#181818" stroke-width="2"/>
-<rect x="242" y="1122.45" width="15.600000000000001" height="13.0" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<circle cx="249.8" cy="1127.65" r="1.3" fill="#181818" stroke="#181818" stroke-width="1"/>
-<rect x="1150" y="830" width="610" height="326" rx="2" fill="#eeeeee" stroke="#181818" stroke-width="1.8"/>
-<rect x="1150" y="830" width="610" height="38" rx="2" fill="#9dc38b" stroke="#181818" stroke-width="1.8"/>
-<text x="1164" y="861.36" xml:space="preserve" font-size="26" fill="#181818" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">(e) 驻留、准入与首次消费</text>
-<text x="1176" y="892" xml:space="preserve" font-size="21" fill="#2676b8" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">ACK</text>
-<path d="M1231 885 L1274 885" fill="none" stroke="#181818" stroke-width="1.6" marker-end="url(#arrow)"/>
-<path d="M1288.25 874.45 L1288.25 867.3 L1297.35 867.3 L1297.35 874.45" fill="none" stroke="#181818" stroke-width="2"/>
-<rect x="1285" y="874.45" width="15.600000000000001" height="13.0" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<circle cx="1292.8" cy="879.65" r="1.3" fill="#181818" stroke="#181818" stroke-width="1"/>
-<text x="1310" y="892" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">lease</text>
-<path d="M1372 885 L1411 885" fill="none" stroke="#181818" stroke-width="1.6" marker-end="url(#arrow)"/>
-<text x="1428" y="892" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">消费 / 到期</text>
-<circle cx="1663" cy="883" r="13" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<path d="M1663 874.55 L1663 883 L1670.15 886.25" fill="none" stroke="#181818" stroke-width="2"/>
-<rect x="1181" y="906" width="196" height="52" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<rect x="1182" y="907" width="10" height="50" rx="0" fill="#dddddd" stroke="none" stroke-width="0"/>
-<text x="1229" y="939.82" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">old</text>
-<rect x="1302" y="921.0" width="15" height="22" rx="1" fill="#ffffff" stroke="#181818" stroke-width="1.8" stroke-dasharray="6 4"/>
-<rect x="1322" y="921.0" width="15" height="22" rx="1" fill="#ffffff" stroke="#181818" stroke-width="1.8" stroke-dasharray="6 4"/>
-<rect x="1342" y="921.0" width="15" height="22" rx="1" fill="#ffffff" stroke="#181818" stroke-width="1.8" stroke-dasharray="6 4"/>
-<rect x="1181" y="984" width="196" height="52" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<rect x="1182" y="985" width="10" height="50" rx="0" fill="#b5d68b" stroke="none" stroke-width="0"/>
-<text x="1229" y="1017.82" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">hit</text>
-<rect x="1302" y="999.0" width="15" height="22" rx="1" fill="#b5d68b" stroke="#181818" stroke-width="1.8"/>
-<rect x="1322" y="999.0" width="15" height="22" rx="1" fill="#b5d68b" stroke="#181818" stroke-width="1.8"/>
-<rect x="1342" y="999.0" width="15" height="22" rx="1" fill="#b5d68b" stroke="#181818" stroke-width="1.8"/>
-<rect x="1181" y="1062" width="196" height="52" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<rect x="1182" y="1063" width="10" height="50" rx="0" fill="#e9a6bf" stroke="none" stroke-width="0"/>
-<text x="1229" y="1095.82" xml:space="preserve" font-size="23" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">P</text>
-<rect x="1302" y="1077.0" width="15" height="22" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="1322" y="1077.0" width="15" height="22" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<rect x="1342" y="1077.0" width="15" height="22" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<path d="M1360.0 1051.8 L1360.0 1045.2 L1368.4 1045.2 L1368.4 1051.8" fill="none" stroke="#181818" stroke-width="2"/>
-<rect x="1357" y="1051.8" width="14.399999999999999" height="12.0" rx="2" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<circle cx="1364.2" cy="1056.6" r="1.2" fill="#181818" stroke="#181818" stroke-width="1"/>
-<circle cx="1402" cy="925" r="15" fill="#ffffff" stroke="#181818" stroke-width="1.8"/>
-<path d="M1402 915.25 L1402 925 L1410.25 928.75" fill="none" stroke="#181818" stroke-width="2"/>
-<text x="1426" y="933" xml:space="preserve" font-size="21" fill="#535353" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">老化</text>
-<line x1="1574" y1="959" x2="1574" y2="969" stroke="#181818" stroke-width="2"/>
-<line x1="1574" y1="1104" x2="1574" y2="1114" stroke="#181818" stroke-width="2"/>
-<line x1="1594" y1="959" x2="1594" y2="969" stroke="#181818" stroke-width="2"/>
-<line x1="1594" y1="1104" x2="1594" y2="1114" stroke="#181818" stroke-width="2"/>
-<line x1="1614" y1="959" x2="1614" y2="969" stroke="#181818" stroke-width="2"/>
-<line x1="1614" y1="1104" x2="1614" y2="1114" stroke="#181818" stroke-width="2"/>
-<line x1="1634" y1="959" x2="1634" y2="969" stroke="#181818" stroke-width="2"/>
-<line x1="1634" y1="1104" x2="1634" y2="1114" stroke="#181818" stroke-width="2"/>
-<line x1="1654" y1="959" x2="1654" y2="969" stroke="#181818" stroke-width="2"/>
-<line x1="1654" y1="1104" x2="1654" y2="1114" stroke="#181818" stroke-width="2"/>
-<line x1="1674" y1="959" x2="1674" y2="969" stroke="#181818" stroke-width="2"/>
-<line x1="1674" y1="1104" x2="1674" y2="1114" stroke="#181818" stroke-width="2"/>
-<line x1="1694" y1="959" x2="1694" y2="969" stroke="#181818" stroke-width="2"/>
-<line x1="1694" y1="1104" x2="1694" y2="1114" stroke="#181818" stroke-width="2"/>
-<line x1="1550" y1="984" x2="1560" y2="984" stroke="#181818" stroke-width="2"/>
-<line x1="1701" y1="984" x2="1711" y2="984" stroke="#181818" stroke-width="2"/>
-<line x1="1550" y1="1004" x2="1560" y2="1004" stroke="#181818" stroke-width="2"/>
-<line x1="1701" y1="1004" x2="1711" y2="1004" stroke="#181818" stroke-width="2"/>
-<line x1="1550" y1="1024" x2="1560" y2="1024" stroke="#181818" stroke-width="2"/>
-<line x1="1701" y1="1024" x2="1711" y2="1024" stroke="#181818" stroke-width="2"/>
-<line x1="1550" y1="1044" x2="1560" y2="1044" stroke="#181818" stroke-width="2"/>
-<line x1="1701" y1="1044" x2="1711" y2="1044" stroke="#181818" stroke-width="2"/>
-<line x1="1550" y1="1064" x2="1560" y2="1064" stroke="#181818" stroke-width="2"/>
-<line x1="1701" y1="1064" x2="1711" y2="1064" stroke="#181818" stroke-width="2"/>
-<line x1="1550" y1="1084" x2="1560" y2="1084" stroke="#181818" stroke-width="2"/>
-<line x1="1701" y1="1084" x2="1711" y2="1084" stroke="#181818" stroke-width="2"/>
-<rect x="1560" y="969" width="141" height="135" rx="2" fill="#a9cee8" stroke="#181818" stroke-width="2"/>
-<text x="1630.5" y="998" xml:space="preserve" font-size="24" fill="#181818" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">GPU</text>
-<rect x="1573.0" y="1011.0" width="35.333333333333336" height="34.5" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.1"/>
-<rect x="1612.6666666666667" y="1011.0" width="35.333333333333336" height="34.5" rx="1" fill="#b5d68b" stroke="#181818" stroke-width="1.1"/>
-<rect x="1652.3333333333333" y="1011.0" width="35.333333333333336" height="34.5" rx="1" fill="#dddddd" stroke="#181818" stroke-width="1.1"/>
-<rect x="1573.0" y="1052.0" width="35.333333333333336" height="34.5" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.1"/>
-<rect x="1612.6666666666667" y="1052.0" width="35.333333333333336" height="34.5" rx="1" fill="#f2bd7d" stroke="#181818" stroke-width="1.1"/>
-<rect x="1652.3333333333333" y="1052.0" width="35.333333333333336" height="34.5" rx="1" fill="#ffffff" stroke="#181818" stroke-width="1.1"/>
-<path d="M1381 947 L1517 947 L1517 987 L1548 987" fill="none" stroke="#181818" stroke-width="2" stroke-dasharray="8 6" marker-end="url(#arrow)"/>
-<path d="M1381 1010 L1548 1010" fill="none" stroke="#181818" stroke-width="2.6" marker-end="url(#arrow)"/>
-<path d="M1381 1088 L1517 1088 L1517 1074 L1548 1074" fill="none" stroke="#bf3335" stroke-width="2.6" marker-end="url(#red-arrow)"/>
-<text x="1390" y="1140" xml:space="preserve" font-size="23" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">KV ∧ slot  /  batch fill</text>
-<rect x="65" y="1174" width="28" height="22" rx="1" fill="#e9a6bf" stroke="#181818" stroke-width="1.8"/>
-<text x="107" y="1187" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">Parent 页</text>
-<rect x="352" y="1174" width="28" height="22" rx="1" fill="#ffffff" stroke="#181818" stroke-width="1.8" stroke-dasharray="6 4"/>
-<text x="394" y="1187" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">缺失 / 延后</text>
-<rect x="718" y="1174" width="28" height="22" rx="1" fill="#b5d68b" stroke="#181818" stroke-width="1.8"/>
-<text x="760" y="1187" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">Child 私有页</text>
-<path d="M1220 1183 L1263 1183" fill="none" stroke="#bf3335" stroke-width="2" marker-end="url(#red-arrow)"/>
-<text x="1281" y="1187" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">控制动作</text>
-<path d="M1474 1183 L1517 1183" fill="none" stroke="#2676b8" stroke-width="2" stroke-dasharray="8 6" marker-end="url(#blue-arrow)"/>
-<text x="1534" y="1187" xml:space="preserve" font-size="21" fill="#181818" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">ACK</text>
+<text x="32" y="43" xml:space="preserve" font-size="31" fill="#000000" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">D2</text>
+<text x="108" y="43" xml:space="preserve" font-size="31" fill="#000000" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">按工作流状态备份、保留与释放 KV</text>
+<rect data-storage-band="HBM" x="210" y="104" width="880" height="98" rx="8" fill="#f2f2f2" stroke="#000000" stroke-width="1.8"/>
+<rect data-storage-band="Host" x="210" y="298" width="880" height="98" rx="8" fill="#fbe3d6" stroke="#000000" stroke-width="1.8"/>
+<rect data-storage-band="HBM" x="320" y="450" width="770" height="99" rx="8" fill="#f2f2f2" stroke="#000000" stroke-width="1.8"/>
+<rect x="1190" y="104" width="218" height="477" rx="8" fill="#f2f2f2" stroke="#a6a6a6" stroke-width="1.7"/>
+<circle cx="85" cy="220" r="28" fill="#a6caec" stroke="#000000" stroke-width="2"/>
+<text x="85" y="228.5" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">P</text>
+<text x="85" y="279" xml:space="preserve" font-size="25" fill="#000000" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">等待中</text>
+<text x="218" y="160" xml:space="preserve" font-size="27" fill="#000000" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">HBM</text>
+<text x="218" y="345" xml:space="preserve" font-size="27" fill="#000000" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">Host</text>
+<rect data-page-tier="HBM" data-page-owner="#a6a6a6" data-page-missing="false" x="355" y="128" width="64" height="46" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="357" y="130" width="60" height="5" rx="1" fill="#a6a6a6" stroke="none" stroke-width="0"/>
+<text x="387.0" y="160.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p0</text>
+<rect data-page-tier="Host" data-page-owner="#a6a6a6" data-page-missing="false" x="355" y="313" width="64" height="46" rx="2" fill="#ffd579" stroke="#000000" stroke-width="1.6"/>
+<rect x="357" y="315" width="60" height="5" rx="1" fill="#a6a6a6" stroke="none" stroke-width="0"/>
+<text x="387.0" y="345.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p0</text>
+<rect data-page-tier="HBM" data-page-owner="#a6caec" data-page-missing="false" x="443" y="128" width="64" height="46" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="445" y="130" width="60" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="475.0" y="160.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p1</text>
+<rect data-page-tier="Host" data-page-owner="#a6caec" data-page-missing="false" x="443" y="313" width="64" height="46" rx="2" fill="#ffd579" stroke="#000000" stroke-width="1.6"/>
+<rect x="445" y="315" width="60" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="475.0" y="345.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p1</text>
+<rect data-page-tier="HBM" data-page-owner="#a6caec" data-page-missing="false" x="531" y="128" width="64" height="46" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="533" y="130" width="60" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="563.0" y="160.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p2</text>
+<rect data-page-tier="Host" data-page-owner="#a6caec" data-page-missing="false" x="531" y="313" width="64" height="46" rx="2" fill="#ffd579" stroke="#000000" stroke-width="1.6"/>
+<rect x="533" y="315" width="60" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="563.0" y="345.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p2</text>
+<rect data-page-tier="HBM" data-page-owner="#a6caec" data-page-missing="false" x="619" y="128" width="64" height="46" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="621" y="130" width="60" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="651.0" y="160.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p3</text>
+<rect data-page-tier="Host" data-page-owner="#a6caec" data-page-missing="false" x="619" y="313" width="64" height="46" rx="2" fill="#ffd579" stroke="#000000" stroke-width="1.6"/>
+<rect x="621" y="315" width="60" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="651.0" y="345.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p3</text>
+<rect data-page-tier="HBM" data-page-owner="#a6caec" data-page-missing="false" x="707" y="128" width="64" height="46" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="709" y="130" width="60" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="739.0" y="160.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p4</text>
+<rect data-page-tier="Host" data-page-owner="#a6caec" data-page-missing="true" x="707" y="313" width="64" height="46" rx="2" fill="#ffffff" stroke="#000000" stroke-width="1.6" stroke-dasharray="6 4"/>
+<rect x="709" y="315" width="60" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="739.0" y="345.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p4</text>
+<path d="M739.0000,180.0000 L739.0000,306.0000" fill="none" stroke="#ffffff" stroke-width="10.5"/>
+<path d="M739.0000,180.0000 L739.0000,306.0000" fill="none" stroke="#35505d" stroke-width="8.5" marker-end="url(#transfer-32)" data-arrow-kind="triangle" data-arrow-size="32" data-flow-role="transfer" data-flow-geometry="straight"/>
+<rect data-page-tier="HBM" data-page-owner="#a6caec" data-page-missing="false" x="795" y="128" width="64" height="46" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="797" y="130" width="60" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="827.0" y="160.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p5</text>
+<rect data-page-tier="Host" data-page-owner="#a6caec" data-page-missing="true" x="795" y="313" width="64" height="46" rx="2" fill="#ffffff" stroke="#000000" stroke-width="1.6" stroke-dasharray="6 4"/>
+<rect x="797" y="315" width="60" height="5" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="827.0" y="345.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p5</text>
+<path d="M827.0000,180.0000 L827.0000,306.0000" fill="none" stroke="#ffffff" stroke-width="10.5"/>
+<path d="M827.0000,180.0000 L827.0000,306.0000" fill="none" stroke="#35505d" stroke-width="8.5" marker-end="url(#transfer-32)" data-arrow-kind="triangle" data-arrow-size="32" data-flow-role="transfer" data-flow-geometry="straight"/>
+<path d="M370.0 190.8 L370.0 184.2 L378.4 184.2 L378.4 190.8" fill="none" stroke="#000000" stroke-width="2"/>
+<rect x="367" y="190.8" width="14.399999999999999" height="12.0" rx="2" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<circle cx="374.2" cy="195.6" r="1.2" fill="#000000" stroke="#000000" stroke-width="1"/>
+<text x="348" y="236" xml:space="preserve" font-size="22" fill="#000000" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">共享：保留</text>
+<path d="M531 119 L531 112 L683 112 L683 119" fill="none" stroke="#275317" stroke-width="1.6"/>
+<path d="M607.0000,111.0000 C850.0000,111.0000 1090.0000,150.0000 1215.0000,150.0000" fill="none" stroke="#ffffff" stroke-width="8"/>
+<path d="M607.0000,111.0000 C850.0000,111.0000 1090.0000,150.0000 1215.0000,150.0000" fill="none" stroke="#275317" stroke-width="6" marker-end="url(#action-24)" data-arrow-kind="notched" data-arrow-size="24" data-flow-role="action" data-flow-geometry="bezier"/>
+<circle data-execution-step="2" cx="965" cy="133" r="19" fill="#000000" stroke="#ffffff" stroke-width="3"/>
+<text x="965" y="140.5" xml:space="preserve" font-size="23" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">2</text>
+<text x="1071" y="89" xml:space="preserve" font-size="24" fill="#000000" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">冷页且已备份</text>
+<rect x="1231" y="128" width="45" height="46" rx="1" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<rect x="1293" y="128" width="45" height="46" rx="1" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<text x="1293" y="215" xml:space="preserve" font-size="24" fill="#000000" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">+ 可用容量</text>
+<text x="582" y="260" xml:space="preserve" font-size="24" fill="#000000" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">仅传增量</text>
+<text data-semantic-role="transfer-action" x="583" y="295" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">D2H</text>
+<circle data-execution-step="1" cx="827" cy="250" r="19" fill="#000000" stroke="#ffffff" stroke-width="3"/>
+<text x="827" y="257.5" xml:space="preserve" font-size="23" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">1</text>
+<path d="M355 390 L355 383 L859 383 L859 390" fill="none" stroke="#275317" stroke-width="1.6"/>
+<text x="538.16796875" y="434" xml:space="preserve" font-size="28" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">c</text>
+<text x="551.59765625" y="419.44" xml:space="preserve" font-size="18.2" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">*</text>
+<text x="561.72265625" y="434" xml:space="preserve" font-size="28" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal"> : stable FULL</text>
+<polygon points="951.0,312.0 992.25,312.0 1001.25,334.125 992.25,356.25 951.0,356.25 942.0,334.125" fill="#ffd579" stroke="#000000" stroke-width="1.5"/>
+<text x="971.625" y="342.0" xml:space="preserve" font-size="24.75" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">S</text>
+<rect x="952.5" y="317.25" width="38.25" height="3.75" rx="1" fill="#a6caec" stroke="none" stroke-width="0"/>
+<text x="952.578125" y="434" xml:space="preserve" font-size="29" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">s</text>
+<text x="963.86328125" y="434" xml:space="preserve" font-size="29" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">(</text>
+<text x="973.51953125" y="434" xml:space="preserve" font-size="29" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="italic">c</text>
+<text x="987.390625" y="418.92" xml:space="preserve" font-size="18.85" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">*</text>
+<text x="997.765625" y="434" xml:space="preserve" font-size="29" fill="#000000" font-weight="400" text-anchor="start" font-family="Liberation Serif" font-style="normal">)</text>
+<text x="934" y="275" xml:space="preserve" font-size="23" fill="#000000" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">需要时匹配</text>
+<circle cx="86" cy="497" r="27" fill="#84e291" stroke="#000000" stroke-width="2"/>
+<text x="86" y="505.5" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">C1</text>
+<path d="M119 473.5 L125.65 483 L138 464" fill="none" stroke="#000000" stroke-width="2.8"/>
+<text x="135" y="506" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">RETURN</text>
+<path d="M260.0000,497.0000 L340.0000,497.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M260.0000,497.0000 L340.0000,497.0000" fill="none" stroke="#156082" stroke-width="4.8" marker-end="url(#execution-18)" data-arrow-kind="triangle" data-arrow-size="18" data-flow-role="execution" data-flow-geometry="straight"/>
+<rect data-page-tier="HBM" data-page-owner="#a6a6a6" data-page-missing="false" x="355" y="474" width="64" height="46" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="357" y="476" width="60" height="5" rx="1" fill="#a6a6a6" stroke="none" stroke-width="0"/>
+<text x="387.0" y="506.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p0</text>
+<rect data-page-tier="HBM" data-page-owner="#84e291" data-page-missing="false" x="443" y="474" width="64" height="46" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="445" y="476" width="60" height="5" rx="1" fill="#84e291" stroke="none" stroke-width="0"/>
+<text x="475.0" y="506.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p1</text>
+<rect data-page-tier="HBM" data-page-owner="#84e291" data-page-missing="false" x="531" y="474" width="64" height="46" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="533" y="476" width="60" height="5" rx="1" fill="#84e291" stroke="none" stroke-width="0"/>
+<text x="563.0" y="506.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p2</text>
+<rect data-page-tier="HBM" data-page-owner="#84e291" data-page-missing="false" x="619" y="474" width="64" height="46" rx="2" fill="#d7aeff" stroke="#000000" stroke-width="1.6"/>
+<rect x="621" y="476" width="60" height="5" rx="1" fill="#84e291" stroke="none" stroke-width="0"/>
+<text x="651.0" y="506.6" xml:space="preserve" font-size="24" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">p3</text>
+<path d="M376.0 537.8 L376.0 531.2 L384.4 531.2 L384.4 537.8" fill="none" stroke="#000000" stroke-width="2"/>
+<rect x="373" y="537.8" width="14.399999999999999" height="12.0" rx="2" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<circle cx="380.2" cy="542.6" r="1.2" fill="#000000" stroke="#000000" stroke-width="1"/>
+<path d="M443 544 L443 537 L683 537 L683 544" fill="none" stroke="#275317" stroke-width="1.6"/>
+<text x="566" y="574" xml:space="preserve" font-size="24" fill="#000000" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">无用私有后缀</text>
+<path d="M700.0000,497.0000 L1208.0000,497.0000" fill="none" stroke="#ffffff" stroke-width="8"/>
+<path d="M700.0000,497.0000 L1208.0000,497.0000" fill="none" stroke="#275317" stroke-width="6" marker-end="url(#action-24)" data-arrow-kind="notched" data-arrow-size="24" data-flow-role="action" data-flow-geometry="straight"/>
+<circle data-execution-step="3" cx="965" cy="497" r="19" fill="#000000" stroke="#ffffff" stroke-width="3"/>
+<text x="965" y="504.5" xml:space="preserve" font-size="23" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">3</text>
+<text x="948" y="530" xml:space="preserve" font-size="24" fill="#000000" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">直接释放，无须 D2H</text>
+<rect x="1231" y="474" width="41" height="46" rx="1" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<rect x="1286" y="474" width="41" height="46" rx="1" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<rect x="1341" y="474" width="41" height="46" rx="1" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<text x="1304" y="559" xml:space="preserve" font-size="24" fill="#000000" font-weight="400" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">+ 可用容量</text>
+<circle cx="86" cy="597" r="25" fill="#f6c6ad" stroke="#000000" stroke-width="2"/>
+<text x="86" y="605.5" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">C2</text>
+<path d="M136.5 588.1 L136.5 580.4 L146.3 580.4 L146.3 588.1" fill="none" stroke="#000000" stroke-width="2"/>
+<rect x="133" y="588.1" width="16.799999999999997" height="14.0" rx="2" fill="#ffffff" stroke="#000000" stroke-width="1.8"/>
+<circle cx="141.4" cy="593.7" r="1.4" fill="#000000" stroke="#000000" stroke-width="1"/>
+<text x="180" y="606" xml:space="preserve" font-size="25" fill="#000000" font-weight="400" text-anchor="start" font-family="Noto Sans CJK SC" font-style="normal">执行中：保留活跃 KV</text>
+<path d="M859 383 L1035 383 L1035 337" fill="none" stroke="#275317" stroke-width="4.8"/>
+<path d="M1007 337 L1446 337" fill="none" stroke="#275317" stroke-width="4.8"/>
+<path d="M1359 150 L1433 150 L1433 337" fill="none" stroke="#275317" stroke-width="4.8"/>
+<path d="M1393 497 L1433 497 L1433 337" fill="none" stroke="#275317" stroke-width="4.8"/>
+<path d="M1446.0000,337.0000 L1510.0000,337.0000" fill="none" stroke="#ffffff" stroke-width="6.8"/>
+<path d="M1446.0000,337.0000 L1510.0000,337.0000" fill="none" stroke="#275317" stroke-width="4.8" marker-end="url(#action-18)" data-arrow-kind="notched" data-arrow-size="18" data-flow-role="action" data-flow-geometry="straight"/>
+<circle data-execution-step="4" cx="1446" cy="337" r="19" fill="#000000" stroke="#ffffff" stroke-width="3"/>
+<text x="1446" y="344.5" xml:space="preserve" font-size="23" fill="#ffffff" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">4</text>
+<text x="1221" y="306" xml:space="preserve" font-size="25" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">恢复视图</text>
+<circle cx="1547" cy="337" r="28" fill="#d9d9d9" stroke="#000000" stroke-width="1.8"/>
+<text x="1547" y="343" xml:space="preserve" font-size="21" fill="#000000" font-weight="700" text-anchor="middle" font-family="Noto Sans CJK SC" font-style="normal">D3</text>
 </svg>

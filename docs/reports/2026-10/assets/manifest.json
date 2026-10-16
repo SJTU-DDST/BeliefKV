@@ -1,9 +1,10 @@
 {
-  "source_revision": "453525adb1297c8ac7267720df9a549360cb8c64",
+  "source_revision": "7d45a2cb1bfa6edb2dd311d73a4978b39bfd0a29",
   "architecture_date": "2026-10-15",
   "source_revision_scope": "latest development implementation, not every frozen experiment; source files and drawing generator are individually fingerprinted",
   "architecture_source_sha256": {
     "beliefkv/control/causal_graph.py": "2b5070822d2dba1cc994b94e40245430de18edd12b2fd1dceed76e9a88d3f657",
+    "beliefkv/predictor/child_report_phase.py": "a7e4d37d9c8e41530f1e09f4f765993a78e47f776c4b0b6774287b90d32e9ee7",
     "beliefkv/predictor/child_semantic_work.py": "9afa46e173e4b35c88e7c8f1137812e3535ec6649aa10846562845918bacefd0",
     "beliefkv/predictor/conditional_work.py": "a334ccef94def2ce2efee22d34843a47d9cf1dd1646a7c053e558a7434e52ae9",
     "beliefkv/predictor/project_tool_history.py": "b8bea4451e90ab04180acc8a72a043e091bb767d358a4133ec0da073aeaeee8b",
@@ -16,24 +17,322 @@
     "beliefkv/runtime/native_transfer_service.py": "7bd8f754f6aba88360afa33d2d33625f572142d8233feaa242d8060ff925525f",
     "patches/sglang-v0.5.20-beliefkv-staging.patch": "f7b1942b37d7c30998dadb29e512ecc6013f1eb02dcbb65b068e0c71c92bed81"
   },
-  "generator_sha256": "dfe156f6d77fc37c69a6ffec46839a40bf19561832e617e79d8873ab6592afa6",
+  "generator_sha256": "9f32e07febf5c6b5b8da62e3dd00c2dbd627a058311495f156e1cbe7582e043b",
   "drawing_helpers_sha256": "656ff099ec8617dde72d7b33122e136b073f5879bbecc81530b9d31917b6602b",
   "schematic_not_empirical_performance": true,
-  "visual_style": "compact control/data planes, native page pools and state ledgers, flat black outlines and semantic ownership colors",
+  "figure_designs": [
+    {
+      "stem": "01_system_overview",
+      "design": null,
+      "role": "shared closed loop"
+    },
+    {
+      "stem": "02_prediction_and_overlap",
+      "design": "D1",
+      "role": "execution demand"
+    },
+    {
+      "stem": "03_pages_and_capacity_handoff",
+      "design": "D2",
+      "role": "KV lifecycle"
+    },
+    {
+      "stem": "04_prefetch_and_admission",
+      "design": "D3",
+      "role": "prefetch/admission"
+    }
+  ],
+  "shared_example": {
+    "agents": [
+      "P",
+      "C1",
+      "C2"
+    ],
+    "checkpoint": "c* at p5; stable FULL p0..p5; D2 reclaims backed cold p2/p3",
+    "sequence": [
+      "P waits after SPAWN",
+      "C1 RETURN frees unused private capacity",
+      "C2 final report provides a forecast",
+      "D3 restores P using D2 view",
+      "C2 RETURN satisfies JOIN",
+      "P request arrives and consumes restored KV"
+    ],
+    "feedback": "actual service, progress and completion update the loop"
+  },
+  "presentation_scope": "one overview plus three compact algorithms with functional rounded groups; numbers annotate execution arrows; implementation details in slide notes",
+  "visual_style": "aligned rounded groups, distinct control/data planes and HBM/Host locations; independent owner stripes, numbered execution arrows and editable curves",
   "shadow_policy": "no offset decorative layers; explicit shape/text resets; package-wide theme, master, layout, shadow, glow, reflection and 3D effects removed",
-  "powerpoint_arrowheads": "editable native triangles oriented from the final SVG path segment",
+  "powerpoint_arrowheads": "editable triangle, notched and open heads; native cubic Bezier paths, rounded control routes, closed curved transfer ribbons and wide block arrows",
+  "color_policy": {
+    "families": [
+      "control blue",
+      "data green",
+      "HBM lavender",
+      "Host gold",
+      "neutral"
+    ],
+    "mechanism_header_colors": [
+      "#156082",
+      "#275317",
+      "#a6caec",
+      "#d9f2d0",
+      "#f6c6ad",
+      "#d9d9d9",
+      "#d9f2d0"
+    ],
+    "separate_hue_per_module": false,
+    "accent_contrast": "distinct location bodies with stable thin owner stripes",
+    "text_contrast_preserved": true,
+    "overview_memory_tiers": "HBM and Host share tier geometry and black outlines, with different background/page colors; blue control and green data planes; neutral prefix index",
+    "explicit_colors_restricted_to_reference_samples": true
+  },
+  "reference_palette": {
+    "source": "User-provided JANUS architecture reference image",
+    "source_sha256": "1e79b12002a6af7115cede03020ba741e4bb87c80a7c56a4ae304819baff91b5",
+    "source_size": [
+      1080,
+      617
+    ],
+    "coordinate_origin": "top-left; x increases rightward, y downward",
+    "method": "Exact RGB pixel samples; no interpolated, lightened or darkened colors",
+    "samples": [
+      {
+        "hex": "#FFFFFF",
+        "xy": [
+          3,
+          3
+        ],
+        "source_role": "white background"
+      },
+      {
+        "hex": "#000000",
+        "xy": [
+          60,
+          33
+        ],
+        "source_role": "black text"
+      },
+      {
+        "hex": "#156082",
+        "xy": [
+          29,
+          100
+        ],
+        "source_role": "control plane title"
+      },
+      {
+        "hex": "#DCEAF7",
+        "xy": [
+          40,
+          131
+        ],
+        "source_role": "control plane background"
+      },
+      {
+        "hex": "#A6CAEC",
+        "xy": [
+          44,
+          320
+        ],
+        "source_role": "control subpanel background"
+      },
+      {
+        "hex": "#215F9A",
+        "xy": [
+          222,
+          206
+        ],
+        "source_role": "blue execution arrow"
+      },
+      {
+        "hex": "#275317",
+        "xy": [
+          606,
+          30
+        ],
+        "source_role": "data plane title"
+      },
+      {
+        "hex": "#D9F2D0",
+        "xy": [
+          614,
+          60
+        ],
+        "source_role": "data plane background"
+      },
+      {
+        "hex": "#F6C6AD",
+        "xy": [
+          400,
+          158
+        ],
+        "source_role": "request scheduler background"
+      },
+      {
+        "hex": "#FBE3D6",
+        "xy": [
+          483,
+          377
+        ],
+        "source_role": "request table background"
+      },
+      {
+        "hex": "#F2AA84",
+        "xy": [
+          524,
+          362
+        ],
+        "source_role": "request table highlight"
+      },
+      {
+        "hex": "#D7AEFF",
+        "xy": [
+          701,
+          135
+        ],
+        "source_role": "HBM manager"
+      },
+      {
+        "hex": "#FFD579",
+        "xy": [
+          639,
+          170
+        ],
+        "source_role": "model and DRAM accents"
+      },
+      {
+        "hex": "#84E291",
+        "xy": [
+          640,
+          223
+        ],
+        "source_role": "green model"
+      },
+      {
+        "hex": "#F2F2F2",
+        "xy": [
+          463,
+          34
+        ],
+        "source_role": "neutral panel background"
+      },
+      {
+        "hex": "#D9D9D9",
+        "xy": [
+          1003,
+          112
+        ],
+        "source_role": "device panel background"
+      },
+      {
+        "hex": "#A6A6A6",
+        "xy": [
+          287,
+          47
+        ],
+        "source_role": "neutral arrow"
+      },
+      {
+        "hex": "#35505D",
+        "xy": [
+          34,
+          279
+        ],
+        "source_role": "control subpanel border"
+      }
+    ],
+    "beliefkv_mapping": {
+      "control_border": "#156082",
+      "control_background": "#DCEAF7",
+      "data_border": "#275317",
+      "data_background": "#D9F2D0",
+      "hbm_header_and_page": "#D7AEFF",
+      "hbm_background": "#F2F2F2",
+      "host_header_and_page": "#FFD579",
+      "host_background": "#FBE3D6",
+      "parent_marker": "#A6CAEC",
+      "child1_marker": "#84E291",
+      "child2_marker": "#F6C6AD"
+    }
+  },
+  "reference_palette_sha256": "1a9c376aa2093780b8df4b899898cde428ff4f0797e172f512918bebee515606",
+  "typography": {
+    "text_colors": [
+      "#000000",
+      "#ffffff"
+    ],
+    "page_title": "overview 37; compact mechanisms 31",
+    "section_title": "overview only, fitted to panel width",
+    "core_labels": "compact mechanisms 24\u201329",
+    "supporting_labels": "compact mechanisms 21\u201323",
+    "italics": "math variables and selected English condition labels",
+    "numbering": "black circles with white numbers placed on execution arrows"
+  },
+  "diagram_grammar": {
+    "entities": [
+      "agent",
+      "FULL page",
+      "Mamba state",
+      "pool",
+      "HiCache",
+      "DMA"
+    ],
+    "edge_actions": [
+      "D2H",
+      "H2D",
+      "reclaim",
+      "admit"
+    ],
+    "duration_bars": "arrow-ended timeline intervals, not component nodes",
+    "join_candidate": "forecast only; actual child RETURN still required",
+    "wait_completion_paths": {
+      "child": "async CPU phase/work, runtime rate hint, RCCG-bound parent",
+      "tool": "history and elapsed age, conditional end hint, owning agent",
+      "output": "candidate identity and timing for cache/admission planning"
+    },
+    "work_hint": "snapshot remaining work advanced using observed effective rate",
+    "data_dependencies": "native layer fences and required state; no global ACK barrier",
+    "state_selection": "match the safe-input checkpoint, not simply newest state"
+  },
   "palette": {
-    "ink": "#181818",
-    "gray_backplate": "#eeeeee",
-    "blue_section": "#a9cee8",
-    "green_section": "#9dc38b",
-    "control_plane": "#e8f1f8",
-    "data_plane": "#eaf2e7",
-    "parent": "#e9a6bf",
-    "child_1": "#b5d68b",
-    "child_2": "#f2bd7d",
-    "transfer_engine": "#f5d460",
-    "control_action": "#bf3335"
+    "reference": "Exact pixel colors from the user-provided JANUS image; semantic mapping is BeliefKV-specific",
+    "ink": "#000000",
+    "gray_backplate": "#f2f2f2",
+    "gray_panel": "#d9d9d9",
+    "control_header": "#156082",
+    "native_header": "#275317",
+    "blue_header": "#a6caec",
+    "blue_section": "#a6caec",
+    "green_section": "#84e291",
+    "control_plane": "#dceaf7",
+    "data_plane": "#d9f2d0",
+    "forecast": "#a6caec",
+    "admission": "#ffffff",
+    "planner": "#d9d9d9",
+    "prepare": "#ffffff",
+    "host": {
+      "edge": "#000000",
+      "header": "#ffd579",
+      "body": "#fbe3d6",
+      "page": "#ffd579"
+    },
+    "hbm": {
+      "edge": "#000000",
+      "header": "#d7aeff",
+      "body": "#f2f2f2",
+      "page": "#d7aeff"
+    },
+    "parent": "#a6caec",
+    "child_1": "#84e291",
+    "child_2": "#f6c6ad",
+    "transfer_engine": "#d9d9d9",
+    "transfer_band": "#f2aa84",
+    "transfer_arrow": "#35505d",
+    "execution_arrow": "#156082",
+    "control_action": "#275317",
+    "feedback_arrow": "#215f9a",
+    "lifecycle_header": "#d9f2d0",
+    "coordination_header": "#f6c6ad"
   },
   "math_typography": "editable Liberation Serif italic variables; positioned upright subscripts and superscripts; editable fraction bars; no rasterized equations",
   "renderer": "CairoSVG / Pillow / python-pptx",
@@ -52,8 +351,527 @@
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 128,
-      "editable_math_text_objects": 29
+      "text_objects": 95,
+      "editable_math_text_objects": 6,
+      "panel_styles": [
+        {
+          "title": "Dynamic agent workflow",
+          "header": "#d9d9d9",
+          "body": "#f2f2f2",
+          "border": "#a6a6a6",
+          "position": [
+            32,
+            124
+          ],
+          "size": [
+            1736,
+            152
+          ],
+          "radius": 8,
+          "role": null
+        },
+        {
+          "title": "BeliefKV control plane",
+          "header": "#156082",
+          "body": "#dceaf7",
+          "border": "#156082",
+          "position": [
+            32,
+            300
+          ],
+          "size": [
+            912,
+            804
+          ],
+          "radius": 8,
+          "role": "control_plane"
+        },
+        {
+          "title": "Native SGLang data plane",
+          "header": "#275317",
+          "body": "#d9f2d0",
+          "border": "#275317",
+          "position": [
+            968,
+            300
+          ],
+          "size": [
+            800,
+            804
+          ],
+          "radius": 8,
+          "role": "data_plane"
+        },
+        {
+          "title": "D1  Event + content forecasts",
+          "header": "#a6caec",
+          "body": "#ffffff",
+          "border": "#156082",
+          "position": [
+            48,
+            350
+          ],
+          "size": [
+            880,
+            292
+          ],
+          "radius": 8,
+          "role": null
+        },
+        {
+          "title": "D2  KV lifecycle",
+          "header": "#d9f2d0",
+          "body": "#ffffff",
+          "border": "#156082",
+          "position": [
+            48,
+            670
+          ],
+          "size": [
+            430,
+            434
+          ],
+          "radius": 8,
+          "role": null
+        },
+        {
+          "title": "D3  Prefetch + admission",
+          "header": "#f6c6ad",
+          "body": "#ffffff",
+          "border": "#156082",
+          "position": [
+            498,
+            670
+          ],
+          "size": [
+            430,
+            434
+          ],
+          "radius": 8,
+          "role": null
+        },
+        {
+          "title": "Prefix index",
+          "header": "#d9d9d9",
+          "body": "#f2f2f2",
+          "border": "#a6a6a6",
+          "position": [
+            986,
+            564
+          ],
+          "size": [
+            330,
+            146
+          ],
+          "radius": 8,
+          "role": null
+        },
+        {
+          "title": "Native admission",
+          "header": "#d9f2d0",
+          "body": "#ffffff",
+          "border": "#275317",
+          "position": [
+            986,
+            946
+          ],
+          "size": [
+            764,
+            148
+          ],
+          "radius": 8,
+          "role": null
+        }
+      ],
+      "flow_types": {
+        "execution": 15,
+        "feedback": 11,
+        "inactive": 1,
+        "action": 11,
+        "transfer_band": 3,
+        "transfer": 2
+      },
+      "flow_geometry": {
+        "straight": 23,
+        "rounded": 13,
+        "loop": 1,
+        "wide_block": 3,
+        "curved_ribbon": 2,
+        "bezier": 1
+      },
+      "transfer_entities": [
+        "DMA"
+      ],
+      "transfer_action_labels": 3,
+      "execution_steps": [],
+      "memory_tiers": [
+        {
+          "tier": "HBM",
+          "position": [
+            986,
+            350
+          ],
+          "size": [
+            764,
+            200
+          ],
+          "header": "#d7aeff",
+          "body": "#f2f2f2",
+          "border": "#000000",
+          "role": "peer_storage_tier"
+        },
+        {
+          "tier": "Host",
+          "position": [
+            986,
+            730
+          ],
+          "size": [
+            764,
+            200
+          ],
+          "header": "#ffd579",
+          "body": "#fbe3d6",
+          "border": "#000000",
+          "role": "peer_storage_tier"
+        }
+      ],
+      "storage_pages": [
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            144,
+            774
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            314,
+            774
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            177,
+            774
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            347,
+            774
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            210,
+            774
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            380,
+            774
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6a6a6",
+          "missing": false,
+          "position": [
+            140,
+            908
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            173,
+            908
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            206,
+            908
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            526,
+            1035
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            645,
+            1035
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            736,
+            1035
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            855,
+            1035
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6a6a6",
+          "missing": false,
+          "position": [
+            1125,
+            415
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1184,
+            415
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1243,
+            415
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1302,
+            415
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#f6c6ad",
+          "missing": false,
+          "position": [
+            1361,
+            415
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#f6c6ad",
+          "missing": false,
+          "position": [
+            1420,
+            415
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#f6c6ad",
+          "missing": false,
+          "position": [
+            1479,
+            415
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6a6a6",
+          "missing": false,
+          "position": [
+            1125,
+            795
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1184,
+            795
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1243,
+            795
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1302,
+            795
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1361,
+            795
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1420,
+            795
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#f6c6ad",
+          "missing": false,
+          "position": [
+            1479,
+            795
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#f6c6ad",
+          "missing": false,
+          "position": [
+            1538,
+            795
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1136,
+            1003.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1156,
+            1003.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1176,
+            1003.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            1136,
+            1035.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            1156,
+            1035.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            1176,
+            1035.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#d9d9d9",
+          "missing": true,
+          "position": [
+            1136,
+            1067.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#d9d9d9",
+          "missing": true,
+          "position": [
+            1156,
+            1067.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#d9d9d9",
+          "missing": true,
+          "position": [
+            1176,
+            1067.0
+          ]
+        }
+      ],
+      "layout": "overview"
     },
     {
       "stem": "01_system_overview_zh",
@@ -69,76 +887,1527 @@
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 128,
-      "editable_math_text_objects": 29
+      "text_objects": 95,
+      "editable_math_text_objects": 6,
+      "panel_styles": [
+        {
+          "title": "\u52a8\u6001 Agent \u5de5\u4f5c\u6d41",
+          "header": "#d9d9d9",
+          "body": "#f2f2f2",
+          "border": "#a6a6a6",
+          "position": [
+            32,
+            124
+          ],
+          "size": [
+            1736,
+            152
+          ],
+          "radius": 8,
+          "role": null
+        },
+        {
+          "title": "BeliefKV \u63a7\u5236\u9762",
+          "header": "#156082",
+          "body": "#dceaf7",
+          "border": "#156082",
+          "position": [
+            32,
+            300
+          ],
+          "size": [
+            912,
+            804
+          ],
+          "radius": 8,
+          "role": "control_plane"
+        },
+        {
+          "title": "\u539f\u751f SGLang \u6570\u636e\u9762",
+          "header": "#275317",
+          "body": "#d9f2d0",
+          "border": "#275317",
+          "position": [
+            968,
+            300
+          ],
+          "size": [
+            800,
+            804
+          ],
+          "radius": 8,
+          "role": "data_plane"
+        },
+        {
+          "title": "D1  \u4e8b\u4ef6\u4e0e\u5185\u5bb9\u9a71\u52a8\u7684\u9700\u6c42\u9884\u6d4b",
+          "header": "#a6caec",
+          "body": "#ffffff",
+          "border": "#156082",
+          "position": [
+            48,
+            350
+          ],
+          "size": [
+            880,
+            292
+          ],
+          "radius": 8,
+          "role": null
+        },
+        {
+          "title": "D2  KV \u751f\u547d\u5468\u671f",
+          "header": "#d9f2d0",
+          "body": "#ffffff",
+          "border": "#156082",
+          "position": [
+            48,
+            670
+          ],
+          "size": [
+            430,
+            434
+          ],
+          "radius": 8,
+          "role": null
+        },
+        {
+          "title": "D3  \u9884\u53d6\u4e0e\u51c6\u5165",
+          "header": "#f6c6ad",
+          "body": "#ffffff",
+          "border": "#156082",
+          "position": [
+            498,
+            670
+          ],
+          "size": [
+            430,
+            434
+          ],
+          "radius": 8,
+          "role": null
+        },
+        {
+          "title": "\u524d\u7f00\u7d22\u5f15",
+          "header": "#d9d9d9",
+          "body": "#f2f2f2",
+          "border": "#a6a6a6",
+          "position": [
+            986,
+            564
+          ],
+          "size": [
+            330,
+            146
+          ],
+          "radius": 8,
+          "role": null
+        },
+        {
+          "title": "\u539f\u751f\u51c6\u5165",
+          "header": "#d9f2d0",
+          "body": "#ffffff",
+          "border": "#275317",
+          "position": [
+            986,
+            946
+          ],
+          "size": [
+            764,
+            148
+          ],
+          "radius": 8,
+          "role": null
+        }
+      ],
+      "flow_types": {
+        "execution": 15,
+        "feedback": 11,
+        "inactive": 1,
+        "action": 11,
+        "transfer_band": 3,
+        "transfer": 2
+      },
+      "flow_geometry": {
+        "straight": 23,
+        "rounded": 13,
+        "loop": 1,
+        "wide_block": 3,
+        "curved_ribbon": 2,
+        "bezier": 1
+      },
+      "transfer_entities": [
+        "DMA"
+      ],
+      "transfer_action_labels": 3,
+      "execution_steps": [],
+      "memory_tiers": [
+        {
+          "tier": "HBM",
+          "position": [
+            986,
+            350
+          ],
+          "size": [
+            764,
+            200
+          ],
+          "header": "#d7aeff",
+          "body": "#f2f2f2",
+          "border": "#000000",
+          "role": "peer_storage_tier"
+        },
+        {
+          "tier": "Host",
+          "position": [
+            986,
+            730
+          ],
+          "size": [
+            764,
+            200
+          ],
+          "header": "#ffd579",
+          "body": "#fbe3d6",
+          "border": "#000000",
+          "role": "peer_storage_tier"
+        }
+      ],
+      "storage_pages": [
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            144,
+            774
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            314,
+            774
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            177,
+            774
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            347,
+            774
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            210,
+            774
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            380,
+            774
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6a6a6",
+          "missing": false,
+          "position": [
+            140,
+            908
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            173,
+            908
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            206,
+            908
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            526,
+            1035
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            645,
+            1035
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            736,
+            1035
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            855,
+            1035
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6a6a6",
+          "missing": false,
+          "position": [
+            1125,
+            415
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1184,
+            415
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1243,
+            415
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1302,
+            415
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#f6c6ad",
+          "missing": false,
+          "position": [
+            1361,
+            415
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#f6c6ad",
+          "missing": false,
+          "position": [
+            1420,
+            415
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#f6c6ad",
+          "missing": false,
+          "position": [
+            1479,
+            415
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6a6a6",
+          "missing": false,
+          "position": [
+            1125,
+            795
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1184,
+            795
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1243,
+            795
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1302,
+            795
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1361,
+            795
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1420,
+            795
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#f6c6ad",
+          "missing": false,
+          "position": [
+            1479,
+            795
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#f6c6ad",
+          "missing": false,
+          "position": [
+            1538,
+            795
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1136,
+            1003.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1156,
+            1003.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1176,
+            1003.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            1136,
+            1035.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            1156,
+            1035.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            1176,
+            1035.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#d9d9d9",
+          "missing": true,
+          "position": [
+            1136,
+            1067.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#d9d9d9",
+          "missing": true,
+          "position": [
+            1156,
+            1067.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#d9d9d9",
+          "missing": true,
+          "position": [
+            1176,
+            1067.0
+          ]
+        }
+      ],
+      "layout": "overview"
     },
     {
       "stem": "02_prediction_and_overlap_en",
       "language": "en",
-      "title": "Event and Content-driven Execution Demand",
+      "title": "Execution-demand Inference",
       "canvas": [
-        1800,
-        1200
+        1600,
+        660
       ],
       "png_pixels": [
         4320,
-        2880
+        1782
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 183,
-      "editable_math_text_objects": 116
+      "text_objects": 42,
+      "editable_math_text_objects": 15,
+      "panel_styles": [],
+      "flow_types": {
+        "execution": 7,
+        "inactive": 1,
+        "feedback": 7,
+        "action": 3
+      },
+      "flow_geometry": {
+        "straight": 8,
+        "bezier": 2,
+        "rounded": 8
+      },
+      "transfer_entities": [],
+      "transfer_action_labels": 0,
+      "execution_steps": [
+        {
+          "number": 1,
+          "position": [
+            710,
+            102
+          ],
+          "meaning": "Bind the single pending child to its waiting parent"
+        },
+        {
+          "number": 2,
+          "position": [
+            574,
+            303
+          ],
+          "meaning": "Infer final-phase confidence and conditional work remaining"
+        },
+        {
+          "number": 3,
+          "position": [
+            982,
+            303
+          ],
+          "meaning": "Advance remaining work using observed token progress and rate"
+        },
+        {
+          "number": 4,
+          "position": [
+            1520,
+            428
+          ],
+          "meaning": "Pass candidate identity and timing to prefetch/admission"
+        }
+      ],
+      "memory_tiers": [],
+      "storage_pages": [],
+      "layout": "compact_algorithm"
     },
     {
       "stem": "02_prediction_and_overlap_zh",
       "language": "zh",
-      "title": "Event and Content-driven Execution Demand",
+      "title": "Execution-demand Inference",
       "canvas": [
-        1800,
-        1200
+        1600,
+        660
       ],
       "png_pixels": [
         4320,
-        2880
+        1782
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 183,
-      "editable_math_text_objects": 116
+      "text_objects": 42,
+      "editable_math_text_objects": 15,
+      "panel_styles": [],
+      "flow_types": {
+        "execution": 7,
+        "inactive": 1,
+        "feedback": 7,
+        "action": 3
+      },
+      "flow_geometry": {
+        "straight": 8,
+        "bezier": 2,
+        "rounded": 8
+      },
+      "transfer_entities": [],
+      "transfer_action_labels": 0,
+      "execution_steps": [
+        {
+          "number": 1,
+          "position": [
+            710,
+            102
+          ],
+          "meaning": "Bind the single pending child to its waiting parent"
+        },
+        {
+          "number": 2,
+          "position": [
+            574,
+            303
+          ],
+          "meaning": "Infer final-phase confidence and conditional work remaining"
+        },
+        {
+          "number": 3,
+          "position": [
+            982,
+            303
+          ],
+          "meaning": "Advance remaining work using observed token progress and rate"
+        },
+        {
+          "number": 4,
+          "position": [
+            1520,
+            428
+          ],
+          "meaning": "Pass candidate identity and timing to prefetch/admission"
+        }
+      ],
+      "memory_tiers": [],
+      "storage_pages": [],
+      "layout": "compact_algorithm"
     },
     {
       "stem": "03_pages_and_capacity_handoff_en",
       "language": "en",
-      "title": "Workflow-aware KV Lifecycle and Admission",
+      "title": "Workflow-aware KV Lifecycle",
       "canvas": [
-        1800,
-        1200
+        1600,
+        640
       ],
       "png_pixels": [
         4320,
-        2880
+        1728
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 139,
-      "editable_math_text_objects": 39
+      "text_objects": 50,
+      "editable_math_text_objects": 8,
+      "panel_styles": [],
+      "flow_types": {
+        "transfer": 2,
+        "action": 3,
+        "execution": 1
+      },
+      "flow_geometry": {
+        "straight": 5,
+        "bezier": 1
+      },
+      "transfer_entities": [],
+      "transfer_action_labels": 1,
+      "execution_steps": [
+        {
+          "number": 2,
+          "position": [
+            965,
+            133
+          ],
+          "meaning": "Reclaim cold FULL pages only after a stable backup exists"
+        },
+        {
+          "number": 1,
+          "position": [
+            827,
+            250
+          ],
+          "meaning": "PREPARE_HOST copies missing stable FULL, not mutable Mamba"
+        },
+        {
+          "number": 3,
+          "position": [
+            965,
+            497
+          ],
+          "meaning": "Retire unreferenced terminal-child private KV without D2H"
+        },
+        {
+          "number": 4,
+          "position": [
+            1446,
+            337
+          ],
+          "meaning": "Expose checkpoint, missing pages, matching state and released capacity"
+        }
+      ],
+      "memory_tiers": [],
+      "storage_pages": [
+        {
+          "tier": "HBM",
+          "owner": "#a6a6a6",
+          "missing": false,
+          "position": [
+            355,
+            128
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6a6a6",
+          "missing": false,
+          "position": [
+            355,
+            313
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            443,
+            128
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            443,
+            313
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            531,
+            128
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            531,
+            313
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            619,
+            128
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            619,
+            313
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            707,
+            128
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": true,
+          "position": [
+            707,
+            313
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            795,
+            128
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": true,
+          "position": [
+            795,
+            313
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6a6a6",
+          "missing": false,
+          "position": [
+            355,
+            474
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            443,
+            474
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            531,
+            474
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            619,
+            474
+          ]
+        }
+      ],
+      "layout": "compact_algorithm"
     },
     {
       "stem": "03_pages_and_capacity_handoff_zh",
       "language": "zh",
-      "title": "Workflow-aware KV Lifecycle and Admission",
+      "title": "Workflow-aware KV Lifecycle",
       "canvas": [
-        1800,
-        1200
+        1600,
+        640
       ],
       "png_pixels": [
         4320,
-        2880
+        1728
       ],
       "paper_width_inches": 7.2,
       "dpi": 600,
-      "text_objects": 139,
-      "editable_math_text_objects": 39
+      "text_objects": 50,
+      "editable_math_text_objects": 8,
+      "panel_styles": [],
+      "flow_types": {
+        "transfer": 2,
+        "action": 3,
+        "execution": 1
+      },
+      "flow_geometry": {
+        "straight": 5,
+        "bezier": 1
+      },
+      "transfer_entities": [],
+      "transfer_action_labels": 1,
+      "execution_steps": [
+        {
+          "number": 2,
+          "position": [
+            965,
+            133
+          ],
+          "meaning": "Reclaim cold FULL pages only after a stable backup exists"
+        },
+        {
+          "number": 1,
+          "position": [
+            827,
+            250
+          ],
+          "meaning": "PREPARE_HOST copies missing stable FULL, not mutable Mamba"
+        },
+        {
+          "number": 3,
+          "position": [
+            965,
+            497
+          ],
+          "meaning": "Retire unreferenced terminal-child private KV without D2H"
+        },
+        {
+          "number": 4,
+          "position": [
+            1446,
+            337
+          ],
+          "meaning": "Expose checkpoint, missing pages, matching state and released capacity"
+        }
+      ],
+      "memory_tiers": [],
+      "storage_pages": [
+        {
+          "tier": "HBM",
+          "owner": "#a6a6a6",
+          "missing": false,
+          "position": [
+            355,
+            128
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6a6a6",
+          "missing": false,
+          "position": [
+            355,
+            313
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            443,
+            128
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            443,
+            313
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            531,
+            128
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            531,
+            313
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            619,
+            128
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            619,
+            313
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            707,
+            128
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": true,
+          "position": [
+            707,
+            313
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            795,
+            128
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": true,
+          "position": [
+            795,
+            313
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6a6a6",
+          "missing": false,
+          "position": [
+            355,
+            474
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            443,
+            474
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            531,
+            474
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            619,
+            474
+          ]
+        }
+      ],
+      "layout": "compact_algorithm"
+    },
+    {
+      "stem": "04_prefetch_and_admission_en",
+      "language": "en",
+      "title": "Prefetch and Admission Coordination",
+      "canvas": [
+        1600,
+        620
+      ],
+      "png_pixels": [
+        4320,
+        1674
+      ],
+      "paper_width_inches": 7.2,
+      "dpi": 600,
+      "text_objects": 47,
+      "editable_math_text_objects": 8,
+      "panel_styles": [],
+      "flow_types": {
+        "feedback": 2,
+        "transfer": 1,
+        "action": 1,
+        "execution": 1
+      },
+      "flow_geometry": {
+        "rounded": 3,
+        "straight": 2
+      },
+      "transfer_entities": [],
+      "transfer_action_labels": 1,
+      "execution_steps": [
+        {
+          "number": 1,
+          "position": [
+            576,
+            166
+          ],
+          "meaning": "Use the rolling completion hint to choose the transfer start"
+        },
+        {
+          "number": 3,
+          "position": [
+            825,
+            300
+          ],
+          "meaning": "Restore only the missing FULL pages and required matching state"
+        },
+        {
+          "number": 2,
+          "position": [
+            600,
+            405
+          ],
+          "meaning": "Select missing pages within per-pool capacity and growth reserve"
+        },
+        {
+          "number": 4,
+          "position": [
+            1383,
+            443
+          ],
+          "meaning": "Admit restored runnable work under native data and slot dependencies"
+        }
+      ],
+      "memory_tiers": [],
+      "storage_pages": [
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            259,
+            277
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            345,
+            277
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6a6a6",
+          "missing": false,
+          "position": [
+            1112,
+            278
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1184,
+            278
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1256,
+            278
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1328,
+            278
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1400,
+            278
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1472,
+            278
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1254,
+            432.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1274,
+            432.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1294,
+            432.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            1254,
+            476.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            1274,
+            476.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            1294,
+            476.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#d9d9d9",
+          "missing": true,
+          "position": [
+            1254,
+            520.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#d9d9d9",
+          "missing": true,
+          "position": [
+            1274,
+            520.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#d9d9d9",
+          "missing": true,
+          "position": [
+            1294,
+            520.0
+          ]
+        }
+      ],
+      "layout": "compact_algorithm"
+    },
+    {
+      "stem": "04_prefetch_and_admission_zh",
+      "language": "zh",
+      "title": "Prefetch and Admission Coordination",
+      "canvas": [
+        1600,
+        620
+      ],
+      "png_pixels": [
+        4320,
+        1674
+      ],
+      "paper_width_inches": 7.2,
+      "dpi": 600,
+      "text_objects": 47,
+      "editable_math_text_objects": 8,
+      "panel_styles": [],
+      "flow_types": {
+        "feedback": 2,
+        "transfer": 1,
+        "action": 1,
+        "execution": 1
+      },
+      "flow_geometry": {
+        "rounded": 3,
+        "straight": 2
+      },
+      "transfer_entities": [],
+      "transfer_action_labels": 1,
+      "execution_steps": [
+        {
+          "number": 1,
+          "position": [
+            576,
+            166
+          ],
+          "meaning": "Use the rolling completion hint to choose the transfer start"
+        },
+        {
+          "number": 3,
+          "position": [
+            825,
+            300
+          ],
+          "meaning": "Restore only the missing FULL pages and required matching state"
+        },
+        {
+          "number": 2,
+          "position": [
+            600,
+            405
+          ],
+          "meaning": "Select missing pages within per-pool capacity and growth reserve"
+        },
+        {
+          "number": 4,
+          "position": [
+            1383,
+            443
+          ],
+          "meaning": "Admit restored runnable work under native data and slot dependencies"
+        }
+      ],
+      "memory_tiers": [],
+      "storage_pages": [
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            259,
+            277
+          ]
+        },
+        {
+          "tier": "Host",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            345,
+            277
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6a6a6",
+          "missing": false,
+          "position": [
+            1112,
+            278
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1184,
+            278
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1256,
+            278
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1328,
+            278
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1400,
+            278
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1472,
+            278
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1254,
+            432.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1274,
+            432.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#a6caec",
+          "missing": false,
+          "position": [
+            1294,
+            432.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            1254,
+            476.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            1274,
+            476.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#84e291",
+          "missing": false,
+          "position": [
+            1294,
+            476.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#d9d9d9",
+          "missing": true,
+          "position": [
+            1254,
+            520.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#d9d9d9",
+          "missing": true,
+          "position": [
+            1274,
+            520.0
+          ]
+        },
+        {
+          "tier": "HBM",
+          "owner": "#d9d9d9",
+          "missing": true,
+          "position": [
+            1294,
+            520.0
+          ]
+        }
+      ],
+      "layout": "compact_algorithm"
     }
   ],
   "powerpoints": [
@@ -147,18 +2416,23 @@
       "language": "zh",
       "slides": [
         {
-          "objects": 499,
-          "text_objects": 128,
+          "objects": 473,
+          "text_objects": 95,
           "picture_objects": 0
         },
         {
-          "objects": 436,
-          "text_objects": 183,
+          "objects": 145,
+          "text_objects": 42,
           "picture_objects": 0
         },
         {
-          "objects": 425,
-          "text_objects": 139,
+          "objects": 136,
+          "text_objects": 50,
+          "picture_objects": 0
+        },
+        {
+          "objects": 164,
+          "text_objects": 47,
           "picture_objects": 0
         }
       ]
@@ -168,20 +2442,123 @@
       "language": "en",
       "slides": [
         {
-          "objects": 499,
-          "text_objects": 128,
+          "objects": 473,
+          "text_objects": 95,
           "picture_objects": 0
         },
         {
-          "objects": 436,
-          "text_objects": 183,
+          "objects": 145,
+          "text_objects": 42,
           "picture_objects": 0
         },
         {
-          "objects": 425,
-          "text_objects": 139,
+          "objects": 136,
+          "text_objects": 50,
+          "picture_objects": 0
+        },
+        {
+          "objects": 164,
+          "text_objects": 47,
           "picture_objects": 0
         }
+      ]
+    }
+  ],
+  "standalone_powerpoints": [
+    {
+      "file": "02_prediction_and_overlap_en_editable.pptx",
+      "language": "en",
+      "slides": [
+        {
+          "objects": 145,
+          "text_objects": 42,
+          "picture_objects": 0
+        }
+      ],
+      "figure": "02_prediction_and_overlap_en",
+      "canvas": [
+        1600,
+        660
+      ]
+    },
+    {
+      "file": "02_prediction_and_overlap_zh_editable.pptx",
+      "language": "zh",
+      "slides": [
+        {
+          "objects": 145,
+          "text_objects": 42,
+          "picture_objects": 0
+        }
+      ],
+      "figure": "02_prediction_and_overlap_zh",
+      "canvas": [
+        1600,
+        660
+      ]
+    },
+    {
+      "file": "03_pages_and_capacity_handoff_en_editable.pptx",
+      "language": "en",
+      "slides": [
+        {
+          "objects": 136,
+          "text_objects": 50,
+          "picture_objects": 0
+        }
+      ],
+      "figure": "03_pages_and_capacity_handoff_en",
+      "canvas": [
+        1600,
+        640
+      ]
+    },
+    {
+      "file": "03_pages_and_capacity_handoff_zh_editable.pptx",
+      "language": "zh",
+      "slides": [
+        {
+          "objects": 136,
+          "text_objects": 50,
+          "picture_objects": 0
+        }
+      ],
+      "figure": "03_pages_and_capacity_handoff_zh",
+      "canvas": [
+        1600,
+        640
+      ]
+    },
+    {
+      "file": "04_prefetch_and_admission_en_editable.pptx",
+      "language": "en",
+      "slides": [
+        {
+          "objects": 164,
+          "text_objects": 47,
+          "picture_objects": 0
+        }
+      ],
+      "figure": "04_prefetch_and_admission_en",
+      "canvas": [
+        1600,
+        620
+      ]
+    },
+    {
+      "file": "04_prefetch_and_admission_zh_editable.pptx",
+      "language": "zh",
+      "slides": [
+        {
+          "objects": 164,
+          "text_objects": 47,
+          "picture_objects": 0
+        }
+      ],
+      "figure": "04_prefetch_and_admission_zh",
+      "canvas": [
+        1600,
+        620
       ]
     }
   ]
