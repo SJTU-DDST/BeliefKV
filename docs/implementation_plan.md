@@ -67,6 +67,22 @@ subset does not match token demand,tool time or quality and proves no causal
 slowdown. Keep all outcomes. Distinguish ordering,exposed restore waits,
 KV lifecycle and realized execution demand;lower mean need not worsen tails.
 
+V1052/V1053 use the complete V68 lifecycle/offload evidence. Early verified
+FULL reuse is65/34 JOIN/tool events,1.649/3.185GB,0.081%/0.156% of same-run
+native FULL H2D;combined0.236% is byte scale,not speedup or replacement.
+PREPARE has1163 node ACKs/12.017GB FULL,337 associated with later restore,
+28.98%;unassociated copies are not automatically waste. Tool demotion has
+2246 node events/176 tools,cumulative18.871/28.782GB FULL/Mamba;
+first actions remain open at least1s for162/176 tools,92.05%,not benefit.
+No same-code module ablation identifies separate or combined net speedup.
+V58's final single-workflow tail is6351.045s,43.87% of collection,GPU0.332%.
+The full-run83.64% completion-throughput difference is tail-confounded.
+Both arms end132 workflows in the first5400s;outputs differ+1.54%.
+Terminal counts are not independently correct completions. All108 first-wave
+3600s restricted time differs-2.75%,90/89 natural completions;versions,
+demand and quality remain limitations. Keep full outcomes and fixed-window/
+all-identity restricted views;do not silently remove the tail or sum module gains.
+
 V1037 exploratory terminal samples mixed context-epoch advancement with
 workflow completion. Correct V1038 requires ROOT RETURN and WORKFLOW_END:
 117 roots observed at least10s after end sum19.07/19.90GB device FULL/Mamba
