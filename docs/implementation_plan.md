@@ -35,6 +35,39 @@ Control exclusive wall is15.321/30.649/27.014s. New earlier-resident-quota
 inspection/order/admission counters remain zero;investigate activation
 without crediting legacy resident-priority events to the new quota.
 
+The a4108c8 follow-up permits a missing/expired aged-head discovery hint only
+on the existing reduced-quota/native-frontier path. A candidate still needs
+a fresh warm hint and two actual native reentry checks;compare missing FULL+
+necessary-Mamba bytes,next-input work and causal rank before reordering.
+Keep ordinary turns,native capacity/dependencies and the old four-turn path.
+V1054/V1056 each pass361 checks;V1057 retains759 unchanged identities and
+replaces the two modules with361 frozen passes,1120 unique total,not1120 fresh.
+V1055 retains real native-matcher CPU costs:0.121-0.126ms at32k/eight nodes,
+0.347-0.351ms at98k/24 nodes and3.36-3.45ms at1024 nodes. No fresh candidate
+adds no native reads but7-11us;input mismatch still pays two checks.
+V1058 registers frozen0bcf78f as V71_aged_head,supervisor610069/
+start_ticks629926832,ops/v71_aged_head_20261015.state.json. Require full156
+V70 summary,exit0,healthy migration,old process exit and two free-resource
+observations. Preserve V70;no GPU benefit or later quality is yet verified.
+
+V1062 joins all five complete V70 windows to sampled native queue metrics.
+At3600-3900s,request steps are19.74% lower;mean queue38.43/43.26 and running
+40.96/44.21. At4800-5100s,steps are1.43% lower and empty-queue/below48-running
+time fractions are96.29%/92.96%,mean queue0.051/0.122. Inspect tool/client
+supply there. Sample holding and a6.99s maximum gap in the fourth window
+limit attribution;below48 with queued requests can reflect prefill,capacity
+or dependencies. Control self-wall24.598/14.875s is not removable JCT.
+
+Broaden the search under the same end-to-end goal. Prioritize a native service
+path with sparse event-driven workflow information,whole-workflow bounded
+service/cache locality,terminal private-KV release and tool/JOIN-to-submit
+supply. Separate backlogged and empty-queue windows before choosing a change.
+Current resident/final-report admission is not full workflow attained-service
+scheduling;the old workflow_fairness policy is not wired into this native path.
+Keep prefetch as an auxiliary with real Host-only opportunities. Do not retain
+a feature at the expense of quality,fairness,tails or recomputation,and keep
+the workload,budgets,no-new-guard and no-new-PrefillAdder constraints.
+
 V1049 seals the V70 first-wave prefix:53/34 early next-request FULL reuse
 JOIN/tool events,1.074/2.485GB,13/one unknown completion boundaries.
 Last-ACK-to-service P90 is15.927/96.278s. V1050 partitions81/44 valid
@@ -54,8 +87,17 @@ mean2156.276/2302.910s,but P95 is5603.914/4999.253s and worsens.
 The143 explicitly eligible pairs yield1946.816/2199.727s mean,-11.50%,
 76 faster/67 slower. Keep the eight additional pairs and all156 outcomes;
 all eight exclusions have guard_intervened_completion,five also missing
-semantic completion. Historical versions,realized demand,native tool tails
-and pending quality prevent causal prefetch or stable acceptance claims.
+semantic completion. Historical versions,realized demand and native tool tails
+still prevent causal prefetch or stable acceptance claims.
+
+V1063 now verifies all156 official V68 task outcomes against frozen patches,
+source results,individual reports and CPU container receipts:93 resolved/
+63 unresolved,no empty patches or infrastructure errors. V58/V906 remains
+90 resolved/62 unresolved/four empty. Paired74 both resolved,19 current-only,
+16 native-only and47 neither. Preserve the original incomplete/JCT-ineligible
+status of resolved django11206. V68 quality is no longer awaiting report audit;
+this single historical comparison does not establish noninferiority,causal
+policy gains or V70/V71 quality. Retain the one-CPU/8GiB resource overlap.
 
 V1051 audits realized demand in those same cohorts. The151 pairs use
 35768/40988 LLM requests and35386/40666 tool calls,-12.74%/-12.98%.
