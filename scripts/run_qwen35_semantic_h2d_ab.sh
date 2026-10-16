@@ -6,6 +6,8 @@ PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 ROOT_COUNT="${ROOT_COUNT:-108}"
 ARRIVAL_BATCH_SIZE="${ARRIVAL_BATCH_SIZE:-0}"
 ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
+ARRIVAL_RATE_PER_SECOND="${ARRIVAL_RATE_PER_SECOND:-0}"
+ARRIVAL_SEED="${ARRIVAL_SEED:-21}"
 HOST_SPLIT="${HOST_SPLIT:-80:20}"
 HOST_NUMA_MEMORY_POLICY="${HOST_NUMA_MEMORY_POLICY:-preferred}"
 PORT="${PORT:-18454}"
@@ -29,6 +31,7 @@ FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_2to4}"
 NATIVE_REFERENCE_RUN="${NATIVE_REFERENCE_RUN:-}"
 NATIVE_REFERENCE_TIMELINE="${NATIVE_REFERENCE_TIMELINE:-}"
 NATIVE_REFERENCE_CACHE="${NATIVE_REFERENCE_CACHE:-}"
+poisson_arrivals="$("$PYTHON" -c 'import math,sys; rate=float(sys.argv[1]); assert math.isfinite(rate) and rate >= 0, "arrival rate must be finite and non-negative"; print(int(rate > 0))' "$ARRIVAL_RATE_PER_SECOND")"
 reference_args=()
 reference_comparison_args=()
 if [[ -n "$NATIVE_REFERENCE_RUN" ]]; then
@@ -51,7 +54,9 @@ if [[ $# -ne 0 || ! -f "$ARTIFACT" ]] \
   || { [[ "$RESUME_PENDING" == "1" ]] && [[ ! -f "$RUN_ROOT/ab_plan.json" ]]; } \
   || [[ ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] || (( ROOT_COUNT > 156 )) \
   || [[ ! "$ARRIVAL_BATCH_SIZE" =~ ^[0-9]+$ || ! "$ARRIVAL_BATCH_INTERVAL_MS" =~ ^[0-9]+$ ]] \
-  || { (( ROOT_COUNT > 108 )) && [[ "$ARRIVAL_BATCH_SIZE" != "108" || "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]]; } \
+  || { [[ "$poisson_arrivals" == "0" ]] && (( ROOT_COUNT > 108 )) && [[ "$ARRIVAL_BATCH_SIZE" != "108" || "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]]; } \
+  || { [[ "$poisson_arrivals" == "1" ]] && [[ "$ARRIVAL_BATCH_SIZE" != "0" || "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; } \
+  || [[ ! "$ARRIVAL_SEED" =~ ^[0-9]+$ ]] \
   || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ || ! "$REPETITION_ID" =~ ^[0-9]+$ ]] \
   || [[ "$EXECUTION_HANDOFF" != "0" && "$EXECUTION_HANDOFF" != "1" ]] \
   || [[ "$ARM_ORDER" != "predictive_h2d reactive" && "$ARM_ORDER" != "reactive predictive_h2d" && "$ARM_ORDER" != "predictive_h2d" && "$ARM_ORDER" != "native predictive_h2d" && "$ARM_ORDER" != "predictive_h2d native" ]]; then
@@ -64,6 +69,7 @@ if [[ "$RESUME_PENDING" == "0" ]]; then
 "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
   --run-root "$RUN_ROOT" --initialize --root-count "$ROOT_COUNT" \
   --arrival-batch-size "$ARRIVAL_BATCH_SIZE" --arrival-batch-interval-ms "$ARRIVAL_BATCH_INTERVAL_MS" \
+  --arrival-rate-per-second "$ARRIVAL_RATE_PER_SECOND" --arrival-seed "$ARRIVAL_SEED" \
   --arm-order "$ARM_ORDER" --semantic-artifact "$ARTIFACT" \
   --activation-wall-clock-seconds "$ACTIVATION_WALL_CLOCK_SECONDS" \
   --prepare-host "$PREPARE_HOST" --execution-handoff "$EXECUTION_HANDOFF" \
@@ -77,6 +83,10 @@ if [[ "$RESUME_PENDING" == "0" ]]; then
   --sampling-seed "$SAMPLING_SEED" --repetition-id "$REPETITION_ID" \
   "${reference_args[@]}" \
   --workload-manifest "${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
+fi
+arrival_schedule=""
+if [[ "$poisson_arrivals" == "1" ]]; then
+  arrival_schedule="$RUN_ROOT/ab_plan.json"
 fi
 for arm in $ARM_ORDER; do
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
@@ -100,6 +110,7 @@ for arm in $ARM_ORDER; do
   set +e
   NATIVE_POLICY_BASELINE="$baseline" AB_MODE="$mode" ROOT_COUNT="$ROOT_COUNT" PORT="$PORT" SAMPLING_SEED="$SAMPLING_SEED" \
     ARRIVAL_BATCH_SIZE="$ARRIVAL_BATCH_SIZE" ARRIVAL_BATCH_INTERVAL_MS="$ARRIVAL_BATCH_INTERVAL_MS" \
+    WORKFLOW_ARRIVAL_SCHEDULE="$arrival_schedule" \
     ACTIVATION_WALL_CLOCK_SECONDS="$ACTIVATION_WALL_CLOCK_SECONDS" \
     PREPARE_HOST="$PREPARE_HOST" EXECUTION_HANDOFF="$EXECUTION_HANDOFF" \
     H2D_SEED_ARTIFACT="$H2D_SEED_ARTIFACT" \

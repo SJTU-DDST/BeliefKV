@@ -329,6 +329,52 @@ def test_native_pair_freezes_disjoint_108_plus_48_fixed_arrivals(tmp_path, monke
     assert plan["formal_repetition_order"] == ["predictive_h2d native"]
 
 
+def test_poisson_pair_freezes_one_exact_schedule_without_reordering_tasks(tmp_path, monkeypatch):
+    from beliefkv.experiments.arrival_schedule import (
+        arrival_schedule_digest, build_poisson_workflow_arrivals,
+    )
+    artifact = tmp_path / "model.json"
+    artifact.write_text("{}")
+    manifest = tmp_path / "workload.json"
+    ids = ["z-task", "a-task", "last-task"]
+    manifest.write_text(json.dumps({"workloads": [
+        {"instance_id": instance} for instance in ids
+    ]}))
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--initialize",
+        "--root-count", "3", "--arm-order", "predictive_h2d native",
+        "--semantic-artifact", str(artifact), "--workload-manifest", str(manifest),
+        "--arrival-rate-per-second", str(1 / 15), "--arrival-seed", "21",
+    ])
+    main()
+    plan = json.loads((tmp_path / "ab_plan.json").read_text())
+    assert plan["workflow_arrival_mode"] == "poisson"
+    assert plan["workflow_arrival_batch_size"] == 0
+    assert plan["workflow_arrival_batch_interval_ms"] == 0
+    assert plan["workload_instance_ids_in_manifest_order"] == ids
+    assert plan["arrival_schedule"] == [
+        {"instance_id": instance, "offset_seconds": arrival.scheduled_offset_seconds}
+        for instance, arrival in zip(
+            ids, build_poisson_workflow_arrivals(3, rate_per_second=1 / 15, seed=21),
+        )
+    ]
+    assert plan["arrival_schedule_sha256"] == arrival_schedule_digest(plan["arrival_schedule"])
+    monkeypatch.setattr(
+        "scripts.summarize_semantic_h2d_ab.verify_frozen_execution_source",
+        lambda *_: {"execution_source_unchanged": True},
+    )
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--verify-frozen-plan",
+    ])
+    main()
+    verification = json.loads((tmp_path / "frozen_execution_verification.json").read_text())
+    assert verification["frozen_arrival_schedule_verified"]
+    plan["arrival_schedule"][1]["offset_seconds"] += .1
+    (tmp_path / "ab_plan.json").write_text(json.dumps(plan))
+    with pytest.raises(ValueError, match="digest changed"):
+        main()
+
+
 def test_native_baseline_labels_are_not_reported_as_reactive():
     demand = {
         "llm_request_count": 1, "tool_call_count": 1,

@@ -13,7 +13,7 @@ for development and matched repeated formal controls. Keep source/engine frozen.
 V72 cold-started at2026-10-16 00:27:06 PDT,port18476,on independent engine
 tree791dd37f. V1080/V1081 bind registration/launch;state is
 ops/v72_workflow_work_20261016.state.json. Keep the agreed156-workflow
-108+48 arrivals and budgets;no new native run is required for development.
+108+48 arrivals and budgets for the frozen V72 only.
 V1082/V1083 verify actual GPU service,source/settings,identical pools and
 NUMA. The00:31 PDT snapshot has108 work accounts,47719 charged output
 tokens,84 work-induced head changes and83 admissions,with healthy migration
@@ -24,6 +24,25 @@ run_batch41.563/35.072ms and return-to-result11.087/6.013ms. Keep this
 negative evidence;inspect later fixed windows and full quality/JCT outcomes.
 The600-900s window yields330045/386707 steps,-14.65%,and36.832s control
 self-wall;actual work-priority activation has not established a service gain.
+
+The next development workload uses one Poisson root-arrival process:
+156 unchanged tasks in the same order,rate1/15 roots/s,independent seed21.
+Freeze the exact table and digest in ab_plan;both arms read it,with no
+completion-driven replenishment or hidden client-worker backlog. Log scheduled,
+submitted and actual worker-start offsets. V1091 passes837 fresh CPU checks;
+V1092 adds10 disjoint harness-config checks. The initial80 are included in837.
+V1093 retimed historical durations predict116/126 peak roots and last arrival
+at2477.769s;this does not prove real cache pressure or a performance gain.
+Run predictive first,then one same-table native baseline:old V58 has different
+external arrivals and cannot measure this workload's native-relative speedup.
+No task reordering,rate sweep or repetitions during this development iteration.
+Wait for frozen V72 to finish and owned resources to exit before the next run.
+Observe actual FULL/Mamba headroom,Host usage,native H2D,cold reclaim,recomputation
+and first-service stalls;retain all failures and full task-quality denominators.
+Keep native per-layer H2D/prefill overlap and its Mamba state-COW dependencies;
+do not add a second pipeline engine. Page/state capacity is reserved before DMA.
+Owner-grouped cold-candidate maintenance and sparse ordered publication pass
+CPU equivalence;whole-dispatch CPU changes remain about0.1%-9.3%,not GPU/JCT.
 
 V1084 audits external arrivals:V72 and historical V58 share the root
 timestamps/task order,but the first108 tasks span seven repositories with47
@@ -37,8 +56,9 @@ Repeating one fixed mapping does not remove mixture/time confounding.
 Report warmup,measurement and drain/tool tails explicitly,all failures and
 quality,and repeated matched uncertainty. Real LLM request timestamps may
 test arrival shape but cannot be labeled real multi-agent workflow traces.
-Current V72 and budgets remain frozen;new arrival modes are not implemented
-or run. This updates formal-evaluation requirements,not the live workload.
+Current V72 and budgets remain frozen;Poisson is now implemented and CPU-checked,
+with GPU validation scheduled for the next development pair. Broader formal
+evaluation remains pending.
 
 V71 failed at00:12:53 PDT with loading_check KeyError:364,driver exit1.
 V1075 preserves83 completed,13 connection-interruption errors and60 missing

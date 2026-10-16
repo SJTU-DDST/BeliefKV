@@ -8,6 +8,7 @@ ROOT_COUNT="${ROOT_COUNT:-108}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 ARRIVAL_BATCH_SIZE="${ARRIVAL_BATCH_SIZE:-0}"
 ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
+WORKFLOW_ARRIVAL_SCHEDULE="${WORKFLOW_ARRIVAL_SCHEDULE:-}"
 HOST_SPLIT="${HOST_SPLIT:-80:20}"
 HOST_NUMA_MEMORY_POLICY="${HOST_NUMA_MEMORY_POLICY:-preferred}"
 HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-200}"
@@ -60,9 +61,11 @@ trap 'exit 143' TERM
 if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || (( ROOT_COUNT > 156 )) \
   || [[ ! "$ARRIVAL_BATCH_SIZE" =~ ^[0-9]+$ || ! "$ARRIVAL_BATCH_INTERVAL_MS" =~ ^[0-9]+$ ]] \
-  || { (( ROOT_COUNT > 108 )) && { [[ "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]] \
+  || { [[ -z "$WORKFLOW_ARRIVAL_SCHEDULE" ]] && (( ROOT_COUNT > 108 )) && { [[ "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]] \
     || { [[ "$ARRIVAL_BATCH_SIZE" != "64" && "$ARRIVAL_BATCH_SIZE" != "108" ]]; }; }; } \
-  || { (( ROOT_COUNT > 128 )) && [[ "$ARRIVAL_BATCH_SIZE" != "108" ]]; } \
+  || { [[ -z "$WORKFLOW_ARRIVAL_SCHEDULE" ]] && (( ROOT_COUNT > 128 )) && [[ "$ARRIVAL_BATCH_SIZE" != "108" ]]; } \
+  || { [[ -n "$WORKFLOW_ARRIVAL_SCHEDULE" ]] && { [[ ! -f "$WORKFLOW_ARRIVAL_SCHEDULE" ]] \
+    || [[ "$ARRIVAL_BATCH_SIZE" != "0" || "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; }; } \
   || { (( ARRIVAL_BATCH_SIZE > 108 )); } \
   || { (( ARRIVAL_BATCH_SIZE > 0 )) && (( ARRIVAL_BATCH_INTERVAL_MS == 0 )); } \
   || { [[ "$ARRIVAL_BATCH_SIZE" == "0" ]] && [[ "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; } \
@@ -95,6 +98,9 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   exit 2
 fi
 "$PYTHON" -c 'import json,sys; rows=json.load(open(sys.argv[1]))["workloads"]; count=int(sys.argv[2]); assert count <= len(rows), "requested roots exceed manifest"; assert len({row["instance_id"] for row in rows[:count]}) == count, "duplicate workload"' "$MANIFEST" "$ROOT_COUNT"
+if [[ -n "$WORKFLOW_ARRIVAL_SCHEDULE" ]]; then
+  PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c 'import json,sys; from pathlib import Path; from beliefkv.experiments.arrival_schedule import load_workflow_arrivals; rows=json.load(open(sys.argv[1]))["workloads"][:int(sys.argv[2])]; load_workflow_arrivals(Path(sys.argv[3]), instance_ids=[row["instance_id"] for row in rows])' "$MANIFEST" "$ROOT_COUNT" "$WORKFLOW_ARRIVAL_SCHEDULE"
+fi
 if [[ -e /tmp/beliefkv-experiments.paused ]] \
   || curl --silent --max-time 2 --fail "$BASE_URL/health" >/dev/null \
   || [[ "$(df -Pk "$ROOT" | awk 'NR == 2 {print $4}')" -lt 20971520 ]]; then
@@ -215,6 +221,9 @@ curl --silent --show-error --max-time 10 --fail --request POST \
 
 set +e
 client_flags=()
+if [[ -n "$WORKFLOW_ARRIVAL_SCHEDULE" ]]; then
+  client_flags+=(--workflow-arrival-schedule "$WORKFLOW_ARRIVAL_SCHEDULE")
+fi
 if [[ "$CHILD_FINAL_REPORT_SHADOW" == "1" ]]; then
   client_flags+=(--child-final-report-shadow)
 fi

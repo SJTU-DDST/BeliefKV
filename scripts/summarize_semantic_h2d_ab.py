@@ -8,13 +8,17 @@ from collections import Counter
 import csv
 import json
 import hashlib
+import math
 import os
 from pathlib import Path
 import shutil
 from statistics import mean, median
 import subprocess
 
-from beliefkv.experiments.arrival_schedule import build_workflow_arrivals
+from beliefkv.experiments.arrival_schedule import (
+    arrival_schedule_digest, build_poisson_workflow_arrivals,
+    build_workflow_arrivals, load_workflow_arrivals,
+)
 
 
 NON_EXECUTION_SOURCE_PATHS = (
@@ -442,6 +446,8 @@ def main() -> None:
     parser.add_argument("--arm-order", default="predictive_h2d native")
     parser.add_argument("--arrival-batch-size", type=int, default=0)
     parser.add_argument("--arrival-batch-interval-ms", type=int, default=0)
+    parser.add_argument("--arrival-rate-per-second", type=float, default=0.0)
+    parser.add_argument("--arrival-seed", type=int, default=21)
     parser.add_argument("--semantic-artifact", type=Path)
     parser.add_argument("--activation-wall-clock-seconds", type=float, default=14400.)
     parser.add_argument("--workload-manifest", type=Path)
@@ -470,6 +476,12 @@ def main() -> None:
         root = Path(__file__).resolve().parents[1]
         plan = json.loads((args.run_root / "ab_plan.json").read_text())
         verification = verify_frozen_execution_source(root, plan["code_commit"])
+        if plan.get("arrival_schedule_sha256"):
+            load_workflow_arrivals(
+                args.run_root / "ab_plan.json",
+                instance_ids=plan["workload_instance_ids_in_manifest_order"],
+            )
+            verification["frozen_arrival_schedule_verified"] = True
         paths = [
             (plan["workload_manifest"], plan["workload_sha256"]),
             (plan["semantic_artifact"], plan["semantic_artifact_sha256"]),
@@ -528,12 +540,28 @@ def main() -> None:
             raise ValueError("unsupported policy arm order")
         if (args.arrival_batch_size == 0) != (args.arrival_batch_interval_ms == 0):
             raise ValueError("arrival batch size and interval must be enabled together")
-        arrivals = build_workflow_arrivals(
-            args.root_count,
-            mode="batched" if args.arrival_batch_size else "simultaneous",
-            batch_size=args.arrival_batch_size or args.root_count,
-            batch_interval_seconds=args.arrival_batch_interval_ms / 1000,
-        )
+        if not math.isfinite(args.arrival_rate_per_second) or args.arrival_rate_per_second < 0:
+            raise ValueError("arrival rate must be finite and non-negative")
+        if args.arrival_rate_per_second:
+            if args.arrival_batch_size:
+                raise ValueError("Poisson arrivals cannot be combined with arrival batches")
+            arrival_mode = "poisson"
+            arrivals = build_poisson_workflow_arrivals(
+                args.root_count, rate_per_second=args.arrival_rate_per_second,
+                seed=args.arrival_seed,
+            )
+        else:
+            arrival_mode = "batched" if args.arrival_batch_size else "simultaneous"
+            arrivals = build_workflow_arrivals(
+                args.root_count, mode=arrival_mode,
+                batch_size=args.arrival_batch_size or args.root_count,
+                batch_interval_seconds=args.arrival_batch_interval_ms / 1000,
+            )
+        arrival_rows = [
+            {"instance_id": row["instance_id"],
+             "offset_seconds": arrival.scheduled_offset_seconds}
+            for row, arrival in zip(workloads, arrivals)
+        ]
         native_pair = "native" in order
         patch = root / "patches/sglang-v0.5.20-beliefkv-staging.patch"
         reference_artifacts = {}
@@ -592,13 +620,13 @@ def main() -> None:
                 ["git", "rev-parse", "HEAD"], cwd=root, text=True,
             ).strip(),
             "root_count": args.root_count, "server_running": 48,
+            "workflow_arrival_mode": arrival_mode,
+            "workflow_arrival_rate_per_second": args.arrival_rate_per_second,
+            "workflow_arrival_seed": args.arrival_seed,
             "workflow_arrival_batch_size": args.arrival_batch_size,
             "workflow_arrival_batch_interval_ms": args.arrival_batch_interval_ms,
-            "arrival_schedule": [
-                {"instance_id": row["instance_id"],
-                 "offset_seconds": arrival.scheduled_offset_seconds}
-                for row, arrival in zip(workloads, arrivals)
-            ],
+            "arrival_schedule": arrival_rows,
+            "arrival_schedule_sha256": arrival_schedule_digest(arrival_rows),
             "activation_wall_clock_seconds": args.activation_wall_clock_seconds,
             "sandbox_command_timeout_s": 180,
             "recursion_limit": 2048, "finalization_reserve_steps": 32,

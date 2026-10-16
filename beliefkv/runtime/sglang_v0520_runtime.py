@@ -9,7 +9,7 @@ from collections import Counter, OrderedDict, deque
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field, replace
 from heapq import nsmallest
-from itertools import islice
+from itertools import chain, islice
 import math
 import json
 import os
@@ -457,6 +457,11 @@ class NativeAdmissionRuntime:
         self._join_prepare_commands: dict[_JoinPrefetchIdentity, str] = {}
         self._prepare_probe_after_ms: dict[PrefillCandidateKey, float] = {}
         self._parent_pressure_candidates: dict[int, tuple[PrefillCandidateKey, int | float]] = {}
+        self._parent_pressure_groups: dict[PrefillCandidateKey, set[int]] = {}
+        self._parent_pressure_group_source: dict | None = None
+        self._parent_pressure_group_size = 0
+        self._parent_pressure_positions: dict[int, int] = {}
+        self._parent_pressure_next_position = 0
         self._final_priority_normal_admissions = 4
         self._final_priority_promoted: str | None = None
         self._final_priority_native_rank: int | None = None
@@ -718,6 +723,9 @@ class NativeAdmissionRuntime:
         self._terminal_root_contexts.clear()
         self._parent_capacity_handoffs.clear()
         self._workflow_attained_output_tokens.clear()
+        self._parent_pressure_groups.clear()
+        self._parent_pressure_group_source = None
+        self._parent_pressure_positions.clear()
         if self._opportunity_writer is not None:
             self._record_runtime_state(final=True)
             self._opportunity_writer.close()
@@ -4294,7 +4302,7 @@ class NativeAdmissionRuntime:
                 # New backups may not fit while settled cold copies can still
                 # release HBM. Publication and native reclaim validate them live.
                 for node_id, created in backed or ():
-                    self._parent_pressure_candidates[node_id] = (anchors.key, created)
+                    self._remember_parent_pressure_node(node_id, anchors.key, created)
                 if backed:
                     self.counts["prepare_backed_budget_registration"] += len(backed)
                 self.counts["prepare_prefix_budget_rejected_early"] += 1
@@ -5297,34 +5305,70 @@ class NativeAdmissionRuntime:
             and not self._terminal(key)
         )
 
+    def _pressure_candidate_groups(self) -> dict[PrefillCandidateKey, set[int]]:
+        candidates = self._parent_pressure_candidates
+        if (
+            self._parent_pressure_group_source is not candidates
+            or self._parent_pressure_group_size != len(candidates)
+        ):
+            groups: dict[PrefillCandidateKey, set[int]] = {}
+            for node_id, (key, _) in candidates.items():
+                groups.setdefault(key, set()).add(node_id)
+            self._parent_pressure_groups = groups
+            self._parent_pressure_positions = {
+                node_id: index for index, node_id in enumerate(candidates)
+            }
+            self._parent_pressure_next_position = len(candidates)
+            self._parent_pressure_group_source = candidates
+            self._parent_pressure_group_size = len(candidates)
+        return self._parent_pressure_groups
+
+    def _remember_parent_pressure_node(
+        self, node_id: int, key: PrefillCandidateKey, created: int | float,
+    ) -> None:
+        groups = self._pressure_candidate_groups()
+        previous = self._parent_pressure_candidates.get(node_id)
+        if previous is None or previous[0] != key:
+            if previous is not None:
+                old_members = groups[previous[0]]
+                old_members.remove(node_id)
+                if not old_members:
+                    del groups[previous[0]]
+            groups.setdefault(key, set()).add(node_id)
+        if previous is None:
+            self._parent_pressure_positions[node_id] = self._parent_pressure_next_position
+            self._parent_pressure_next_position += 1
+        self._parent_pressure_candidates[node_id] = (key, created)
+        self._parent_pressure_group_size = len(self._parent_pressure_candidates)
+
     @timed_runtime("prepare_candidate_maintenance")
     def _prune_parent_pressure_candidates(self) -> None:
         if not self._parent_pressure_candidates:
             return
+        groups = self._pressure_candidate_groups()
         self._refresh_prefetch_service_leases()
         protected = {
             (lease.node_id, lease.creation_time)
             for lease in self._prefetch_service_leases.values()
         }
-        live_keys: dict[str, tuple[PrefillCandidateKey, bool]] = {}
-        previous_key = None
-        previous_live = False
-        removed = []
-        for node_id, (key, created) in self._parent_pressure_candidates.items():
-            if protected and (node_id, created) in protected:
-                self.counts["prefetch_residency_pressure_protected"] += 1
-                removed.append(node_id)
+        for node_id, created in protected:
+            record = self._parent_pressure_candidates.get(node_id)
+            if record is None or record[1] != created:
                 continue
-            if key is not previous_key:
-                cached = live_keys.get(key.context_id)
-                if cached is None or (cached[0] is not key and cached[0] != key):
-                    cached = (key, self._live_parent_pressure_key(key))
-                    live_keys[key.context_id] = cached
-                previous_key, previous_live = key, cached[1]
-            if not previous_live:
-                removed.append(node_id)
-        for node_id in removed:
+            self.counts["prefetch_residency_pressure_protected"] += 1
             del self._parent_pressure_candidates[node_id]
+            del self._parent_pressure_positions[node_id]
+            members = groups[record[0]]
+            members.remove(node_id)
+            if not members:
+                del groups[record[0]]
+        for key, members in tuple(groups.items()):
+            if not self._live_parent_pressure_key(key):
+                for node_id in members:
+                    del self._parent_pressure_candidates[node_id]
+                    del self._parent_pressure_positions[node_id]
+                del groups[key]
+        self._parent_pressure_group_size = len(self._parent_pressure_candidates)
 
     def _on_parent_pressure_parked(self, node_id: int, freed: dict[int, int]) -> None:
         for command, lease in tuple(self._prefetch_service_leases.items()):
@@ -5362,14 +5406,20 @@ class NativeAdmissionRuntime:
         tree = getattr(cache, "tree_core", None)
         device_leaves = getattr(tree, "evictable_device_leaves", ())
         indexed = False
-        for position, (node_id, (_, created)) in enumerate(self._parent_pressure_candidates.items()):
-            if position == 2 * limit:
-                lrus = getattr(tree, "lru_lists", None)
-                mamba_lru = getattr(lrus.get(2), "cache", None) if isinstance(lrus, dict) else None
-                if isinstance(device_leaves, set) and isinstance(mamba_lru, dict):
-                    # Only index a scan that outlasts two native pool prefixes.
-                    # Live checks and the original order remain authoritative.
-                    visited = set(islice(self._parent_pressure_candidates, position))
+        full_ids: set[int] = set()
+        mamba_ids: set[int] = set()
+        entries = iter(self._parent_pressure_candidates.items())
+        head = tuple(islice(entries, 2 * limit))
+
+        def remaining_entries():
+            nonlocal indexed, full_ids, mamba_ids
+            lrus = getattr(tree, "lru_lists", None)
+            mamba_lru = getattr(lrus.get(2), "cache", None) if isinstance(lrus, dict) else None
+            if isinstance(device_leaves, set) and isinstance(mamba_lru, dict):
+                # Inspect only the sparse pool members when sorting those IDs
+                # costs less than walking the remaining owner-node table.
+                visited = {node_id for node_id, _ in head}
+                if len(head) == 2 * limit:
                     if (
                         full_left
                         and len(device_leaves) > 8 * len(self._parent_pressure_candidates)
@@ -5398,6 +5448,20 @@ class NativeAdmissionRuntime:
                         self._parent_pressure_candidates.keys() & mamba_lru.keys()
                     ) - visited - excluded if mamba_left else set()
                     indexed = True
+                    pool_ids = full_ids | mamba_ids
+                    if not fallback_left and (
+                        len(pool_ids) * max(1, (len(pool_ids) - 1).bit_length())
+                        < len(self._parent_pressure_candidates) - len(head)
+                    ):
+                        self._pressure_candidate_groups()
+                        for node_id in sorted(
+                            pool_ids, key=self._parent_pressure_positions.__getitem__,
+                        ):
+                            yield node_id, self._parent_pressure_candidates[node_id]
+                        return
+            yield from entries
+
+        for node_id, (_, created) in chain(head, remaining_entries()):
             if indexed:
                 if not fallback_left and not (
                     full_left and full_ids or mamba_left and mamba_ids
@@ -5515,7 +5579,7 @@ class NativeAdmissionRuntime:
                     != (key, node.creation_time)
                 ):
                     self.counts["prepare_backed_full_tail_registered"] += 1
-                self._parent_pressure_candidates[node.node_id] = (key, node.creation_time)
+                self._remember_parent_pressure_node(node.node_id, key, node.creation_time)
 
     def _shadow_reclaim_tail_leaves(
         self, candidate: ActionLocalShadowCandidate | ActionLocalPrefetchCandidate,
@@ -5749,7 +5813,7 @@ class NativeAdmissionRuntime:
                 continue
             self._join_prepare_commands[identity] = issued[-1][1]
             for item, command in issued:
-                self._parent_pressure_candidates[item.node_id] = (item.key, item.creation_time)
+                self._remember_parent_pressure_node(item.node_id, item.key, item.creation_time)
             self.counts["join_prepare_issued"] += len(issued)
             self._record_prepare_selection(
                 step, command_id=issued[0][1], source="join_prepare",
@@ -5848,8 +5912,8 @@ class NativeAdmissionRuntime:
             first_attempt = False
             if issued:
                 for item, command in issued:
-                    self._parent_pressure_candidates[item.node_id] = (
-                        item.key, item.creation_time,
+                    self._remember_parent_pressure_node(
+                        item.node_id, item.key, item.creation_time,
                     )
                 self.counts["tool_prepare_issued"] += len(issued)
                 self._record_prepare_selection(

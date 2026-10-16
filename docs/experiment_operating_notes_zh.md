@@ -4,7 +4,18 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
-当前运行V67_aged_warm/e8dcba7，2026-10-15 17:20:43 PDT、
+当前运行V72_workflow_work/f7aec98，权威状态为
+ops/v72_workflow_work_20261016.state.json，源码/引擎保持冻结。
+2026-10-16用户授权下一轮切换在线随机root到达，暂用Poisson、
+平均15秒/root、独立seed21、原156任务及顺序，不扫到达率或重复。
+完整到达表冻结于ab_plan并校验，客户端读取同一表且保留156个
+worker槽，不能按各侧完成数动态补任务。记录提交与实际开始延迟；
+压力须用真实两池、原生H2D、冷回收和重算证据判断，不能由root数
+推断。新负载先predictive再同时间表native一次，历史V58仅作诊断。
+V72结束并确认旧进程退出后冷启动，不热改运行源码/已登记helper。
+后文V67及其他旧轮次的“当前/下一版”均为历史记录，不覆盖本段。
+
+历史V67_aged_warm/e8dcba7于2026-10-15 17:20:43 PDT、
 北京时间10月16日08:20:43冷启动，supervisor546742/start_ticks
 628002818、driver597989、端口18471；实际状态为
 ops/v67_aged_warm_direct_20261015.state.json，登记/启动见

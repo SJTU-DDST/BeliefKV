@@ -83,3 +83,17 @@ def test_resume_preserves_explicit_numa_policy_and_legacy_binding():
     configuration["host_numa_memory_policy"] = "preferred"
     environment = resume_environment(configuration, Path("/run"), python="/python", port=18454)
     assert environment["HOST_NUMA_MEMORY_POLICY"] == "preferred"
+
+
+def test_resume_retains_poisson_rate_and_arrival_seed():
+    configuration = plan()
+    configuration.update(
+        workflow_arrival_mode="poisson", workflow_arrival_batch_size=0,
+        workflow_arrival_batch_interval_ms=0,
+        workflow_arrival_rate_per_second=1 / 15, workflow_arrival_seed=21,
+    )
+    environment = resume_environment(configuration, Path("/run"), python="/python", port=18454)
+    assert environment["ARRIVAL_BATCH_SIZE"] == "0"
+    assert environment["ARRIVAL_BATCH_INTERVAL_MS"] == "0"
+    assert environment["ARRIVAL_RATE_PER_SECOND"] == str(1 / 15)
+    assert environment["ARRIVAL_SEED"] == "21"
