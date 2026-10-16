@@ -2181,20 +2181,38 @@ index e7bee63..41abf6b 100644
          """Hashable dict-key for the first ``page_size`` logical units, namespaced by ``extra_key``."""
          return self.child_key_at(offset=0, page_size=page_size)
 diff --git a/python/sglang/srt/mem_cache/unified_cache/components/full.py b/python/sglang/srt/mem_cache/unified_cache/components/full.py
-index 1d4b255..ae376f1 100644
+index 1d4b255..eb2a497 100644
 --- a/python/sglang/srt/mem_cache/unified_cache/components/full.py
 +++ b/python/sglang/srt/mem_cache/unified_cache/components/full.py
-@@ -53,6 +53,9 @@ class FullComponent(TreeComponent):
+@@ -53,6 +53,10 @@ class FullComponent(TreeComponent):
              if cache.enable_session_radix_cache
              else None
          )
 +        self.host_eviction_counts = {
 +            "calls": 0, "already_satisfied": 0, "heap_builds": 0, "heap_candidates": 0,
 +        }
++        self.latest_session_branch_retirements = 0
  
      def _ensure_eviction_strategy(self) -> None:
          if self.session_ref_eviction_strategy is None:
-@@ -239,13 +242,22 @@ class FullComponent(TreeComponent):
+@@ -60,6 +64,16 @@ class FullComponent(TreeComponent):
+                 self.tree_core.eviction_strategy.get_priority
+             )
+ 
++    def retain_latest_session_leaf(self, session_id: str, leaf: UnifiedTreeNode) -> None:
++        """Retire old branch coverage; cached values and request locks stay native-owned."""
++        if leaf not in self._session_leaves.get(session_id, ()):
++            return
++        for old in tuple(self._session_leaves.get(session_id, ())):
++            if old is not leaf:
++                self._dec_session_coverage(session_id, old)
++                self._unmark_session_leaf(session_id, old)
++                self.latest_session_branch_retirements += 1
++
+     def _dec_session_coverage(self, session_id: str, leaf: UnifiedTreeNode) -> None:
+         node = leaf
+         while node is not None and node is not self.tree_core.root_node:
+@@ -239,13 +253,22 @@ class FullComponent(TreeComponent):
          host_frees: dict[ComponentType, list[torch.Tensor]],
      ) -> None:
          """Evict host leaves to free KV host pool space."""
@@ -2270,7 +2288,7 @@ index 3c18cee..74fb7ca 100644
          cd = leaf.component_data[self.component_type]
          cd.session_ref += 1
 diff --git a/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py b/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py
-index 406069a..1d97fb8 100644
+index 406069a..7fad7d9 100644
 --- a/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py
 +++ b/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py
 @@ -10,6 +10,8 @@ from collections import OrderedDict
@@ -2297,7 +2315,7 @@ index 406069a..1d97fb8 100644
              component.register_session_leaf(session_id, leaf)
 +            if leaf is not None and leaf is not self.tree_core.root_node:
 +                if (
-+                    component.component_type == ComponentType.MAMBA
++                    component.component_type in (ComponentType.FULL, ComponentType.MAMBA)
 +                    and isinstance(getattr(req, "beliefkv_metadata", None), dict)
 +                ):
 +                    component.retain_latest_session_leaf(session_id, leaf)
@@ -2715,7 +2733,7 @@ index 6815679..8132f2c 100644
      def evict_device_end(self, component_type: ComponentType) -> None:
          """Finish the component's device-eviction walk."""
 diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
-index d417d7d..ade72f1 100644
+index d417d7d..996e075 100644
 --- a/python/sglang/srt/mem_cache/unified_radix_cache.py
 +++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
 @@ -4,9 +4,10 @@ import atexit
@@ -2823,7 +2841,7 @@ index d417d7d..ade72f1 100644
          result = self.tree_core.evict_device_leaf(node_id, self.is_write_back)
          self._free_values(result.device_frees, result.host_frees)
          if self._tracks_write_through_unbacked_evictions():
-@@ -801,6 +857,466 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -801,6 +857,510 @@ class UnifiedRadixCache(BasePrefixCache):
          self._accumulate_tracker(tracker, result.tracker)
          return result.is_dropped
  
@@ -3061,6 +3079,10 @@ index d417d7d..ade72f1 100644
 +            "native_full_selected_tokens": 0, "native_full_scan_truncated": False,
 +            "native_full_excluded": 0,
 +            "native_full_rejections": {}, "waiting_candidate_checks": [],
++            "native_full_scan_cycle_started": False, "native_full_scan_remaining": 0,
++            "native_full_scan_source": "not_needed",
++            "native_full_backed_index_size": None,
++            "native_fallback_considered": False,
 +            "max_nodes": max_nodes, "transaction_attempts": 0,
 +        } if collect_diagnostics else None
 +        fallback = getattr(self, "beliefkv_join_pressure_candidates", ())
@@ -3071,76 +3093,111 @@ index d417d7d..ade72f1 100644
 +                for identity in by_component.get(int(ct), fallback)[:8]:
 +                    waiting.setdefault(identity, None)
 +        candidates = [(node_id, created, "waiting_agent") for node_id, created in waiting]
-+        scanned = selected = 0
-+        leaves = self.tree_core.evictable_device_leaves
-+        scan = getattr(self, "_beliefkv_handoff_full_scan", None)
-+        needs_full = self._component_available_size(BASE_COMPONENT_TYPE) < full_tokens
-+        new_scan = needs_full and not scan
-+        if new_scan:
-+            # Continue the bounded census across calls instead of repeatedly
-+            # inspecting the same set prefix. Every victim is revalidated below.
-+            scan = deque(leaves)
-+            self._beliefkv_handoff_full_scan = scan
-+        elif not needs_full:
-+            scan = None
-+            self._beliefkv_handoff_full_scan = None
-+        while scan and scanned < max_nodes and selected < 8:
-+            node = scan.popleft()
-+            if node.id in excluded:
-+                if diagnosis is not None:
-+                    diagnosis["native_full_excluded"] += 1
-+                continue
-+            scanned += 1
-+            reason = (
-+                "not_current_device_leaf" if node not in leaves else
-+                "unbacked" if not node.backuped else
-+                "session_referenced" if any(cd.session_ref for cd in node.component_data) else
-+                "device_locked" if any(cd.lock_ref for cd in node.component_data) else
-+                "inflight" if (
-+                    node.id in self.ongoing_write_through
-+                    or node.write_through_pending_id is not None
-+                    or node.load_back_pending_id is not None
-+                ) else None
-+            )
-+            if reason is None:
-+                candidates.append((node.id, node.creation_time, "unreferenced_cache"))
-+                selected += 1
-+                if diagnosis is not None:
-+                    full = node.component_data[BASE_COMPONENT_TYPE]
-+                    diagnosis["native_full_selected_tokens"] += (
-+                        len(full.value) if full.value is not None else 0
-+                    )
-+            elif diagnosis is not None:
-+                reasons = diagnosis["native_full_rejections"]
-+                reasons[reason] = reasons.get(reason, 0) + 1
 +        if diagnosis is not None:
-+            diagnosis["native_full_scanned"] = scanned
-+            diagnosis["native_full_selected"] = selected
-+            diagnosis["native_full_scan_truncated"] = bool(scan)
-+            diagnosis["native_full_scan_cycle_started"] = bool(new_scan)
-+            diagnosis["native_full_scan_remaining"] = len(scan) if scan is not None else 0
 +            diagnosis["published_waiting_candidates"] = len(waiting)
-+        if self._component_available_size(ComponentType.MAMBA) < mamba_slots:
-+            lru = getattr(self.tree_core, "lru_lists", {}).get(ComponentType.MAMBA)
-+            node = lru.get_lru_no_lock() if lru is not None else None
-+            scanned = 0
-+            while node is not None and scanned < 8:
-+                if node.id not in excluded:
-+                    scanned += 1
-+                    state = node.component_data[ComponentType.MAMBA]
-+                    if (
-+                        state.value is not None and state.host_value is not None
-+                        and state.session_ref == 0
-+                    ):
-+                        candidates.append((node.id, node.creation_time, "unreferenced_mamba"))
-+                node = lru.get_prev_no_lock(node)
++
 +        pending = list(reversed(candidates))
 +        attempts = 0
-+        while pending and attempts < max_nodes:
++        native_considered = False
++        while attempts < max_nodes:
 +            need_full = self._component_available_size(BASE_COMPONENT_TYPE) < full_tokens
 +            need_mamba = self._component_available_size(ComponentType.MAMBA) < mamba_slots
 +            if not need_full and not need_mamba:
 +                break
++            if not pending:
++                if native_considered:
++                    break
++                native_considered = True
++                candidates = []
++                scanned = selected = 0
++                leaves = self.tree_core.evictable_device_leaves
++                scan = getattr(self, "_beliefkv_handoff_full_scan", None)
++                new_scan = need_full and not scan
++                if new_scan:
++                    duplicates = getattr(self.tree_core, "full_host_duplicates", None)
++                    if type(duplicates) is dict and len(duplicates) < len(leaves):
++                        # This native index is maintained at backup/load ACKs.
++                        # Filter its lazy stale entries before the bounded scan.
++                        scan = deque(
++                            node for node in duplicates.values() if node in leaves
++                        )
++                        self._beliefkv_handoff_full_scan_source = (
++                            "settled_full_host_duplicates"
++                        )
++                    else:
++                        # A dense index also includes interior nodes. Preserve
++                        # the native leaf walk instead of looking up every leaf.
++                        scan = deque(leaves)
++                        self._beliefkv_handoff_full_scan_source = (
++                            "device_leaves_dense_index"
++                            if type(duplicates) is dict else "device_leaves_legacy"
++                        )
++                    self._beliefkv_handoff_full_scan = scan
++                elif not need_full:
++                    scan = None
++                    self._beliefkv_handoff_full_scan = None
++                while scan and scanned < max_nodes and selected < 8:
++                    node = scan.popleft()
++                    if node.id in excluded:
++                        if diagnosis is not None:
++                            diagnosis["native_full_excluded"] += 1
++                        continue
++                    scanned += 1
++                    reason = (
++                        "not_current_device_leaf" if node not in leaves else
++                        "unbacked" if not node.backuped else
++                        "session_referenced" if any(cd.session_ref for cd in node.component_data) else
++                        "device_locked" if any(cd.lock_ref for cd in node.component_data) else
++                        "inflight" if (
++                            node.id in self.ongoing_write_through
++                            or node.write_through_pending_id is not None
++                            or node.load_back_pending_id is not None
++                        ) else None
++                    )
++                    if reason is None:
++                        candidates.append((node.id, node.creation_time, "unreferenced_cache"))
++                        selected += 1
++                        if diagnosis is not None:
++                            full = node.component_data[BASE_COMPONENT_TYPE]
++                            diagnosis["native_full_selected_tokens"] += (
++                                len(full.value) if full.value is not None else 0
++                            )
++                    elif diagnosis is not None:
++                        reasons = diagnosis["native_full_rejections"]
++                        reasons[reason] = reasons.get(reason, 0) + 1
++                if diagnosis is not None:
++                    diagnosis["native_full_scanned"] = scanned
++                    diagnosis["native_full_selected"] = selected
++                    diagnosis["native_full_scan_truncated"] = bool(scan)
++                    diagnosis["native_full_scan_cycle_started"] = bool(new_scan)
++                    diagnosis["native_full_scan_remaining"] = len(scan) if scan is not None else 0
++                    if need_full:
++                        diagnosis["native_full_scan_source"] = getattr(
++                            self, "_beliefkv_handoff_full_scan_source",
++                            "device_leaves_legacy",
++                        )
++                        duplicates = getattr(self.tree_core, "full_host_duplicates", None)
++                        diagnosis["native_full_backed_index_size"] = (
++                            len(duplicates) if type(duplicates) is dict else None
++                        )
++                    diagnosis["native_fallback_considered"] = True
++                if need_mamba:
++                    lru = getattr(self.tree_core, "lru_lists", {}).get(ComponentType.MAMBA)
++                    node = lru.get_lru_no_lock() if lru is not None else None
++                    scanned = 0
++                    while node is not None and scanned < 8:
++                        if node.id not in excluded:
++                            scanned += 1
++                            state = node.component_data[ComponentType.MAMBA]
++                            if (
++                                state.value is not None and state.host_value is not None
++                                and state.session_ref == 0
++                            ):
++                                candidates.append((node.id, node.creation_time, "unreferenced_mamba"))
++                        node = lru.get_prev_no_lock(node)
++                pending = list(reversed(candidates))
++                if not pending:
++                    break
 +            node_id, created, scope = pending.pop()
 +            attempts += 1
 +            try:
@@ -3230,7 +3287,12 @@ index d417d7d..ade72f1 100644
 +                    pending.append((parent.id, parent.creation_time, scope))
 +        if diagnosis is not None:
 +            diagnosis["transaction_attempts"] = attempts
-+            diagnosis["transaction_truncated"] = bool(pending and attempts >= max_nodes)
++            diagnosis["transaction_truncated"] = attempts >= max_nodes and (
++                bool(pending) or not native_considered and (
++                    self._component_available_size(BASE_COMPONENT_TYPE) < full_tokens
++                    or self._component_available_size(ComponentType.MAMBA) < mamba_slots
++                )
++            )
 +            diagnosis["freed_units"] = {int(ct): count for ct, count in tracker.items()}
 +            diagnosis["free_full_tokens_after"] = self._component_available_size(BASE_COMPONENT_TYPE)
 +            diagnosis["free_mamba_slots_after"] = self._component_available_size(ComponentType.MAMBA)
@@ -3290,7 +3352,7 @@ index d417d7d..ade72f1 100644
      def _evict_components(
          self,
          request_by_type: dict[ComponentType, int],
-@@ -851,6 +1367,11 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -851,6 +1411,11 @@ class UnifiedRadixCache(BasePrefixCache):
              # on a shared pool, released enough bytes to satisfy its allocation.
              if tracker[ct] >= request_cnt or target_reached(ct):
                  continue
@@ -3302,7 +3364,7 @@ index d417d7d..ade72f1 100644
              self.tree_core.evict_device_start(ct, request_cnt)
              try:
                  while True:
-@@ -892,7 +1413,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -892,7 +1457,9 @@ class UnifiedRadixCache(BasePrefixCache):
              isinstance(self.tree_core, UnifiedTreeCore)
              and self.host_memory_mode == "cache"
              and self.cache_controller is not None
@@ -3313,7 +3375,7 @@ index d417d7d..ade72f1 100644
          )
  
      def _record_dropped_tokens(self, dropped_tokens: int, reason: str) -> None:
-@@ -955,6 +1478,18 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -955,6 +1522,18 @@ class UnifiedRadixCache(BasePrefixCache):
              return DecLockRefResult()
          return self.tree_core.dec_host_lock_ref(node_id, params)
  
@@ -3332,7 +3394,7 @@ index d417d7d..ade72f1 100644
      @rank_consensus(same_params=["req.rid", "is_insert", "kv_len_to_handle"])
      def cache_finished_req(
          self, req: Req, is_insert: bool = True, *, kv_len_to_handle: int, **kwargs
-@@ -1078,7 +1613,7 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1078,7 +1657,7 @@ class UnifiedRadixCache(BasePrefixCache):
              self._dec_req_lock(req, skip_swa=req.swa_prefix_lock_released)
  
          if is_insert and result is not None and result.last_device_node is not None:
@@ -3341,7 +3403,7 @@ index d417d7d..ade72f1 100644
  
          # cleanup
          for comp in self._components_tuple:
-@@ -1309,6 +1844,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1309,6 +1888,13 @@ class UnifiedRadixCache(BasePrefixCache):
              return 0
          result = self.tree_core.drive_host_eviction(component_type, num_tokens)
          self._free_values(result.device_frees, result.host_frees)
@@ -3355,7 +3417,7 @@ index d417d7d..ade72f1 100644
          return result.tracker.get(component_type, 0)
  
      # ---- Decode retraction ----
-@@ -1518,8 +2060,227 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1518,8 +2104,227 @@ class UnifiedRadixCache(BasePrefixCache):
  
      # ---- HiCache: Backup / LoadBack ----
  
@@ -3584,7 +3646,7 @@ index d417d7d..ade72f1 100644
      ) -> int:
          """Run a backup action top-down, stopping at the first failed backup."""
          if self.buffer_pipeline is not None:
-@@ -1532,14 +2293,23 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1532,14 +2337,23 @@ class UnifiedRadixCache(BasePrefixCache):
              return 0
          written = 0
          for node_id in action.node_ids:
@@ -3610,7 +3672,7 @@ index d417d7d..ade72f1 100644
              )
              if host_indices is None:
                  return 0
-@@ -1554,6 +2324,406 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1554,6 +2368,406 @@ class UnifiedRadixCache(BasePrefixCache):
              written = len(host_indices)
          return written
  
@@ -4017,7 +4079,7 @@ index d417d7d..ade72f1 100644
      @staticmethod
      def _backup_publish_node_ids(
          node_id: NodeId, comp_xfers: dict[ComponentType, list[PoolTransfer]]
-@@ -1574,18 +2744,77 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1574,18 +2788,77 @@ class UnifiedRadixCache(BasePrefixCache):
              CacheTransferPhase.BACKUP_HOST, kv_xfer, comp_xfers
          )
  
@@ -4097,7 +4159,7 @@ index d417d7d..ade72f1 100644
          )
  
      def _track_write_through_node(
-@@ -1627,10 +2856,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1627,10 +2900,10 @@ class UnifiedRadixCache(BasePrefixCache):
              updated_node_ids,
          )
  
@@ -4110,7 +4172,7 @@ index d417d7d..ade72f1 100644
  
          lock_node_id, lock_params, publish_node_ids = self.ongoing_write_through.pop(
              ack_id
-@@ -1643,15 +2872,25 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1643,15 +2916,26 @@ class UnifiedRadixCache(BasePrefixCache):
              # suffix; the prefix fragment must be persisted as well.
              for node_id in publish_node_ids:
                  self.write_backup_storage(node_id)
@@ -4131,13 +4193,14 @@ index d417d7d..ade72f1 100644
 -        if self.cache_controller is None:
 +        if (
 +            self.cache_controller is None
++            or node_id in self.ongoing_load_back
 +            or type(beliefkv_include_mamba) is not bool
 +            or (not beliefkv_include_mamba and req is not None)
 +        ):
              return False
  
          host_anchor_params = self.inc_host_lock_ref(node_id).to_dec_params()
-@@ -1675,6 +2914,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1675,6 +2959,10 @@ class UnifiedRadixCache(BasePrefixCache):
                  result=result,
                  ancestor_lock_params=ancestor_lock_params,
                  host_anchor_params=host_anchor_params,
@@ -4148,7 +4211,7 @@ index d417d7d..ade72f1 100644
              )
              return success
          finally:
-@@ -1690,9 +2933,34 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1690,9 +2978,34 @@ class UnifiedRadixCache(BasePrefixCache):
          result: IncLockRefResult,
          ancestor_lock_params: DecLockRefParams,
          host_anchor_params: DecLockRefParams,
@@ -4184,7 +4247,7 @@ index d417d7d..ade72f1 100644
          kv_tokens = len(kv_xfer.host_indices)
          sidecar_xfers = self._build_sidecar_transfers(
              CacheTransferPhase.LOAD_BACK, kv_xfer, comp_xfers
-@@ -1703,7 +2971,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1703,7 +3016,8 @@ class UnifiedRadixCache(BasePrefixCache):
          # when the Full-KV load is skipped by thresholding. max(1, ...): an
          # entirely empty spec (e.g. foreign-pin rejection) must never report
          # success, even at load_back_threshold <= 0.
@@ -4194,7 +4257,7 @@ index d417d7d..ade72f1 100644
              mem_quota is not None and kv_tokens + result.delta > mem_quota
          ):
              self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -1714,6 +2983,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1714,6 +3028,10 @@ class UnifiedRadixCache(BasePrefixCache):
              self.token_to_kv_pool_allocator, "c128_attn_allocator", None
          )
          if c128_allocator is not None:
@@ -4205,7 +4268,7 @@ index d417d7d..ade72f1 100644
              c128_num_pages = _c128_transfer_num_pages(
                  comp_xfers.get(ComponentType.C128, ()),
                  c128_allocator.page_size,
-@@ -1727,6 +3000,10 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1727,6 +3045,10 @@ class UnifiedRadixCache(BasePrefixCache):
  
          avail = self._component_available_size(ComponentType.FULL)
          if avail < kv_tokens:
@@ -4216,7 +4279,7 @@ index d417d7d..ade72f1 100644
              needed = kv_tokens - avail
              self.evict_for_alloc(EvictParams(num_tokens=needed))
              if self._component_available_size(ComponentType.FULL) < kv_tokens:
-@@ -1741,6 +3018,9 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -1741,6 +3063,9 @@ class UnifiedRadixCache(BasePrefixCache):
              host_indices=kv_xfer.host_indices,
              node_id=node_id,
              extra_pools=aux_xfers or None,
@@ -4226,7 +4289,7 @@ index d417d7d..ade72f1 100644
          )
  
          self.dec_lock_ref(node_id, ancestor_lock_params)
-@@ -3130,10 +4410,24 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3130,10 +4455,24 @@ class UnifiedRadixCache(BasePrefixCache):
              while self.ongoing_write_through:
                  for ack in cc.ack_write_queue:
                      ack.finish_event.synchronize()
@@ -4252,7 +4315,7 @@ index d417d7d..ade72f1 100644
                  cc.ack_write_queue.clear()
                  assert len(self.ongoing_write_through) == 0
              return
-@@ -3154,11 +4448,122 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3154,11 +4493,122 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_write_queue.pop(0)
              ack.finish_event.synchronize()
@@ -4376,7 +4439,7 @@ index d417d7d..ade72f1 100644
      def _log_write_ack_metrics(self, ack: HiCacheAck) -> None:
          """Record D->H backup volume and duration for a completed write ack."""
          if self.metrics_collector is None:
-@@ -3200,6 +4605,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3200,6 +4650,8 @@ class UnifiedRadixCache(BasePrefixCache):
          while finish_count > 0:
              ack = cc.ack_load_queue.pop(0)
              ack.finish_event.synchronize()
@@ -4385,7 +4448,7 @@ index d417d7d..ade72f1 100644
              for ack_id in ack.node_ids:
                  if (
                      self.buffer_pipeline is not None
-@@ -3211,6 +4618,8 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3211,6 +4663,8 @@ class UnifiedRadixCache(BasePrefixCache):
                  self.dec_host_lock_ref(node, host_lock_params)
                  # Unpin the loaded nodes; host copies stay as reclaimable duplicates.
                  self.tree_core.finish_load_back(node)
@@ -4394,7 +4457,7 @@ index d417d7d..ade72f1 100644
  
              if self.metrics_collector is not None:
                  for pool, num_tokens in (ack.num_tokens_by_pool or {}).items():
-@@ -3225,6 +4634,13 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3225,6 +4679,13 @@ class UnifiedRadixCache(BasePrefixCache):
                      self.metrics_collector.observe_load_back_duration(
                          duration_ms / 1000.0
                      )
@@ -4408,7 +4471,28 @@ index d417d7d..ade72f1 100644
              finish_count -= 1
  
      # ---- HiCache: Scheduler Entry Points ----
-@@ -3341,9 +4757,31 @@ class UnifiedRadixCache(BasePrefixCache):
+@@ -3236,7 +4697,7 @@ class UnifiedRadixCache(BasePrefixCache):
+     ) -> Optional[tuple[torch.Tensor, NodeId]]:
+         """Prepare KV cache loading from host to device.
+         Returns (device_indices, last_node), or None when buffer-mode
+-        admission must retry without committing a load."""
++        admission or an in-flight load anchor requires a retry."""
+         if self.buffer_pipeline is not None:
+             return self.buffer_pipeline.init_load_back(params)
+         best_match_node_id = params.best_match_node
+@@ -3255,6 +4716,11 @@ class UnifiedRadixCache(BasePrefixCache):
+                 and (req.swa_host_hit_length > 0 or req.mamba_host_hit_length > 0)
+             )
+         ):
++            # A FULL-only prefetch can expose its pages before its ACK while
++            # native admission still needs Mamba under this same anchor.
++            # Reusing the anchor would overwrite its locks and double-pop it.
++            if best_match_node_id in self.ongoing_load_back:
++                return None
+             if self.load_back(best_match_node_id, mem_quota, req=req):
+                 new_indices = self.tree_core.collect_full_device_indices(
+                     best_match_node_id, last_best_match_device_node_id
+@@ -3341,9 +4807,31 @@ class UnifiedRadixCache(BasePrefixCache):
          if self.linker is not None:
              return self.linker.start_layer_wise_loading()
          if self.cache_controller is not None:
@@ -4597,12 +4681,221 @@ index b219467..6ca04e5 100644
      def test_prefetch_refill_leaves_eviction_path_uncorrupted(self):
          """Write-through: eviction after such a refill must not corrupt the tree."""
          cache, allocator, _ = build_fixture(self.cfg)
+diff --git a/test/srt/test_beliefkv_backed_full_scan.py b/test/srt/test_beliefkv_backed_full_scan.py
+new file mode 100644
+index 0000000..5c9b296
+--- /dev/null
++++ b/test/srt/test_beliefkv_backed_full_scan.py
+@@ -0,0 +1,203 @@
++"""Real CPU recovery of backed FULL leaves behind unrelated unbacked leaves."""
++
++import pytest
++
++from sglang.srt.mem_cache.unified_cache.component_type import ComponentType
++from test_beliefkv_terminal_capacity import hybrid_cache, insert_session
++
++
++def backed_victim(cache):
++    ordered = []
++    for index in range(13):
++        session = f"native-{index}"
++        node, _ = insert_session(cache, [100 + index, 1000 + index], session)
++        cache.release_radix_session(session)
++        ordered.append(node)
++    victim = ordered[-1]
++    for component in (ComponentType.FULL, ComponentType.MAMBA):
++        data = victim.component_data[component]
++        data.host_value = data.value.clone()
++    cache.tree_core._update_duplicate_tracking(victim)
++
++    class Leaves(set):
++        iterations = 0
++
++        def __iter__(self):
++            self.iterations += 1
++            return (node for node in ordered if set.__contains__(self, node))
++
++    leaves = Leaves(cache.tree_core.evictable_device_leaves)
++    cache.tree_core.evictable_device_leaves = leaves
++    cache.is_write_back = True
++    cache.beliefkv_join_pressure_candidates = ()
++    cache.beliefkv_join_pressure_validator = lambda *_: False
++    return victim, ordered, leaves
++
++
++@pytest.mark.parametrize("hybrid_cache", (32,), indirect=True)
++def test_backed_index_reaches_real_victim_beyond_the_unbacked_scan_prefix(hybrid_cache):
++    cache, allocator, request_pool = hybrid_cache
++    victim, ordered, leaves = backed_victim(cache)
++    available = allocator.available_size()
++    original = [node.component_data[ComponentType.FULL].value for node in ordered]
++
++    result = cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available + 2, mamba_slots=0, max_nodes=8,
++        collect_diagnostics=True,
++    )
++
++    assert result == {int(ComponentType.FULL): 2, int(ComponentType.MAMBA): 1}
++    assert allocator.available_size() == available + 2
++    assert victim.component_data[ComponentType.FULL].value is None
++    assert victim.component_data[ComponentType.FULL].host_value is not None
++    assert all(
++        node.component_data[ComponentType.FULL].value is values
++        for node, values in zip(ordered[:-1], original[:-1])
++    )
++    diagnosis = cache.beliefkv_handoff_last_capacity
++    assert diagnosis["native_full_scan_source"] == "settled_full_host_duplicates"
++    assert diagnosis["native_full_scanned"] == 1
++    assert diagnosis["native_full_selected"] == 1
++    assert diagnosis["native_full_scan_cycle_started"]
++    assert diagnosis["full_target_satisfied"]
++    assert leaves.iterations == 0
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++@pytest.mark.parametrize("hybrid_cache", (32,), indirect=True)
++@pytest.mark.parametrize("blocked", ("host_lost", "lock", "session", "d2h", "h2d", "excluded"))
++def test_index_candidates_still_require_live_native_eviction_proof(hybrid_cache, blocked):
++    cache, allocator, _ = hybrid_cache
++    victim, _, _ = backed_victim(cache)
++    full = victim.component_data[ComponentType.FULL]
++    if blocked == "host_lost":
++        full.host_value = None
++    elif blocked == "lock":
++        cache.inc_lock_ref(victim.id)
++    elif blocked == "session":
++        insert_session(cache, [112, 1012], "live")
++    elif blocked == "d2h":
++        victim.write_through_pending_id = victim.id
++    elif blocked == "h2d":
++        victim.load_back_pending_id = victim.id
++    available = allocator.available_size()
++    values = full.value
++
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available + 2, mamba_slots=0, max_nodes=8,
++        exclude_node_ids=(victim.id,) if blocked == "excluded" else (),
++    ) == {}
++    assert allocator.available_size() == available
++    assert full.value is values
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++@pytest.mark.parametrize("hybrid_cache", (32,), indirect=True)
++def test_empty_authoritative_duplicate_index_does_not_scan_unbacked_leaves(hybrid_cache):
++    cache, allocator, _ = hybrid_cache
++    victim, _, leaves = backed_victim(cache)
++    for component in (ComponentType.FULL, ComponentType.MAMBA):
++        victim.component_data[component].host_value = None
++    cache.tree_core._update_duplicate_tracking(victim)
++    assert cache.tree_core.full_host_duplicates == {}
++    available = allocator.available_size()
++
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available + 2, mamba_slots=0, max_nodes=8,
++        collect_diagnostics=True,
++    ) == {}
++    assert leaves.iterations == 0
++    assert cache.beliefkv_handoff_last_capacity["native_full_scanned"] == 0
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++@pytest.mark.parametrize("hybrid_cache", (32,), indirect=True)
++def test_backed_index_follows_a_newly_exposed_parent_within_the_same_transaction(hybrid_cache):
++    cache, allocator, _ = hybrid_cache
++    parent, _ = insert_session(cache, [1, 2], "branch")
++    leaf, _ = insert_session(cache, [1, 2, 3, 4], "branch")
++    cache.release_radix_session("branch")
++    for node in (parent, leaf):
++        for component in (ComponentType.FULL, ComponentType.MAMBA):
++            data = node.component_data[component]
++            data.host_value = data.value.clone()
++        cache.tree_core._update_duplicate_tracking(node)
++    cache.is_write_back = True
++    cache.beliefkv_join_pressure_candidates = ()
++    cache.beliefkv_join_pressure_validator = lambda *_: False
++    available = allocator.available_size()
++
++    result = cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available + 4, mamba_slots=0, max_nodes=2,
++        collect_diagnostics=True,
++    )
++
++    assert result[int(ComponentType.FULL)] == 4
++    assert allocator.available_size() == available + 4
++    assert cache.beliefkv_handoff_last_capacity["native_full_scanned"] == 1
++    assert cache.beliefkv_handoff_last_capacity["transaction_attempts"] == 2
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++@pytest.mark.parametrize("hybrid_cache", (32,), indirect=True)
++def test_native_leaf_walk_handles_more_numerous_interior_duplicates(
++    hybrid_cache,
++):
++    cache, allocator, _ = hybrid_cache
++    for end in range(2, 10, 2):
++        leaf, _ = insert_session(cache, list(range(1, end + 1)), "branch")
++    cache.release_radix_session("branch")
++    node = leaf
++    while node is not cache.tree_core.root_node:
++        for component in (ComponentType.FULL, ComponentType.MAMBA):
++            data = node.component_data[component]
++            data.host_value = data.value.clone()
++        cache.tree_core._update_duplicate_tracking(node)
++        node = node.parent
++    assert len(cache.tree_core.full_host_duplicates) == 4
++    assert len(cache.tree_core.evictable_device_leaves) == 1
++    cache.is_write_back = True
++    cache.beliefkv_join_pressure_validator = lambda *_: False
++    available = allocator.available_size()
++
++    result = cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available + 2, mamba_slots=0, max_nodes=1,
++        collect_diagnostics=True,
++    )
++
++    assert result[int(ComponentType.FULL)] == 2
++    assert allocator.available_size() == available + 2
++    assert cache.beliefkv_handoff_last_capacity["native_full_scanned"] == 1
++    assert (
++        cache.beliefkv_handoff_last_capacity["native_full_scan_source"]
++        == "device_leaves_dense_index"
++    )
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++@pytest.mark.parametrize("hybrid_cache", (32,), indirect=True)
++def test_native_ack_split_and_reinsert_keep_backed_index_complete(hybrid_cache):
++    cache, allocator, _ = hybrid_cache
++    leaf, _ = insert_session(cache, [1, 2, 3, 4], "checkpoint")
++    cache.release_radix_session("checkpoint")
++    full = leaf.component_data[ComponentType.FULL]
++    full.host_value = full.value.clone()
++    cache.tree_core.mark_write_through_pending([leaf.id], leaf.id)
++    assert leaf.id not in cache.tree_core.full_host_duplicates
++    cache.tree_core.finish_write_through([leaf.id], leaf.id)
++    assert cache.tree_core.full_host_duplicates[leaf.id] is leaf
++
++    insert_session(cache, [1, 2, 9, 9], "other")
++    prefix = leaf.parent
++    assert prefix is not cache.tree_core.root_node
++    assert cache.tree_core.full_host_duplicates[prefix.id] is prefix
++    assert cache.tree_core.full_host_duplicates[leaf.id] is leaf
++
++    cache.is_write_back = True
++    result = cache.tree_core.demote_backed_full_preserving_mamba(leaf.id)
++    cache._free_values(result.device_frees, result.host_frees)
++    cache.tree_core._update_duplicate_tracking(leaf)
++    assert leaf.id not in cache.tree_core.full_host_duplicates
++    cache.tree_core._unevict_node_on_insert(leaf, allocator.alloc(2))
++    assert cache.tree_core.full_host_duplicates[leaf.id] is leaf
++    cache._execute_and_commit_kv_backup.assert_not_called()
 diff --git a/test/srt/test_beliefkv_execution_handoff.py b/test/srt/test_beliefkv_execution_handoff.py
 new file mode 100644
-index 0000000..18b17ed
+index 0000000..deaf243
 --- /dev/null
 +++ b/test/srt/test_beliefkv_execution_handoff.py
-@@ -0,0 +1,736 @@
+@@ -0,0 +1,824 @@
 +"""CPU checks for read-only reentry and cold-only capacity exchange."""
 +
 +import ast
@@ -4986,6 +5279,94 @@ index 0000000..18b17ed
 +    cache._demote.assert_called_once()
 +    cache.beliefkv_join_pressure_parked.assert_called_once_with(2, {0: 2, 2: 1})
 +    assert cache.beliefkv_handoff_last_victims[0]["scope"] == "waiting_agent"
++
++
++@pytest.mark.parametrize("collect_diagnostics", (False, True))
++def test_known_waiting_capacity_does_not_scan_unrelated_native_leaves(collect_diagnostics):
++    cache, _, victim, _ = fixture()
++
++    class Leaves(set):
++        iterations = 0
++
++        def __iter__(self):
++            self.iterations += 1
++            return super().__iter__()
++
++    leaves = Leaves(cache.tree_core.evictable_device_leaves)
++    cache.tree_core.evictable_device_leaves = leaves
++    cache.is_write_back = True
++    cache.ongoing_write_through = {}
++    cache.beliefkv_join_pressure_candidates = ((victim.id, victim.creation_time),)
++    cache.beliefkv_join_pressure_validator = lambda *_: True
++    free = {0: 0, 2: 0}
++    cache._component_available_size = free.__getitem__
++
++    def demote(node_id, tracker):
++        assert node_id == victim.id
++        free[0] += 2
++        free[2] += 1
++        tracker.update({0: 2, 2: 1})
++
++    cache._demote = demote
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=2, mamba_slots=1, collect_diagnostics=collect_diagnostics,
++    ) == {0: 2, 2: 1}
++    assert free == {0: 2, 2: 1}
++    assert leaves.iterations == 0
++    assert cache.beliefkv_handoff_last_victims[0]["scope"] == "waiting_agent"
++    if collect_diagnostics:
++        diagnosis = cache.beliefkv_handoff_last_capacity
++        assert diagnosis["native_full_scanned"] == 0
++        assert diagnosis["full_target_satisfied"] and diagnosis["mamba_target_satisfied"]
++
++
++@pytest.mark.parametrize("waiting", ("partial", "invalid", "excluded", "bounded"))
++def test_known_waiting_shortfall_still_uses_validated_native_fallback(waiting):
++    cache, checkpoint, victim, _ = fixture()
++    fallback = Node(
++        id=3, parent=cache.tree_core.root_node, creation_time=3,
++        component_data=[data(refs=0), data(False, False, 0), data(refs=0)],
++        write_through_pending_id=None, load_back_pending_id=None, backuped=True,
++    )
++    nodes = {0: cache.tree_core.root_node, 1: checkpoint, 2: victim, 3: fallback}
++    cache.tree_core.node_by_id = nodes.__getitem__
++    cache.tree_core.evictable_device_leaves.add(fallback)
++    cache.is_write_back = True
++    cache.ongoing_write_through = {}
++    cache.beliefkv_join_pressure_candidates = ((victim.id, victim.creation_time),)
++    cache.beliefkv_join_pressure_validator = lambda *_: waiting not in ("invalid", "bounded")
++    free = {0: 0, 2: 0}
++    cache._component_available_size = free.__getitem__
++
++    def demote(node_id, tracker):
++        node = nodes[node_id]
++        assert node is fallback or waiting == "partial"
++        node.component_data[0].value = None
++        free[0] += 2
++        free[2] += 1
++        tracker[0] = tracker.get(0, 0) + 2
++        tracker[2] = tracker.get(2, 0) + 1
++
++    cache._demote = demote
++    target = 4 if waiting == "partial" else 2
++    result = cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=target, mamba_slots=1,
++        exclude_node_ids=(victim.id,) if waiting == "excluded" else (),
++        max_nodes=1 if waiting == "bounded" else 64,
++        collect_diagnostics=True,
++    )
++    if waiting == "bounded":
++        assert result == {} and free == {0: 0, 2: 0}
++        assert fallback.component_data[0].value is not None
++        diagnosis = cache.beliefkv_handoff_last_capacity
++        assert diagnosis["transaction_truncated"]
++        assert not diagnosis["native_fallback_considered"]
++        return
++    assert result[0] == free[0] == target
++    assert fallback.component_data[0].value is None
++    assert (victim.component_data[0].value is None) == (waiting == "partial")
++    assert cache.beliefkv_handoff_last_capacity["native_full_scanned"] > 0
++    assert cache.beliefkv_handoff_last_victims[-1]["scope"] == "unreferenced_cache"
 +
 +
 +def test_handoff_reclaim_accumulates_native_full_and_mamba_into_sparse_tracker():
@@ -8557,10 +8938,10 @@ index 0000000..f8adad2
 +    assert tracker.snapshot_released_session_leaf_anchors("session", generation) is None
 diff --git a/test/srt/test_beliefkv_shadow_dispatch.py b/test/srt/test_beliefkv_shadow_dispatch.py
 new file mode 100644
-index 0000000..700e2eb
+index 0000000..a69530b
 --- /dev/null
 +++ b/test/srt/test_beliefkv_shadow_dispatch.py
-@@ -0,0 +1,1402 @@
+@@ -0,0 +1,1495 @@
 +"""CPU-only action-local shadow dispatch tests, without importing the GPU runtime."""
 +
 +import ast
@@ -8621,7 +9002,9 @@ index 0000000..700e2eb
 +        "beliefkv_prefetch_can_admit",
 +        "supports_beliefkv_overlap_prefetch",
 +        "ready_to_load_host_cache",
++        "init_load_back",
 +        "load_back",
++        "loading_check",
 +        "_load_back_transfers",
 +        "_execute_and_commit_kv_backup",
 +        "_execute_kv_backup",
@@ -8637,6 +9020,9 @@ index 0000000..700e2eb
 +        for node in cache.body
 +        if isinstance(node, ast.FunctionDef) and node.name in names
 +    ]
++    for method in methods:
++        if method.name == "init_load_back":
++            method.decorator_list = []
 +    results = [
 +        node
 +        for node in TREE.body
@@ -8969,6 +9355,94 @@ index 0000000..700e2eb
 +
 +
 +class TestPrepareHostShadow(unittest.TestCase):
++    def test_same_anchor_full_prefetch_then_native_state_waits_without_overwriting(self):
++        cache, _, parent, leaf, _, _, _ = native_load_fixture()
++        full_spec = SimpleNamespace(
++            host_indices=torch.arange(2), nodes_to_load=[leaf.id],
++        )
++        state_spec = SimpleNamespace(host_indices=torch.arange(0), nodes_to_load=[])
++        cache.tree_core.build_load_back_spec = Mock(side_effect=(
++            (full_spec, {}),
++            (state_spec, {ComponentType.MAMBA: [SimpleNamespace(
++                name=PoolName.MAMBA, host_indices=torch.arange(1),
++                nodes_to_load=[leaf.id],
++            )]}),
++        ))
++        cache.linker = None
++        cache.tree_core.is_full_device_evicted = Mock(return_value=False)
++        cache.tree_core.empty_match_result = SimpleNamespace(
++            device_indices=torch.arange(0),
++        )
++        cache.tree_core.collect_full_device_indices = Mock(return_value=torch.arange(0))
++        cache.tree_core.finish_load_back = Mock(
++            side_effect=lambda node_id: setattr(leaf, "load_back_pending_id", None),
++        )
++        request = SimpleNamespace(
++            rid="native-parent", last_node=parent.id,
++            swa_host_hit_length=0, mamba_host_hit_length=1,
++        )
++        params = SimpleNamespace(
++            best_match_node=leaf.id, mem_quota=None, req=request, host_hit_length=0,
++        )
++        self.assertTrue(cache.load_back(
++            leaf.id, beliefkv_command_id="full-prefetch",
++            beliefkv_no_device_reclaim=True, beliefkv_include_mamba=False,
++        ))
++        first = cache.ongoing_load_back[leaf.id]
++        self.assertIsNone(cache.init_load_back(params))
++        self.assertIs(cache.ongoing_load_back[leaf.id], first)
++        self.assertEqual(cache.cache_controller.load.call_count, 1)
++        self.assertEqual(cache.inc_host_lock_ref.call_count, 1)
++        for comp in cache._components_tuple:
++            self.assertEqual(comp.prepare_load_back.call_count, 1)
++
++        cache.cache_controller.ack_load_queue = [SimpleNamespace(
++            node_ids=[leaf.id], finish_event=Mock(),
++        )]
++        cache.loading_check(finish_count=1)
++        self.assertEqual(cache.ongoing_load_back, {})
++
++        cache.init_load_back(params)
++        self.assertEqual(cache.cache_controller.load.call_count, 2)
++        cache.cache_controller.ack_load_queue = [SimpleNamespace(
++            node_ids=[leaf.id], finish_event=Mock(),
++        )]
++        cache.loading_check(finish_count=1)
++        self.assertEqual(cache.ongoing_load_back, {})
++        self.assertEqual(cache.dec_host_lock_ref.call_count, 2)
++        self.assertEqual(cache.tree_core.finish_load_back.call_count, 2)
++
++    def test_duplicate_load_back_declines_before_locks_or_component_preparation(self):
++        cache, _, _, leaf, _, _, _ = native_load_fixture()
++        pending = object()
++        cache.ongoing_load_back[leaf.id] = pending
++        self.assertFalse(cache.load_back(leaf.id, req=object()))
++        self.assertIs(cache.ongoing_load_back[leaf.id], pending)
++        cache.inc_lock_ref.assert_not_called()
++        cache.inc_host_lock_ref.assert_not_called()
++        cache.cache_controller.load.assert_not_called()
++        for comp in cache._components_tuple:
++            comp.prepare_load_back.assert_not_called()
++
++    def test_inflight_full_without_further_restore_keeps_native_layer_pipeline(self):
++        cache, _, parent, leaf, _, _, _ = native_load_fixture()
++        cache.ongoing_load_back[leaf.id] = object()
++        cache.linker = None
++        cache.tree_core.is_full_device_evicted = Mock(return_value=False)
++        empty = torch.arange(0)
++        cache.tree_core.empty_match_result = SimpleNamespace(device_indices=empty)
++        request = SimpleNamespace(
++            rid="native-parent", last_node=parent.id,
++            swa_host_hit_length=0, mamba_host_hit_length=0,
++        )
++        params = SimpleNamespace(
++            best_match_node=leaf.id, mem_quota=None, req=request, host_hit_length=0,
++        )
++        indices, node_id = cache.init_load_back(params)
++        self.assertIs(indices, empty)
++        self.assertEqual(node_id, parent.id)
++        cache.inc_host_lock_ref.assert_not_called()
++
 +    def test_prefix_burst_queues_ancestors_once_and_retains_per_node_ack_identity(self):
 +        cache, _, parent, leaf, group, ops, args = fixture()
 +        parent.component_data[ComponentType.FULL].host_value = None
@@ -9965,13 +10439,14 @@ index 0000000..700e2eb
 +    unittest.main()
 diff --git a/test/srt/test_beliefkv_terminal_capacity.py b/test/srt/test_beliefkv_terminal_capacity.py
 new file mode 100644
-index 0000000..7513616
+index 0000000..1a99dfc
 --- /dev/null
 +++ b/test/srt/test_beliefkv_terminal_capacity.py
-@@ -0,0 +1,944 @@
+@@ -0,0 +1,979 @@
 +"""Terminal child reclamation with the real CPU radix tree and allocator."""
 +
 +from array import array
++from collections import deque
 +from pathlib import Path
 +from types import SimpleNamespace as NS
 +from unittest.mock import Mock
@@ -10271,6 +10746,7 @@ index 0000000..7513616
 +        if component == ComponentType.FULL:
 +            full = node.component_data[ComponentType.FULL]
 +            full.host_value = full.value.clone()
++        cache.tree_core._update_duplicate_tracking(node)
 +    if component == ComponentType.FULL:
 +        ordered = list(cache.tree_core.evictable_device_leaves)
 +    else:
@@ -10548,6 +11024,7 @@ index 0000000..7513616
 +        state.host_value = state.value.clone()
 +        if ineligible and blocked == "pending":
 +            node.load_back_pending_id = node.id
++        cache.tree_core._update_duplicate_tracking(node)
 +    saved_values = [
 +        (node, tuple((data.value, data.host_value) for data in node.component_data))
 +        for node in ordered[:-1]
@@ -10557,6 +11034,8 @@ index 0000000..7513616
 +    cache.is_write_back = True
 +    cache.beliefkv_join_pressure_candidates = ()
 +    cache.beliefkv_join_pressure_validator = lambda *_: False
++    # Exercise the legacy cursor independently of the indexed candidate path.
++    cache._beliefkv_handoff_full_scan = deque(ordered)
 +
 +    result = cache.reclaim_beliefkv_handoff_capacity(
 +        full_tokens=full_available + 2,
@@ -10652,10 +11131,12 @@ index 0000000..7513616
 +        state.host_value = state.value.clone()
 +        if node is not victim and blocked == "pending":
 +            node.load_back_pending_id = node.id
++        cache.tree_core._update_duplicate_tracking(node)
 +    available = allocator.available_size()
 +    cache.is_write_back = True
 +    cache.beliefkv_join_pressure_candidates = ()
 +    cache.beliefkv_join_pressure_validator = lambda *_: False
++    cache._beliefkv_handoff_full_scan = deque(ordered)
 +
 +    assert cache.reclaim_beliefkv_handoff_capacity(
 +        full_tokens=available + 2, mamba_slots=0, max_nodes=8,
@@ -10664,7 +11145,7 @@ index 0000000..7513616
 +    first = cache.beliefkv_handoff_last_capacity
 +    assert first["native_full_scanned"] == 8
 +    assert first["native_full_scan_remaining"] == 1
-+    assert first["native_full_scan_cycle_started"]
++    assert not first["native_full_scan_cycle_started"]
 +    if victim_changes:
 +        victim.load_back_pending_id = victim.id
 +    result = cache.reclaim_beliefkv_handoff_capacity(
@@ -10725,6 +11206,34 @@ index 0000000..7513616
 +    assert [row["node_id"] for row in cache.beliefkv_handoff_last_victims] == [
 +        node.id for node in chain
 +    ]
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++def test_known_waiting_chain_fills_real_capacity_without_native_leaf_census(hybrid_cache):
++    cache, allocator, request_pool, chain = backed_waiting_chain(hybrid_cache)
++
++    class Leaves(set):
++        iterations = 0
++
++        def __iter__(self):
++            self.iterations += 1
++            return super().__iter__()
++
++    leaves = Leaves(cache.tree_core.evictable_device_leaves)
++    cache.tree_core.evictable_device_leaves = leaves
++    available = allocator.available_size()
++    state = chain[0].component_data[ComponentType.MAMBA].value
++    result = cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available + 6, mamba_slots=0, collect_diagnostics=True,
++    )
++    assert result[int(ComponentType.FULL)] == 6
++    assert allocator.available_size() == available + 6
++    assert chain[0].component_data[ComponentType.MAMBA].value is state
++    assert leaves.iterations == 0
++    diagnosis = cache.beliefkv_handoff_last_capacity
++    assert diagnosis["full_target_satisfied"] and diagnosis["mamba_target_satisfied"]
++    assert diagnosis["native_full_scanned"] == 0
++    assert not diagnosis["native_fallback_considered"]
 +    cache._execute_and_commit_kv_backup.assert_not_called()
 +
 +
