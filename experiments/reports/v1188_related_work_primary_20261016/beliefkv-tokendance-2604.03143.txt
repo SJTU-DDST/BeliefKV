@@ -1,0 +1,769 @@
+                                            TokenDance: Scaling Multi-Agent LLM Serving via
+                                                    Collective KV Cache Sharing
+                                                     Zhuohang Bian                                Feiyang Wu                                Chengrui Zhang
+                                                    Peking University                           Peking University                           Peking University
+                                                      Beijing, China                             Beijing, China                              Beijing, China
+                                                  22373017@buaa.edu.cn                     2501111907@stu.pku.edu.cn                   2301111796@stu.pku.edu.cn
+
+                                                    Hangcheng Dong                                  Yun Liang                                 Youwei Zhuo
+                                               Shanghai Jiao Tong University                     Peking University                          Peking University
+                                                     Shanghai, China                               Beijing, China                             Beijing, China
+                                               donghangcheng@sjtu.edu.cn                       ericlyun@pku.edu.cn                         youwei@pku.edu.cn
+arXiv:2604.03143v1 [cs.DC] 3 Apr 2026
+
+
+
+
+                                        Abstract                                                               across interaction rounds, and all active agents’ caches must
+                                        Multi-agent LLM applications organize execution in synchro-            coexist in GPU memory simultaneously. The central chal-
+                                        nized rounds where a central scheduler gathers outputs from            lenge for multi-agent LLM serving is therefore maximizing
+                                        all agents and redistributes the combined context. This All-           the number of agents that can run concurrently under a fixed
+                                        Gather communication pattern creates massive KV Cache                  memory budget.
+                                        redundancy, because every agent’s prompt contains the same                This memory pressure has a structural root cause. Multi-
+                                        shared output blocks, yet existing reuse methods fail to ex-           agent frameworks such as OpenClaw [24] and MoltBook [23]
+                                        ploit it efficiently.                                                  organize execution in synchronized rounds: each agent pro-
+                                           We present TokenDance, a system that scales the number              duces an output, a central scheduler gathers all outputs, and
+                                        of concurrent agents by exploiting the All-Gather pattern              redistributes the combined context to every agent for the
+                                        for collective KV Cache sharing. TokenDance’s KV Collector             next round. We call this recurring data flow the All-Gather
+                                        performs KV Cache reuse over the full round in one collec-             pattern, after the corresponding collective in distributed com-
+                                        tive step, so the cost of reusing a shared block is paid once          puting. The pattern directly explains the memory problem.
+                                        regardless of agent count. Its Diff-Aware Storage encodes              As Figure 1 shows, each agent’s prompt for round 𝑡+1 com-
+                                        sibling caches as block-sparse diffs against a single master           bines a private history (𝐻 ) with the full set of shared out-
+                                        copy, achieving 11–17× compression on representative work-             put blocks (𝑂). Because private histories differ in length, the
+                                        loads. Evaluation on GenerativeAgents and AgentSociety                 same shared blocks land at different absolute positions across
+                                        shows that TokenDance supports up to 2.7× more concurrent              prompts, preventing the serving engine from recognizing
+                                        agents than vLLM with prefix caching under SLO require-                the overlap. The result is 𝑁 near-identical KV Caches in GPU
+                                        ment, reduces per-agent KV Cache storage by up to 17.5×,               memory. Therefore, memory grows with agent count rather
+                                        and achieves up to 1.9× prefill speedup over per-request               than with the amount of unique context.
+                                        position-independent caching.                                             Figure 2 quantifies the scale of this redundancy. On an 80
+                                                                                                               GB A100 GPU serving Qwen2.5-14B, we compare 10 multi-
+                                        ACM Reference Format:                                                  agent sessions (250 agent subrequests total) against 250 in-
+                                        Zhuohang Bian, Feiyang Wu, Chengrui Zhang, Hangcheng Dong,
+                                                                                                               dependent single requests. The multi-agent workload con-
+                                        Yun Liang, and Youwei Zhuo. 2026. TokenDance: Scaling Multi-
+                                                                                                               sumes 41.5 GiB of KV Cache storage—99.3% of the pool—
+                                        Agent LLM Serving via Collective KV Cache Sharing. In . ACM, New
+                                        York, NY, USA, 14 pages. https://doi.org/10.1145/nnnnnnn.nnnnnnn       while independent requests use only 24.8 GiB (59.2%). The
+                                                                                                               latency impact is immediate: multi-agent sessions hit a P99
+                                                                                                               of 136 s because the memory pool saturates from the start,
+                                        1   Introduction                                                       whereas independent requests start lower and rise gradually
+                                        Large language models (LLMs) are the execution engine of               to 125 s. The difference is that independent requests free
+                                        many multi-agent platforms for coding [8, 29], search [14,             their KV Caches after completion, whereas multi-agent KV
+                                        15, 32], and simulation [16, 26–28]. Social simulation pushes          Caches must coexist across rounds, saturating the pool and
+                                        multi-agent serving to its limits: it requires many agents             forcing the scheduler to preempt and swap.
+                                        running simultaneously, complex multi-round interactions                  Existing serving systems do not exploit this redundancy
+                                        where each agent’s context grows over time, and tool use that          because they operate at the wrong granularity. Systems like
+                                        further extends prompt length. As these applications grow              vLLM [12] and SGLang [40] treat each agent subrequest as
+                                        from a handful of agents to tens or hundreds in production             an independent inference request, applying prefix caching
+                                        deployments, GPU memory becomes the dominant scaling                   or position-independent caching per request. Agent-aware
+                                        constraint. Each agent maintains a KV Cache that persists
+                                                                                                           1
+Conference’17, July 2017, Washington, DC, USA      Zhuohang Bian, Feiyang Wu, Chengrui Zhang, Hangcheng Dong, Yun Liang, and Youwei Zhuo
+
+
+
+
+Figure 1. The All-Gather prompt structure. All agents re-
+ceive the same output blocks (𝑂), but the blocks appear at
+different positions because each prompt has its own private
+history (𝐻 ) and may use a different block order. This struc-
+                                                                        (a) Schematic: Structural (b) Measurement: Pairwise Block
+ture arises in any multi-agent application that follows the
+                                                                        Overlap                   Similarity
+All-Gather pattern.
+                                                                        Figure 3. High similarity of KV Caches after PIC reuse.
+                                                                        Because all agents reuse the same shared blocks, their KV
+                                                                        Caches differ only at the privately-recomputed positions.
+
+
+                                                                        40] only matches tokens from position zero, so it cannot
+                                                                        detect any sharing once private histories diverge. Position-
+                                                                        independent caching (PIC) methods [10, 34–36] remove this
+                                                                        constraint and can reuse blocks at arbitrary offsets, but they
+                                                                        still process each request separately: in an 𝑁 -agent round the
+                                                                        same shared blocks trigger 𝑁 separate reuse passes, paying
+(a) Subrequest latency against (b) Peak KV Cache usage for the          per-request overhead for what is fundamentally a round-
+request index.                 two workloads.                           level sharing opportunity. Section 2.3 and Figure 4 contrast
+                                                                        this per-request approach with collective reuse.
+Figure 2. The scaling gap between multi-agent and inde-                    The second problem is inefficient storage. In All-Gather
+pendent workloads on a single A100-80GB GPU serving                     workloads where agents share the majority of their round
+Qwen2.5-14B. Both workloads issue the same total number                 context, the resulting KV Caches after reuse are nearly iden-
+of subrequests (250), but the multi-agent workload nearly               tical. The reason is structural: the shared output blocks are
+exhausts the KV Cache pool because each agent retains its               reused from the same cached source, so they produce identi-
+own copy of the shared context across rounds, whereas in-               cal KV Cache values across all agents; the only entries that
+dependent requests free memory after completion.                        differ are tokens that each agent recomputes from its own
+                                                                        history, which typically account for a small fraction of the
+                                                                        total sequence. Figure 3 confirms this quantitatively: in an
+schedulers such as Parrot [17], Autellix [22], and Token-               8-agent GenerativeAgents [26] round, pairwise block simi-
+cake [2] optimize when each subrequest runs and manage                  larity ranges from 91% to 97%, meaning the vast majority of
+offloading, but do not change how the resulting KV Caches               cached data is duplicated across agents. Storing one full KV
+are computed or stored; every agent still holds a full, inde-           Cache per agent therefore wastes most of the GPU memory
+pendent cache copy. The missing capability is round-level               budget and directly caps how many agents can remain active.
+KV Cache optimization: detecting that agents in the same                Making one round faster does not solve the problem if each
+round share most of their context and using this overlap                agent still holds a full KV Cache copy. The per-agent storage
+to reduce both compute and memory cost. Exploiting this                 cost must also shrink so the same hardware can sustain more
+overlap, however, requires solving two specific problems.               concurrent agents.
+   The first problem is inefficient reuse. Each agent’s prompt             We present TokenDance, a system that scales the number
+in a new round contains a private history and a shared set              of concurrent agents on local GPUs by exploiting the All-
+of output blocks from the previous round. Because histories             Gather pattern for collective KV Cache sharing. Instead of
+differ in length and the scheduler may choose different block           optimizing individual requests, TokenDance operates on the
+orders, the same shared blocks appear at different absolute             multi-agent round as a whole. It amortizes reuse computation
+positions across requests. As Figure 1 shows, block 𝑂 1 starts          across all agents in a round so the cost of sharing a block is
+at a different offset in each agent’s prompt. Prefix caching [12,       paid once regardless of agent count, and it compresses KV
+                                                                    2
+TokenDance : Scaling Multi-Agent LLM Serving via Collective KV Cache Sharing                     Conference’17, July 2017, Washington, DC, USA
+
+
+Cache storage to only the inter-agent differences so memory
+cost grows with the actual difference rather than with the
+number of agents.
+   We evaluate TokenDance on the multi-agent social sim-
+ulation frameworks GenerativeAgents [26] and AgentSoci-
+ety [27]. Compared to vLLM with prefix caching, Token-
+Dance reduces end-to-end latency by up to 2.3× and KV
+Cache storage by 94%. Against CacheBlend, TokenDance
+achieves a 1.9× speedup in the prefill phase. These gains
+translate directly into higher agent capacity: under the same
+latency target, TokenDance supports up to 2.7× more con-
+current agents.
+
+2     Background
+2.1   The All-Gather Pattern
+As introduced in Section 1, the All-Gather pattern organizes
+multi-agent execution in synchronized rounds where a sched-
+uler gathers all agent outputs and redistributes the combined
+context. We now formalize this structure. For a system with
+𝑁 agents, each agent 𝑖 maintains a private history 𝐻𝑖𝑡 con-
+taining its system prompt and prior interactions up to round
+𝑡. In round 𝑡, each agent 𝑗 produces an output block 𝑂 𝑡𝑗 . The
+shared set of round outputs is:
+                     O𝑡 = {𝑂 𝑡1, 𝑂 𝑡2, . . . , 𝑂 𝑡𝑁 }             (1)
+The prompt for agent 𝑖 in round 𝑡 + 1 is then:
+                       𝑃𝑖𝑡 +1 = 𝐻𝑖𝑡 ∥Π𝑖 (O𝑡 )                     (2)       Figure 4. Per-request PIC reuse (top) vs. TokenDance’s col-
+                                                                            lective reuse (bottom). Existing PIC methods process each
+where Π𝑖 is the scheduler-defined layout of the shared output               agent’s shared blocks independently, repeating RoPE rota-
+blocks for agent 𝑖. Every prompt in the round contains the                  tion and important-position selection 𝑁 times. TokenDance
+same shared output blocks and one private history, and the                  groups the 𝑁 requests and performs these operations once
+shared blocks appear at different absolute positions across                 for the round.
+requests because the private histories differ in length.
+
+2.2   KV Cache Reuse in LLM Serving                                         recomputed, while the remaining positions reuse the rotated
+LLM serving is memory-bound: the system stores KV Caches                    cached values directly. This recovers sharing beyond the
+to avoid recomputing attention keys and values for prior                    prefix at the cost of additional compute for rotation and re-
+tokens, and managing these caches is the primary challenge                  computation, and a minor accuracy trade-off at positions
+for scaling system capacity. Existing reuse methods fall into               that are reused without recomputation.
+two categories.
+   Prefix caching, used by vLLM [12] and SGLang [40], reuses                2.3   Limitations of Existing Serving Systems
+cached tensors only when a new request shares an exact                      The All-Gather pattern creates a specific combination of
+token prefix with a stored sequence. This works well for                    redundancy that existing serving systems fail to exploit. We
+requests that share a common system prompt but fails once                   group prior work into two categories and explain why each
+per-agent private histories cause the prefix to diverge.                    falls short.
+   Position-independent caching (PIC) methods [10, 34–36]                   Agent-Aware, Compute-Centric Schedulers. Parrot [17],
+remove this constraint by recovering shared blocks at ar-                   Autellix [22], and Teola [31] inject application-level depen-
+bitrary offsets. The key idea is to correct for positional en-              dency graphs into the serving backend to prioritize critical
+coding differences: a PIC method first applies RoPE rota-                   requests and reduce head-of-line blocking. ScaleSim [25]
+tion to align cached Keys with the target positions in the                  estimates future invocation distances to guide prefetching
+new request, then computes key differences between the ro-                  in simulation workloads. These systems decide when each
+tated cached values and freshly computed values to identify                 request runs, but they do not control how the resulting KV
+important positions—token positions where the two differ                    Caches are computed or stored. The memory allocator un-
+significantly. Only these important positions are selectively               derneath still treats every agent’s cache as an independent
+                                                                        3
+Conference’17, July 2017, Washington, DC, USA     Zhuohang Bian, Feiyang Wu, Chengrui Zhang, Hangcheng Dong, Yun Liang, and Youwei Zhuo
+
+
+object. A burst of non-critical agents can therefore evict a
+critical agent’s cache regardless of the schedule. None of
+these systems detects that the 𝑁 requests in an All-Gather
+round share the same output blocks, so neither the reuse
+work nor the storage footprint is reduced.
+KV-Cache-centric, Agent-Agnostic Engines. vLLM [12]
+and SGLang [40] reuse cached tensors through prefix match-
+ing, which breaks as soon as private histories diverge from
+position zero. CacheBlend [35] and EPIC [10] lift this posi-
+tional constraint by reusing KV Cache blocks at arbitrary
+offsets, but they still analyze each request separately: 𝑁
+agents trigger 𝑁 independent reuse passes over the same
+shared blocks. Mooncake [30] and CacheGen [19] expand
+the cache pool through disaggregation and compression, yet
+their policies are driven by global memory pressure, not by
+round structure. Tokencake [2] adds agent-aware scheduling
+on top of a KV-Cache-centric backend, proactively offload-            Figure 5. TokenDance Overview. A round-aware prompt
+ing stalled agents and reserving memory for critical ones.            interface preserves block boundaries so the runtime can iden-
+Across all of these systems, the final outcome is the same:           tify shared content; collective KV Cache reuse amortizes the
+every agent holds a dense, independent KV Cache copy, and             reuse cost across all agents in the round; diff-aware storage
+no storage is freed even when over 90% of cache blocks are            with fused restore compresses per-agent KV Caches to only
+identical across agents in the same round.                            the inter-agent differences.
+   Figure 4 contrasts this per-request approach (top) with the
+collective alternative that TokenDance introduces (bottom).
+
+
+
+                                                                      4    TokenDance Design
+3    Overview                                                         The design of TokenDance starts from a mismatch between
+TokenDance scales the number of active agents that a local            the All-Gather application structure and the serving system.
+GPU can support in an All-Gather system by addressing                 Multi-agent applications communicate in rounds, but the
+both redundant reuse computation and redundant KV Cache               serving system receives a flat token stream, loses the logical
+storage. The key design principle is to lift the unit of op-          boundary between private and shared blocks, and treats
+timization from a single request to the All-Gather round:             every request as independent.
+every operation that is common across agents in a round is               This mismatch creates three compounding inefficiencies.
+performed once and shared, while only the per-agent differ-           First, the runtime cannot identify shared blocks across re-
+ences are handled individually. Figure 5 illustrates the three        quests because position-based indexing conflates content
+components that realize this principle.                               identity with absolute offset. Second, position-independent
+   The round-aware prompt interface (Section 4.1) preserves           reuse methods repeat the same analysis for each request in
+the logical block structure of each prompt by inserting sep-          the round, even though all requests consume the same shared
+arator tokens between adjacent blocks, so the runtime can             blocks. Third, even after reuse, the resulting KV Caches are
+recognize shared blocks even when they appear at different            nearly identical, yet the system stores one full dense copy
+absolute positions. The collective KV Cache reuse algorithm           per request. The cumulative result is an inflated per-agent
+(Section 4.2) exploits this structure to perform reuse for a          KV Cache cost that directly caps the number of concurrent
+compatible group of requests in one pass, paying the reuse            agents.
+overhead once per round instead of once per request. The diff-           TokenDance addresses these inefficiencies with two de-
+aware storage scheme (Section 4.3) encodes sibling caches             sign rules. First, it keeps the round structure visible until the
+as sparse differences against a shared Master copy, and the           runtime can use it. Second, it preserves one correct cache
+fused restore path (Section 4.4) applies those differences dur-       state per request while sharing the work and state that are
+ing GPU transfer to avoid a separate reconstruction step.             truly common across the round. The first rule leads to a
+Together, these components reduce both the compute work               round-aware interface (Section 4.1) and collective KV Cache
+and the storage cost that each additional agent adds, allow-          reuse (Section 4.2). The second rule leads to diff-aware stor-
+ing the same hardware to sustain more agents at the same              age and fused diff restore (Section 4.4). The rest of this section
+service level.                                                        describes each component in detail.
+                                                                  4
+TokenDance : Scaling Multi-Agent LLM Serving via Collective KV Cache Sharing                    Conference’17, July 2017, Washington, DC, USA
+
+
+                                                                           (PIC) methods [10, 34–36] can recover sharing beyond the
+                                                                           prefix, but they still process each request independently.
+                                                                           In an 𝑁 -agent round, the runtime performs 𝑁 separate
+                                                                           reuse passes for the same set of shared blocks. Each pass
+                                                                           applies RoPE, computes key differences, and selects impor-
+                                                                           tant positions—all operations that produce nearly identical
+                                                                           results across requests because the shared blocks are content-
+                                                                           identical. This per-request redundancy is a poor match for
+                                                                           the All-Gather pattern, where the shared round updates are
+                                                                           common to every request in the round.
+                                                                              TokenDance resolves this redundancy with collective KV
+                                                                           Cache reuse, illustrated in Figure 7. Rather than process-
+                                                                           ing each request independently, the KV Collector groups
+Figure 6. Example of TokenDance’s round-aware prompt                       the 𝑁 requests in a round and performs one shared RoPE
+interface. Each prompt is composed of a private history block              rotation and one shared important-position selection pass,
+and a shared set of output blocks, with reserved separator                 then updates only the differing positions in each request’s
+tokens (<TTSEP>) in between.                                               cache. Figure 7 contrasts this collective path (T3) with full
+                                                                           recomputation (T1) and per-request PIC reuse (T2).
+                                                                           Grouping Compatible Requests. The KV Collector col-
+4.1   Round-Aware Prompt Interface                                         lects requests from the same All-Gather round whose prompt
+The runtime cannot exploit the All-Gather pattern if it only               spans are compatible for collective processing. Compatibil-
+receives a flat token stream. TokenDance provides a round-                 ity requires that the requests have the same active prompt
+aware prompt interface that preserves the logical block struc-             length, the same cached span visible to the cache layer,
+ture of each prompt, so the runtime can recognize shared                   and non-overlapping slot mappings in the execution engine.
+blocks even when they appear at different absolute positions               These are execution constraints that ensure lockstep layer-
+across requests.                                                           wise processing; requests that do not satisfy them fall back
+   Any multi-agent framework that follows the All-Gather                   to separate groups or to the single-request path.
+pattern can adopt this interface with minimal code changes.                Layerwise Collective Reuse. For each compatible group,
+If the application does not follow the pattern, TokenDance                 the runtime drives layerwise retrieval and model execution
+falls back to the standard single-request path with no per-                in lockstep. At each layer, KV Collector concatenates the Q
+formance loss.                                                             and K tensors from all requests in the group into one com-
+   The application assembles one prompt per agent and in-                  bined tensor and applies a single batched RoPE call. On the
+serts a reserved separator token <TTSEP> between adjacent                  configured check layer, the runtime compares the rotated
+logical blocks. Figure 6 shows an example for three agents in              Keys against the cached Keys for the entire group in one
+one round. Each prompt contains a private history block and                batched difference pass. This pass identifies the important
+the same set of shared output blocks, with separator tokens                positions—the token positions where the cached values di-
+in between. The delimited blocks make the reusable rela-                   verge significantly from the freshly computed values—for
+tionship between requests explicit: the private history, each              each request simultaneously. The runtime then refreshes
+shared agent update, and the round task are all individually               only those important positions in each request’s cached K
+identifiable after tokenization.                                           and V tensors. Later layers reuse the important-position set
+   Once block boundaries are visible, the runtime switches                 identified on the check layer directly, without repeating the
+from fixed-size chunk hashing to segment-based hashing.                    difference computation.
+Each shared update is indexed by its own content segment                      The expensive operations—RoPE rotation and key-
+rather than by its absolute position in one long prompt. Two               difference analysis—are therefore performed once for the
+requests that contain the same shared update therefore map                 group rather than once per request. Only the final cache
+that update to the same cache object, even when their private              update remains request-specific, because each request’s pri-
+histories differ in length. This is the first step that turns the          vate history produces different values at the positions that
+All-Gather pattern into a serving optimization: the runtime                need refreshing. In a request-centric path, the reuse-analysis
+now knows which blocks are shared and can reason about                     overhead grows linearly with the number of agents. In
+reuse at the block level rather than the prefix level.                     TokenDance, the group pays one shared RoPE pass and one
+                                                                           shared diff-analysis pass per layer, and only the per-position
+4.2   Collective KV Cache Reuse                                            refresh scales with agent count. As the number of agents
+Once the round structure is visible, the next problem is re-               in a round grows, this amortization reduces the total reuse
+peated reuse work. Existing position-independent caching
+                                                                       5
+Conference’17, July 2017, Washington, DC, USA    Zhuohang Bian, Feiyang Wu, Chengrui Zhang, Hangcheng Dong, Yun Liang, and Youwei Zhuo
+
+
+                                                                     in full, it merely shifts redundancy from prefill compute to
+                                                                     memory capacity.
+                                                                        This problem is especially acute for multi-agent serving be-
+                                                                     cause rounds repeat and agent states stay live across rounds.
+                                                                     In a system with 𝑁 agents running over 𝑅 rounds, storing
+                                                                     one full cache per agent per round leads to memory con-
+                                                                     sumption that grows as 𝑂 (𝑁 × 𝑅). If the system stores many
+                                                                     near-duplicate KV Caches, memory pressure rises quickly
+                                                                     and the number of active agents falls. Storage must therefore
+                                                                     exploit the same All-Gather structure that reuse exploits: the
+                                                                     requests in a round are structurally similar and differ only
+                                                                     at a predictable subset of positions.
+                                                                     Master-Mirror Layout. TokenDance uses a Master-Mirror
+Figure 7. Collective KV Cache reuse for a three-agent All-           layout to compress the per-round cache family, as shown
+Gather round. Left: each agent’s prompt contains a private           in Figure 8. Diff-Aware Storage keeps one dense cache as
+section and the same shared blocks in different orders. Right:       the Master and stores each remaining cache as a Mirror that
+vLLM computes all three from scratch (T1); per-request               contains only the difference from that Master. The adapter
+PIC processes each request independently (T2); TokenDance            forwards the reuse plan from collective KV Cache reuse
+groups them and shares the RoPE and important-position               into the store path, so storage already knows which request
+selection work across the group (T3), paying the reuse over-         should become the Master and which positions differ in
+head once per round.                                                 each Mirror. When no explicit reuse plan is available—for
+                                                                     example, when a request arrives outside a recognized All-
+                                                                     Gather round—the backend falls back to a token-similarity
+                                                                     heuristic to find a reusable Master among existing cached
+work per round. That reduction is the compute side of the            entries.
+scaling gain.                                                        Block-Sparse Diff Representation. The Mirror correc-
+   The collective amortization is decoupled from the under-          tion is stored as a block-sparse K/V diff. The differences
+lying per-position recovery method. The current prototype            among recovered caches are concentrated in a subset of to-
+uses CacheBlend [35]’s selective recomputation as the de-            ken positions whose values changed because of private con-
+fault backend, but any PIC method that accepts a set of token        text or position-dependent RoPE rotation. These differing
+positions and returns corrected K/V tensors can serve as a           positions tend to cluster in contiguous blocks that corre-
+drop-in replacement through an adapter interface.                    spond to the private history segment or to the boundary
+Reuse Plan Output. Collective KV Cache reuse also pro-               regions between shared blocks. A block-granular representa-
+duces metadata that Diff-Aware Storage later consumes. The           tion captures this clustering with much lower metadata cost
+reuse path records the group membership, the accumulated             than a fine-grained element-wise diff. It also aligns naturally
+per-request deviation scores, and the request chosen as the          with the block-based memory management used by modern
+Master. The Master is not semantically special. It is simply         serving engines and with the tile-aligned restore pipeline
+the request whose recovered result is closest to the group’s         described in Section 4.4.
+common structure, typically the one with the lowest total               On read, the storage layer does not eagerly rebuild a dense
+deviation from the shared blocks. Selecting a good Master            Mirror tensor. Instead, it returns a lightweight mirror ob-
+minimizes the size of the sparse corrections that Diff-Aware         ject that keeps a reference to the Master and the sparse diff
+Storage must keep for the remaining requests. The reuse              metadata. This preserves a standard logical KV Cache ab-
+plan therefore serves as the bridge between the compute              straction for the caller while delaying materialization until
+optimization in this subsection and the storage optimization         the runtime actually needs the data. The Mirror occupies
+in the next.                                                         only 10–20% of a full cache, so the system saves memory
+                                                                     immediately without paying the restore cost until execution
+4.3   Diff-Aware Storage                                             time.
+Collective KV Cache reuse removes redundant compute, but                The strength of this layout depends on how much of the
+it does not remove redundant storage. After reuse completes          prompt is shared versus private. The All-Gather pattern is a
+for one round, the system still holds one dense KV Cache             natural fit because the shared output blocks from the previ-
+per request. This is wasteful because the requests in one All-       ous round dominate the prompt, and only the private history
+Gather round share most of their logical blocks and differ           and round task are unique per agent. If requests diverge more
+only in a private history and a small number of position-            strongly—for example, in a system where each agent receives
+sensitive updates. If the system stores every recovered result       a substantially different subset of the shared outputs—then
+                                                                 6
+TokenDance : Scaling Multi-Agent LLM Serving via Collective KV Cache Sharing                     Conference’17, July 2017, Washington, DC, USA
+
+
+
+
+Figure 8. Diff-aware storage with the Master-Mirror layout.
+Left: after reuse, the KV Caches of three agents differ at only
+10–20% of positions. Right: Diff-Aware Storage stores one                  Figure 9. Fused diff restore at block granularity. Blocks
+full Master cache and encodes each remaining cache as a                    marked “Have Diff” are corrected in SM memory before
+sparse diff (Diff 2, Diff 3). On restore, the system reconstructs          attention; blocks with no diff bypass the correction path.
+each Mirror on the fly from the Master plus its diff.
+                                                                           block-level dispatch. Blocks identical to the Master proceed
+Algorithm 1 Fused Diff Restore for One Mirror Request                      directly to attention. Blocks that carry diffs are corrected in
+Require: Mirror 𝑀, slot map 𝑆, positions 𝑃 old , 𝑃 new , layers            SM memory before being fed to FlashAttention. The block-
+    𝐿.                                                                     sparse format makes this skip-or-correct decision per block
+ 1: Allocate ping-pong buffers 𝐵 load , 𝐵 comp .
+                                                                           without scanning the full cache, and the block size aligns with
+ 2: for ℓ ← 1 to 𝐿 do
+                                                                           attention tile sizes so corrected blocks require no additional
+ 3:     Load Master chunks of layer ℓ into 𝐵 load .                        reshaping.
+ 4:     Sync; swap 𝐵 load ↔ 𝐵 comp .                                          The current prototype fuses the diff into the transfer
+ 5:     𝐷 ← GetDiff(𝑀, ℓ)                                                  pipeline before attention, not inside the attention tile loader.
+ 6:     if 𝐷 ≠ ∅ then                                                      This already removes the dense reconstruction step and re-
+ 7:          Update 𝐵 comp .{𝐾, 𝑉 } at 𝐷.indices with 𝐷.values.            duces extra memory traffic on the critical path. A deeper
+ 8:     end if                                                             fusion—applying diffs as attention tiles are loaded from HBM
+ 9:     𝐵 comp .𝐾 ← RoPERecover(𝑃 old , 𝑃 new , 𝐵 comp .𝐾)                 into shared memory—is a natural extension.
+10:     Write 𝐵 comp to paged KV Cache at layer ℓ using 𝑆.                    Taken together, diff-aware storage and fused restore ad-
+11: end for
+                                                                           dress the memory side of the scaling problem. Storage re-
+                                                                           duces how much state each additional agent contributes to
+                                                                           the memory footprint. Fused restore ensures this compres-
+the Mirror corrections grow larger and the storage benefit                 sion remains usable during online execution rather than
+diminishes. We quantify this relationship in Section 6.4.                  only at rest. This is how TokenDance turns the structural
+                                                                           similarity inherent in the All-Gather pattern into higher
+4.4   Fused Diff Restore                                                   active-agent capacity on local GPUs.
+Compression is useful only if restore stays cheap on the
+critical path. A naive Mirror restore would load the full Mas-             5   Implementation
+ter, copy it into a new buffer, and overwrite the differing                TokenDance is implemented on top of LMCache and vLLM.
+blocks—adding an extra dense write-then-read round trip                    We add approximately 3K lines of Python and 500 lines of
+for an object the system never keeps.                                      CUDA/C++ across four parts: round-aware segment index-
+   TokenDance eliminates this overhead by applying the                     ing, collective KV Cache reuse, diff-aware storage, and fused
+sparse corrections inside the layerwise transfer path that                 sparse restore.
+already moves cached KV data into paged GPU memory.                        Round-Aware Segment Indexing. The application inserts
+Algorithm 1 shows the procedure. Two GPU buffers alternate                 <TTSEP> separators between logical blocks as described in
+roles in a ping-pong fashion: one receives Master chunks                   Section 4.1. On the runtime side, we replace the fixed-size
+from storage while the other undergoes in-place correction                 chunk hash table with a segment-based hash table that splits
+and writeback. At each layer, the path applies the block-                  prompts at separator boundaries and indexes each segment
+sparse diff (line 7), recovers RoPE positions (line 9), and                independently.
+writes the result into paged KV Cache memory (line 10)—                    Collective KV Cache Reuse. The vLLM V1 adapter scans
+all within the same pass that ordinary cache loads already                 requests in each scheduler step, and dispatches each group
+perform. No separate dense Mirror is ever materialized.                    to the collective path described in Section 4.2. Internally,
+   The only additional work per layer is the correction at                 the KV Collector creates one compute generator and one
+line 7, whose cost is proportional to the number of differing              retrieval generator per request and drives them in lockstep
+blocks—typically 10–20% of the total. Figure 9 illustrates the             across layers.
+                                                                       7
+Conference’17, July 2017, Washington, DC, USA     Zhuohang Bian, Feiyang Wu, Chengrui Zhang, Hangcheng Dong, Yun Liang, and Youwei Zhuo
+
+
+Diff-Aware Storage. We add a diff-aware backend that                   with full per-request KV Cache recovery, the most widely
+wraps the normal LMCache storage backend. When a reuse                 adopted open-source PIC method [35], which performs se-
+plan is available, the store path uses it to select the Mas-           lective cross-prefix reuse without round-level sharing.
+ter and identify Mirror positions directly. When no reuse                 Our metrics reflect the scaling goal directly. We derive
+plan is available, the backend falls back to a token-similarity        two capacity metrics from round latency (the end-to-end
+heuristic. Master chunks are written unchanged. Each Mirror            time to serve one agent round), peak KV Cache footprint,
+chunk is serialized as a block-sparse K/V diff: the backend            and restore overhead. The first is the maximum number
+records the touched block indices and the K/V correction               of agents sustained below a fixed latency target (1500 ms).
+values for those blocks. When both K and V planes touch the            The second is the maximum number of agents sustained
+same blocks, the implementation shares the block-index list            at a given QPS before latency exceeds that target. These
+between them to reduce metadata size. On read, the back-               two views correspond to the two ways a serving system is
+end returns a lightweight mirror object rather than a dense            provisioned: by latency SLO and by throughput budget.
+tensor, deferring materialization to the restore path.
+Fused Sparse Restore. We extend the GPU connector’s lay-               6.2   Main Result: Scaling the Number of Active
+erwise ping-pong transfer path to recognize mirror objects.                  Agents
+The connector loads Master chunks into its temporary buffer,           Under the same latency target or QPS target, how many
+merges the sparse diff metadata for the current layer, and             agents can each system support? For each system, we sweep
+invokes a paired K/V diff kernel in place before RoPE re-              the number of agents from 1 to 10 and the offered QPS from 1
+covery and paged-memory writeback. The CUDA extension                  to 16, recording round latency at each operating point. From
+provides two kernels: one for a single KV plane and one that           these sweeps, we derive the two capacity views described
+updates K and V together. The paired kernel is used when               above.
+the sparse metadata is well aligned; otherwise the connector              Figure 10 presents the results across four configurations
+falls back to dense restore. As discussed in Section 4.4, fusion       (two workloads × two models). Each configuration shows
+currently occurs in the transfer pipeline before attention, not        two panels: round latency against agent count at 𝑄𝑃𝑆 =
+inside the attention tile loader.                                      10 (left, with a dashed 1500 ms SLO line) and maximum
+                                                                       supported agents against QPS (right).
+6     Evaluation                                                          TokenDance consistently achieves the lowest round
+                                                                       latency across all configurations and agent counts. On
+The main question of our evaluation is not whether Tok-                GenerativeAgents/Qwen2.5-7B, TokenDance keeps round
+enDance speeds up one round, but whether it can scale the
+                                                                       latency below the SLO for all 10 agents, while vLLM with
+number of active agents under the same service target. We or-
+                                                                       prefix caching and CacheBlend Ordinary Path cross the SLO
+ganize the evaluation around five questions: (Q1) the system-          at 10 agents. On GenerativeAgents/Qwen2.5-14B, Token-
+level scaling benefit (§6.2); (Q2) where this benefit comes            Dance still sustains all 10 agents below the SLO, while vLLM
+from on the compute side (§6.3); (Q3) where it comes from              exceeds it at 7.5 agents and both CacheBlend variants exceed
+on the memory side (§6.4); (Q4) whether the fused retrieval            it at similar points. The gap widens with model size because
+path preserves these gains on the critical path (§6.5); and
+                                                                       the per-agent KV Cache footprint grows, and TokenDance’s
+(Q5) whether TokenDance preserves model output fidelity
+                                                                       deduplication provides proportionally larger savings.
+(§6.6).                                                                   The supported-agents panels quantify the scaling benefit.
+                                                                       On GenerativeAgents/Qwen2.5-7B at 𝑄𝑃𝑆 = 16, TokenDance
+6.1   Setup and Metrics                                                supports 8 agents while CacheBlend drops to 4 and vLLM
+We evaluate TokenDance on NVIDIA A100 80 GB GPU. We                    drops to 2. On GenerativeAgents/Qwen2.5-14B, TokenDance
+use two models, Qwen2.5-7B and Qwen2.5-14B, to show                    maintains 4 agents across the full QPS range, while vLLM
+how gains change with model size. We replay traces from                drops to 1 agent beyond 𝑄𝑃𝑆 = 8. The AgentSociety work-
+GenerativeAgents and AgentSociety, two representative All-             load (bottom row) shows the same pattern: at 𝑄𝑃𝑆 = 4 on
+Gather-pattern frameworks that span different operating                AgentSociety/Qwen2.5-7B, TokenDance supports 4 agents
+regimes: GenerativeAgents uses shorter private histories               while vLLM and CacheBlend Ordinary Path support 3. On
+and fewer agents per round, while AgentSociety uses longer             AgentSociety/Qwen2.5-14B, the baselines can barely sustain
+histories with more agents.                                            a single agent beyond 𝑄𝑃𝑆 = 4, whereas TokenDance still
+   We compare against three baselines that span the space              supports 2 agents at 𝑄𝑃𝑆 = 16.
+of existing reuse strategies: (1) vLLM with prefix caching,               Two trends are worth highlighting. First, TokenDance’s
+which represents the standard request-local reuse path;                advantage grows with agent count. At small agent counts
+(2) CacheBlend without per-request KV Cache recovery                   (1–2), all systems perform similarly because there is little
+(CacheBlend Ordinary Path), which uses a CPU-side KV                   cross-agent redundancy to exploit. As the agent count rises,
+Cache pool but no cross-prefix reuse; and (3) CacheBlend               the baselines pay linearly growing reuse and storage costs,
+                                                                   8
+TokenDance : Scaling Multi-Agent LLM Serving via Collective KV Cache Sharing                    Conference’17, July 2017, Washington, DC, USA
+
+
+
+
+Figure 10. Scaling capacity overview across two workloads (GenerativeAgents, AgentSociety) and two models (Qwen2.5-7B,
+Qwen2.5-14B). Left panels: round latency vs. agent count at 𝑄𝑃𝑆 = 10; the dashed line marks the 1500 ms SLO. Right panels:
+maximum number of agents that stay below the SLO at each QPS level. TokenDance (orange) consistently supports more
+agents than all baselines across the full QPS range.
+
+while TokenDance amortizes both across the round. Sec-                     reaches 2.57× and the 5-agent configuration reaches 1.31×
+ond, TokenDance’s advantage is more pronounced on the                      at 𝑄𝑃𝑆 = 1, while the 3-agent configuration achieves a more
+14B model than on the 7B model. This is because the per-                   modest 1.17×. The 15-agent and 20-agent configurations
+agent KV Cache footprint doubles with model size, making                   reach 1.61× and 1.73× at 𝑄𝑃𝑆 = 1 respectively; beyond 10
+deduplication more valuable in absolute terms. These results               agents, scheduling overhead grows and partially offsets the
+confirm the central claim: TokenDance increases the number                 per-request amortization gain.
+of concurrently active agents by exploiting the All-Gather                    Two observations stand out. First, all agent counts achieve
+pattern, and the benefit scales with both agent count and                  speedup above 1.0 across the entire QPS range, confirming
+model size.                                                                that collective reuse is consistently beneficial regardless of
+                                                                           group size. The benefit is largest at low QPS where the sys-
+                                                                           tem has time to fully exploit the collective grouping, and
+6.3   Why Scale Improves: Collective Reuse Compute
+                                                                           smallest at high QPS where GPU compute saturation limits
+Does collective KV Cache reuse amortize the reuse overhead                 the margin. Second, as QPS increases beyond 4, the speedup
+that grows with agent count in request-centric methods? The                converges across agent counts to the 1.2–1.6× range. At
+scaling result in Q1 combines compute and memory gains.                    high QPS, the GPU becomes compute-saturated and the bot-
+We now isolate the compute contribution by measuring how                   tleneck shifts from redundant reuse work to raw compute
+collective KV Cache reuse affects prefill throughput as agent              capacity. Nonetheless, even at 𝑄𝑃𝑆 = 16, collective reuse
+count grows.                                                               still provides a 1.3–1.5× speedup, which directly translates
+   We replay a single GenerativeAgents round while varying                 to the higher agent capacity observed in Q1.
+the number of agents (3, 5, 10, 15, and 20) and the offered                   The key takeaway is that collective KV Cache reuse
+QPS (1, 2, 4, 8, 12, and 16). All agents share the same set                amortizes the RoPE and important-position selection cost
+of output blocks from the previous round, so the degree                    across the round. The per-request overhead of reuse analy-
+of cross-agent redundancy is controlled. We measure the                    sis grows sublinearly with agent count under TokenDance,
+speedup of TokenDance’s collective KV Cache reuse over                     whereas it grows linearly under request-centric methods like
+the serial baseline, where each request is processed by the                CacheBlend. This sublinear scaling is what shifts the latency
+PIC backend independently.                                                 curve downward in Figure 10 and allows more agents to fit
+   Figure 11 reports the results. The y-axis shows the speedup             under the SLO.
+of collective reuse over the serial path; a value above 1.0
+means collective reuse is faster. The peak speedup is 2.57×,
+achieved at 10 agents and 𝑄𝑃𝑆 = 1. At low QPS, larger groups
+benefit more from amortization: the 10-agent configuration
+                                                                       9
+Conference’17, July 2017, Washington, DC, USA     Zhuohang Bian, Feiyang Wu, Chengrui Zhang, Hangcheng Dong, Yun Liang, and Youwei Zhuo
+
+
+
+
+                                                                       Figure 12. Redundancy characterization of recovered KV
+                                                                       Caches across agents in a single GenerativeAgents round.
+Figure 11. Collective KV Cache reuse speedup over serial               Left: compression ratio (full cache size divided by Master-
+(per-request) PIC recovery for varying agent counts (3, 5, 10,         plus-diff size). Right: average number of 32-token blocks
+15, 20) and QPS levels on the GenerativeAgents workload.               that differ between a Mirror and its Master. The 14B model
+The peak speedup of 2.57× occurs at 10 agents and 𝑄𝑃𝑆 = 1.             achieves higher compression because cache tensors per to-
+All configurations exceed 1.0× across the full QPS range,              ken are larger while the number of differing blocks stays
+confirming that collective reuse is consistently beneficial.           similar.
+
+
+6.4   Why Scale Improves: KV Cache Footprint and                       cost. This explains why TokenDance’s scaling advantage
+      Storage Redundancy                                               over the baselines is larger on the 14B model in Figure 10:
+Does Master-Mirror storage significantly lower the KV                  the storage savings translate directly into more agents fitting
+Cache cost per agent round? Collective KV Cache reuse                  within the GPU memory budget.
+reduces compute waste, but the system still holds one re-              Implied capacity gain. The compression ratios above trans-
+covered KV Cache per agent. If these caches remain dense               late to concrete capacity improvements. Under the Master-
+and duplicated, memory pressure will still cap the number of           Mirror layout, the KV Cache cost of 𝑁 agents in one round is
+active agents. We now isolate the memory contribution by               approximately 1 + (𝑁 − 1)/𝑅 full caches, where 𝑅 is the com-
+characterizing the redundancy among recovered caches and               pression ratio. For 𝑁 = 10 agents on the 7B model (𝑅 = 11.2),
+measuring the storage savings of the Master-Mirror layout.             this is 1 + 9/11.2 ≈ 1.8 full caches instead of 10, a 5.6× re-
+Redundancy characterization. We produce recovered KV                   duction in KV Cache memory. For the 14B model (𝑅 = 17.5),
+Caches for all agents in a single GenerativeAgents round               the cost is 1 + 9/17.5 ≈ 1.5 full caches instead of 10, a 6.7×
+and compare each Mirror against the selected Master at                 reduction. This memory reduction is the mechanism that
+block granularity (32 tokens per block). Figure 12 reports             allows TokenDance to sustain more agents within the same
+two metrics for both the 7B and 14B models. The left panel             GPU memory budget.
+shows the compression ratio, defined as the ratio of the full
+dense KV Cache size to the Master-plus-diff size. The 7B               6.5   End-to-End Retrieval Cost
+model achieves a compression ratio of 11.2×, meaning that              Does the fused retrieval path preserve the storage gains
+the diff-encoded Mirror is roughly 9% the size of a full cache.        during online serving, or does reconstruction latency erase
+The 14B model achieves 17.5×, because the larger model                 the compression benefit? A naive restore path would recon-
+produces longer cache tensors per token while the number               struct a dense Mirror by copying the full Master and over-
+of differing blocks remains similar. The right panel shows             writing the differing blocks, adding an extra write-then-read
+the average number of changed blocks per Mirror. The 7B                round trip on the critical path. We compare this dense re-
+model averages 53.2 changed blocks per Mirror, and the 14B             store approach against TokenDance’s fused diff path, which
+model averages 59.6. These numbers are small relative to the           applies sparse corrections during the layerwise GPU transfer
+total block count of a full cache (typically 500–700 blocks in         pipeline without materializing a separate dense copy.
+these workloads), confirming that the vast majority of blocks             Figure 13 reports the results for 1, 3, 5, and 10 agents at
+are identical to the Master.                                           QPS levels from 1 to 8 on the GenerativeAgents/Qwen2.5-7B
+   The higher compression ratio on the 14B model is signifi-           configuration. The left panel plots absolute restore latency
+cant for scaling. Each 14B agent’s full KV Cache is approxi-           for both paths. Dashed lines show dense restore; solid lines
+mately twice the size of a 7B agent’s cache. By compressing            show fused retrieval. At 10 agents and 𝑄𝑃𝑆 = 1, dense restore
+Mirrors to about 6% of the full size, TokenDance effectively           takes 0.59 ms per Mirror, while fused retrieval takes 0.43 ms, a
+removes the model-size penalty from the per-agent storage              27% reduction. At 1 agent, fused retrieval costs 0.13–0.18 ms,
+                                                                  10
+TokenDance : Scaling Multi-Agent LLM Serving via Collective KV Cache Sharing                      Conference’17, July 2017, Washington, DC, USA
+
+
+
+
+Figure 13. Latency analysis of Mirror state reconstruction
+on GenerativeAgents using Qwen2.5-7B. Left: absolute re-
+                                                                            Figure 14. Accuracy evaluation across eight scenarios from
+store latency for dense reconstruction (dashed) and fused diff
+                                                                            GenerativeAgents (IDs 1–4) and AgentSociety (IDs 5–8).
+retrieval (solid) across agent counts and QPS levels. Right:
+                                                                            Each bar shows the number of simulation rounds completed
+speedup of fused retrieval over dense restore. Fused retrieval
+                                                                            before the first output divergence between TokenDance and
+consistently reduces restore latency by 1.3–2.6× by avoiding
+                                                                            vLLM (prefix caching, temperature = 0). The relative differ-
+a separate dense materialization step.
+                                                                            ence Δ is annotated above each pair. Workload ID mapping:
+                                                                            1 = Meet and Greet, 2 = Valentine’s Day Party, 3 = Election
+                                                                            Discussions, 4 = Winning the Election, 5 = Information Out-
+which is negligible compared to the overall round latency of
+                                                                            break, 6 = Pre-Landfall Activity, 7 = Hurricane, 8 = Economic
+several hundred milliseconds. As agent count increases, the
+                                                                            Stabilization. Three scenarios show zero divergence; the re-
+absolute gap between dense and fused paths widens because
+                                                                            maining differences are attributable to the underlying PIC
+fused retrieval avoids materializing increasingly large dense
+                                                                            method, not to TokenDance.
+tensors.
+   The right panel reports the speedup of fused retrieval over
+dense restore. The speedup ranges from 1.3× to 2.6× de-
+pending on agent count and QPS. The 3-agent configuration
+achieves the highest peak speedup of 2.6× at 𝑄𝑃𝑆 = 4. The
+1-agent configuration shows a consistent 1.8–2.0× speedup                   (e.g., vLLM with prefix caching) is therefore attributable to
+across the QPS range. At 10 agents the speedup is 1.3–1.5×                  CacheBlend’s selective recomputation, not to TokenDance.
+because the restore pipeline becomes partially bandwidth-                      To verify this, we run both TokenDance and vLLM with
+bound regardless of the reconstruction strategy. Across all                 prefix caching on the same set of agent rounds, setting tem-
+configurations, fused retrieval is consistently faster than                 perature to 0 to eliminate sampling randomness and using
+dense restore, confirming that the storage compression from                 identical system prompts and input histories for every agent.
+Q3 is preserved on the online critical path.                                For each scenario we record the number of simulation rounds
+   The combination of Q3 and Q4 closes the memory-side                      that complete before the first divergence, i.e., the first round
+argument. Master-Mirror storage reduces the per-agent KV                    in which at least one agent produces a different response
+Cache footprint by 11–17× (Q3), and fused diff retrieval en-                under the two systems. Figure 14 reports the results across
+sures that accessing the compressed representation adds less                eight scenarios spanning both workloads (IDs 1–4 from Gen-
+latency than reconstructing a dense copy (Q4). Together,                    erativeAgents, IDs 5–8 from AgentSociety).
+these two mechanisms enable the higher agent counts ob-                        In three of the eight scenarios (Meet and Greet, Valen-
+served in Q1.                                                               tine’s Day Party, and Information Outbreak), both systems
+                                                                            produce identical output for the entire trace (Δ = 0.0%).
+6.6   Accuracy Influence                                                    In the remaining five scenarios, the round counts differ by
+Does TokenDance’s collective reuse and compressed stor-                     3.3%–11.9%. These differences arise because CacheBlend’s
+age alter model output compared to a standard per-request                   PIC recovery introduces small numerical perturbations at se-
+serving system under greedy decoding? By construction, To-                  lectively recomputed positions; under greedy decoding, such
+kenDance’s collective path and Master-Mirror storage pro-                   perturbations can eventually flip a single token choice, which
+duce the same recovered KV Caches as the underlying PIC                     then cascades through subsequent rounds. This is consistent
+method applied per request; the collective grouping changes                 with the stochastic nature of multi-agent simulation, where
+execution order but not the numerical result. In our evalua-                minor perturbations in one round propagate unpredictably
+tion we use CacheBlend as the PIC backend, so TokenDance                    through later rounds. The key result is that TokenDance does
+produces the same output as CacheBlend with per-request re-                 not introduce any additional accuracy degradation beyond
+covery. Any output difference relative to a non-PIC baseline                what the underlying PIC method already produces.
+                                                                       11
+Conference’17, July 2017, Washington, DC, USA     Zhuohang Bian, Feiyang Wu, Chengrui Zhang, Hangcheng Dong, Yun Liang, and Youwei Zhuo
+
+
+7    Related Work                                                       GenerativeAgents [26], AgentSociety [27], OpenClaw [24],
+LLM Serving Systems. vLLM [12], SGLang [40], Orca [38],                 and MoltBook [23] show that many real agent workloads run
+and Sarathi-Serve [1] improve batching, scheduling, and                 in explicit rounds with a shared scheduler. These systems
+memory management for LLM inference. These systems op-                  define or schedule agent applications; TokenDance optimizes
+timize execution for individual requests but do not exploit             the KV Cache layer for the repeated gather-and-redistribute
+the round-level KV Cache redundancy that TokenDance tar-                pattern that they all share.
+gets.
+Request-Centric KV Cache Reuse. Prefix caching in                       8    Conclusion
+SGLang [40] and vLLM [12] reuses cached state when                      We presented TokenDance, a system for scaling multi-agent
+a new request shares an exact prefix with a stored se-                  LLM serving through collective KV Cache sharing. The de-
+quence. PromptCache [7] reuses cached modules identified                sign follows two core observations. Current reuse meth-
+by markup, and DroidSpeak [18] shares KV Caches across                  ods are inefficient for agent rounds, and even after round-
+different LLMs. EPIC [10], KVLink [34], and KVComm [36]                 level KV Cache reuse the resulting KV Caches remain highly
+recover reuse at arbitrary positions through position cor-              compressible. TokenDance turns these observations into a
+rection, and CacheBlend [35] further adds selective recom-              progressive design with collective KV Cache reuse, Master-
+putation to restore accuracy at important positions. All of             Mirror storage, and fused diff retrieval. On representative
+these methods operate on one request at a time. TokenDance              multi-agent workloads, it reduces end-to-end latency by up
+differs by treating the agent round as the reuse unit: it shares        to 2.3× and KV Cache storage by 94% compared to vLLM
+reuse work across all agents in a round and compresses the              with prefix caching.
+resulting set of KV Caches that this collective execution                  More broadly, our work argues that communication struc-
+produces.                                                               ture should become a first-class concept in LLM serving.
+KV Cache Compression and Movement. HCache [5], In-                      The All-Gather pattern is a natural starting point because it
+finiGen [13], CacheGen [19], MoonCake [30], and CachedAt-               already appears across many agent workloads. As agent
+tention [4] reduce the cost of long-context serving through             systems continue to diversify, other recurring communi-
+recomputation, offloading, compression, or disaggregation.              cation patterns will likely expose similar opportunities. A
+These methods target individual caches. TokenDance instead              communication-pattern-aware serving stack will be impor-
+exploits similarity across sibling caches from the same round.          tant for making future multi-agent platforms efficient at
+The Master-Mirror layout and fused diff path are designed               scale.
+around cross-cache redundancy rather than single-cache
+compression alone.                                                      References
+KV Cache Eviction and Quantization. H2O [39] and Scis-                   [1] Amey Agrawal, Nitin Kedia, Ashish Panwar, Jayashree Mohan, Nipun
+sorHands [20] reduce KV Cache memory by evicting tokens                      Kwatra, Bhargav Gulavani, Alexey Tumanov, and Ramachandran Ram-
+with low attention scores, while StreamingLLM [33] and                       jee. 2024. Taming {Throughput-Latency} tradeoff in {LLM} inference
+FastGen [6] keep only a fixed window plus a few important                    with {Sarathi-Serve}. In 18th USENIX symposium on operating systems
+                                                                             design and implementation (OSDI 24). 117–134.
+tokens for long-sequence serving. KIVI [21] and KVQuant [9]              [2] Zhuohang Bian, Feiyang Wu, Teng Ma, and Youwei Zhuo. 2025. Token-
+take a different path, quantizing cached values to 2–3 bits                  cake: A KV-Cache-centric Serving Framework for LLM-based Multi-
+with little accuracy loss. These methods shrink individual                   Agent Applications. arXiv preprint arXiv:2510.18586 (2025).
+caches but do not address cross-cache redundancy. Token-                 [3] Tri Dao, Dan Fu, Stefano Ermon, Atri Rudra, and Christopher Ré.
+Dance is orthogonal: it removes the duplicated data across                   2022. Flashattention: Fast and memory-efficient exact attention with
+                                                                             io-awareness. Advances in neural information processing systems 35
+sibling caches first, and per-cache compression can be ap-                   (2022), 16344–16359.
+plied on top.                                                            [4] Bin Gao, Zhuomin He, Puru Sharma, Qingxuan Kang, Djordje Jevdjic,
+Attention Kernels and Sparse Backends. FlashAtten-                           Junbo Deng, Xingkun Yang, Zhou Yu, and Pengfei Zuo. 2024. Cost-
+tion [3] shows that attention performance depends heavily                    Efficient Large Language Model Serving for Multi-turn Conversations
+on data movement. FlashInfer [37] provides efficient variable-               with CachedAttention. arXiv:2403.19708 [cs.CL] https://arxiv.org/abs/
+                                                                             2403.19708
+length and block-sparse attention backends. Our fused diff               [5] Shiwei Gao, Youmin Chen, and Jiwu Shu. 2025. Fast state restoration
+kernel follows the same data-movement logic. It aligns sparse                in llm serving with hcache. In Proceedings of the Twentieth European
+diff blocks with attention tiles so compressed caches can be                 Conference on Computer Systems. 128–143.
+used without an extra dense reconstruction pass.                         [6] Suyu Ge, Yunan Zhang, Liyuan Liu, Minjia Zhang, Jiawei Han, and
+Multi-Agent LLM Systems. Parrot [17], Autellix [22],                         Jianfeng Gao. 2024. Model Tells You What to Discard: Adaptive KV
+                                                                             Cache Compression for LLMs. arXiv:2310.01801 [cs.CL] https://arxiv.
+Teola [31], ScaleSim [25], and Tokencake [2] optimize sched-                 org/abs/2310.01801
+uling, prefetching, or execution order for agent applications.           [7] In Gim, Guojun Chen, Seung-seob Lee, Nikhil Sarda, Anurag Khan-
+LRAgent [11] shares KV Caches across multi-LoRA agents by                    delwal, and Lin Zhong. 2024. Prompt Cache: Modular Attention
+decomposing caches into shared and adapter-specific parts.                   Reuse for Low-Latency Inference. In Proceedings of Machine Learning
+                                                                             and Systems, P. Gibbons, G. Pekhimenko, and C. De Sa (Eds.), Vol. 6.
+                                                                   12
+TokenDance : Scaling Multi-Agent LLM Serving via Collective KV Cache Sharing                                   Conference’17, July 2017, Washington, DC, USA
+
+
+     325–338. https://proceedings.mlsys.org/paper_files/paper/2024/file/                  Scissorhands: exploiting the persistence of importance hypothesis for
+     a66caa1703fe34705a4368c3014c1966-Paper-Conference.pdf                                LLM KV cache compression at test time. In Proceedings of the 37th
+ [8] Sirui Hong, Mingchen Zhuge, Jiaqi Chen, Xiawu Zheng, Yuheng Cheng,                   International Conference on Neural Information Processing Systems (New
+     Ceyao Zhang, Jinlin Wang, Zili Wang, Steven Ka Shing Yau, Zijuan Lin,                Orleans, LA, USA) (NIPS ’23). Curran Associates Inc., Red Hook, NY,
+     Liyang Zhou, Chenyu Ran, Lingfeng Xiao, Chenglin Wu, and Jürgen                      USA, Article 2279, 23 pages.
+     Schmidhuber. 2024. MetaGPT: Meta Programming for A Multi-Agent                  [21] Zirui Liu, Jiayi Yuan, Hongye Jin, Shaochen (Henry) Zhong, Zhaozhuo
+     Collaborative Framework. arXiv:2308.00352 [cs.AI] https://arxiv.org/                 Xu, Vladimir Braverman, Beidi Chen, and Xia Hu. 2024. KIVI: a tuning-
+     abs/2308.00352                                                                       free asymmetric 2bit quantization for KV cache. In Proceedings of the
+ [9] Coleman Hooper, Sehoon Kim, Hiva Mohammadzadeh, Michael W.                           41st International Conference on Machine Learning (Vienna, Austria)
+     Mahoney, Yakun Sophia Shao, Kurt Keutzer, and Amir Gholami. 2024.                    (ICML’24). JMLR.org, Article 1311, 13 pages.
+     KVQuant: Towards 10 Million Context Length LLM Inference with                   [22] Michael Luo, Xiaoxiang Shi, Colin Cai, Tianjun Zhang, Justin Wong,
+     KV Cache Quantization. In Advances in Neural Information Processing                  Yichuan Wang, Chi Wang, Yanping Huang, Zhifeng Chen, Joseph E
+     Systems, A. Globerson, L. Mackey, D. Belgrave, A. Fan, U. Paquet,                    Gonzalez, et al. 2025. Autellix: An efficient serving engine for llm
+     J. Tomczak, and C. Zhang (Eds.), Vol. 37. Curran Associates, Inc., 1270–             agents as general programs. arXiv preprint arXiv:2502.13965 (2025).
+     1303. doi:10.52202/079017-0040                                                  [23] moltbook. 2026. moltbook: The front page of the agent internet. https:
+[10] Junhao Hu, Wenrui Huang, Weidong Wang, Haoyi Wang, Tiancheng                         //www.moltbook.com/. Website. Accessed: 2026-03-31.
+     Hu, Qin Zhang, Hao Feng, Xusheng Chen, Yizhou Shan, and Tao Xie.                [24] OpenClaw contributors. 2026. OpenClaw: Your own personal AI
+     2024. EPIC: Efficient position-independent caching for serving large                 assistant. Any OS. Any Platform. The lobster way. https://github.com/
+     language models. arXiv preprint arXiv:2410.15332 (2024).                             openclaw/openclaw. GitHub repository. Accessed: 2026-03-31.
+[11] Hyesung Jeon, Hyeongju Ha, and Jae-Joon Kim. 2026.                  LRA-        [25] Zaifeng Pan, Yipeng Shen, Zhengding Hu, Zhuang Wang, Aninda
+     gent: Efficient KV Cache Sharing for Multi-LoRA LLM Agents.                          Manocha, Zheng Wang, Zhongkai Yu, Yue Guan, and Yufei Ding. 2026.
+     arXiv:2602.01053 [cs.LG] https://arxiv.org/abs/2602.01053                            ScaleSim: Serving Large-Scale Multi-Agent Simulation with Invocation
+[12] Woosuk Kwon, Zhuohan Li, Siyuan Zhuang, Ying Sheng, Lianmin                          Distance-Based Memory Management. arXiv preprint arXiv:2601.21473
+     Zheng, Cody Hao Yu, Joseph Gonzalez, Hao Zhang, and Ion Stoica.                      (2026).
+     2023. Efficient memory management for large language model serving              [26] Joon Sung Park, Joseph O’Brien, Carrie Jun Cai, Meredith Ringel Mor-
+     with pagedattention. In Proceedings of the 29th symposium on operating               ris, Percy Liang, and Michael S Bernstein. 2023. Generative agents:
+     systems principles. 611–626.                                                         Interactive simulacra of human behavior. In Proceedings of the 36th
+[13] Wonbeom Lee, Jungi Lee, Junghwan Seo, and Jaewoong Sim. 2024.                        annual acm symposium on user interface software and technology. 1–22.
+     {InfiniGen}: Efficient generative inference of large language models            [27] Jinghua Piao, Yuwei Yan, Jun Zhang, Nian Li, Junbo Yan, Xiaochong
+     with dynamic {KV} cache management. In 18th USENIX Symposium                         Lan, Zhihong Lu, Zhiheng Zheng, Jing Yi Wang, Di Zhou, et al. 2025.
+     on Operating Systems Design and Implementation (OSDI 24). 155–172.                   Agentsociety: Large-scale simulation of llm-driven generative agents
+[14] Guohao Li, Hasan Hammoud, Hani Itani, Dmitrii Khizbullin,                            advances understanding of human behaviors and society. (2025).
+     and Bernard Ghanem. 2023.                  CAMEL: Communicative                 [28] Xavier Puig, Kevin Ra, Marko Boben, Jiaman Li, Tingwu Wang, Sanja
+     Agents for "Mind" Exploration of Large Language Model                                Fidler, and Antonio Torralba. 2018. Virtualhome: Simulating house-
+     Society. In Advances in Neural Information Processing Sys-                           hold activities via programs. In Proceedings of the IEEE conference on
+     tems, A. Oh, T. Naumann, A. Globerson, K. Saenko, M. Hardt,                          computer vision and pattern recognition. 8494–8502.
+     and S. Levine (Eds.), Vol. 36. Curran Associates, Inc., 51991–                  [29] Chen Qian, Wei Liu, Hongzhang Liu, Nuo Chen, Yufan Dang, Jiahao
+     52008. https://proceedings.neurips.cc/paper_files/paper/2023/file/                   Li, Cheng Yang, Weize Chen, Yusheng Su, Xin Cong, Juyuan Xu, Dahai
+     a3621ee907def47c1b952ade25c67698-Paper-Conference.pdf                                Li, Zhiyuan Liu, and Maosong Sun. 2024. ChatDev: Communicative
+[15] Lehui Li, Ruining Wang, Haochen Song, Yaoxin Mao, Tong Zhang,                        Agents for Software Development. In Proceedings of the 62nd Annual
+     Yuyao Wang, Jiayi Fan, Yitong Zhang, Jieping Ye, Chengqi Zhang,                      Meeting of the Association for Computational Linguistics (Volume 1:
+     et al. 2026. What Papers Don’t Tell You: Recovering Tacit Knowledge                  Long Papers), Lun-Wei Ku, Andre Martins, and Vivek Srikumar (Eds.).
+     for Automated Paper Reproduction. arXiv preprint arXiv:2603.01801                    Association for Computational Linguistics, Bangkok, Thailand, 15174–
+     (2026).                                                                              15186. doi:10.18653/v1/2024.acl-long.810
+[16] Zhonghang Li, Long Xia, Lei Shi, Yong Xu, Dawei Yin, and Chao Huang.            [30] Ruoyu Qin, Zheming Li, Weiran He, Jialei Cui, Heyi Tang, Feng Ren,
+     2024. Opencity: Open spatio-temporal foundation models for traffic                   Teng Ma, Shangming Cai, Yineng Zhang, Mingxing Zhang, et al. 2024.
+     prediction. arXiv preprint arXiv:2408.10269 (2024).                                  Mooncake: A kvcache-centric disaggregated architecture for llm serv-
+[17] Chaofan Lin, Zhenhua Han, Chengruidong Zhang, Yuqing Yang, Fan                       ing. ACM Transactions on Storage (2024).
+     Yang, Chen Chen, and Lili Qiu. 2024. Parrot: Efficient serving of               [31] Xin Tan, Yimin Jiang, Yitao Yang, and Hong Xu. 2024. Teola: Towards
+     {LLM-based} applications with semantic variable. In 18th USENIX                      end-to-end optimization of llm-based applications. arXiv preprint
+     Symposium on Operating Systems Design and Implementation (OSDI                       arXiv:2407.00326 (2024).
+     24). 929–945.                                                                   [32] Qingyun Wu, Gagan Bansal, Jieyu Zhang, Yiran Wu, Beibin Li, Erkang
+[18] Yuhan Liu, Yuyang Huang, Jiayi Yao, Shaoting Feng, Zhuohan Gu,                       Zhu, Li Jiang, Xiaoyun Zhang, Shaokun Zhang, Jiale Liu, Ahmed Has-
+     Kuntai Du, Hanchen Li, Yihua Cheng, Junchen Jiang, Shan Lu,                          san Awadallah, Ryen W White, Doug Burger, and Chi Wang. 2023.
+     Madan Musuvathi, and Esha Choukse. 2025. DroidSpeak: KV Cache                        AutoGen: Enabling Next-Gen LLM Applications via Multi-Agent Con-
+     Sharing for Cross-LLM Communication and Multi-LLM Serving.                           versation. arXiv:2308.08155 [cs.AI] https://arxiv.org/abs/2308.08155
+     arXiv:2411.02820 [cs.MA] https://arxiv.org/abs/2411.02820                       [33] Guangxuan Xiao, Yuandong Tian, Beidi Chen, Song Han, and Mike
+[19] Yuhan Liu, Hanchen Li, Yihua Cheng, Siddhant Ray, Yuyang Huang,                      Lewis. 2024. Efficient Streaming Language Models with Attention
+     Qizheng Zhang, Kuntai Du, Jiayi Yao, Shan Lu, Ganesh Anantha-                        Sinks. arXiv:2309.17453 [cs.CL] https://arxiv.org/abs/2309.17453
+     narayanan, et al. 2024. Cachegen: Kv cache compression and streaming            [34] Jingbo Yang, Bairu Hou, Wei Wei, Yujia Bao, and Shiyu Chang. 2025.
+     for fast large language model serving. In Proceedings of the ACM SIG-                Kvlink: Accelerating large language models via efficient kv cache reuse.
+     COMM 2024 Conference. 38–56.                                                         arXiv preprint arXiv:2502.16002 (2025).
+[20] Zichang Liu, Aditya Desai, Fangshuo Liao, Weitao Wang, Victor Xie,              [35] Jiayi Yao, Hanchen Li, Yuhan Liu, Siddhant Ray, Yihua Cheng, Qizheng
+     Zhaozhuo Xu, Anastasios Kyrillidis, and Anshumali Shrivastava. 2023.                 Zhang, Kuntai Du, Shan Lu, and Junchen Jiang. 2025. Cacheblend:
+
+                                                                                13
+Conference’17, July 2017, Washington, DC, USA               Zhuohang Bian, Feiyang Wu, Chengrui Zhang, Hangcheng Dong, Yun Liang, and Youwei Zhuo
+
+
+     Fast large language model serving for rag with cached knowledge                     on operating systems design and implementation (OSDI 22). 521–538.
+     fusion. In Proceedings of the twentieth European conference on computer        [39] Zhenyu Zhang, Ying Sheng, Tianyi Zhou, Tianlong Chen, Lian-
+     systems. 94–109.                                                                    min Zheng, Ruisi Cai, Zhao Song, Yuandong Tian, Christopher
+[36] Hancheng Ye, Zhengqi Gao, Mingyuan Ma, Qinsi Wang, Yuzhe Fu,                        Ré, Clark Barrett, Zhangyang "Atlas" Wang, and Beidi Chen. 2023.
+     Ming-Yu Chung, Yueqian Lin, Zhijian Liu, Jianyi Zhang, Danyang                      H2O: Heavy-Hitter Oracle for Efficient Generative Inference of
+     Zhuo, et al. 2025. Kvcomm: Online cross-context kv-cache commu-                     Large Language Models. In Advances in Neural Information Pro-
+     nication for efficient llm-based multi-agent systems. arXiv preprint                cessing Systems, A. Oh, T. Naumann, A. Globerson, K. Saenko,
+     arXiv:2510.12872 (2025).                                                            M. Hardt, and S. Levine (Eds.), Vol. 36. Curran Associates, Inc., 34661–
+[37] Zihao Ye, Lequn Chen, Ruihang Lai, Wuwei Lin, Yineng Zhang,                         34710. https://proceedings.neurips.cc/paper_files/paper/2023/file/
+     Stephanie Wang, Tianqi Chen, Baris Kasikci, Vinod Grover, Arvind                    6ceefa7b15572587b78ecfcebb2827f8-Paper-Conference.pdf
+     Krishnamurthy, et al. 2025. Flashinfer: Efficient and customizable             [40] Lianmin Zheng, Liangsheng Yin, Zhiqiang Xie, Chuyue Livia Sun,
+     attention engine for llm inference serving. Proceedings of Machine                  Jeff Huang, Cody Hao Yu, Shiyi Cao, Christos Kozyrakis, Ion Stoica,
+     Learning and Systems 7 (2025).                                                      Joseph E Gonzalez, et al. 2024. Sglang: Efficient execution of structured
+[38] Gyeong-In Yu, Joo Seong Jeong, Geon-Woo Kim, Soojeong Kim, and                      language model programs. Advances in neural information processing
+     Byung-Gon Chun. 2022. Orca: A distributed serving system for                        systems 37 (2024), 62557–62583.
+     {Transformer-Based} generative models. In 16th USENIX symposium
+
+
+
+
+                                                                               14
+

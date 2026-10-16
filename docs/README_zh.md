@@ -7,6 +7,14 @@ write-back 补丁、当前研究文档和只读审计器。日常查看和后续
 实验仍使用各自登记的独立 worktree 固定版本。V75/V76 的运行源码、引擎和
 helper 保持冻结，不随 `main` 的新提交变化。
 
+V75 predictive 已完整结束：155 completed、1 incomplete，全部156项原始duration
+均值1806.897s，质量未评分；native于10:37 PDT核验真实服务，V76仍等待。
+完整审计确认原生H2D流累计3.899s，decode约占已记录worker区间84%，不能直接
+折算收益。367个真实child均为一层，200个JOIN均单等待者；多轮workflow为29个。
+19项CPU检查通过。完整结果、阶段成本、TokenDance共享条件和已有工作边界维护在
+[研究筛选4.10/4.11](research/non_scheduling_directions_20261016_zh.md#410-v75-predictive-完整结果与真实成本量级)，
+证据V1187/V1188/V1192/V1193。核心机制、质量匹配收益仍未成立。
+
 质量执行已自动登记：V1185/V1186绑定真实等待进程3806721，V75/V76全部结束后
 按V76 reactive、V75 native、V75 predictive评分，单worker/1核/8GiB/无GPU，
 各保留全部156项。29项CPU检查通过，当前尚未开始评分；最新V75前缀与执行边界

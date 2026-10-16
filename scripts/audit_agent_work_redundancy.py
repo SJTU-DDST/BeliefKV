@@ -11,6 +11,8 @@ import json
 from pathlib import Path
 import statistics
 
+from scripts.audit_native_system_costs import finite_number
+
 
 def distribution(values):
     values = sorted(values)
@@ -162,12 +164,130 @@ def token_totals(rows, native_results):
     }
 
 
+def dependency_topology(events):
+    """Count declared consumers without inferring shared prompt or tensor values."""
+    creates, joins, spawn_edges = {}, {}, set()
+    for event in events:
+        workflow = event["workflow_id"]
+        invocation = event.get("invocation_id")
+        kind = event["kind"]
+        if kind == "invocation_create":
+            key = workflow, invocation
+            if not invocation or key in creates:
+                raise ValueError(f"missing or duplicate invocation identity: {key}")
+            creates[key] = event
+        elif kind == "spawn":
+            target = event.get("target_invocation_id")
+            if invocation and target:
+                spawn_edges.add((workflow, invocation, target))
+        if kind not in ("join_create", "join_wait", "join_satisfied"):
+            continue
+        identity = event.get("join_id")
+        if not identity:
+            raise ValueError("join event without identity")
+        group = joins.setdefault((workflow, identity), {
+            "members": None, "waiters": set(), "satisfied": False,
+        })
+        if kind == "join_create":
+            if group["members"] is not None:
+                raise ValueError(f"duplicate join creation: {(workflow, identity)}")
+            group["members"] = frozenset(event.get("member_invocation_ids") or [])
+        elif kind == "join_wait" and invocation:
+            group["waiters"].add(invocation)
+        elif kind == "join_satisfied":
+            group["satisfied"] = True
+
+    depths = {}
+
+    def depth(key, visiting):
+        if key in depths:
+            return depths[key]
+        create = creates.get(key)
+        if create is None:
+            return None
+        if key in visiting:
+            raise ValueError(f"cycle in invocation parent chain: {key}")
+        parent = create.get("parent_invocation_id")
+        if parent is None:
+            result = 0 if create.get("relation_type") == "root" else None
+        else:
+            before = depth((key[0], parent), visiting | {key})
+            result = (
+                before + int(create.get("relation_type") == "spawn")
+                if before is not None else None
+            )
+        depths[key] = result
+        return result
+
+    counts, child_depths = Counter(), Counter()
+    workflows = {event["workflow_id"] for event in events}
+    by_workflow = {workflow: Counter() for workflow in workflows}
+    for key, create in creates.items():
+        attrs = create.get("attributes") or {}
+        if attrs.get("runtime_internal"):
+            counts["runtime_internal_invocations"] += 1
+        elif create.get("relation_type") == "spawn":
+            counts["dynamic_subagents"] += 1
+            by_workflow[key[0]]["dynamic_subagents"] += 1
+            value = depth(key, set())
+            child_depths["unknown" if value is None else str(value)] += 1
+            if value is not None and value > 1:
+                counts["nested_dynamic_subagents"] += 1
+    counts["observed_spawn_edges"] = len(spawn_edges)
+    counts["spawn_edges_without_target_creation"] = sum(
+        (workflow, target) not in creates
+        for workflow, _, target in spawn_edges
+    )
+    member_sets = defaultdict(list)
+    for (workflow, _), group in joins.items():
+        members, waiters = group["members"], group["waiters"]
+        counts["join_groups"] += 1
+        counts["satisfied_join_groups"] += int(group["satisfied"])
+        by_workflow[workflow]["join_groups"] += 1
+        if members is None:
+            counts["join_groups_without_observed_creation"] += 1
+        elif not members:
+            counts["join_groups_without_observed_members"] += 1
+        else:
+            member_sets[(workflow, members)].append(group)
+        if not waiters:
+            counts["join_groups_without_observed_waiter"] += 1
+        elif len(waiters) == 1:
+            counts["join_groups_with_one_declared_waiter"] += 1
+        else:
+            counts["join_groups_with_multiple_declared_waiters"] += 1
+    counts["nonempty_producer_sets"] = len(member_sets)
+    counts["producer_sets_with_multiple_declared_consumers"] = sum(
+        len(set().union(*(group["waiters"] for group in groups))) > 1
+        for groups in member_sets.values()
+    )
+    return {
+        "counts": dict(counts),
+        "dynamic_child_depths": dict(child_depths),
+        "join_groups_per_workflow": dict(Counter(
+            str(row["join_groups"]) for row in by_workflow.values()
+        )),
+        "semantics": (
+            "Declared invocation/SPAWN/JOIN identities, scoped by workflow. "
+            "Internal summaries are separate from dynamic subagents. Missing "
+            "creation, parent or waiter evidence stays unknown. Multiple consumers "
+            "of a producer set describe dependency topology only: they do not prove "
+            "identical rendered tokens, equal KV/Mamba values, compatible batch "
+            "geometry, or an opportunity beyond native exact-prefix sharing. "
+            "A single JOIN waiter does not exclude repeated tool-result text or "
+            "shared prefixes elsewhere in the application."
+        ),
+    }
+
+
 def prefill_service(path, requests, after_compaction, bindings):
     if not path.exists():
         return {"status": "source_absent"}
     size = path.stat().st_size
     digest, analyzed_bytes = hashlib.sha256(), 0
     tokens, batches, unproven = Counter(), Counter(), Counter()
+    phase_events, invalid_timing, replay = Counter(), Counter(), Counter()
+    phase_durations, role_durations = defaultdict(list), defaultdict(list)
     after_compaction = set(after_compaction)
     seen = set()
     with path.open("rb") as stream:
@@ -177,15 +297,26 @@ def prefill_service(path, requests, after_compaction, bindings):
                 break
             digest.update(line)
             analyzed_bytes += len(line)
-            if b'"gpu_service_sample"' not in line or b'"prefill"' not in line:
+            if b'"gpu_service_sample"' not in line:
                 continue
             event = json.loads(line)
-            if event.get("event") != "gpu_service_sample" or event.get("phase") != "prefill":
+            if event.get("event") != "gpu_service_sample":
                 continue
             identity = event["sample_id"]
             if identity in seen:
                 raise ValueError(f"duplicate service sample: {identity}")
             seen.add(identity)
+            phase = str(event.get("phase") or "unknown")
+            phase_events[phase] += 1
+            elapsed = event.get("service_elapsed_ms")
+            valid_timing = finite_number(elapsed) and elapsed >= 0
+            if valid_timing:
+                phase_durations[phase].append(elapsed)
+            else:
+                invalid_timing[phase] += 1
+            replay[(phase, str(event.get("cuda_graph_replayed")))] += 1
+            if phase != "prefill":
+                continue
             roles = set()
             for sample in event["request_samples"]:
                 request = sample.get("request_id")
@@ -201,20 +332,42 @@ def prefill_service(path, requests, after_compaction, bindings):
                 tokens[role] += delta
                 if request in after_compaction:
                     tokens["next_ordinary_after_compaction"] += delta
-            batches["+".join(sorted(roles))] += 1
+            role_set = "+".join(sorted(roles)) or "unknown"
+            batches[role_set] += 1
+            if valid_timing:
+                role_durations[role_set].append(elapsed)
     bindings.append({
         "path": str(path.resolve()), "observed_size_bytes": size,
         "analyzed_bytes": analyzed_bytes, "sha256": digest.hexdigest(),
     })
     return {
         "status": "observed_complete_line_prefix",
-        "prefill_batches": len(seen), "batches_by_role_set": dict(batches),
+        "prefill_batches": phase_events["prefill"],
+        "batches_by_role_set": dict(batches),
         "extend_tokens_by_role": dict(tokens),
         "samples_without_proven_extend_geometry": dict(unproven),
+        "worker_phase_intervals_ms": {
+            phase: {
+                **distribution(phase_durations[phase]),
+                "observed_batches": count,
+                "batches_without_valid_timing": invalid_timing[phase],
+            } for phase, count in sorted(phase_events.items())
+        },
+        "prefill_batch_role_set_worker_intervals_ms": {
+            role_set: distribution(values)
+            for role_set, values in sorted(role_durations.items())
+        },
+        "cuda_graph_replay_observations": {
+            phase + ":" + state: count
+            for (phase, state), count in sorted(replay.items())
+        },
         "scope": (
             "Recorded native batch extend geometry, including chunking/re-execution. "
             "Mixed prefill batches may include one-token decode rows. No exclusive "
-            "kernel time or counterfactual saving is allocated by token count."
+            "kernel time or counterfactual saving is allocated by token count. "
+            "Worker intervals include launch/queue/dependency effects; cumulative "
+            "intervals are not isolated kernels or removable JCT. Mixed-role batch "
+            "intervals are kept whole and are never apportioned to their requests."
         ),
     }
 
@@ -224,6 +377,7 @@ def analyze(client, *, with_prefill_service=False):
     root_rows, root_repeats, sandbox_rows = [], [], []
     workflow_counts, missing, workflow_ids = Counter(), Counter(), set()
     after_compaction = []
+    topology_events = []
     client = client.resolve()
     workflow_paths = sorted(client.glob("workflows/*/runtime_events.deepagents.jsonl"))
     for path in workflow_paths:
@@ -233,6 +387,12 @@ def analyze(client, *, with_prefill_service=False):
         if len(local_workflows) != 1:
             raise ValueError(f"expected one workflow per source: {path}")
         workflow_ids.update(local_workflows)
+        topology_events.extend(
+            event for event in events if event["kind"] in (
+                "invocation_create", "spawn", "join_create", "join_wait",
+                "join_satisfied", "workflow_start",
+            )
+        )
         creates = {
             row.get("invocation_id"): row for row in events
             if row["kind"] == "invocation_create"
@@ -402,6 +562,7 @@ def analyze(client, *, with_prefill_service=False):
         ),
         "workflow_sources": len(workflow_paths),
         "workflow_counts": dict(workflow_counts), "missing": dict(missing),
+        "dependency_topology": dependency_topology(topology_events),
         "requests_by_role": per_role,
         "summary_span_sum_per_workflow_ms": distribution(
             sum(summary_by_workflow.get(workflow, ()))

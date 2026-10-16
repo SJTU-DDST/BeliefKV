@@ -1,0 +1,558 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-16T17:45:28Z",
+  "scope": "Complete V75 predictive observation; matched-batch native is running, quality ungraded; no causal speedup or oracle bound",
+  "source_bindings": [
+    {
+      "sha256": "918dd99baee4e36d0ef97d0ebc2cc50170c4c6cd2875325bc40b4c1817a1daa0",
+      "path": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/client_156/summary.json"
+    },
+    {
+      "sha256": "7de3c19bdf31a9b5c467785815e2bb1d3b431082c6091111699f598c848b75bf",
+      "path": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/client_156/workflows/pytest-dev__pytest-7490/result.json"
+    },
+    {
+      "sha256": "9200bbeef31cd96cbdc32946e4948455332b5822b23b26df1e6c495ccb81c2ec",
+      "path": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/client_156/workflows/pytest-dev__pytest-7490/runtime_events.deepagents.jsonl"
+    },
+    {
+      "sha256": "9119de92f047017c2ce91c2c962553d3e11134293d0d57f357cf3554e2d8a2ea",
+      "path": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/server/native_telemetry_status.json"
+    },
+    {
+      "sha256": "3e511daf4df224f7d70ae83248b75a48ec93591a0b1fa12c855b1294601128fe",
+      "path": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/memory_opportunity.json"
+    },
+    {
+      "sha256": "85c7f65fc3d7b8e43835346ebcdb78cfb7f62cbf243a61c60b73b34aa1f3da5b",
+      "path": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/native_h2d_sources.json"
+    },
+    {
+      "sha256": "c1fa8b61e2df2a1bd354d5c8baf3c887b339b91c18f057a02e6d98eabd2f9337",
+      "path": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/prefetch_lifecycle.json"
+    },
+    {
+      "sha256": "02582fc928398692834571b361c1140e2600391224e691c71af4649fe0e4c719",
+      "path": "experiments/reports/v1143_v75_native_actual_startup_20261016.json"
+    }
+  ],
+  "predictive": {
+    "workflow_count": 156,
+    "completed_workflows": 155,
+    "outcomes": [
+      {
+        "outcome": "completed",
+        "count": 155
+      },
+      {
+        "outcome": "incomplete",
+        "count": 1
+      }
+    ],
+    "duration_seconds": 7919.167762887664,
+    "all_arrival_raw_duration_mean_s": 1806.8971281316644,
+    "raw_completed_duration_mean_s": 1783.1299644662788,
+    "native_agent_jct_eligible_workflows": 144,
+    "nonempty_patch_workflows": 154,
+    "runtime_control_delivery": {
+      "degraded_workflows": 0,
+      "failure_count": 0
+    },
+    "guarded_workflows": [
+      {
+        "instance_id": "django__django-11066",
+        "outcome": "completed",
+        "guarded_returns": 1
+      },
+      {
+        "instance_id": "django__django-11087",
+        "outcome": "completed",
+        "guarded_returns": 1
+      },
+      {
+        "instance_id": "django__django-11141",
+        "outcome": "completed",
+        "guarded_returns": 1
+      },
+      {
+        "instance_id": "django__django-11211",
+        "outcome": "completed",
+        "guarded_returns": 1
+      },
+      {
+        "instance_id": "django__django-12125",
+        "outcome": "completed",
+        "guarded_returns": 1
+      },
+      {
+        "instance_id": "django__django-12273",
+        "outcome": "completed",
+        "guarded_returns": 1
+      },
+      {
+        "instance_id": "django__django-12754",
+        "outcome": "completed",
+        "guarded_returns": 1
+      },
+      {
+        "instance_id": "django__django-12965",
+        "outcome": "completed",
+        "guarded_returns": 1
+      },
+      {
+        "instance_id": "django__django-13112",
+        "outcome": "completed",
+        "guarded_returns": 1
+      },
+      {
+        "instance_id": "pydata__xarray-4966",
+        "outcome": "completed",
+        "guarded_returns": 1
+      },
+      {
+        "instance_id": "pydata__xarray-6744",
+        "outcome": "completed",
+        "guarded_returns": 1
+      }
+    ],
+    "noncompleted": [
+      {
+        "instance_id": "pytest-dev__pytest-7490",
+        "outcome": "incomplete",
+        "duration_seconds": 5490.80749626644,
+        "error": null,
+        "natural_terminal": false,
+        "workflow_deadline": {
+          "abort_requested_count": 0,
+          "active_command_cancel_count": 0,
+          "cleanup_complete": false,
+          "enabled": true,
+          "expired": false,
+          "pending_task_cancel_count": 0,
+          "server_terminal": false,
+          "server_terminal_latency_ms": null
+        },
+        "native_agent_jct_exclusion_reasons": [
+          "outcome:incomplete",
+          "missing_semantic_completion"
+        ]
+      }
+    ]
+  },
+  "incomplete_terminal_evidence": {
+    "instance_id": "pytest-dev__pytest-7490",
+    "last_llm_finish_reason": "length",
+    "last_root_context_epoch": 120,
+    "deadline_expired": false,
+    "source": "client_156/workflows/pytest-dev__pytest-7490/runtime_events.deepagents.jsonl; final llm_result and workflow_end"
+  },
+  "write_back_batch": {
+    "counts": {
+      "attempts": 19227,
+      "batches": 8863,
+      "enqueue_failed": 0,
+      "full_tokens": 19731247,
+      "no_chain": 10364,
+      "no_planner": 0,
+      "nodes": 50662,
+      "partial_batches": 0,
+      "planned_nodes": 50662,
+      "unsupported_or_queued": 0
+    },
+    "max_nodes": 32
+  },
+  "transfer_budget": {
+    "native_h2d": {
+      "batch_count": 352,
+      "actual_bytes": 115202826240,
+      "cuda_event_interval": {
+        "count": 352,
+        "sum_ms": 3898.535550430417,
+        "p50_ms": 10.859087944030762,
+        "max_ms": 38.47110366821289
+      },
+      "submit_to_ack": {
+        "count": 352,
+        "sum_ms": 20663.312763907015,
+        "p50_ms": 54.44018170237541,
+        "max_ms": 569.9111241847277
+      },
+      "enqueue_to_submit": {
+        "count": 352,
+        "sum_ms": 1616.6046932339668,
+        "p50_ms": 0.9100921452045441,
+        "max_ms": 146.30095846951008
+      },
+      "submit_to_complete_envelope_union_ms": 20663.261962890625,
+      "ack_sum_share_of_workload_percent": 0.26092783209800696
+    },
+    "predictive_h2d": {
+      "batch_count": 204,
+      "actual_bytes": 12155617280,
+      "cuda_event_interval": {
+        "count": 204,
+        "sum_ms": 725.9469769448042,
+        "p50_ms": 3.3330719470977783,
+        "max_ms": 11.925248146057129
+      },
+      "submit_to_ack": {
+        "count": 204,
+        "sum_ms": 8430.581947788596,
+        "p50_ms": 42.01448755338788,
+        "max_ms": 200.20453352481127
+      },
+      "enqueue_to_submit": {
+        "count": 204,
+        "sum_ms": 170.8790985867381,
+        "p50_ms": 0.4039788618683815,
+        "max_ms": 15.512125566601753
+      },
+      "submit_to_complete_envelope_union_ms": 8430.53759765625,
+      "ack_sum_share_of_workload_percent": 0.10645792841133661
+    },
+    "execution_handoff_h2d": {
+      "batch_count": 0,
+      "actual_bytes": 0,
+      "cuda_event_interval": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "max_ms": null
+      },
+      "submit_to_ack": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "max_ms": null
+      },
+      "enqueue_to_submit": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "max_ms": null
+      },
+      "submit_to_complete_envelope_union_ms": 0.0,
+      "ack_sum_share_of_workload_percent": 0.0
+    },
+    "unknown_controlled_h2d": {
+      "batch_count": 0,
+      "actual_bytes": 0,
+      "cuda_event_interval": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "max_ms": null
+      },
+      "submit_to_ack": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "max_ms": null
+      },
+      "enqueue_to_submit": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "max_ms": null
+      },
+      "submit_to_complete_envelope_union_ms": 0.0,
+      "ack_sum_share_of_workload_percent": 0.0
+    },
+    "mixed_h2d": {
+      "batch_count": 0,
+      "actual_bytes": 0,
+      "cuda_event_interval": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "max_ms": null
+      },
+      "submit_to_ack": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "max_ms": null
+      },
+      "enqueue_to_submit": {
+        "count": 0,
+        "sum_ms": 0,
+        "p50_ms": null,
+        "max_ms": null
+      },
+      "submit_to_complete_envelope_union_ms": 0.0,
+      "ack_sum_share_of_workload_percent": 0.0
+    },
+    "d2h": {
+      "batch_count": 35082,
+      "actual_bytes": 1749251461120,
+      "cuda_event_interval": {
+        "count": 35082,
+        "sum_ms": 213983.57419149205,
+        "p50_ms": 3.0344960689544678,
+        "max_ms": 105.02700805664062
+      },
+      "submit_to_ack": {
+        "count": 35082,
+        "sum_ms": 431229.3565813452,
+        "p50_ms": 3.954971209168434,
+        "max_ms": 132.44045712053776
+      },
+      "enqueue_to_submit": {
+        "count": 35082,
+        "sum_ms": 21980.57429678738,
+        "p50_ms": 0.018180813640356064,
+        "max_ms": 28.414292261004448
+      },
+      "submit_to_complete_envelope_union_ms": 430624.4152832031,
+      "ack_sum_share_of_workload_percent": 5.445387312063973
+    }
+  },
+  "predictive_reuse": {
+    "schema_version": null,
+    "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d",
+    "scope": "Observed controller submission/ACK/first-launch chain; no DMA wall anchor, exposed-stall measurement or counterfactual speedup.",
+    "prepare": {
+      "issued": 1683,
+      "acked": 1683,
+      "commands_with_observed_restore": 299
+    },
+    "by_source": {
+      "execution_handoff": {
+        "issued_commands": 0,
+        "actual_bytes": 0,
+        "full_transferred_bytes_known": 0,
+        "full_verified_reused_bytes_known": 0,
+        "ack_to_first_service_ms": {
+          "count": 0
+        }
+      },
+      "join_ticket": {
+        "issued_commands": 357,
+        "actual_bytes": 10675445760,
+        "full_transferred_bytes_known": 3721420800,
+        "full_verified_reused_bytes_known": 2663075840,
+        "ack_to_first_service_ms": {
+          "count": 357,
+          "p50": 5316.79443359375,
+          "p90": 52897.841552734375,
+          "max": 52899.095458984375
+        }
+      },
+      "tool_wait": {
+        "issued_commands": 135,
+        "actual_bytes": 1480171520,
+        "full_transferred_bytes_known": 900669440,
+        "full_verified_reused_bytes_known": 598814720,
+        "ack_to_first_service_ms": {
+          "count": 135,
+          "p50": 641.67333984375,
+          "p90": 136086.23081054687,
+          "max": 136086.58374023438
+        }
+      }
+    },
+    "independent_events": {
+      "join_ticket": {
+        "observed_events": 200,
+        "events_with_observed_full_plan": 160,
+        "events_with_early_reused_full": 93,
+        "early_started_and_reused_full_bytes": 2443100160,
+        "remaining_native_full_host_hit_bytes_known": 4528148480,
+        "last_ack_to_first_service_ms": {
+          "count": 115,
+          "p50": 2189.662841796875,
+          "p90": 11416.009033203127,
+          "max": 45846.403564453125
+        }
+      },
+      "tool_wait": {
+        "observed_events": 22588,
+        "events_with_observed_full_plan": 47,
+        "events_with_early_reused_full": 13,
+        "early_started_and_reused_full_bytes": 598814720,
+        "remaining_native_full_host_hit_bytes_known": 38302228480,
+        "last_ack_to_first_service_ms": {
+          "count": 15,
+          "p50": 679.632568359375,
+          "p90": 84954.03911132808,
+          "max": 136062.00952148438
+        }
+      }
+    },
+    "cohort_timing": {
+      "by_source": {
+        "join_ticket": {
+          "observed_wait_events": 200,
+          "first_plan_relative_to_completion_ms": {
+            "count": 200,
+            "p50": -520529.9932861328,
+            "p90": -137245.58090820312,
+            "max": 64.35205078125
+          },
+          "first_positive_full_plan_relative_to_completion_ms": {
+            "count": 160,
+            "p50": -573831.4750976562,
+            "p90": -136744.27714843754,
+            "max": -331.171142578125
+          },
+          "plan_timing_categories": {
+            "no_plan_observation_before_completion": {
+              "independent_events": 1,
+              "max_snapshot_pre_completion_full_bytes_known": 0,
+              "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0,
+              "early_started_and_reused_full_bytes": 0
+            },
+            "only_zero_full_plan_before_completion": {
+              "independent_events": 39,
+              "max_snapshot_pre_completion_full_bytes_known": 0,
+              "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+              "remaining_native_full_host_hit_bytes_known": 0,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0,
+              "early_started_and_reused_full_bytes": 0
+            },
+            "positive_full_plan_before_completion": {
+              "independent_events": 160,
+              "max_snapshot_pre_completion_full_bytes_known": 5006827520,
+              "max_snapshot_pre_completion_fitting_full_bytes_known": 4707696640,
+              "remaining_native_full_host_hit_bytes_known": 4528148480,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 93,
+              "early_started_and_reused_full_bytes": 2443100160
+            }
+          }
+        },
+        "tool_wait": {
+          "observed_wait_events": 22588,
+          "first_plan_relative_to_completion_ms": {
+            "count": 22588,
+            "p50": -168.8291015625,
+            "p90": 31.862817382812494,
+            "max": 472.382568359375
+          },
+          "first_positive_full_plan_relative_to_completion_ms": {
+            "count": 47,
+            "p50": -1691.750732421875,
+            "p90": -825.3856445312504,
+            "max": -166.8017578125
+          },
+          "plan_timing_categories": {
+            "no_plan_observation_before_completion": {
+              "independent_events": 4985,
+              "max_snapshot_pre_completion_full_bytes_known": 0,
+              "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+              "remaining_native_full_host_hit_bytes_known": 3239587840,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0,
+              "early_started_and_reused_full_bytes": 0
+            },
+            "only_zero_full_plan_before_completion": {
+              "independent_events": 17556,
+              "max_snapshot_pre_completion_full_bytes_known": 0,
+              "max_snapshot_pre_completion_fitting_full_bytes_known": 0,
+              "remaining_native_full_host_hit_bytes_known": 26892677120,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 0,
+              "early_started_and_reused_full_bytes": 0
+            },
+            "positive_full_plan_before_completion": {
+              "independent_events": 47,
+              "max_snapshot_pre_completion_full_bytes_known": 3030425600,
+              "max_snapshot_pre_completion_fitting_full_bytes_known": 1206538240,
+              "remaining_native_full_host_hit_bytes_known": 8169963520,
+              "remaining_native_full_evidence_unknown_events": 0,
+              "events_with_early_reused_full": 13,
+              "early_started_and_reused_full_bytes": 598814720
+            }
+          }
+        }
+      }
+    }
+  },
+  "workflow_join_round_distribution": {
+    "1": 127,
+    "2": 20,
+    "3": 7,
+    "7": 1,
+    "5": 1
+  },
+  "host_eviction_attribution": {
+    "available": true,
+    "counts": {
+      "expired_without_reaccess": 37159,
+      "full_device_hit": 5410,
+      "full_evictions": 62050,
+      "full_host_hit": 2534,
+      "full_mixed_tier_hit": 1,
+      "full_recompute": 35,
+      "mamba_evictions": 16740,
+      "mamba_prefix_revisited_hit_location_unknown": 463,
+      "request_probes": 37877
+    },
+    "evicted_units_by_pool": {
+      "full": 23015210,
+      "full_expired": 9134119,
+      "mamba": 16740,
+      "mamba_expired": 9696
+    },
+    "full_reaccess_semantics": "exact prefix match plus request device/host cached-token intervals; remaining evicted FULL interval is attributed to recomputation",
+    "identity_semantics": "run-keyed HMAC over exact cache namespace and radix token prefix; raw token IDs are not written",
+    "mamba_reaccess_semantics": "exact prefix revisit is observable, but native telemetry does not expose the Mamba hit location per node",
+    "pending_blocks_by_pool": {
+      "full": 26187,
+      "mamba": 6581
+    },
+    "pending_latest_evicted_units_by_pool": {
+      "full": 10358680,
+      "mamba": 6581
+    },
+    "probe_prefix_length_overflow": 0,
+    "recomputed_full_units": 2499,
+    "reused_full_units": 3322978
+  },
+  "native_actual_startup": {
+    "status": "actual_gpu_source_arrivals_capacity_and_batch_config_verified",
+    "at": "2026-10-16T10:37:24.408809-07:00",
+    "scheduler": {
+      "pid": 3831770,
+      "state": "R",
+      "ppid": 3831390,
+      "start_ticks": "634234241",
+      "argv": [
+        "sglang::scheduler"
+      ]
+    },
+    "source_commit": "2ad32d097dae169ff437ecb9f66098a2dc6ffea4",
+    "canonical_patch": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v1137-batched-writeback-gpu-20261016/patches/sglang-v0.5.20-beliefkv-staging.patch",
+      "sha256": "ea859cf0e8d02db87e1b586fa149c7a8ddf798e867ee7888e21fa4a25f1785ce",
+      "expected_tree": "53020ce3efef3ed362e9af0db77147b39070f064",
+      "actual_tree": "53020ce3efef3ed362e9af0db77147b39070f064",
+      "matches_worktree": true,
+      "covered_untracked_paths": []
+    },
+    "actual_server_settings": {
+      "status": "ready",
+      "max_running_requests": 48,
+      "context_length": 131072,
+      "chunked_prefill_size": 4096,
+      "prefill_decode_interval": 0,
+      "enable_mixed_chunk": false,
+      "enable_prefill_delayer": false,
+      "min_free_slots_delay": null,
+      "enable_beliefkv_admission": false
+    }
+  },
+  "limitations": [
+    "All-arrival raw duration includes incomplete and guard-intervened workflows; it is not quality-qualified JCT.",
+    "Completed and natural returns are not official task-resolution results.",
+    "Transfer stream and submit-to-ACK sums overlap other work and are not removable JCT.",
+    "Node-command and independent wait-event quantiles use different denominators.",
+    "Positive-plan snapshots do not prove immediately executable capacity or isolated prefetch value.",
+    "Host eviction reaccess evidence is bounded; absent reaccess is not proof of useless backup.",
+    "Quality evaluation remains queued behind the complete V75/V76 processes."
+  ]
+}

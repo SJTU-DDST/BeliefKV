@@ -1,0 +1,187 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-16T17:54:04Z",
+  "status": "cpu_qualified_complete_predictive_observation_not_end_to_end_acceptance",
+  "bindings": [
+    {
+      "sha256": "cfae4bc3f7937b12351d8053068dee6af25f9ec7fc6cf5464656d5c23ee7aae8",
+      "path": "scripts/audit_agent_work_redundancy.py"
+    },
+    {
+      "sha256": "a9262996530573c11cc2bbdaf6184a87443b30e02fbd8f983c74e5bbbb862952",
+      "path": "scripts/audit_native_system_costs.py"
+    },
+    {
+      "sha256": "754ce07099a008be88ec0e98dc9fa6715d6368c12951420db09e229e5bb14c5c",
+      "path": "tests/test_agent_work_redundancy.py"
+    },
+    {
+      "sha256": "0d44325211b80a6ede6c3ca99186b99af2a2fc54342a4aae0439956342358476",
+      "path": "experiments/reports/v1187_v75_predictive_completed_basis_20261016.json"
+    },
+    {
+      "sha256": "b75823ffc135aa5f5edda014e0f821f7fe587f9db5a2d028b4f476da773fd16b",
+      "path": "experiments/reports/v1187_v75_predictive_completed_sources_20261016.json"
+    },
+    {
+      "sha256": "fb0f400c272a91c1ba1224ce3deb09cd43af227f06fc62d5954f0534906d3340",
+      "path": "experiments/reports/v1188_related_work_primary_20261016/SHA256SUMS"
+    },
+    {
+      "sha256": "ea2da5286abe91cebb6724474bd0c90b2c27ca9c03af423eadbbdd38b241812e",
+      "path": "experiments/reports/v1188_related_work_primary_20261016/.gitattributes"
+    },
+    {
+      "sha256": "0f07728ca579a61e420a3313e32d5314c3a41aaf9b36607df43c9ad84b07e593",
+      "path": "experiments/reports/v1188_related_work_primary_20261016/README.md"
+    },
+    {
+      "sha256": "ae088a6db398f68afd356cf04f806a60b3e5d9100169061333fd488624c21ced",
+      "path": "experiments/reports/v1192_work_topology_and_phase_cost_cpu_20261016.xml"
+    },
+    {
+      "sha256": "f5699e802e901e114719ca78f56a028d0b1bbeb0edde0ae2cb6d799bdbe382ae",
+      "path": "experiments/reports/v1193_v75_predictive_complete_phase_cost_20261016.json"
+    },
+    {
+      "sha256": "66e9669cad274631c4e92741a07d8e659875c91e7a6ba88e12ef7260ce40d09e",
+      "path": "experiments/reports/v1194_v75_native_and_queue_live_processes_20261016.txt"
+    }
+  ],
+  "reproduce": {
+    "command": "CUDA_VISIBLE_DEVICES=999 OMP_NUM_THREADS=1 OPENBLAS_NUM_THREADS=1 MKL_NUM_THREADS=1 python -m scripts.audit_agent_work_redundancy --client experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/client_156 --with-prefill-service --output <new-report-path>",
+    "tests": "python -m pytest -q tests/test_agent_work_redundancy.py",
+    "passed_cases": 19,
+    "raw_input_bindings": 470,
+    "complete_workflow_sources": 156
+  },
+  "new_evidence": {
+    "dependency_topology": {
+      "counts": {
+        "dynamic_subagents": 367,
+        "join_groups": 200,
+        "join_groups_with_one_declared_waiter": 200,
+        "nonempty_producer_sets": 200,
+        "observed_spawn_edges": 367,
+        "producer_sets_with_multiple_declared_consumers": 0,
+        "runtime_internal_invocations": 708,
+        "satisfied_join_groups": 200,
+        "spawn_edges_without_target_creation": 0
+      },
+      "dynamic_child_depths": {
+        "1": 367
+      },
+      "join_groups_per_workflow": {
+        "1": 127,
+        "2": 20,
+        "3": 7,
+        "5": 1,
+        "7": 1
+      },
+      "semantics": "Declared invocation/SPAWN/JOIN identities, scoped by workflow. Internal summaries are separate from dynamic subagents. Missing creation, parent or waiter evidence stays unknown. Multiple consumers of a producer set describe dependency topology only: they do not prove identical rendered tokens, equal KV/Mamba values, compatible batch geometry, or an opportunity beyond native exact-prefix sharing. A single JOIN waiter does not exclude repeated tool-result text or shared prefixes elsewhere in the application."
+    },
+    "worker_phase_intervals_ms": {
+      "decode": {
+        "batches_without_valid_timing": 0,
+        "count": 461524,
+        "max": 1206.8880945444107,
+        "observed_batches": 461524,
+        "p50": 9.45409620180726,
+        "p90": 23.385061416774988,
+        "p99": 62.82439663074912,
+        "sum": 6411941.806110553
+      },
+      "prefill": {
+        "batches_without_valid_timing": 0,
+        "count": 40932,
+        "max": 4046.587996184826,
+        "observed_batches": 40932,
+        "p50": 14.645383227616549,
+        "p90": 90.78626157715921,
+        "p99": 141.28540491685288,
+        "sum": 1226440.2796057984
+      }
+    },
+    "prefill_batch_role_set_worker_intervals_ms": {
+      "child": {
+        "count": 24390,
+        "max": 333.3685304969549,
+        "p50": 12.86585908383131,
+        "p90": 49.52417751774193,
+        "p99": 109.82769807800658,
+        "sum": 520746.4678026736
+      },
+      "child+root": {
+        "count": 944,
+        "max": 147.46008347719908,
+        "p50": 24.962663184851408,
+        "p90": 57.616925612092025,
+        "p99": 111.98615748435253,
+        "sum": 29396.63322083652
+      },
+      "child+root+summary": {
+        "count": 60,
+        "max": 205.7529939338565,
+        "p50": 72.52861047163606,
+        "p90": 137.75546727702022,
+        "p99": 195.20532798022026,
+        "sum": 5009.318181313574
+      },
+      "child+summary": {
+        "count": 167,
+        "max": 192.53847189247608,
+        "p50": 80.72216808795929,
+        "p90": 129.78824730962515,
+        "p99": 154.70098486170173,
+        "sum": 14019.30397003889
+      },
+      "root": {
+        "count": 11518,
+        "max": 4046.587996184826,
+        "p50": 13.189885299652815,
+        "p90": 51.4669077470899,
+        "p99": 112.93789324350654,
+        "sum": 254789.68704491854
+      },
+      "root+summary": {
+        "count": 101,
+        "max": 147.04887755215168,
+        "p50": 65.28786011040211,
+        "p90": 122.30698857456446,
+        "p99": 143.93960870802402,
+        "sum": 6985.513128340244
+      },
+      "summary": {
+        "count": 3752,
+        "max": 206.1557024717331,
+        "p50": 112.41743061691523,
+        "p90": 138.3284687064588,
+        "p99": 168.4140645433217,
+        "sum": 395493.3562576771
+      }
+    },
+    "cuda_graph_replay_observations": {
+      "decode:True": 461524,
+      "prefill:True": 40932
+    },
+    "decode_share_of_recorded_phase_interval_sum": 0.8394371653783566
+  },
+  "frozen_run_checks": {
+    "app75_worktree_clean": true,
+    "app76_worktree_clean": true,
+    "canonical_patch_sha256": "ea859cf0e8d02db87e1b586fa149c7a8ddf798e867ee7888e21fa4a25f1785ce",
+    "main_app75_app76_patch_equal": true,
+    "user_paper_asset_checksums_unchanged": 43,
+    "registered_helpers_modified": false,
+    "new_gpu_experiment_registered": false
+  },
+  "research_decision": {
+    "selected_new_contribution": false,
+    "quality_matched_native_improvement_proven": false,
+    "continue_frozen_v75_native_and_queued_v76": true,
+    "retain_automatic_quality_queue": true,
+    "do_not_reinstate_withdrawn_three_mechanisms": true,
+    "prioritize_real_control_and_model_computation_evidence": true,
+    "do_not_equate_topology_or_text_similarity_with_tensor_reuse": true
+  }
+}

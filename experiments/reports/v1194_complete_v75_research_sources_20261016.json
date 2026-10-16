@@ -1,0 +1,46 @@
+[
+  {
+    "sha256": "cfae4bc3f7937b12351d8053068dee6af25f9ec7fc6cf5464656d5c23ee7aae8",
+    "path": "scripts/audit_agent_work_redundancy.py"
+  },
+  {
+    "sha256": "a9262996530573c11cc2bbdaf6184a87443b30e02fbd8f983c74e5bbbb862952",
+    "path": "scripts/audit_native_system_costs.py"
+  },
+  {
+    "sha256": "754ce07099a008be88ec0e98dc9fa6715d6368c12951420db09e229e5bb14c5c",
+    "path": "tests/test_agent_work_redundancy.py"
+  },
+  {
+    "sha256": "0d44325211b80a6ede6c3ca99186b99af2a2fc54342a4aae0439956342358476",
+    "path": "experiments/reports/v1187_v75_predictive_completed_basis_20261016.json"
+  },
+  {
+    "sha256": "b75823ffc135aa5f5edda014e0f821f7fe587f9db5a2d028b4f476da773fd16b",
+    "path": "experiments/reports/v1187_v75_predictive_completed_sources_20261016.json"
+  },
+  {
+    "sha256": "fb0f400c272a91c1ba1224ce3deb09cd43af227f06fc62d5954f0534906d3340",
+    "path": "experiments/reports/v1188_related_work_primary_20261016/SHA256SUMS"
+  },
+  {
+    "sha256": "ea2da5286abe91cebb6724474bd0c90b2c27ca9c03af423eadbbdd38b241812e",
+    "path": "experiments/reports/v1188_related_work_primary_20261016/.gitattributes"
+  },
+  {
+    "sha256": "0f07728ca579a61e420a3313e32d5314c3a41aaf9b36607df43c9ad84b07e593",
+    "path": "experiments/reports/v1188_related_work_primary_20261016/README.md"
+  },
+  {
+    "sha256": "ae088a6db398f68afd356cf04f806a60b3e5d9100169061333fd488624c21ced",
+    "path": "experiments/reports/v1192_work_topology_and_phase_cost_cpu_20261016.xml"
+  },
+  {
+    "sha256": "f5699e802e901e114719ca78f56a028d0b1bbeb0edde0ae2cb6d799bdbe382ae",
+    "path": "experiments/reports/v1193_v75_predictive_complete_phase_cost_20261016.json"
+  },
+  {
+    "sha256": "66e9669cad274631c4e92741a07d8e659875c91e7a6ba88e12ef7260ce40d09e",
+    "path": "experiments/reports/v1194_v75_native_and_queue_live_processes_20261016.txt"
+  }
+]

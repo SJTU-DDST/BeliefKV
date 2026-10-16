@@ -1,8 +1,18 @@
 # BeliefKV 实验注意事项
 
-更新日期：2026-10-16（Asia/Shanghai）。本文是当前实验的执行约束，不是新增 agent
+更新日期：2026-10-16（PDT）。本文是当前实验的执行约束，不是新增 agent
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
+
+2026-10-16 10:49 PDT：V75 predictive完整结果为155 completed/1 incomplete；
+11个workflow有既有guard介入，必须保留原标签和全部任务，不能统一称自然完成。
+pytest-7490末次响应为length，不能因工具180s上限或deadline未到就重标成功。
+原生H2D累计流时间3.899s、D2H213.984s不等于JCT收益。节点命令ACK→服务分布
+与独立JOIN/tool事件分布不能混用，大burst会给前者重复权重。worker区间包括
+依赖/队列，不是纯kernel；混合角色批次保持整批，不按token分摊时间。
+依赖图单等待者也不能排除相同工具文本，或证明等价KV。V1187/V1193绑定完整
+证据，V1192有19项CPU检查。当前native已按V1143核验真实服务；V75/V76和
+官方质量helper继续冻结，后者仍未评分，不改注册依赖或追加未登记GPU任务。
 
 2026-10-16 10:20 PDT：官方质量等待器V1185已登记，实际进程3806721等待V75/V76
 全部退出后再启动单CPU worker；顺序V76 reactive、V75 native、V75 predictive。

@@ -1,0 +1,34 @@
+[
+  {
+    "sha256": "918dd99baee4e36d0ef97d0ebc2cc50170c4c6cd2875325bc40b4c1817a1daa0",
+    "path": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/client_156/summary.json"
+  },
+  {
+    "sha256": "7de3c19bdf31a9b5c467785815e2bb1d3b431082c6091111699f598c848b75bf",
+    "path": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/client_156/workflows/pytest-dev__pytest-7490/result.json"
+  },
+  {
+    "sha256": "9200bbeef31cd96cbdc32946e4948455332b5822b23b26df1e6c495ccb81c2ec",
+    "path": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/client_156/workflows/pytest-dev__pytest-7490/runtime_events.deepagents.jsonl"
+  },
+  {
+    "sha256": "9119de92f047017c2ce91c2c962553d3e11134293d0d57f357cf3554e2d8a2ea",
+    "path": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/server/native_telemetry_status.json"
+  },
+  {
+    "sha256": "3e511daf4df224f7d70ae83248b75a48ec93591a0b1fa12c855b1294601128fe",
+    "path": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/memory_opportunity.json"
+  },
+  {
+    "sha256": "85c7f65fc3d7b8e43835346ebcdb78cfb7f62cbf243a61c60b73b34aa1f3da5b",
+    "path": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/native_h2d_sources.json"
+  },
+  {
+    "sha256": "c1fa8b61e2df2a1bd354d5c8baf3c887b339b91c18f057a02e6d98eabd2f9337",
+    "path": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/prefetch_lifecycle.json"
+  },
+  {
+    "sha256": "02582fc928398692834571b361c1140e2600391224e691c71af4649fe0e4c719",
+    "path": "experiments/reports/v1143_v75_native_actual_startup_20261016.json"
+  }
+]

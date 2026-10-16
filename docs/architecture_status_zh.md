@@ -1,6 +1,18 @@
 # BeliefKV 当前架构与实现状态
 
-更新日期：2026-10-16（Asia/Shanghai）。
+更新日期：2026-10-16（PDT）。
+
+2026-10-16 10:49 PDT：V75 predictive已完整结束，155 completed/1 incomplete，
+原始全部156项duration均值1806.897s；11个workflow有既有guard介入，质量未评分。
+唯一incomplete的pytest-7490末次finish_reason=length，非工具/deadline超时。
+原生H2D流累计3.899s，D2H213.984s；均非可扣除JCT。批量写回8863批/50662节点。
+V1193只读完整156份轨迹和原生服务：decode/prefill worker区间累计6411.942/
+1226.440s，全部记录graph replay；不能用摘要token占比估计时间收益。
+367个真实child均深度1，200个JOIN均单等待者，29个workflow多轮；708个内部
+调用单列，不将依赖关系当成相同token/KV证明。新增19项CPU检查通过。
+native于10:37:24核验scheduler3831770/start_ticks634234241、同应用/引擎/batch32，
+V76与质量队列仍按原顺序等待。运行源码及已登记helper冻结。详见研究筛选
+4.10/4.11和V1187/V1188/V1192/V1193；系统贡献与质量匹配端到端收益仍待证明。
 
 2026-10-16 10:20 PDT：最新 V1179 再核对 V75 前缀，768个大FULL差额中普通续接
 仅22个/24,741token；2个客户端身份和1个服务样本身份仍unknown，不把差额称

@@ -1,8 +1,11 @@
 import hashlib
 import json
 
+import pytest
+
 from scripts.audit_agent_work_redundancy import (
-    analyze, prefill_service, read_source, repeated_results, root_evidence, tool_pairs,
+    analyze, dependency_topology, prefill_service, read_source, repeated_results,
+    root_evidence, tool_pairs,
 )
 
 
@@ -138,6 +141,56 @@ def test_prefill_extends_are_not_allocated_as_gpu_time_or_missed_geometry(tmp_pa
     }
     assert result["samples_without_proven_extend_geometry"] == {"unknown": 1}
     assert result["batches_by_role_set"] == {"root+summary+unknown": 1}
+    assert result["worker_phase_intervals_ms"]["prefill"][
+        "batches_without_valid_timing"
+    ] == 1
+
+
+def test_service_phase_intervals_keep_mixed_roles_whole_and_decode_separate(tmp_path):
+    path = tmp_path / "service.jsonl"
+    rows = [
+        {
+            "event": "gpu_service_sample", "sample_id": identity, "phase": phase,
+            "service_elapsed_ms": elapsed, "cuda_graph_replayed": replayed,
+            "request_samples": [
+                {
+                    "request_id": request, "token_delta": 100,
+                    "token_delta_semantics": "prefill_extend_input_len",
+                } for request in requests
+            ],
+        }
+        for identity, phase, elapsed, replayed, requests in [
+            ("decode", "decode", 20, True, ("r",)),
+            ("mixed", "prefill", 10, False, ("r", "s")),
+            ("summary", "prefill", 5, True, ("s",)),
+            ("missing", "prefill", None, None, ("r",)),
+            ("invalid", "prefill", True, None, ("r",)),
+        ]
+    ]
+    path.write_text("".join(json.dumps(row) + "\n" for row in rows))
+    result = prefill_service(
+        path, {"r": {"role": "root"}, "s": {"role": "summary"}}, (), [],
+    )
+    assert result["prefill_batches"] == 4
+    phases = result["worker_phase_intervals_ms"]
+    assert phases["decode"]["sum"] == 20
+    assert phases["prefill"]["sum"] == 15
+    assert phases["prefill"]["batches_without_valid_timing"] == 2
+    by_role = result["prefill_batch_role_set_worker_intervals_ms"]
+    assert by_role["root+summary"]["sum"] == 10
+    assert by_role["summary"]["sum"] == 5
+    assert "root" not in by_role
+    assert result["cuda_graph_replay_observations"]["prefill:True"] == 1
+
+
+def test_service_identities_are_unique_across_phases(tmp_path):
+    path = tmp_path / "service.jsonl"
+    path.write_text(
+        '{"event":"gpu_service_sample","phase":"decode","sample_id":"same"}\n'
+        '{"event":"gpu_service_sample","phase":"prefill","sample_id":"same"}\n'
+    )
+    with pytest.raises(ValueError, match="duplicate service sample"):
+        prefill_service(path, {}, (), [])
 
 
 def test_roles_and_summary_per_workflow_include_zero_summary_workflows(tmp_path):
@@ -192,3 +245,109 @@ def test_roles_and_summary_per_workflow_include_zero_summary_workflows(tmp_path)
     assert result["context_compaction"][
         "next_ordinary_request_native_ingress"
     ]["fields"]["uncached_prompt_tokens"]["sum"] == 20
+
+
+def invocation(identity, *, parent=None, relation="root", internal=False, workflow="wf"):
+    return {
+        **event("invocation_create", 0, identity, workflow=workflow),
+        "parent_invocation_id": parent, "relation_type": relation,
+        "attributes": {"runtime_internal": internal},
+    }
+
+
+def join(kind, identity, *, waiter=None, members=(), workflow="wf"):
+    return {
+        **event(kind, 1, waiter, workflow=workflow),
+        "join_id": identity, "member_invocation_ids": list(members),
+    }
+
+
+def test_topology_separates_internal_calls_from_dynamic_and_nested_spawn():
+    rows = [
+        invocation("root"),
+        invocation("child", parent="root", relation="spawn"),
+        invocation("summary", parent="child", relation="call", internal=True),
+        invocation("nested", parent="child", relation="spawn"),
+        join("join_create", "j", members=("child",)),
+        join("join_wait", "j", waiter="root"),
+        join("join_satisfied", "j"),
+    ]
+    result = dependency_topology(rows)
+    assert result["counts"]["dynamic_subagents"] == 2
+    assert result["counts"]["runtime_internal_invocations"] == 1
+    assert result["counts"]["nested_dynamic_subagents"] == 1
+    assert result["dynamic_child_depths"] == {"1": 1, "2": 1}
+    assert result["counts"]["join_groups_with_one_declared_waiter"] == 1
+    assert result["counts"]["producer_sets_with_multiple_declared_consumers"] == 0
+
+
+def test_topology_groups_exact_producer_sets_across_joins_not_wait_observations():
+    rows = [
+        join("join_create", "j1", members=("a", "b")),
+        join("join_wait", "j1", waiter="first"),
+        join("join_wait", "j1", waiter="first"),
+        join("join_create", "j2", members=("b", "a")),
+        join("join_wait", "j2", waiter="second"),
+        join("join_create", "j3", members=("a", "c")),
+        join("join_wait", "j3", waiter="third"),
+    ]
+    result = dependency_topology(rows)["counts"]
+    assert result["join_groups_with_one_declared_waiter"] == 3
+    assert result["nonempty_producer_sets"] == 2
+    assert result["producer_sets_with_multiple_declared_consumers"] == 1
+
+
+def test_topology_scopes_join_and_invocation_identities_by_workflow():
+    rows = []
+    for workflow in ("one", "two"):
+        rows.extend([
+            invocation("root", workflow=workflow),
+            invocation("child", parent="root", relation="spawn", workflow=workflow),
+            join("join_create", "j", members=("child",), workflow=workflow),
+            join("join_wait", "j", waiter=workflow, workflow=workflow),
+        ])
+    result = dependency_topology(rows)
+    assert result["counts"]["dynamic_subagents"] == 2
+    assert result["counts"]["producer_sets_with_multiple_declared_consumers"] == 0
+    assert result["join_groups_per_workflow"] == {"1": 2}
+
+
+def test_topology_preserves_unknown_creations_parents_and_waiters():
+    result = dependency_topology([
+        invocation("orphan", parent="unseen", relation="spawn"),
+        join("join_create", "empty"),
+        join("join_satisfied", "missing"),
+        join("join_wait", "missing", waiter="consumer"),
+    ])
+    assert result["dynamic_child_depths"] == {"unknown": 1}
+    counts = result["counts"]
+    assert counts["join_groups_without_observed_creation"] == 1
+    assert counts["join_groups_without_observed_members"] == 1
+    assert counts["join_groups_without_observed_waiter"] == 1
+    assert counts["nonempty_producer_sets"] == 0
+
+
+def test_topology_counts_actual_multiple_waiters_without_prompt_reuse_credit():
+    result = dependency_topology([
+        join("join_create", "j", members=("a", "b")),
+        join("join_wait", "j", waiter="first"),
+        join("join_wait", "j", waiter="second"),
+    ])
+    assert result["counts"]["join_groups_with_multiple_declared_waiters"] == 1
+    assert result["counts"]["producer_sets_with_multiple_declared_consumers"] == 1
+    assert "identical rendered tokens" in result["semantics"]
+    assert "prefill_tokens_saved" not in result
+
+
+@pytest.mark.parametrize("rows,reason", [
+    ([invocation("root"), invocation("root")], "duplicate invocation"),
+    ([join("join_create", "j"), join("join_create", "j")], "duplicate join"),
+    ([join("join_wait", None)], "without identity"),
+    ([
+        invocation("a", parent="b", relation="spawn"),
+        invocation("b", parent="a", relation="spawn"),
+    ], "cycle"),
+])
+def test_topology_rejects_ambiguous_duplicate_or_cyclic_identity(rows, reason):
+    with pytest.raises(ValueError, match=reason):
+        dependency_topology(rows)
