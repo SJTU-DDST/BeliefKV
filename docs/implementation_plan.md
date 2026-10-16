@@ -52,6 +52,10 @@ At19:51 PDT,88 outcomes are written:87 completed and one incomplete.
 The django11206 root ends with two length results,repetitive final text
 and no semantic completion;no guard intervened and both children/JOIN ended.
 Preserve it without automatically increasing output or changing live harness.
+At19:55 PDT,90 are completed and two incomplete. New pytest6197 also
+ends on length with repetitive text,no semantic completion or guard action;
+children/JOIN finished. Keep117 repeat-tool observations/165 feedback records
+separate from physical-migration failures.
 
 V1004's503.998-525.815s native stack diagnosis is outside fixed windows;
 941 main-thread samples include50 local closure captures,not CPU duration.

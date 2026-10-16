@@ -50,6 +50,8 @@ V1025用真实原生RadixKey/reentry方法补测完整CPU规划：
 合成树与CPU索引不证明线上频率或GPU收益，须保留这项风险。
 PDT 19:51已有87 completed及1 incomplete；后者root输出重复并两次
 触及length，无语义完成、无guard干预，保留预算及原始失败证据。
+PDT 19:55为90 completed、2 incomplete；新增pytest6197同样
+以length及重复正文结束，无guard干预，全部child/JOIN已结束。
 
 未来冷诊断可在同一采样prefill记录相邻forward±1的前驱结果
 处理、后继选择及launch观察点，保留每个阶段绝对线程CPU

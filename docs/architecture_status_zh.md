@@ -48,6 +48,9 @@ PDT 19:51核对已写出88份结果：87 completed、1 incomplete。
 django__django-11206的root末两轮finish_reason均为length，
 最后正文重复且无语义完成；guard未干预，两名child及JOIN均已结束。
 保留该结果，不自动增加8192输出预算或改变正在运行的harness。
+PDT 19:55再核对为90 completed、2 incomplete；新增pytest6197
+末轮亦为length及重复正文，无语义完成或guard干预，child/JOIN已结束。
+此前有117次重复工具观测、165次重复结果反馈，不能将其计作迁移失败。
 
 V1004在503.998–525.815秒区间采样，处于固定窗口之外。
 941个主线程样本无损坏，PREPARE局部闭包采集出现在50个样本中；
