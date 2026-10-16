@@ -409,6 +409,7 @@ class NativeAdmissionRuntime:
         ] = OrderedDict()
         self._prefetch_lock_release_failures: set[str] = set()
         self._prefetch_priority_normal_admissions = 4
+        self._resident_priority_normal_admissions = 4
         self._prefetch_priority_promoted: str | None = None
         self._prefetch_priority_native_rank: int | None = None
         self._prefetch_priority_aged_head_bypassed = False
@@ -8318,11 +8319,35 @@ class NativeAdmissionRuntime:
     ) -> tuple[tuple[int, object], dict] | None:
         if self._residency_pool_bytes is None:
             return None
+        normal_admissions = min(
+            self._prefetch_priority_normal_admissions,
+            self._resident_priority_normal_admissions,
+        )
+        budget = None
+        if normal_admissions < 4:
+            budget = self._current_residency_budget()
+            if (
+                normal_admissions == 0 or budget.source != "native_next_prefill"
+                or budget.request_slots <= 0
+            ):
+                return None
+        now_ms = time.monotonic() * 1000.
+
+        def observation(request: object, key: PrefillCandidateKey) -> dict | None:
+            if budget is None:
+                return self._read_request_residency_hint(request, key=key)
+            # Earlier locality turns reuse discovery already paid for in
+            # this frontier; no extra ancestry scans to hunt for a hit.
+            cached = self._residency_ordering_hints.get(key)
+            if cached is None or cached[0] <= now_ms:
+                cached = self._reentry_observations.get(key)
+            return cached[1] if cached is not None and cached[0] > now_ms else None
+
         head_index, head = ordered[0]
         head_key = keys[head_index]
         if head_key is None:
             return None
-        head_observation = self._read_request_residency_hint(head, key=head_key)
+        head_observation = observation(head, head_key)
         head_cost = self._request_restore_cost(head, head_observation)
         if head_cost is None or head_cost[0] == 0:
             return None
@@ -8335,10 +8360,10 @@ class NativeAdmissionRuntime:
                 or ranks[index][:2] > ranks[head_index][:2]
             ):
                 continue
-            observation = self._read_request_residency_hint(request, key=key)
-            candidate_cost = self._request_restore_cost(request, observation)
+            hint = observation(request, key)
+            candidate_cost = self._request_restore_cost(request, hint)
             if (
-                candidate_cost is None or observation["missing_full_tokens"] != 0
+                candidate_cost is None or hint["missing_full_tokens"] != 0
                 or candidate_cost[0] >= head_cost[0]
                 or candidate_cost[1] > head_cost[1]
             ):
@@ -8347,14 +8372,43 @@ class NativeAdmissionRuntime:
         if not candidates:
             return None
         selected_cost, _, selected = min(candidates, key=lambda item: item[:2])
+        ordinary_quota = 4
+        if budget is not None:
+            ordinary_quota = max(1, min(4, math.ceil(
+                max(0, budget.request_slots - len(candidates)) / len(candidates),
+            )))
+            if normal_admissions < ordinary_quota:
+                return None
+            # An ordering hint alone cannot earn an earlier turn. Recheck
+            # actual input compatibility and current missing state for both.
+            self.counts["resident_aged_native_quota_inspected"] += 1
+            selected_observation = self._read_request_reentry(
+                selected[1], key=keys[selected[0]], refresh=True,
+            )
+            selected_cost = self._request_restore_cost(selected[1], selected_observation)
+            head_observation = self._read_request_reentry(head, key=head_key, refresh=True)
+            head_cost = self._request_restore_cost(head, head_observation)
+            if (
+                selected_cost is None or head_cost is None
+                or selected_observation["missing_full_tokens"] != 0
+                or selected_cost[0] >= head_cost[0]
+                or selected_cost[1] > head_cost[1]
+            ):
+                return None
         return selected, {
             "head_request_id": head.rid,
             "head_restore_bytes": head_cost[0],
             "selected_restore_bytes": selected_cost[0],
             "head_next_input_tokens": head_cost[1],
             "selected_next_input_tokens": selected_cost[1],
-            "ordinary_admission_quota": 4,
-            "evidence": "advisory_session_hint;native_input_and_capacity_checks_remain",
+            "ordinary_admission_quota": ordinary_quota,
+            "native_prefill_slots": budget.request_slots if budget is not None else None,
+            "resident_candidates": len(candidates),
+            "evidence": (
+                "fresh_native_reentry;native_admission_remains"
+                if budget is not None
+                else "advisory_session_hint;native_input_and_capacity_checks_remain"
+            ),
         }
 
     @timed_runtime("admission_plan")
@@ -8720,7 +8774,10 @@ class NativeAdmissionRuntime:
                     self.counts["final_priority_ordered"] += 1
         if (
             self.enable_resident_first and len(ordered) > 1
-            and self._prefetch_priority_normal_admissions >= 4
+            and min(
+                self._prefetch_priority_normal_admissions,
+                self._resident_priority_normal_admissions,
+            ) >= 1
             and self._prefetch_priority_promoted is None
             and self._parent_handoff_priority_promoted is None
             and self._final_priority_promoted is None
@@ -8735,6 +8792,8 @@ class NativeAdmissionRuntime:
                 self._resident_priority_promoted = candidate[1].rid
                 self._resident_priority_details = details
                 self.counts["resident_aged_priority_ordered"] += 1
+                if details["ordinary_admission_quota"] < 4:
+                    self.counts["resident_aged_native_quota_ordered"] += 1
         return compile_native_prefill_plan(
             [
                 key for index, _ in ordered
@@ -8827,13 +8886,30 @@ class NativeAdmissionRuntime:
                     else:
                         self.counts["residency_ordering_hint_native_unknown"] += 1
                 self.demand_hints.pop(req.rid, None)
+                resident_priority = req.rid == self._resident_priority_promoted
+                native_quota_resident = bool(
+                    resident_priority and self._resident_priority_details is not None
+                    and self._resident_priority_details["ordinary_admission_quota"] < 4
+                )
+                self._resident_priority_normal_admissions = (
+                    0 if resident_priority else min(
+                        4, self._resident_priority_normal_admissions + 1,
+                    )
+                )
                 if req.rid in (
                     self._prefetch_priority_promoted, self._final_priority_promoted,
                     self._parent_handoff_priority_promoted, self._resident_priority_promoted,
                 ):
-                    self._prefetch_priority_normal_admissions = 0
+                    # Locality turns keep accruing the ordinary quota for
+                    # restore/final-stage priorities, so those can still run.
+                    self._prefetch_priority_normal_admissions = (
+                        min(4, self._prefetch_priority_normal_admissions + 1)
+                        if native_quota_resident else 0
+                    )
                     if req.rid == self._resident_priority_promoted:
                         self.counts["resident_aged_priority_admitted"] += 1
+                        if native_quota_resident:
+                            self.counts["resident_aged_native_quota_admitted"] += 1
                         if self._opportunity_writer is not None:
                             self._opportunity_writer.record({
                                 "event": "resident_aged_priority_admitted",

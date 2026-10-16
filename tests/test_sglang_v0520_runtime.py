@@ -179,7 +179,7 @@ def test_residency_hint_feedback_keeps_aborted_request_unserved():
     assert runtime.counts["residency_ordering_hint_native_observed"] == 0
     runtime.close()
 
-def _aged_warm_fixture(names=("head", "warm")):
+def _aged_warm_fixture(names=("head", "warm"), *, cached=False):
     runtime = NativeAdmissionRuntime()
     runtime.enable_resident_first = True
     runtime.enable_final_stage_priority = False
@@ -215,6 +215,13 @@ def _aged_warm_fixture(names=("head", "warm")):
         prefetch_gpu_session_nodes=Mock(side_effect=AssertionError("ordering issued DMA")),
     )
     runtime.attach_native_cache(cache)
+    if cached:
+        runtime._residency_ordering_hints = {
+            runtime.visible[request.rid]: (
+                time.monotonic() * 1000. + 50., observations[request.rid],
+            )
+            for request in requests
+        }
     return runtime, requests, observations, cache
 
 
@@ -297,6 +304,156 @@ def test_aged_warm_bypass_does_not_displace_a_stronger_causal_head():
     assert select(runtime, queue).candidates[0].rid == "head"
     assert runtime.counts["resident_aged_priority_ordered"] == 0
     runtime.close()
+
+
+@pytest.mark.parametrize("slots,normal,expected", (
+    (1, 1, "warm"), (2, 1, "warm"), (4, 1, "head"),
+    (4, 3, "warm"), (8, 3, "head"), (1, 0, "head"), (0, 3, "head"),
+))
+def test_aged_resident_quota_uses_imminent_slots_and_fresh_native_cost(slots, normal, expected):
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, queue, _, cache = _aged_warm_fixture(cached=True)
+    runtime._prefetch_priority_normal_admissions = normal
+    runtime._resident_priority_normal_admissions = normal
+    budget = PrefetchResidencyBudget(slots, 1024 ** 3, source="native_next_prefill")
+    try:
+        with patch.object(runtime, "_current_residency_budget", return_value=budget):
+            chosen = select(runtime, queue).candidates[0]
+        assert chosen.rid == expected
+        if expected == "warm":
+            assert runtime._resident_priority_details["ordinary_admission_quota"] == max(
+                1, min(4, slots - 1),
+            )
+            assert runtime._resident_priority_details["evidence"] == (
+                "fresh_native_reentry;native_admission_remains"
+            )
+            runtime.on_prefill_candidate_result(chosen, admitted=True, result="CONTINUE")
+            assert runtime.counts["resident_aged_native_quota_admitted"] == 1
+            assert runtime._prefetch_priority_normal_admissions == min(4, normal + 1)
+        else:
+            assert runtime.counts["resident_aged_native_quota_admitted"] == 0
+        cache.prefetch_gpu_session_nodes.assert_not_called()
+        assert not runtime._prefetch_service_leases
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("changed", (
+    "candidate_prefix", "candidate_full", "head_now_hot", "larger_input", "unknown_head",
+))
+def test_reduced_resident_quota_never_uses_an_advisory_hint_as_reentry_proof(changed):
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, queue, observations, _ = _aged_warm_fixture(cached=True)
+    runtime._prefetch_priority_normal_admissions = 1
+    native = {name: row.copy() for name, row in observations.items()}
+    if changed == "candidate_prefix":
+        native["warm"] = None
+    elif changed == "candidate_full":
+        native["warm"]["missing_full_tokens"] = 1
+    elif changed == "head_now_hot":
+        native["head"].update(missing_full_tokens=0, missing_mamba_slots=0)
+    elif changed == "larger_input":
+        native["warm"]["checkpoint_tokens"] -= 1
+    else:
+        native["head"] = None
+    try:
+        with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+            1, 1024 ** 3, source="native_next_prefill",
+        )), patch.object(runtime, "_read_request_residency_hint", side_effect=(
+            lambda request, **kwargs: observations[request.rid]
+        )), patch.object(runtime, "_read_request_reentry", side_effect=(
+            lambda request, **kwargs: native[request.rid]
+        )):
+            assert select(runtime, queue).candidates[0].rid == "head"
+        assert runtime.counts["resident_aged_native_quota_ordered"] == 0
+        assert runtime._prefetch_priority_normal_admissions == 1
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_accelerated_resident_turns_preserve_ordinary_turns_and_restore_priority_credit():
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, queue, _, _ = _aged_warm_fixture(cached=True)
+    runtime._prefetch_priority_normal_admissions = 1
+    runtime._resident_priority_normal_admissions = 1
+    rows = []
+    runtime._opportunity_writer = NS(record=rows.append, close=lambda: None)
+    try:
+        with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+            1, 1024 ** 3, source="native_next_prefill",
+        )):
+            for _ in range(3):
+                chosen = select(runtime, queue).candidates[0]
+                assert chosen.rid == "warm"
+                runtime.on_prefill_candidate_result(chosen, admitted=True, result="CONTINUE")
+                assert runtime._resident_priority_normal_admissions == 0
+                assert select(runtime, queue).candidates[0].rid == "head"
+                runtime.on_prefill_candidate_result(queue[0], admitted=True, result="CONTINUE")
+        assert runtime.counts["resident_aged_native_quota_admitted"] == 3
+        assert runtime._prefetch_priority_normal_admissions == 4
+        assert runtime._final_priority_normal_admissions == 4
+        assert runtime.counts["native_admitted"] == 6
+        assert all(row["ordinary_admission_quota"] == 1 for row in rows)
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_native_decline_does_not_spend_resident_quota_or_credit_completion():
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, queue, _, _ = _aged_warm_fixture(cached=True)
+    runtime._prefetch_priority_normal_admissions = 1
+    runtime._resident_priority_normal_admissions = 1
+    try:
+        with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+            1, 1024 ** 3, source="native_next_prefill",
+        )):
+            chosen = select(runtime, queue).candidates[0]
+        assert chosen.rid == "warm"
+        runtime.on_prefill_candidate_result(chosen, admitted=False, result="NO_TOKEN")
+        assert runtime._prefetch_priority_normal_admissions == 1
+        assert runtime._resident_priority_normal_admissions == 1
+        assert runtime.counts["resident_aged_native_quota_admitted"] == 0
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("change", ("none", "expired_head", "expired_candidate", "old_epoch"))
+def test_reduced_resident_quota_does_not_add_discovery_scans_without_fresh_hints(change):
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, queue, _, cache = _aged_warm_fixture(cached=True)
+    runtime._prefetch_priority_normal_admissions = 1
+    if change == "none":
+        runtime._residency_ordering_hints.clear()
+    elif change == "old_epoch":
+        key = runtime.visible["warm"]
+        record = runtime._residency_ordering_hints.pop(key)
+        runtime._residency_ordering_hints[replace(key, context_epoch=1)] = record
+    else:
+        key = runtime.visible["head" if change == "expired_head" else "warm"]
+        runtime._residency_ordering_hints[key] = (
+            time.monotonic() * 1000. - 1., runtime._residency_ordering_hints[key][1],
+        )
+    try:
+        with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+            1, 1024 ** 3, source="native_next_prefill",
+        )), patch.object(runtime, "_read_request_residency_hint", side_effect=AssertionError(
+            "reduced quota must not start new discovery",
+        )), patch.object(runtime, "_read_request_reentry", side_effect=AssertionError(
+            "no fresh advisory candidate exists",
+        )):
+            assert select(runtime, queue).candidates[0].rid == "head"
+        cache.inspect_beliefkv_reentry.assert_not_called()
+        assert runtime.counts["resident_aged_native_quota_inspected"] == 0
+    finally:
+        runtime.close()
 
 
 def test_waiting_migration_deferral_requires_overlap_and_native_demand_recovery():
