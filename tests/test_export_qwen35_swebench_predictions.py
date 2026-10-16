@@ -91,3 +91,34 @@ def test_empty_patch_is_exported_for_official_classification(tmp_path):
     assert json.loads((output / "preds.json").read_text())["org__repo-1"][
         "model_patch"
     ] == ""
+
+
+@pytest.mark.parametrize("outcome", ("incomplete", "error", "runner_error", "administratively_censored"))
+def test_saved_non_completed_patch_retains_original_outcome_and_evaluation_denominator(tmp_path, outcome):
+    client, frozen, patch = _inputs(tmp_path)
+    summary_path = client / "summary.json"
+    summary = json.loads(summary_path.read_text())
+    summary["workflows"][0]["outcome"] = outcome
+    _write(summary_path, summary)
+    output = tmp_path / "out"
+    result = export_predictions(client, frozen, output)
+    assert result["schema_version"] == 2
+    assert result["evaluation_denominator"] == 1
+    assert result["instance_ids"] == ["org__repo-1"]
+    assert result["workflow_outcome_by_instance"] == {"org__repo-1": outcome}
+    assert result["native_non_completed_ids"] == ["org__repo-1"]
+    assert not result["official_correctness_evaluated"]
+    assert json.loads((output / "preds.json").read_text())["org__repo-1"]["model_patch"] == patch.read_text()
+    assert json.loads(summary_path.read_text())["workflows"][0]["outcome"] == outcome
+
+
+@pytest.mark.parametrize("outcome", (None, "", True))
+def test_malformed_outcome_cannot_be_silently_reclassified(tmp_path, outcome):
+    client, frozen, patch = _inputs(tmp_path)
+    summary_path = client / "summary.json"
+    summary = json.loads(summary_path.read_text())
+    summary["workflows"][0]["outcome"] = outcome
+    _write(summary_path, summary)
+    with pytest.raises(ValueError, match="identity or outcome"):
+        export_predictions(client, frozen, tmp_path / "out")
+    assert not (tmp_path / "out").exists()

@@ -1,0 +1,517 @@
+{
+  "status": "tool_retry_cpu_comparison_not_gpu_or_jct_acceptance",
+  "observed_at": "2026-10-14T19:01:56.528607-07:00",
+  "baseline_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+  "baseline_sources": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+    "beliefkv/runtime/sglang_v0520_physical.py": "a068a4d3cc1a3aa6bd31e5f3938bd4587076119017eadf72576796c18b864e66",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "526af6f635b8bc3ae393dc8f14b8c3d5b199946bcdb57a427e4585213891abf2"
+  },
+  "candidate_sources": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "4313cbe326bb3491726eb8cb439d9ba890e8e1df0cc3c1edea0d98b990222c68",
+    "beliefkv/runtime/sglang_v0520_physical.py": "d94509b4c554e76f7a93c95ce9865d149f4c2aac5a8bddbdd5ec09e79828f606",
+    "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+    "beliefkv/runtime/hotpath_timing.py": "aa554df03b5c08cc009be14f21a9c25bdb5e48eb585b5cf774601d9ae471792b",
+    "scripts/benchmark_tool_prefetch_retry.py": "67db2011f837672d71fc28b03c48855ad9bf962e2b2526577f9b5e00e860dda2",
+    "scripts/benchmark_native_prepare_path.py": "3ccb01eb8778c1fa11f5a6cdd67c03c300998085b0846a44eec76323c7e2e6a3"
+  },
+  "cases": [
+    {
+      "pending_transactions": 0,
+      "mixed_transfer_directions": false,
+      "profiling_enabled": false,
+      "iterations": 500,
+      "warmup_iterations": 32,
+      "calls_per_sample": 50,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.00102421976,
+            "p50_ms": 0.00102256,
+            "p99_ms": 0.0011338399999999999,
+            "max_ms": 0.00142982
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00103397196,
+            "p50_ms": 0.00103156,
+            "p99_ms": 0.00114822,
+            "max_ms": 0.00144494
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.0006142056,
+            "p50_ms": 0.0006129600000000001,
+            "p99_ms": 0.00069414,
+            "max_ms": 0.0007109
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00062358656,
+            "p50_ms": 0.00062216,
+            "p99_ms": 0.00070398,
+            "max_ms": 0.0007203600000000001
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.40031854101311226,
+      "graph_expectations_tickets_and_completion_credit_equal": true,
+      "deferred_scan_counters": {
+        "baseline": 26600,
+        "candidate": 26600
+      },
+      "physical_actions_issued": 0
+    },
+    {
+      "pending_transactions": 1,
+      "mixed_transfer_directions": false,
+      "profiling_enabled": false,
+      "iterations": 500,
+      "warmup_iterations": 32,
+      "calls_per_sample": 50,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.00109680992,
+            "p50_ms": 0.00109528,
+            "p99_ms": 0.00118224,
+            "max_ms": 0.0014649
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.0011060352,
+            "p50_ms": 0.00110452,
+            "p99_ms": 0.00119182,
+            "max_ms": 0.0014746400000000002
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.00061595068,
+            "p50_ms": 0.0006152,
+            "p99_ms": 0.0006933400000000001,
+            "max_ms": 0.00070816
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00062520392,
+            "p50_ms": 0.0006245,
+            "p99_ms": 0.0007023999999999999,
+            "max_ms": 0.00071826
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.4384162025084529,
+      "graph_expectations_tickets_and_completion_credit_equal": true,
+      "deferred_scan_counters": {
+        "baseline": 26600,
+        "candidate": 26600
+      },
+      "physical_actions_issued": 0
+    },
+    {
+      "pending_transactions": 16,
+      "mixed_transfer_directions": false,
+      "profiling_enabled": false,
+      "iterations": 500,
+      "warmup_iterations": 32,
+      "calls_per_sample": 50,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.00198094256,
+            "p50_ms": 0.00197354,
+            "p99_ms": 0.0021418400000000003,
+            "max_ms": 0.00446628
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00199036876,
+            "p50_ms": 0.0019832,
+            "p99_ms": 0.00215096,
+            "max_ms": 0.00447648
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.0006191224,
+            "p50_ms": 0.00061874,
+            "p99_ms": 0.00069122,
+            "max_ms": 0.0007070799999999999
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00062840004,
+            "p50_ms": 0.0006280600000000001,
+            "p99_ms": 0.0007009200000000001,
+            "max_ms": 0.0007227000000000001
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.6874607005263191,
+      "graph_expectations_tickets_and_completion_credit_equal": true,
+      "deferred_scan_counters": {
+        "baseline": 26600,
+        "candidate": 26600
+      },
+      "physical_actions_issued": 0
+    },
+    {
+      "pending_transactions": 16,
+      "mixed_transfer_directions": true,
+      "profiling_enabled": false,
+      "iterations": 500,
+      "warmup_iterations": 32,
+      "calls_per_sample": 50,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.00150773984,
+            "p50_ms": 0.00150614,
+            "p99_ms": 0.00161458,
+            "max_ms": 0.00201606
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00151776776,
+            "p50_ms": 0.0015165,
+            "p99_ms": 0.0016239000000000002,
+            "max_ms": 0.00202872
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.0006180848,
+            "p50_ms": 0.00061742,
+            "p99_ms": 0.0006973999999999999,
+            "max_ms": 0.0007101599999999999
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00062753324,
+            "p50_ms": 0.00062682,
+            "p99_ms": 0.00070916,
+            "max_ms": 0.00072014
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.5900587199446823,
+      "graph_expectations_tickets_and_completion_credit_equal": true,
+      "deferred_scan_counters": {
+        "baseline": 0,
+        "candidate": 26600
+      },
+      "physical_actions_issued": 0
+    },
+    {
+      "pending_transactions": 64,
+      "mixed_transfer_directions": true,
+      "profiling_enabled": false,
+      "iterations": 500,
+      "warmup_iterations": 32,
+      "calls_per_sample": 50,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.00376669536,
+            "p50_ms": 0.00375904,
+            "p99_ms": 0.00401072,
+            "max_ms": 0.00462466
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00377755316,
+            "p50_ms": 0.0037698,
+            "p99_ms": 0.00402124,
+            "max_ms": 0.004634940000000001
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.00062646352,
+            "p50_ms": 0.00062648,
+            "p99_ms": 0.0006904000000000001,
+            "max_ms": 0.00072758
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00063618292,
+            "p50_ms": 0.00063624,
+            "p99_ms": 0.00070048,
+            "max_ms": 0.0007376
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.8336835182763492,
+      "graph_expectations_tickets_and_completion_credit_equal": true,
+      "deferred_scan_counters": {
+        "baseline": 0,
+        "candidate": 26600
+      },
+      "physical_actions_issued": 0
+    },
+    {
+      "pending_transactions": 0,
+      "mixed_transfer_directions": false,
+      "profiling_enabled": true,
+      "iterations": 500,
+      "warmup_iterations": 32,
+      "calls_per_sample": 50,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.00209676192,
+            "p50_ms": 0.00209116,
+            "p99_ms": 0.00231052,
+            "max_ms": 0.0024479600000000003
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00210626304,
+            "p50_ms": 0.00210032,
+            "p99_ms": 0.0023199,
+            "max_ms": 0.0024587800000000003
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.0016059036,
+            "p50_ms": 0.0015956999999999998,
+            "p99_ms": 0.0017607200000000001,
+            "max_ms": 0.00189196
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00161534336,
+            "p50_ms": 0.00160514,
+            "p99_ms": 0.0017698800000000002,
+            "max_ms": 0.0019009799999999998
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.23410303063878612,
+      "graph_expectations_tickets_and_completion_credit_equal": true,
+      "deferred_scan_counters": {
+        "baseline": 26600,
+        "candidate": 26600
+      },
+      "physical_actions_issued": 0
+    },
+    {
+      "pending_transactions": 1,
+      "mixed_transfer_directions": false,
+      "profiling_enabled": true,
+      "iterations": 500,
+      "warmup_iterations": 32,
+      "calls_per_sample": 50,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.00227603312,
+            "p50_ms": 0.00227212,
+            "p99_ms": 0.0025147000000000004,
+            "max_ms": 0.00263932
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00228556804,
+            "p50_ms": 0.00228122,
+            "p99_ms": 0.00252498,
+            "max_ms": 0.00265102
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.00160979132,
+            "p50_ms": 0.0016021,
+            "p99_ms": 0.00176288,
+            "max_ms": 0.00181842
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00161928556,
+            "p50_ms": 0.00161152,
+            "p99_ms": 0.0017745,
+            "max_ms": 0.00182778
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.2927206085647823,
+      "graph_expectations_tickets_and_completion_credit_equal": true,
+      "deferred_scan_counters": {
+        "baseline": 26600,
+        "candidate": 26600
+      },
+      "physical_actions_issued": 0
+    },
+    {
+      "pending_transactions": 16,
+      "mixed_transfer_directions": false,
+      "profiling_enabled": true,
+      "iterations": 500,
+      "warmup_iterations": 32,
+      "calls_per_sample": 50,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.00322061888,
+            "p50_ms": 0.00320816,
+            "p99_ms": 0.0035801,
+            "max_ms": 0.0041616399999999994
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00323034372,
+            "p50_ms": 0.0032190200000000004,
+            "p99_ms": 0.00358922,
+            "max_ms": 0.00417254
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.0016079944,
+            "p50_ms": 0.00160652,
+            "p99_ms": 0.00172288,
+            "max_ms": 0.00177718
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.0016174942,
+            "p50_ms": 0.00161632,
+            "p99_ms": 0.00173634,
+            "max_ms": 0.0017865000000000001
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.5007188183657422,
+      "graph_expectations_tickets_and_completion_credit_equal": true,
+      "deferred_scan_counters": {
+        "baseline": 26600,
+        "candidate": 26600
+      },
+      "physical_actions_issued": 0
+    },
+    {
+      "pending_transactions": 16,
+      "mixed_transfer_directions": true,
+      "profiling_enabled": true,
+      "iterations": 500,
+      "warmup_iterations": 32,
+      "calls_per_sample": 50,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.00278714676,
+            "p50_ms": 0.0027844600000000003,
+            "p99_ms": 0.00299414,
+            "max_ms": 0.00332714
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00279729172,
+            "p50_ms": 0.0027943,
+            "p99_ms": 0.00300424,
+            "max_ms": 0.00333902
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.00161366576,
+            "p50_ms": 0.001608,
+            "p99_ms": 0.00177508,
+            "max_ms": 0.00188038
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00162361108,
+            "p50_ms": 0.0016175800000000002,
+            "p99_ms": 0.00178546,
+            "max_ms": 0.00189074
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.42103308546263996,
+      "graph_expectations_tickets_and_completion_credit_equal": true,
+      "deferred_scan_counters": {
+        "baseline": 0,
+        "candidate": 26600
+      },
+      "physical_actions_issued": 0
+    },
+    {
+      "pending_transactions": 64,
+      "mixed_transfer_directions": true,
+      "profiling_enabled": true,
+      "iterations": 500,
+      "warmup_iterations": 32,
+      "calls_per_sample": 50,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.0052314269600000005,
+            "p50_ms": 0.0052172600000000005,
+            "p99_ms": 0.0056966000000000004,
+            "max_ms": 0.0061641000000000005
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00524200224,
+            "p50_ms": 0.00522748,
+            "p99_ms": 0.0057069,
+            "max_ms": 0.00617672
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 500,
+            "mean_ms": 0.00161551488,
+            "p50_ms": 0.0016061600000000001,
+            "p99_ms": 0.0017743400000000001,
+            "max_ms": 0.00196884
+          },
+          "wall_ms": {
+            "count": 500,
+            "mean_ms": 0.00162551084,
+            "p50_ms": 0.00161552,
+            "p99_ms": 0.00178562,
+            "max_ms": 0.00197842
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.6911903975048521,
+      "graph_expectations_tickets_and_completion_credit_equal": true,
+      "deferred_scan_counters": {
+        "baseline": 0,
+        "candidate": 26600
+      },
+      "physical_actions_issued": 0
+    }
+  ],
+  "limitations": [
+    "Complete deferred dispatch calls with actual registered physical expectations, without a GPU.",
+    "Pending population sizes are scenarios, not a replay of V59's population distribution.",
+    "State and credit must match; overlapping defer reasons intentionally change counter precedence.",
+    "CPU-thread costs are not historical wall sums or promised JCT savings.",
+    "Tests separately cover partial/full ACKs, expiry, invalid receipts and immediate new-hint rearming."
+  ]
+}

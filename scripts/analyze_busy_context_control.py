@@ -549,6 +549,14 @@ def main() -> None:
     parser.add_argument("--start-seconds", type=float, default=600.)
     parser.add_argument("--end-seconds", type=float, default=900.)
     parser.add_argument("--timezone", default="Asia/Shanghai")
+    parser.add_argument(
+        "--predictive-timezone",
+        help="Override the predictive GPU/server-log wall timezone.",
+    )
+    parser.add_argument(
+        "--native-timezone",
+        help="Override the native GPU/server-log wall timezone.",
+    )
     args = parser.parse_args()
     if not 0 <= args.start_seconds < args.end_seconds:
         parser.error("window must satisfy 0 <= start < end")
@@ -562,6 +570,10 @@ def main() -> None:
         plan["code_commit"] == native_plan["code_commit"]
         and plan["sglang_patch_sha256"] == native_plan["sglang_patch_sha256"]
     )
+    timezones = {
+        "predictive_h2d": ZoneInfo(args.predictive_timezone or args.timezone),
+        "native": ZoneInfo(args.native_timezone or args.timezone),
+    }
     report = {
         "scope": (
             "Complete observed window; not identical-demand causality or completed-pair JCT"
@@ -573,6 +585,7 @@ def main() -> None:
         "native_patch_sha256": native_plan["sglang_patch_sha256"],
         "same_version": same_version,
         "native_run_root": str(native_root),
+        "arm_wall_timezones": {name: str(zone) for name, zone in timezones.items()},
         "frozen_plan_changed_keys": [
             key for key in sorted(plan.keys() | native_plan.keys())
             if plan.get(key) != native_plan.get(key)
@@ -592,7 +605,7 @@ def main() -> None:
     for name in ("predictive_h2d", "native"):
         arm = (args.run_root if name == "predictive_h2d" else native_root) / name
         window = monitor_window(
-            arm, args.start_seconds, args.end_seconds, ZoneInfo(args.timezone),
+            arm, args.start_seconds, args.end_seconds, timezones[name],
         )
         values = decode_geometry(arm, window["begin_ts_ms"], window["end_ts_ms"])
         values["monitor_window"] = window
@@ -600,7 +613,7 @@ def main() -> None:
             arm, window["begin_ts_ms"], window["end_ts_ms"],
         )
         values["periodic_decode_graph_log"] = periodic_decode_graph_log(
-            arm, window["begin_ts_ms"], window["end_ts_ms"], ZoneInfo(args.timezone),
+            arm, window["begin_ts_ms"], window["end_ts_ms"], timezones[name],
         )
         if name == "predictive_h2d":
             values["control_profile"] = control_profile(

@@ -161,6 +161,27 @@ def main() -> None:
         raise ValueError("work refit requires the frozen semantic encoder")
     print(f"Encoding {len(samples)} cached work snapshots", flush=True)
     embeddings = cached_embeddings(samples, encoder, sha, args.cache)
+    reproduction = None
+    delivered = [i for i, row in enumerate(samples) if "online_forecast" in row]
+    if delivered:
+        scores, previous = work_arrays(baseline, observations, embeddings)
+        expected_scores = np.asarray([samples[i]["online_forecast"]["score"] for i in delivered])
+        expected_work = np.asarray([
+            samples[i]["online_forecast"]["remaining_tokens"] for i in delivered
+        ])
+        reproduction = {
+            "snapshot_count": len(delivered),
+            "max_absolute_phase_score_difference": float(np.max(np.abs(
+                scores[delivered, 2] - expected_scores,
+            ))),
+            "max_absolute_center_work_difference": float(np.max(np.abs(
+                previous[delivered, 1] - expected_work,
+            ))),
+        }
+        if not np.allclose(scores[delivered, 2], expected_scores, atol=1e-5, rtol=1e-4):
+            raise ValueError("reconstructed phase inputs differ from delivered forecasts")
+        if not np.allclose(previous[delivered, 1], expected_work, atol=.1, rtol=1e-3):
+            raise ValueError("reconstructed work inputs differ from delivered forecasts")
     text_window = (
         {"max_tokens": args.work_text_max_tokens, "truncation_side": args.work_text_truncation_side}
         if args.work_text_max_tokens is not None else {}
@@ -292,13 +313,23 @@ def main() -> None:
         ),
         "phase_artifact_sha256": hashlib.sha256(args.phase_artifact.read_bytes()).hexdigest(),
         "encoder_weights_sha256": sha, "selected": selected,
-        "selection_basis": "Astropy selector only; no Sphinx labels or action benefit",
+        "selection_basis": "Frozen selector workflows only; no evaluation labels or action benefit",
         "candidates": [candidate[3] for candidate in candidates],
         "work_bounds": cal, "export_max_absolute_token_difference": export_error,
         "role_snapshot_counts": {role: len(indices) for role, indices in roles.items()},
         "role_workflow_counts": {
             role: len({tasks[i] for i in indices}) for role, indices in roles.items()
         },
+        "role_notice_active_snapshot_counts": {
+            role: sum(observations[i].notice_active for i in indices)
+            for role, indices in roles.items()
+        },
+        "role_notice_active_request_counts": {
+            role: len({
+                observations[i].request_id for i in indices if observations[i].notice_active
+            }) for role, indices in roles.items()
+        },
+        "delivered_input_reproduction": reproduction,
         "excluded_intervened_tasks_by_run": exclusions,
         "evaluation_last_snapshot": {name: metrics(rows, name) for name in ("baseline", "candidate")},
         "evaluation_near_end": {

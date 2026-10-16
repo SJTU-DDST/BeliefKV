@@ -1,0 +1,1002 @@
+{
+  "status": "four_window_adjacent_forward_diagnosis_not_gpu_or_jct_acceptance",
+  "observed_at_local": "2026-10-14T20:39:12.644563-07:00",
+  "analyzer_revision": "9b0a1d8a1cbc31e6154f9af1c607c936f6090b48",
+  "sources": {
+    "scripts/analyze_prefill_overlap_neighbors.py": "53da76700a7cf6177ac82f4cfe06ba794a79ec1fbaf509819ad0998de593b877",
+    "scripts/analyze_prefill_turnover.py": "4becc5d75d7be52a85848241cc8792c1153cd5fa85833766b3f486dcd1f06a7d",
+    "tests/test_analyze_prefill_overlap_neighbors.py": "06153298fa7379f69aa5346e102c4033235a7a7b157ac91ec9845e3b3dc97003",
+    "tests/test_analyze_prefill_turnover.py": "0d7663ed67738868c5aa177e7a82fd1ca5948d3aab3ffa24471e8ff04301615b"
+  },
+  "cpu_checks": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v659_overlap_neighbor_checks_20261015.xml",
+    "sha256": "bb86c0f55d2394d8e31787ed833e41a9c8964432a805ba4f1af83e41d3578b98",
+    "tests": 24,
+    "errors": 0,
+    "failures": 0,
+    "skipped": 0
+  },
+  "windows": [
+    {
+      "begin_seconds": 120,
+      "end_seconds": 300,
+      "evidence": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v661_v59_overlap_neighbors_120_300_20261015.json",
+        "sha256": "0bedd3e05eb38e92edf2f199f5c07228904056e674e1db5fa59067801503c7ea"
+      },
+      "phase_evidence": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_prefill_phases_120_300_20261014.json",
+        "sha256": "883419d0d4a052e0c56ac2dd57559e06da2feec109ff7440c696ac5926769f98"
+      },
+      "arms": {
+        "predictive_h2d": {
+          "short_sample_count": 44,
+          "next_launch_relations": {
+            "next_launch_inside_delivery_gap": 44
+          },
+          "decode_prefill_decode": {
+            "sample_count": 43,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 43,
+                "mean_ms": 7.095102598500806,
+                "p50_ms": 6.590218544006348,
+                "p90_ms": 10.590017318725586,
+                "max_ms": 17.30203914642334,
+                "sum_ms": 305.08941173553467
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 43,
+                "mean_ms": 5.590049100476642,
+                "p50_ms": 5.136693000793457,
+                "p90_ms": 9.245833396911621,
+                "max_ms": 15.711356163024902,
+                "sum_ms": 240.3721113204956
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 43,
+                "mean_ms": 1.5050534980241643,
+                "p50_ms": 1.4163742065429688,
+                "p90_ms": 1.8069791793823242,
+                "max_ms": 2.5564937591552734,
+                "sum_ms": 64.71730041503906
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 43,
+                "mean_ms": 0.8611802389455396,
+                "p50_ms": 0.3201713562011719,
+                "p90_ms": 1.2321929931640625,
+                "max_ms": 11.197863578796387,
+                "sum_ms": 37.0307502746582
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 43,
+                "mean_ms": 1.58739158719085,
+                "p50_ms": 1.2415761947631836,
+                "p90_ms": 2.292475700378418,
+                "max_ms": 7.059000015258789,
+                "sum_ms": 68.25783824920654
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 43,
+                "mean_ms": 4.002657513285792,
+                "p50_ms": 3.570211410522461,
+                "p90_ms": 5.723079681396484,
+                "max_ms": 14.469779968261719,
+                "sum_ms": 172.11427307128906
+              }
+            }
+          },
+          "decode47_prefill1_decode48": {
+            "sample_count": 22,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 22,
+                "mean_ms": 6.620774052359841,
+                "p50_ms": 5.835437774658203,
+                "p90_ms": 7.991934776306152,
+                "max_ms": 17.30203914642334,
+                "sum_ms": 145.6570291519165
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 22,
+                "mean_ms": 5.215804490176114,
+                "p50_ms": 4.535276889801025,
+                "p90_ms": 6.391171455383301,
+                "max_ms": 15.711356163024902,
+                "sum_ms": 114.74769878387451
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 22,
+                "mean_ms": 1.4049695621837268,
+                "p50_ms": 1.2991113662719727,
+                "p90_ms": 1.6007633209228516,
+                "max_ms": 2.082956314086914,
+                "sum_ms": 30.909330368041992
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 22,
+                "mean_ms": 0.9398065913807262,
+                "p50_ms": 0.29309558868408203,
+                "p90_ms": 1.2321929931640625,
+                "max_ms": 11.197863578796387,
+                "sum_ms": 20.675745010375977
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 22,
+                "mean_ms": 1.3272943063215776,
+                "p50_ms": 1.0330801010131836,
+                "p90_ms": 1.4412899017333984,
+                "max_ms": 5.603057861328125,
+                "sum_ms": 29.200474739074707
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 22,
+                "mean_ms": 3.8885101838545366,
+                "p50_ms": 3.392688274383545,
+                "p90_ms": 5.090243339538574,
+                "max_ms": 14.469779968261719,
+                "sum_ms": 85.5472240447998
+              }
+            }
+          }
+        },
+        "native": {
+          "short_sample_count": 51,
+          "next_launch_relations": {
+            "next_launch_inside_delivery_gap": 51
+          },
+          "decode_prefill_decode": {
+            "sample_count": 46,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 46,
+                "mean_ms": 3.9807840637538745,
+                "p50_ms": 3.8027939796447754,
+                "p90_ms": 4.772464752197266,
+                "max_ms": 6.930234909057617,
+                "sum_ms": 183.11606693267822
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 46,
+                "mean_ms": 2.580978808195695,
+                "p50_ms": 2.3552284240722656,
+                "p90_ms": 3.355025291442871,
+                "max_ms": 5.193012237548828,
+                "sum_ms": 118.72502517700195
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 46,
+                "mean_ms": 1.3998052555581797,
+                "p50_ms": 1.4012141227722168,
+                "p90_ms": 1.5761699676513672,
+                "max_ms": 1.7575502395629883,
+                "sum_ms": 64.39104175567627
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 46,
+                "mean_ms": 0.0024873070094896398,
+                "p50_ms": 0.0023093223571777344,
+                "p90_ms": 0.002750396728515625,
+                "max_ms": 0.008792877197265625,
+                "sum_ms": 0.11441612243652344
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 46,
+                "mean_ms": 1.1705899653227434,
+                "p50_ms": 0.8864889144897461,
+                "p90_ms": 1.7181711196899414,
+                "max_ms": 3.3225412368774414,
+                "sum_ms": 53.84713840484619
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 46,
+                "mean_ms": 1.4103888428729514,
+                "p50_ms": 1.3114914894104004,
+                "p90_ms": 1.8498001098632812,
+                "max_ms": 3.1712570190429688,
+                "sum_ms": 64.87788677215576
+              }
+            }
+          },
+          "decode47_prefill1_decode48": {
+            "sample_count": 23,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 23,
+                "mean_ms": 3.451814029527747,
+                "p50_ms": 3.3727617263793945,
+                "p90_ms": 3.8599748611450195,
+                "max_ms": 4.590664863586426,
+                "sum_ms": 79.39172267913818
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 23,
+                "mean_ms": 2.111016356426737,
+                "p50_ms": 2.0948171615600586,
+                "p90_ms": 2.4109067916870117,
+                "max_ms": 3.0144948959350586,
+                "sum_ms": 48.55337619781494
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 23,
+                "mean_ms": 1.3407976731010105,
+                "p50_ms": 1.2785749435424805,
+                "p90_ms": 1.5604248046875,
+                "max_ms": 1.5770416259765625,
+                "sum_ms": 30.838346481323242
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 23,
+                "mean_ms": 0.0023466193157693615,
+                "p50_ms": 0.0022945404052734375,
+                "p90_ms": 0.0027494430541992188,
+                "max_ms": 0.002819061279296875,
+                "sum_ms": 0.05397224426269531
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 23,
+                "mean_ms": 0.9096508855405061,
+                "p50_ms": 0.8686008453369141,
+                "p90_ms": 1.0662775039672852,
+                "max_ms": 1.1646947860717773,
+                "sum_ms": 20.92197036743164
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 23,
+                "mean_ms": 1.2013654708862305,
+                "p50_ms": 1.1647167205810547,
+                "p90_ms": 1.497584342956543,
+                "max_ms": 1.8498001098632812,
+                "sum_ms": 27.6314058303833
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "begin_seconds": 600,
+      "end_seconds": 900,
+      "evidence": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v661_v59_overlap_neighbors_600_900_20261015.json",
+        "sha256": "67a998d460c323a6adc9c73f69f58a63a2388d116f952165fd89276d673c1e34"
+      },
+      "phase_evidence": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_prefill_phases_600_900_20261014.json",
+        "sha256": "8fffbb42387efcecd2aa62f34a063bbd3dfbe637472b9db03217285e2dacae21"
+      },
+      "arms": {
+        "predictive_h2d": {
+          "short_sample_count": 66,
+          "next_launch_relations": {
+            "next_launch_inside_delivery_gap": 66
+          },
+          "decode_prefill_decode": {
+            "sample_count": 64,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 64,
+                "mean_ms": 8.001991242170334,
+                "p50_ms": 7.437738418579102,
+                "p90_ms": 10.460042953491211,
+                "max_ms": 17.727978706359863,
+                "sum_ms": 512.1274394989014
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 64,
+                "mean_ms": 6.53132863342762,
+                "p50_ms": 6.042848110198975,
+                "p90_ms": 8.705228805541992,
+                "max_ms": 16.416804313659668,
+                "sum_ms": 418.0050325393677
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 64,
+                "mean_ms": 1.470662608742714,
+                "p50_ms": 1.408231258392334,
+                "p90_ms": 1.7594060897827148,
+                "max_ms": 2.2522706985473633,
+                "sum_ms": 94.12240695953369
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 64,
+                "mean_ms": 1.7216973006725311,
+                "p50_ms": 1.6265130043029785,
+                "p90_ms": 2.6047286987304688,
+                "max_ms": 5.393780708312988,
+                "sum_ms": 110.18862724304199
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 64,
+                "mean_ms": 1.7537704557180405,
+                "p50_ms": 1.2005534172058105,
+                "p90_ms": 3.3846559524536133,
+                "max_ms": 11.080938339233398,
+                "sum_ms": 112.24130916595459
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 64,
+                "mean_ms": 4.7775581777095795,
+                "p50_ms": 4.630681991577148,
+                "p90_ms": 6.663144111633301,
+                "max_ms": 9.869534492492676,
+                "sum_ms": 305.7637233734131
+              }
+            }
+          },
+          "decode47_prefill1_decode48": {
+            "sample_count": 43,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 43,
+                "mean_ms": 7.174947428148847,
+                "p50_ms": 6.789496421813965,
+                "p90_ms": 9.474381446838379,
+                "max_ms": 17.727978706359863,
+                "sum_ms": 308.5227394104004
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 43,
+                "mean_ms": 5.775269353112509,
+                "p50_ms": 5.409132957458496,
+                "p90_ms": 7.90598201751709,
+                "max_ms": 16.416804313659668,
+                "sum_ms": 248.3365821838379
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 43,
+                "mean_ms": 1.3996780750363371,
+                "p50_ms": 1.3255434036254883,
+                "p90_ms": 1.6309318542480469,
+                "max_ms": 1.7594060897827148,
+                "sum_ms": 60.1861572265625
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 43,
+                "mean_ms": 1.569655551466831,
+                "p50_ms": 1.5143165588378906,
+                "p90_ms": 2.4408979415893555,
+                "max_ms": 3.5946950912475586,
+                "sum_ms": 67.49518871307373
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 43,
+                "mean_ms": 1.4069723084915515,
+                "p50_ms": 1.1031675338745117,
+                "p90_ms": 1.3680963516235352,
+                "max_ms": 11.080938339233398,
+                "sum_ms": 60.49980926513672
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 43,
+                "mean_ms": 4.368297044620958,
+                "p50_ms": 4.051077842712402,
+                "p90_ms": 6.016490936279297,
+                "max_ms": 7.48075008392334,
+                "sum_ms": 187.83677291870117
+              }
+            }
+          }
+        },
+        "native": {
+          "short_sample_count": 62,
+          "next_launch_relations": {
+            "next_launch_inside_delivery_gap": 62
+          },
+          "decode_prefill_decode": {
+            "sample_count": 62,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 62,
+                "mean_ms": 4.375697443562169,
+                "p50_ms": 4.146250247955322,
+                "p90_ms": 6.06906795501709,
+                "max_ms": 7.376157760620117,
+                "sum_ms": 271.2932415008545
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 62,
+                "mean_ms": 2.952344109935145,
+                "p50_ms": 2.617241382598877,
+                "p90_ms": 4.416932106018066,
+                "max_ms": 5.621840476989746,
+                "sum_ms": 183.045334815979
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 62,
+                "mean_ms": 1.423353333627024,
+                "p50_ms": 1.339836597442627,
+                "p90_ms": 1.5958919525146484,
+                "max_ms": 1.9140386581420898,
+                "sum_ms": 88.24790668487549
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 62,
+                "mean_ms": 0.0023590672400689893,
+                "p50_ms": 0.0022683143615722656,
+                "p90_ms": 0.0028581619262695312,
+                "max_ms": 0.0031118392944335938,
+                "sum_ms": 0.14626216888427734
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 62,
+                "mean_ms": 1.3100739448301253,
+                "p50_ms": 0.8985757827758789,
+                "p90_ms": 2.2627782821655273,
+                "max_ms": 3.93729305267334,
+                "sum_ms": 81.22458457946777
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 62,
+                "mean_ms": 1.6422701651050198,
+                "p50_ms": 1.5961437225341797,
+                "p90_ms": 2.0309524536132812,
+                "max_ms": 3.1475229263305664,
+                "sum_ms": 101.82075023651123
+              }
+            }
+          },
+          "decode47_prefill1_decode48": {
+            "sample_count": 41,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 41,
+                "mean_ms": 3.875136747592833,
+                "p50_ms": 3.7126827239990234,
+                "p90_ms": 4.620489120483398,
+                "max_ms": 5.372621536254883,
+                "sum_ms": 158.88060665130615
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 41,
+                "mean_ms": 2.5135597368566,
+                "p50_ms": 2.4373741149902344,
+                "p90_ms": 3.070049285888672,
+                "max_ms": 4.030513763427734,
+                "sum_ms": 103.0559492111206
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 41,
+                "mean_ms": 1.3615770107362328,
+                "p50_ms": 1.3126115798950195,
+                "p90_ms": 1.5849733352661133,
+                "max_ms": 1.6049919128417969,
+                "sum_ms": 55.82465744018555
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 41,
+                "mean_ms": 0.0023583668034251144,
+                "p50_ms": 0.0022678375244140625,
+                "p90_ms": 0.0028667449951171875,
+                "max_ms": 0.0029392242431640625,
+                "sum_ms": 0.09669303894042969
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 41,
+                "mean_ms": 0.9346851023232065,
+                "p50_ms": 0.882990837097168,
+                "p90_ms": 1.0990056991577148,
+                "max_ms": 1.376999855041504,
+                "sum_ms": 38.322089195251465
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 41,
+                "mean_ms": 1.5788746345333937,
+                "p50_ms": 1.5495948791503906,
+                "p90_ms": 1.9762372970581055,
+                "max_ms": 3.1475229263305664,
+                "sum_ms": 64.73386001586914
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "begin_seconds": 1800,
+      "end_seconds": 2100,
+      "evidence": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v661_v59_overlap_neighbors_1800_2100_20261015.json",
+        "sha256": "6d225c113b1d94e68940b9e3e404679613afd2d1bab949df44c988d91c291aa5"
+      },
+      "phase_evidence": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_prefill_phases_1800_2100_20261014.json",
+        "sha256": "d3e34ff7c153cccde43ca79627b02dbf358a938b72c358ac7afdc18731f71f1d"
+      },
+      "arms": {
+        "predictive_h2d": {
+          "short_sample_count": 69,
+          "next_launch_relations": {
+            "next_launch_inside_delivery_gap": 69
+          },
+          "decode_prefill_decode": {
+            "sample_count": 69,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 69,
+                "mean_ms": 7.306715702665025,
+                "p50_ms": 6.353811264038086,
+                "p90_ms": 9.828093528747559,
+                "max_ms": 24.068037033081055,
+                "sum_ms": 504.1633834838867
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 69,
+                "mean_ms": 5.816789627075195,
+                "p50_ms": 4.90367317199707,
+                "p90_ms": 8.317023277282715,
+                "max_ms": 22.724077224731445,
+                "sum_ms": 401.3584842681885
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 69,
+                "mean_ms": 1.4899260755898296,
+                "p50_ms": 1.4521055221557617,
+                "p90_ms": 1.7477731704711914,
+                "max_ms": 1.9574346542358398,
+                "sum_ms": 102.80489921569824
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 69,
+                "mean_ms": 0.9892916195634482,
+                "p50_ms": 0.6899852752685547,
+                "p90_ms": 2.3387880325317383,
+                "max_ms": 6.397582054138184,
+                "sum_ms": 68.26112174987793
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 69,
+                "mean_ms": 2.1421514870463936,
+                "p50_ms": 1.2771129608154297,
+                "p90_ms": 4.2597198486328125,
+                "max_ms": 17.525458335876465,
+                "sum_ms": 147.80845260620117
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 69,
+                "mean_ms": 3.6746381400288017,
+                "p50_ms": 3.4737844467163086,
+                "p90_ms": 5.751855850219727,
+                "max_ms": 10.131916046142578,
+                "sum_ms": 253.5500316619873
+              }
+            }
+          },
+          "decode47_prefill1_decode48": {
+            "sample_count": 47,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 47,
+                "mean_ms": 7.022846242214771,
+                "p50_ms": 6.210911750793457,
+                "p90_ms": 8.69737434387207,
+                "max_ms": 24.068037033081055,
+                "sum_ms": 330.07377338409424
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 47,
+                "mean_ms": 5.558725925202065,
+                "p50_ms": 4.647225379943848,
+                "p90_ms": 7.076261520385742,
+                "max_ms": 22.724077224731445,
+                "sum_ms": 261.26011848449707
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 47,
+                "mean_ms": 1.4641203170127057,
+                "p50_ms": 1.365199089050293,
+                "p90_ms": 1.6525983810424805,
+                "max_ms": 1.9574346542358398,
+                "sum_ms": 68.81365489959717
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 47,
+                "mean_ms": 0.9367603748402697,
+                "p50_ms": 0.6899852752685547,
+                "p90_ms": 2.255312919616699,
+                "max_ms": 2.5695934295654297,
+                "sum_ms": 44.027737617492676
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 47,
+                "mean_ms": 2.007904316516633,
+                "p50_ms": 1.0955209732055664,
+                "p90_ms": 1.4503278732299805,
+                "max_ms": 17.525458335876465,
+                "sum_ms": 94.37150287628174
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 47,
+                "mean_ms": 3.5508216086854327,
+                "p50_ms": 3.4737844467163086,
+                "p90_ms": 5.1986188888549805,
+                "max_ms": 8.133115768432617,
+                "sum_ms": 166.88861560821533
+              }
+            }
+          }
+        },
+        "native": {
+          "short_sample_count": 64,
+          "next_launch_relations": {
+            "next_launch_inside_delivery_gap": 64
+          },
+          "decode_prefill_decode": {
+            "sample_count": 64,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 64,
+                "mean_ms": 4.460641443729401,
+                "p50_ms": 3.8858437538146973,
+                "p90_ms": 6.357324600219727,
+                "max_ms": 13.840901374816895,
+                "sum_ms": 285.48105239868164
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 64,
+                "mean_ms": 2.940249517560005,
+                "p50_ms": 2.340747356414795,
+                "p90_ms": 4.520613670349121,
+                "max_ms": 12.536687850952148,
+                "sum_ms": 188.17596912384033
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 64,
+                "mean_ms": 1.5203919261693954,
+                "p50_ms": 1.4342756271362305,
+                "p90_ms": 1.7837533950805664,
+                "max_ms": 2.421952247619629,
+                "sum_ms": 97.30508327484131
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 64,
+                "mean_ms": 0.00249364972114563,
+                "p50_ms": 0.0024251937866210938,
+                "p90_ms": 0.0028257369995117188,
+                "max_ms": 0.005322456359863281,
+                "sum_ms": 0.1595935821533203
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 64,
+                "mean_ms": 1.296899899840355,
+                "p50_ms": 1.0454645156860352,
+                "p90_ms": 2.1233158111572266,
+                "max_ms": 6.12690544128418,
+                "sum_ms": 83.00159358978271
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 64,
+                "mean_ms": 1.6433496177196503,
+                "p50_ms": 1.3513998985290527,
+                "p90_ms": 2.348841667175293,
+                "max_ms": 11.64631462097168,
+                "sum_ms": 105.17437553405762
+              }
+            }
+          },
+          "decode47_prefill1_decode48": {
+            "sample_count": 48,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 48,
+                "mean_ms": 4.032474060853322,
+                "p50_ms": 3.6360793113708496,
+                "p90_ms": 4.50998592376709,
+                "max_ms": 13.840901374816895,
+                "sum_ms": 193.55875492095947
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 48,
+                "mean_ms": 2.559292813142141,
+                "p50_ms": 2.2380237579345703,
+                "p90_ms": 2.814939498901367,
+                "max_ms": 12.536687850952148,
+                "sum_ms": 122.84605503082275
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 48,
+                "mean_ms": 1.4731812477111816,
+                "p50_ms": 1.3117098808288574,
+                "p90_ms": 1.629714012145996,
+                "max_ms": 2.421952247619629,
+                "sum_ms": 70.71269989013672
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 48,
+                "mean_ms": 0.0025161107381184897,
+                "p50_ms": 0.0024251937866210938,
+                "p90_ms": 0.0028467178344726562,
+                "max_ms": 0.005322456359863281,
+                "sum_ms": 0.1207733154296875
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 48,
+                "mean_ms": 1.0299197435379028,
+                "p50_ms": 0.9317378997802734,
+                "p90_ms": 1.3554086685180664,
+                "max_ms": 1.5865306854248047,
+                "sum_ms": 49.436147689819336
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 48,
+                "mean_ms": 1.5293730696042378,
+                "p50_ms": 1.2291197776794434,
+                "p90_ms": 1.6778545379638672,
+                "max_ms": 11.64631462097168,
+                "sum_ms": 73.40990734100342
+              }
+            }
+          }
+        }
+      }
+    },
+    {
+      "begin_seconds": 3600,
+      "end_seconds": 3900,
+      "evidence": {
+        "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v660_v59_second_wave_overlap_neighbors_20261015.json",
+        "sha256": "3824ae3541bf71713ff91491c183d254c3743ad7f45011b1f66a044f70d97c77"
+      },
+      "phase_evidence": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v59_v58_native_reference_tz_prefill_phases_3600_3900_20261014.json",
+        "sha256": "55ff831d004a45126635356125217e3eb013061d3b021a502a2331d6eeb15500"
+      },
+      "arms": {
+        "predictive_h2d": {
+          "short_sample_count": 56,
+          "next_launch_relations": {
+            "next_launch_inside_delivery_gap": 56
+          },
+          "decode_prefill_decode": {
+            "sample_count": 53,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 53,
+                "mean_ms": 8.339792863377985,
+                "p50_ms": 6.546943664550781,
+                "p90_ms": 11.464629173278809,
+                "max_ms": 62.90949535369873,
+                "sum_ms": 442.0090217590332
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 53,
+                "mean_ms": 6.715210464765441,
+                "p50_ms": 5.097794532775879,
+                "p90_ms": 9.675882339477539,
+                "max_ms": 60.751784324645996,
+                "sum_ms": 355.90615463256836
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 53,
+                "mean_ms": 1.6245823986125443,
+                "p50_ms": 1.559290885925293,
+                "p90_ms": 2.141751289367676,
+                "max_ms": 2.6311769485473633,
+                "sum_ms": 86.10286712646484
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 53,
+                "mean_ms": 0.8149389950734265,
+                "p50_ms": 0.5272235870361328,
+                "p90_ms": 1.7277584075927734,
+                "max_ms": 2.274641990661621,
+                "sum_ms": 43.1917667388916
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 53,
+                "mean_ms": 1.7723495195496757,
+                "p50_ms": 1.274226188659668,
+                "p90_ms": 2.795779228210449,
+                "max_ms": 11.214409828186035,
+                "sum_ms": 93.93452453613281
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 53,
+                "mean_ms": 4.942860945215765,
+                "p50_ms": 3.594921112060547,
+                "p90_ms": 6.099947929382324,
+                "max_ms": 58.46509265899658,
+                "sum_ms": 261.97163009643555
+              }
+            }
+          },
+          "decode47_prefill1_decode48": {
+            "sample_count": 22,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 22,
+                "mean_ms": 6.914251067421653,
+                "p50_ms": 6.511091709136963,
+                "p90_ms": 9.645746231079102,
+                "max_ms": 16.916008949279785,
+                "sum_ms": 152.11352348327637
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 22,
+                "mean_ms": 5.34940767288208,
+                "p50_ms": 5.057185649871826,
+                "p90_ms": 7.653933525085449,
+                "max_ms": 15.32225227355957,
+                "sum_ms": 117.68696880340576
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 22,
+                "mean_ms": 1.564843394539573,
+                "p50_ms": 1.3441638946533203,
+                "p90_ms": 2.0774002075195312,
+                "max_ms": 2.6311769485473633,
+                "sum_ms": 34.426554679870605
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 22,
+                "mean_ms": 0.7643189430236816,
+                "p50_ms": 0.45371437072753906,
+                "p90_ms": 1.7277584075927734,
+                "max_ms": 2.1688108444213867,
+                "sum_ms": 16.815016746520996
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 22,
+                "mean_ms": 1.2750937721946023,
+                "p50_ms": 1.0925850868225098,
+                "p90_ms": 1.6871070861816406,
+                "max_ms": 2.0590429306030273,
+                "sum_ms": 28.05206298828125
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 22,
+                "mean_ms": 4.074313900687478,
+                "p50_ms": 3.7146096229553223,
+                "p90_ms": 5.865435600280762,
+                "max_ms": 14.002589225769043,
+                "sum_ms": 89.63490581512451
+              }
+            }
+          }
+        },
+        "native": {
+          "short_sample_count": 75,
+          "next_launch_relations": {
+            "next_launch_inside_delivery_gap": 75
+          },
+          "decode_prefill_decode": {
+            "sample_count": 73,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 73,
+                "mean_ms": 4.3773773794304836,
+                "p50_ms": 3.7874107360839844,
+                "p90_ms": 5.913874626159668,
+                "max_ms": 13.075154304504395,
+                "sum_ms": 319.5485486984253
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 73,
+                "mean_ms": 2.9320972782291777,
+                "p50_ms": 2.3990516662597656,
+                "p90_ms": 4.11329460144043,
+                "max_ms": 11.638794898986816,
+                "sum_ms": 214.04310131072998
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 73,
+                "mean_ms": 1.4452801012013057,
+                "p50_ms": 1.324671745300293,
+                "p90_ms": 1.6270322799682617,
+                "max_ms": 2.7046194076538086,
+                "sum_ms": 105.50544738769531
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 73,
+                "mean_ms": 0.002446501222375321,
+                "p50_ms": 0.0023508071899414062,
+                "p90_ms": 0.0028104782104492188,
+                "max_ms": 0.004840850830078125,
+                "sum_ms": 0.17859458923339844
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 73,
+                "mean_ms": 1.2531229437214055,
+                "p50_ms": 0.9427261352539062,
+                "p90_ms": 1.9085187911987305,
+                "max_ms": 5.33281135559082,
+                "sum_ms": 91.4779748916626
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 73,
+                "mean_ms": 1.6789743345077723,
+                "p50_ms": 1.391714096069336,
+                "p90_ms": 2.4676408767700195,
+                "max_ms": 10.7505464553833,
+                "sum_ms": 122.56512641906738
+              }
+            }
+          },
+          "decode47_prefill1_decode48": {
+            "sample_count": 46,
+            "previous_boundary_outside_interval": 0,
+            "metrics": {
+              "run_return_to_result_start_ms": {
+                "count": 46,
+                "mean_ms": 3.948090511819591,
+                "p50_ms": 3.568147659301758,
+                "p90_ms": 5.834545135498047,
+                "max_ms": 8.313273429870605,
+                "sum_ms": 181.61216354370117
+              },
+              "run_return_to_next_launch_ms": {
+                "count": 46,
+                "mean_ms": 2.5351137700288193,
+                "p50_ms": 2.2706170082092285,
+                "p90_ms": 3.8518877029418945,
+                "max_ms": 6.708614349365234,
+                "sum_ms": 116.61523342132568
+              },
+              "next_launch_to_result_start_ms": {
+                "count": 46,
+                "mean_ms": 1.4129767417907715,
+                "p50_ms": 1.3033809661865234,
+                "p90_ms": 1.6270322799682617,
+                "max_ms": 2.5493412017822266,
+                "sum_ms": 64.99693012237549
+              },
+              "current_post_launch_physical_overlap_ms": {
+                "count": 46,
+                "mean_ms": 0.002445034358812415,
+                "p50_ms": 0.00235748291015625,
+                "p90_ms": 0.0028104782104492188,
+                "max_ms": 0.004487037658691406,
+                "sum_ms": 0.1124715805053711
+              },
+              "run_return_to_previous_observer_completion_ms": {
+                "count": 46,
+                "mean_ms": 1.0195648359215779,
+                "p50_ms": 0.9253158569335938,
+                "p90_ms": 1.4103574752807617,
+                "max_ms": 1.9465217590332031,
+                "sum_ms": 46.89998245239258
+              },
+              "previous_observer_completion_to_next_launch_ms": {
+                "count": 46,
+                "mean_ms": 1.5155489341072415,
+                "p50_ms": 1.2969269752502441,
+                "p90_ms": 2.4676408767700195,
+                "max_ms": 5.5467634201049805,
+                "sum_ms": 69.7152509689331
+              }
+            }
+          }
+        }
+      }
+    }
+  ],
+  "limits": [
+    "These are identical sealed V59/V58 source prefixes, not a new GPU experiment or same-version causal comparison.",
+    "Per-sample intervals split at exact adjacent-forward launches. Quantile summaries are not additive.",
+    "The previous completion timestamp is taken at native telemetry observer entry after runtime processing, not the end of all result/telemetry/sampling work.",
+    "The interval after the previous observer timestamp includes telemetry tail, sampling, physical planning, receive/maintenance/selection and launch entry; it is not isolated scheduler CPU.",
+    "A timing-event GPU span includes dispatch gaps and dependencies; none of these values is isolated kernel work or a removable JCT bound.",
+    "Neighbor/batch matching does not fix differing prefix lengths, project trajectories, cache pressure or native baseline versions.",
+    "V60 and the qualified d925278 candidate remain unchanged; this read-only analyzer is not substituted into registered observers."
+  ],
+  "helper": {
+    "path": "/home/longhao/experiment/ops/summarize_v59_overlap_neighbors_20261015.py",
+    "sha256": "4490e4ba85a7df75c8ec6c8988df9e906fb5b1fbe7daf5373bf2b247d8227ca9"
+  }
+}

@@ -1,5 +1,7 @@
-from datetime import datetime
+from datetime import datetime, timezone
 import json
+import time
+from zoneinfo import ZoneInfo
 
 import pytest
 
@@ -7,7 +9,7 @@ from scripts.compare_native_policy_runs import (
     acknowledged_prefetch_sources, busy_window_statistics, h2d_source_parts,
     interval_milliseconds, last_runtime_state, percentile,
     paired_workflow_jct, phase_statistics, transfer_parts, restore_wait_statistics,
-    cached_native_reference, native_reference_metadata,
+    aligned_native_clock, cached_native_reference, native_reference_metadata,
 )
 
 
@@ -37,6 +39,15 @@ def test_historical_reference_records_configuration_differences_without_claiming
 def test_native_reference_reuses_completed_metrics_only_with_matching_bins(tmp_path):
     cached = {
         "run": str((tmp_path / "native").resolve()),
+        "time_origin_local": "2026-10-14T20:00:00+00:00",
+        "clock_alignment": {
+            "schema_version": 2, "gpu_timezone": "UTC",
+            "anchor_unix_ms": datetime(2026, 10, 14, 20, tzinfo=timezone.utc).timestamp() * 1000.,
+        },
+        "phase_statistics": {
+            "prefill": {"batch_count": 1, "worker_interval_seconds": .2},
+            "decode": {"batch_count": 1, "worker_interval_seconds": .2},
+        },
         "bands": [{"start_seconds": 0.}, {"start_seconds": 600.}],
     }
     assert cached_native_reference(tmp_path, 600) is None
@@ -45,6 +56,59 @@ def test_native_reference_reuses_completed_metrics_only_with_matching_bins(tmp_p
     )
     assert cached_native_reference(tmp_path, 600) == cached
     assert cached_native_reference(tmp_path, 300) is None
+
+
+def test_native_reference_rejects_legacy_cache_without_clock_evidence(tmp_path):
+    cached = {
+        "run": str((tmp_path / "native").resolve()),
+        "bands": [{"start_seconds": 0.}, {"start_seconds": 600.}],
+    }
+    (tmp_path / "native_policy_comparison.json").write_text(
+        json.dumps({"runs": {"native": cached}}),
+    )
+    assert cached_native_reference(tmp_path, 600) is None
+
+
+@pytest.mark.parametrize("phase", ["decode", "prefill"])
+def test_native_reference_rejects_nonempty_phases_collapsed_to_zero_worker_time(tmp_path, phase):
+    cached = {
+        "run": str((tmp_path / "native").resolve()),
+        "clock_alignment": {"schema_version": 2, "gpu_timezone": "UTC", "anchor_unix_ms": 1000.},
+        "phase_statistics": {phase: {"batch_count": 100, "worker_interval_seconds": 0.}},
+        "bands": [{"start_seconds": 0.}, {"start_seconds": 600.}],
+    }
+    (tmp_path / "native_policy_comparison.json").write_text(
+        json.dumps({"runs": {"native": cached}}),
+    )
+    assert cached_native_reference(tmp_path, 600) is None
+
+
+def test_corrected_native_cache_uses_a_new_path_without_overwriting_legacy_evidence(tmp_path):
+    legacy = tmp_path / "native_policy_comparison.json"
+    legacy.write_text('{"legacy_clock_artifact": true}\n')
+    corrected = tmp_path / "native_policy_comparison.clock_v2.json"
+    cached = {
+        "run": str((tmp_path / "native").resolve()),
+        "clock_alignment": {"schema_version": 2, "gpu_timezone": "UTC", "anchor_unix_ms": 1000.},
+        "phase_statistics": {"decode": {"batch_count": 100, "worker_interval_seconds": .1}},
+        "bands": [{"start_seconds": 0.}, {"start_seconds": 600.}],
+    }
+    corrected.write_text(json.dumps({"runs": {"native": cached}}))
+    assert cached_native_reference(tmp_path, 600, cache_path=corrected) == cached
+    assert legacy.read_text() == '{"legacy_clock_artifact": true}\n'
+
+
+@pytest.mark.parametrize("anchor_text", [
+    "2026-10-14T20:00:00",
+    "2026-10-14T21:00:00+00:00",
+])
+def test_native_clock_rejects_naive_or_shifted_timeline_anchor(anchor_text):
+    evidence = {
+        "schema_version": 2, "gpu_timezone": "America/Los_Angeles",
+        "anchor_unix_ms": datetime(2026, 10, 14, 20, tzinfo=timezone.utc).timestamp() * 1000.,
+    }
+    with pytest.raises(ValueError, match="start_anchor disagrees"):
+        aligned_native_clock(evidence, anchor_text=anchor_text)
 
 
 def test_split_transfer_conserves_bytes_and_native_remainder():
@@ -219,7 +283,7 @@ def test_last_runtime_state_ignores_partial_head_and_trailing_other_events(tmp_p
     }
 
 
-def write_busy_window_fixture(arm, *, partial=False):
+def write_busy_window_fixture(arm, *, partial=False, capture_timezone="UTC"):
     client, server = arm / "client_4", arm / "server"
     client.mkdir()
     server.mkdir()
@@ -230,7 +294,7 @@ def write_busy_window_fixture(arm, *, partial=False):
         "2026/10/10 00:00:02.500,80\n"
         "2026/10/10 00:00:03.500,0\n"
     )
-    anchor = datetime(2026, 10, 10).timestamp() * 1000.
+    anchor = datetime(2026, 10, 10, tzinfo=ZoneInfo(capture_timezone)).timestamp() * 1000.
     services = [{
         "event": "gpu_service_sample", "phase": phase, "batch_size": size,
         "service_start_ts_ms": anchor + begin, "complete_ts_ms": anchor + end,
@@ -291,10 +355,27 @@ def test_live_busy_window_keeps_incomplete_service_horizon_explicit(tmp_path):
     assert window["decode_worker_interval_seconds"] == .5
 
 
+@pytest.mark.skipif(not hasattr(time, "tzset"), reason="requires process timezone support")
+def test_live_busy_window_uses_the_captured_zone_instead_of_the_analysis_process(tmp_path, monkeypatch):
+    write_busy_window_fixture(tmp_path, capture_timezone="Asia/Shanghai")
+    try:
+        with monkeypatch.context() as environment:
+            environment.setenv("TZ", "America/Los_Angeles")
+            time.tzset()
+            result = busy_window_statistics(tmp_path, [(1., 3.)])
+    finally:
+        time.tzset()
+    assert result["clock_alignment"]["gpu_timezone"] == "Asia/Shanghai"
+    assert result["time_origin_local"] == "2026-10-10T00:00:00+08:00"
+    assert result["windows"][0]["decode_worker_interval_seconds"] == 1.
+    assert result["windows"][0]["prefill_worker_interval_seconds"] == 1.25
+    assert result["windows"][0]["gpu_utilization_mean"] == 70.
+
+
 def test_live_busy_window_partitions_mixed_transfers_without_duplicating_batch_time(tmp_path):
     write_busy_window_fixture(tmp_path)
     server = tmp_path / "server"
-    anchor = datetime(2026, 10, 10).timestamp() * 1000.
+    anchor = datetime(2026, 10, 10, tzinfo=timezone.utc).timestamp() * 1000.
     server.joinpath("native_telemetry_status.json").write_text(json.dumps({
         "host_pool_evidence": {
             "full": {"bytes_per_unit": 10}, "mamba": {"bytes_per_unit": 100},

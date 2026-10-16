@@ -1561,6 +1561,8 @@ def test_host_pool_usage_and_evictions_are_persisted_by_pool(
     }
     if with_scan_counts:
         cache.components = {0: SimpleNamespace(host_eviction_counts=scan_counts)}
+        cache.write_back_batch_nodes = 32
+        cache.write_back_batch_counts = {"attempts": 6, "batches": 2, "nodes": 7}
     monkeypatch.setattr(
         sglang_v0520_observer,
         "observe_static_full_mamba_host_usage",
@@ -1584,6 +1586,8 @@ def test_host_pool_usage_and_evictions_are_persisted_by_pool(
     }
     audit.record_host_pool_usage(cache)
     scan_counts["calls"] = 6
+    if with_scan_counts:
+        cache.write_back_batch_counts["batches"] = 3
 
     from sglang.srt.mem_cache.unified_cache.component_type import ComponentType
 
@@ -1604,6 +1608,9 @@ def test_host_pool_usage_and_evictions_are_persisted_by_pool(
     assert usage["full_host_eviction_scans"] == ({
         **scan_counts, "calls": 5,
     } if with_scan_counts else {})
+    assert usage["write_back_batch"] == ({
+        "max_nodes": 32, "counts": {"attempts": 6, "batches": 2, "nodes": 7},
+    } if with_scan_counts else {"max_nodes": None, "counts": {}})
     eviction = next(row for row in rows if row["event"] == "host_pool_eviction")
     assert eviction["pools"] == {
         "full": {"evicted_units": 12, "evicted_bytes": 192},
@@ -1614,6 +1621,7 @@ def test_host_pool_usage_and_evictions_are_persisted_by_pool(
     )
     assert status["host_pool_evidence"]["full"]["evicted_bytes"] == 192
     assert status["host_pool_evidence"]["mamba"]["h2d_ack_units"] == 2
+    assert status["write_back_batch"] == usage["write_back_batch"]
 
 
 def test_post_eviction_cache_hits_and_recompute_are_split_by_pool(

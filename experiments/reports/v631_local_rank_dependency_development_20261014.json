@@ -1,0 +1,146 @@
+{
+  "status": "development_cpu_candidate_not_qualified_or_deployed",
+  "observed_at_local": "2026-10-14T16:29:56.031660-07:00",
+  "baseline_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+  "changed_methods": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": [
+      "on_events"
+    ],
+    "beliefkv/policy/causal_frontier.py": [
+      "__init__",
+      "admission_rank",
+      "retain_observed_state"
+    ]
+  },
+  "candidate_sources": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "fc77d800fe4ec11bc9cc8002437572baaea6b132729c6de335fbc7072b93a929",
+    "beliefkv/policy/causal_frontier.py": "32e206ce1cc069c0690b05bedb0d5925b40fac3b48e1f77b4461ea51993240a4",
+    "scripts/benchmark_local_rank_dependencies.py": "370e7b18f92806ba426bb534332c5511c7290bf5f41e71c05bc55ccdf91ddd1e"
+  },
+  "checks": [
+    {
+      "path": "/home/longhao/experiment/ops/v627_local_rank_dependency_checks_20261014.xml",
+      "sha256": "438251c4d51dddb3f00a3404a671af47f598563542634bc6fdcdfb43dda6137f",
+      "tests": 249,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    },
+    {
+      "path": "/home/longhao/experiment/ops/v629_local_rank_dependency_integration_checks_20261014.xml",
+      "sha256": "54833ac7f9a29e0dc6f1322a997b262141ebc1d46e92a560803c06aa3863599a",
+      "tests": 230,
+      "errors": 0,
+      "failures": 0,
+      "skipped": 0
+    }
+  ],
+  "total_passing_checks": 479,
+  "cpu_evidence": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v628_local_rank_dependency_cpu_20261014.json",
+    "sha256": "c2b605a95fcfef2f725d1f57bc2b704b1ab45cc2206cd5449e98a04a35b9f978"
+  },
+  "cpu_cases": [
+    {
+      "kind": "llm_round",
+      "workflows": 108,
+      "reduction": 0.21230595732931756,
+      "classification_calls": {
+        "baseline": 32508,
+        "candidate": 408
+      }
+    },
+    {
+      "kind": "tool_round",
+      "workflows": 108,
+      "reduction": 0.20560967604159297,
+      "classification_calls": {
+        "baseline": 32508,
+        "candidate": 408
+      }
+    },
+    {
+      "kind": "context",
+      "workflows": 108,
+      "reduction": 0.2125309797542031,
+      "classification_calls": {
+        "baseline": 32508,
+        "candidate": 108
+      }
+    },
+    {
+      "kind": "observation_control",
+      "workflows": 108,
+      "reduction": 0.005969847961275532,
+      "classification_calls": {
+        "baseline": 108,
+        "candidate": 108
+      }
+    },
+    {
+      "kind": "message_control",
+      "workflows": 108,
+      "reduction": -0.03513993630606538,
+      "classification_calls": {
+        "baseline": 32508,
+        "candidate": 32508
+      }
+    },
+    {
+      "kind": "llm_round",
+      "workflows": 156,
+      "reduction": 0.22984947637681974,
+      "classification_calls": {
+        "baseline": 46956,
+        "candidate": 456
+      }
+    },
+    {
+      "kind": "tool_round",
+      "workflows": 156,
+      "reduction": 0.2257591398763139,
+      "classification_calls": {
+        "baseline": 46956,
+        "candidate": 456
+      }
+    },
+    {
+      "kind": "context",
+      "workflows": 156,
+      "reduction": 0.23569774044113045,
+      "classification_calls": {
+        "baseline": 46956,
+        "candidate": 156
+      }
+    },
+    {
+      "kind": "observation_control",
+      "workflows": 156,
+      "reduction": 0.014979974680634278,
+      "classification_calls": {
+        "baseline": 156,
+        "candidate": 156
+      }
+    },
+    {
+      "kind": "message_control",
+      "workflows": 156,
+      "reduction": -0.023255014989647993,
+      "classification_calls": {
+        "baseline": 46956,
+        "candidate": 46956
+      }
+    }
+  ],
+  "reservation": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v632_v60_resume_after_user_reservation_20261015.json",
+    "sha256": "43214d35c2e7d1fedfccfce5b1a6219281a6f36e24f3df8bd0e878059699a706"
+  },
+  "limitations": [
+    "No GPU or timing-model change and no native engine change.",
+    "Current V60 target remains frozen and excludes this development candidate.",
+    "No new tests or benchmarks after the user reservation instruction; these receipts bind already completed results.",
+    "Synthetic CPU savings and identical plans are not live frequency, GPU, JCT or formal acceptance evidence.",
+    "Message controls still rebuild all ranks and cost about2.3-3.5% more; include this cost in live evaluation."
+  ]
+}

@@ -1227,7 +1227,7 @@ def test_uncertain_tool_window_reaches_reclaim_and_revalidated_batch_submission(
         window = next(row for row in records if row["event"] == "tool_prefetch_latest_start")
         assert window["remaining_p50_ms"] == 300.
         assert window["prediction_early_ms"] == 200.
-        assert window["start_window_ms"] == 315.
+        assert window["start_window_ms"] == 565.
         assert runtime.graph.invocations[key.invocation_id].state.value == "wait_tool"
     finally:
         runtime.close()
@@ -1242,7 +1242,7 @@ def test_tool_uncertainty_cannot_bypass_final_forecast_or_causal_revalidation(ch
     def drain(**kwargs):
         if change == "forecast_narrowed":
             runtime.tool_wait_hints[key.context_id] = replace(
-                hint, wait_p10_ms=300., wait_p50_ms=300., wait_p90_ms=300.,
+                hint, wait_p10_ms=600., wait_p50_ms=600., wait_p90_ms=600.,
             )
         else:
             runtime.on_events((event(
@@ -1281,7 +1281,10 @@ def test_tool_window_uses_surviving_cdf_and_join_keeps_its_service_window():
             center = hint.remaining_quantile(.5, now_ms=now_ms)
             lower = hint.remaining_quantile(.1, now_ms=now_ms)
         assert window.prediction_early_ms == pytest.approx(center - lower)
-        assert window.horizon_ms == pytest.approx(min(500., 115. + center - lower))
+        assert window.horizon_ms == pytest.approx(min(
+            runtime.prefetch_lead_ms, 365. + center - lower,
+        ))
+        assert window.planning_slack_ms == 250.
         assert window.prediction_early_ms != hint.wait_p50_ms - hint.wait_p10_ms
     finally:
         runtime.close()

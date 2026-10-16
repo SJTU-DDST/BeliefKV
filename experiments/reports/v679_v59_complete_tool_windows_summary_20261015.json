@@ -1,0 +1,186 @@
+{
+  "scope": "Fixed-trace diagnostic at forecast acceptance and recorded FULL-plan times. Uses the runtime's surviving residual mass/CDF/quantile logic and proven whole-tool-round completion as evaluation labels only. Single-call rounds are reported separately from sequential/parallel multi-call rounds. Plan samples are selected by the recorded runtime, not continuous coverage. A timely candidate means both leads are inside the upper start window; the service categories separately compare actual lead with recorded H2D P90. This estimate excludes planning/enqueue time and is not actual transfer completion or proof of feasible restoration. Missing service estimates remain unknown, not zero. Categories overlap across snapshots of one round. Per-round maximum FULL bytes may share pages and do not establish achievable unique bytes, actual transfers, residence, admission, hidden stalls, heldout accuracy or speedup.",
+  "counts": {
+    "tool_wait_forecast_records": 89626,
+    "wait_prefetch_plan_records": 48000,
+    "plans_without_positive_full_bytes": 36766,
+    "forecasts_without_surviving_timing_support": 727,
+    "wait_prefetch_plan_at_or_after_completion": 6183,
+    "tool_wait_forecast_at_or_after_completion": 3397,
+    "records_without_round_label": 3556,
+    "positive_full_plans_without_timing": 270
+  },
+  "scheduler_wall_minus_monotonic_ms": 1785829736899.4324,
+  "forecast_timing": {
+    "independent_tool_rounds": 28274,
+    "rounds_with_pre_completion_forecasts": 25431,
+    "rounds_with_last_second_forecasts": 25321,
+    "tool_weighted_last_second_signed_error_ms": {
+      "count": 25321,
+      "p50": 21.775105818349076,
+      "p90": 529.5782857702065,
+      "min": -882.4054165599814,
+      "max": 85951.3139219552
+    },
+    "tool_weighted_last_second_absolute_error_ms": {
+      "count": 25321,
+      "p50": 69.06193542480469,
+      "p90": 542.6599297523499,
+      "min": 0.00038814544677734375,
+      "max": 85951.3139219552
+    },
+    "first_500ms_window_lead_ms": {
+      "count": 20931,
+      "p50": 169.60986328125,
+      "p90": 590.50390625,
+      "min": 0.01318359375,
+      "max": 180240.07861328125
+    },
+    "first_500ms_window_in_actual_0_to_500ms": 18140,
+    "first_500ms_window_more_than_500ms_early": 2791
+  },
+  "single_tool_round_forecast_timing": {
+    "independent_tool_rounds": 27712,
+    "rounds_with_pre_completion_forecasts": 24888,
+    "rounds_with_last_second_forecasts": 24805,
+    "tool_weighted_last_second_signed_error_ms": {
+      "count": 24805,
+      "p50": 21.986860275268555,
+      "p90": 526.0822356992282,
+      "min": -674.3341481401932,
+      "max": 85951.3139219552
+    },
+    "tool_weighted_last_second_absolute_error_ms": {
+      "count": 24805,
+      "p50": 68.09968280792236,
+      "p90": 539.1539590975424,
+      "min": 0.00038814544677734375,
+      "max": 85951.3139219552
+    },
+    "first_500ms_window_lead_ms": {
+      "count": 20509,
+      "p50": 168.255126953125,
+      "p90": 576.3704101562502,
+      "min": 0.01318359375,
+      "max": 180240.07861328125
+    },
+    "first_500ms_window_in_actual_0_to_500ms": 17855,
+    "first_500ms_window_more_than_500ms_early": 2654
+  },
+  "multi_tool_round_forecast_timing": {
+    "independent_tool_rounds": 562,
+    "rounds_with_pre_completion_forecasts": 543,
+    "rounds_with_last_second_forecasts": 516,
+    "tool_weighted_last_second_signed_error_ms": {
+      "count": 516,
+      "p50": 11.575936134458221,
+      "p90": 641.098278813981,
+      "min": -882.4054165599814,
+      "max": 6466.952351209233
+    },
+    "tool_weighted_last_second_absolute_error_ms": {
+      "count": 516,
+      "p50": 140.82467567673672,
+      "p90": 643.0229761119243,
+      "min": 0.10455608367919922,
+      "max": 6466.952351209233
+    },
+    "first_500ms_window_lead_ms": {
+      "count": 422,
+      "p50": 277.2314453125,
+      "p90": 7085.334887695314,
+      "min": 0.71240234375,
+      "max": 40597.2294921875
+    },
+    "first_500ms_window_in_actual_0_to_500ms": 285,
+    "first_500ms_window_more_than_500ms_early": 137
+  },
+  "positive_full_plan_window_categories": {
+    "timely_candidate": {
+      "snapshots": 191,
+      "independent_tool_rounds": 177,
+      "sum_per_round_max_observed_full_bytes": 7319367680
+    },
+    "timely_candidate_with_observed_free_capacity": {
+      "snapshots": 191,
+      "independent_tool_rounds": 177,
+      "sum_per_round_max_observed_full_bytes": 7319367680
+    },
+    "predicted_too_early": {
+      "snapshots": 99,
+      "independent_tool_rounds": 88,
+      "sum_per_round_max_observed_full_bytes": 5510144000
+    },
+    "predicted_too_early_with_observed_free_capacity": {
+      "snapshots": 99,
+      "independent_tool_rounds": 88,
+      "sum_per_round_max_observed_full_bytes": 5510144000
+    },
+    "missed_recorded_window": {
+      "snapshots": 998,
+      "independent_tool_rounds": 723,
+      "sum_per_round_max_observed_full_bytes": 71340789760
+    },
+    "missed_recorded_window_with_observed_free_capacity": {
+      "snapshots": 14,
+      "independent_tool_rounds": 13,
+      "sum_per_round_max_observed_full_bytes": 539873280
+    },
+    "not_yet_due": {
+      "snapshots": 3493,
+      "independent_tool_rounds": 1826,
+      "sum_per_round_max_observed_full_bytes": 143729233920
+    },
+    "not_yet_due_with_observed_free_capacity": {
+      "snapshots": 55,
+      "independent_tool_rounds": 47,
+      "sum_per_round_max_observed_full_bytes": 2215587840
+    }
+  },
+  "timely_full_plan_service_categories": {
+    "actual_lead_at_least_recorded_h2d_p90": {
+      "snapshots": 130,
+      "independent_tool_rounds": 123,
+      "sum_per_round_max_observed_full_bytes": 4762501120
+    },
+    "actual_lead_at_least_recorded_h2d_p90_with_observed_free_capacity": {
+      "snapshots": 130,
+      "independent_tool_rounds": 123,
+      "sum_per_round_max_observed_full_bytes": 4762501120
+    },
+    "actual_lead_below_recorded_h2d_p90": {
+      "snapshots": 61,
+      "independent_tool_rounds": 57,
+      "sum_per_round_max_observed_full_bytes": 2580664320
+    },
+    "actual_lead_below_recorded_h2d_p90_with_observed_free_capacity": {
+      "snapshots": 61,
+      "independent_tool_rounds": 57,
+      "sum_per_round_max_observed_full_bytes": 2580664320
+    },
+    "recorded_h2d_p90_unavailable": {
+      "snapshots": 0,
+      "independent_tool_rounds": 0,
+      "sum_per_round_max_observed_full_bytes": 0
+    },
+    "recorded_h2d_p90_unavailable_with_observed_free_capacity": {
+      "snapshots": 0,
+      "independent_tool_rounds": 0,
+      "sum_per_round_max_observed_full_bytes": 0
+    }
+  },
+  "sources": {
+    "lifecycle_audit": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/prefetch_lifecycle.json",
+    "lifecycle_audit_sha256": "37cf2787bdd6d8ca7d2731e8034ca17c20fac19e54ecaf20f41bd89f25c7f6b8",
+    "opportunities": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/opportunities/admission_opportunities.jsonl",
+    "opportunities_sha256": "b6f7cdb84cd10e8e324c01f1bc9abd85ebdbf5df879c36190636763f765009a0",
+    "opportunities_read_bytes": 1457985716,
+    "opportunities_read_bytes_limit": 1457985716,
+    "audit_script_sha256": "97c564d94421777315f4303f6da3b93353d6045dd89df6370d02c3de5f25f8f0"
+  },
+  "detailed_evidence": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v679_v59_complete_tool_windows_20261015.json",
+    "sha256": "5513fd68510fe3b000f19d0c59c9bc99a21a5e9977375809bb7675a00b4e1d03",
+    "tool_round_rows": 28274
+  }
+}

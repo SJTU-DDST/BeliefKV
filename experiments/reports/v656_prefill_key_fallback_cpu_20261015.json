@@ -1,0 +1,154 @@
+{
+  "status": "isolated_equality_controls_not_admission_or_jct_gain",
+  "observed_at_local": "2026-10-14T20:08:31.175418-07:00",
+  "baseline_revision": "d925278",
+  "baseline_sources": {
+    "beliefkv/runtime/sglang_v0520_admission.py": "092d0f2814402e2a8a8211ba6afa6fad273b2c85323d73cc5bf8f89f29cc5ecd"
+  },
+  "candidate_sources": {
+    "beliefkv/runtime/sglang_v0520_admission.py": "69034926f0f66178b43482692cecd301b4d43dc5805a8678a03c8c85456211f4",
+    "scripts/benchmark_prefill_key_equality.py": "6ff5b62c4e8bff497eee74b3229878f330200f530c4a1ff9ed34cff62f03737b",
+    "scripts/benchmark_prefill_key_fallback.py": "9a655bdeee5bc6e4de78ea292dd5f978375c36a989a0e97aaefdac6a7b1ed382"
+  },
+  "iterations": 500,
+  "calls_per_sample": 1000,
+  "cases": [
+    {
+      "kind": "identical_object",
+      "thread_cpu_ms_per_comparison": {
+        "baseline": {
+          "count": 500,
+          "mean_ms": 0.000274438886,
+          "p50_ms": 0.000274098,
+          "p99_ms": 0.00029013600000000003,
+          "max_ms": 0.00029663099999999995
+        },
+        "candidate": {
+          "count": 500,
+          "mean_ms": 8.0274168e-05,
+          "p50_ms": 7.998099999999999e-05,
+          "p99_ms": 8.5009e-05,
+          "max_ms": 9.7315e-05
+        }
+      },
+      "expected_equal": true,
+      "all_results_equal": true,
+      "thread_cpu_mean_reduction_fraction": 0.707497107388783
+    },
+    {
+      "kind": "equal_distinct_objects",
+      "thread_cpu_ms_per_comparison": {
+        "baseline": {
+          "count": 500,
+          "mean_ms": 0.000298551978,
+          "p50_ms": 0.00030389800000000004,
+          "p99_ms": 0.000323985,
+          "max_ms": 0.000328222
+        },
+        "candidate": {
+          "count": 500,
+          "mean_ms": 0.000297056492,
+          "p50_ms": 0.000301362,
+          "p99_ms": 0.00031671600000000004,
+          "max_ms": 0.000320049
+        }
+      },
+      "expected_equal": true,
+      "all_results_equal": true,
+      "thread_cpu_mean_reduction_fraction": 0.005009131106811671
+    },
+    {
+      "kind": "equal_deserialized_fields",
+      "thread_cpu_ms_per_comparison": {
+        "baseline": {
+          "count": 500,
+          "mean_ms": 0.000269508674,
+          "p50_ms": 0.00026911599999999996,
+          "p99_ms": 0.00028624900000000003,
+          "max_ms": 0.000343676
+        },
+        "candidate": {
+          "count": 500,
+          "mean_ms": 0.000270080232,
+          "p50_ms": 0.000270232,
+          "p99_ms": 0.00028165,
+          "max_ms": 0.000285599
+        }
+      },
+      "expected_equal": true,
+      "all_results_equal": true,
+      "thread_cpu_mean_reduction_fraction": -0.0021207406482210978
+    },
+    {
+      "kind": "changed_session_generation",
+      "thread_cpu_ms_per_comparison": {
+        "baseline": {
+          "count": 500,
+          "mean_ms": 0.000242316592,
+          "p50_ms": 0.00024236,
+          "p99_ms": 0.000258415,
+          "max_ms": 0.000265388
+        },
+        "candidate": {
+          "count": 500,
+          "mean_ms": 0.000240759652,
+          "p50_ms": 0.000240702,
+          "p99_ms": 0.000253198,
+          "max_ms": 0.000256209
+        }
+      },
+      "expected_equal": false,
+      "all_results_equal": true,
+      "thread_cpu_mean_reduction_fraction": 0.00642523067508316
+    },
+    {
+      "kind": "foreign_tuple",
+      "thread_cpu_ms_per_comparison": {
+        "baseline": {
+          "count": 500,
+          "mean_ms": 7.569855e-05,
+          "p50_ms": 7.5245e-05,
+          "p99_ms": 8.1822e-05,
+          "max_ms": 8.4759e-05
+        },
+        "candidate": {
+          "count": 500,
+          "mean_ms": 8.0903628e-05,
+          "p50_ms": 8.057e-05,
+          "p99_ms": 8.699800000000001e-05,
+          "max_ms": 9.0759e-05
+        }
+      },
+      "expected_equal": false,
+      "all_results_equal": true,
+      "thread_cpu_mean_reduction_fraction": -0.0687606037367956
+    },
+    {
+      "kind": "foreign_subclass",
+      "thread_cpu_ms_per_comparison": {
+        "baseline": {
+          "count": 500,
+          "mean_ms": 0.000131887828,
+          "p50_ms": 0.000131267,
+          "p99_ms": 0.000139845,
+          "max_ms": 0.000153659
+        },
+        "candidate": {
+          "count": 500,
+          "mean_ms": 0.000144406232,
+          "p50_ms": 0.000143915,
+          "p99_ms": 0.000152118,
+          "max_ms": 0.00016465299999999998
+        }
+      },
+      "expected_equal": false,
+      "all_results_equal": true,
+      "thread_cpu_mean_reduction_fraction": -0.09491705330077926
+    }
+  ],
+  "limitations": [
+    "These isolated comparisons preserve unfavorable fallback costs; complete planning/selection costs are reported separately.",
+    "Scenario frequencies are not measured production proportions; do not extrapolate a JCT saving.",
+    "Both variants use the same key class/hash and all original field validation remains outside this equality method."
+  ]
+}

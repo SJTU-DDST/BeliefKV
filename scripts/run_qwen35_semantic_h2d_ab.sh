@@ -6,6 +6,8 @@ PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
 ROOT_COUNT="${ROOT_COUNT:-108}"
 ARRIVAL_BATCH_SIZE="${ARRIVAL_BATCH_SIZE:-0}"
 ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
+ARRIVAL_RATE_PER_SECOND="${ARRIVAL_RATE_PER_SECOND:-0}"
+ARRIVAL_SEED="${ARRIVAL_SEED:-21}"
 HOST_SPLIT="${HOST_SPLIT:-80:20}"
 HOST_NUMA_MEMORY_POLICY="${HOST_NUMA_MEMORY_POLICY:-preferred}"
 PORT="${PORT:-18454}"
@@ -27,9 +29,23 @@ SEMANTIC_WORK_STATISTIC="${SEMANTIC_WORK_STATISTIC:-center}"
 EOS_PROTOCOL_WINDOW_MS="${EOS_PROTOCOL_WINDOW_MS:-250}"
 FANOUT_PROFILE="${FANOUT_PROFILE:-native_in_graph_2to4}"
 NATIVE_REFERENCE_RUN="${NATIVE_REFERENCE_RUN:-}"
+NATIVE_REFERENCE_TIMELINE="${NATIVE_REFERENCE_TIMELINE:-}"
+NATIVE_REFERENCE_CACHE="${NATIVE_REFERENCE_CACHE:-}"
+poisson_arrivals="$("$PYTHON" -c 'import math,sys; rate=float(sys.argv[1]); assert math.isfinite(rate) and rate >= 0, "arrival rate must be finite and non-negative"; print(int(rate > 0))' "$ARRIVAL_RATE_PER_SECOND")"
 reference_args=()
+reference_comparison_args=()
 if [[ -n "$NATIVE_REFERENCE_RUN" ]]; then
   reference_args=(--native-reference-run "$NATIVE_REFERENCE_RUN")
+  if [[ -n "$NATIVE_REFERENCE_TIMELINE" ]]; then
+    reference_args+=(--native-reference-timeline "$NATIVE_REFERENCE_TIMELINE")
+  fi
+  if [[ -n "$NATIVE_REFERENCE_CACHE" ]]; then
+    reference_args+=(--native-reference-cache "$NATIVE_REFERENCE_CACHE")
+    reference_comparison_args+=(--native-reference-cache "$NATIVE_REFERENCE_CACHE")
+  fi
+elif [[ -n "$NATIVE_REFERENCE_TIMELINE" || -n "$NATIVE_REFERENCE_CACHE" ]]; then
+  printf 'Native reference artifacts require NATIVE_REFERENCE_RUN\n' >&2
+  exit 2
 fi
 
 if [[ $# -ne 0 || ! -f "$ARTIFACT" ]] \
@@ -38,11 +54,13 @@ if [[ $# -ne 0 || ! -f "$ARTIFACT" ]] \
   || { [[ "$RESUME_PENDING" == "1" ]] && [[ ! -f "$RUN_ROOT/ab_plan.json" ]]; } \
   || [[ ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] || (( ROOT_COUNT > 156 )) \
   || [[ ! "$ARRIVAL_BATCH_SIZE" =~ ^[0-9]+$ || ! "$ARRIVAL_BATCH_INTERVAL_MS" =~ ^[0-9]+$ ]] \
-  || { (( ROOT_COUNT > 108 )) && [[ "$ARRIVAL_BATCH_SIZE" != "108" || "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]]; } \
+  || { [[ "$poisson_arrivals" == "0" ]] && (( ROOT_COUNT > 108 )) && [[ "$ARRIVAL_BATCH_SIZE" != "108" || "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]]; } \
+  || { [[ "$poisson_arrivals" == "1" ]] && [[ "$ARRIVAL_BATCH_SIZE" != "0" || "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; } \
+  || [[ ! "$ARRIVAL_SEED" =~ ^[0-9]+$ ]] \
   || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ || ! "$REPETITION_ID" =~ ^[0-9]+$ ]] \
   || [[ "$EXECUTION_HANDOFF" != "0" && "$EXECUTION_HANDOFF" != "1" ]] \
-  || [[ "$ARM_ORDER" != "predictive_h2d reactive" && "$ARM_ORDER" != "reactive predictive_h2d" && "$ARM_ORDER" != "predictive_h2d" && "$ARM_ORDER" != "native predictive_h2d" && "$ARM_ORDER" != "predictive_h2d native" ]]; then
-  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=108|156 ARRIVAL_BATCH_SIZE=0|108 ARRIVAL_BATCH_INTERVAL_MS=0|3600000 FANOUT_PROFILE=native_in_graph_2to4 ARM_ORDER="predictive_h2d native"|"predictive_h2d reactive"|predictive_h2d SAMPLING_SEED=21 REPETITION_ID=0 ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
+  || [[ "$ARM_ORDER" != "predictive_h2d reactive" && "$ARM_ORDER" != "reactive predictive_h2d" && "$ARM_ORDER" != "predictive_h2d" && "$ARM_ORDER" != "reactive" && "$ARM_ORDER" != "native predictive_h2d" && "$ARM_ORDER" != "predictive_h2d native" ]]; then
+  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=108|156 ARRIVAL_BATCH_SIZE=0|108 ARRIVAL_BATCH_INTERVAL_MS=0|3600000 FANOUT_PROFILE=native_in_graph_2to4 ARM_ORDER="predictive_h2d native"|"predictive_h2d reactive"|predictive_h2d|reactive SAMPLING_SEED=21 REPETITION_ID=0 ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
   exit 2
 fi
 mkdir -p "$RUN_ROOT"
@@ -51,6 +69,7 @@ if [[ "$RESUME_PENDING" == "0" ]]; then
 "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
   --run-root "$RUN_ROOT" --initialize --root-count "$ROOT_COUNT" \
   --arrival-batch-size "$ARRIVAL_BATCH_SIZE" --arrival-batch-interval-ms "$ARRIVAL_BATCH_INTERVAL_MS" \
+  --arrival-rate-per-second "$ARRIVAL_RATE_PER_SECOND" --arrival-seed "$ARRIVAL_SEED" \
   --arm-order "$ARM_ORDER" --semantic-artifact "$ARTIFACT" \
   --activation-wall-clock-seconds "$ACTIVATION_WALL_CLOCK_SECONDS" \
   --prepare-host "$PREPARE_HOST" --execution-handoff "$EXECUTION_HANDOFF" \
@@ -64,6 +83,10 @@ if [[ "$RESUME_PENDING" == "0" ]]; then
   --sampling-seed "$SAMPLING_SEED" --repetition-id "$REPETITION_ID" \
   "${reference_args[@]}" \
   --workload-manifest "${WORKLOAD_MANIFEST:-$ROOT/configs/migration/qwen35_native_reactive_overlapped_128root_workload_2026-09-23.json}"
+fi
+arrival_schedule=""
+if [[ "$poisson_arrivals" == "1" ]]; then
+  arrival_schedule="$RUN_ROOT/ab_plan.json"
 fi
 for arm in $ARM_ORDER; do
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
@@ -87,6 +110,7 @@ for arm in $ARM_ORDER; do
   set +e
   NATIVE_POLICY_BASELINE="$baseline" AB_MODE="$mode" ROOT_COUNT="$ROOT_COUNT" PORT="$PORT" SAMPLING_SEED="$SAMPLING_SEED" \
     ARRIVAL_BATCH_SIZE="$ARRIVAL_BATCH_SIZE" ARRIVAL_BATCH_INTERVAL_MS="$ARRIVAL_BATCH_INTERVAL_MS" \
+    WORKFLOW_ARRIVAL_SCHEDULE="$arrival_schedule" \
     ACTIVATION_WALL_CLOCK_SECONDS="$ACTIVATION_WALL_CLOCK_SECONDS" \
     PREPARE_HOST="$PREPARE_HOST" EXECUTION_HANDOFF="$EXECUTION_HANDOFF" \
     H2D_SEED_ARTIFACT="$H2D_SEED_ARTIFACT" \
@@ -130,16 +154,17 @@ for arm in $ARM_ORDER; do
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
     --cleanup-arm "$RUN_ROOT/$arm" > "$RUN_ROOT/$arm.workspace_cleanup.json"
 done
-if [[ "$ARM_ORDER" == "predictive_h2d" ]]; then
+if [[ "$ARM_ORDER" == "predictive_h2d" || "$ARM_ORDER" == "reactive" ]]; then
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
     --run-root "$RUN_ROOT" --allow-incomplete
   if [[ -n "$NATIVE_REFERENCE_RUN" ]]; then
     "$PYTHON" "$ROOT/scripts/compare_native_policy_runs.py" \
-      --arm "predictive_h2d=$RUN_ROOT/predictive_h2d" \
+      --arm "$ARM_ORDER=$RUN_ROOT/$ARM_ORDER" \
       --arm "native=$NATIVE_REFERENCE_RUN/native" \
-      --timeline "predictive_h2d=$RUN_ROOT/timelines/predictive_h2d.json.gz" \
-      --timeline "native=$NATIVE_REFERENCE_RUN/timelines/native.json.gz" \
+      --timeline "$ARM_ORDER=$RUN_ROOT/timelines/$ARM_ORDER.json.gz" \
+      --timeline "native=${NATIVE_REFERENCE_TIMELINE:-$NATIVE_REFERENCE_RUN/timelines/native.json.gz}" \
       --native-reference-run "$NATIVE_REFERENCE_RUN" \
+      "${reference_comparison_args[@]}" \
       --output "$RUN_ROOT/native_reference_comparison.json"
   fi
 else

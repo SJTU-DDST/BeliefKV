@@ -479,8 +479,9 @@ def has_host_backed_missing_copy(
 
 def missing_prepare_full_prefix_tokens(
     cache: object, anchors: ContextSessionAnchors, *, max_nodes: int | None = None,
+    backed_nodes: list[tuple[int, int | float]] | None = None,
 ) -> int | None:
-    """Read a budget rejection hint; viable candidates still need a full closure."""
+    """Report missing tokens and backed candidates when new backup is still needed."""
     if (
         (max_nodes is not None and (type(max_nodes) is not int or max_nodes <= 0))
         or type(anchors.reusable_input_tokens) is not int
@@ -507,6 +508,8 @@ def missing_prepare_full_prefix_tokens(
                 if node.id != node_id or normalize_native_creation_time(node.creation_time) != created:
                     return None
         nodes: dict[int, _PreparePrefixNode] = {}
+        native_backed = {}
+        device_leaves = getattr(cache.tree_core, "evictable_device_leaves", ())
         depth: dict[int, int] = {}
         for leaf in leaves:
             current = cache.tree_core.node_by_id(leaf)
@@ -536,6 +539,13 @@ def missing_prepare_full_prefix_tokens(
                 if node_id in nodes and nodes[node_id] != summary:
                     return None
                 nodes[node_id] = summary
+                if backed_nodes is not None and (
+                    summary.full_device_tokens > 0
+                    and summary.full_host_tokens >= summary.full_device_tokens
+                    and current in device_leaves
+                    or summary.mamba_device_present and summary.mamba_host_present
+                ):
+                    native_backed[node_id] = current
                 if max_nodes is not None and len(nodes) > max_nodes:
                     return None
                 current = parent
@@ -544,10 +554,22 @@ def missing_prepare_full_prefix_tokens(
         selected = _checkpoint_paths(anchors, nodes, leaves, depth)
         if selected is None:
             return None
-        return sum(
+        missing = sum(
             max(nodes[node_id].full_device_tokens - nodes[node_id].full_host_tokens, 0)
             for node_id in selected[0]
         )
+        if missing and backed_nodes is not None:
+            identities = []
+            for node_id, native in native_backed.items():
+                if node_id not in selected[0]:
+                    continue
+                if cache.tree_core.node_by_id(node_id) is not native:
+                    return None
+                identities.append((
+                    node_id, normalize_native_creation_time(native.creation_time),
+                ))
+            backed_nodes.extend(identities)
+        return missing
     except (AttributeError, IndexError, KeyError, TypeError, ValueError, RuntimeError):
         return None
 
@@ -720,18 +742,24 @@ def plan_prefetch_gpu_steps(
 
 def next_shadow_backup_step(
     candidate: ActionLocalShadowCandidate,
+    *,
+    reclaim_tail_leaves: frozenset[int] = frozenset(),
 ) -> ShadowBackupStep | None:
-    steps = shadow_backup_steps(candidate, max_steps=1)
+    steps = shadow_backup_steps(
+        candidate, max_steps=1, reclaim_tail_leaves=reclaim_tail_leaves,
+    )
     return steps[0] if steps else None
 
 
 def shadow_backup_steps(
     candidate: ActionLocalShadowCandidate, *, max_steps: int = 8,
+    reclaim_tail_leaves: frozenset[int] = frozenset(),
 ) -> tuple[ShadowBackupStep, ...]:
-    """Plan one ancestor-first burst of missing FULL extents on one input path.
+    """Plan one ancestor-first burst of missing FULL extents on one session path.
 
     Existing Host extents are retained. Mamba snapshots stay with native
-    demand write-back; speculative PREPARE does not copy them.
+    demand write-back. The runtime may additionally prove idle device leaves
+    whose FULL tail must be backed before native can reclaim their ancestors.
     """
     if type(max_steps) is not int or not 1 <= max_steps <= 16:
         raise ValueError("shadow burst must contain one to sixteen extents")
@@ -748,6 +776,8 @@ def shadow_backup_steps(
     paths: set[int] = set()
     provenance: dict[int, int] = {}
     depth: dict[int, int] = {}
+    single_leaf_path = None
+    ordered_nodes = None
     for leaf in sorted(leaves):
         current = leaf
         chain: list[int] = []
@@ -758,11 +788,17 @@ def shadow_backup_steps(
             seen.add(current)
             chain.append(current)
             current = nodes[current].parent_id
-        for distance, node_id in enumerate(reversed(chain)):
-            paths.add(node_id)
-            provenance.setdefault(node_id, leaf)
-            depth[node_id] = distance
-    ordered_nodes = sorted(paths, key=lambda value: (depth[value], value))
+        if len(leaves) == 1 and len(seen) == len(nodes):
+            paths = seen
+            single_leaf_path = leaf
+            ordered_nodes = chain[::-1]
+        else:
+            for distance, node_id in enumerate(reversed(chain)):
+                paths.add(node_id)
+                provenance.setdefault(node_id, leaf)
+                depth[node_id] = distance
+    if ordered_nodes is None:
+        ordered_nodes = sorted(paths, key=lambda value: (depth[value], value))
     selected = _checkpoint_paths(
         candidate.anchors, nodes, leaves, depth,
         ordered_nodes=ordered_nodes if len(paths) == len(nodes) else None,
@@ -770,6 +806,25 @@ def shadow_backup_steps(
     if selected is None:
         return ()
     eligible_paths, _ = selected
+    for leaf in leaves.keys() & reclaim_tail_leaves:
+        if nodes[leaf].full_session_leaf_count != 1:
+            continue
+        current, tail = leaf, set()
+        while current not in eligible_paths:
+            node = nodes[current]
+            if (
+                node.parent_id is None or node.full_device_tokens <= 0
+                or node.full_session_refs != 1 or node.mamba_session_refs > 1
+                or node.full_device_locks or node.full_host_locks
+                or node.mamba_device_locks or node.mamba_host_locks
+                or node.pending_write_id is not None
+                or node.pending_load_id is not None
+            ):
+                break
+            tail.add(current)
+            current = node.parent_id
+        else:
+            eligible_paths.update(tail)
     steps = []
     staged_full = set()
     leaf_id = None
@@ -782,7 +837,8 @@ def shadow_backup_steps(
     for node_id in ordered_nodes:
         node = nodes[node_id]
         if node_id not in eligible_paths or (
-            leaf_id is not None and provenance[node_id] != leaf_id
+            leaf_id is not None
+            and (single_leaf_path if single_leaf_path is not None else provenance[node_id]) != leaf_id
         ):
             continue
         parent = nodes.get(node.parent_id)
@@ -802,7 +858,7 @@ def shadow_backup_steps(
         ):
             continue
         if node.full_device_tokens > node.full_host_tokens:
-            leaf_id = provenance[node_id]
+            leaf_id = single_leaf_path if single_leaf_path is not None else provenance[node_id]
             steps.append(ShadowBackupStep(
                 key=candidate.anchors.key,
                 leaf_node_id=leaf_id,
@@ -1308,6 +1364,8 @@ class PhysicalTransactionLedger:
         self.max_nodes = max_nodes
         self.max_age_s = max_age_s
         self._pending: dict[str, tuple[PhysicalActionExpectation, float, set[int]]] = {}
+        self._pending_action_counts: dict[str, int] = {}
+        self._context_invalidated_commands: set[str] = set()
         self._history: deque[str] = deque()
         self._seen: set[str] = set()
         self._published_by_command: dict[str, dict[int, tuple[int, ...]]] = {}
@@ -1319,7 +1377,7 @@ class PhysicalTransactionLedger:
 
     def pending_action_count(self, action: str) -> int:
         """Count a direction without serializing unrelated native transfers."""
-        return sum(expected.action == action for expected, _, _ in self._pending.values())
+        return self._pending_action_counts.get(action, 0)
 
     def is_pending(self, command_id: str) -> bool:
         return command_id in self._pending
@@ -1361,6 +1419,16 @@ class PhysicalTransactionLedger:
         self._history.append(command_id)
         self._seen.add(command_id)
 
+    def _retire(self, command_id: str) -> None:
+        expected, _, _ = self._pending.pop(command_id)
+        self._context_invalidated_commands.discard(command_id)
+        remaining = self._pending_action_counts[expected.action] - 1
+        if remaining:
+            self._pending_action_counts[expected.action] = remaining
+        else:
+            del self._pending_action_counts[expected.action]
+        self._remember(command_id)
+
     def expire(self) -> tuple[str, ...]:
         """Drop timed-out commands without issuing any completion credit."""
         now = monotonic()
@@ -1370,8 +1438,7 @@ class PhysicalTransactionLedger:
             if now - started >= self.max_age_s
         )
         for command_id in expired:
-            del self._pending[command_id]
-            self._remember(command_id)
+            self._retire(command_id)
         return expired
 
     def register(self, expected: PhysicalActionExpectation) -> None:
@@ -1442,6 +1509,9 @@ class PhysicalTransactionLedger:
         ):
             raise PhysicalReceiptError("node already owned by a pending command")
         self._pending[expected.command_id] = (expected, monotonic(), set())
+        self._pending_action_counts[expected.action] = (
+            self._pending_action_counts.get(expected.action, 0) + 1
+        )
 
     def cancel_unsubmitted(self, command_id: str) -> None:
         """Release a reservation only when native confirms nothing was queued.
@@ -1457,14 +1527,19 @@ class PhysicalTransactionLedger:
             raise PhysicalReceiptError(
                 f"cannot cancel partially acknowledged {expected.action}"
             )
-        del self._pending[command_id]
-        self._remember(command_id)
+        self._retire(command_id)
+
+    def invalidate_context(self, context_id: str) -> None:
+        """Keep submitted DMA pending, but forbid credit after prefix replacement."""
+        self._context_invalidated_commands.update(
+            command_id for command_id, (expected, _, _) in self._pending.items()
+            if expected.context_id == context_id
+        )
 
     def _reject(self, message: str) -> None:
         # An invalid merged event cannot safely be attributed to any subset.
         for command_id in tuple(self._pending):
-            del self._pending[command_id]
-            self._remember(command_id)
+            self._retire(command_id)
         raise PhysicalReceiptError(message)
 
     def observe(
@@ -1490,8 +1565,7 @@ class PhysicalTransactionLedger:
             )
         except PhysicalReceiptError:
             for command_id in tuple(self._pending):
-                del self._pending[command_id]
-                self._remember(command_id)
+                self._retire(command_id)
             raise
         except (TypeError, ValueError, AttributeError, KeyError):
             self._reject("invalid or inconsistent native child commit")
@@ -1549,7 +1623,8 @@ class PhysicalTransactionLedger:
                 and same_session and live_epoch == expected.context_epoch + 1
             )
             if (
-                direction != ("d2h" if expected.action == "PREPARE_HOST" else "h2d")
+                command_id in self._context_invalidated_commands
+                or direction != ("d2h" if expected.action == "PREPARE_HOST" else "h2d")
                 or type(live_epoch) is not int
                 or not epoch_matches
                 or (
@@ -1641,6 +1716,5 @@ class PhysicalTransactionLedger:
                 )
             )
         for action in completed:
-            del self._pending[action.command_id]
-            self._remember(action.command_id)
+            self._retire(action.command_id)
         return tuple(completed)

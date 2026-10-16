@@ -3,6 +3,7 @@ from __future__ import annotations
 import asyncio
 from types import SimpleNamespace
 from typing import Any
+from uuid import uuid4
 
 import pytest
 
@@ -22,8 +23,10 @@ from beliefkv.runtime.context_lifecycle import (
     ContextLifecycleMiddleware,
     ContextLifecyclePolicy,
     ContextLifecycleState,
+    make_summary_model,
 )
 from beliefkv.runtime.deepagents_adapter import BeliefKVChatOpenAI
+from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 
 
 class _FakeModel(BaseChatModel):
@@ -34,6 +37,61 @@ class _FakeModel(BaseChatModel):
     def _generate(self, messages, **kwargs: Any) -> ChatResult:
         del messages, kwargs
         raise AssertionError("the token accounting test must not invoke the model")
+
+
+@pytest.mark.parametrize("extra_body", (
+    None,
+    {"chat_template_kwargs": {"enable_thinking": True, "custom_template_option": 7},
+     "custom_endpoint_option": "retained"},
+))
+def test_summary_payload_disables_thinking_and_preserves_agent_model(extra_body):
+    model = BeliefKVChatOpenAI(
+        beliefkv_adapter=SimpleNamespace(),
+        model="qwen-summary-test", base_url="http://127.0.0.1:1/v1",
+        api_key="EMPTY", max_completion_tokens=8192, extra_body=extra_body,
+    )
+    summary = make_summary_model(model, output_tokens=2048)
+    payload = summary._get_request_payload([HumanMessage(content="Summarize the evidence")])
+    assert isinstance(summary, BeliefKVChatOpenAI)
+    assert payload["max_completion_tokens"] == 2048
+    assert payload["extra_body"]["chat_template_kwargs"]["enable_thinking"] is False
+    assert model.max_tokens == 8192
+    assert model.extra_body == extra_body
+    assert summary._beliefkv_adapter is model._beliefkv_adapter
+    if extra_body is not None:
+        assert model.extra_body["chat_template_kwargs"]["enable_thinking"] is True
+        assert payload["extra_body"]["chat_template_kwargs"]["custom_template_option"] == 7
+        assert payload["extra_body"]["custom_endpoint_option"] == "retained"
+        assert summary.extra_body is not model.extra_body
+        assert summary.extra_body["chat_template_kwargs"] is not model.extra_body["chat_template_kwargs"]
+
+
+@pytest.mark.parametrize("per_call", ({}, {"extra_body": {"request_option": "retained"}}))
+def test_runtime_tagged_summary_preserves_non_thinking_in_final_payload(per_call):
+    metadata = BeliefKVRequestMetadata(
+        root_workflow_id="w", invocation_id="summary", context_id="c", context_epoch=0,
+    )
+    adapter = SimpleNamespace(
+        metadata_for_model_run=lambda _: metadata, native_radix_sessions=None,
+    )
+    model = BeliefKVChatOpenAI(
+        beliefkv_adapter=adapter, model="qwen-summary-test",
+        base_url="http://127.0.0.1:1/v1", api_key="EMPTY", max_completion_tokens=8192,
+    )
+    summary = make_summary_model(model, output_tokens=2048)
+    kwargs, rid = summary._with_beliefkv_runtime(SimpleNamespace(run_id=uuid4()), per_call)
+    payload = summary._get_request_payload([HumanMessage(content="checkpoint facts")], **kwargs)
+    extra = payload["extra_body"]
+    assert extra["chat_template_kwargs"]["enable_thinking"] is False
+    assert extra["beliefkv_metadata"] == metadata.to_wire()
+    assert extra["rid"] == rid
+    assert payload["max_completion_tokens"] == 2048
+    assert payload["messages"] == []
+    assert extra["messages"][0]["content"] == "checkpoint facts"
+    assert model.extra_body is None
+    if per_call:
+        assert extra["request_option"] == "retained"
+        assert per_call == {"extra_body": {"request_option": "retained"}}
 
 
 def test_context_lifecycle_defaults_to_32k_with_8k_retention() -> None:

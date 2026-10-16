@@ -1,0 +1,48 @@
+{
+  "schema_version": 1,
+  "status": "paused_at_admission_deadline_partial_quality_evidence",
+  "environment_snapshot": "experiments/reports/v758_quality_cpu_environment_20261015.json",
+  "harness_commit": "f7bbbb2ccdf479001d6467c9e34af59e44a840f9",
+  "supervisor_state": "/home/longhao/experiment/ops/quality_eval/quality_cpu_20261015.state.json",
+  "supervisor_state_sha256": "3c4436a9e0da2b59ba8188a497dcc9ffda8bdf910cde2bcbed6d41c24c94e028",
+  "finished_at_local": "2026-10-15T04:13:24.103269-07:00",
+  "no_new_task_after": "2026-10-15T19:13:00+08:00",
+  "last_container_admission_local": "2026-10-15T04:12:40.202632-07:00",
+  "v59_predictive": {
+    "frozen_input_tasks": 156,
+    "admitted_containers": 116,
+    "official_task_reports": 115,
+    "resolved_reports": 80,
+    "unresolved_reports": 35,
+    "grading_infrastructure_errors": 1,
+    "unattempted_at_cutoff": 40,
+    "official_summary": "experiments/reports/v755_v59_quality_inputs_20261015/beliefkv-Qwen3.5-35B-A3B-4fa83ff3632e4013a280ec6f6de63a65.beliefkv-quality-cpu-20261015.json",
+    "official_summary_sha256": "5c247c61abfbde6d1741eda0f772974e82a62b5b51b3be8241f39b02cf3ad43b",
+    "official_summary_error_instances": 41,
+    "official_summary_error_interpretation": "The unchanged official summary puts both one attempted Docker API timeout and 40 tasks not admitted after the CPU cutoff into error_ids. Preserve that report, but keep these categories separate from each other and from model failures.",
+    "infrastructure_error": {
+      "instance_id": "django__django-11239",
+      "message": "UnixHTTPConnectionPool read timeout=60 during Docker evaluation",
+      "log_sha256": "90482db5aa26a413d6c7c87db0e6ee1ffdd1e70758553950947a4383d25ebbdb"
+    },
+    "container_receipts_sha256": "3fe87a5f88a5d878b530e69444e09fe7d7d4a2d8b981cefaa9ea2cd51eedfe61",
+    "workflow_original_outcomes_changed": false
+  },
+  "v58_native": {
+    "frozen_input_tasks": 156,
+    "cpu_evaluation_started": false,
+    "official_quality_status": "ungraded"
+  },
+  "resource_verification": {
+    "all_admitted_container_nano_cpus": 1000000000,
+    "all_admitted_container_memory_bytes": 8589934592,
+    "all_device_requests_empty": true,
+    "supervisor_and_worker_no_longer_live": true,
+    "owned_running_containers": 0,
+    "gpu_experiment_started": false
+  },
+  "semantics": "This partial nonrandom task cohort cannot establish full-workload quality or a native/predictive quality comparison. Unattempted tasks and the Docker API timeout are missing correctness evidence, not demonstrated model failures. Keep all 156 input tasks, original workflow outcomes, official reports and logs. A zero evaluator exit code does not mean all tasks were graded.",
+  "frozen_v61_changed": false,
+  "launch_lower_bound": "2026-10-15T19:51:00+08:00",
+  "goal_complete": false
+}

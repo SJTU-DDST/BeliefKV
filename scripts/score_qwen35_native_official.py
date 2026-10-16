@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+from collections import Counter
 import hashlib
 import json
 import math
@@ -140,6 +141,15 @@ def score_run(client_dir: Path, evaluation_dir: Path, grader_run_id: str) -> dic
         "complete_official_grading": complete,
         "measurement_complete": measurement_complete,
         "instance_ids": ids,
+        "workflow_count": len(ids),
+        "native_workflow_outcome_counts": dict(Counter(row.get("outcome") for row in rows)),
+        "native_non_completed_ids": [
+            instance_id for instance_id in ids if by_id[instance_id].get("outcome") != "completed"
+        ],
+        "resolved_non_completed_ids": [
+            instance_id for instance_id in ids
+            if instance_id in groups["resolved"] and by_id[instance_id].get("outcome") != "completed"
+        ],
         "resolved_ids": sorted(groups["resolved"]),
         "correctly_completed_ids": useful,
         "unresolved_ids": sorted(groups["unresolved"]),

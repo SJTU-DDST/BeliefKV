@@ -1,0 +1,125 @@
+{
+  "status": "latest_source_actual_workflow_service_and_configuration_verified",
+  "at": "2026-10-15T04:46:25.126385-07:00",
+  "collection_revision": "824cd44536d42f0244d64a1e7ceacf192091f9c0",
+  "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261015_v61",
+  "execution_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v780-latest-gpu-20261015",
+  "launch_state": {
+    "path": "/home/longhao/experiment/ops/v61_latest_immediate_20261015.state.json",
+    "sha256": "b516fdb0f2df0df9b9bd788b995af1a07c3233ee169154c12377f1c2531e4a55"
+  },
+  "driver": {
+    "pid": 100385,
+    "state": "R",
+    "ppid": 100311,
+    "start_ticks": "623466626",
+    "argv": [
+      "bash",
+      "/home/longhao/experiment/.worktrees/beliefkv-v780-latest-gpu-20261015/scripts/run_qwen35_semantic_h2d_ab.sh"
+    ]
+  },
+  "scheduler": {
+    "pid": 100964,
+    "state": "R",
+    "ppid": 100425,
+    "start_ticks": "623468008",
+    "argv": [
+      "sglang::scheduler"
+    ]
+  },
+  "server_settings": {
+    "status": "ready",
+    "max_running_requests": 48,
+    "context_length": 131072,
+    "chunked_prefill_size": 4096,
+    "prefill_decode_interval": 0,
+    "enable_mixed_chunk": false,
+    "enable_prefill_delayer": false,
+    "min_free_slots_delay": null
+  },
+  "source": {
+    "collection_code_commit": "824cd44536d42f0244d64a1e7ceacf192091f9c0",
+    "verification_code_commit": "824cd44536d42f0244d64a1e7ceacf192091f9c0",
+    "execution_source_unchanged": true,
+    "non_execution_paths": [
+      "docs/",
+      "tests/",
+      "experiments/archive/README.md",
+      "experiments/reports/*.json",
+      "experiments/reports/*.json.gz",
+      "experiments/reports/*.raw.gz",
+      "experiments/reports/*.md",
+      "scripts/summarize_semantic_h2d_ab.py",
+      "scripts/launch_semantic_h2d_after_pair.py",
+      "scripts/analyze_prefill_turnover.py",
+      "scripts/seal_reservation_cutoff.py"
+    ],
+    "changed_committed_paths": []
+  },
+  "first_actual_service": [
+    {
+      "event": "gpu_service_sample",
+      "ts_ms": 1792064608109.095,
+      "forward_iter": 3,
+      "sample_id": "native-service-000000001",
+      "phase": "prefill",
+      "batch_size": 1,
+      "cuda_graph_replayed": true,
+      "request_samples": [
+        {
+          "request_id": "beliefkv:01a13f5f-d0ac-7c33-aa5d-1e754b992c53",
+          "workflow_id": "deepagents:autonomous:django__django-15368:aaaed32f1769",
+          "invocation_id": "deepagents:autonomous:django__django-15368:aaaed32f1769:root",
+          "context_id": "deepagents:autonomous:django__django-15368:aaaed32f1769:context:root",
+          "context_epoch": 0,
+          "phase": "prefill",
+          "sequence_tokens_before": 0,
+          "output_tokens_before": 0,
+          "token_delta": 4096,
+          "token_delta_semantics": "prefill_extend_input_len",
+          "prefill_geometry_source": "native_batch"
+        }
+      ],
+      "service_start_ts_ms": 1792064607394.9531,
+      "complete_ts_ms": 1792064608109.095,
+      "launch_monotonic_ms": 6234870495.531048,
+      "launch_timestamp_semantics": "scheduler.run_batch entry; not CUDA submission or kernel start",
+      "service_start_monotonic_ms": 6234870495.531048,
+      "complete_monotonic_ms": 6234871209.6729555,
+      "monotonic_clock_domain": "9f8b5186907ce4cea0c8d85f4d8f50458c417fb605cb84679e19661416cfd7ec",
+      "service_elapsed_ms": 714.1419081017375,
+      "timing_semantics_version": "gpu_service_interval_v1",
+      "timing_boundary": "scheduler/worker interval, not CUDA kernel time"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261015_v61/predictive_h2d/server/runtime_audit.jsonl",
+      "bytes": 34899,
+      "sha256": "5d9feaf4c16fd9fc216b1dbfbbe5e73c886b79ef63689c8d53ba3a6a0ac5bed2"
+    }
+  ],
+  "placement": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v783_v61_latest_numa_placement_20261015.json",
+    "sha256": "786a0bcdb4a796c17ef861ec2457e26e3a639dd83e01de3c8faea984936e837e"
+  },
+  "pool_capacity_matches_v59": true,
+  "cpu_checks": {
+    "path": "/home/longhao/experiment/ops/v781_latest_source_integrated_checks_20261015.xml",
+    "sha256": "ac582b66806aaf107504b3ccbe8b99810e6d9593dff1e4271d4ab3a60dfcb679",
+    "tests": 1986,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "unique_checks": 1984
+  },
+  "analysis_sources": {
+    "scripts/analyze_busy_context_control.py": "032b6c61d41c29692c7ba474882aa46ce149373142838c63d33c5123519cc789",
+    "scripts/analyze_prefill_turnover.py": "4becc5d75d7be52a85848241cc8792c1153cd5fa85833766b3f486dcd1f06a7d",
+    "scripts/audit_prefetch_lifecycle.py": "bf917de2f29c05f2cb77f5d978877dcce80b0c2dcff91271c1342e14d70f64ad",
+    "scripts/audit_wait_service_phases.py": "e2bbda658300ea6970529861dd3cc8fc68d544445ab44192dfb831c214813d21"
+  },
+  "observer": {
+    "path": "/home/longhao/experiment/ops/observe_v61_latest_20261015.py",
+    "sha256": "635b73478da5262d3f222dc8d404fb5ccaf206eb69bcbdf6600fe01012f10883"
+  },
+  "scope": "Real startup and source verification. Historical native remains a development reference; no throughput, JCT or quality gain is established."
+}

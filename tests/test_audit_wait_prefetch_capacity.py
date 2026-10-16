@@ -1,0 +1,189 @@
+import pytest
+
+from scripts.audit_wait_capacity_budgets import evaluate
+
+
+def plan(**changes):
+    return {
+        "event": "wait_prefetch_plan", "source": "tool_wait", "workflow_id": "w",
+        "invocation_id": "i", "context_id": "c", "context_epoch": 1,
+        "active_tool_ids": ["a", "b"], "join_id": None,
+        "blocked_detail": "prefetch_full_capacity_budget",
+        "capacity_budget": {
+            "source": "native_next_prefill",
+            "requested_full_tokens": 8, "remaining_byte_limit": 0,
+        },
+        **changes,
+    }
+
+
+def test_zero_budget_snapshots_keep_wait_identity_and_source_separate():
+    result = evaluate((
+        plan(), plan(active_tool_ids=["b", "a"]), plan(context_epoch=2),
+        plan(source="join_ticket", join_id="join"),
+        plan(event="unrelated"), plan(source="execution_handoff"),
+    ))
+    bucket = result["buckets"]["native_zero_bytes_full_block"]
+    assert bucket["snapshots"] == 4
+    assert bucket["observed_wait_identities"] == 3
+    assert bucket["by_source"] == {"tool_wait": 3, "join_ticket": 1}
+    assert len(bucket["examples"]) == 3
+    assert result["counts"]["records"] == 6
+    assert result["counts"]["wait_prefetch_plan_records"] == 4
+
+
+@pytest.mark.parametrize("budget", (
+    None, {}, {"requested_full_tokens": 0, "remaining_byte_limit": 0},
+    {"source": "legacy_capacity_unavailable", "requested_full_tokens": 8,
+     "remaining_byte_limit": 0},
+))
+def test_absent_nonpositive_or_explicit_budgets_are_not_native_zero_capacity(budget):
+    result = evaluate((plan(capacity_budget=budget),))
+    assert "native_zero_bytes" not in result["buckets"]
+    assert result["counts"]["plan_records_without_reclaim_diagnostics"] == 1
+    assert result["recorded_reclaim_outcomes"] == {}
+
+
+def test_positive_byte_full_shortfall_does_not_imply_zero_byte_budget():
+    result = evaluate((plan(capacity_budget={
+        "source": "native_next_prefill", "requested_full_tokens": 8,
+        "remaining_byte_limit": 1024,
+    }),))
+    assert result["buckets"]["positive_bytes_full_block"]["snapshots"] == 1
+    assert "native_zero_bytes" not in result["buckets"]
+
+
+def test_reclaim_rejections_remain_overlapping_observations_not_unique_evictions():
+    diagnosis = {
+        "full_target_satisfied": False, "mamba_target_satisfied": True,
+        "published_waiting_candidates": 1, "native_full_scan_truncated": True,
+        "transaction_truncated": False,
+        "native_full_rejections": {"unbacked": 4, "session_referenced": 2},
+        "waiting_candidate_checks": [{
+            "identity_matches": True, "causal_wait_valid": False, "inflight": True,
+            "full_lock_ref": 1, "mamba_lock_ref": 0, "full_session_ref": 2,
+            "full_device_tokens": 8, "full_host_tokens": 0,
+        }],
+    }
+    result = evaluate((plan(capacity_reclaim=diagnosis), plan(capacity_reclaim=diagnosis)))
+    assert result["recorded_reclaim_outcomes"] == {"full=False,mamba=True": 2}
+    assert result["native_full_rejection_check_counts"]["unbacked"] == 8
+    assert result["full_unsatisfied_native_rejection_check_counts"]["session_referenced"] == 4
+    assert result["waiting_candidate_check_counts"]["causal_wait_valid=False"] == 2
+    assert result["waiting_candidate_check_counts"]["full_host_shortfall"] == 2
+    assert result["buckets"]["full_unsatisfied_with_published_waiter"][
+        "observed_wait_identities"
+    ] == 1
+    assert "full_unsatisfied_transactions_truncated" not in result["buckets"]
+    assert "full_unsatisfied_without_published_waiter" not in result["buckets"]
+
+
+def test_shared_waiting_volume_deduplicates_listed_nodes_without_authorizing_reclaim():
+    check = {
+        "node_id": 3, "creation_time": 9., "full_session_ref": 2,
+        "full_device_tokens": 23,
+    }
+    diagnosis = {
+        "target_full_tokens": 5794, "free_full_tokens_after": 2871,
+        "full_target_satisfied": False,
+        "waiting_candidate_checks": [check, {**check, "full_device_tokens": 20}],
+    }
+    result = evaluate(
+        (plan(capacity_reclaim=diagnosis), plan(capacity_reclaim=diagnosis)),
+        full_bytes_per_token=20480,
+    )
+    volume = result["recorded_shared_waiting_volume"]
+    assert volume["diagnostic_snapshots"] == 2
+    assert volume["shared_check_records"] == 4
+    first, second = volume["rows"]
+    assert first == second
+    assert first["known_node_identities"] == 1
+    assert first["listed_device_tokens"] == 23
+    assert first["listed_device_bytes"] == 23 * 20480
+    assert first["post_reclaim_full_deficit_tokens"] == 2923
+    assert first["listed_tokens_fraction_of_post_reclaim_deficit"] == 23 / 2923
+    assert first["all_referencing_sessions_waiting"] is None
+
+
+@pytest.mark.parametrize("change", (
+    {"node_id": None}, {"creation_time": float("nan")}, {"full_device_tokens": None},
+))
+def test_missing_shared_identity_or_size_keeps_complete_volume_unknown(change):
+    check = {
+        "node_id": 3, "creation_time": 9., "full_session_ref": 2,
+        "full_device_tokens": 23, **change,
+    }
+    result = evaluate((plan(capacity_reclaim={"waiting_candidate_checks": [check]}),))
+    row, = result["recorded_shared_waiting_volume"]["rows"]
+    assert row["checks_without_valid_identity_or_size"] == 1
+    assert row["listed_device_tokens"] is None
+    assert row["listed_device_bytes"] is None
+    assert row["post_reclaim_full_deficit_tokens"] is None
+    assert row["all_referencing_sessions_waiting"] is None
+
+
+@pytest.mark.parametrize("unit", (0, -1, True, 1.5))
+def test_shared_waiting_volume_rejects_unmeasured_or_invalid_pool_units(unit):
+    with pytest.raises(ValueError, match="positive integer"):
+        evaluate((), full_bytes_per_token=unit)
+
+
+def test_missing_pool_units_preserve_tokens_without_fabricating_bytes():
+    result = evaluate((plan(capacity_reclaim={
+        "target_full_tokens": 10, "free_full_tokens_after": 0,
+        "waiting_candidate_checks": [{
+            "node_id": 3, "creation_time": 9., "full_session_ref": 2,
+            "full_device_tokens": 2,
+        }],
+    }),))
+    row, = result["recorded_shared_waiting_volume"]["rows"]
+    assert row["listed_device_tokens"] == 2
+    assert row["listed_device_bytes"] is None
+    assert row["post_reclaim_full_deficit_bytes"] is None
+
+
+@pytest.mark.parametrize("available,payload_fits,reserve_exceeds", (
+    (3267, True, True), (4400, True, False), (300, False, True),
+))
+def test_recorded_reserve_and_payload_constraints_are_distinguished(
+    available, payload_fits, reserve_exceeds,
+):
+    result = evaluate((plan(
+        capacity_budget={
+            "source": "native_next_prefill", "reserve_full_tokens": 4145,
+        },
+        capacity_reclaim={
+            "target_full_tokens": 4473, "free_full_tokens_after": available,
+            "full_target_satisfied": False,
+        },
+    ),))
+    label = (
+        "recorded_target_payload_fits_without_full_reserve" if payload_fits else
+        "recorded_target_payload_exceeds_free_full"
+    )
+    assert result["buckets"][label]["observed_wait_identities"] == 1
+    assert ("full_reserve_alone_exceeds_free_full" in result["buckets"]) == reserve_exceeds
+    assert "does not authorize removing it" in result["reserve_classification_semantics"]
+
+
+@pytest.mark.parametrize("changes", (
+    {"reserve_full_tokens": None}, {"reserve_full_tokens": True},
+    {"reserve_full_tokens": -1}, {"target_full_tokens": None},
+    {"target_full_tokens": 4145}, {"free_full_tokens_after": 5000},
+    {"full_target_satisfied": True},
+))
+def test_missing_invalid_or_already_satisfied_targets_are_not_reserve_blocked(changes):
+    budget = {
+        "source": "native_next_prefill",
+        "reserve_full_tokens": changes.get("reserve_full_tokens", 4145),
+    }
+    diagnosis = {
+        "target_full_tokens": 4473, "free_full_tokens_after": 3267,
+        "full_target_satisfied": False,
+        **{key: value for key, value in changes.items() if key != "reserve_full_tokens"},
+    }
+    result = evaluate((plan(capacity_budget=budget, capacity_reclaim=diagnosis),))
+    assert not any(
+        name.startswith(("recorded_target_payload_", "full_reserve_alone_"))
+        for name in result["buckets"]
+    )

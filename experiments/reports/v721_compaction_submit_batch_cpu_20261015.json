@@ -1,0 +1,62 @@
+{
+  "status": "cpu_checked_development_only_not_cold_qualified_or_deployed",
+  "observed_at_local": "2026-10-15T00:24:32.149676-07:00",
+  "development_base_revision": "d856907a03382f6a82f5f6d4e91cb0e2067e2a80",
+  "production_path": "beliefkv/runtime/deepagents_adapter.py",
+  "changed_methods": [
+    "DeepAgentsRuntimeAdapter._publish",
+    "DeepAgentsRuntimeAdapter.on_chat_model_start"
+  ],
+  "base_file_sha256": "a00d2d41ab7d58e5b29c6f972a146f41aedb210a130724fdff116423d727916a",
+  "sources": {
+    "beliefkv/runtime/deepagents_adapter.py": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/deepagents_adapter.py",
+      "sha256": "7f9afa81c03254205c55fb7ce68401349005efd8893c9f681df0afb9a4e17555",
+      "bytes": 126255
+    },
+    "tests/test_deepagents_adapter.py": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/tests/test_deepagents_adapter.py",
+      "sha256": "12230f18621743ed7e5951d1006587b76df1720d4884420f673e4c044f71c97d",
+      "bytes": 102411
+    }
+  },
+  "checks": {
+    "path": "/home/longhao/experiment/ops/v721_compaction_submit_batch_checks_20261015.xml",
+    "sha256": "ec2a8906bce495d5ae715a93bba34b3a7386ab1da403a7c71558d0249cea86a8",
+    "bytes": 15558
+  },
+  "xml_totals": {
+    "tests": 110,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "pytest_console": "108 passed, 2 subtests passed",
+  "behavior": [
+    "Publish CONTEXT_COMPACT followed by LLM_SUBMIT as one ordered logical batch.",
+    "Queued batches containing compaction retain the synchronous ACK barrier.",
+    "Keep session rotation after delivery and delivery failure measurement degradation.",
+    "Leave ordinary LLM_SUBMIT and LLM_RESULT asynchronous behavior unchanged."
+  ],
+  "performance_limit": "One fewer logical delivery is verified structurally. No CPU speedup, GPU gain or JCT improvement is measured. LLM_SUBMIT timing moves ahead of the compaction ACK; validate actual HTTP/native arrival and complete turnover, not that moved boundary.",
+  "scheduled_run": {
+    "state": {
+      "path": "/home/longhao/experiment/ops/v61_user_reservation_1951_20261015.state.json",
+      "sha256": "79c4e7f3ec46a8614ac46358c1a8681245b4d80e05a8d81a70c260800ee2f3a1",
+      "bytes": 554
+    },
+    "live_pid": 3948539,
+    "live_cmdline": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python /home/longhao/experiment/ops/resume_v61_after_user_reservation_1951_20261015.py --watch",
+    "not_before": "2026-10-15T19:51:00+08:00",
+    "experiment_directory_absent": true,
+    "target_revision": "73518e2628f71e5d2f9c7be88c3c29bb484529a1",
+    "target_source_bindings_unchanged": 89,
+    "registered_analysis_sources_unchanged": {
+      "scripts/analyze_busy_context_control.py": true,
+      "scripts/analyze_prefill_turnover.py": true,
+      "scripts/audit_prefetch_lifecycle.py": true,
+      "scripts/audit_wait_service_phases.py": true
+    }
+  },
+  "source_binding_note": "Base hash covers the exact Git blob bytes, including its final newline."
+}

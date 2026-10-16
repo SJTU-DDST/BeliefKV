@@ -9,7 +9,7 @@ from collections import Counter, OrderedDict, deque
 from collections.abc import Sequence
 from dataclasses import asdict, dataclass, field, replace
 from heapq import nsmallest
-from itertools import islice
+from itertools import chain, islice
 import math
 import json
 import os
@@ -105,6 +105,7 @@ if TYPE_CHECKING:
 
 
 TOOL_OFFLOAD_WAIT_MS = 1000.
+TOOL_PREFETCH_PLANNING_SLACK_MS = 250.
 
 
 @dataclass
@@ -166,6 +167,11 @@ class _JoinPrefetchTicket:
     stage_bound: bool = False
     command_ids: tuple[str, ...] = ()
     work_endpoint_tokens: float | None = None
+    client_request_id: str | None = None
+    client_submit_ts_ms: float | None = None
+    checkpoint_key: PrefillCandidateKey | None = None
+    checkpoint_input_tokens: int | None = None
+    restoration_complete: bool = False
 
 
 @dataclass(frozen=True)
@@ -369,6 +375,11 @@ class NativeAdmissionRuntime:
                 require_physical_actions=enable_admission_prefetch,
             )
         self.semantic_revision = 0
+        self._workflow_attained_work_enabled = (
+            os.environ.get("BELIEFKV_WORKFLOW_ATTAINED_WORK", "0") == "1"
+        )
+        self._workflow_attained_output_tokens: dict[str, int] = {}
+        self._workflow_work_promoted: str | None = None
         self.predictor_sha256 = predictor_sha256
         self.demand_hints: dict[str, NativeDemandHint] = {}
         self.tool_wait_hints: dict[str, NativeToolWaitHint] = {}
@@ -403,10 +414,14 @@ class NativeAdmissionRuntime:
         ] = OrderedDict()
         self._prefetch_lock_release_failures: set[str] = set()
         self._prefetch_priority_normal_admissions = 4
+        self._resident_priority_normal_admissions = 4
         self._prefetch_priority_promoted: str | None = None
         self._prefetch_priority_native_rank: int | None = None
         self._prefetch_priority_aged_head_bypassed = False
         self._prefetch_priority_complete_ready_quota: int | None = None
+        self._prefetch_priority_partial_restore_details: dict | None = None
+        self._resident_priority_promoted: str | None = None
+        self._resident_priority_details: dict | None = None
         self._native_running_batch: object | None = None
         self._native_max_running: int | None = None
         self._native_prefill_slots: int | None = None
@@ -442,10 +457,16 @@ class NativeAdmissionRuntime:
         self._join_prepare_commands: dict[_JoinPrefetchIdentity, str] = {}
         self._prepare_probe_after_ms: dict[PrefillCandidateKey, float] = {}
         self._parent_pressure_candidates: dict[int, tuple[PrefillCandidateKey, int | float]] = {}
+        self._parent_pressure_groups: dict[PrefillCandidateKey, set[int]] = {}
+        self._parent_pressure_group_source: dict | None = None
+        self._parent_pressure_group_size = 0
+        self._parent_pressure_positions: dict[int, int] = {}
+        self._parent_pressure_next_position = 0
         self._final_priority_normal_admissions = 4
         self._final_priority_promoted: str | None = None
         self._final_priority_native_rank: int | None = None
         self._join_ticket: _JoinPrefetchTicket | None = None
+        self._confirmed_join_tickets: dict[str, _JoinPrefetchTicket] = {}
         self._join_prefetch_issued: Counter[_JoinPrefetchIdentity] = Counter()
         self.enable_admission_prefetch = enable_admission_prefetch
         self.enable_final_stage_prefetch = enable_final_stage_prefetch
@@ -457,6 +478,10 @@ class NativeAdmissionRuntime:
             None if priority_setting is None else priority_setting == "1"
         )
         self.enable_prepare_host = os.environ.get("BELIEFKV_ENABLE_PREPARE_HOST", "1") == "1"
+        sampling_setting = os.environ.get("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "1")
+        if sampling_setting not in ("0", "1"):
+            raise ValueError("H2D opportunity sampling setting must be 0 or 1")
+        self.enable_h2d_opportunity_sampling = sampling_setting == "1"
         semantic_artifact = os.environ.get("BELIEFKV_SEMANTIC_REPORT_ARTIFACT")
         self._semantic_worker = None
         self._semantic_score_threshold = .5
@@ -510,6 +535,7 @@ class NativeAdmissionRuntime:
         self._admission_lease: _AdmissionPrefetchLease | None = None
         self.shadow_candidate: ActionLocalShadowCandidate | None = None
         self._native_cache: object | None = None
+        self._residency_pool_bytes: tuple[int, int] | None = None
         self._context_tokens: dict[str, tuple[int, int, int, bool]] = {}
         self._boundary_history: dict[str, deque[str]] = {}
         self._tool_metadata: dict[
@@ -548,6 +574,7 @@ class NativeAdmissionRuntime:
         self._execution_handoff_capacity_blocked: set[PrefillCandidateKey] = set()
         self._reentry_observations: dict[PrefillCandidateKey, tuple[float, dict | None]] = {}
         self._terminal_child_reclaims: OrderedDict[tuple, _TerminalChildReclaim] = OrderedDict()
+        self._terminal_root_contexts: OrderedDict[tuple[str, str], _TerminalChildReclaim] = OrderedDict()
         self._terminal_child_reclaim_next_ms = 0.
         self._parent_capacity_handoffs: dict[str, _ParentCapacityHandoff] = {}
         self._parent_handoff_priority_promoted: str | None = None
@@ -600,6 +627,7 @@ class NativeAdmissionRuntime:
         self.graph = RuntimeCausalContextGraph(strict_timestamps=False)
         self._join_by_invocation: dict[str, set[str]] = {}
         self._noncontinuing_joins: set[str] = set()
+        self._continuing_joins: set[str] = set()
         self.frontier = CausalFrontierScheduler(self.graph)
         self.visible: dict[str, PrefillCandidateKey] = {}
         self.context_sessions: dict[str, PrefillCandidateKey] = {}
@@ -691,11 +719,17 @@ class NativeAdmissionRuntime:
         )
         self._residency_hint_admissions.clear()
         self._discard_join_ticket("shutdown")
+        self._confirmed_join_tickets.clear()
         self._final_stages.clear()
         self._final_request_stages.clear()
         self._terminal_cache_watches.clear()
         self._terminal_child_reclaims.clear()
+        self._terminal_root_contexts.clear()
         self._parent_capacity_handoffs.clear()
+        self._workflow_attained_output_tokens.clear()
+        self._parent_pressure_groups.clear()
+        self._parent_pressure_group_source = None
+        self._parent_pressure_positions.clear()
         if self._opportunity_writer is not None:
             self._record_runtime_state(final=True)
             self._opportunity_writer.close()
@@ -721,12 +755,13 @@ class NativeAdmissionRuntime:
             if pending is not None and self.prefetch_discarded_callback is not None:
                 self.prefetch_discarded_callback(command, reason)
 
-    def _discard_join_ticket(self, reason: str) -> None:
-        ticket = self._join_ticket
+    def _discard_join_ticket(
+        self, reason: str, *, ticket: _JoinPrefetchTicket | None = None,
+    ) -> None:
+        ticket = ticket if ticket is not None else self._join_ticket
         if (
             ticket is not None
             and ticket.phase == "confirmed"
-            and self.enable_confirmed_join_canary
             and self._opportunity_writer is not None
         ):
             self._opportunity_writer.record({
@@ -741,10 +776,25 @@ class NativeAdmissionRuntime:
                 "no_step_recorded": ticket.no_step_recorded,
                 "command_id": ticket.command_id,
             })
-        self._join_ticket = None
+        if ticket is not None and self._confirmed_join_tickets.get(ticket.join_id) is ticket:
+            del self._confirmed_join_tickets[ticket.join_id]
+        if self._join_ticket is ticket:
+            self._join_ticket = None
 
     def attach_native_cache(self, cache: object) -> None:
         self._native_cache = cache
+        self._residency_pool_bytes = None
+        try:
+            entries = cache.host_pool_group.entry_map
+            full_unit = entries["kv"].host_pool.size_per_token
+            mamba_unit = entries["mamba"].host_pool.size_per_token
+            if (
+                type(full_unit) is int and full_unit > 0
+                and type(mamba_unit) is int and mamba_unit > 0
+            ):
+                self._residency_pool_bytes = full_unit, mamba_unit
+        except (AttributeError, KeyError, TypeError):
+            pass
         if callable(getattr(cache, "_evict_backed_join_parent", None)):
             cache.beliefkv_join_pressure_validator = self._live_parent_pressure_node
             cache.beliefkv_join_pressure_parked = self._on_parent_pressure_parked
@@ -764,11 +814,30 @@ class NativeAdmissionRuntime:
         self, waiting_queue: Sequence[object] = (), *, running_batch: object = None,
     ) -> None:
         """Plan immutable waiting contexts after native forward submission."""
+        if running_batch is not None:
+            self._observe_native_admission_capacity(running_batch=running_batch, adder=None)
         self.counts["physical_planning_after_forward"] += 1
-        self.dispatch_join_prefetch()
-        self.dispatch_tool_prefetch()
-        self.dispatch_join_prepare(waiting_queue, running_batch=running_batch)
-        self.dispatch_tool_prepare(waiting_queue, running_batch=running_batch)
+        if (
+            self.enable_final_stage_prefetch or self.enable_admission_prefetch
+            or self.enable_confirmed_join_canary or self._join_ticket is not None
+            or self._confirmed_join_tickets
+        ):
+            self.dispatch_join_prefetch()
+        if self.enable_tool_prefetch or self._tool_ticket is not None:
+            if (
+                self.enable_tool_prefetch and not self.physical_disabled
+                and self._tool_ticket is None
+                and time.monotonic() * 1000. < self._tool_prefetch_next_ms
+            ):
+                self.counts["tool_prefetch_scan_deferred"] += 1
+            else:
+                self.dispatch_tool_prefetch()
+        # Earlier handlers can cross a deadline or rearm another source.
+        # Read each existing deadline at its original dispatch position.
+        if time.monotonic() * 1000. >= self._join_prepare_next_ms:
+            self.dispatch_join_prepare(waiting_queue, running_batch=running_batch)
+        if time.monotonic() * 1000. >= self._tool_prepare_next_ms:
+            self.dispatch_tool_prepare(waiting_queue, running_batch=running_batch)
 
     def predictor_fileno(self) -> int | None:
         if self._semantic_worker is not None:
@@ -802,7 +871,32 @@ class NativeAdmissionRuntime:
         # A provisional callback can arrive behind a confirmed RETURN/epoch
         # advance. It is advisory, so a stale one must not discard the RCCG.
         filtered = []
+        submitted_origins = None
         for event in events:
+            if (
+                (self.enable_admission_prefetch or self.enable_final_stage_prefetch)
+                and self._continuing_joins and event.kind is RuntimeEventKind.LLM_SUBMIT
+                and not event.attributes.get("runtime_internal")
+            ):
+                origin = self.context_sessions.get(event.context_id)
+                parent = self.graph.invocations.get(event.invocation_id)
+                tokens = self._context_tokens.get(event.context_id)
+                if (
+                    origin is not None and parent is not None
+                    and parent.join_id in self._continuing_joins
+                    and (
+                        parent.state is InvocationState.WAIT_JOIN
+                        or parent.join_id in self._confirmed_join_tickets
+                    )
+                    and origin.invocation_id == event.invocation_id
+                    and origin.root_workflow_id == event.workflow_id
+                    and event.context_epoch == origin.context_epoch + 1
+                    and tokens is not None and tokens[0] == origin.context_epoch
+                    and type(tokens[1]) is int and tokens[1] > 1
+                ):
+                    if submitted_origins is None:
+                        submitted_origins = {}
+                    submitted_origins[event.event_id] = (origin, tokens[1] - 1)
             if event.attributes.get(SEMANTIC_TEXT) is True:
                 self._capture_semantic_text(event)
                 continue
@@ -852,6 +946,17 @@ class NativeAdmissionRuntime:
         events = tuple(filtered)
         if not events:
             return
+        if submitted_origins is not None:
+            advanced_invocations = {
+                event.invocation_id for event in events
+                if event.kind in (
+                    RuntimeEventKind.CONTEXT_COMPACT, RuntimeEventKind.CONTEXT_ADVANCE,
+                )
+            }
+            submitted_origins = {
+                event_id: origin for event_id, origin in submitted_origins.items()
+                if origin[0].invocation_id not in advanced_invocations
+            } or None
         hints = []
         for event in events:
             raw = event.attributes.get(PREDICTION_ATTRIBUTE)
@@ -867,6 +972,34 @@ class NativeAdmissionRuntime:
                 raise ValueError("admission prediction has no matching live request")
             hints.append(hint)
         graph_version = self.graph.graph_version
+        semantic_revision = self.semantic_revision
+        sessions_revision = self._context_sessions_revision
+        rank_dependencies_unchanged = True
+        changed_rank_invocations = set()
+        for event in events:
+            if event.kind in (
+                RuntimeEventKind.STRUCTURED_ACTION,
+                RuntimeEventKind.TOOL_WAIT_OBSERVATION,
+                RuntimeEventKind.CALL_CENSORED,
+                RuntimeEventKind.CONTEXT_ADVANCE,
+                RuntimeEventKind.CONTEXT_COMPACT,
+            ):
+                continue
+            if event.kind not in (
+                RuntimeEventKind.LLM_SUBMIT, RuntimeEventKind.LLM_RESULT,
+                RuntimeEventKind.TOOL_START, RuntimeEventKind.TOOL_END,
+            ):
+                rank_dependencies_unchanged = False
+                break
+            invocation = self.graph.invocations.get(event.invocation_id)
+            if (
+                invocation is None or invocation.state is InvocationState.WAIT_CHILD
+                or event.kind is RuntimeEventKind.LLM_RESULT
+                and bool(event.attributes.get("terminal", False))
+            ):
+                rank_dependencies_unchanged = False
+                break
+            changed_rank_invocations.add(event.invocation_id)
         try:
             with self._hotpath_timing.measure("graph_apply"):
                 deltas = self.graph.apply_batch(events, atomic=False)
@@ -875,6 +1008,7 @@ class NativeAdmissionRuntime:
             self.graph = RuntimeCausalContextGraph(strict_timestamps=False)
             self._join_by_invocation.clear()
             self._noncontinuing_joins.clear()
+            self._continuing_joins.clear()
             self.frontier = CausalFrontierScheduler(self.graph)
             self.demand_hints.clear()
             self._last_model_signature = None
@@ -882,6 +1016,7 @@ class NativeAdmissionRuntime:
             self._wait_context_cache = None
             self._join_parent_cache = None
             self._terminal_child_reclaims.clear()
+            self._terminal_root_contexts.clear()
             self._parent_capacity_handoffs.clear()
             self.tool_wait_hint = None
             self.join_wait_hint = None
@@ -894,6 +1029,7 @@ class NativeAdmissionRuntime:
             self._final_request_stages.clear()
             self._child_report_notices.clear()
             self._discard_join_ticket("causal_mirror_discarded")
+            self._confirmed_join_tickets.clear()
             self._admission_lease = None
             self.shadow_candidate = None
             self._context_tokens.clear()
@@ -917,12 +1053,24 @@ class NativeAdmissionRuntime:
                 event.invocation_id: event
                 for event in events if event.kind is RuntimeEventKind.RETURN
             }
+            confirmed_in_batch = (
+                {
+                    event.join_id for event in events
+                    if event.kind is RuntimeEventKind.JOIN_SATISFIED
+                } | {
+                    join_id for invocation_id in terminal_returns
+                    for join_id in self._join_by_invocation.get(invocation_id, ())
+                    if (join := self.graph.joins.get(join_id)) is not None and join.satisfied
+                }
+            ) if submitted_origins is not None else set()
             for event in events:
                 if event.kind is RuntimeEventKind.JOIN_CREATE and event.join_id:
                     join = self.graph.joins.get(event.join_id)
                     if join is not None:
                         if event.attributes.get("parent_prefix_continuation") is False:
                             self._noncontinuing_joins.add(join.join_id)
+                        elif event.attributes.get("parent_prefix_continuation") is True:
+                            self._continuing_joins.add(join.join_id)
                         for member in join.member_invocation_ids:
                             self._join_by_invocation.setdefault(member, set()).add(join.join_id)
                 elif event.kind is RuntimeEventKind.JOIN_WAIT and event.join_id and event.invocation_id:
@@ -1006,6 +1154,7 @@ class NativeAdmissionRuntime:
                         returned = terminal_returns.get(key.invocation_id)
                         if returned is not None:
                             self._retire_terminal_child(key, returned)
+                            self._remember_terminal_root(key, returned)
                         invocation = self.graph.invocations.get(key.invocation_id)
                         if invocation is not None and invocation.state.terminal:
                             self._parent_capacity_handoffs.pop(context_id, None)
@@ -1026,6 +1175,7 @@ class NativeAdmissionRuntime:
                             self._tool_prefetch_survival_evidence.pop(key, None)
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.WORKFLOW_END:
+                    self._workflow_attained_output_tokens.pop(event.workflow_id, None)
                     self._execution_handoff_capacity_blocked = {
                         key for key in self._execution_handoff_capacity_blocked
                         if key.root_workflow_id != event.workflow_id
@@ -1039,7 +1189,9 @@ class NativeAdmissionRuntime:
                         (identity, reclaim)
                         for identity, reclaim in self._terminal_child_reclaims.items()
                         if reclaim.key.root_workflow_id != event.workflow_id
+                        or reclaim.invocation_scope == "workflow_root"
                     )
+                    self._retire_ended_workflow_roots(event.workflow_id)
                     self._child_report_notices = {
                         child: notice for child, notice in self._child_report_notices.items()
                         if notice.workflow_id != event.workflow_id
@@ -1075,6 +1227,11 @@ class NativeAdmissionRuntime:
                             self._clear_semantic_invocation(key.invocation_id)
                     self._noncontinuing_joins = {
                         join_id for join_id in self._noncontinuing_joins
+                        if (join := self.graph.joins.get(join_id)) is not None
+                        and join.workflow_id != event.workflow_id
+                    }
+                    self._continuing_joins = {
+                        join_id for join_id in self._continuing_joins
                         if (join := self.graph.joins.get(join_id)) is not None
                         and join.workflow_id != event.workflow_id
                     }
@@ -1126,6 +1283,11 @@ class NativeAdmissionRuntime:
                         report_notices_in_batch.add(event.invocation_id)
                     self._observe_child_completion_intent(event)
                 elif event.kind is RuntimeEventKind.LLM_SUBMIT:
+                    self._bind_confirmed_join_submit(
+                        event,
+                        origin=(submitted_origins or {}).get(event.event_id),
+                        confirmed_in_batch=confirmed_in_batch,
+                    )
                     self._clear_semantic_invocation(event.invocation_id)
                     self._bind_child_report_notice(event)
                     self._bind_final_request(event)
@@ -1168,7 +1330,16 @@ class NativeAdmissionRuntime:
                             or stage.join_id == event.join_id
                         ):
                             self._clear_final_stage(join_id)
-                elif event.kind is RuntimeEventKind.CONTEXT_COMPACT:
+                elif event.kind in (
+                    RuntimeEventKind.CONTEXT_COMPACT, RuntimeEventKind.CONTEXT_ADVANCE,
+                ):
+                    invocation = self.graph.invocations.get(event.invocation_id)
+                    context_id = event.context_id or (
+                        invocation.context_id if invocation is not None else None
+                    )
+                    if context_id is not None:
+                        self.physical_ledger.invalidate_context(context_id)
+                    self._advance_join_ticket(event)
                     self._child_report_notices.pop(event.invocation_id, None)
                     self._parent_capacity_handoffs.pop(event.context_id, None)
             returned_joins = {
@@ -1203,6 +1374,39 @@ class NativeAdmissionRuntime:
                     and self.visible.get(rid) == hint.key
                 }
             self.semantic_revision += 1
+            if rank_dependencies_unchanged:
+                self.frontier.retain_observed_state(
+                    previous_version=graph_version,
+                    invalidated_invocations=changed_rank_invocations,
+                )
+                self.counts["admission_rank_dependencies_preserved"] += 1
+            if (
+                sessions_revision == self._context_sessions_revision
+                and all(event.kind in (
+                    RuntimeEventKind.STRUCTURED_ACTION,
+                    RuntimeEventKind.TOOL_WAIT_OBSERVATION,
+                    RuntimeEventKind.CALL_CENSORED,
+                ) for event in events)
+            ):
+                # These RCCG handlers only validate identities and record labels.
+                # Keep live timing, boundary inputs and residency checks separate.
+                cached = self._prefill_causal_cache
+                if cached is not None and cached[0][:2] == (
+                    semantic_revision, graph_version,
+                ):
+                    signature = (
+                        self.semantic_revision, self.graph.graph_version,
+                        *cached[0][2:],
+                    )
+                    self._prefill_causal_cache = (signature, *cached[1:])
+                    self.counts["admission_causal_cache_preserved_observation"] += 1
+                parent_cache = self._join_parent_cache
+                if parent_cache is not None and parent_cache[0] == (
+                    graph_version, sessions_revision,
+                ):
+                    self._join_parent_cache = (
+                        (self.graph.graph_version, sessions_revision), parent_cache[1],
+                    )
 
     def _clear_semantic_invocation(self, invocation_id: str) -> None:
         for rid, key in tuple(self._semantic_keys.items()):
@@ -1683,7 +1887,7 @@ class NativeAdmissionRuntime:
             return
         if now_ms is None:
             now_ms = time.monotonic() * 1000
-        if now_ms >= self._opportunity_next_ms:
+        if self.enable_h2d_opportunity_sampling and now_ms >= self._opportunity_next_ms:
             self._sample_h2d_opportunities(waiting_queue, now_ms=now_ms)
         if (
             self._terminal_cache_diagnostics
@@ -1707,8 +1911,19 @@ class NativeAdmissionRuntime:
                     else self.enable_admission_prefetch or self.enable_final_stage_prefetch
                 ),
                 "prepare_host": self.enable_prepare_host,
-                "prepare_pool_scope": "missing_full_prefix",
+                "h2d_opportunity_sampling": self.enable_h2d_opportunity_sampling,
+                "prepare_pool_scope": "missing_full_session_path",
+                "latest_full_session_branches_retired": getattr(
+                    getattr(
+                        getattr(self._native_cache, "tree_core", None),
+                        "components_by_type", {},
+                    ).get(0),
+                    "latest_session_branch_retirements", None,
+                ),
                 "resident_first": self.enable_resident_first,
+                "workflow_attained_work": self._workflow_attained_work_enabled,
+                "workflow_work_metric": "completed_request_output_tokens",
+                "workflow_work_accounts": len(self._workflow_attained_output_tokens),
                 "execution_handoff": self.enable_execution_handoff,
                 "overlap_prefetch_supported": self.can_prefetch_during_overlap(),
                 "execution_handoff_request_id": (
@@ -1721,6 +1936,7 @@ class NativeAdmissionRuntime:
                     self._model_worker is not None and self._model_worker.disabled
                 ),
                 "tool_prefetch": self.enable_tool_prefetch,
+                "tool_prefetch_planning_slack_ms": TOOL_PREFETCH_PLANNING_SLACK_MS,
                 "prefetch_lead_ms": self.prefetch_lead_ms,
                 "semantic_work_statistic": self.semantic_work_statistic,
                 "final_admission_policy": "remaining_report_work",
@@ -1814,7 +2030,10 @@ class NativeAdmissionRuntime:
         self, waiting_queue: Sequence[object], *, now_ms: float,
     ) -> None:
         writer = self._opportunity_writer
-        if writer is None or now_ms < self._opportunity_next_ms:
+        if (
+            not self.enable_h2d_opportunity_sampling
+            or writer is None or now_ms < self._opportunity_next_ms
+        ):
             return
         self._opportunity_next_ms = now_ms + 1000.0
         sample_start = time.perf_counter()
@@ -1973,7 +2192,9 @@ class NativeAdmissionRuntime:
         if not isinstance(candidate, ActionLocalShadowCandidate):
             row["prepare_reason"] = "no_observable_shadow_closure"
             return
-        step = next_shadow_backup_step(candidate)
+        tail_leaves = self._shadow_reclaim_tail_leaves(candidate)
+        row["prepare_full_tail_leaf_candidates"] = len(tail_leaves)
+        step = next_shadow_backup_step(candidate, reclaim_tail_leaves=tail_leaves)
         if step is None:
             row["prepare_reason"] = "no_eligible_shadow_step"
             return
@@ -2803,14 +3024,36 @@ class NativeAdmissionRuntime:
         ticket = self._join_ticket
         if ticket is not None and ticket.join_id in self._noncontinuing_joins:
             self._discard_join_ticket("noncontinuing_join")
+            ticket = None
+        if event.kind in (
+            RuntimeEventKind.JOIN_TIMEOUT, RuntimeEventKind.INVOCATION_CANCEL,
+            RuntimeEventKind.CONTEXT_COMPACT, RuntimeEventKind.CONTEXT_ADVANCE,
+        ):
+            candidates = list(self._confirmed_join_tickets.values())
+            if ticket is not None and self._confirmed_join_tickets.get(ticket.join_id) is not ticket:
+                candidates.append(ticket)
+            for pending in candidates:
+                if event.kind is RuntimeEventKind.JOIN_TIMEOUT and event.join_id == pending.join_id:
+                    self._discard_join_ticket("join_timeout", ticket=pending)
+                elif event.kind is RuntimeEventKind.INVOCATION_CANCEL and (
+                    event.invocation_id == pending.key.invocation_id
+                    or event.invocation_id in pending.member_ids
+                ):
+                    self._discard_join_ticket("invocation_canceled", ticket=pending)
+                elif event.kind in (
+                    RuntimeEventKind.CONTEXT_COMPACT, RuntimeEventKind.CONTEXT_ADVANCE,
+                ) and (
+                    event.context_id == pending.key.context_id
+                    or event.invocation_id == pending.key.invocation_id
+                ):
+                    self._discard_join_ticket("event_invalidated", ticket=pending)
             return
-        if ticket is None:
-            if not (
-                self.enable_admission_prefetch or self.enable_confirmed_join_canary
-            ) or event.kind not in (
-                RuntimeEventKind.RETURN, RuntimeEventKind.JOIN_SATISFIED,
-            ):
-                return
+        if (
+            self.enable_admission_prefetch or self.enable_final_stage_prefetch
+            or self.enable_confirmed_join_canary
+        ) and event.kind in (
+            RuntimeEventKind.RETURN, RuntimeEventKind.JOIN_SATISFIED,
+        ):
             candidate_joins = (
                 (event.join_id,) if event.join_id is not None else
                 tuple(sorted(self._join_by_invocation.get(event.invocation_id, ())))
@@ -2825,23 +3068,40 @@ class NativeAdmissionRuntime:
                     or join.workflow_id != event.workflow_id
                     or event.kind is RuntimeEventKind.RETURN
                     and event.invocation_id not in join.member_invocation_ids
+                    or join.mode.value == "all" and any(
+                        self.graph.invocations[member].state is InvocationState.CANCELLED
+                        for member in join.member_invocation_ids
+                    )
                 ):
                     continue
                 key = self._join_parent_key(join_id)
                 parent = self.graph.invocations.get(key.invocation_id) if key else None
                 if (
-                    key is None or parent.state is not InvocationState.READY
+                    key is None or parent is None or parent.state is not InvocationState.READY
                     or parent.join_id != join_id
                 ):
                     continue
-                self._join_ticket = _JoinPrefetchTicket(
-                    key, join_id, join.mode.value,
-                    tuple(sorted(join.member_invocation_ids)),
-                    "confirmed", time.monotonic() + 2.0,
-                    issued_nodes=self._issued_join_nodes(join_id, key),
+                pending = self._confirmed_join_tickets.get(join_id)
+                if pending is not None and pending.key == key:
+                    continue
+                pending = (
+                    ticket if ticket is not None
+                    and (ticket.join_id, ticket.key) == (join_id, key)
+                    else _JoinPrefetchTicket(
+                        key, join_id, join.mode.value,
+                        tuple(sorted(join.member_invocation_ids)),
+                        "confirmed", 0.,
+                        issued_nodes=self._issued_join_nodes(join_id, key),
+                    )
                 )
+                # Keep any issued burst and its ACK identity across RETURN.
+                pending.phase = "confirmed"
+                pending.expires_at = time.monotonic() + 2.0
+                self._confirmed_join_tickets[join_id] = pending
+                if self._join_ticket is None:
+                    self._join_ticket = pending
                 self.counts["join_reentry_confirmed"] += 1
-                if self.enable_confirmed_join_canary and self._opportunity_writer:
+                if self._opportunity_writer is not None:
                     self._opportunity_writer.record({
                         "event": "confirmed_join_ticket",
                         "ts_ms": time.time() * 1000.0,
@@ -2851,36 +3111,98 @@ class NativeAdmissionRuntime:
                         "context_epoch": key.context_epoch,
                         "session_id": key.session_id,
                         "session_generation": key.session_generation,
+                        "confirmation_event_id": event.event_id,
+                        "issued_nodes": pending.issued_nodes,
+                        "pre_boundary_prediction": False,
                     })
-                return
-            return
-        join = self.graph.joins.get(ticket.join_id)
-        if join is None or join.workflow_id != ticket.key.root_workflow_id:
-            self._discard_join_ticket("join_removed_or_changed")
-            return
-        if event.kind is RuntimeEventKind.JOIN_TIMEOUT and event.join_id == ticket.join_id:
-            self._discard_join_ticket("join_timeout")
-        elif event.kind is RuntimeEventKind.INVOCATION_CANCEL and (
-            event.invocation_id == ticket.key.invocation_id
-            or event.invocation_id in ticket.member_ids
+        if (
+            ticket is not None and ticket.phase != "confirmed"
+            and event.kind is RuntimeEventKind.RETURN
+            and event.invocation_id in ticket.member_ids
         ):
-            self._discard_join_ticket("invocation_canceled")
-        elif join.satisfied and (
-            event.join_id == ticket.join_id
-            or event.invocation_id in ticket.member_ids
-        ):
-            if self._semantic_worker is not None:
-                self._discard_join_ticket("semantic_join_already_returned")
-                return
-            if ticket.phase != "confirmed":
-                ticket.phase = "confirmed"
-                ticket.expires_at = time.monotonic() + 2.0
-                self.counts["join_reentry_confirmed"] += 1
-        elif event.kind is RuntimeEventKind.RETURN and event.invocation_id in ticket.member_ids:
             ticket.phase = "probabilistic"
 
-    def _live_join_ticket(self) -> bool:
-        ticket = self._join_ticket
+    def _bind_confirmed_join_submit(
+        self, event: RuntimeEvent, *,
+        origin: tuple[PrefillCandidateKey, int] | None,
+        confirmed_in_batch: set[str],
+    ) -> None:
+        if (
+            not (self.enable_admission_prefetch or self.enable_final_stage_prefetch)
+            or not self._continuing_joins or event.attributes.get("runtime_internal")
+        ):
+            return
+        parent = self.graph.invocations.get(event.invocation_id)
+        pending = self._confirmed_join_tickets.get(parent.join_id) if parent else None
+        rid = event.attributes.get("request_id")
+        if pending is not None and pending.client_request_id is not None:
+            if pending.client_request_id != rid or pending.client_submit_ts_ms != event.ts_ms:
+                self._discard_join_ticket("client_submit_changed", ticket=pending)
+            return
+        join = self.graph.joins.get(parent.join_id) if parent else None
+        if origin is None or join is None:
+            return
+        key, input_tokens = origin
+        if (
+            join.join_id not in self._continuing_joins or not join.satisfied
+            or join.join_id in self._noncontinuing_joins
+            or join.workflow_id != key.root_workflow_id
+            or key.invocation_id not in join.waiter_invocation_ids
+            or join.mode.value == "all" and any(
+                self.graph.invocations[member].state is InvocationState.CANCELLED
+                for member in join.member_invocation_ids
+            )
+            or type(rid) is not str or not rid or rid == key.request_id
+            or event.workflow_id != key.root_workflow_id
+            or event.invocation_id != key.invocation_id
+            or event.context_id != key.context_id
+            or event.context_epoch != key.context_epoch + 1
+            or parent.state is not InvocationState.RUNNING_LLM
+            or parent.updated_ts_ms != event.ts_ms
+            or parent.active_tool_calls or parent.blocking_child_ids
+            or self.context_sessions.get(key.context_id) is not None
+            or key.session_id is None or key.session_generation is None
+            or type(input_tokens) is not int or input_tokens <= 0
+        ):
+            if pending is not None:
+                self._discard_join_ticket("client_submit_identity_unproven", ticket=pending)
+            return
+        if pending is None:
+            if join.join_id not in confirmed_in_batch:
+                return
+            pending = _JoinPrefetchTicket(
+                key, join.join_id, join.mode.value, tuple(sorted(join.member_invocation_ids)),
+                "confirmed", time.monotonic() + 2.,
+                issued_nodes=self._issued_join_nodes(join.join_id, key),
+            )
+            self._confirmed_join_tickets[join.join_id] = pending
+            self.counts["join_reentry_confirmed"] += 1
+        if pending.phase != "confirmed" or pending.key != key:
+            return
+        pending.checkpoint_key = key
+        pending.checkpoint_input_tokens = input_tokens
+        pending.key = replace(key, request_id=rid, context_epoch=event.context_epoch)
+        pending.client_request_id = rid
+        pending.client_submit_ts_ms = event.ts_ms
+        if self._join_ticket is None:
+            self._join_ticket = pending
+        self.counts["confirmed_join_client_bound"] += 1
+        if self._opportunity_writer is not None:
+            self._opportunity_writer.record({
+                "event": "confirmed_join_client_bound",
+                "ts_ms": time.time() * 1000.,
+                "workflow_id": key.root_workflow_id,
+                "join_id": pending.join_id,
+                "invocation_id": key.invocation_id,
+                "context_id": key.context_id,
+                "context_epoch": key.context_epoch,
+                "target_context_epoch": event.context_epoch,
+                "request_id": rid,
+                "scope": "old safe input checkpoint; submitted consumer not native-visible",
+            })
+
+    def _live_join_ticket(self, ticket: _JoinPrefetchTicket | None = None) -> bool:
+        ticket = ticket if ticket is not None else self._join_ticket
         if ticket is None or time.monotonic() >= ticket.expires_at:
             return False
         key = ticket.key
@@ -2890,7 +3212,8 @@ class NativeAdmissionRuntime:
         return bool(
             (
                 self.enable_admission_prefetch
-                or self.enable_final_stage_prefetch and ticket.stage_bound
+                or self.enable_final_stage_prefetch
+                and (ticket.stage_bound or ticket.phase == "confirmed")
                 or self.enable_confirmed_join_canary and ticket.phase == "confirmed"
             ) and not self.physical_disabled
             and ticket.join_id not in self._noncontinuing_joins
@@ -2898,14 +3221,32 @@ class NativeAdmissionRuntime:
             and join.mode.value == ticket.join_mode
             and tuple(sorted(join.member_invocation_ids)) == ticket.member_ids
             and key.invocation_id in join.waiter_invocation_ids
-            and self.context_sessions.get(key.context_id) == key
             and context is not None and context.epoch == key.context_epoch
             and parent is not None and parent.context_id == key.context_id
             and parent.workflow_id == key.root_workflow_id
             and parent.join_id == ticket.join_id
-            and parent.state is (
-                InvocationState.READY if ticket.phase == "confirmed"
-                else InvocationState.WAIT_JOIN
+            and (
+                self.context_sessions.get(key.context_id) == key and parent.state is (
+                    InvocationState.READY if ticket.phase == "confirmed"
+                    else InvocationState.WAIT_JOIN
+                ) and ticket.client_request_id is None
+                or ticket.phase == "confirmed"
+                and ticket.join_id in self._continuing_joins
+                and ticket.client_request_id == key.request_id
+                and (checkpoint := ticket.checkpoint_key) is not None
+                and checkpoint.request_id != key.request_id
+                and checkpoint.context_epoch + 1 == key.context_epoch
+                and checkpoint.root_workflow_id == key.root_workflow_id
+                and checkpoint.invocation_id == key.invocation_id
+                and checkpoint.context_id == key.context_id
+                and checkpoint.session_id == key.session_id
+                and checkpoint.session_generation == key.session_generation
+                and type(ticket.checkpoint_input_tokens) is int
+                and ticket.checkpoint_input_tokens > 0
+                and self.context_sessions.get(key.context_id) is None
+                and ticket.client_submit_ts_ms == parent.updated_ts_ms
+                and parent.state is InvocationState.RUNNING_LLM
+                and not parent.active_tool_calls and not parent.blocking_child_ids
             )
             and join.satisfied == (ticket.phase == "confirmed")
             and (
@@ -2918,9 +3259,67 @@ class NativeAdmissionRuntime:
             and not self._terminal(key)
         )
 
+    def _pending_confirmed_join_ticket(
+        self, context_id: str, context_epoch: int,
+    ) -> _JoinPrefetchTicket | None:
+        context = self.graph.contexts.get(context_id)
+        if context is None:
+            return None
+        for invocation_id in context.invocation_ids:
+            invocation = self.graph.invocations.get(invocation_id)
+            ticket = (
+                self._confirmed_join_tickets.get(invocation.join_id)
+                if invocation is not None else None
+            )
+            if (
+                ticket is not None and ticket.phase == "confirmed"
+                and ticket.client_request_id is not None
+                and ticket.key.context_id == context_id and ticket.key.context_epoch == context_epoch
+                and self._live_join_ticket(ticket)
+            ):
+                return ticket
+        return None
+
+    def _pending_confirmed_join_submit(self, key: PrefillCandidateKey) -> bool:
+        ticket = self._pending_confirmed_join_ticket(key.context_id, key.context_epoch)
+        return ticket is not None and ticket.key == key
+
+    def _select_confirmed_join_ticket(self) -> None:
+        if not self._confirmed_join_tickets:
+            return
+        ticket = self._join_ticket
+        if ticket is not None and not ticket.restoration_complete and self._live_join_ticket(ticket) and (
+            ticket.phase == "confirmed" or ticket.command_id is not None
+        ):
+            return
+        if ticket is not None and ticket.restoration_complete:
+            self._join_ticket = None
+        for pending in tuple(self._confirmed_join_tickets.values()):
+            if self._live_join_ticket(pending):
+                if not pending.restoration_complete:
+                    self._join_ticket = pending
+                    return
+                continue
+            self._discard_join_ticket(
+                "expired" if time.monotonic() >= pending.expires_at
+                else "confirmed_reentry_invalidated",
+                ticket=pending,
+            )
+
+    def _yield_confirmed_join_ticket(self) -> None:
+        ticket = self._join_ticket
+        if (
+            ticket is not None and ticket.phase == "confirmed"
+            and len(self._confirmed_join_tickets) > 1
+        ):
+            self._confirmed_join_tickets.pop(ticket.join_id, None)
+            self._confirmed_join_tickets[ticket.join_id] = ticket
+            self._join_ticket = None
+
     @timed_runtime("join_prefetch")
     def dispatch_join_prefetch(self) -> None:
         """Restore a bounded reusable prefix burst, without granting admission."""
+        self._select_confirmed_join_ticket()
         observation = self._roll_final_stage()
         ticket = self._join_ticket
         if ticket is None or not self._live_join_ticket():
@@ -3027,13 +3426,22 @@ class NativeAdmissionRuntime:
                 self._opportunity_writer.record(no_step_record)
                 ticket.no_step_recorded = True
             if ticket.issued_nodes:
-                self._discard_join_ticket("prefix_resident_or_unavailable")
+                if ticket.client_request_id is not None:
+                    # Keep the bound consumer for residency validation until
+                    # native arrival, without blocking another JOIN restore.
+                    ticket.restoration_complete = True
+                    self._join_ticket = None
+                else:
+                    self._discard_join_ticket("prefix_resident_or_unavailable")
+            else:
+                self._yield_confirmed_join_ticket()
             return
         if observation.fits_current_free_lists is not True:
             self.counts["semantic_h2d_no_free_capacity"] += 1
             self._record_wait_prefetch_plan(
                 "join_ticket", ticket.key, observation, reason="no_cold_capacity",
             )
+            self._yield_confirmed_join_ticket()
             return
         commands = self._issue_wait_prefetch_steps(
             ticket.key, getattr(observation, "steps", ()) or (step,),
@@ -3050,6 +3458,8 @@ class NativeAdmissionRuntime:
             if stage is not None and ticket.phase == "provisional":
                 stage.issued_nodes = ticket.issued_nodes
             self.counts[f"join_prefetch_{ticket.phase}_issued"] += len(commands)
+        else:
+            self._yield_confirmed_join_ticket()
 
     def _submit_tool_wait(self, context_id: str) -> None:
         worker = self._model_worker
@@ -3436,6 +3846,12 @@ class NativeAdmissionRuntime:
     ) -> ContextSessionAnchors | None:
         """Request-local lookup for a finished tool-waiting context."""
         key = self.context_sessions.get(context_id)
+        pending = (
+            self._pending_confirmed_join_ticket(context_id, context_epoch)
+            if key is None else None
+        )
+        if pending is not None:
+            key = pending.key
         context = self.graph.contexts.get(context_id)
         if (
             key is None
@@ -3474,9 +3890,11 @@ class NativeAdmissionRuntime:
             key=key, component_leaves=leaves,
             captured_monotonic_s=time.monotonic(),
             reusable_input_tokens=(
-                max(0, tokens[1] - 1)
-                if (tokens := self._context_tokens.get(context_id)) is not None
-                and tokens[0] == key.context_epoch else None
+                pending.checkpoint_input_tokens if pending is not None else (
+                    max(0, tokens[1] - 1)
+                    if (tokens := self._context_tokens.get(context_id)) is not None
+                    and tokens[0] == key.context_epoch else None
+                )
             ),
         )
 
@@ -3519,6 +3937,60 @@ class NativeAdmissionRuntime:
         if not self._record_terminal_cache(watch):
             self._terminal_cache_watches.pop(scope, None)
             self.counts["terminal_cache_watch_anchors_gone"] += 1
+
+    def _remember_terminal_root(self, key: PrefillCandidateKey, event: RuntimeEvent) -> None:
+        invocation = self.graph.invocations.get(key.invocation_id)
+        context = self.graph.contexts.get(key.context_id)
+        if (
+            invocation is None or context is None
+            or invocation.relation_type is not RelationType.ROOT
+            or invocation.parent_invocation_id is not None
+            or invocation.state is not InvocationState.DONE
+            or invocation.workflow_id != key.root_workflow_id
+            or context.workflow_id != key.root_workflow_id
+            or context.epoch != key.context_epoch
+            or key.session_id is None or key.session_generation is None
+        ):
+            return
+        identity = key.root_workflow_id, key.context_id
+        self._terminal_root_contexts[identity] = _TerminalChildReclaim(
+            key, None, None, event.ts_ms, time.time() * 1000.,
+            invocation_scope="workflow_root",
+        )
+        self._terminal_root_contexts.move_to_end(identity)
+        if len(self._terminal_root_contexts) > 512:
+            self._terminal_root_contexts.popitem(last=False)
+            self.counts["terminal_root_provenance_expired"] += 1
+
+    def _retire_ended_workflow_roots(self, workflow_id: str) -> None:
+        workflow = self.graph.workflows.get(workflow_id)
+        retire = getattr(self._native_cache, "retire_beliefkv_child_session", None)
+        if workflow is None or workflow.end_ts_ms is None or not callable(retire):
+            return
+        for identity, reclaim in tuple(self._terminal_root_contexts.items()):
+            key = reclaim.key
+            if key.root_workflow_id != workflow_id:
+                continue
+            del self._terminal_root_contexts[identity]
+            invocation = self.graph.invocations.get(key.invocation_id)
+            context = self.graph.contexts.get(key.context_id)
+            if (
+                invocation is None or invocation.state is not InvocationState.DONE
+                or context is None or context.epoch != key.context_epoch
+                or context.workflow_id != workflow_id
+                or any(
+                    other.root_workflow_id != workflow_id
+                    and (other.session_id, other.session_generation)
+                    == (key.session_id, key.session_generation)
+                    and not self._terminal(other)
+                    for other in self.context_sessions.values()
+                )
+            ):
+                self.counts["terminal_root_retirement_invalidated"] += 1
+                continue
+            # Session close alone retains cached KV. Native releases only
+            # unreferenced leaves and retries locked/in-flight suffixes.
+            self._apply_terminal_child_reclaim(reclaim, retry=False)
 
     def _retire_terminal_child(self, key: PrefillCandidateKey, event: RuntimeEvent) -> None:
         child = self.graph.invocations.get(key.invocation_id)
@@ -3608,10 +4080,11 @@ class NativeAdmissionRuntime:
         if handoff is not None and handoff.join_id == reclaim.join_id:
             handoff.freed_device_units.update(device)
             handoff.freed_host_units.update(host)
-        self.counts["terminal_child_reclaim_calls"] += 1
-        self.counts["terminal_child_discarded_nodes"] += len(result["discarded_nodes"])
-        self.counts["terminal_child_freed_full_tokens"] += device.get(0, 0)
-        self.counts["terminal_child_freed_mamba_slots"] += device.get(2, 0)
+        counter = "terminal_root" if reclaim.invocation_scope == "workflow_root" else "terminal_child"
+        self.counts[f"{counter}_reclaim_calls"] += 1
+        self.counts[f"{counter}_discarded_nodes"] += len(result["discarded_nodes"])
+        self.counts[f"{counter}_freed_full_tokens"] += device.get(0, 0)
+        self.counts[f"{counter}_freed_mamba_slots"] += device.get(2, 0)
         reclaim.retry_anchors = result["retry_anchors"]
         identity = (key.session_id, key.session_generation)
         if reclaim.retry_anchors:
@@ -3630,7 +4103,11 @@ class NativeAdmissionRuntime:
                 if (entry := entries.get(pool)) is not None
             }
             self._opportunity_writer.record({
-                "event": "terminal_child_cache_reclaimed", "ts_ms": time.time() * 1000.,
+                "event": (
+                    "terminal_workflow_root_cache_reclaimed"
+                    if reclaim.invocation_scope == "workflow_root"
+                    else "terminal_child_cache_reclaimed"
+                ), "ts_ms": time.time() * 1000.,
                 "workflow_id": key.root_workflow_id, "invocation_id": key.invocation_id,
                 "invocation_scope": reclaim.invocation_scope,
                 "context_id": key.context_id, "context_epoch": key.context_epoch,
@@ -3830,8 +4307,18 @@ class NativeAdmissionRuntime:
             and type(anchors.reusable_input_tokens) is int
             and host_full_free_tokens < anchors.reusable_input_tokens
         ):
-            needed = missing_prepare_full_prefix_tokens(cache, anchors)
+            backed = [] if (
+                cache is self._native_cache and self.enable_prepare_host
+                and include_non_actionable
+            ) else None
+            needed = missing_prepare_full_prefix_tokens(cache, anchors, backed_nodes=backed)
             if needed is not None and needed > host_full_free_tokens:
+                # New backups may not fit while settled cold copies can still
+                # release HBM. Publication and native reclaim validate them live.
+                for node_id, created in backed or ():
+                    self._remember_parent_pressure_node(node_id, anchors.key, created)
+                if backed:
+                    self.counts["prepare_backed_budget_registration"] += len(backed)
                 self.counts["prepare_prefix_budget_rejected_early"] += 1
                 return None
         return capture_action_local_shadow(
@@ -3849,6 +4336,10 @@ class NativeAdmissionRuntime:
         """Read action-local session/allocator evidence; never dispatch H2D."""
         cache = self._native_cache
         key = self.context_sessions.get(context_id)
+        if key is None and (
+            pending := self._pending_confirmed_join_ticket(context_id, context_epoch)
+        ) is not None:
+            key = pending.key
         invocation = self.graph.invocations.get(key.invocation_id) if key else None
         if (
             cache is None or key is None
@@ -3865,6 +4356,7 @@ class NativeAdmissionRuntime:
                 and invocation.state is InvocationState.RUNNING_LLM
                 and self.visible.get(key.request_id) == key
             )
+            and not self._pending_confirmed_join_submit(key)
             or self._terminal(key)
         ):
             return None
@@ -4022,9 +4514,15 @@ class NativeAdmissionRuntime:
                 first = opportunity.steps[0]
                 missing = nodes[first.node_id].full_host_tokens
                 probe_tokens = min(missing, byte_limit // full_unit)
-                probe_tokens = probe_tokens // max(1, self._native_page_size) * max(
-                    1, self._native_page_size,
-                )
+                page_size = max(1, self._native_page_size)
+                probe_tokens = probe_tokens // page_size * page_size
+                if (
+                    probe_tokens == 0 and budget.source == "native_next_prefill"
+                    and missing >= page_size
+                ):
+                    # Backed waiting pages may be absent from both native
+                    # budgets. Probe one page; reclaim must earn a fresh budget.
+                    probe_tokens = page_size
                 if probe_tokens > 0:
                     first = replace(first, include_mamba=False)
                     return replace(
@@ -4136,6 +4634,12 @@ class NativeAdmissionRuntime:
             "source": source, "workflow_id": key.root_workflow_id,
             "invocation_id": key.invocation_id, "context_id": key.context_id,
             "context_epoch": key.context_epoch, "request_id": key.request_id,
+            **({
+                "confirmed_parent_request_id": ticket.client_request_id,
+                "checkpoint_context_epoch": ticket.checkpoint_key.context_epoch,
+                "target_context_epoch": key.context_epoch,
+            } if source == "join_ticket" and ticket is not None
+                 and ticket.client_request_id is not None else {}),
             "session_id": key.session_id, "session_generation": key.session_generation,
             "join_id": join_id, "active_tool_ids": tools, "reason": reason,
             "no_step_reason": getattr(opportunity, "no_step_reason", None),
@@ -4181,6 +4685,7 @@ class NativeAdmissionRuntime:
                 "h2d_service_ceiling_shape": window.service_ceiling_shape,
             } if window is not None and window.service_ceiling_bytes is not None else {}),
             "prediction_early_ms": window.prediction_early_ms if window else None,
+            "planning_slack_ms": window.planning_slack_ms if window else None,
             "scope": "bounded reusable checkpoint plan; not a reservation or oracle",
         })
 
@@ -4510,16 +5015,32 @@ class NativeAdmissionRuntime:
         host_full_free_tokens: int | None = None,
     ) -> ShadowBackupStep | None:
         """Recheck a waiting context and native closure at the action safe point."""
+        selection = self._refreshed_shadow_backup_selection(
+            context_id=context_id, source=source,
+            host_full_free_tokens=host_full_free_tokens,
+        )
+        return selection[0] if selection is not None else None
+
+    def _refreshed_shadow_backup_selection(
+        self, *, context_id: str | None = None, source: str = "tool_wait",
+        host_full_free_tokens: int | None = None,
+    ) -> tuple[ShadowBackupStep, ActionLocalShadowCandidate] | None:
         candidate = self._refreshed_shadow_backup_candidate(
             context_id=context_id, source=source,
             host_full_free_tokens=host_full_free_tokens,
         )
-        step = next_shadow_backup_step(candidate) if candidate is not None else None
         if candidate is not None:
+            tail_leaves = self._shadow_reclaim_tail_leaves(candidate)
+            step = next_shadow_backup_step(candidate, reclaim_tail_leaves=tail_leaves)
             # Settled cold copies remain reclaimable while other extents still
             # need PREPARE; publication rechecks native locks and ownership.
-            self._register_backed_pressure_nodes(candidate.anchors.key, candidate=candidate)
-        return step
+            self._register_backed_pressure_nodes(
+                candidate.anchors.key, candidate=candidate,
+                reclaim_tail_leaves=tail_leaves,
+            )
+            if step is not None:
+                return step, candidate
+        return None
 
     def _refreshed_shadow_backup_candidate(
         self, *, context_id: str | None = None, source: str = "tool_wait",
@@ -4638,7 +5159,7 @@ class NativeAdmissionRuntime:
                 "context_id": step.key.context_id,
                 "context_epoch": step.key.context_epoch,
                 "include_mamba": step.include_mamba,
-                "backup_scope": "missing_full_prefix",
+                "backup_scope": "missing_full_extent",
                 "node_id": step.node_id, "leaf_node_id": step.leaf_node_id,
                 "node_creation_time": step.creation_time,
                 "leaf_creation_time": step.leaf_creation_time,
@@ -4647,6 +5168,7 @@ class NativeAdmissionRuntime:
 
     def issue_shadow_backup_steps(
         self, step: ShadowBackupStep, *, source: str = "tool_wait",
+        _selection_candidate: ActionLocalShadowCandidate | None = None,
     ) -> tuple[tuple[ShadowBackupStep, str], ...]:
         """Reserve one FULL prefix burst; each extent retains its own ACK."""
         cache = self._native_cache
@@ -4654,19 +5176,36 @@ class NativeAdmissionRuntime:
         if not callable(burst):
             command = self.issue_shadow_backup_step(step, source=source)
             return ((step, command),) if command is not None else ()
-        if self.event_server is not None:
+        deliveries = (
             self.event_server.drain(max_messages=128)
+            if self.event_server is not None else ()
+        )
         if (
             self.physical_disabled
+            or cache is not self._native_cache
             or self.physical_ledger.pending_action_count("PREPARE_HOST")
             or not isinstance(step, ShadowBackupStep)
         ):
             self.counts["shadow_step_stale"] += 1
             return ()
-        candidate = self._refreshed_shadow_backup_candidate(
-            context_id=step.key.context_id, source=source,
+        # Only the first native attempt in this synchronous dispatch may reuse
+        # its selection. Control delivery or an earlier attempt invalidates it.
+        if (
+            type(deliveries) is tuple and not deliveries
+            and isinstance(_selection_candidate, ActionLocalShadowCandidate)
+            and _selection_candidate.anchors.key == step.key
+        ):
+            candidate = _selection_candidate
+            self.counts["prepare_selection_closure_reused"] += 1
+        else:
+            candidate = self._refreshed_shadow_backup_candidate(
+                context_id=step.key.context_id, source=source,
+            )
+        steps = (
+            shadow_backup_steps(
+                candidate, reclaim_tail_leaves=self._shadow_reclaim_tail_leaves(candidate),
+            ) if candidate is not None else ()
         )
-        steps = shadow_backup_steps(candidate) if candidate is not None else ()
         if not steps or steps[0] != step:
             self.counts["shadow_step_stale"] += 1
             return ()
@@ -4725,7 +5264,7 @@ class NativeAdmissionRuntime:
                     "command_id": command, "source": source,
                     "context_id": item.key.context_id,
                     "context_epoch": item.key.context_epoch,
-                    "include_mamba": False, "backup_scope": "missing_full_prefix",
+                    "include_mamba": False, "backup_scope": "missing_full_extent",
                     "node_id": item.node_id, "leaf_node_id": item.leaf_node_id,
                     "node_creation_time": item.creation_time,
                     "leaf_creation_time": item.leaf_creation_time,
@@ -4749,6 +5288,15 @@ class NativeAdmissionRuntime:
         ):
             self.counts["prefetch_residency_pressure_protected"] += 1
             return False
+        try:
+            node = self._native_cache.tree_core.node_by_id(node_id)
+            if node.creation_time != creation_time:
+                return False
+            owners = node.component_data[0].session_ids
+            if owners is not None and record[0].session_id not in owners:
+                return False
+        except (AttributeError, IndexError, KeyError, RuntimeError, TypeError, ValueError):
+            return False
         return self._live_parent_pressure_key(record[0])
 
     def _live_parent_pressure_key(self, key: PrefillCandidateKey) -> bool:
@@ -4771,34 +5319,70 @@ class NativeAdmissionRuntime:
             and not self._terminal(key)
         )
 
+    def _pressure_candidate_groups(self) -> dict[PrefillCandidateKey, set[int]]:
+        candidates = self._parent_pressure_candidates
+        if (
+            self._parent_pressure_group_source is not candidates
+            or self._parent_pressure_group_size != len(candidates)
+        ):
+            groups: dict[PrefillCandidateKey, set[int]] = {}
+            for node_id, (key, _) in candidates.items():
+                groups.setdefault(key, set()).add(node_id)
+            self._parent_pressure_groups = groups
+            self._parent_pressure_positions = {
+                node_id: index for index, node_id in enumerate(candidates)
+            }
+            self._parent_pressure_next_position = len(candidates)
+            self._parent_pressure_group_source = candidates
+            self._parent_pressure_group_size = len(candidates)
+        return self._parent_pressure_groups
+
+    def _remember_parent_pressure_node(
+        self, node_id: int, key: PrefillCandidateKey, created: int | float,
+    ) -> None:
+        groups = self._pressure_candidate_groups()
+        previous = self._parent_pressure_candidates.get(node_id)
+        if previous is None or previous[0] != key:
+            if previous is not None:
+                old_members = groups[previous[0]]
+                old_members.remove(node_id)
+                if not old_members:
+                    del groups[previous[0]]
+            groups.setdefault(key, set()).add(node_id)
+        if previous is None:
+            self._parent_pressure_positions[node_id] = self._parent_pressure_next_position
+            self._parent_pressure_next_position += 1
+        self._parent_pressure_candidates[node_id] = (key, created)
+        self._parent_pressure_group_size = len(self._parent_pressure_candidates)
+
     @timed_runtime("prepare_candidate_maintenance")
     def _prune_parent_pressure_candidates(self) -> None:
         if not self._parent_pressure_candidates:
             return
+        groups = self._pressure_candidate_groups()
         self._refresh_prefetch_service_leases()
         protected = {
             (lease.node_id, lease.creation_time)
             for lease in self._prefetch_service_leases.values()
         }
-        live_keys: dict[str, tuple[PrefillCandidateKey, bool]] = {}
-        previous_key = None
-        previous_live = False
-        removed = []
-        for node_id, (key, created) in self._parent_pressure_candidates.items():
-            if protected and (node_id, created) in protected:
-                self.counts["prefetch_residency_pressure_protected"] += 1
-                removed.append(node_id)
+        for node_id, created in protected:
+            record = self._parent_pressure_candidates.get(node_id)
+            if record is None or record[1] != created:
                 continue
-            if key is not previous_key:
-                cached = live_keys.get(key.context_id)
-                if cached is None or (cached[0] is not key and cached[0] != key):
-                    cached = (key, self._live_parent_pressure_key(key))
-                    live_keys[key.context_id] = cached
-                previous_key, previous_live = key, cached[1]
-            if not previous_live:
-                removed.append(node_id)
-        for node_id in removed:
+            self.counts["prefetch_residency_pressure_protected"] += 1
             del self._parent_pressure_candidates[node_id]
+            del self._parent_pressure_positions[node_id]
+            members = groups[record[0]]
+            members.remove(node_id)
+            if not members:
+                del groups[record[0]]
+        for key, members in tuple(groups.items()):
+            if not self._live_parent_pressure_key(key):
+                for node_id in members:
+                    del self._parent_pressure_candidates[node_id]
+                    del self._parent_pressure_positions[node_id]
+                del groups[key]
+        self._parent_pressure_group_size = len(self._parent_pressure_candidates)
 
     def _on_parent_pressure_parked(self, node_id: int, freed: dict[int, int]) -> None:
         for command, lease in tuple(self._prefetch_service_leases.items()):
@@ -4836,14 +5420,20 @@ class NativeAdmissionRuntime:
         tree = getattr(cache, "tree_core", None)
         device_leaves = getattr(tree, "evictable_device_leaves", ())
         indexed = False
-        for position, (node_id, (_, created)) in enumerate(self._parent_pressure_candidates.items()):
-            if position == 2 * limit:
-                lrus = getattr(tree, "lru_lists", None)
-                mamba_lru = getattr(lrus.get(2), "cache", None) if isinstance(lrus, dict) else None
-                if isinstance(device_leaves, set) and isinstance(mamba_lru, dict):
-                    # Only index a scan that outlasts two native pool prefixes.
-                    # Live checks and the original order remain authoritative.
-                    visited = set(islice(self._parent_pressure_candidates, position))
+        full_ids: set[int] = set()
+        mamba_ids: set[int] = set()
+        entries = iter(self._parent_pressure_candidates.items())
+        head = tuple(islice(entries, 2 * limit))
+
+        def remaining_entries():
+            nonlocal indexed, full_ids, mamba_ids
+            lrus = getattr(tree, "lru_lists", None)
+            mamba_lru = getattr(lrus.get(2), "cache", None) if isinstance(lrus, dict) else None
+            if isinstance(device_leaves, set) and isinstance(mamba_lru, dict):
+                # Inspect only the sparse pool members when sorting those IDs
+                # costs less than walking the remaining owner-node table.
+                visited = {node_id for node_id, _ in head}
+                if len(head) == 2 * limit:
                     if (
                         full_left
                         and len(device_leaves) > 8 * len(self._parent_pressure_candidates)
@@ -4872,6 +5462,20 @@ class NativeAdmissionRuntime:
                         self._parent_pressure_candidates.keys() & mamba_lru.keys()
                     ) - visited - excluded if mamba_left else set()
                     indexed = True
+                    pool_ids = full_ids | mamba_ids
+                    if not fallback_left and (
+                        len(pool_ids) * max(1, (len(pool_ids) - 1).bit_length())
+                        < len(self._parent_pressure_candidates) - len(head)
+                    ):
+                        self._pressure_candidate_groups()
+                        for node_id in sorted(
+                            pool_ids, key=self._parent_pressure_positions.__getitem__,
+                        ):
+                            yield node_id, self._parent_pressure_candidates[node_id]
+                        return
+            yield from entries
+
+        for node_id, (_, created) in chain(head, remaining_entries()):
             if indexed:
                 if not fallback_left and not (
                     full_left and full_ids or mamba_left and mamba_ids
@@ -4944,6 +5548,7 @@ class NativeAdmissionRuntime:
     def _register_backed_pressure_nodes(
         self, key: PrefillCandidateKey,
         *, candidate: ActionLocalShadowCandidate | ActionLocalPrefetchCandidate | None = None,
+        reclaim_tail_leaves: frozenset[int] | None = None,
     ) -> None:
         if candidate is None:
             cache = self._native_cache
@@ -4960,6 +5565,8 @@ class NativeAdmissionRuntime:
         if candidate is None or anchors.reusable_input_tokens is None:
             return
         nodes = {node.node_id: node for node in candidate.nodes}
+        if reclaim_tail_leaves is None:
+            reclaim_tail_leaves = self._shadow_reclaim_tail_leaves(candidate)
         prefix_lengths: dict[int, int] = {}
         for node in candidate.nodes:
             if not (
@@ -4975,8 +5582,55 @@ class NativeAdmissionRuntime:
             for ancestor in reversed(chain):
                 prefix += ancestor.key_tokens or 0
                 prefix_lengths[ancestor.node_id] = prefix
-            if prefix_lengths[node.node_id] <= anchors.reusable_input_tokens:
-                self._parent_pressure_candidates[node.node_id] = (key, node.creation_time)
+            if (
+                prefix_lengths[node.node_id] <= anchors.reusable_input_tokens
+                or node.node_id in reclaim_tail_leaves
+            ):
+                if (
+                    node.node_id in reclaim_tail_leaves
+                    and prefix_lengths[node.node_id] > anchors.reusable_input_tokens
+                    and self._parent_pressure_candidates.get(node.node_id)
+                    != (key, node.creation_time)
+                ):
+                    self.counts["prepare_backed_full_tail_registered"] += 1
+                self._remember_parent_pressure_node(node.node_id, key, node.creation_time)
+
+    def _shadow_reclaim_tail_leaves(
+        self, candidate: ActionLocalShadowCandidate | ActionLocalPrefetchCandidate,
+    ) -> frozenset[int]:
+        """Prove current private device leaves; H2D keeps its input checkpoint."""
+        key, cache = candidate.anchors.key, self._native_cache
+        if not self._live_parent_pressure_key(key):
+            return frozenset()
+        tree = getattr(cache, "tree_core", None)
+        device_leaves = getattr(tree, "evictable_device_leaves", ())
+        eligible = set()
+        for node_id, created in dict(candidate.anchors.component_leaves).get(0, ()):
+            try:
+                node = tree.node_by_id(node_id)
+                full = node.component_data[0]
+                if (
+                    node.id == node_id and node.creation_time == created
+                    and node in device_leaves
+                    and full.value is not None and full.session_ref == 1
+                    and full.session_ids == {key.session_id}
+                    and node.write_through_pending_id is None
+                    and node.load_back_pending_id is None
+                    and node_id not in getattr(cache, "ongoing_write_through", {})
+                    and all(
+                        data.lock_ref == 0 and data.host_lock_ref == 0
+                        and data.session_ref <= 1
+                        for data in (
+                            node.component_data.values()
+                            if isinstance(node.component_data, dict)
+                            else node.component_data
+                        )
+                    )
+                ):
+                    eligible.add(node_id)
+            except (AttributeError, IndexError, KeyError, RuntimeError, TypeError, ValueError):
+                continue
+        return frozenset(eligible)
 
     def _prepare_step_rank(
         self, step: ShadowBackupStep, headroom: object,
@@ -5133,6 +5787,7 @@ class NativeAdmissionRuntime:
             self._publish_parent_pressure_candidates()
             return
         candidates = []
+        selected_candidate = selected_order = None
         for offset in range(min(len(parents), 8)):
             key = parents[(self._join_prepare_cursor + offset) % len(parents)]
             if not self._prepare_probe_due(key, now_ms):
@@ -5142,29 +5797,37 @@ class NativeAdmissionRuntime:
             prior = self._join_prepare_commands.get(identity)
             if prior is not None and self.physical_ledger.is_pending(prior):
                 continue
-            step = self.refreshed_shadow_backup_step(
+            selection = self._refreshed_shadow_backup_selection(
                 context_id=key.context_id, source="join_prepare",
                 host_full_free_tokens=headroom.host_full_free_tokens,
             )
-            if step is None:
+            if selection is None:
                 self._prepare_probe_after_ms[key] = now_ms + 1000.
                 continue
+            step, candidate = selection
             rank = self._prepare_step_rank(
                 step, headroom, full_pressure=full_pressure, mamba_pressure=mamba_pressure,
             )
             if rank is not None:
                 candidates.append((rank, offset, identity, step))
+                if selected_order is None or (rank, offset) < selected_order:
+                    selected_order, selected_candidate = (rank, offset), candidate
             else:
                 self._prepare_probe_after_ms[key] = now_ms + 1000.
         self._join_prepare_cursor = (self._join_prepare_cursor + 8) % len(parents)
+        first_attempt = True
         for rank, offset, identity, step in sorted(candidates, key=lambda item: item[:2]):
-            issued = self.issue_shadow_backup_steps(step, source="join_prepare")
+            issued = self.issue_shadow_backup_steps(
+                step, source="join_prepare",
+                _selection_candidate=selected_candidate if first_attempt else None,
+            )
+            first_attempt = False
             if not issued:
                 self._prepare_probe_after_ms[step.key] = now_ms + 250.
                 continue
             self._join_prepare_commands[identity] = issued[-1][1]
             for item, command in issued:
-                self._parent_pressure_candidates[item.node_id] = (item.key, item.creation_time)
+                self._remember_parent_pressure_node(item.node_id, item.key, item.creation_time)
             self.counts["join_prepare_issued"] += len(issued)
             self._record_prepare_selection(
                 step, command_id=issued[0][1], source="join_prepare",
@@ -5229,34 +5892,42 @@ class NativeAdmissionRuntime:
         if not hints:
             return
         candidates = []
+        selected_candidate = selected_order = None
         for offset in range(min(8, len(hints))):
             hint = hints[(self._tool_prepare_cursor + offset) % len(hints)]
             if not self._prepare_probe_due(hint.key, now_ms):
                 continue
             if not self._long_tool_wait(hint.key):
                 continue
-            step = self.refreshed_shadow_backup_step(
+            selection = self._refreshed_shadow_backup_selection(
                 context_id=hint.key.context_id,
                 host_full_free_tokens=headroom.host_full_free_tokens,
             )
-            if step is not None:
+            if selection is not None:
+                step, candidate = selection
                 rank = self._prepare_step_rank(
                     step, headroom,
                     full_pressure=full_pressure, mamba_pressure=mamba_pressure,
                 )
                 if rank is not None:
                     candidates.append((rank, offset, step))
+                    if selected_order is None or (rank, offset) < selected_order:
+                        selected_order, selected_candidate = (rank, offset), candidate
                 else:
                     self._prepare_probe_after_ms[hint.key] = now_ms + 1000.
             else:
                 self._prepare_probe_after_ms[hint.key] = now_ms + 1000.
         self._tool_prepare_cursor = (self._tool_prepare_cursor + 8) % len(hints)
+        first_attempt = True
         for rank, offset, step in sorted(candidates, key=lambda item: item[:2]):
-            issued = self.issue_shadow_backup_steps(step)
+            issued = self.issue_shadow_backup_steps(
+                step, _selection_candidate=selected_candidate if first_attempt else None,
+            )
+            first_attempt = False
             if issued:
                 for item, command in issued:
-                    self._parent_pressure_candidates[item.node_id] = (
-                        item.key, item.creation_time,
+                    self._remember_parent_pressure_node(
+                        item.node_id, item.key, item.creation_time,
                     )
                 self.counts["tool_prepare_issued"] += len(issued)
                 self._record_prepare_selection(
@@ -5301,17 +5972,18 @@ class NativeAdmissionRuntime:
                 self._tool_ticket = None
             else:
                 return
-        if self.physical_ledger.pending_action_count("PREFETCH_GPU"):
-            return
         now_ms = time.monotonic() * 1000
         if now_ms < self._tool_prefetch_next_ms:
             self.counts["tool_prefetch_scan_deferred"] += 1
+            return
+        if self.physical_ledger.pending_action_count("PREFETCH_GPU"):
             return
         self._tool_prefetch_next_ms = now_ms + SEMANTIC_FRAME_INTERVAL_MS
         self.counts["tool_prefetch_scans"] += 1
         budget = None
         candidates = []
         outside_window = deferred = 0
+        next_possible_window_ms = math.inf
         for hint in self.tool_wait_hints.values():
             if self._live_tool_hint(hint.key, now_ms=now_ms) is None:
                 self._tool_survival_probes.pop(hint.key.context_id, None)
@@ -5322,16 +5994,16 @@ class NativeAdmissionRuntime:
                 if probe is not None and probe[0] is hint and now_ms < probe[1]:
                     deferred += 1
                     outside_window += 1
+                    next_possible_window_ms = min(next_possible_window_ms, probe[1])
                     continue
             remaining = self._tool_prefetch_remaining(hint, .5, now_ms=now_ms)
             if remaining is None or remaining > self.prefetch_lead_ms:
+                deadline = hint.next_prefetch_check_ms(
+                    self.prefetch_lead_ms, now_ms=now_ms, remaining_ms=remaining,
+                )
+                next_possible_window_ms = min(next_possible_window_ms, deadline)
                 if use_probe:
-                    self._tool_survival_probes[hint.key.context_id] = (
-                        hint, hint.next_prefetch_check_ms(
-                            self.prefetch_lead_ms, now_ms=now_ms,
-                            remaining_ms=remaining,
-                        ),
-                    )
+                    self._tool_survival_probes[hint.key.context_id] = (hint, deadline)
                 outside_window += 1
                 continue
             if self._tool_survival_probes:
@@ -5347,6 +6019,19 @@ class NativeAdmissionRuntime:
                 if self.tool_wait_hints.get(context) is probe[0] and now_ms < probe[1]
             }
         if not candidates:
+            # No live hint can enter earlier. New forecasts and credited D2H
+            # already rearm this deadline; pending tickets are handled above.
+            if (
+                math.isfinite(next_possible_window_ms)
+                and next_possible_window_ms > now_ms
+                and next_possible_window_ms != self._tool_prefetch_next_ms
+            ):
+                self.counts[
+                    "tool_prefetch_scan_deadline_coalesced"
+                    if next_possible_window_ms > self._tool_prefetch_next_ms
+                    else "tool_prefetch_scan_deadline_advanced"
+                ] += 1
+                self._tool_prefetch_next_ms = next_possible_window_ms
             return
         # Scheduler/event/batch maintenance already expires leases. Revalidate
         # them here only when this scan will use restoration capacity.
@@ -5454,6 +6139,7 @@ class NativeAdmissionRuntime:
                     "h2d_ms": window.service_ms,
                     "enqueue_to_submit_p90_ms": window.enqueue_ms,
                     "prediction_early_ms": window.prediction_early_ms,
+                    "planning_slack_ms": window.planning_slack_ms,
                 })
             return None if from_cache else opportunity
 
@@ -5604,6 +6290,9 @@ class NativeAdmissionRuntime:
             estimate, max_lead_ms=self.prefetch_lead_ms,
             observation_spacing_ms=SEMANTIC_FRAME_INTERVAL_MS,
             prediction_early_ms=prediction_early_ms,
+            # A narrow tool distribution can still overestimate the last few
+            # hundred milliseconds. Keep this runtime allowance separate from it.
+            planning_slack_ms=TOOL_PREFETCH_PLANNING_SLACK_MS if hint is not None else 0.,
         )
         return (
             replace(
@@ -5761,7 +6450,9 @@ class NativeAdmissionRuntime:
         context = self.graph.contexts.get(key.context_id)
         if (
             not valid_source
-            or self.context_sessions.get(key.context_id) != key
+            or self.context_sessions.get(key.context_id) != key and not (
+                source == "join_ticket" and self._pending_confirmed_join_submit(key)
+            )
             or context is None
             or context.epoch != key.context_epoch
             or context.workflow_id != key.root_workflow_id
@@ -5772,8 +6463,9 @@ class NativeAdmissionRuntime:
                 invocation.state.value not in ("ready", "running_llm")
                 if source == "admission"
                 else invocation.state.value != (
-                    "ready" if source == "join_ticket"
-                    and ticket.phase == "confirmed"
+                    (
+                        "running_llm" if ticket.client_request_id is not None else "ready"
+                    ) if source == "join_ticket" and ticket.phase == "confirmed"
                     else "wait_join" if source in ("join_wait", "join_ticket")
                     else "wait_tool"
                 )
@@ -5941,6 +6633,21 @@ class NativeAdmissionRuntime:
                     "child_request_id": stage.request_id if stage else None,
                     "phase": ticket.phase,
                 })
+                if ticket.phase == "confirmed":
+                    record.update({
+                        "timing_policy": (
+                            "confirmed_join_client_bound_before_native_visibility"
+                            if ticket.client_request_id is not None
+                            else "confirmed_join_before_parent_request"
+                        ),
+                        **({
+                            "confirmed_parent_request_id": ticket.client_request_id,
+                            "target_context_epoch": step.key.context_epoch,
+                            "checkpoint_context_epoch": ticket.checkpoint_key.context_epoch,
+                            "reusable_input_tokens": ticket.checkpoint_input_tokens,
+                        } if ticket.client_request_id is not None else {}),
+                        "pre_boundary_prediction": False,
+                    })
             elif source == "tool_wait":
                 hint = self.tool_wait_hints.get(step.key.context_id)
                 invocation = self.graph.invocations.get(step.key.invocation_id)
@@ -5966,7 +6673,11 @@ class NativeAdmissionRuntime:
             self._opportunity_writer.record(record)
 
     def _live_wait_prefetch(self, key: PrefillCandidateKey, source: str) -> bool:
-        if self.physical_disabled or self.context_sessions.get(key.context_id) != key:
+        if self.physical_disabled or (
+            self.context_sessions.get(key.context_id) != key and not (
+                source == "join_ticket" and self._pending_confirmed_join_submit(key)
+            )
+        ):
             return False
         if source == "join_ticket":
             ticket = self._join_ticket
@@ -6312,7 +7023,13 @@ class NativeAdmissionRuntime:
             return "context_changed"
         current = self.context_sessions.get(key.context_id)
         pending_epoch_handoff = current is None and context.epoch == key.context_epoch + 1
-        if (current is None and not pending_epoch_handoff) or (current is not None and (
+        pending_client_handoff = (
+            current is None and lease.source == "join_ticket"
+            and self._pending_confirmed_join_submit(key)
+        )
+        if (
+            current is None and not pending_epoch_handoff and not pending_client_handoff
+        ) or (current is not None and (
             current.root_workflow_id != key.root_workflow_id
             or current.invocation_id != key.invocation_id
             or current.context_epoch not in (key.context_epoch, key.context_epoch + 1)
@@ -6335,7 +7052,7 @@ class NativeAdmissionRuntime:
         try:
             sessions = cache.session_refs
             generations = getattr(sessions, "_session_generations", None)
-            if pending_epoch_handoff and (
+            if (pending_epoch_handoff or pending_client_handoff) and (
                 generations is None
                 or generations.get(key.session_id) != key.session_generation
             ):
@@ -7379,12 +8096,19 @@ class NativeAdmissionRuntime:
             and key.session_id is not None
             and key.session_generation is not None
         }
-        # A client LLM_SUBMIT can advance the causal epoch before its HTTP request
-        # registers a new visible key. Native session generation is the authority
-        # for accepting the outstanding old-prefix H2D ACK across that one step.
+        # HTTP registration can lag both an old-epoch transfer and a confirmed
+        # JOIN transfer already bound to its next consumer's epoch.
         cache = self._native_cache
         for context_id, epoch, session_id, generation in self.physical_ledger.pending_transfer_sessions:
-            if context_id in live_sessions or live_epochs.get(context_id) != epoch + 1:
+            if context_id in live_sessions:
+                continue
+            if live_epochs.get(context_id) == epoch:
+                ticket = self._pending_confirmed_join_ticket(context_id, epoch)
+                if ticket is None or (
+                    ticket.key.session_id, ticket.key.session_generation,
+                ) != (session_id, generation):
+                    continue
+            elif live_epochs.get(context_id) != epoch + 1:
                 continue
             context = self.graph.contexts.get(context_id)
             workflow = self.graph.workflows.get(context.workflow_id) if context else None
@@ -7653,9 +8377,10 @@ class NativeAdmissionRuntime:
                 key is None
                 or key.invocation_id in ready_ranks
                 or self.visible.get(key.request_id) != key
-                or self._terminal(key)
-                or key.root_workflow_id not in self.graph.workflows
             ):
+                continue
+            workflow = self.graph.workflows.get(key.root_workflow_id)
+            if workflow is None or workflow.end_ts_ms is not None:
                 continue
             invocation = self.graph.invocations.get(key.invocation_id)
             context = self.graph.contexts.get(key.context_id)
@@ -7761,10 +8486,136 @@ class NativeAdmissionRuntime:
             return float(remaining), "notice_budget"
         return None, "unknown"
 
+    def _request_restore_cost(
+        self, request: object, observation: dict | None,
+    ) -> tuple[int, int] | None:
+        if observation is None or self._residency_pool_bytes is None:
+            return None
+        values = tuple(observation.get(name) for name in (
+            "checkpoint_tokens", "missing_full_tokens", "missing_mamba_slots",
+        ))
+        if any(type(value) is not int or value < 0 for value in values):
+            return None
+        checkpoint, full, mamba = values
+        inputs = getattr(request, "origin_input_ids", ())
+        if not 0 < checkpoint < len(inputs):
+            return None
+        new_input = len(inputs) - checkpoint
+        chunk = self._native_chunk_input_reserve
+        if type(chunk) is int and chunk > 0:
+            new_input = min(new_input, chunk)
+        full_unit, mamba_unit = self._residency_pool_bytes
+        return full * full_unit + mamba * mamba_unit, new_input
+
+    def _resident_aged_bypass(
+        self, ordered: list[tuple[int, object]],
+        keys: dict[int, PrefillCandidateKey | None],
+        ranks: dict[int, tuple[int, int, int]],
+    ) -> tuple[tuple[int, object], dict] | None:
+        if self._residency_pool_bytes is None:
+            return None
+        normal_admissions = min(
+            self._prefetch_priority_normal_admissions,
+            self._resident_priority_normal_admissions,
+        )
+        budget = None
+        if normal_admissions < 4:
+            budget = self._current_residency_budget()
+            if (
+                normal_admissions == 0 or budget.source != "native_next_prefill"
+                or budget.request_slots <= 0
+            ):
+                return None
+        now_ms = time.monotonic() * 1000.
+
+        def observation(request: object, key: PrefillCandidateKey) -> dict | None:
+            if budget is None:
+                return self._read_request_residency_hint(request, key=key)
+            # Earlier locality turns reuse discovery already paid for in
+            # this frontier; no extra ancestry scans to hunt for a hit.
+            cached = self._residency_ordering_hints.get(key)
+            if cached is None or cached[0] <= now_ms:
+                cached = self._reentry_observations.get(key)
+            return cached[1] if cached is not None and cached[0] > now_ms else None
+
+        head_index, head = ordered[0]
+        head_key = keys[head_index]
+        if head_key is None:
+            return None
+        head_observation = observation(head, head_key)
+        head_cost = self._request_restore_cost(head, head_observation)
+        if (
+            head_cost is None and budget is None
+            or head_cost is not None and head_cost[0] == 0
+        ):
+            return None
+        candidates = []
+        for pair in self._resident_prefill_scan(ordered, keys):
+            index, request = pair
+            key = keys[index]
+            if (
+                index == head_index or key is None
+                or ranks[index][:2] > ranks[head_index][:2]
+            ):
+                continue
+            hint = observation(request, key)
+            candidate_cost = self._request_restore_cost(request, hint)
+            if (
+                candidate_cost is None or hint["missing_full_tokens"] != 0
+                or head_cost is not None and (
+                    candidate_cost[0] >= head_cost[0]
+                    or candidate_cost[1] > head_cost[1]
+                )
+            ):
+                continue
+            candidates.append((candidate_cost, index, pair))
+        if not candidates:
+            return None
+        selected_cost, _, selected = min(candidates, key=lambda item: item[:2])
+        ordinary_quota = 4
+        if budget is not None:
+            ordinary_quota = max(1, min(4, math.ceil(
+                max(0, budget.request_slots - len(candidates)) / len(candidates),
+            )))
+            if normal_admissions < ordinary_quota:
+                return None
+            # Aged heads need not retain a discovery hint. A known warm
+            # candidate earns only this comparison, not an admission bypass.
+            self.counts["resident_aged_native_quota_inspected"] += 1
+            selected_observation = self._read_request_reentry(
+                selected[1], key=keys[selected[0]], refresh=True,
+            )
+            selected_cost = self._request_restore_cost(selected[1], selected_observation)
+            head_observation = self._read_request_reentry(head, key=head_key, refresh=True)
+            head_cost = self._request_restore_cost(head, head_observation)
+            if (
+                selected_cost is None or head_cost is None
+                or selected_observation["missing_full_tokens"] != 0
+                or selected_cost[0] >= head_cost[0]
+                or selected_cost[1] > head_cost[1]
+            ):
+                return None
+        return selected, {
+            "head_request_id": head.rid,
+            "head_restore_bytes": head_cost[0],
+            "selected_restore_bytes": selected_cost[0],
+            "head_next_input_tokens": head_cost[1],
+            "selected_next_input_tokens": selected_cost[1],
+            "ordinary_admission_quota": ordinary_quota,
+            "native_prefill_slots": budget.request_slots if budget is not None else None,
+            "resident_candidates": len(candidates),
+            "evidence": (
+                "fresh_native_reentry;native_admission_remains"
+                if budget is not None
+                else "advisory_session_hint;native_input_and_capacity_checks_remain"
+            ),
+        }
+
     @timed_runtime("admission_plan")
     def plan_native_prefill(
         self, native_order: Sequence[object], *, running_batch: object, adder: object
     ) -> NativePrefillPlan:
+        self._workflow_work_promoted = None
         self._observe_native_admission_capacity(running_batch=running_batch, adder=adder)
         # Reuse causal classification only; residency, hint expiry and aging
         # remain live because native allocation may change between the two calls.
@@ -7815,16 +8666,30 @@ class NativeAdmissionRuntime:
                     and hinted[ranks[index][:2]] == members[ranks[index][:2]]
                 }
 
+        work_baseline_ranks: dict[int, tuple] | None = (
+            {} if self._workflow_attained_work_enabled else None
+        )
+
         def waiting_rank(pair: tuple[int, object]) -> tuple:
             index, request = pair
             since = self._visible_since.get(getattr(request, "rid", ""), now_ms / 1000.)
             if now_ms / 1000. - since >= 10.:
                 return (-1, since, index, index)
-            return (
+            rank = (
                 *ranks[index][:2],
                 length_ranks.get(index, index),
                 index,
             )
+            if self._workflow_attained_work_enabled and not self.enable_resident_first:
+                work_baseline_ranks[index] = rank
+                key = keys[index]
+                work = self._workflow_attained_output_tokens.get(
+                    key.root_workflow_id, 0,
+                ) if key is not None else 0
+                return (
+                    *rank[:2], work, *rank[2:],
+                )
+            return rank
 
         waiting_ranks = {pair[0]: waiting_rank(pair) for pair in tagged}
         ordered = sorted(tagged, key=lambda pair: waiting_ranks[pair[0]])
@@ -7873,7 +8738,7 @@ class NativeAdmissionRuntime:
             def residency_rank(pair: tuple[int, object]) -> tuple:
                 rank = waiting_ranks[pair[0]]
                 if rank[0] == -1:
-                    return rank[:2] + (0,) + rank[2:]
+                    return rank[:2] + (0, 0) + rank[2:]
                 key = keys[pair[0]]
                 observation = residency_observations.get(pair[0])
                 if observation is None:
@@ -7889,12 +8754,39 @@ class NativeAdmissionRuntime:
                     and observation["device_checkpoint_tokens"] > 0
                     else 2
                 )
-                return rank[:2] + (resident,) + rank[2:]
+                restore_bytes = 0
+                if observation is not None and self._residency_pool_bytes is not None:
+                    full_unit, mamba_unit = self._residency_pool_bytes
+                    restore_bytes = (
+                        observation["missing_full_tokens"] * full_unit
+                        + observation["missing_mamba_slots"] * mamba_unit
+                    )
+                    # A host-only state can leave a large FULL prefix resident.
+                    # Compare missing bytes instead of requiring an older
+                    # complete device checkpoint for all partial hits.
+                    resident = int(restore_bytes > 0)
+                tail = rank[2:]
+                if self._workflow_attained_work_enabled:
+                    work_baseline_ranks[pair[0]] = (
+                        rank[:2] + (resident, restore_bytes) + tail
+                    )
+                    work = self._workflow_attained_output_tokens.get(
+                        key.root_workflow_id, 0,
+                    ) if key is not None else 0
+                    tail = (work, *tail)
+                return rank[:2] + (resident, restore_bytes) + tail
 
             resident_ordered = sorted(ordered, key=residency_rank)
             if resident_ordered != ordered:
                 self.counts["resident_first_ordered"] += 1
             ordered = resident_ordered
+        work_selected = None
+        if (
+            work_baseline_ranks and ordered
+            and waiting_ranks[ordered[0][0]][0] != -1
+            and min(work_baseline_ranks, key=work_baseline_ranks.__getitem__) != ordered[0][0]
+        ):
+            work_selected = ordered[0][1].rid
         self._final_priority_promoted = None
         self._final_priority_native_rank = None
         self._prefetch_priority_promoted = None
@@ -7902,6 +8794,9 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_native_rank = None
         self._prefetch_priority_aged_head_bypassed = False
         self._prefetch_priority_complete_ready_quota = None
+        self._prefetch_priority_partial_restore_details = None
+        self._resident_priority_promoted = None
+        self._resident_priority_details = None
         priority_candidates = []
         ready_restores = len({
             lease.key for lease in self._prefetch_service_leases.values()
@@ -7978,6 +8873,7 @@ class NativeAdmissionRuntime:
             )
             ordinary_quota = 4 if aged_head else restore_stride
             complete_ready = False
+            partial_restore_details = None
             if (
                 aged_head and source == "prefetch" and native_rank > 0
                 and budget.source == "native_next_prefill"
@@ -7998,6 +8894,35 @@ class NativeAdmissionRuntime:
                 )
                 if complete_ready:
                     ordinary_quota = restore_stride
+                elif (
+                    self._residency_pool_bytes is not None
+                    and self._prefetch_priority_normal_admissions < ordinary_quota
+                    and ranks[candidate[0]][:2] <= ranks[ordered[0][0]][:2]
+                ):
+                    selected_cost = self._request_restore_cost(candidate[1], observation)
+                    if (
+                        selected_cost is not None and selected_cost[0] > 0
+                        and observation["missing_full_tokens"] < observation["checkpoint_tokens"]
+                    ):
+                        self.counts["prefetch_priority_partial_restore_inspected"] += 1
+                        head_observation = self._read_request_reentry(
+                            ordered[0][1], key=head, refresh=True,
+                        )
+                        head_cost = self._request_restore_cost(ordered[0][1], head_observation)
+                        if (
+                            head_cost is not None and selected_cost[0] < head_cost[0]
+                            and selected_cost[1] <= head_cost[1]
+                        ):
+                            ordinary_quota = restore_stride
+                            partial_restore_details = {
+                                "head_request_id": ordered[0][1].rid,
+                                "head_restore_bytes": head_cost[0],
+                                "selected_restore_bytes": selected_cost[0],
+                                "head_next_input_tokens": head_cost[1],
+                                "selected_next_input_tokens": selected_cost[1],
+                                "ordinary_admission_quota": ordinary_quota,
+                                "evidence": "fresh_native_reentry;native_admission_remains",
+                            }
             ordinary_quota_met = self._prefetch_priority_normal_admissions >= ordinary_quota
             if native_rank > 0 and ordinary_quota_met:
                 ordered.remove(candidate)
@@ -8011,6 +8936,9 @@ class NativeAdmissionRuntime:
                     if complete_ready:
                         self._prefetch_priority_complete_ready_quota = ordinary_quota
                         self.counts["prefetch_priority_complete_ready_ordered"] += 1
+                    elif partial_restore_details is not None:
+                        self._prefetch_priority_partial_restore_details = partial_restore_details
+                        self.counts["prefetch_priority_partial_restore_ordered"] += 1
                 self._prefetch_priority_native_rank = native_rank
                 self._prefetch_priority_aged_head_bypassed = aged_head
                 if aged_head:
@@ -8023,6 +8951,7 @@ class NativeAdmissionRuntime:
                 if self.enable_final_stage_priority is not None
                 else self.enable_admission_prefetch or self.enable_final_stage_prefetch
             )
+            and self._final_stages
             and self._final_priority_normal_admissions >= 4
             and self._prefetch_priority_normal_admissions >= 4
             and self._prefetch_priority_promoted is None
@@ -8074,7 +9003,29 @@ class NativeAdmissionRuntime:
                     self._final_priority_promoted = candidate[1].rid
                     self._final_priority_native_rank = native_rank
                     self.counts["final_priority_ordered"] += 1
-        return compile_native_prefill_plan(
+        if (
+            self.enable_resident_first and len(ordered) > 1
+            and min(
+                self._prefetch_priority_normal_admissions,
+                self._resident_priority_normal_admissions,
+            ) >= 1
+            and self._prefetch_priority_promoted is None
+            and self._parent_handoff_priority_promoted is None
+            and self._final_priority_promoted is None
+            and waiting_ranks[ordered[0][0]][0] == -1
+        ):
+            selected = self._resident_aged_bypass(ordered, keys, ranks)
+            if selected is not None:
+                candidate, details = selected
+                details["tagged_displaced"] = ordered.index(candidate)
+                ordered.remove(candidate)
+                ordered.insert(0, candidate)
+                self._resident_priority_promoted = candidate[1].rid
+                self._resident_priority_details = details
+                self.counts["resident_aged_priority_ordered"] += 1
+                if details["ordinary_admission_quota"] < 4:
+                    self.counts["resident_aged_native_quota_ordered"] += 1
+        plan = compile_native_prefill_plan(
             [
                 key for index, _ in ordered
                 if (key := keys[index]) is not None
@@ -8083,6 +9034,10 @@ class NativeAdmissionRuntime:
             ],
             semantic_revision=self.semantic_revision,
         )
+        if plan.prioritized and plan.prioritized[0].request_id == work_selected:
+            self._workflow_work_promoted = work_selected
+            self.counts["workflow_work_head_ordered"] += 1
+        return plan
 
     def _submit_local_predictions(
         self,
@@ -8148,6 +9103,9 @@ class NativeAdmissionRuntime:
         if getattr(req, "beliefkv_metadata", None) is not None:
             self.counts["native_admitted" if admitted else f"native_{result}"] += 1
             if admitted:
+                if req.rid == self._workflow_work_promoted:
+                    self.counts["workflow_work_head_admitted"] += 1
+                    self._workflow_work_promoted = None
                 key = self.visible.get(req.rid)
                 hinted = self._residency_ordering_hints.get(key)
                 if hinted is not None and hinted[0] > time.monotonic() * 1000.:
@@ -8166,17 +9124,45 @@ class NativeAdmissionRuntime:
                     else:
                         self.counts["residency_ordering_hint_native_unknown"] += 1
                 self.demand_hints.pop(req.rid, None)
+                resident_priority = req.rid == self._resident_priority_promoted
+                native_quota_resident = bool(
+                    resident_priority and self._resident_priority_details is not None
+                    and self._resident_priority_details["ordinary_admission_quota"] < 4
+                )
+                self._resident_priority_normal_admissions = (
+                    0 if resident_priority else min(
+                        4, self._resident_priority_normal_admissions + 1,
+                    )
+                )
                 if req.rid in (
                     self._prefetch_priority_promoted, self._final_priority_promoted,
-                    self._parent_handoff_priority_promoted,
+                    self._parent_handoff_priority_promoted, self._resident_priority_promoted,
                 ):
-                    self._prefetch_priority_normal_admissions = 0
+                    # Locality turns keep accruing the ordinary quota for
+                    # restore/final-stage priorities, so those can still run.
+                    self._prefetch_priority_normal_admissions = (
+                        min(4, self._prefetch_priority_normal_admissions + 1)
+                        if native_quota_resident else 0
+                    )
+                    if req.rid == self._resident_priority_promoted:
+                        self.counts["resident_aged_priority_admitted"] += 1
+                        if native_quota_resident:
+                            self.counts["resident_aged_native_quota_admitted"] += 1
+                        if self._opportunity_writer is not None:
+                            self._opportunity_writer.record({
+                                "event": "resident_aged_priority_admitted",
+                                "ts_ms": time.time() * 1000.,
+                                "request_id": req.rid,
+                                **(self._resident_priority_details or {}),
+                            })
                     if req.rid == self._parent_handoff_priority_promoted:
                         self.counts["parent_handoff_priority_admitted"] += 1
                     if req.rid == self._prefetch_priority_promoted:
                         self.counts["prefetch_priority_admitted"] += 1
                         if self._prefetch_priority_complete_ready_quota is not None:
                             self.counts["prefetch_priority_complete_ready_admitted"] += 1
+                        if self._prefetch_priority_partial_restore_details is not None:
+                            self.counts["prefetch_priority_partial_restore_admitted"] += 1
                         if self._prefetch_priority_aged_head_bypassed:
                             self.counts["prefetch_priority_aged_head_bypass_admitted"] += 1
                         if self._opportunity_writer is not None:
@@ -8188,6 +9174,8 @@ class NativeAdmissionRuntime:
                                 "aged_head_bounded_bypass": self._prefetch_priority_aged_head_bypassed,
                                 "complete_checkpoint_ordinary_quota":
                                     self._prefetch_priority_complete_ready_quota,
+                                "partial_checkpoint_cost_comparison":
+                                    self._prefetch_priority_partial_restore_details,
                                 "queue_wait_ms": (
                                     time.monotonic() - self._visible_since.get(req.rid, time.monotonic())
                                 ) * 1000.,
@@ -8312,6 +9300,29 @@ class NativeAdmissionRuntime:
                             )
             if self._semantic_worker is not None:
                 key = visible_key
+                metadata = getattr(req, "beliefkv_metadata", None)
+                if (
+                    key is not None and isinstance(metadata, dict)
+                    and metadata.get("parent_invocation_id", False) is None
+                ):
+                    invocation = self.graph.invocations.get(key.invocation_id)
+                    if (
+                        invocation is not None
+                        and invocation.relation_type is RelationType.ROOT
+                        and invocation.parent_invocation_id is None
+                        and invocation.workflow_id == key.root_workflow_id
+                        and invocation.context_id == key.context_id
+                    ):
+                        key = None
+                if key is not None and key.request_id in self._decoded_tool_requests:
+                    # A tool marker rules out a natural RETURN for this request.
+                    if req.finished():
+                        self._semantic_finished[key.request_id] = (
+                            time.monotonic() * 1000,
+                            len(getattr(req, "output_ids", ()) or ()),
+                        )
+                        self._semantic_eos_proofs[key.request_id] = False
+                    key = None
                 if key is not None:
                     self._semantic_keys[key.request_id] = key
                     history = self._semantic_progress.get(key.request_id)
@@ -8322,10 +9333,7 @@ class NativeAdmissionRuntime:
                     start = self._decoded_scan_positions.get(key.request_id, 0)
                     outputs = getattr(req, "output_ids", ()) or ()
                     self._decoded_scan_positions[key.request_id] = len(outputs)
-                    if (
-                        key.request_id not in self._decoded_tool_requests
-                        and any(token in self._tool_open_token_ids for token in outputs[start:])
-                    ):
+                    if any(token in self._tool_open_token_ids for token in outputs[start:]):
                         self._child_report_notices.pop(key.invocation_id, None)
                         self._decoded_tool_requests.add(key.request_id)
                         self._semantic_forecasts.pop(key.request_id, None)
@@ -8377,6 +9385,15 @@ class NativeAdmissionRuntime:
             if visible_key is not None and req.finished():
                 context_id = visible_key.context_id
                 key = visible_key
+                if self._workflow_attained_work_enabled:
+                    workflow = self.graph.workflows.get(key.root_workflow_id)
+                    if workflow is not None and workflow.end_ts_ms is None:
+                        tokens = len(getattr(req, "output_ids", ()) or ())
+                        self._workflow_attained_output_tokens[key.root_workflow_id] = (
+                            self._workflow_attained_output_tokens.get(key.root_workflow_id, 0)
+                            + tokens
+                        )
+                        self.counts["workflow_completed_output_tokens_charged"] += tokens
                 del self.visible[rid]
                 self._visible_since.pop(rid, None)
                 self.demand_hints.pop(rid, None)

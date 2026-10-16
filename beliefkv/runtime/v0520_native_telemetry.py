@@ -131,6 +131,7 @@ class NativeReactiveTelemetry:
         }
         self._host_snapshot_interval_ms = 1000.0
         self._last_host_snapshot_ms = float("-inf")
+        self._write_back_batch: dict[str, Any] = {}
         self._cache: object | None = None
         self._restore_wait_probe = RestoreWaitProbe()
         self.prefill_turnover_probe = PrefillTurnoverProbe(self._emit)
@@ -238,6 +239,10 @@ class NativeReactiveTelemetry:
             ),
         }
         with self._state_lock:
+            self._write_back_batch = {
+                "max_nodes": getattr(cache, "write_back_batch_nodes", None),
+                "counts": dict(getattr(cache, "write_back_batch_counts", {}) or {}),
+            }
             for pool, (units, byte_count) in used.items():
                 high_water = self._host_pool_high_water[pool]
                 high_water["used_units"] = max(high_water["used_units"], units)
@@ -259,6 +264,7 @@ class NativeReactiveTelemetry:
                     for pool, (units, byte_count) in used.items()
                 },
                 "sample_semantics": "scheduler_safe_point_sampled_high_water",
+                "write_back_batch": self._write_back_batch,
                 "reentry_pressure_backups": dict(
                     getattr(cache, "beliefkv_reentry_backup_counts", {}) or {}
                 ),
@@ -2071,6 +2077,10 @@ class NativeReactiveTelemetry:
                 key: dict(values)
                 for key, values in self._cache_request_evidence.items()
             }
+            write_back_batch = {
+                "max_nodes": self._write_back_batch.get("max_nodes"),
+                "counts": dict(self._write_back_batch.get("counts") or {}),
+            }
         status = {
             "schema_version": 1,
             "source": "native_sglang_v0520",
@@ -2082,6 +2092,7 @@ class NativeReactiveTelemetry:
             "failed_records": 0 if self._error is None else 1,
             "dropped_records": 0 if self._error is None else None,
             "host_pool_evidence": pool_evidence,
+            "write_back_batch": write_back_batch,
             "request_cache_evidence": request_cache_evidence,
             "context_prefix_reuse_evidence": {
                 "counts": dict(self._context_prefix_counts),

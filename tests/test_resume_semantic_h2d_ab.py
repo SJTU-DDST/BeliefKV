@@ -58,6 +58,24 @@ def test_resume_retains_historical_native_reference_across_development_iteration
     assert environment["NATIVE_REFERENCE_RUN"] == "/native-reference"
 
 
+def test_resume_preserves_selected_reference_paths_and_clears_unspecified_paths():
+    configuration = plan()
+    environment = resume_environment(configuration, Path("/next"), python="/python", port=18454)
+    assert environment["NATIVE_REFERENCE_RUN"] == ""
+    assert environment["NATIVE_REFERENCE_TIMELINE"] == ""
+    assert environment["NATIVE_REFERENCE_CACHE"] == ""
+    configuration.update(
+        native_reference_run="/native-reference",
+        native_reference_timeline="/native-reference/timelines/native.clock_v2.json.gz",
+        native_reference_cache="/native-reference/native.clock_v2.json",
+    )
+    snapshot = dict(configuration)
+    environment = resume_environment(configuration, Path("/next"), python="/python", port=18454)
+    for field in ("native_reference_run", "native_reference_timeline", "native_reference_cache"):
+        assert environment[field.upper()] == configuration[field]
+    assert configuration == snapshot
+
+
 def test_resume_preserves_explicit_numa_policy_and_legacy_binding():
     configuration = plan()
     environment = resume_environment(configuration, Path("/run"), python="/python", port=18454)
@@ -65,3 +83,17 @@ def test_resume_preserves_explicit_numa_policy_and_legacy_binding():
     configuration["host_numa_memory_policy"] = "preferred"
     environment = resume_environment(configuration, Path("/run"), python="/python", port=18454)
     assert environment["HOST_NUMA_MEMORY_POLICY"] == "preferred"
+
+
+def test_resume_retains_poisson_rate_and_arrival_seed():
+    configuration = plan()
+    configuration.update(
+        workflow_arrival_mode="poisson", workflow_arrival_batch_size=0,
+        workflow_arrival_batch_interval_ms=0,
+        workflow_arrival_rate_per_second=1 / 15, workflow_arrival_seed=21,
+    )
+    environment = resume_environment(configuration, Path("/run"), python="/python", port=18454)
+    assert environment["ARRIVAL_BATCH_SIZE"] == "0"
+    assert environment["ARRIVAL_BATCH_INTERVAL_MS"] == "0"
+    assert environment["ARRIVAL_RATE_PER_SECOND"] == str(1 / 15)
+    assert environment["ARRIVAL_SEED"] == "21"

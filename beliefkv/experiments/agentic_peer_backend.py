@@ -44,6 +44,7 @@ from beliefkv.runtime.context_lifecycle import (
     CompletionBudgetMiddleware,
     ContextLifecycleMiddleware,
     ContextLifecyclePolicy,
+    make_summary_model,
 )
 from beliefkv.runtime.deepagents_adapter import (
     BeliefKVChatOpenAI,
@@ -604,8 +605,8 @@ class ToolEnabledPeerBackend(PeerAgentBackend):
             model_context_tokens=self.config.context_lifecycle.model_context_tokens,
             completion_tokens=self.config.max_completion_tokens,
         )
-        summary_model = model.model_copy(
-            update={"max_tokens": self.config.context_lifecycle.summary_output_tokens}
+        summary_model = make_summary_model(
+            model, output_tokens=self.config.context_lifecycle.summary_output_tokens,
         )
         required_range = self.config.required_initial_subagent_min > 0
         activation_policy = _ActivationPolicy(

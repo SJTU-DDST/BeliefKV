@@ -80,6 +80,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument(
         "--workflow-arrival-batch-interval-ms", type=float, default=0.0
     )
+    parser.add_argument("--workflow-arrival-schedule", type=Path)
     parser.add_argument(
         "--saturated-root-backlog",
         action="store_true",
@@ -307,6 +308,7 @@ def main() -> int:
         workflow_arrival_batch_interval_ms=(
             args.workflow_arrival_batch_interval_ms
         ),
+        workflow_arrival_schedule=args.workflow_arrival_schedule,
         saturated_root_backlog=args.saturated_root_backlog,
         gpu_index=args.gpu,
         pool_tokens=args.pool_tokens,

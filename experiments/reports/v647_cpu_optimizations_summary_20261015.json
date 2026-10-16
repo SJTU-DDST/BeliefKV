@@ -1,0 +1,92 @@
+{
+  "status": "development_cpu_validated_not_cold_qualified_or_gpu_accepted",
+  "observed_at_asia_shanghai": "2026-10-15T10:04:47+08:00",
+  "development_checkout": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011",
+  "evidence_directory": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports",
+  "baseline_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+  "authorization": {
+    "source": "User explicitly requested historical bottleneck analysis and CPU-verifiable optimizations.",
+    "cpu_validation_allowed_during_reservation": true,
+    "gpu_not_before": "2026-10-15T15:00:00+08:00",
+    "gpu_experiment_started": false,
+    "frozen_v60_changed": false,
+    "cpu_environment": "CUDA_VISIBLE_DEVICES=999; OMP/MKL/OPENBLAS_NUM_THREADS=1; nice=10"
+  },
+  "latest_history": {
+    "run": "qwen35_native_predictive_replenished_108plus48_20261014_v59",
+    "tool_prefetch_calls": 2856427,
+    "tool_prefetch_retry_deferred": 2743143,
+    "control_drain_calls": 2856427,
+    "tool_prefetch_self_wall_ms": 84915.608825,
+    "control_drain_self_wall_ms": 74694.256474,
+    "scope": "Clock-independent shared-path counters and wall aggregates; legacy full-timeline phase statistics remain quarantined."
+  },
+  "core_source_sha256": {
+    "beliefkv/runtime/event_channel.py": "c6d2a65854c6cebe77c333c830911cc53fe60702ef469ba3307296557e29d298",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "4313cbe326bb3491726eb8cb439d9ba890e8e1df0cc3c1edea0d98b990222c68",
+    "beliefkv/runtime/sglang_v0520_physical.py": "d94509b4c554e76f7a93c95ce9865d149f4c2aac5a8bddbdd5ec09e79828f606",
+    "beliefkv/policy/causal_frontier.py": "32e206ce1cc069c0690b05bedb0d5925b40fac3b48e1f77b4461ea51993240a4"
+  },
+  "validation": {
+    "junit": "v646_final_cpu_validation_20261015.xml",
+    "sha256": "38da5c542a1548ffa093fb0f26c381e4711c253340dcb8cc351416cede379655",
+    "passed_tests": 752,
+    "passed_subtests": 2,
+    "skipped": 1,
+    "junit_testcase_elements": 753,
+    "junit_declared_tests_including_subtests": 755,
+    "errors": 0,
+    "failures": 0,
+    "skipped_reason": "test_test_progress_shadow_in_real_sandbox requires an explicitly selected cached SWE-bench Docker image",
+    "initial_failed_receipt_preserved": "v637_runtime_cpu_checks_20261015.xml",
+    "initial_failure": "The new-hint regression fixture omitted native-session registration; corrected the fixture, then reran the relevant current source."
+  },
+  "local_rank_cache": {
+    "report": "v643_combined_local_rank_cpu_20261015.json",
+    "sha256": "16dc2ebd5e95b4ac4294891b63471ec923c78071370ec962690fa03abd653264",
+    "scenarios": "108 workflows/one JOIN round and 156 workflows/two JOIN rounds; 300 identical event-maintenance-admission iterations per case",
+    "useful_case_thread_cpu_reduction_range": [0.20891150563470473, 0.24277335293135716],
+    "message_control_thread_cpu_cost_increase_range": [0.01963592555584026, 0.02979137006135346],
+    "request_order_and_complete_graph_snapshots_equal": true,
+    "physical_actions_issued": 0
+  },
+  "tool_retry": {
+    "report": "v645_final_tool_retry_cpu_20261015.json",
+    "sha256": "39801314150deed2e3691080764b7d0320add6e546c3f718c86c7dddaf364ed5",
+    "scenarios": "Complete deferred dispatch calls with 0, 1, 16 or 64 registered transactions, including mixed directions; 500 samples of 50 calls",
+    "profiled_thread_cpu_reduction_range": [0.23410303063878612, 0.6911903975048521],
+    "unprofiled_thread_cpu_reduction_range": [0.40031854101311226, 0.8336835182763492],
+    "graph_expectations_tickets_and_completion_credit_equal": true,
+    "physical_actions_issued": 0,
+    "counter_caveat": "Overlapping defer reasons intentionally change which defer counter wins; physical actions and credit remain unchanged."
+  },
+  "control_poll": {
+    "report": "v644_bounded_control_poll_cpu_20261015.json",
+    "sha256": "f6823f16a56e5f33733c6c4e7af6ba29a3a5fbb70adf84270afc58bb51ad2b2c",
+    "change": "Probe readiness after an empty drain; retain direct receive after recent traffic.",
+    "scenarios": "Real UNIX datagrams, 6000 measured drains per traffic/profile case; deterministic randomized order; GC remains enabled",
+    "profiled_idle_cpu_us": {"baseline": 4.717785666666667, "candidate": 3.8399831666666664},
+    "profiled_idle_thread_cpu_reduction": 0.18606239494983423,
+    "profiled_sparse_thread_cpu_reduction": 0.06389205280801669,
+    "profiled_busy_thread_cpu_cost_increase_range": [0.003860080563016677, 0.005346625657735693],
+    "unprofiled_idle_thread_cpu_reduction": 0.27359247430214184,
+    "unprofiled_busy_max_thread_cpu_cost_increase": 0.008115676666743399,
+    "idle_peak_extra_allocated_bytes": {"baseline_range": [60294, 60358], "candidate_range": [96, 128]},
+    "exact_delivery_ack_and_handler_order_equal": true,
+    "receive_profiling_cadence_equal": true,
+    "preliminary_reports_preserved": [
+      "v638_control_empty_poll_cpu_20261015.json",
+      "v639_adaptive_control_poll_cpu_20261015.json",
+      "v641_control_poll_gc_cpu_20261015.json"
+    ],
+    "measurement_refinement": "The final fixture compares and releases handler observations after every drain; growing artificial histories had produced uneven GC costs. GC remains enabled and is recorded."
+  },
+  "limits_and_next_step": [
+    "These percentages measure separate CPU paths and cannot be added or converted into predicted JCT gains.",
+    "Synthetic queue, traffic and transaction populations are scenarios rather than replayed V59 frequencies.",
+    "Keep message-invalidating and busy-socket negative controls, including their measured extra cost.",
+    "Harness and clock/reporting CPU checks passed; real-model loop recurrence and corrected full-trace export are still unverified.",
+    "This is not a replacement for exact cold-source/engine qualification, real GPU turnover, useful FULL consumption or matched workflow JCT/throughput/quality/fairness validation.",
+    "Preserve the frozen V60 target and user GPU reservation; do not hot-edit or flip model eligibility."
+  ]
+}

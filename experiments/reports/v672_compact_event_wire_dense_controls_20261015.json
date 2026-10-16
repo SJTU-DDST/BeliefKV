@@ -1,0 +1,284 @@
+{
+  "status": "dense_message_control_not_live_workload_frequency_or_gpu_gain",
+  "observed_at_local": "2026-10-14T21:19:29.205709-07:00",
+  "baseline_revision": "2b5c36d",
+  "baseline_encoder_sha256": "c6d2a65854c6cebe77c333c830911cc53fe60702ef469ba3307296557e29d298",
+  "candidate_sources": {
+    "beliefkv/runtime/event_channel.py": "c053fa25b06d3c5de5331c1118665f8a95ffb68ea430e9666648ab84213056b4",
+    "scripts/benchmark_compact_event_wire.py": "2cd5b08bc4ae28e8c731ca0678f72af9a387d489c837979a8d0093146b72d91d"
+  },
+  "events": [
+    {
+      "event_id": "dense",
+      "ts_ms": 0.0,
+      "kind": "workflow_start",
+      "workflow_id": "wf",
+      "invocation_id": "i",
+      "target_invocation_id": "t",
+      "context_id": "c",
+      "target_context_id": "tc",
+      "parent_invocation_id": "p",
+      "parent_context_id": "pc",
+      "agent_definition_id": "role",
+      "agent_instance_id": "instance",
+      "relation_type": "call",
+      "context_mode": "fresh",
+      "execution_mode": "foreground",
+      "return_target_id": "p",
+      "join_id": "j",
+      "member_invocation_ids": [
+        "i"
+      ],
+      "context_epoch": 0,
+      "confidence": "declared_runtime",
+      "attributes": {
+        "null": null,
+        "zero": 0,
+        "false": false
+      }
+    }
+  ],
+  "cases": [
+    {
+      "events": 1,
+      "iterations": 1000,
+      "profiling_enabled": false,
+      "payload_bytes": {
+        "baseline": 619,
+        "candidate": 619
+      },
+      "payload_reduction_fraction": 0.0,
+      "graph_counters_exact_acks_and_timing_counts_equal": true,
+      "costs_per_event": {
+        "baseline": {
+          "encode": {
+            "wall_ms": {
+              "count": 1000,
+              "mean_ms": 0.020093299,
+              "p50_ms": 0.01972,
+              "p99_ms": 0.026638,
+              "max_ms": 0.050013
+            },
+            "thread_cpu_ms": {
+              "count": 1000,
+              "mean_ms": 0.019460425,
+              "p50_ms": 0.019103,
+              "p99_ms": 0.025657,
+              "max_ms": 0.039115
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 1000,
+              "mean_ms": 0.059316672,
+              "p50_ms": 0.058247,
+              "p99_ms": 0.077428,
+              "max_ms": 0.108492
+            },
+            "thread_cpu_ms": {
+              "count": 1000,
+              "mean_ms": 0.059278905,
+              "p50_ms": 0.058233,
+              "p99_ms": 0.077416,
+              "max_ms": 0.108534
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 1000,
+              "mean_ms": 0.079409971,
+              "p50_ms": 0.078016,
+              "p99_ms": 0.104646,
+              "max_ms": 0.144901
+            },
+            "thread_cpu_ms": {
+              "count": 1000,
+              "mean_ms": 0.07873933,
+              "p50_ms": 0.077412,
+              "p99_ms": 0.101391,
+              "max_ms": 0.143977
+            }
+          }
+        },
+        "candidate": {
+          "encode": {
+            "wall_ms": {
+              "count": 1000,
+              "mean_ms": 0.021908547,
+              "p50_ms": 0.021564,
+              "p99_ms": 0.028826,
+              "max_ms": 0.050039
+            },
+            "thread_cpu_ms": {
+              "count": 1000,
+              "mean_ms": 0.021289686,
+              "p50_ms": 0.02097,
+              "p99_ms": 0.028109,
+              "max_ms": 0.040792
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 1000,
+              "mean_ms": 0.059596691,
+              "p50_ms": 0.058489,
+              "p99_ms": 0.081986,
+              "max_ms": 0.121778
+            },
+            "thread_cpu_ms": {
+              "count": 1000,
+              "mean_ms": 0.059558342,
+              "p50_ms": 0.058492,
+              "p99_ms": 0.081028,
+              "max_ms": 0.121804
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 1000,
+              "mean_ms": 0.081505238,
+              "p50_ms": 0.08012,
+              "p99_ms": 0.109487,
+              "max_ms": 0.144617
+            },
+            "thread_cpu_ms": {
+              "count": 1000,
+              "mean_ms": 0.080848028,
+              "p50_ms": 0.079508,
+              "p99_ms": 0.10676,
+              "max_ms": 0.143989
+            }
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": {
+        "encode": -0.09399902622887213,
+        "server": -0.004713936601899116,
+        "combined": -0.02678074603886027
+      }
+    },
+    {
+      "events": 1,
+      "iterations": 1000,
+      "profiling_enabled": true,
+      "payload_bytes": {
+        "baseline": 619,
+        "candidate": 619
+      },
+      "payload_reduction_fraction": 0.0,
+      "graph_counters_exact_acks_and_timing_counts_equal": true,
+      "costs_per_event": {
+        "baseline": {
+          "encode": {
+            "wall_ms": {
+              "count": 1000,
+              "mean_ms": 0.020965138,
+              "p50_ms": 0.020683,
+              "p99_ms": 0.025483,
+              "max_ms": 0.054933
+            },
+            "thread_cpu_ms": {
+              "count": 1000,
+              "mean_ms": 0.02031198,
+              "p50_ms": 0.020064,
+              "p99_ms": 0.024824,
+              "max_ms": 0.035601
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 1000,
+              "mean_ms": 0.073782794,
+              "p50_ms": 0.073009,
+              "p99_ms": 0.086353,
+              "max_ms": 0.116116
+            },
+            "thread_cpu_ms": {
+              "count": 1000,
+              "mean_ms": 0.073790143,
+              "p50_ms": 0.073016,
+              "p99_ms": 0.086407,
+              "max_ms": 0.116086
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 1000,
+              "mean_ms": 0.094747932,
+              "p50_ms": 0.093825,
+              "p99_ms": 0.108616,
+              "max_ms": 0.135721
+            },
+            "thread_cpu_ms": {
+              "count": 1000,
+              "mean_ms": 0.094102123,
+              "p50_ms": 0.093207,
+              "p99_ms": 0.108003,
+              "max_ms": 0.1351
+            }
+          }
+        },
+        "candidate": {
+          "encode": {
+            "wall_ms": {
+              "count": 1000,
+              "mean_ms": 0.022879598,
+              "p50_ms": 0.022596,
+              "p99_ms": 0.028373,
+              "max_ms": 0.05648
+            },
+            "thread_cpu_ms": {
+              "count": 1000,
+              "mean_ms": 0.022238873,
+              "p50_ms": 0.021977,
+              "p99_ms": 0.027798,
+              "max_ms": 0.044234
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 1000,
+              "mean_ms": 0.073945618,
+              "p50_ms": 0.073139,
+              "p99_ms": 0.086109,
+              "max_ms": 0.106114
+            },
+            "thread_cpu_ms": {
+              "count": 1000,
+              "mean_ms": 0.07390841,
+              "p50_ms": 0.073153,
+              "p99_ms": 0.086053,
+              "max_ms": 0.09735
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 1000,
+              "mean_ms": 0.096825216,
+              "p50_ms": 0.095756,
+              "p99_ms": 0.111947,
+              "max_ms": 0.133778
+            },
+            "thread_cpu_ms": {
+              "count": 1000,
+              "mean_ms": 0.096147283,
+              "p50_ms": 0.095143,
+              "p99_ms": 0.111349,
+              "max_ms": 0.122561
+            }
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": {
+        "encode": -0.09486485315562532,
+        "server": -0.0016027479442612957,
+        "combined": -0.02173340977652538
+      }
+    }
+  ],
+  "limits": [
+    "Every optional top-level field is non-null; this is a synthetic encoding stress control, not a real workflow trace.",
+    "Only one WORKFLOW_START is replayed per fresh runtime; original authoritative attributes and graph results are preserved.",
+    "Retain any slowdown; the sealed V59 prefixes separately measure actual recorded payloads."
+  ]
+}

@@ -1,6 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+import hashlib
+import json
+import math
+from pathlib import Path
+import random
+from collections.abc import Sequence
 
 
 @dataclass(frozen=True)
@@ -9,6 +15,58 @@ class WorkflowArrival:
     batch_index: int
     position_in_batch: int
     scheduled_offset_seconds: float
+
+
+def build_poisson_workflow_arrivals(
+    workflow_count: int, *, rate_per_second: float, seed: int,
+) -> tuple[WorkflowArrival, ...]:
+    if workflow_count <= 0:
+        raise ValueError("workflow_count must be positive")
+    if not math.isfinite(rate_per_second) or rate_per_second <= 0:
+        raise ValueError("Poisson arrival rate must be finite and positive")
+    if type(seed) is not int or seed < 0:
+        raise ValueError("arrival seed must be a non-negative integer")
+    generator = random.Random(seed)
+    offset = 0.0
+    arrivals = []
+    for index in range(workflow_count):
+        offset += generator.expovariate(rate_per_second)
+        arrivals.append(WorkflowArrival(index, index, 0, offset))
+    return tuple(arrivals)
+
+
+def arrival_schedule_digest(rows: list[dict]) -> str:
+    return hashlib.sha256(json.dumps(
+        rows, sort_keys=True, separators=(",", ":"), allow_nan=False,
+    ).encode()).hexdigest()
+
+
+def load_workflow_arrivals(
+    path: Path, *, instance_ids: Sequence[str],
+) -> tuple[WorkflowArrival, ...]:
+    plan = json.loads(path.read_bytes())
+    rows = plan["arrival_schedule"]
+    if (
+        not isinstance(rows, list) or len(rows) != len(instance_ids)
+        or len(set(instance_ids)) != len(instance_ids)
+    ):
+        raise ValueError("frozen arrivals must cover the selected workflows exactly")
+    arrivals = []
+    previous = 0.0
+    for index, (row, instance_id) in enumerate(zip(rows, instance_ids)):
+        offset = row.get("offset_seconds")
+        if (
+            row.get("instance_id") != instance_id
+            or type(offset) not in (int, float)
+            or not math.isfinite(offset) or offset < previous
+        ):
+            raise ValueError("frozen arrivals must preserve task order and finite monotonic times")
+        arrivals.append(WorkflowArrival(index, index, 0, float(offset)))
+        previous = offset
+    expected_digest = plan.get("arrival_schedule_sha256")
+    if expected_digest is not None and expected_digest != arrival_schedule_digest(rows):
+        raise ValueError("frozen arrival schedule digest changed")
+    return tuple(arrivals)
 
 
 def build_workflow_arrivals(

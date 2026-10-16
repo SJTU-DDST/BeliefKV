@@ -1,0 +1,315 @@
+diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
+index ade72f1..01fa982 100644
+--- a/python/sglang/srt/mem_cache/unified_radix_cache.py
++++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
+@@ -1091,6 +1091,8 @@ class UnifiedRadixCache(BasePrefixCache):
+             "native_full_selected_tokens": 0, "native_full_scan_truncated": False,
+             "native_full_excluded": 0,
+             "native_full_rejections": {}, "waiting_candidate_checks": [],
++            "native_full_scan_cycle_started": False, "native_full_scan_remaining": 0,
++            "native_fallback_considered": False,
+             "max_nodes": max_nodes, "transaction_attempts": 0,
+         } if collect_diagnostics else None
+         fallback = getattr(self, "beliefkv_join_pressure_candidates", ())
+@@ -1101,76 +1103,87 @@ class UnifiedRadixCache(BasePrefixCache):
+                 for identity in by_component.get(int(ct), fallback)[:8]:
+                     waiting.setdefault(identity, None)
+         candidates = [(node_id, created, "waiting_agent") for node_id, created in waiting]
+-        scanned = selected = 0
+-        leaves = self.tree_core.evictable_device_leaves
+-        scan = getattr(self, "_beliefkv_handoff_full_scan", None)
+-        needs_full = self._component_available_size(BASE_COMPONENT_TYPE) < full_tokens
+-        new_scan = needs_full and not scan
+-        if new_scan:
+-            # Continue the bounded census across calls instead of repeatedly
+-            # inspecting the same set prefix. Every victim is revalidated below.
+-            scan = deque(leaves)
+-            self._beliefkv_handoff_full_scan = scan
+-        elif not needs_full:
+-            scan = None
+-            self._beliefkv_handoff_full_scan = None
+-        while scan and scanned < max_nodes and selected < 8:
+-            node = scan.popleft()
+-            if node.id in excluded:
+-                if diagnosis is not None:
+-                    diagnosis["native_full_excluded"] += 1
+-                continue
+-            scanned += 1
+-            reason = (
+-                "not_current_device_leaf" if node not in leaves else
+-                "unbacked" if not node.backuped else
+-                "session_referenced" if any(cd.session_ref for cd in node.component_data) else
+-                "device_locked" if any(cd.lock_ref for cd in node.component_data) else
+-                "inflight" if (
+-                    node.id in self.ongoing_write_through
+-                    or node.write_through_pending_id is not None
+-                    or node.load_back_pending_id is not None
+-                ) else None
+-            )
+-            if reason is None:
+-                candidates.append((node.id, node.creation_time, "unreferenced_cache"))
+-                selected += 1
+-                if diagnosis is not None:
+-                    full = node.component_data[BASE_COMPONENT_TYPE]
+-                    diagnosis["native_full_selected_tokens"] += (
+-                        len(full.value) if full.value is not None else 0
+-                    )
+-            elif diagnosis is not None:
+-                reasons = diagnosis["native_full_rejections"]
+-                reasons[reason] = reasons.get(reason, 0) + 1
+         if diagnosis is not None:
+-            diagnosis["native_full_scanned"] = scanned
+-            diagnosis["native_full_selected"] = selected
+-            diagnosis["native_full_scan_truncated"] = bool(scan)
+-            diagnosis["native_full_scan_cycle_started"] = bool(new_scan)
+-            diagnosis["native_full_scan_remaining"] = len(scan) if scan is not None else 0
+             diagnosis["published_waiting_candidates"] = len(waiting)
+-        if self._component_available_size(ComponentType.MAMBA) < mamba_slots:
+-            lru = getattr(self.tree_core, "lru_lists", {}).get(ComponentType.MAMBA)
+-            node = lru.get_lru_no_lock() if lru is not None else None
+-            scanned = 0
+-            while node is not None and scanned < 8:
+-                if node.id not in excluded:
+-                    scanned += 1
+-                    state = node.component_data[ComponentType.MAMBA]
+-                    if (
+-                        state.value is not None and state.host_value is not None
+-                        and state.session_ref == 0
+-                    ):
+-                        candidates.append((node.id, node.creation_time, "unreferenced_mamba"))
+-                node = lru.get_prev_no_lock(node)
++
+         pending = list(reversed(candidates))
+         attempts = 0
+-        while pending and attempts < max_nodes:
++        native_considered = False
++        while attempts < max_nodes:
+             need_full = self._component_available_size(BASE_COMPONENT_TYPE) < full_tokens
+             need_mamba = self._component_available_size(ComponentType.MAMBA) < mamba_slots
+             if not need_full and not need_mamba:
+                 break
++            if not pending:
++                if native_considered:
++                    break
++                native_considered = True
++                candidates = []
++                scanned = selected = 0
++                leaves = self.tree_core.evictable_device_leaves
++                scan = getattr(self, "_beliefkv_handoff_full_scan", None)
++                new_scan = need_full and not scan
++                if new_scan:
++                    # Known waiting victims left a deficit. Continue the bounded
++                    # native census and revalidate selected victims below.
++                    scan = deque(leaves)
++                    self._beliefkv_handoff_full_scan = scan
++                elif not need_full:
++                    scan = None
++                    self._beliefkv_handoff_full_scan = None
++                while scan and scanned < max_nodes and selected < 8:
++                    node = scan.popleft()
++                    if node.id in excluded:
++                        if diagnosis is not None:
++                            diagnosis["native_full_excluded"] += 1
++                        continue
++                    scanned += 1
++                    reason = (
++                        "not_current_device_leaf" if node not in leaves else
++                        "unbacked" if not node.backuped else
++                        "session_referenced" if any(cd.session_ref for cd in node.component_data) else
++                        "device_locked" if any(cd.lock_ref for cd in node.component_data) else
++                        "inflight" if (
++                            node.id in self.ongoing_write_through
++                            or node.write_through_pending_id is not None
++                            or node.load_back_pending_id is not None
++                        ) else None
++                    )
++                    if reason is None:
++                        candidates.append((node.id, node.creation_time, "unreferenced_cache"))
++                        selected += 1
++                        if diagnosis is not None:
++                            full = node.component_data[BASE_COMPONENT_TYPE]
++                            diagnosis["native_full_selected_tokens"] += (
++                                len(full.value) if full.value is not None else 0
++                            )
++                    elif diagnosis is not None:
++                        reasons = diagnosis["native_full_rejections"]
++                        reasons[reason] = reasons.get(reason, 0) + 1
++                if diagnosis is not None:
++                    diagnosis["native_full_scanned"] = scanned
++                    diagnosis["native_full_selected"] = selected
++                    diagnosis["native_full_scan_truncated"] = bool(scan)
++                    diagnosis["native_full_scan_cycle_started"] = bool(new_scan)
++                    diagnosis["native_full_scan_remaining"] = len(scan) if scan is not None else 0
++                    diagnosis["native_fallback_considered"] = True
++                if need_mamba:
++                    lru = getattr(self.tree_core, "lru_lists", {}).get(ComponentType.MAMBA)
++                    node = lru.get_lru_no_lock() if lru is not None else None
++                    scanned = 0
++                    while node is not None and scanned < 8:
++                        if node.id not in excluded:
++                            scanned += 1
++                            state = node.component_data[ComponentType.MAMBA]
++                            if (
++                                state.value is not None and state.host_value is not None
++                                and state.session_ref == 0
++                            ):
++                                candidates.append((node.id, node.creation_time, "unreferenced_mamba"))
++                        node = lru.get_prev_no_lock(node)
++                pending = list(reversed(candidates))
++                if not pending:
++                    break
+             node_id, created, scope = pending.pop()
+             attempts += 1
+             try:
+@@ -1260,7 +1273,12 @@ class UnifiedRadixCache(BasePrefixCache):
+                     pending.append((parent.id, parent.creation_time, scope))
+         if diagnosis is not None:
+             diagnosis["transaction_attempts"] = attempts
+-            diagnosis["transaction_truncated"] = bool(pending and attempts >= max_nodes)
++            diagnosis["transaction_truncated"] = attempts >= max_nodes and (
++                bool(pending) or not native_considered and (
++                    self._component_available_size(BASE_COMPONENT_TYPE) < full_tokens
++                    or self._component_available_size(ComponentType.MAMBA) < mamba_slots
++                )
++            )
+             diagnosis["freed_units"] = {int(ct): count for ct, count in tracker.items()}
+             diagnosis["free_full_tokens_after"] = self._component_available_size(BASE_COMPONENT_TYPE)
+             diagnosis["free_mamba_slots_after"] = self._component_available_size(ComponentType.MAMBA)
+diff --git a/test/srt/test_beliefkv_execution_handoff.py b/test/srt/test_beliefkv_execution_handoff.py
+index 18b17ed..deaf243 100644
+--- a/test/srt/test_beliefkv_execution_handoff.py
++++ b/test/srt/test_beliefkv_execution_handoff.py
+@@ -383,6 +383,94 @@ def test_reclaim_backs_cold_exchange_with_actual_allocator_release():
+     assert cache.beliefkv_handoff_last_victims[0]["scope"] == "waiting_agent"
+ 
+ 
++@pytest.mark.parametrize("collect_diagnostics", (False, True))
++def test_known_waiting_capacity_does_not_scan_unrelated_native_leaves(collect_diagnostics):
++    cache, _, victim, _ = fixture()
++
++    class Leaves(set):
++        iterations = 0
++
++        def __iter__(self):
++            self.iterations += 1
++            return super().__iter__()
++
++    leaves = Leaves(cache.tree_core.evictable_device_leaves)
++    cache.tree_core.evictable_device_leaves = leaves
++    cache.is_write_back = True
++    cache.ongoing_write_through = {}
++    cache.beliefkv_join_pressure_candidates = ((victim.id, victim.creation_time),)
++    cache.beliefkv_join_pressure_validator = lambda *_: True
++    free = {0: 0, 2: 0}
++    cache._component_available_size = free.__getitem__
++
++    def demote(node_id, tracker):
++        assert node_id == victim.id
++        free[0] += 2
++        free[2] += 1
++        tracker.update({0: 2, 2: 1})
++
++    cache._demote = demote
++    assert cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=2, mamba_slots=1, collect_diagnostics=collect_diagnostics,
++    ) == {0: 2, 2: 1}
++    assert free == {0: 2, 2: 1}
++    assert leaves.iterations == 0
++    assert cache.beliefkv_handoff_last_victims[0]["scope"] == "waiting_agent"
++    if collect_diagnostics:
++        diagnosis = cache.beliefkv_handoff_last_capacity
++        assert diagnosis["native_full_scanned"] == 0
++        assert diagnosis["full_target_satisfied"] and diagnosis["mamba_target_satisfied"]
++
++
++@pytest.mark.parametrize("waiting", ("partial", "invalid", "excluded", "bounded"))
++def test_known_waiting_shortfall_still_uses_validated_native_fallback(waiting):
++    cache, checkpoint, victim, _ = fixture()
++    fallback = Node(
++        id=3, parent=cache.tree_core.root_node, creation_time=3,
++        component_data=[data(refs=0), data(False, False, 0), data(refs=0)],
++        write_through_pending_id=None, load_back_pending_id=None, backuped=True,
++    )
++    nodes = {0: cache.tree_core.root_node, 1: checkpoint, 2: victim, 3: fallback}
++    cache.tree_core.node_by_id = nodes.__getitem__
++    cache.tree_core.evictable_device_leaves.add(fallback)
++    cache.is_write_back = True
++    cache.ongoing_write_through = {}
++    cache.beliefkv_join_pressure_candidates = ((victim.id, victim.creation_time),)
++    cache.beliefkv_join_pressure_validator = lambda *_: waiting not in ("invalid", "bounded")
++    free = {0: 0, 2: 0}
++    cache._component_available_size = free.__getitem__
++
++    def demote(node_id, tracker):
++        node = nodes[node_id]
++        assert node is fallback or waiting == "partial"
++        node.component_data[0].value = None
++        free[0] += 2
++        free[2] += 1
++        tracker[0] = tracker.get(0, 0) + 2
++        tracker[2] = tracker.get(2, 0) + 1
++
++    cache._demote = demote
++    target = 4 if waiting == "partial" else 2
++    result = cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=target, mamba_slots=1,
++        exclude_node_ids=(victim.id,) if waiting == "excluded" else (),
++        max_nodes=1 if waiting == "bounded" else 64,
++        collect_diagnostics=True,
++    )
++    if waiting == "bounded":
++        assert result == {} and free == {0: 0, 2: 0}
++        assert fallback.component_data[0].value is not None
++        diagnosis = cache.beliefkv_handoff_last_capacity
++        assert diagnosis["transaction_truncated"]
++        assert not diagnosis["native_fallback_considered"]
++        return
++    assert result[0] == free[0] == target
++    assert fallback.component_data[0].value is None
++    assert (victim.component_data[0].value is None) == (waiting == "partial")
++    assert cache.beliefkv_handoff_last_capacity["native_full_scanned"] > 0
++    assert cache.beliefkv_handoff_last_victims[-1]["scope"] == "unreferenced_cache"
++
++
+ def test_handoff_reclaim_accumulates_native_full_and_mamba_into_sparse_tracker():
+     cache, _, victim, _ = fixture()
+     cache.is_write_back = True
+diff --git a/test/srt/test_beliefkv_terminal_capacity.py b/test/srt/test_beliefkv_terminal_capacity.py
+index 7513616..ef4f5d0 100644
+--- a/test/srt/test_beliefkv_terminal_capacity.py
++++ b/test/srt/test_beliefkv_terminal_capacity.py
+@@ -757,6 +757,34 @@ def test_wait_reclaim_continues_through_newly_exposed_backed_full_ancestors(
+     cache._execute_and_commit_kv_backup.assert_not_called()
+ 
+ 
++def test_known_waiting_chain_fills_real_capacity_without_native_leaf_census(hybrid_cache):
++    cache, allocator, request_pool, chain = backed_waiting_chain(hybrid_cache)
++
++    class Leaves(set):
++        iterations = 0
++
++        def __iter__(self):
++            self.iterations += 1
++            return super().__iter__()
++
++    leaves = Leaves(cache.tree_core.evictable_device_leaves)
++    cache.tree_core.evictable_device_leaves = leaves
++    available = allocator.available_size()
++    state = chain[0].component_data[ComponentType.MAMBA].value
++    result = cache.reclaim_beliefkv_handoff_capacity(
++        full_tokens=available + 6, mamba_slots=0, collect_diagnostics=True,
++    )
++    assert result[int(ComponentType.FULL)] == 6
++    assert allocator.available_size() == available + 6
++    assert chain[0].component_data[ComponentType.MAMBA].value is state
++    assert leaves.iterations == 0
++    diagnosis = cache.beliefkv_handoff_last_capacity
++    assert diagnosis["full_target_satisfied"] and diagnosis["mamba_target_satisfied"]
++    assert diagnosis["native_full_scanned"] == 0
++    assert not diagnosis["native_fallback_considered"]
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
+ @pytest.mark.parametrize(
+     "blocked", ("enough_capacity", "shared", "locked", "pending", "excluded", "not_waiting"),
+ )

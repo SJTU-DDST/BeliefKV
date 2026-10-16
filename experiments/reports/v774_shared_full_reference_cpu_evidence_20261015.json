@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "status": "offline_audit_complete_no_shared_reclamation_policy_change",
+  "latest_actual_predictive": "V59",
+  "audit": {
+    "report": "experiments/reports/v773_v59_recorded_shared_waiter_volume_20261015.json",
+    "report_sha256": "5d05e21fd7a6918e7b12f14143a33d238f895174eaadcf82fdf9aac211f14ff4",
+    "opportunities_read_bytes": 1457985716,
+    "opportunities_sha256": "b6f7cdb84cd10e8e324c01f1bc9abd85ebdbf5df879c36190636763f765009a0",
+    "same_complete_prefix_as_v685": true,
+    "existing_audit_fields_unchanged_except_source_bindings": true,
+    "recorded_diagnostic_snapshots": 10640,
+    "full_target_unsatisfied_snapshots": 10099,
+    "listed_multireference_check_records": 4,
+    "full_bytes_per_token": 20480,
+    "unsatisfied_snapshots_with_listed_multireference_nodes": [
+      {
+        "listed_tokens": 1,
+        "listed_bytes": 20480,
+        "post_reclaim_deficit_bytes": 145141760,
+        "listed_fraction_of_deficit": 0.00014110342881332017
+      },
+      {
+        "listed_tokens": 23,
+        "listed_bytes": 471040,
+        "post_reclaim_deficit_bytes": 59863040,
+        "listed_fraction_of_deficit": 0.00786862812179268
+      },
+      {
+        "listed_tokens": 37,
+        "listed_bytes": 757760,
+        "post_reclaim_deficit_bytes": 76554240,
+        "listed_fraction_of_deficit": 0.009898341359015517
+      }
+    ],
+    "remaining_snapshot": {
+      "listed_tokens": 48,
+      "listed_bytes": 983040,
+      "post_reclaim_deficit_bytes": 0
+    },
+    "all_referencing_sessions_waiting": null,
+    "scope": "Only recorded waiting-candidate checks, deduplicated by node identity within each snapshot. Not a complete cache census, a cross-time capacity sum, or an upper bound on reclaimable capacity."
+  },
+  "validation": {
+    "audit_script_sha256": "a0d7fdbc55dfd522e0c0877772d0b0e80edeb68947da8e845ba017df1c17d3ab",
+    "audit_tests_sha256": "79b3f121beaeeba06565449d60254bb63481ed183273aab19158f7bfbcb90065",
+    "receipt": "/home/longhao/experiment/ops/v772_shared_waiter_audit_checks_20261015.xml",
+    "receipt_sha256": "b1e920cc29151b86c0f80f428148b1cb89afd6248691967d560d606b2699c42f",
+    "checks": 16,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "real_cpu_reference_demonstration": {
+    "engine_checkout": "/home/longhao/experiment/.worktrees/sglang-v591-post-sampling-20261014",
+    "helpers": "test/registered/unit/mem_cache/test_session_unified_radix_cache.py",
+    "helper_sha256": "3e395a0e745ce3bb36c4197942050c1bdec20e61029464f627994f5d8e6d69c2",
+    "component_sha256": {
+      "components/full.py": "20b574e42f709bb92e0851164bfe528d6ebc263dbc55981a1a9605aad28df582",
+      "components/base.py": "4dfdde9d4b6265ca817106fc3ebe8542b218ec367c6b848b47d231f66b1ac5ac",
+      "session_ref_tracker.py": "981ebab68b72dedafa706628bbe9a72eaed8807c0c9f6aa79ffe5147aedd7a2e"
+    },
+    "construction": "Use the actual make_params/insert/register helpers and UnifiedRadixCache with 64 CPU token slots. Insert prefix [1,2], register the listed continuations, enumerate indexed session leaves covering the prefix, then release session A.",
+    "cases": [
+      {
+        "registrations": [[[1, 2, 3], "A"], [[1, 2, 4], "A"]],
+        "prefix_session_ref_before": 2,
+        "distinct_indexed_sessions_covering_prefix": ["A"],
+        "prefix_session_ref_after_releasing_A": 0
+      },
+      {
+        "registrations": [[[1, 2, 3], "A"], [[1, 2, 4], "B"]],
+        "prefix_session_ref_before": 2,
+        "distinct_indexed_sessions_covering_prefix": ["A", "B"],
+        "prefix_session_ref_after_releasing_A": 1
+      },
+      {
+        "registrations": [[[1, 2], "A"], [[1, 2, 3], "A"]],
+        "prefix_session_ref_before": 1,
+        "distinct_indexed_sessions_covering_prefix": ["A"],
+        "prefix_session_ref_after_releasing_A": 0
+      }
+    ],
+    "assertions_passed": 3,
+    "all_tensors_device": "cpu",
+    "gpu_used": false,
+    "environment_correction": "An initial import with empty CUDA_VISIBLE_DEVICES failed because existing test_utils indexes its first character. Repeating with CUDA_VISIBLE_DEVICES=999 imported the unchanged helper and passed all three CPU assertions; the import failure is not a passing check."
+  },
+  "decision": "Do not infer distinct owners or permission to reclaim shared FULL from session_ref>1. The listed small-node observations do not justify a new shared eviction mechanism. Prioritize the existing capacity/registration repairs, known-victim-first reclamation, reduced dispatch overhead and measured next-consumer FULL conversion.",
+  "runtime_policy_changed": false,
+  "frozen_v61_or_engine_changed": false,
+  "launch_lower_bound": "2026-10-15T19:51:00+08:00",
+  "gpu_benefit_verified": false,
+  "goal_complete": false
+}

@@ -179,6 +179,335 @@ def test_residency_hint_feedback_keeps_aborted_request_unserved():
     assert runtime.counts["residency_ordering_hint_native_observed"] == 0
     runtime.close()
 
+def _aged_warm_fixture(names=("head", "warm"), *, cached=False):
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_resident_first = True
+    runtime.enable_final_stage_priority = False
+    runtime.on_events((event(0, RuntimeEventKind.WORKFLOW_START),))
+    requests, observations = [], {}
+    for index, name in enumerate(names):
+        request = req(name)
+        request.session_id, request.session_generation = f"session-{name}", 1
+        request.origin_input_ids = range(8321)
+        request.output_ids = []
+        runtime.on_events((event(
+            index + 1, RuntimeEventKind.INVOCATION_CREATE,
+            invocation_id=name, context_id=f"ctx-{name}",
+        ),))
+        assert runtime.register_visible_request(request)
+        runtime._visible_since[name] = time.monotonic() - 20. + index / 100.
+        requests.append(request)
+        warm = name.startswith("warm")
+        observations[name] = {
+            "checkpoint_tokens": 8192,
+            "missing_full_tokens": 0 if warm else 4096,
+            "missing_mamba_slots": int(warm),
+            "device_checkpoint_tokens": 0 if warm else 4096,
+        }
+    cache = NS(
+        inspect_beliefkv_reentry=Mock(
+            side_effect=lambda request: observations[request.rid],
+        ),
+        host_pool_group=NS(entry_map={
+            "kv": NS(host_pool=NS(size_per_token=20480)),
+            "mamba": NS(host_pool=NS(size_per_token=64389120)),
+        }),
+        prefetch_gpu_session_nodes=Mock(side_effect=AssertionError("ordering issued DMA")),
+    )
+    runtime.attach_native_cache(cache)
+    if cached:
+        runtime._residency_ordering_hints = {
+            runtime.visible[request.rid]: (
+                time.monotonic() * 1000. + 50., observations[request.rid],
+            )
+            for request in requests
+        }
+    return runtime, requests, observations, cache
+
+
+def test_aged_warm_bypass_consumes_one_existing_ordinary_admission_quota():
+    names = ("head", "cold1", "cold2", "cold3", "warm0", "warm1")
+    runtime, queue, _, cache = _aged_warm_fixture(names)
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    chosen = select(runtime, queue).candidates[0]
+    assert chosen.rid == "warm0"
+    runtime.on_prefill_candidate_result(chosen, admitted=True, result="CONTINUE")
+    queue.remove(chosen)
+    assert runtime._prefetch_priority_normal_admissions == 0
+    for expected in names[:4]:
+        chosen = select(runtime, queue).candidates[0]
+        assert chosen.rid == expected
+        runtime.on_prefill_candidate_result(chosen, admitted=True, result="CONTINUE")
+        queue.remove(chosen)
+    assert runtime.counts["resident_aged_priority_ordered"] == 1
+    assert runtime.counts["resident_aged_priority_admitted"] == 1
+    recorded = next(row for row in records if row["event"] == "resident_aged_priority_admitted")
+    assert recorded["head_restore_bytes"] == 4096 * 20480
+    assert recorded["selected_restore_bytes"] == 64389120
+    assert recorded["head_next_input_tokens"] == recorded["selected_next_input_tokens"] == 129
+    assert not runtime.physical_ledger.pending_count
+    assert not runtime._prefetch_service_leases
+    cache.prefetch_gpu_session_nodes.assert_not_called()
+    runtime.close()
+
+
+@pytest.mark.parametrize("change", (
+    "quota", "unknown_geometry", "already_resident_head", "missing_full",
+    "larger_new_input", "invalid_observation", "unknown_head",
+))
+def test_aged_warm_bypass_requires_known_lower_restore_cost_without_more_prefill(change):
+    runtime, queue, observations, cache = _aged_warm_fixture()
+    if change == "quota":
+        runtime._prefetch_priority_normal_admissions = 3
+    elif change == "unknown_geometry":
+        runtime._residency_pool_bytes = None
+    elif change == "already_resident_head":
+        observations["head"]["missing_full_tokens"] = 0
+    elif change == "missing_full":
+        observations["warm"]["missing_full_tokens"] = 1
+    elif change == "larger_new_input":
+        queue[1].origin_input_ids = range(9000)
+    elif change == "invalid_observation":
+        observations["warm"]["missing_mamba_slots"] = True
+    elif change == "unknown_head":
+        observations["head"] = None
+    assert select(runtime, queue).candidates[0].rid == "head"
+    assert runtime.counts["resident_aged_priority_ordered"] == 0
+    assert not runtime.physical_ledger.pending_count
+    assert not runtime._prefetch_service_leases
+    if change in ("quota", "unknown_geometry"):
+        cache.inspect_beliefkv_reentry.assert_not_called()
+    runtime.close()
+
+
+def test_aged_warm_bypass_preserves_untagged_positions_and_native_decline_quota():
+    runtime, queue, _, _ = _aged_warm_fixture()
+    plain = req("plain", tagged=False)
+    queue.insert(1, plain)
+    selected = select(runtime, queue).candidates
+    assert tuple(request.rid for request in selected) == ("warm", "plain", "head")
+    runtime.on_prefill_candidate_result(selected[0], admitted=False, result="NO_TOKEN")
+    assert runtime._prefetch_priority_normal_admissions == 4
+    assert runtime.counts["resident_aged_priority_admitted"] == 0
+    runtime.close()
+
+
+def test_aged_warm_bypass_does_not_displace_a_stronger_causal_head():
+    runtime, queue, _, _ = _aged_warm_fixture()
+    runtime.on_events((
+        event(20, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="waiter", context_id="ctx-waiter"),
+        event(21, RuntimeEventKind.JOIN_CREATE, join_id="join", member_invocation_ids=("head",)),
+        event(22, RuntimeEventKind.JOIN_WAIT, invocation_id="waiter", join_id="join"),
+    ))
+    assert select(runtime, queue).candidates[0].rid == "head"
+    assert runtime.counts["resident_aged_priority_ordered"] == 0
+    runtime.close()
+
+
+@pytest.mark.parametrize("slots,normal,expected", (
+    (1, 1, "warm"), (2, 1, "warm"), (4, 1, "head"),
+    (4, 3, "warm"), (8, 3, "head"), (1, 0, "head"), (0, 3, "head"),
+))
+def test_aged_resident_quota_uses_imminent_slots_and_fresh_native_cost(slots, normal, expected):
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, queue, _, cache = _aged_warm_fixture(cached=True)
+    runtime._prefetch_priority_normal_admissions = normal
+    runtime._resident_priority_normal_admissions = normal
+    budget = PrefetchResidencyBudget(slots, 1024 ** 3, source="native_next_prefill")
+    try:
+        with patch.object(runtime, "_current_residency_budget", return_value=budget):
+            chosen = select(runtime, queue).candidates[0]
+        assert chosen.rid == expected
+        if expected == "warm":
+            assert runtime._resident_priority_details["ordinary_admission_quota"] == max(
+                1, min(4, slots - 1),
+            )
+            assert runtime._resident_priority_details["evidence"] == (
+                "fresh_native_reentry;native_admission_remains"
+            )
+            runtime.on_prefill_candidate_result(chosen, admitted=True, result="CONTINUE")
+            assert runtime.counts["resident_aged_native_quota_admitted"] == 1
+            assert runtime._prefetch_priority_normal_admissions == min(4, normal + 1)
+        else:
+            assert runtime.counts["resident_aged_native_quota_admitted"] == 0
+        cache.prefetch_gpu_session_nodes.assert_not_called()
+        assert not runtime._prefetch_service_leases
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("changed", (
+    "candidate_prefix", "candidate_full", "head_now_hot", "larger_input", "unknown_head",
+))
+def test_reduced_resident_quota_never_uses_an_advisory_hint_as_reentry_proof(changed):
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, queue, observations, _ = _aged_warm_fixture(cached=True)
+    runtime._prefetch_priority_normal_admissions = 1
+    native = {name: row.copy() for name, row in observations.items()}
+    if changed == "candidate_prefix":
+        native["warm"] = None
+    elif changed == "candidate_full":
+        native["warm"]["missing_full_tokens"] = 1
+    elif changed == "head_now_hot":
+        native["head"].update(missing_full_tokens=0, missing_mamba_slots=0)
+    elif changed == "larger_input":
+        native["warm"]["checkpoint_tokens"] -= 1
+    else:
+        native["head"] = None
+    try:
+        with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+            1, 1024 ** 3, source="native_next_prefill",
+        )), patch.object(runtime, "_read_request_residency_hint", side_effect=(
+            lambda request, **kwargs: observations[request.rid]
+        )), patch.object(runtime, "_read_request_reentry", side_effect=(
+            lambda request, **kwargs: native[request.rid]
+        )):
+            assert select(runtime, queue).candidates[0].rid == "head"
+        assert runtime.counts["resident_aged_native_quota_ordered"] == 0
+        assert runtime._prefetch_priority_normal_admissions == 1
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_accelerated_resident_turns_preserve_ordinary_turns_and_restore_priority_credit():
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, queue, _, _ = _aged_warm_fixture(cached=True)
+    runtime._prefetch_priority_normal_admissions = 1
+    runtime._resident_priority_normal_admissions = 1
+    rows = []
+    runtime._opportunity_writer = NS(record=rows.append, close=lambda: None)
+    try:
+        with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+            1, 1024 ** 3, source="native_next_prefill",
+        )):
+            for _ in range(3):
+                chosen = select(runtime, queue).candidates[0]
+                assert chosen.rid == "warm"
+                runtime.on_prefill_candidate_result(chosen, admitted=True, result="CONTINUE")
+                assert runtime._resident_priority_normal_admissions == 0
+                assert select(runtime, queue).candidates[0].rid == "head"
+                runtime.on_prefill_candidate_result(queue[0], admitted=True, result="CONTINUE")
+        assert runtime.counts["resident_aged_native_quota_admitted"] == 3
+        assert runtime._prefetch_priority_normal_admissions == 4
+        assert runtime._final_priority_normal_admissions == 4
+        assert runtime.counts["native_admitted"] == 6
+        assert all(row["ordinary_admission_quota"] == 1 for row in rows)
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_native_decline_does_not_spend_resident_quota_or_credit_completion():
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, queue, _, _ = _aged_warm_fixture(cached=True)
+    runtime._prefetch_priority_normal_admissions = 1
+    runtime._resident_priority_normal_admissions = 1
+    try:
+        with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+            1, 1024 ** 3, source="native_next_prefill",
+        )):
+            chosen = select(runtime, queue).candidates[0]
+        assert chosen.rid == "warm"
+        runtime.on_prefill_candidate_result(chosen, admitted=False, result="NO_TOKEN")
+        assert runtime._prefetch_priority_normal_admissions == 1
+        assert runtime._resident_priority_normal_admissions == 1
+        assert runtime.counts["resident_aged_native_quota_admitted"] == 0
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("change", ("none", "expired_candidate", "old_epoch"))
+def test_reduced_resident_quota_does_not_add_discovery_scans_without_fresh_hints(change):
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, queue, _, cache = _aged_warm_fixture(cached=True)
+    runtime._prefetch_priority_normal_admissions = 1
+    if change == "none":
+        runtime._residency_ordering_hints.clear()
+    elif change == "old_epoch":
+        key = runtime.visible["warm"]
+        record = runtime._residency_ordering_hints.pop(key)
+        runtime._residency_ordering_hints[replace(key, context_epoch=1)] = record
+    else:
+        key = runtime.visible["head" if change == "expired_head" else "warm"]
+        runtime._residency_ordering_hints[key] = (
+            time.monotonic() * 1000. - 1., runtime._residency_ordering_hints[key][1],
+        )
+    try:
+        with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+            1, 1024 ** 3, source="native_next_prefill",
+        )), patch.object(runtime, "_read_request_residency_hint", side_effect=AssertionError(
+            "reduced quota must not start new discovery",
+        )), patch.object(runtime, "_read_request_reentry", side_effect=AssertionError(
+            "no fresh advisory candidate exists",
+        )):
+            assert select(runtime, queue).candidates[0].rid == "head"
+        cache.inspect_beliefkv_reentry.assert_not_called()
+        assert runtime.counts["resident_aged_native_quota_inspected"] == 0
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("head_hint", ("missing", "expired"))
+@pytest.mark.parametrize("native_change", (
+    "unchanged", "candidate_prefix", "candidate_full", "head_hot", "head_unknown",
+    "larger_input",
+))
+def test_known_warm_candidate_rechecks_aged_head_without_a_fresh_head_hint(
+    head_hint, native_change,
+):
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, queue, observations, cache = _aged_warm_fixture(cached=True)
+    runtime._prefetch_priority_normal_admissions = 1
+    head_key = runtime.visible["head"]
+    if head_hint == "missing":
+        runtime._residency_ordering_hints.pop(head_key)
+    else:
+        runtime._residency_ordering_hints[head_key] = (
+            time.monotonic() * 1000. - 1., observations["head"],
+        )
+    native = {name: row.copy() for name, row in observations.items()}
+    if native_change == "candidate_prefix":
+        native["warm"] = None
+    elif native_change == "candidate_full":
+        native["warm"]["missing_full_tokens"] = 1
+    elif native_change == "head_hot":
+        native["head"].update(missing_full_tokens=0, missing_mamba_slots=0)
+    elif native_change == "head_unknown":
+        native["head"] = None
+    elif native_change == "larger_input":
+        native["warm"]["checkpoint_tokens"] -= 1
+    cache.inspect_beliefkv_reentry.side_effect = lambda request: native[request.rid]
+    try:
+        with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+            1, 1024 ** 3, source="native_next_prefill",
+        )), patch.object(runtime, "_read_request_residency_hint", side_effect=AssertionError(
+            "an earlier locality turn must not discover more candidates",
+        )):
+            chosen = select(runtime, queue).candidates[0]
+        assert chosen.rid == ("warm" if native_change == "unchanged" else "head")
+        assert [call.args[0].rid for call in cache.inspect_beliefkv_reentry.call_args_list] == [
+            "warm", "head",
+        ]
+        assert runtime.counts["resident_aged_native_quota_ordered"] == int(
+            native_change == "unchanged"
+        )
+        assert runtime._prefetch_priority_normal_admissions == 1
+        assert not runtime.physical_ledger.pending_count
+        assert not runtime._prefetch_service_leases
+        cache.prefetch_gpu_session_nodes.assert_not_called()
+    finally:
+        runtime.close()
+
 
 def test_waiting_migration_deferral_requires_overlap_and_native_demand_recovery():
     runtime = NativeAdmissionRuntime()
@@ -194,6 +523,8 @@ def test_waiting_migration_deferral_requires_overlap_and_native_demand_recovery(
 
 def test_after_forward_planning_retains_existing_waiting_context_handlers():
     runtime = NativeAdmissionRuntime()
+    runtime.enable_final_stage_prefetch = True
+    runtime.enable_tool_prefetch = True
     runtime._hotpath_timing.enabled = True
     calls = []
     runtime.dispatch_join_prefetch = lambda: calls.append("join")
@@ -211,6 +542,85 @@ def test_after_forward_planning_retains_existing_waiting_context_handlers():
     ]
     assert runtime.counts["physical_planning_after_forward"] == 1
     assert runtime._hotpath_timing.snapshot()["phases"]["post_launch_physical"]["count"] == 1
+
+
+def test_after_forward_skips_only_existing_backoff_work():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_final_stage_prefetch = True
+    runtime.enable_tool_prefetch = True
+    runtime._hotpath_timing.enabled = True
+    runtime._tool_prefetch_next_ms = 1050.
+    runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 1050.
+    runtime.dispatch_join_prefetch = Mock()
+    runtime.dispatch_tool_prefetch = Mock(side_effect=AssertionError("tool retry not due"))
+    runtime.dispatch_join_prepare = Mock(side_effect=AssertionError("JOIN backup not due"))
+    runtime.dispatch_tool_prepare = Mock(side_effect=AssertionError("tool backup not due"))
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.):
+        runtime.dispatch_after_forward()
+    runtime.dispatch_join_prefetch.assert_called_once()
+    assert runtime.counts["physical_planning_after_forward"] == 1
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 1
+    assert runtime.physical_ledger.pending_count == 0
+    assert runtime._tool_prefetch_next_ms == 1050.
+    assert runtime._join_prepare_next_ms == runtime._tool_prepare_next_ms == 1050.
+    assert runtime._hotpath_timing.snapshot()["phases"]["post_launch_physical"]["count"] == 1
+    runtime.close()
+
+
+def test_after_forward_processes_acknowledged_ticket_before_scan_deadline():
+    from beliefkv.runtime.sglang_v0520_runtime import _ToolPrefetchTicket
+
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_tool_prefetch = True
+    runtime._tool_prefetch_next_ms = 5000.
+    runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 5000.
+    runtime.dispatch_join_prefetch = Mock()
+    key = PrefillCandidateKey("r", "w", "i", "c", 0, 0)
+    runtime._tool_ticket = _ToolPrefetchTicket(key, 1., command_id="acknowledged")
+    runtime.completed_physical_actions.append(
+        NS(action="PREFETCH_GPU", command_id="acknowledged"),
+    )
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.):
+        runtime.dispatch_after_forward()
+    assert runtime._tool_ticket is None
+    assert runtime.counts["tool_prefetch_acked"] == 1
+    assert runtime.counts["tool_prefetch_scans"] == 1
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 0
+    runtime.close()
+
+
+def test_after_forward_rechecks_clock_after_prior_handler_crosses_deadline():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_final_stage_prefetch = True
+    runtime.enable_tool_prefetch = True
+    runtime._tool_prefetch_next_ms = 1050.
+    runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 1050.
+    clock = [1.]
+    runtime.dispatch_join_prefetch = lambda: clock.__setitem__(0, 1.05)
+    runtime.dispatch_join_prepare = Mock()
+    runtime.dispatch_tool_prepare = Mock()
+    queue, running = [object()], object()
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", lambda: clock[0]):
+        runtime.dispatch_after_forward(queue, running_batch=running)
+    assert runtime.counts["tool_prefetch_scans"] == 1
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 0
+    runtime.dispatch_join_prepare.assert_called_once_with(queue, running_batch=running)
+    runtime.dispatch_tool_prepare.assert_called_once_with(queue, running_batch=running)
+    runtime.close()
+
+
+def test_after_forward_prior_handler_can_rearm_tool_scan_immediately():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_final_stage_prefetch = True
+    runtime.enable_tool_prefetch = True
+    runtime._tool_prefetch_next_ms = 5000.
+    runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 5000.
+    runtime.dispatch_join_prefetch = lambda: setattr(runtime, "_tool_prefetch_next_ms", 0.)
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.):
+        runtime.dispatch_after_forward()
+    assert runtime.counts["tool_prefetch_scans"] == 1
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 0
+    runtime.close()
 
 
 def test_native_ack_is_credited_only_after_live_context_reconciliation():
@@ -1462,7 +1872,8 @@ def test_native_shadow_explicit_decline_cancels_unsubmitted_reservation():
 
 @pytest.mark.parametrize("source", ("join_prepare", "tool_wait"))
 @pytest.mark.parametrize("partial", (False, True))
-def test_native_shadow_burst_reserves_each_node_and_credits_only_its_ack(source, partial):
+@pytest.mark.parametrize("selection", (False, True))
+def test_native_shadow_burst_reserves_each_node_and_credits_only_its_ack(source, partial, selection):
     from beliefkv.runtime.sglang_v0520_physical import next_shadow_backup_step
     from tests.test_sglang_v0520_physical import prefetch_node
 
@@ -1517,8 +1928,11 @@ def test_native_shadow_burst_reserves_each_node_and_credits_only_its_ack(source,
         cache_controller=controller, prepare_host_session_nodes=prepare,
     ))
     with patch.object(runtime, "capture_shadow_candidate", return_value=candidate) as capture:
-        issued = runtime.issue_shadow_backup_steps(step, source=source)
-        capture.assert_called_once()
+        issued = runtime.issue_shadow_backup_steps(
+            step, source=source,
+            _selection_candidate=candidate if selection else None,
+        )
+        assert capture.call_count == int(not selection)
     assert [item.node_id for item, _ in issued] == ([11] if partial else [11, 12])
     assert runtime.physical_ledger.pending_count == len(issued)
     assert runtime.counts["shadow_burst_nodes"] == len(issued)
@@ -1539,6 +1953,99 @@ def test_native_shadow_burst_reserves_each_node_and_credits_only_its_ack(source,
     assert [action.command_id for action in runtime.completed_physical_actions] == [
         command for _, command in issued
     ]
+
+
+@pytest.mark.parametrize("delivery_result", ((), (object(),), None))
+def test_prepare_selection_is_reused_only_after_proven_empty_control_drain(delivery_result):
+    from beliefkv.runtime.sglang_v0520_physical import next_shadow_backup_step
+    from tests.test_sglang_v0520_physical import prefetch_node
+
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    runtime.enable_prepare_host = True
+    key = runtime.context_sessions["ctx-parent"]
+    candidate = ActionLocalShadowCandidate(
+        ContextSessionAnchors(
+            key, ((0, ((11, 4),)), (2, ((11, 4),))), 1.,
+            reusable_input_tokens=8,
+        ),
+        (prefetch_node(0, None, 1, key_tokens=0),
+         prefetch_node(11, 0, 4, full_gpu=8, mamba_gpu=True, key_tokens=8)),
+        8, 1,
+    )
+    runtime.event_server = NS(
+        drain=Mock(return_value=delivery_result), close=lambda: None,
+    )
+    runtime.attach_native_cache(NS(
+        prepare_host_session_nodes=Mock(),
+        prepare_host_shadow=Mock(return_value=NS(issued=False)),
+    ))
+    try:
+        with patch.object(runtime, "capture_shadow_candidate", return_value=candidate) as capture:
+            assert runtime.issue_shadow_backup_steps(
+                next_shadow_backup_step(candidate), source="join_prepare",
+                _selection_candidate=candidate,
+            ) == ()
+        assert capture.call_count == int(delivery_result != ())
+        runtime._native_cache.prepare_host_shadow.assert_called_once()
+        assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("change", ("join_end", "context_rebind", "cache_replaced"))
+@pytest.mark.parametrize("reported_delivery", (False, True))
+def test_prepare_reused_selection_keeps_final_causal_and_cache_checks(change, reported_delivery):
+    from beliefkv.runtime.sglang_v0520_physical import next_shadow_backup_step
+    from tests.test_sglang_v0520_physical import prefetch_node
+
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    runtime.enable_prepare_host = True
+    key = runtime.context_sessions["ctx-parent"]
+    candidate = ActionLocalShadowCandidate(
+        ContextSessionAnchors(
+            key, ((0, ((11, 4),)), (2, ((11, 4),))), 1.,
+            reusable_input_tokens=8,
+        ),
+        (prefetch_node(0, None, 1, key_tokens=0),
+         prefetch_node(11, 0, 4, full_gpu=8, mamba_gpu=True, key_tokens=8)),
+        8, 1,
+    )
+    checks = []
+
+    def decline_after_check(**kwargs):
+        checks.append(True)
+        assert not kwargs["beliefkv_before_enqueue"](NS(
+            beliefkv_command_id=kwargs["beliefkv_command_id"],
+        ))
+        return NS(issued=False)
+
+    cache = NS(
+        prepare_host_session_nodes=Mock(),
+        prepare_host_shadow=Mock(side_effect=decline_after_check),
+    )
+    runtime.attach_native_cache(cache)
+
+    def drain(**kwargs):
+        if change == "join_end":
+            runtime.on_events((event(7, RuntimeEventKind.RETURN, invocation_id="child"),))
+        elif change == "context_rebind":
+            runtime.context_sessions[key.context_id] = replace(key, context_epoch=1)
+        else:
+            runtime._native_cache = NS()
+        return (object(),) if reported_delivery else ()
+
+    runtime.event_server = NS(drain=drain, close=lambda: None)
+    try:
+        assert runtime.issue_shadow_backup_steps(
+            next_shadow_backup_step(candidate), source="join_prepare",
+            _selection_candidate=candidate,
+        ) == ()
+        assert runtime.physical_ledger.pending_count == 0
+        assert checks == ([True] if not reported_delivery and change != "cache_replaced" else [])
+    finally:
+        runtime.close()
 
 
 def test_single_missing_shadow_extent_uses_direct_native_write_with_full_only():
@@ -2563,6 +3070,175 @@ def select(runtime, native):
     )
 
 
+def workflow_attained_work_fixture(monkeypatch, *, enabled=True):
+    monkeypatch.setenv("BELIEFKV_WORKFLOW_ATTAINED_WORK", "1" if enabled else "0")
+    runtime = NativeAdmissionRuntime()
+    requests = []
+    for invocation, tokens in (("heavy", 80), ("short", 8)):
+        workflow, context = f"wf-{invocation}", f"ctx-{invocation}"
+
+        def observed(sequence, kind, **kwargs):
+            return RuntimeEvent(
+                f"{invocation}-{sequence}", float(sequence), kind, workflow,
+                invocation_id=invocation, context_id=context, **kwargs,
+            )
+
+        runtime.on_events((
+            observed(0, RuntimeEventKind.WORKFLOW_START),
+            observed(1, RuntimeEventKind.INVOCATION_CREATE, context_epoch=0),
+            observed(2, RuntimeEventKind.LLM_SUBMIT, context_epoch=0,
+                     attributes={"request_id": f"{invocation}-first"}),
+        ))
+        previous = req(f"{invocation}-first")
+        previous.beliefkv_metadata.update(
+            root_workflow_id=workflow, invocation_id=invocation,
+            context_id=context, context_epoch=0,
+        )
+        previous.output_ids = list(range(tokens))
+        previous.finished = lambda: True
+        assert runtime.register_visible_request(previous)
+        runtime.on_batch_completed(NS(reqs=(previous,)))
+        runtime.on_batch_completed(NS(reqs=(previous,)))
+        runtime.on_events((
+            observed(3, RuntimeEventKind.LLM_RESULT, context_epoch=0),
+            observed(4, RuntimeEventKind.CONTEXT_ADVANCE, context_epoch=1),
+            observed(5, RuntimeEventKind.LLM_SUBMIT, context_epoch=1,
+                     attributes={"request_id": invocation}),
+        ))
+        request = req(invocation)
+        request.origin_input_ids, request.output_ids = list(range(32)), []
+        request.beliefkv_metadata.update(
+            root_workflow_id=workflow, invocation_id=invocation,
+            context_id=context, context_epoch=1,
+        )
+        assert runtime.register_visible_request(request)
+        requests.append(request)
+    return runtime, requests
+
+
+@pytest.mark.parametrize("enabled,resident_first", [
+    (False, True), (True, True), (True, False),
+])
+def test_workflow_attained_work_uses_completed_output_and_preserves_default(
+    monkeypatch, enabled, resident_first,
+):
+    runtime, requests = workflow_attained_work_fixture(monkeypatch, enabled=enabled)
+    runtime.enable_resident_first = resident_first
+    try:
+        selected = select(runtime, requests)
+        assert selected.candidates == tuple(reversed(requests) if enabled else requests)
+        assert not selected.rejected
+        assert runtime._workflow_attained_output_tokens == (
+            {"wf-heavy": 80, "wf-short": 8} if enabled else {}
+        )
+        assert runtime.counts["workflow_completed_output_tokens_charged"] == (88 if enabled else 0)
+        assert runtime.counts["workflow_work_head_ordered"] == int(enabled)
+        selected_head = selected.candidates[0]
+        runtime.on_prefill_candidate_result(selected_head, admitted=False, result="OTHER")
+        assert runtime.counts["workflow_work_head_admitted"] == 0
+        runtime.on_prefill_candidate_result(selected_head, admitted=True, result="CONTINUE")
+        runtime.on_prefill_candidate_result(selected_head, admitted=True, result="CONTINUE")
+        assert runtime.counts["workflow_work_head_admitted"] == int(enabled)
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_workflow_attained_work_preserves_hbm_locality(monkeypatch):
+    runtime, (heavy, short) = workflow_attained_work_fixture(monkeypatch)
+    runtime.enable_resident_first = True
+    runtime._residency_pool_bytes = (1024, 65536)
+    inspected = []
+
+    def residency(request, **kwargs):
+        inspected.append(request.rid)
+        return {
+            "checkpoint_tokens": 16, "device_checkpoint_tokens": 16,
+            "missing_full_tokens": 0 if request is heavy else 8,
+            "missing_mamba_slots": 0,
+        }
+
+    try:
+        with patch.object(runtime, "_read_request_residency_hint", side_effect=residency):
+            assert select(runtime, [heavy, short]).candidates[0] is heavy
+        assert inspected == ["heavy", "short"]
+        assert runtime.counts["workflow_work_head_ordered"] == 0
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_workflow_attained_work_does_not_charge_active_or_duplicate_finishes(monkeypatch):
+    runtime, (heavy, _) = workflow_attained_work_fixture(monkeypatch)
+    try:
+        heavy.output_ids = [1, 2]
+        runtime.on_batch_completed(NS(reqs=(heavy,)))
+        assert runtime._workflow_attained_output_tokens["wf-heavy"] == 80
+        heavy.finished = lambda: True
+        runtime.on_batch_completed(NS(reqs=(heavy,)))
+        runtime.on_batch_completed(NS(reqs=(heavy,)))
+        assert runtime._workflow_attained_output_tokens["wf-heavy"] == 82
+        assert runtime.counts["workflow_completed_output_tokens_charged"] == 90
+    finally:
+        runtime.close()
+
+
+def test_workflow_attained_work_preserves_aged_head(monkeypatch):
+    runtime, (heavy, short) = workflow_attained_work_fixture(monkeypatch)
+    runtime._visible_since["heavy"] = time.monotonic() - 11.
+    try:
+        assert select(runtime, [heavy, short]).candidates[0] is heavy
+        assert runtime.counts["workflow_work_head_ordered"] == 0
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_workflow_attained_work_preserves_blocking_join_priority(monkeypatch):
+    from beliefkv.core.events import RelationType
+
+    runtime, (_, short) = workflow_attained_work_fixture(monkeypatch)
+    runtime.on_events((
+        RuntimeEvent(
+            "critical-create", 6., RuntimeEventKind.INVOCATION_CREATE, "wf-heavy",
+            invocation_id="critical", context_id="ctx-critical", context_epoch=0,
+            parent_invocation_id="heavy", relation_type=RelationType.SPAWN,
+        ),
+        RuntimeEvent(
+            "join-create", 7., RuntimeEventKind.JOIN_CREATE, "wf-heavy",
+            join_id="critical-join", member_invocation_ids=("critical",),
+        ),
+        RuntimeEvent(
+            "join-wait", 8., RuntimeEventKind.JOIN_WAIT, "wf-heavy",
+            invocation_id="heavy", join_id="critical-join",
+        ),
+    ))
+    critical = req("critical")
+    critical.origin_input_ids, critical.output_ids = list(range(32)), []
+    critical.beliefkv_metadata.update(root_workflow_id="wf-heavy")
+    assert runtime.register_visible_request(critical)
+    try:
+        assert select(runtime, [short, critical]).candidates[0] is critical
+        assert runtime.counts["workflow_work_head_ordered"] == 0
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_workflow_attained_work_retires_accounts_without_late_resurrection(monkeypatch):
+    runtime, (heavy, _) = workflow_attained_work_fixture(monkeypatch)
+    runtime.on_events((RuntimeEvent(
+        "heavy-end", 9., RuntimeEventKind.WORKFLOW_END, "wf-heavy",
+    ),))
+    try:
+        heavy.output_ids, heavy.finished = [1, 2, 3], lambda: True
+        runtime.on_batch_completed(NS(reqs=(heavy,)))
+        assert "wf-heavy" not in runtime._workflow_attained_output_tokens
+        assert runtime._workflow_attained_output_tokens["wf-short"] == 8
+    finally:
+        runtime.close()
+
+
 def final_stage_runtime(*, stage_only=False, event_socket_path=None, stage_records=None):
     runtime = NativeAdmissionRuntime(
         event_socket_path=event_socket_path,
@@ -3020,6 +3696,50 @@ def test_semantic_pending_snapshot_coalesces_then_resubmits_at_existing_interval
     runtime.close()
 
 
+@pytest.mark.parametrize("parent_metadata, linked_child, tracked", [
+    ("missing", False, True),
+    (None, False, False),
+    ("parent", False, True),
+    (None, True, True),
+])
+def test_native_child_decode_history_skips_only_confirmed_roots(
+    parent_metadata, linked_child, tracked,
+):
+    runtime = NativeAdmissionRuntime()
+    request = req("served")
+    request.session_id, request.session_generation = "session", 1
+    request.origin_input_ids, request.output_ids = [1, 2], [7, 8]
+    if parent_metadata != "missing":
+        request.beliefkv_metadata["parent_invocation_id"] = parent_metadata
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent", context_id="ctx-parent"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="served", context_id="ctx-served",
+              parent_invocation_id="parent" if linked_child else None),
+    ))
+    runtime.register_visible_request(request)
+    runtime._semantic_worker = NS(close=lambda: None)
+    runtime._tool_open_token_ids = frozenset({7})
+    try:
+        runtime.on_batch_completed(NS(reqs=(request,)))
+        assert ("served" in runtime._semantic_progress) is tracked
+        assert ("served" in runtime._semantic_keys) is tracked
+        assert ("served" in runtime._decoded_tool_requests) is tracked
+        assert runtime.counts["semantic_native_tool_marker_invalidated"] == int(tracked)
+        assert runtime._context_tokens["ctx-served"] == (
+            0, 2, 2, parent_metadata not in ("missing", None),
+        )
+        request.finished = lambda: True
+        runtime.on_batch_completed(NS(reqs=(request,)))
+        assert "served" not in runtime.visible
+        assert ("served" in runtime._semantic_finished) is tracked
+        assert runtime._context_tokens["ctx-served"][:3] == (0, 2, 2)
+    finally:
+        runtime.close()
+
+
 def test_semantic_pending_snapshot_retries_missing_target_without_new_text():
     runtime, now, submitted, text = semantic_pending_fixture()
     text(now, 128)
@@ -3091,7 +3811,7 @@ def test_native_decode_tool_marker_invalidates_forecast_before_client_tool_chunk
         context_id="ctx-child", context_epoch=1, attributes={"request_id": "child"},
     ),))
     runtime.register_visible_request(child)
-    runtime._semantic_worker = NS()
+    runtime._semantic_worker = NS(close=lambda: None)
     runtime._tool_open_token_ids = frozenset({248058})
     key = runtime.visible["child"]
     runtime.on_batch_completed(NS(reqs=[child]))
@@ -3100,6 +3820,23 @@ def test_native_decode_tool_marker_invalidates_forecast_before_client_tool_chunk
     assert not runtime._semantic_key_live(key, time.monotonic() * 1000)
     assert not runtime._final_stages
     assert runtime.graph.invocations["child"].state is InvocationState.RUNNING_LLM
+    progress = tuple(runtime._semantic_progress["child"])
+    scanned = runtime._decoded_scan_positions["child"]
+    child.output_ids.extend([5, 6, 7])
+    runtime.on_batch_completed(NS(reqs=[child]))
+    assert tuple(runtime._semantic_progress["child"]) == progress
+    assert runtime._decoded_scan_positions["child"] == scanned
+    assert runtime._context_tokens["ctx-child"][2] == len(child.output_ids)
+    assert runtime.counts["semantic_native_tool_marker_invalidated"] == 1
+    child.finished = lambda: True
+    child.finished_reason = NS(to_json=lambda: {"type": "stop"})
+    runtime.on_batch_completed(NS(reqs=[child]))
+    assert runtime._semantic_finished["child"][1] == len(child.output_ids)
+    assert runtime._semantic_eos_proofs["child"] is False
+    assert "child" not in runtime._semantic_normal_stops
+    assert "child" not in runtime.visible
+    assert not runtime._final_stages
+    runtime.close()
 
 
 def test_semantic_eos_window_creates_only_h2d_candidate_not_final_priority():
@@ -3578,7 +4315,9 @@ def test_join_prepare_is_selective_and_invalidates_on_parent_reentry():
     runtime = final_stage_runtime()
     runtime._clear_final_stage("join")
     runtime.enable_prepare_host = True
-    runtime.attach_native_cache(NS())
+    runtime.attach_native_cache(NS(tree_core=NS(node_by_id=lambda _: NS(
+        creation_time=4, component_data={0: NS(session_ids=None)},
+    ))))
     key = runtime.context_sessions["ctx-parent"]
     step = ShadowBackupStep(key, 11, 4, 11, 4)
     from beliefkv.runtime.sglang_v0520_observer import StaticPoolHeadroomObservation
@@ -3588,7 +4327,7 @@ def test_join_prepare_is_selective_and_invalidates_on_parent_reentry():
             True, device_full_free_tokens=0, device_mamba_free_slots=1,
             host_full_free_tokens=1000, host_mamba_free_slots=10,
         ),
-    ), patch.object(runtime, "refreshed_shadow_backup_step", return_value=step), patch.object(
+    ), patch.object(runtime, "_refreshed_shadow_backup_selection", return_value=(step, object())), patch.object(
         runtime, "issue_shadow_backup_step", return_value="prepare",
     ) as issue:
         runtime.dispatch_join_prepare([req("child")])
@@ -3610,7 +4349,7 @@ def test_full_only_prepare_does_not_scan_backups_for_mamba_only_pressure(method)
             True, device_full_free_tokens=100_000, device_mamba_free_slots=0,
             host_full_free_tokens=1000, host_mamba_free_slots=0,
         ),
-    ), patch.object(runtime, "refreshed_shadow_backup_step") as observe, patch.object(
+    ), patch.object(runtime, "_refreshed_shadow_backup_selection") as observe, patch.object(
         runtime, "issue_shadow_backup_step",
     ) as issue:
         getattr(runtime, method)([req("child")])
@@ -3650,6 +4389,56 @@ def test_prepare_budget_hint_only_skips_definitely_unfittable_closures(
         )
         capture.assert_called_once()
     runtime.close()
+
+
+@pytest.mark.parametrize("blocked", (
+    None, "locked", "shared", "pending_write", "pending_load", "host_evicted",
+))
+def test_prepare_host_shortfall_keeps_existing_safe_backed_nodes_for_reclaim(blocked):
+    from tests.test_sglang_v0520_physical import prepare_prefix_fixture
+
+    runtime = final_stage_runtime()
+    runtime.enable_prepare_host = True
+    key = runtime.context_sessions["ctx-parent"]
+    cache, anchors, nodes = prepare_prefix_fixture(second_leaf=True)
+    anchors = replace(anchors, key=key)
+    for node_id in (1, 3, 4):
+        nodes[node_id].component_data[0].host_value = nodes[node_id].component_data[0].value
+    cache.tree_core.evictable_device_leaves = (nodes[3], nodes[4])
+    nodes[4].backuped = True
+    runtime.attach_native_cache(cache)
+    try:
+        with patch.object(runtime, "snapshot_session_anchors", return_value=anchors), patch(
+            "beliefkv.runtime.sglang_v0520_runtime.capture_action_local_shadow",
+        ) as capture:
+            candidate = runtime.capture_shadow_candidate(
+                cache, context_id=key.context_id, context_epoch=key.context_epoch,
+                include_non_actionable=True, host_full_free_tokens=0,
+            )
+        assert candidate is None
+        capture.assert_not_called()
+        assert runtime.counts["prepare_prefix_budget_rejected_early"] == 1
+        assert runtime._parent_pressure_candidates == {
+            4: (key, 5.),
+        }
+        assert runtime._live_parent_pressure_node(4, 5.)
+        if blocked == "locked":
+            nodes[4].component_data[0].lock_ref = 1
+        elif blocked == "shared":
+            nodes[4].component_data[0].session_ref = 2
+        elif blocked == "pending_write":
+            nodes[4].write_through_pending_id = 1
+        elif blocked == "pending_load":
+            nodes[4].load_back_pending_id = 1
+        elif blocked == "host_evicted":
+            nodes[4].component_data[0].host_value = None
+        runtime._publish_parent_pressure_candidates()
+        assert cache.beliefkv_join_pressure_candidates_by_component[0] == (
+            ((4, 5.),) if blocked is None else ()
+        )
+        assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
 
 
 def test_final_stage_latest_start_requires_serviced_decode_and_h2d_evidence():
@@ -3942,6 +4731,94 @@ def test_admission_plans_only_queued_invocations_without_whole_graph_scan():
     assert describe.call_count == 1
 
 
+@pytest.mark.parametrize("invalid", (
+    "workflow_ended", "workflow_missing", "invocation_missing",
+    "invocation_done", "invocation_cancelled", "invocation_waiting",
+    "invocation_workflow_changed", "invocation_context_changed",
+    "context_missing", "context_workflow_changed", "context_advanced",
+    "context_behind", "running_session_changed",
+))
+def test_prefill_classification_does_not_promote_invalid_live_state(invalid):
+    from beliefkv.control.causal_graph import InvocationState
+
+    runtime = NativeAdmissionRuntime()
+    request = req("a")
+    request.session_id, request.session_generation = "s-a", 1
+    runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="a", context_id="ctx-a"),
+    ))
+    invocation = runtime.graph.invocations["a"]
+    context = runtime.graph.contexts["ctx-a"]
+    if invalid == "workflow_ended":
+        runtime.graph.workflows["wf"].end_ts_ms = 2.
+    elif invalid == "workflow_missing":
+        del runtime.graph.workflows["wf"]
+    elif invalid == "invocation_missing":
+        del runtime.graph.invocations["a"]
+    elif invalid == "invocation_done":
+        invocation.state = InvocationState.DONE
+    elif invalid == "invocation_cancelled":
+        invocation.state = InvocationState.CANCELLED
+    elif invalid == "invocation_waiting":
+        invocation.state = InvocationState.WAIT_TOOL
+    elif invalid == "invocation_workflow_changed":
+        invocation.workflow_id = "other"
+    elif invalid == "invocation_context_changed":
+        invocation.context_id = "other"
+    elif invalid == "context_missing":
+        del runtime.graph.contexts["ctx-a"]
+    elif invalid == "context_workflow_changed":
+        context.workflow_id = "other"
+    elif invalid == "context_advanced":
+        context.epoch = 1
+    elif invalid == "context_behind":
+        key = replace(runtime.visible["a"], context_epoch=1)
+        runtime.visible["a"] = runtime.context_sessions["ctx-a"] = key
+    else:
+        invocation.state = InvocationState.RUNNING_LLM
+        runtime.context_sessions.pop("ctx-a")
+    key = runtime.visible["a"]
+    try:
+        with patch.object(
+            runtime.frontier, "admission_rank",
+            side_effect=AssertionError("invalid state must not obtain a causal rank"),
+        ):
+            assert runtime._prefill_causal_ranks(
+                [(0, request)], {0: key},
+            ) == {0: (5, 0, 0)}
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("transition", ("workflow_end", "context_advance"))
+def test_prefill_final_authorization_rechecks_changes_after_classification(transition):
+    runtime = NativeAdmissionRuntime()
+    tagged, plain = req("a"), req("plain", tagged=False)
+    runtime.register_visible_request(tagged)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="a", context_id="ctx-a"),
+    ))
+
+    def change_state(*args):
+        if transition == "workflow_end":
+            runtime.graph.workflows["wf"].end_ts_ms = 2.
+        else:
+            runtime.graph.contexts["ctx-a"].epoch += 1
+
+    try:
+        with patch.object(runtime, "_submit_local_predictions", side_effect=change_state):
+            result = select(runtime, [tagged, plain])
+        assert result.candidates == (plain,)
+        assert result.rejected == (("a", "no_authorization"),)
+    finally:
+        runtime.close()
+
+
 def test_shared_path_timing_is_persisted_without_per_call_rows(tmp_path):
     runtime = NativeAdmissionRuntime(opportunity_dir=str(tmp_path))
     runtime.on_events((event(0, RuntimeEventKind.WORKFLOW_START),))
@@ -3975,6 +4852,87 @@ def test_native_fenced_prefetch_does_not_request_overlap_drain():
     assert not runtime.counts["join_overlap_drain_requested"]
     runtime.enable_confirmed_join_canary = True
     assert runtime.can_prefetch_during_overlap() is False
+
+
+def test_tool_prefetch_retry_deadline_skips_unneeded_transaction_inspection():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_tool_prefetch = True
+    runtime._tool_prefetch_next_ms = 1050.
+    with (
+        patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.),
+        patch.object(
+            runtime.physical_ledger, "pending_action_count",
+            side_effect=AssertionError("the retry is not due"),
+        ),
+    ):
+        runtime.dispatch_tool_prefetch()
+    assert runtime._tool_ticket is None
+    assert runtime._tool_prefetch_next_ms == 1050.
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 1
+    assert runtime.counts["tool_prefetch_scans"] == 0
+    assert runtime.physical_ledger.pending_count == 0
+
+
+def test_tool_prefetch_scans_when_existing_retry_deadline_is_reached():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_tool_prefetch = True
+    runtime._tool_prefetch_next_ms = 1050.
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.05):
+        runtime.dispatch_tool_prefetch()
+    assert runtime.counts["tool_prefetch_scans"] == 1
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 0
+    assert runtime._tool_prefetch_next_ms > 1050.
+
+
+def test_completed_tool_prefetch_ticket_is_processed_before_retry_deadline():
+    from beliefkv.runtime.sglang_v0520_runtime import _ToolPrefetchTicket
+
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_tool_prefetch = True
+    key = PrefillCandidateKey("r", "w", "i", "c", 0, 0)
+    runtime._tool_ticket = _ToolPrefetchTicket(key, 1., command_id="acknowledged")
+    runtime.completed_physical_actions.append(
+        NS(action="PREFETCH_GPU", command_id="acknowledged"),
+    )
+    runtime._tool_prefetch_next_ms = 5000.
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.):
+        runtime.dispatch_tool_prefetch()
+    assert runtime._tool_ticket is None
+    assert runtime.counts["tool_prefetch_acked"] == 1
+    assert runtime.counts["tool_prefetch_scans"] == 1
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 0
+
+
+def test_new_tool_hint_rearms_existing_retry_without_new_delay():
+    runtime = NativeAdmissionRuntime()
+    runtime.enable_tool_prefetch = True
+    runtime.predictor_sha256 = "a" * 64
+    request = req("tool")
+    request.session_id, request.session_generation = "session-tool", 2
+    assert runtime.register_visible_request(request)
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="tool", context_id="ctx-tool",
+              agent_definition_id="role", agent_instance_id="tool"),
+        event(2, RuntimeEventKind.TOOL_START, invocation_id="tool",
+              attributes={"tool_family": "shell"}),
+    ))
+    key = runtime.context_sessions["ctx-tool"]
+    runtime._model_worker = NS(disabled=False)
+    runtime._tool_timing_only = True
+    runtime._tool_prefetch_next_ms = 5000.
+    hint = NativeToolWaitHint(
+        key, 100., 300., 600., 1000., 6000., "a" * 64,
+        runtime.graph.invocations["tool"].updated_ts_ms,
+    )
+    with patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=1.):
+        runtime._accept_tool_wait(hint)
+        assert runtime._tool_prefetch_next_ms == 0.
+        runtime.dispatch_tool_prefetch()
+    assert runtime.counts["tool_wait_accepted"] == 1
+    assert runtime.counts["tool_prefetch_scans"] == 1
+    assert runtime.counts["tool_prefetch_scan_deferred"] == 0
 
 
 def test_stale_attempt_and_session_fail_closed_without_blocking_native():

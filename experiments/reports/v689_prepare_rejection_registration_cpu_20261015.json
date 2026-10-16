@@ -1,0 +1,87 @@
+{
+  "scope": "CPU-only complete JOIN PREPARE checks with zero Host headroom and unbacked current leaves. Backed internal prefixes must not grow the candidate registry. Baseline source execution preserves timing decorators. Includes live-cadence and forced-probe stress controls; no socket, DMA, neural inference, GPU or JCT.",
+  "baseline_revision": "2e37ed2",
+  "baseline_source_sha256": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+    "beliefkv/runtime/sglang_v0520_physical.py": "d94509b4c554e76f7a93c95ce9865d149f4c2aac5a8bddbdd5ec09e79828f606",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "b6a8aec0ca7fba6cfd7e2fcbbde54cb62605346e62ebe3285c1152f36d0210b9"
+  },
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_physical.py": "3863e5661a3811b50b4207d7194264d7bf7b68826c3cf526c0cd27ca9914347b",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "d13fc0f8baaed3c5408594f99e0797b7dd5f6e2450da3f2d8c07288b7fbcf8a5",
+    "scripts/benchmark_native_prepare_path.py": "3ccb01eb8778c1fa11f5a6cdd67c03c300998085b0846a44eec76323c7e2e6a3",
+    "scripts/benchmark_prepare_rejection_registration.py": "338929d5d1aa94f03e32f28ee836f609f485e3ca799f15b336291a102985ef31"
+  },
+  "cases": [
+    {
+      "iterations": 400,
+      "step_ms": 20,
+      "force_probes": false,
+      "workflows": 156,
+      "depth": 64,
+      "native_leaf_set": true,
+      "native_mamba_index": true,
+      "cold_candidates_and_actions_equal": true,
+      "measurements": {
+        "baseline": {
+          "thread_cpu_mean_ms_per_iteration": 0.47919731,
+          "thread_cpu_p50_ms_per_iteration": 0.014154,
+          "measured_iterations": 300,
+          "native_reads_including_warmup": {
+            "node_lookup": 13200,
+            "session_snapshot": 1072
+          },
+          "budget_rejections": 1072,
+          "registered_nodes": 0
+        },
+        "development": {
+          "thread_cpu_mean_ms_per_iteration": 0.49869727,
+          "thread_cpu_p50_ms_per_iteration": 0.014502000000000001,
+          "measured_iterations": 300,
+          "native_reads_including_warmup": {
+            "node_lookup": 13200,
+            "session_snapshot": 1072
+          },
+          "budget_rejections": 1072,
+          "registered_nodes": 0
+        }
+      },
+      "thread_cpu_mean_delta_ms_per_iteration": 0.01949996000000004
+    },
+    {
+      "iterations": 400,
+      "step_ms": 20,
+      "force_probes": true,
+      "workflows": 156,
+      "depth": 64,
+      "native_leaf_set": true,
+      "native_mamba_index": true,
+      "cold_candidates_and_actions_equal": true,
+      "measurements": {
+        "baseline": {
+          "thread_cpu_mean_ms_per_iteration": 1.1997562766666667,
+          "thread_cpu_p50_ms_per_iteration": 1.1864995,
+          "measured_iterations": 300,
+          "native_reads_including_warmup": {
+            "node_lookup": 19584,
+            "session_snapshot": 3200
+          },
+          "budget_rejections": 3200,
+          "registered_nodes": 0
+        },
+        "development": {
+          "thread_cpu_mean_ms_per_iteration": 1.2460939833333333,
+          "thread_cpu_p50_ms_per_iteration": 1.231368,
+          "measured_iterations": 300,
+          "native_reads_including_warmup": {
+            "node_lookup": 19584,
+            "session_snapshot": 3200
+          },
+          "budget_rejections": 3200,
+          "registered_nodes": 0
+        }
+      },
+      "thread_cpu_mean_delta_ms_per_iteration": 0.04633770666666659
+    }
+  ]
+}

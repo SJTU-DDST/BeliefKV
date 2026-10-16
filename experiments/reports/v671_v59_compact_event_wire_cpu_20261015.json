@@ -1,0 +1,1112 @@
+{
+  "status": "same_event_prefix_cpu_control_replay_not_gpu_or_jct_acceptance",
+  "observed_at_local": "2026-10-14T21:17:27.597940-07:00",
+  "baseline_revision": "2b5c36d",
+  "baseline_encoder_sha256": "c6d2a65854c6cebe77c333c830911cc53fe60702ef469ba3307296557e29d298",
+  "candidate_sources": {
+    "beliefkv/runtime/event_channel.py": "c053fa25b06d3c5de5331c1118665f8a95ffb68ea430e9666648ab84213056b4",
+    "beliefkv/core/events.py": "62bbefc3f3f68fe43af8731e1a2b1197166feea6a85fcf28910f010591d634d9",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "b8dd8c6c15d541046d7ebe0a709192f7752bb0e56d595494fa30d06abbebf9b9",
+    "beliefkv/runtime/hotpath_timing.py": "aa554df03b5c08cc009be14f21a9c25bdb5e48eb585b5cf774601d9ae471792b",
+    "scripts/benchmark_compact_event_wire.py": "2cd5b08bc4ae28e8c731ca0678f72af9a387d489c837979a8d0093146b72d91d"
+  },
+  "cases": [
+    {
+      "source": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/client_156/workflows/django__django-14349/runtime_events.deepagents.jsonl",
+        "read_prefix_bytes": 144629,
+        "read_prefix_sha256": "372ab57c40259f7a011d680c685a5e08241b3540a6d91eaa4ca0c16ef563b39e",
+        "events": 128,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 13,
+          "llm_result": 11,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 74,
+          "tool_start": 11,
+          "tool_end": 11
+        }
+      },
+      "events": 128,
+      "iterations": 40,
+      "profiling_enabled": false,
+      "payload_bytes": {
+        "baseline": 146803,
+        "candidate": 111527
+      },
+      "payload_reduction_fraction": 0.24029481686341558,
+      "graph_counters_exact_acks_and_timing_counts_equal": true,
+      "costs_per_event": {
+        "baseline": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0223693921875,
+              "p50_ms": 0.02238809375,
+              "p99_ms": 0.0233136640625,
+              "max_ms": 0.0233136640625
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0217622763671875,
+              "p50_ms": 0.021741,
+              "p99_ms": 0.022704328125,
+              "max_ms": 0.022704328125
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0597114890625,
+              "p50_ms": 0.059657,
+              "p99_ms": 0.0617026640625,
+              "max_ms": 0.0617026640625
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0596782431640625,
+              "p50_ms": 0.0596293125,
+              "p99_ms": 0.06164190625,
+              "max_ms": 0.06164190625
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.08208088125,
+              "p50_ms": 0.082068859375,
+              "p99_ms": 0.0845072890625,
+              "max_ms": 0.0845072890625
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.08144051953125,
+              "p50_ms": 0.0814118203125,
+              "p99_ms": 0.0838524375,
+              "max_ms": 0.0838524375
+            }
+          }
+        },
+        "candidate": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0213988294921875,
+              "p50_ms": 0.0213781953125,
+              "p99_ms": 0.02222215625,
+              "max_ms": 0.02222215625
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0207847275390625,
+              "p50_ms": 0.020754015625,
+              "p99_ms": 0.0215629765625,
+              "max_ms": 0.0215629765625
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0575576623046875,
+              "p50_ms": 0.057379875,
+              "p99_ms": 0.06424671875,
+              "max_ms": 0.06424671875
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.057517389453125,
+              "p50_ms": 0.057357375,
+              "p99_ms": 0.0641984140625,
+              "max_ms": 0.0641984140625
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.078956491796875,
+              "p50_ms": 0.078813390625,
+              "p99_ms": 0.0858749453125,
+              "max_ms": 0.0858749453125
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0783021169921875,
+              "p50_ms": 0.0781505078125,
+              "p99_ms": 0.0852448515625,
+              "max_ms": 0.0852448515625
+            }
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": {
+        "encode": 0.04491941980844061,
+        "server": 0.0362084001869335,
+        "combined": 0.03853613111908316
+      }
+    },
+    {
+      "source": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/client_156/workflows/django__django-14349/runtime_events.deepagents.jsonl",
+        "read_prefix_bytes": 144629,
+        "read_prefix_sha256": "372ab57c40259f7a011d680c685a5e08241b3540a6d91eaa4ca0c16ef563b39e",
+        "events": 128,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 13,
+          "llm_result": 11,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 74,
+          "tool_start": 11,
+          "tool_end": 11
+        }
+      },
+      "events": 128,
+      "iterations": 40,
+      "profiling_enabled": true,
+      "payload_bytes": {
+        "baseline": 146803,
+        "candidate": 111527
+      },
+      "payload_reduction_fraction": 0.24029481686341558,
+      "graph_counters_exact_acks_and_timing_counts_equal": true,
+      "costs_per_event": {
+        "baseline": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0226927490234375,
+              "p50_ms": 0.0227270546875,
+              "p99_ms": 0.0231663359375,
+              "max_ms": 0.0231663359375
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.022105804296875,
+              "p50_ms": 0.0221343515625,
+              "p99_ms": 0.022576890625,
+              "max_ms": 0.022576890625
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.06568889765625,
+              "p50_ms": 0.065707921875,
+              "p99_ms": 0.0682291796875,
+              "max_ms": 0.0682291796875
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.065655095703125,
+              "p50_ms": 0.065625859375,
+              "p99_ms": 0.0682103046875,
+              "max_ms": 0.0682103046875
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0883816466796875,
+              "p50_ms": 0.088447203125,
+              "p99_ms": 0.0909746015625,
+              "max_ms": 0.0909746015625
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0877609,
+              "p50_ms": 0.0877942421875,
+              "p99_ms": 0.0903588125,
+              "max_ms": 0.0903588125
+            }
+          }
+        },
+        "candidate": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.02170636796875,
+              "p50_ms": 0.0217287265625,
+              "p99_ms": 0.0221795703125,
+              "max_ms": 0.0221795703125
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0211175115234375,
+              "p50_ms": 0.0211432734375,
+              "p99_ms": 0.0215835625,
+              "max_ms": 0.0215835625
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0630652708984375,
+              "p50_ms": 0.063144828125,
+              "p99_ms": 0.0638587890625,
+              "max_ms": 0.0638587890625
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0630522232421875,
+              "p50_ms": 0.0631330078125,
+              "p99_ms": 0.063850046875,
+              "max_ms": 0.063850046875
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0847716388671875,
+              "p50_ms": 0.084882640625,
+              "p99_ms": 0.086038359375,
+              "max_ms": 0.086038359375
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.084169734765625,
+              "p50_ms": 0.084284546875,
+              "p99_ms": 0.085433609375,
+              "max_ms": 0.085433609375
+            }
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": {
+        "encode": 0.04470738816670017,
+        "server": 0.03964463737448509,
+        "combined": 0.04091987701100375
+      }
+    },
+    {
+      "source": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/runtime_events.deepagents.jsonl",
+        "read_prefix_bytes": 147311,
+        "read_prefix_sha256": "513e174aaf87cc3e44f8884f9b396cabc4771bd747db7ffdab57adbb560b2e8b",
+        "events": 128,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 14,
+          "llm_result": 14,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 70,
+          "tool_start": 11,
+          "tool_end": 11
+        }
+      },
+      "events": 128,
+      "iterations": 40,
+      "profiling_enabled": false,
+      "payload_bytes": {
+        "baseline": 149485,
+        "candidate": 114141
+      },
+      "payload_reduction_fraction": 0.23643843863932834,
+      "graph_counters_exact_acks_and_timing_counts_equal": true,
+      "costs_per_event": {
+        "baseline": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0229400671875,
+              "p50_ms": 0.0229598203125,
+              "p99_ms": 0.0232774375,
+              "max_ms": 0.0232774375
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0223298119140625,
+              "p50_ms": 0.0223561484375,
+              "p99_ms": 0.0226696171875,
+              "max_ms": 0.0226696171875
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.06050690703125,
+              "p50_ms": 0.0604885390625,
+              "p99_ms": 0.0613473984375,
+              "max_ms": 0.0613473984375
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0604805357421875,
+              "p50_ms": 0.060462078125,
+              "p99_ms": 0.0613623046875,
+              "max_ms": 0.0613623046875
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.08344697421875,
+              "p50_ms": 0.083455328125,
+              "p99_ms": 0.0845013515625,
+              "max_ms": 0.0845013515625
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.08281034765625,
+              "p50_ms": 0.082839515625,
+              "p99_ms": 0.08384059375,
+              "max_ms": 0.08384059375
+            }
+          }
+        },
+        "candidate": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0218548642578125,
+              "p50_ms": 0.0218160078125,
+              "p99_ms": 0.022582046875,
+              "max_ms": 0.022582046875
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0212492916015625,
+              "p50_ms": 0.0212221796875,
+              "p99_ms": 0.0219773125,
+              "max_ms": 0.0219773125
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.05800146328125,
+              "p50_ms": 0.0580431328125,
+              "p99_ms": 0.059556765625,
+              "max_ms": 0.059556765625
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0579725052734375,
+              "p50_ms": 0.058030953125,
+              "p99_ms": 0.0595353828125,
+              "max_ms": 0.0595353828125
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0798563275390625,
+              "p50_ms": 0.079863359375,
+              "p99_ms": 0.0811648046875,
+              "max_ms": 0.0811648046875
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.079221796875,
+              "p50_ms": 0.0792575,
+              "p99_ms": 0.080542109375,
+              "max_ms": 0.080542109375
+            }
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": {
+        "encode": 0.04838913631061659,
+        "server": 0.04146839041639894,
+        "combined": 0.043334569686221625
+      }
+    },
+    {
+      "source": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/client_156/workflows/pylint-dev__pylint-4970/runtime_events.deepagents.jsonl",
+        "read_prefix_bytes": 147311,
+        "read_prefix_sha256": "513e174aaf87cc3e44f8884f9b396cabc4771bd747db7ffdab57adbb560b2e8b",
+        "events": 128,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 14,
+          "llm_result": 14,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 70,
+          "tool_start": 11,
+          "tool_end": 11
+        }
+      },
+      "events": 128,
+      "iterations": 40,
+      "profiling_enabled": true,
+      "payload_bytes": {
+        "baseline": 149485,
+        "candidate": 114141
+      },
+      "payload_reduction_fraction": 0.23643843863932834,
+      "graph_counters_exact_acks_and_timing_counts_equal": true,
+      "costs_per_event": {
+        "baseline": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.02335736328125,
+              "p50_ms": 0.023355015625,
+              "p99_ms": 0.02375375,
+              "max_ms": 0.02375375
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0227503064453125,
+              "p50_ms": 0.0227518671875,
+              "p99_ms": 0.023147265625,
+              "max_ms": 0.023147265625
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0666781662109375,
+              "p50_ms": 0.066751640625,
+              "p99_ms": 0.0672031953125,
+              "max_ms": 0.0672031953125
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.066658842578125,
+              "p50_ms": 0.0667399921875,
+              "p99_ms": 0.0671996796875,
+              "max_ms": 0.0671996796875
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0900355294921875,
+              "p50_ms": 0.0901096171875,
+              "p99_ms": 0.0908794609375,
+              "max_ms": 0.0908794609375
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0894091490234375,
+              "p50_ms": 0.0894970546875,
+              "p99_ms": 0.0902656953125,
+              "max_ms": 0.0902656953125
+            }
+          }
+        },
+        "candidate": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.022358809375,
+              "p50_ms": 0.022383921875,
+              "p99_ms": 0.0228001171875,
+              "max_ms": 0.0228001171875
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0217469947265625,
+              "p50_ms": 0.0217889765625,
+              "p99_ms": 0.0221959140625,
+              "max_ms": 0.0221959140625
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.06419495625,
+              "p50_ms": 0.0641523125,
+              "p99_ms": 0.0649023046875,
+              "max_ms": 0.0649023046875
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.064189219140625,
+              "p50_ms": 0.064146859375,
+              "p99_ms": 0.0648864296875,
+              "max_ms": 0.0648864296875
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.086553765625,
+              "p50_ms": 0.086513578125,
+              "p99_ms": 0.0874329765625,
+              "max_ms": 0.0874329765625
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0859362138671875,
+              "p50_ms": 0.085901859375,
+              "p99_ms": 0.086811796875,
+              "max_ms": 0.086811796875
+            }
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": {
+        "encode": 0.044101019964798094,
+        "server": 0.037048699647095895,
+        "combined": 0.03884317426329165
+      }
+    },
+    {
+      "source": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/client_156/workflows/pydata__xarray-3095/runtime_events.deepagents.jsonl",
+        "read_prefix_bytes": 145591,
+        "read_prefix_sha256": "24ee1cb9398dbbe3ac2bcf7f414537a12d004df2c653b462d300c1aec87fb2ce",
+        "events": 128,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 16,
+          "llm_result": 14,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 64,
+          "tool_start": 13,
+          "tool_end": 13
+        }
+      },
+      "events": 128,
+      "iterations": 40,
+      "profiling_enabled": false,
+      "payload_bytes": {
+        "baseline": 147765,
+        "candidate": 112147
+      },
+      "payload_reduction_fraction": 0.24104490237877707,
+      "graph_counters_exact_acks_and_timing_counts_equal": true,
+      "costs_per_event": {
+        "baseline": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.021638259765625,
+              "p50_ms": 0.023071234375,
+              "p99_ms": 0.0236697890625,
+              "max_ms": 0.0236697890625
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0210716638671875,
+              "p50_ms": 0.0224708125,
+              "p99_ms": 0.0230442109375,
+              "max_ms": 0.0230442109375
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.058305233984375,
+              "p50_ms": 0.0622823828125,
+              "p99_ms": 0.0629126875,
+              "max_ms": 0.0629126875
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0582810673828125,
+              "p50_ms": 0.062264640625,
+              "p99_ms": 0.0628952109375,
+              "max_ms": 0.0628952109375
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.07994349375,
+              "p50_ms": 0.085459671875,
+              "p99_ms": 0.0863163359375,
+              "max_ms": 0.0863163359375
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.07935273125,
+              "p50_ms": 0.084816140625,
+              "p99_ms": 0.0856759921875,
+              "max_ms": 0.0856759921875
+            }
+          }
+        },
+        "candidate": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.020580603125,
+              "p50_ms": 0.0219813984375,
+              "p99_ms": 0.0225401171875,
+              "max_ms": 0.0225401171875
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.020004114453125,
+              "p50_ms": 0.0213414765625,
+              "p99_ms": 0.021919015625,
+              "max_ms": 0.021919015625
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0559259150390625,
+              "p50_ms": 0.05983890625,
+              "p99_ms": 0.060847578125,
+              "max_ms": 0.060847578125
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.05590157734375,
+              "p50_ms": 0.0598184375,
+              "p99_ms": 0.0607737421875,
+              "max_ms": 0.0607737421875
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0765065181640625,
+              "p50_ms": 0.0817564453125,
+              "p99_ms": 0.0832797265625,
+              "max_ms": 0.0832797265625
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.075905691796875,
+              "p50_ms": 0.0811182265625,
+              "p99_ms": 0.0825865,
+              "max_ms": 0.0825865
+            }
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": {
+        "encode": 0.050662796293218904,
+        "server": 0.04082783905505871,
+        "combined": 0.043439455691388185
+      }
+    },
+    {
+      "source": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/client_156/workflows/pydata__xarray-3095/runtime_events.deepagents.jsonl",
+        "read_prefix_bytes": 145591,
+        "read_prefix_sha256": "24ee1cb9398dbbe3ac2bcf7f414537a12d004df2c653b462d300c1aec87fb2ce",
+        "events": 128,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 16,
+          "llm_result": 14,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 64,
+          "tool_start": 13,
+          "tool_end": 13
+        }
+      },
+      "events": 128,
+      "iterations": 40,
+      "profiling_enabled": true,
+      "payload_bytes": {
+        "baseline": 147765,
+        "candidate": 112147
+      },
+      "payload_reduction_fraction": 0.24104490237877707,
+      "graph_counters_exact_acks_and_timing_counts_equal": true,
+      "costs_per_event": {
+        "baseline": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.01833584140625,
+              "p50_ms": 0.0183514921875,
+              "p99_ms": 0.01869903125,
+              "max_ms": 0.01869903125
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0178607599609375,
+              "p50_ms": 0.0178818515625,
+              "p99_ms": 0.01821725,
+              "max_ms": 0.01821725
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0536017017578125,
+              "p50_ms": 0.0536046640625,
+              "p99_ms": 0.054369171875,
+              "max_ms": 0.054369171875
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0535703650390625,
+              "p50_ms": 0.05354396875,
+              "p99_ms": 0.05436525,
+              "max_ms": 0.05436525
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0719375431640625,
+              "p50_ms": 0.0719798125,
+              "p99_ms": 0.072956171875,
+              "max_ms": 0.072956171875
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.071431125,
+              "p50_ms": 0.0714310625,
+              "p99_ms": 0.07246428125,
+              "max_ms": 0.07246428125
+            }
+          }
+        },
+        "candidate": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0175484630859375,
+              "p50_ms": 0.01756796875,
+              "p99_ms": 0.0179704375,
+              "max_ms": 0.0179704375
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0170592734375,
+              "p50_ms": 0.0170798046875,
+              "p99_ms": 0.0173645234375,
+              "max_ms": 0.0173645234375
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0515786703125,
+              "p50_ms": 0.051612578125,
+              "p99_ms": 0.0522562734375,
+              "max_ms": 0.0522562734375
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0515708357421875,
+              "p50_ms": 0.051602765625,
+              "p99_ms": 0.0522451328125,
+              "max_ms": 0.0522451328125
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0691271333984375,
+              "p50_ms": 0.06922525,
+              "p99_ms": 0.0699861796875,
+              "max_ms": 0.0699861796875
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0686301091796875,
+              "p50_ms": 0.0687315625,
+              "p99_ms": 0.0694865859375,
+              "max_ms": 0.0694865859375
+            }
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": {
+        "encode": 0.04487415570168318,
+        "server": 0.03732528787916556,
+        "combined": 0.03921281962607337
+      }
+    },
+    {
+      "source": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/runtime_events.deepagents.jsonl",
+        "read_prefix_bytes": 146886,
+        "read_prefix_sha256": "aecd7c8f6aa85d445612027b7f92d0f5497a226636ea8a12fcf74179b3685595",
+        "events": 128,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 14,
+          "llm_result": 12,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 72,
+          "tool_start": 11,
+          "tool_end": 11
+        }
+      },
+      "events": 128,
+      "iterations": 40,
+      "profiling_enabled": false,
+      "payload_bytes": {
+        "baseline": 149060,
+        "candidate": 113750
+      },
+      "payload_reduction_fraction": 0.2368844760499128,
+      "graph_counters_exact_acks_and_timing_counts_equal": true,
+      "costs_per_event": {
+        "baseline": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.017557453125,
+              "p50_ms": 0.0175675546875,
+              "p99_ms": 0.0178534453125,
+              "max_ms": 0.0178534453125
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0170802533203125,
+              "p50_ms": 0.01709034375,
+              "p99_ms": 0.0173888046875,
+              "max_ms": 0.0173888046875
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0462951970703125,
+              "p50_ms": 0.04626665625,
+              "p99_ms": 0.047086640625,
+              "max_ms": 0.047086640625
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0462706080078125,
+              "p50_ms": 0.046254875,
+              "p99_ms": 0.04707534375,
+              "max_ms": 0.04707534375
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0638526501953125,
+              "p50_ms": 0.0638339375,
+              "p99_ms": 0.06493184375,
+              "max_ms": 0.06493184375
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.063350861328125,
+              "p50_ms": 0.063331328125,
+              "p99_ms": 0.0644503984375,
+              "max_ms": 0.0644503984375
+            }
+          }
+        },
+        "candidate": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0168219234375,
+              "p50_ms": 0.016846609375,
+              "p99_ms": 0.0171991015625,
+              "max_ms": 0.0171991015625
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.016334598828125,
+              "p50_ms": 0.016352484375,
+              "p99_ms": 0.016674671875,
+              "max_ms": 0.016674671875
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0443836318359375,
+              "p50_ms": 0.044406,
+              "p99_ms": 0.04521759375,
+              "max_ms": 0.04521759375
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0443572171875,
+              "p50_ms": 0.044390171875,
+              "p99_ms": 0.044845578125,
+              "max_ms": 0.044845578125
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.061205555273437504,
+              "p50_ms": 0.061248015625,
+              "p99_ms": 0.0621994765625,
+              "max_ms": 0.0621994765625
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.060691816015625,
+              "p50_ms": 0.060748171875,
+              "p99_ms": 0.061434046875,
+              "max_ms": 0.061434046875
+            }
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": {
+        "encode": 0.043655938714956655,
+        "server": 0.04135218668381091,
+        "combined": 0.04197330954550882
+      }
+    },
+    {
+      "source": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_replenished_108plus48_20261014_v59/predictive_h2d/client_156/workflows/mwaskom__seaborn-3187/runtime_events.deepagents.jsonl",
+        "read_prefix_bytes": 146886,
+        "read_prefix_sha256": "aecd7c8f6aa85d445612027b7f92d0f5497a226636ea8a12fcf74179b3685595",
+        "events": 128,
+        "event_kinds": {
+          "workflow_start": 1,
+          "invocation_create": 3,
+          "llm_submit": 14,
+          "llm_result": 12,
+          "spawn": 2,
+          "join_create": 1,
+          "join_wait": 1,
+          "structured_action": 72,
+          "tool_start": 11,
+          "tool_end": 11
+        }
+      },
+      "events": 128,
+      "iterations": 40,
+      "profiling_enabled": true,
+      "payload_bytes": {
+        "baseline": 149060,
+        "candidate": 113750
+      },
+      "payload_reduction_fraction": 0.2368844760499128,
+      "graph_counters_exact_acks_and_timing_counts_equal": true,
+      "costs_per_event": {
+        "baseline": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.0179202984375,
+              "p50_ms": 0.01795528125,
+              "p99_ms": 0.018244953125,
+              "max_ms": 0.018244953125
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0174492478515625,
+              "p50_ms": 0.017482078125,
+              "p99_ms": 0.0177670703125,
+              "max_ms": 0.0177670703125
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.051026240234375,
+              "p50_ms": 0.0511118046875,
+              "p99_ms": 0.051625671875,
+              "max_ms": 0.051625671875
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0510186373046875,
+              "p50_ms": 0.0511042265625,
+              "p99_ms": 0.051618296875,
+              "max_ms": 0.051618296875
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.068946538671875,
+              "p50_ms": 0.06906128125,
+              "p99_ms": 0.06975490625,
+              "max_ms": 0.06975490625
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.06846788515625,
+              "p50_ms": 0.0685801484375,
+              "p99_ms": 0.0692731875,
+              "max_ms": 0.0692731875
+            }
+          }
+        },
+        "candidate": {
+          "encode": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.017099696875,
+              "p50_ms": 0.0171010390625,
+              "p99_ms": 0.0175546875,
+              "max_ms": 0.0175546875
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.01662489296875,
+              "p50_ms": 0.01663221875,
+              "p99_ms": 0.0170751796875,
+              "max_ms": 0.0170751796875
+            }
+          },
+          "server": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.049006926171875,
+              "p50_ms": 0.049029015625,
+              "p99_ms": 0.0499001328125,
+              "max_ms": 0.0499001328125
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0489985228515625,
+              "p50_ms": 0.0490177890625,
+              "p99_ms": 0.04989725,
+              "max_ms": 0.04989725
+            }
+          },
+          "combined": {
+            "wall_ms": {
+              "count": 40,
+              "mean_ms": 0.06610662304687501,
+              "p50_ms": 0.0661085625,
+              "p99_ms": 0.0674548203125,
+              "max_ms": 0.0674548203125
+            },
+            "thread_cpu_ms": {
+              "count": 40,
+              "mean_ms": 0.0656234158203125,
+              "p50_ms": 0.0656161875,
+              "p99_ms": 0.0669724296875,
+              "max_ms": 0.0669724296875
+            }
+          }
+        }
+      },
+      "thread_cpu_mean_reduction": {
+        "encode": 0.04724300381455593,
+        "server": 0.039595617598735866,
+        "combined": 0.041544577131981786
+      }
+    }
+  ],
+  "limits": [
+    "Each raw record is delivered as its own batch; original wire batching is not recorded.",
+    "Both arms retain identical current runtime graph handling and parent timing.",
+    "Server timing includes JSON decode, event validation, graph handling and exact ACK encoding.",
+    "These are synchronous CPU handler calls; socket waiting, model work and native KV are absent.",
+    "No field is removed from authoritative logs or decoded events; nested null values remain.",
+    "Prefix hashes bind the sampled historical data; elapsed CPU is not GPU idle or JCT saving.",
+    "The frozen V60, qualified d925278 candidate and reservation waiter remain unchanged."
+  ]
+}

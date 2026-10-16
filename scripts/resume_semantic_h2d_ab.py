@@ -25,6 +25,8 @@ def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) ->
         "ROOT_COUNT": plan["root_count"],
         "ARRIVAL_BATCH_SIZE": plan["workflow_arrival_batch_size"],
         "ARRIVAL_BATCH_INTERVAL_MS": plan["workflow_arrival_batch_interval_ms"],
+        "ARRIVAL_RATE_PER_SECOND": plan.get("workflow_arrival_rate_per_second", 0),
+        "ARRIVAL_SEED": plan.get("workflow_arrival_seed", 21),
         "ARM_ORDER": " ".join(plan["order"]), "RESUME_PENDING": 1,
         "HOST_SPLIT": plan["host_split"], "PORT": port,
         "HOST_NUMA_MEMORY_POLICY": plan.get("host_numa_memory_policy", "bind"),
@@ -46,8 +48,10 @@ def resume_environment(plan: dict, run_root: Path, *, python: str, port: int) ->
         "CHILD_FINAL_REPORT_SHADOW": int(plan["child_final_report_shadow"]),
         "WORKLOAD_MANIFEST": plan["workload_manifest"],
     }
-    if plan.get("native_reference_run"):
-        values["NATIVE_REFERENCE_RUN"] = plan["native_reference_run"]
+    for field in (
+        "native_reference_run", "native_reference_timeline", "native_reference_cache",
+    ):
+        values[field.upper()] = plan.get(field) or ""
     return {name: str(value) for name, value in values.items()}
 
 

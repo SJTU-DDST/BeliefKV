@@ -1,0 +1,88 @@
+{
+  "status": "development_cpu_verified_not_cold_qualified_or_deployed",
+  "observed_at_local": "2026-10-14T22:23:11.663717-07:00",
+  "production_revision": "c7bd6eea34200037959b7accbd5d7d09d062a143",
+  "repair_commits": [
+    "2e37ed2f9fc4e1daf47f6070073e80868cce796e",
+    "c7bd6eea34200037959b7accbd5d7d09d062a143"
+  ],
+  "production_delta_from_e2ec098": [
+    "beliefkv/runtime/sglang_v0520_physical.py",
+    "beliefkv/runtime/sglang_v0520_runtime.py"
+  ],
+  "source_sha256": {
+    "beliefkv/runtime/sglang_v0520_runtime.py": "d13fc0f8baaed3c5408594f99e0797b7dd5f6e2450da3f2d8c07288b7fbcf8a5",
+    "beliefkv/runtime/sglang_v0520_physical.py": "3863e5661a3811b50b4207d7194264d7bf7b68826c3cf526c0cd27ca9914347b",
+    "tests/test_wait_prefetch_partial_extent.py": "404a924507923c75f6c2c5a3059b33d412e4afe089b0aed93d46aa7f1c204797",
+    "tests/test_sglang_v0520_runtime.py": "48320c0f08ff1fe26d3ce168e857c11505002393f32574da4420d24a6af809be",
+    "tests/test_sglang_v0520_physical.py": "e2f76fb937fcfa4cc30f93fac06155cdbac1b4d4b191264b6ea5c3f413287181",
+    "tests/test_audit_wait_prefetch_capacity.py": "637d4027c1931f11a7932849a5534a8a4f98ae2f0c6ba0fc96b8db6e76a00269",
+    "scripts/audit_wait_capacity_budgets.py": "7a12ef09c3ce40f5feb63a17224e898200656046194c6d3de1673839b420fda1",
+    "scripts/benchmark_prepare_rejection_registration.py": "338929d5d1aa94f03e32f28ee836f609f485e3ca799f15b336291a102985ef31"
+  },
+  "current_checks": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v688_wait_capacity_repairs_runtime_checks_20261015.xml",
+    "sha256": "f6d2c45af066ab17f592bf7e6ca773ab47219f9ddf5a3cc70bcac56a85ada6f6",
+    "unique_checks": 881,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "historical_failure_receipts": [
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v680_zero_native_byte_budget_before_fix_20261015.xml",
+      "sha256": "1549f6ba6d8632545107f976c77aa2fd4252b3e8e195ef23e7b1c026c0662f5f"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v681_zero_native_byte_budget_after_fix_20261015.xml",
+      "sha256": "e38cab4b6a96b3f6ba5be6859b021ce69f2ff8651eeba188a47950cfcc12458f"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v686_backed_prefix_registration_before_fix_20261015.xml",
+      "sha256": "f59b84802ab84c97a63228b42c74554e599c6cb90f00f8f60ae1c54d5cbf4f9f"
+    }
+  ],
+  "evidence": [
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v679_v59_complete_tool_windows_summary_20261015.json",
+      "sha256": "433025728d8ea129c9aee4821a79198d12dcb3051f3a69c2341aea369cdb4c88"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v685_v59_complete_wait_capacity_audit_20261015.json",
+      "sha256": "74676e481cee9661c6848099ed340b013001c9582d2ed585f9b3df4f4b049c5c"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/experiments/reports/v689_prepare_rejection_registration_cpu_20261015.json",
+      "sha256": "b406181917d6d84ab61d57b23efb260071f991178d0418ab5be3433e0506947d"
+    }
+  ],
+  "source_prefix_equal": true,
+  "historical_scope": "No native zero-byte budget observed in V59; recorded missing waiting candidates do not establish a contemporaneous safe cold victim. Both repairs have independent CPU reproductions, not demonstrated GPU/JCT impact.",
+  "cpu_control": {
+    "original_cadence_added_thread_cpu_ms_per_iteration": 0.01949996000000004,
+    "forced_probe_added_thread_cpu_ms_per_iteration": 0.04633770666666659,
+    "scope": "No actionable backed leaf; native reads, rejection coverage, empty candidate registry and no actions are equal. This is a cost, not a speedup."
+  },
+  "frozen_candidates": {
+    "registered_v60": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v620-v60-observation-cache-20261014",
+      "revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+      "clean": true,
+      "modified": false
+    },
+    "qualified_cpu_candidate": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v674-combined-cpu-20261015",
+      "revision": "9c79eeeb48950af0536ac2a98f77e2b69176f8f6",
+      "clean": true,
+      "modified": false
+    }
+  },
+  "reservation_waiter": {
+    "pid": 3615090,
+    "start_ticks": "619081644",
+    "confirmed_live": true,
+    "modified": false
+  },
+  "gpu_experiments_not_started": true,
+  "goal_status": "active_full_turnover_consumption_quality_jct_throughput_acceptance_unachieved"
+}

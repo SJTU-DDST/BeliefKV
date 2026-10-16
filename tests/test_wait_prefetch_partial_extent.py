@@ -4,7 +4,9 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget, TransferStartWindow
+from beliefkv.runtime.native_transfer_policy import (
+    PrefetchResidencyBudget, TransferStartWindow, native_residency_budget,
+)
 from beliefkv.runtime.sglang_v0520_physical import (
     inspect_session_h2d_opportunity, plan_prefetch_gpu_steps,
 )
@@ -229,8 +231,105 @@ def test_zero_native_budget_can_reclaim_a_backed_waiting_session_at_latest_start
         runtime.close()
 
 
+@pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
+@pytest.mark.parametrize("page_size", (1, 2))
+@pytest.mark.parametrize("outcome", ("reclaimed", "no_victim", "reserve_grew"))
+def test_zero_native_byte_budget_rechecks_actual_capacity_after_backed_probe(
+    source, page_size, outcome,
+):
+    fixture = (
+        provisional_join_batch_fixture() if source == "join_ticket"
+        else batch_fixture(source)
+    )
+    runtime, key, opportunity, cache, _ = fixture
+    runtime._h2d_samples.extend(((40, 10.),) * 3)
+    if runtime._semantic_worker is not None:
+        runtime._semantic_worker.error = ""
+    runtime._native_page_size = page_size
+    headroom = [replace(
+        opportunity.headroom, device_full_free_tokens=page_size,
+        device_mamba_free_slots=1,
+    )]
+    input_reserve = [0]
+    records = []
+    runtime._opportunity_writer = NS(record=records.append, close=lambda: None)
+    cache.beliefkv_join_pressure_candidates_by_component = {0: ((99, 100.),)}
+
+    def budget(**kwargs):
+        return native_residency_budget(
+            running_requests=0, max_running_requests=48,
+            available_request_rows=1, prefill_slots=1, page_size=page_size,
+            input_token_reserve=input_reserve[0],
+            full_free_tokens=headroom[0].device_full_free_tokens,
+            mamba_free_slots=headroom[0].device_mamba_free_slots,
+            full_bytes_per_token=10, mamba_bytes_per_slot=20,
+            protected_bytes=0,
+        )
+
+    def reclaim(**kwargs):
+        assert kwargs["exclude_node_ids"] == (0, 1, 2, 3, 4)
+        assert kwargs["full_tokens"] == 2 * page_size
+        assert kwargs["mamba_slots"] == 1
+        assert runtime.physical_ledger.pending_count == 0
+        if outcome == "no_victim":
+            return {}
+        headroom[0] = replace(headroom[0], device_full_free_tokens=page_size + 4)
+        if outcome == "reserve_grew":
+            input_reserve[0] = 4
+        return {0: 4}
+
+    cache.reclaim_beliefkv_handoff_capacity = Mock(side_effect=reclaim)
+    original_enqueue = cache.prefetch_gpu_session_nodes.side_effect
+
+    def enqueue(**kwargs):
+        assert budget().byte_limit == 40
+        outcomes = original_enqueue(**kwargs)
+        headroom[0] = replace(
+            headroom[0],
+            device_full_free_tokens=headroom[0].device_full_free_tokens - 4 * len(outcomes),
+        )
+        return outcomes
+
+    cache.prefetch_gpu_session_nodes.side_effect = enqueue
+    try:
+        assert budget().byte_limit == 0
+        with patch.object(runtime, "inspect_context_h2d_opportunity",
+                          side_effect=lambda **kwargs: replace(
+                              opportunity, headroom=headroom[0],
+                          )), \
+            patch.object(runtime, "_current_residency_budget", side_effect=budget), \
+            patch.object(runtime, "_publish_parent_pressure_candidates"), \
+            patch.object(runtime, "_live_parent_pressure_node", return_value=True), \
+            patch("beliefkv.runtime.sglang_v0520_physical.observe_unified_node_closure",
+                  return_value=NS(
+                      observable=True, nodes=tuple(reversed(opportunity.candidate.nodes)),
+                  )):
+            if source == "tool_wait":
+                runtime.dispatch_tool_prefetch()
+            else:
+                runtime.dispatch_join_prefetch()
+        cache.reclaim_beliefkv_handoff_capacity.assert_called_once()
+        assert runtime.counts["wait_prefetch_backed_capacity_probe"] == 1
+        assert not runtime.physical_disabled
+        expected = outcome == "reclaimed"
+        assert runtime.physical_ledger.pending_count == int(expected)
+        if expected:
+            cache.prefetch_gpu_session_nodes.assert_called_once()
+            assert tuple(
+                node[0] for node in cache.prefetch_gpu_session_nodes.call_args.kwargs["nodes"]
+            ) == (1,)
+            assert headroom[0].device_full_free_tokens == page_size
+            assert budget().byte_limit == 0
+        else:
+            cache.prefetch_gpu_session_nodes.assert_not_called()
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("blocked", ("not_cold", "excluded", "before_start_window"))
-def test_zero_budget_reclaim_probe_does_not_evict_without_a_live_timed_opportunity(blocked):
+def test_zero_budget_reclaim_probe_does_not_evict_without_a_live_timed_opportunity(
+    blocked, native_zero_bytes=False,
+):
     runtime, key, opportunity, cache, _ = batch_fixture("tool_wait")
     runtime._h2d_samples.extend(((40, 10.),) * 3)
     cache.beliefkv_join_pressure_candidates_by_component = {
@@ -246,13 +345,57 @@ def test_zero_budget_reclaim_probe_does_not_evict_without_a_live_timed_opportuni
                           )), \
             patch.object(runtime, "_current_residency_budget",
                          return_value=PrefetchResidencyBudget(
-                             1, 1024, reserve_full_tokens=1,
+                             1, 0 if native_zero_bytes else 1024, reserve_full_tokens=1,
+                             source="native_next_prefill" if native_zero_bytes else
+                             "legacy_capacity_unavailable",
                          )), \
             patch.object(runtime, "_live_parent_pressure_node",
                          return_value=blocked != "not_cold"), \
             patch.object(runtime, "_h2d_start_window",
                          return_value=TransferStartWindow(10., 0., 50.)):
             runtime.dispatch_tool_prefetch()
+        cache.reclaim_beliefkv_handoff_capacity.assert_not_called()
+        cache.prefetch_gpu_session_nodes.assert_not_called()
+        assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("blocked", ("not_cold", "excluded", "before_start_window"))
+def test_native_zero_byte_probe_rejects_nonlive_or_untimed_victims(blocked):
+    test_zero_budget_reclaim_probe_does_not_evict_without_a_live_timed_opportunity(
+        blocked, native_zero_bytes=True,
+    )
+
+
+@pytest.mark.parametrize("source", ("join_ticket", "tool_wait"))
+def test_explicit_zero_byte_budget_does_not_authorize_backed_capacity_probe(source):
+    fixture = (
+        provisional_join_batch_fixture() if source == "join_ticket"
+        else batch_fixture(source)
+    )
+    runtime, _, opportunity, cache, _ = fixture
+    runtime._h2d_samples.extend(((40, 10.),) * 3)
+    cache.beliefkv_join_pressure_candidates_by_component = {0: ((99, 100.),)}
+    cache.reclaim_beliefkv_handoff_capacity = Mock(return_value={0: 4})
+    try:
+        with patch.object(runtime, "inspect_context_h2d_opportunity",
+                          return_value=replace(
+                              opportunity, headroom=replace(
+                                  opportunity.headroom, device_full_free_tokens=1,
+                              ),
+                          )), \
+            patch.object(runtime, "_current_residency_budget",
+                         return_value=PrefetchResidencyBudget(
+                             1, 0, reserve_full_tokens=1,
+                         )), \
+            patch.object(runtime, "_live_parent_pressure_node", return_value=True), \
+            patch.object(runtime, "_h2d_start_window",
+                         return_value=TransferStartWindow(200., 0., 500.)):
+            if source == "tool_wait":
+                runtime.dispatch_tool_prefetch()
+            else:
+                runtime.dispatch_join_prefetch()
         cache.reclaim_beliefkv_handoff_capacity.assert_not_called()
         cache.prefetch_gpu_session_nodes.assert_not_called()
         assert runtime.physical_ledger.pending_count == 0

@@ -37,7 +37,10 @@ from langchain_core.tools import BaseTool, tool
 from langgraph.types import Command
 from pydantic import BaseModel, Field, field_validator
 
-from beliefkv.experiments.arrival_schedule import build_workflow_arrivals
+from beliefkv.experiments.arrival_schedule import (
+    WorkflowArrival, arrival_schedule_digest, build_workflow_arrivals,
+    load_workflow_arrivals,
+)
 from beliefkv.experiments.sandbox_progress import observe_output
 from beliefkv.predictor.project_tool_history import ProjectToolHistory
 from beliefkv.experiments.swebench_prompt import (
@@ -74,6 +77,7 @@ from beliefkv.runtime.context_lifecycle import (
     CompletionBudgetMiddleware,
     ContextLifecycleMiddleware,
     ContextLifecyclePolicy,
+    make_summary_model,
 )
 from beliefkv.runtime.sglang_adapter import BeliefKVRequestMetadata
 from beliefkv.runtime.stream_content_shadow import StreamContentShadow
@@ -1621,6 +1625,7 @@ class DeepAgentsExperimentConfig:
     workflow_arrival_interval_ms: float = 0.0
     workflow_arrival_batch_size: int = 0
     workflow_arrival_batch_interval_ms: float = 0.0
+    workflow_arrival_schedule: Path | None = None
     saturated_root_backlog: bool = False
     gpu_index: int = 0
     pool_tokens: int = 163_840
@@ -1750,6 +1755,11 @@ class DeepAgentsExperimentConfig:
                     "workflow arrival batch interval must not precede the final "
                     "intra-batch arrival"
                 )
+        if self.workflow_arrival_schedule is not None and (
+            self.saturated_root_backlog or self.workflow_arrival_interval_ms
+            or self.workflow_arrival_batch_size or self.workflow_arrival_batch_interval_ms
+        ):
+            raise ValueError("a frozen arrival schedule cannot be combined with other arrival modes")
         if self.sampling_seed is not None and self.sampling_seed < 0:
             raise ValueError("sampling_seed must be non-negative when configured")
         if self.runtime_event_ack_timeout_s <= 0 or self.runtime_event_ack_retries <= 0:
@@ -1989,6 +1999,9 @@ the supported edit, or return an honest blocked result with the evidence and exa
 blocker. Retry a failed tool only after correcting its inputs or changing the method;
 do not cycle equivalent probes. A new call ID or slightly altered probe that produces
 no new evidence is not progress.
+For shell wrappers, expose the subprocess's stdout, stderr, and return status;
+a successful wrapper exit is not proof of test or task success. Prefer a small
+isolated fixture when investigating recursive linters or directory walkers.
 """ + SANDBOX_PATH_CONTRACT
 
 AUTONOMOUS_SYSTEM_PROMPT = (
@@ -2008,6 +2021,10 @@ Avoid repeated tool loops. Do not repeat the same tool call with identical argum
 when the result and workspace are unchanged. After one unproductive repeat, change
 approach, add concrete evidence, edit/test when appropriate, or report the blocker
 honestly. Do not treat equivalent probes as progress.
+For shell wrappers, report the subprocess's stdout, stderr, and return status
+separately; a printed number or the wrapper's successful exit is not proof that
+the diagnostic or the assigned task succeeded. For recursive linters or walkers,
+prefer a small isolated reproduction fixture over traversing the entire checkout.
 """
 
 NATIVE_CHILD_RETURN_INSTRUCTION = """
@@ -2036,6 +2053,10 @@ repeat an unchanged failing call. Once the assigned deliverable is supported by 
 return the result to the parent instead of continuing broad exploration. If blocked,
 report the exact command, path, and observed failure without guessing another repository
 root.
+An investigation or reproduction assignment is complete once its specific question
+can be answered with observed evidence, even when the repository bug remains unfixed.
+The parent coordinates the overall repair. Do not keep rerunning a broad diagnostic
+while waiting for a reproduction task to turn into a full passing repair.
 """
 
 AUTONOMOUS_NATURAL_SUBAGENT_PROMPT = """
@@ -3066,6 +3087,11 @@ def _autonomous_subagents(
                         ),
                     ),
                     PatchToolCallsMiddleware(),
+                    _tool_observation_budget(
+                        config,
+                        audit=backend.audit,
+                        scope=scope,
+                    ),
                     _tool_circuit(
                         backend,
                         scope=scope,
@@ -3073,11 +3099,6 @@ def _autonomous_subagents(
                         suppress_repeats=config.tool_circuit_breaker_enabled,
                     ),
                     ToolOutcomeStatusMiddleware(),
-                    _tool_observation_budget(
-                        config,
-                        audit=backend.audit,
-                        scope=scope,
-                    ),
                     _loop_guard(
                         config,
                         completion_schema=ChildCompletion,
@@ -3106,8 +3127,8 @@ def _build_autonomous_agent(
     delegation_enabled: bool = True,
 ) -> Any:
     model = _model(config, adapter, deadline_controller)
-    summary_model = model.model_copy(
-        update={"max_tokens": config.context_lifecycle.summary_output_tokens}
+    summary_model = make_summary_model(
+        model, output_tokens=config.context_lifecycle.summary_output_tokens,
     )
     deadline_controller.register_model(summary_model)
     middleware: list[Any] = [
@@ -3161,6 +3182,11 @@ def _build_autonomous_agent(
             model_context_tokens=config.context_lifecycle.model_context_tokens,
         ),
         PatchToolCallsMiddleware(),
+        _tool_observation_budget(
+            config,
+            audit=backend.audit,
+            scope="autonomous:supervisor",
+        ),
         _tool_circuit(
             backend,
             scope="autonomous:supervisor",
@@ -3168,11 +3194,6 @@ def _build_autonomous_agent(
             suppress_repeats=config.tool_circuit_breaker_enabled,
         ),
         ToolOutcomeStatusMiddleware(),
-        _tool_observation_budget(
-            config,
-            audit=backend.audit,
-            scope="autonomous:supervisor",
-        ),
         _loop_guard(
             config,
             completion_schema=WorkflowCompletion,
@@ -3386,14 +3407,19 @@ def _run_planned_child(
             if config.child_return_intent_shadow else []
         )
         child_model = _model(config, adapter, deadline_controller)
-        summary_model = child_model.model_copy(
-            update={"max_tokens": config.context_lifecycle.summary_output_tokens}
+        summary_model = make_summary_model(
+            child_model, output_tokens=config.context_lifecycle.summary_output_tokens,
         )
         deadline_controller.register_model(summary_model)
         child = create_agent(
             model=child_model,
             tools=shadow_tools,
             middleware=[
+                _tool_observation_budget(
+                    config,
+                    audit=backend.audit,
+                    scope=f"planned:child:{handle.invocation_id}",
+                ),
                 _tool_circuit(
                     child_backend,
                     scope=f"planned:child:{handle.invocation_id}",
@@ -3401,11 +3427,6 @@ def _run_planned_child(
                     suppress_repeats=config.tool_circuit_breaker_enabled,
                 ),
                 ToolOutcomeStatusMiddleware(),
-                _tool_observation_budget(
-                    config,
-                    audit=backend.audit,
-                    scope=f"planned:child:{handle.invocation_id}",
-                ),
                 _filesystem_middleware(child_backend, allow_direct_edits=False),
                 _context_lifecycle_middleware(
                     config, child_backend, adapter, summary_model,
@@ -3692,6 +3713,11 @@ def _run_planned(
         model=_model(config, adapter, deadline_controller),
         tools=[_workspace_patch_tool(backend)],
         middleware=[
+            _tool_observation_budget(
+                config,
+                audit=backend.audit,
+                scope="planned:implementer",
+            ),
             _tool_circuit(
                 backend,
                 scope="planned:implementer",
@@ -3699,11 +3725,6 @@ def _run_planned(
                 suppress_repeats=config.tool_circuit_breaker_enabled,
             ),
             ToolOutcomeStatusMiddleware(),
-            _tool_observation_budget(
-                config,
-                audit=backend.audit,
-                scope="planned:implementer",
-            ),
             _filesystem_middleware(backend, allow_direct_edits=True),
             _loop_guard(
                 config,
@@ -3821,6 +3842,11 @@ def _repair_incomplete_workflow(
             model=_model(config, adapter, deadline_controller),
             tools=[_workspace_patch_tool(backend)],
             middleware=[
+                _tool_observation_budget(
+                    config,
+                    audit=backend.audit,
+                    scope=f"completion-repair:{attempt + 1}",
+                ),
                 _tool_circuit(
                     backend,
                     scope=f"completion-repair:{attempt + 1}",
@@ -3828,11 +3854,6 @@ def _repair_incomplete_workflow(
                     suppress_repeats=config.tool_circuit_breaker_enabled,
                 ),
                 ToolOutcomeStatusMiddleware(),
-                _tool_observation_budget(
-                    config,
-                    audit=backend.audit,
-                    scope=f"completion-repair:{attempt + 1}",
-                ),
                 _filesystem_middleware(backend, allow_direct_edits=True),
                 _loop_guard(
                     config,
@@ -4619,6 +4640,46 @@ def _execute_saturated_root_pool(
         return tuple((future, futures[future]) for future in as_completed(futures))
 
 
+def _execute_scheduled_root_pool(
+    workloads: Sequence[SweBenchWorkload],
+    *,
+    arrivals: Sequence[WorkflowArrival],
+    concurrency: int,
+    run_one: Any,
+    started: float,
+    audit: JsonlAudit,
+) -> tuple[tuple[Any, SweBenchWorkload], ...]:
+    """Submit by the external clock without waiting for earlier roots to finish."""
+    def execute(workload, arrival):
+        audit.emit(
+            "workflow_started", instance_id=workload.instance_id,
+            scheduled_offset_seconds=arrival.scheduled_offset_seconds,
+            actual_offset_seconds=time.monotonic() - started,
+        )
+        try:
+            return run_one(workload)
+        finally:
+            audit.emit(
+                "workflow_finished", instance_id=workload.instance_id,
+                actual_offset_seconds=time.monotonic() - started,
+            )
+
+    with ThreadPoolExecutor(max_workers=concurrency) as executor:
+        futures = {}
+        for arrival in arrivals:
+            delay = started + arrival.scheduled_offset_seconds - time.monotonic()
+            if delay > 0:
+                time.sleep(delay)
+            workload = workloads[arrival.workflow_index]
+            audit.emit(
+                "workflow_submitted", instance_id=workload.instance_id,
+                scheduled_offset_seconds=arrival.scheduled_offset_seconds,
+                actual_offset_seconds=time.monotonic() - started,
+            )
+            futures[executor.submit(execute, workload, arrival)] = workload
+        return tuple((future, futures[future]) for future in as_completed(futures))
+
+
 def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
     output_dir = config.output_dir.expanduser().resolve()
     if output_dir.exists():
@@ -4665,6 +4726,30 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
             "--saturated-root-backlog requires --concurrency to cover every "
             f"frozen root ({config.concurrency} < {len(workloads)})"
         )
+    if config.workflow_arrival_schedule is not None:
+        if config.concurrency < len(workloads):
+            raise ValueError("frozen online arrivals require a client slot for every root")
+        arrivals = load_workflow_arrivals(
+            config.workflow_arrival_schedule,
+            instance_ids=[workload.instance_id for workload in workloads],
+        )
+    elif config.workflow_arrival_batch_size > 0:
+        arrivals = build_workflow_arrivals(
+            len(workloads), mode="batched",
+            batch_size=config.workflow_arrival_batch_size,
+            batch_interval_seconds=config.workflow_arrival_batch_interval_ms / 1000.0,
+            intra_batch_interval_seconds=config.workflow_arrival_interval_ms / 1000.0,
+        )
+    else:
+        arrivals = build_workflow_arrivals(
+            len(workloads), mode="batched", batch_size=1,
+            batch_interval_seconds=config.workflow_arrival_interval_ms / 1000.0,
+        )
+    arrival_rows = [
+        {"instance_id": workloads[arrival.workflow_index].instance_id,
+         "offset_seconds": arrival.scheduled_offset_seconds}
+        for arrival in arrivals
+    ]
     output_dir.mkdir(parents=True)
     run_id = uuid.uuid4().hex
     manifest = {
@@ -4675,6 +4760,10 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
             **asdict(config),
             "output_dir": str(output_dir),
             "workload_manifest": str(config.workload_manifest),
+            "workflow_arrival_schedule": (
+                str(config.workflow_arrival_schedule)
+                if config.workflow_arrival_schedule else None
+            ),
             "tool_window_shadow_artifact": (
                 str(config.tool_window_shadow_artifact)
                 if config.tool_window_shadow_artifact else None
@@ -4708,6 +4797,15 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         "workflow_arrival_batch_size": config.workflow_arrival_batch_size,
         "workflow_arrival_batch_interval_ms": (
             config.workflow_arrival_batch_interval_ms
+        ),
+        "arrival_schedule": arrival_rows,
+        "arrival_schedule_sha256": arrival_schedule_digest(arrival_rows),
+        "workflow_arrival_schedule_source": (
+            {
+                "path": str(config.workflow_arrival_schedule.resolve()),
+                "sha256": hashlib.sha256(config.workflow_arrival_schedule.read_bytes()).hexdigest(),
+            }
+            if config.workflow_arrival_schedule is not None else None
         ),
         "saturated_root_backlog": config.saturated_root_backlog,
         "root_submission_mode": (
@@ -4746,25 +4844,7 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
         early_survivor_shadow=config.early_tool_wait_shadow
     )
     tool_wait_shadow_timer = ToolWaitShadowTimer()
-    if config.workflow_arrival_batch_size > 0:
-        arrivals = build_workflow_arrivals(
-            len(workloads),
-            mode="batched",
-            batch_size=config.workflow_arrival_batch_size,
-            batch_interval_seconds=(
-                config.workflow_arrival_batch_interval_ms / 1000.0
-            ),
-            intra_batch_interval_seconds=(
-                config.workflow_arrival_interval_ms / 1000.0
-            ),
-        )
-    else:
-        arrivals = build_workflow_arrivals(
-            len(workloads),
-            mode="batched",
-            batch_size=1,
-            batch_interval_seconds=config.workflow_arrival_interval_ms / 1000.0,
-        )
+    arrival_audit = JsonlAudit(output_dir / "workflow_arrivals.jsonl")
     native_session_close_executor = (
         ThreadPoolExecutor(
             max_workers=min(32, config.concurrency),
@@ -4798,24 +4878,18 @@ def run_experiment(config: DeepAgentsExperimentConfig) -> dict[str, Any]:
             ):
                 record_result(future, workload)
         else:
-            with ThreadPoolExecutor(max_workers=config.concurrency) as executor:
-                futures: dict[Any, Any] = {}
-                for arrival in arrivals:
-                    target = started + arrival.scheduled_offset_seconds
-                    delay = target - time.monotonic()
-                    if delay > 0:
-                        time.sleep(delay)
-                    workload = workloads[arrival.workflow_index]
-                    futures[
-                        executor.submit(
-                            _run_workflow, config, bundle, workload,
-                            project_tool_history, tool_wait_shadow_timer,
-                            tool_window_shadow, native_session_close_executor,
-                        )
-                    ] = workload
-                for future in as_completed(futures):
-                    record_result(future, futures[future])
+            for future, workload in _execute_scheduled_root_pool(
+                workloads, arrivals=arrivals, concurrency=config.concurrency,
+                started=started, audit=arrival_audit,
+                run_one=lambda workload: _run_workflow(
+                    config, bundle, workload, project_tool_history,
+                    tool_wait_shadow_timer, tool_window_shadow,
+                    native_session_close_executor,
+                ),
+            ):
+                record_result(future, workload)
     finally:
+        arrival_audit.close()
         if native_session_close_executor is not None:
             native_session_close_executor.shutdown(wait=True)
         tool_wait_shadow_timer.close()

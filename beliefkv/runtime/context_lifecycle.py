@@ -35,11 +35,15 @@ Preserve all state needed to continue the task correctly:
 - the current plan, completed work, and exact next actions;
 - files read or modified and the important changes in each file;
 - commands and tests already run, including their results;
+- repeated commands with identical observations, their accumulated cost, and any
+  diagnostics still missing; distinguish shell status from test or task success;
 - unresolved errors, blockers, hypotheses, and rejected approaches;
 - child-agent assignments, returned findings, and outstanding JOIN state.
 
 Do not copy verbose tool output when a concise factual record is sufficient. Do
 not claim that work or tests completed unless the messages establish that fact.
+Keep each delegated deliverable distinct from the parent workflow's unfinished
+repair, so an answered investigation can return without repeating its tool work.
 Return only the checkpoint summary.
 
 <messages>
@@ -55,6 +59,18 @@ The previous summarization attempt returned no checkpoint text. Return a
 non-empty checkpoint now. Preserve uncertainty and incomplete work; do not
 invent progress or a terminal outcome.
 """
+
+
+def make_summary_model(model: BaseChatModel, *, output_tokens: int) -> BaseChatModel:
+    """Use the checkpoint budget for visible text on the serving endpoint."""
+    extra_body = dict(getattr(model, "extra_body", None) or {})
+    template = dict(extra_body.get("chat_template_kwargs") or {})
+    template["enable_thinking"] = False
+    extra_body["chat_template_kwargs"] = template
+    return model.model_copy(update={
+        "max_tokens": output_tokens,
+        "extra_body": extra_body,
+    })
 
 
 @dataclass(frozen=True)

@@ -1,9 +1,11 @@
 import json
+import socket
 import tempfile
 import threading
 import time
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 import zmq
 
@@ -65,6 +67,54 @@ class QueuedTransportFixture:
 
 
 class RuntimeEventChannelTest(unittest.TestCase):
+    def test_empty_drain_checks_readiness_without_allocating_a_receive_buffer(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with RuntimeEventDatagramServer(
+                Path(temporary) / "server.sock", lambda _: None,
+            ) as server:
+                with patch.object(server, "_socket") as receiver:
+                    self.assertEqual(server.drain(), ())
+                    receiver.recvfrom.assert_not_called()
+
+    def test_arrival_after_empty_poll_and_bounded_burst_keep_wire_order(self):
+        observed = []
+        with tempfile.TemporaryDirectory() as temporary:
+            with RuntimeEventDatagramServer(
+                Path(temporary) / "server.sock",
+                lambda events: observed.extend(item.event_id for item in events),
+            ) as server, socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as sender:
+                self.assertEqual(server.drain(), ())
+                for index in range(3):
+                    sender.sendto(_encode_event_message(
+                        str(index), ((event(
+                            str(index), RuntimeEventKind.WORKFLOW_START, ts_ms=float(index),
+                        ),),),
+                    ), str(server.path))
+                self.assertEqual(len(server.drain(max_messages=1)), 1)
+                self.assertEqual(observed, ["0"])
+                self.assertEqual(len(server.drain(max_messages=2)), 2)
+                self.assertEqual(observed, ["0", "1", "2"])
+                self.assertEqual(server.drain(), ())
+
+    def test_busy_receive_skips_readiness_probe_then_empty_drains_rearm_it(self):
+        with tempfile.TemporaryDirectory() as temporary:
+            with RuntimeEventDatagramServer(
+                Path(temporary) / "server.sock", lambda _: None,
+            ) as server, socket.socket(socket.AF_UNIX, socket.SOCK_DGRAM) as sender:
+                payload = _encode_event_message("first", ((
+                    event("first", RuntimeEventKind.WORKFLOW_START, ts_ms=0.),
+                ),))
+                sender.sendto(payload, str(server.path))
+                self.assertEqual(len(server.drain(max_messages=1)), 1)
+                sender.sendto(payload, str(server.path))
+                with patch.object(server, "_receive_poller") as poller:
+                    self.assertEqual(len(server.drain(max_messages=1)), 1)
+                    poller.poll.assert_not_called()
+                self.assertEqual(server.drain(), ())
+                with patch.object(server, "_socket") as receiver:
+                    self.assertEqual(server.drain(), ())
+                    receiver.recvfrom.assert_not_called()
+
     def test_queued_batches_share_ack_without_changing_order_or_close_boundary(self):
         transport = QueuedTransportFixture(hold_second=True)
         queued = QueuedRuntimeEventSink(transport)
@@ -473,6 +523,44 @@ class RuntimeEventChannelTest(unittest.TestCase):
             attributes={"persistent": True},
         )
         self.assertEqual(RuntimeEvent.from_dict(original.to_dict()), original)
+
+    def test_wire_omits_absent_fields_without_removing_nested_null_or_zero_values(self):
+        original = event(
+            "compact", RuntimeEventKind.STRUCTURED_ACTION, ts_ms=0.,
+            invocation_id="child", context_id="ctx", context_epoch=0,
+            attributes={
+                "null": None, "zero": 0, "false": False, "empty": "",
+                "list": [], "nested": {"missing": None}, "text": "\u5b50\u4efb\u52a1",
+            },
+        )
+        authoritative = original.to_dict()
+        raw = json.loads(_encode_event_message("compact", ((original,),)))
+        encoded = raw["events"][0]
+        self.assertNotIn("target_context_id", encoded)
+        self.assertNotIn("parent_invocation_id", encoded)
+        self.assertEqual(encoded["context_epoch"], 0)
+        self.assertEqual(encoded["attributes"], authoritative["attributes"])
+        self.assertEqual(RuntimeEvent.from_dict(encoded), original)
+        self.assertEqual(original.to_dict(), authoritative)
+        self.assertIn("target_context_id", authoritative)
+        self.assertIsNone(authoritative["target_context_id"])
+
+    def test_wire_keeps_every_present_optional_identity_field(self):
+        from beliefkv.core.events import ContextMode, ExecutionMode, RelationType
+
+        original = event(
+            "full", RuntimeEventKind.INVOCATION_CREATE, ts_ms=1.,
+            invocation_id="child", target_invocation_id="target",
+            context_id="ctx", target_context_id="target-ctx",
+            parent_invocation_id="parent", parent_context_id="parent-ctx",
+            agent_definition_id="role", agent_instance_id="instance",
+            relation_type=RelationType.CALL, context_mode=ContextMode.FRESH,
+            execution_mode=ExecutionMode.FOREGROUND, return_target_id="parent",
+            join_id="join", member_invocation_ids=("child",), context_epoch=0,
+        )
+        encoded = json.loads(_encode_event_message("full", ((original,),)))["events"][0]
+        self.assertEqual(encoded, original.to_dict())
+        self.assertEqual(RuntimeEvent.from_dict(encoded), original)
 
     def test_acknowledged_batch_reaches_controller(self):
         controller = BeliefKVController()

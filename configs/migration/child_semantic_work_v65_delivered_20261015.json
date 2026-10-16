@@ -1,0 +1,17 @@
+{
+  "plan_id": "child-semantic-work-v65-delivered-development",
+  "snapshot_policy": "sealed_delivered_online_forecasts",
+  "encoder": {
+    "revision": "962c85140d46c4a811a4d05c3a120af2918bf85c3de67d8f478891abd039471d",
+    "max_tokens": 256
+  },
+  "training_runs": [
+    "experiments/raw/qwen35_native_predictive_replenished_108plus48_20261015_v65_tagged_summary_latest/predictive_h2d"
+  ],
+  "calibration_evaluation_runs": [],
+  "training_projects": ["django", "pallets", "pytest-dev", "mwaskom"],
+  "calibration_projects": ["pydata", "pylint-dev"],
+  "evaluation_projects": ["psf"],
+  "nominal_workflow_interval_coverage": 0.8,
+  "scope": "Work-only CPU development refit on a fixed V65 prefix. Project roles are fixed before fitting. The old phase and encoder remain frozen; they have previously seen these project families, so this is not an independent phase test or a sealed final test. No GPU deployment, phase threshold selection, or action benefit claim."
+}

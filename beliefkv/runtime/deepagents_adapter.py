@@ -324,6 +324,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         self._stream_content_state: dict[str, tuple[int, str, int, int]] = {}
         self._semantic_text_enabled = os.environ.get("BELIEFKV_EMIT_SEMANTIC_TEXT") == "1"
         self._semantic_text_last_ms: dict[str, float] = {}
+        self._semantic_multi_member_frames_coalesced = 0
         self._eos_snapshot_accum: dict[str, tuple[float | None, int, int]] = {}
         self._eos_shadow = eos_shadow
         self._eos_top_hit_shadow = eos_top_hit_shadow
@@ -753,6 +754,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             isinstance(callback_metadata, Mapping)
             and callback_metadata.get("lc_source") == "summarization"
         )
+        context_events: tuple[RuntimeEvent, ...] = ()
         if is_summary:
             metadata = self._begin_internal_summary(key)
             invocation_id = metadata.invocation_id
@@ -772,32 +774,25 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                     self._post_join_model_runs[key] = satisfied[0]
             compaction = self._pending_context_compaction.get()
             if compaction is not None:
-                self._publish(
-                    (
-                        self._event(
-                            RuntimeEventKind.CONTEXT_COMPACT,
-                            invocation_id=invocation_id,
-                            context_id=metadata.context_id,
-                            context_epoch=epoch,
-                            confidence=EventConfidence.OBSERVED_EXACT,
-                            attributes={
-                                "source": "deepagents_summarization",
-                                "previous_context_epoch": previous_epoch,
-                                "source_message_count": (
-                                    compaction.source_message_count
-                                ),
-                                "retained_message_count": (
-                                    compaction.retained_message_count
-                                ),
-                                "summary_chars": compaction.summary_chars,
-                                "summary_sha256": compaction.summary_sha256,
-                                "trigger_tokens": compaction.trigger_tokens,
-                                "keep_tokens": compaction.keep_tokens,
-                                "old_kv_disposition": "release_ownership",
-                            },
-                        ),
+                context_events = (
+                    self._event(
+                        RuntimeEventKind.CONTEXT_COMPACT,
+                        invocation_id=invocation_id,
+                        context_id=metadata.context_id,
+                        context_epoch=epoch,
+                        confidence=EventConfidence.OBSERVED_EXACT,
+                        attributes={
+                            "source": "deepagents_summarization",
+                            "previous_context_epoch": previous_epoch,
+                            "source_message_count": compaction.source_message_count,
+                            "retained_message_count": compaction.retained_message_count,
+                            "summary_chars": compaction.summary_chars,
+                            "summary_sha256": compaction.summary_sha256,
+                            "trigger_tokens": compaction.trigger_tokens,
+                            "keep_tokens": compaction.keep_tokens,
+                            "old_kv_disposition": "release_ownership",
+                        },
                     ),
-                    control=True,
                 )
                 self._pending_context_compaction.set(None)
         prompt_messages = messages[0] if messages else []
@@ -829,7 +824,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "sampling_seed": sampling_seed,
             },
         )
-        self._publish((event,), control=True)
+        self._publish(context_events + (event,), control=True)
 
     def on_llm_new_token(
         self,
@@ -916,6 +911,7 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
         eos_events: list[float] = []
         first_top_hit = False
         first_tool_chunk = False
+        semantic_control_useful = False
         content_observation: dict[str, Any] | None = None
         with self._lock:
             if (
@@ -937,6 +933,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
             self._child_stream_last_chunk[key] = chunk
             first_tool_chunk = (
                 tool_seen and key not in self._child_first_tool_chunk_shadow_runs
+            )
+            semantic_control_useful = (
+                key not in self._child_first_tool_chunk_shadow_runs
             )
             if self._stream_content_shadow is not None:
                 count, tail, next_at, last_emitted = self._stream_content_state.get(
@@ -999,6 +998,23 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 self._stream_content_state[key] = (
                     count, tail, next_at, last_emitted
                 )
+                if (
+                    content_observation is not None and self._semantic_text_enabled
+                    and semantic_control_useful and not first_content
+                    and not first_tool_chunk and not finish
+                    and when - self._semantic_text_last_ms.get(key, 0.)
+                    >= SEMANTIC_FRAME_INTERVAL_MS
+                ):
+                    members = self._join_members.get(pending.join_id)
+                    completed = self._join_completed.get(pending.join_id)
+                    if (
+                        members is not None and completed is not None
+                        and invocation_id in members and len(members - completed) > 1
+                    ):
+                        # The runtime uses body forecasts for the last ALL member.
+                        # Local history, initial/final frames and notices stay intact.
+                        semantic_control_useful = False
+                        self._semantic_multi_member_frames_coalesced += 1
             if (
                 self._eos_shadow
                 and logprobs
@@ -1104,21 +1120,23 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 or when - self._semantic_text_last_ms.get(key, 0.) >= SEMANTIC_FRAME_INTERVAL_MS
             ):
                 self._semantic_text_last_ms[key] = when
-                self._publish((self._event(
-                    RuntimeEventKind.STRUCTURED_ACTION,
-                    ts_ms=when, invocation_id=invocation_id,
-                    context_id=metadata.context_id, context_epoch=metadata.context_epoch,
-                    join_id=pending.join_id, confidence=EventConfidence.OBSERVED_EXACT,
-                    attributes={
-                        "source": "deepagents_semantic_text",
-                        "beliefkv_semantic_child_text": True,
-                        "request_id": _native_request_id(run_id),
-                        "content_chars": content_observation["content_chars"],
-                        "content_tail": content_observation["semantic_content_tail"],
-                        "tool_chunk": tool_seen,
-                        "monotonic_clock_domain": self._monotonic_clock_domain,
-                    },
-                ),), control=True, async_control=True)
+                # Runtime ignores later text after this request's first tool marker.
+                if semantic_control_useful:
+                    self._publish((self._event(
+                        RuntimeEventKind.STRUCTURED_ACTION,
+                        ts_ms=when, invocation_id=invocation_id,
+                        context_id=metadata.context_id, context_epoch=metadata.context_epoch,
+                        join_id=pending.join_id, confidence=EventConfidence.OBSERVED_EXACT,
+                        attributes={
+                            "source": "deepagents_semantic_text",
+                            "beliefkv_semantic_child_text": True,
+                            "request_id": _native_request_id(run_id),
+                            "content_chars": content_observation["content_chars"],
+                            "content_tail": content_observation["semantic_content_tail"],
+                            "tool_chunk": tool_seen,
+                            "monotonic_clock_domain": self._monotonic_clock_domain,
+                        },
+                    ),), control=True, async_control=True)
         self._publish(tuple(
             self._event(
                 RuntimeEventKind.STRUCTURED_ACTION,
@@ -2545,10 +2563,14 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                         len(control_events) == 1
                         and control_events[0].kind == RuntimeEventKind.TOOL_START
                     )
+                    # A compacted prompt keeps its ACK barrier when paired with submit.
                     async_reentry = (
                         isinstance(self.control_sink, QueuedRuntimeEventSink)
                         and not any(
-                            event.kind == RuntimeEventKind.WORKFLOW_END
+                            event.kind in {
+                                RuntimeEventKind.WORKFLOW_END,
+                                RuntimeEventKind.CONTEXT_COMPACT,
+                            }
                             for event in control_events
                         )
                         and any(
@@ -2637,6 +2659,9 @@ class DeepAgentsRuntimeAdapter(BaseCallbackHandler):
                 "failure_count": self._control_delivery_failure_count,
                 "late_terminal_event_suppressed_count": (
                     self._late_terminal_control_event_count
+                ),
+                "semantic_multi_member_frames_coalesced": (
+                    self._semantic_multi_member_frames_coalesced
                 ),
                 "first_failure": payload(first),
                 "last_failure": payload(last),
@@ -2921,7 +2946,8 @@ class BeliefKVChatOpenAI(ChatOpenAI):
                 execution_timeout_s=effective_timeout_s,
             )
         rid = _native_request_id(run_manager.run_id)
-        extra_body = dict(kwargs.get("extra_body") or {})
+        extra_body = dict(self.extra_body or {})
+        extra_body.update(kwargs.get("extra_body") or {})
         existing = extra_body.get("beliefkv_metadata")
         if existing is not None and existing != metadata.to_wire():
             raise RuntimeError("conflicting beliefkv_metadata in ChatOpenAI request")

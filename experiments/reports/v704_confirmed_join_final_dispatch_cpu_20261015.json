@@ -1,0 +1,89 @@
+{
+  "scope": "Alternating CPU dispatch calls with no live final-stage or confirmed JOIN candidate. Both arms retain the real timing decorator. Measures only idle-path overhead; not active planning, DMA, GPU or JCT benefit.",
+  "baseline_revision": "485e6e8",
+  "baseline_sources": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+    "beliefkv/runtime/sglang_v0520_physical.py": "3863e5661a3811b50b4207d7194264d7bf7b68826c3cf526c0cd27ca9914347b",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "d13fc0f8baaed3c5408594f99e0797b7dd5f6e2450da3f2d8c07288b7fbcf8a5"
+  },
+  "candidate_sources": {
+    "beliefkv/runtime/sglang_v0520_observer.py": "049a60e5c1b06ab336a4635575100995c5b63228fa405a93c05eeba741f61e5c",
+    "beliefkv/runtime/sglang_v0520_physical.py": "3863e5661a3811b50b4207d7194264d7bf7b68826c3cf526c0cd27ca9914347b",
+    "beliefkv/runtime/sglang_v0520_runtime.py": "a77c9e551383c5bc24ce505a27d3f0e81e22dd748d6816ba2f99e0dfa808b680",
+    "scripts/benchmark_join_reentry_dispatch.py": "2bf9ace292ef34442be6633ca3d2ab4404cb5dcfd448018cfa0cdce889600b73"
+  },
+  "cases": [
+    {
+      "final_stage_enabled": false,
+      "profiling": false,
+      "blocks": 200,
+      "calls_per_block": 128,
+      "thread_cpu_us_per_call": {
+        "baseline": {
+          "mean": 0.39671984375,
+          "median": 0.40045312499999997
+        },
+        "candidate": {
+          "mean": 0.477647734375,
+          "median": 0.48035937500000003
+        }
+      },
+      "added_mean_thread_cpu_us": 0.080927890625,
+      "same_counters_and_no_actions": true
+    },
+    {
+      "final_stage_enabled": false,
+      "profiling": true,
+      "blocks": 200,
+      "calls_per_block": 128,
+      "thread_cpu_us_per_call": {
+        "baseline": {
+          "mean": 1.6575630859375,
+          "median": 1.6564375
+        },
+        "candidate": {
+          "mean": 1.740516171875,
+          "median": 1.741671875
+        }
+      },
+      "added_mean_thread_cpu_us": 0.08295308593750006,
+      "same_counters_and_no_actions": true
+    },
+    {
+      "final_stage_enabled": true,
+      "profiling": false,
+      "blocks": 200,
+      "calls_per_block": 128,
+      "thread_cpu_us_per_call": {
+        "baseline": {
+          "mean": 0.849357109375,
+          "median": 0.84853125
+        },
+        "candidate": {
+          "mean": 0.940263671875,
+          "median": 0.93634375
+        }
+      },
+      "added_mean_thread_cpu_us": 0.09090656250000007,
+      "same_counters_and_no_actions": true
+    },
+    {
+      "final_stage_enabled": true,
+      "profiling": true,
+      "blocks": 200,
+      "calls_per_block": 128,
+      "thread_cpu_us_per_call": {
+        "baseline": {
+          "mean": 2.1581637109375,
+          "median": 2.16008203125
+        },
+        "candidate": {
+          "mean": 2.2662819921875,
+          "median": 2.2686171875000003
+        }
+      },
+      "added_mean_thread_cpu_us": 0.10811828124999989,
+      "same_counters_and_no_actions": true
+    }
+  ]
+}

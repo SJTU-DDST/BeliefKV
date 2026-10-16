@@ -1,0 +1,2464 @@
+{
+  "status": "control_poll_cpu_comparison_not_gpu_or_jct_acceptance",
+  "observed_at": "2026-10-14T19:02:08.928721-07:00",
+  "baseline_revision": "5391a6b31d82994f819aa32bcf77a9b7a0326508",
+  "baseline_event_channel_sha256": "305c40ea1af46dd8d55a87921fafe12fc452dc3478b6e4e2276f224fc5d1bafe",
+  "candidate_sources": {
+    "beliefkv/runtime/event_channel.py": "c6d2a65854c6cebe77c333c830911cc53fe60702ef469ba3307296557e29d298",
+    "beliefkv/runtime/hotpath_timing.py": "aa554df03b5c08cc009be14f21a9c25bdb5e48eb585b5cf774601d9ae471792b",
+    "beliefkv/core/events.py": "62bbefc3f3f68fe43af8731e1a2b1197166feea6a85fcf28910f010591d634d9",
+    "scripts/benchmark_control_empty_poll.py": "0396154410edf6fd16c46116a20003d935e524d86e8a5426e02075adea0f85c8"
+  },
+  "cases": [
+    {
+      "kind": "idle",
+      "profiling_enabled": false,
+      "iterations": 6000,
+      "warmup_iterations": 32,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.0039859515,
+            "p50_ms": 0.003989,
+            "p99_ms": 0.00467,
+            "max_ms": 0.012197
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.0045664285,
+            "p50_ms": 0.004552,
+            "p99_ms": 0.005431,
+            "max_ms": 0.028801
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.0028954251666666667,
+            "p50_ms": 0.002863,
+            "p99_ms": 0.003587,
+            "max_ms": 0.019229
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.003467466,
+            "p50_ms": 0.003425,
+            "p99_ms": 0.004294,
+            "max_ms": 0.020046
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.27359247430214184,
+      "exact_delivery_ack_and_handler_order_equal": true,
+      "receive_profiling_cadence_equal": true,
+      "handler_event_count": 0,
+      "order_random_seed": 19,
+      "gc_inside_timed_calls_including_warmup": {
+        "baseline": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        },
+        "candidate": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        }
+      },
+      "timings": {
+        "baseline": {
+          "schema_version": 1,
+          "enabled": false,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 84.091393,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {}
+        },
+        "candidate": {
+          "schema_version": 1,
+          "enabled": false,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 83.910787,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {}
+        }
+      }
+    },
+    {
+      "kind": "sparse",
+      "profiling_enabled": false,
+      "iterations": 6000,
+      "warmup_iterations": 32,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.008684675166666666,
+            "p50_ms": 0.004172,
+            "p99_ms": 0.050315,
+            "max_ms": 0.145785
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.009291785333333333,
+            "p50_ms": 0.00475,
+            "p99_ms": 0.051031,
+            "max_ms": 0.146641
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.008168464166666667,
+            "p50_ms": 0.003149,
+            "p99_ms": 0.051636,
+            "max_ms": 0.727601
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.008764695166666666,
+            "p50_ms": 0.003723,
+            "p99_ms": 0.052449,
+            "max_ms": 0.728781
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.059439298545247765,
+      "exact_delivery_ack_and_handler_order_equal": true,
+      "receive_profiling_cadence_equal": true,
+      "handler_event_count": 604,
+      "order_random_seed": 19,
+      "gc_inside_timed_calls_including_warmup": {
+        "baseline": {
+          "count": 1,
+          "thread_cpu_ns": 84968
+        },
+        "candidate": {
+          "count": 2,
+          "thread_cpu_ns": 650523
+        }
+      },
+      "timings": {
+        "baseline": {
+          "schema_version": 1,
+          "enabled": false,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 187.548902,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {}
+        },
+        "candidate": {
+          "schema_version": 1,
+          "enabled": false,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 187.396142,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {}
+        }
+      }
+    },
+    {
+      "kind": "one_message",
+      "profiling_enabled": false,
+      "iterations": 6000,
+      "warmup_iterations": 32,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.0446355275,
+            "p50_ms": 0.04691,
+            "p99_ms": 0.052242,
+            "max_ms": 0.083505
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.045392301333333336,
+            "p50_ms": 0.0477,
+            "p99_ms": 0.053153,
+            "max_ms": 0.084302
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.044947673,
+            "p50_ms": 0.047246,
+            "p99_ms": 0.052537,
+            "max_ms": 0.081811
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.045696450166666666,
+            "p50_ms": 0.048031,
+            "p99_ms": 0.053456,
+            "max_ms": 0.082722
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": -0.006993207372759214,
+      "exact_delivery_ack_and_handler_order_equal": true,
+      "receive_profiling_cadence_equal": true,
+      "handler_event_count": 6032,
+      "order_random_seed": 19,
+      "gc_inside_timed_calls_including_warmup": {
+        "baseline": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        },
+        "candidate": {
+          "count": 3,
+          "thread_cpu_ns": 52477
+        }
+      },
+      "timings": {
+        "baseline": {
+          "schema_version": 1,
+          "enabled": false,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 931.936564,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {}
+        },
+        "candidate": {
+          "schema_version": 1,
+          "enabled": false,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 931.784215,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {}
+        }
+      }
+    },
+    {
+      "kind": "burst",
+      "profiling_enabled": false,
+      "iterations": 6000,
+      "warmup_iterations": 32,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.22934972116666666,
+            "p50_ms": 0.229187,
+            "p99_ms": 0.239653,
+            "max_ms": 0.452789
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.23008819666666666,
+            "p50_ms": 0.229891,
+            "p99_ms": 0.240711,
+            "max_ms": 0.453755
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.22984892483333333,
+            "p50_ms": 0.229695,
+            "p99_ms": 0.240313,
+            "max_ms": 0.509248
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.230569248,
+            "p50_ms": 0.230395,
+            "p99_ms": 0.241491,
+            "max_ms": 0.510516
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": -0.002176604637351698,
+      "exact_delivery_ack_and_handler_order_equal": true,
+      "receive_profiling_cadence_equal": true,
+      "handler_event_count": 48256,
+      "order_random_seed": 19,
+      "gc_inside_timed_calls_including_warmup": {
+        "baseline": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        },
+        "candidate": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        }
+      },
+      "timings": {
+        "baseline": {
+          "schema_version": 1,
+          "enabled": false,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 4413.031137,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {}
+        },
+        "candidate": {
+          "schema_version": 1,
+          "enabled": false,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 4412.904701,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {}
+        }
+      }
+    },
+    {
+      "kind": "duplicate_rejection",
+      "profiling_enabled": false,
+      "iterations": 6000,
+      "warmup_iterations": 32,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.055203365666666664,
+            "p50_ms": 0.055119,
+            "p99_ms": 0.0595,
+            "max_ms": 0.090503
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.055889728,
+            "p50_ms": 0.055796,
+            "p99_ms": 0.060166,
+            "max_ms": 0.118498
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.055651378333333335,
+            "p50_ms": 0.055501,
+            "p99_ms": 0.060036,
+            "max_ms": 0.139304
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.05633027533333333,
+            "p50_ms": 0.056171,
+            "p99_ms": 0.060743,
+            "max_ms": 0.140211
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": -0.008115676666743399,
+      "exact_delivery_ack_and_handler_order_equal": true,
+      "receive_profiling_cadence_equal": true,
+      "handler_event_count": 0,
+      "order_random_seed": 19,
+      "gc_inside_timed_calls_including_warmup": {
+        "baseline": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        },
+        "candidate": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        }
+      },
+      "timings": {
+        "baseline": {
+          "schema_version": 1,
+          "enabled": false,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 1202.604688,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {}
+        },
+        "candidate": {
+          "schema_version": 1,
+          "enabled": false,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 1202.469434,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {}
+        }
+      }
+    },
+    {
+      "kind": "idle",
+      "profiling_enabled": true,
+      "iterations": 6000,
+      "warmup_iterations": 32,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.004717785666666667,
+            "p50_ms": 0.004696,
+            "p99_ms": 0.006162,
+            "max_ms": 0.040043
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.005190873166666667,
+            "p50_ms": 0.005168,
+            "p99_ms": 0.006668,
+            "max_ms": 0.040539
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.0038399831666666665,
+            "p50_ms": 0.003809,
+            "p99_ms": 0.005255,
+            "max_ms": 0.011256
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.004302446166666666,
+            "p50_ms": 0.00427,
+            "p99_ms": 0.005745,
+            "max_ms": 0.011704
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.18606239494983423,
+      "exact_delivery_ack_and_handler_order_equal": true,
+      "receive_profiling_cadence_equal": true,
+      "handler_event_count": 0,
+      "order_random_seed": 19,
+      "gc_inside_timed_calls_including_warmup": {
+        "baseline": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        },
+        "candidate": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        }
+      },
+      "timings": {
+        "baseline": {
+          "schema_version": 1,
+          "enabled": true,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 87.798336,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {
+            "control_socket_receive_sample": {
+              "count": 95,
+              "total_ms": 0.153331,
+              "self_ms": 0.153331,
+              "mean_ms": 0.0016140105263157895,
+              "max_ms": 0.005158,
+              "histogram": [
+                95,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_drain": {
+              "count": 6032,
+              "total_ms": 14.003318,
+              "self_ms": 13.849987,
+              "mean_ms": 0.002321504973474801,
+              "max_ms": 0.037359,
+              "histogram": [
+                6030,
+                1,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        },
+        "candidate": {
+          "schema_version": 1,
+          "enabled": true,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 87.676601,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {
+            "control_socket_receive_sample": {
+              "count": 95,
+              "total_ms": 0.091958,
+              "self_ms": 0.091958,
+              "mean_ms": 0.000967978947368421,
+              "max_ms": 0.00448,
+              "histogram": [
+                95,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_drain": {
+              "count": 6032,
+              "total_ms": 8.896769,
+              "self_ms": 8.804811,
+              "mean_ms": 0.001474928547745358,
+              "max_ms": 0.021657,
+              "histogram": [
+                6031,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "kind": "sparse",
+      "profiling_enabled": true,
+      "iterations": 6000,
+      "warmup_iterations": 32,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.008550254833333333,
+            "p50_ms": 0.004846,
+            "p99_ms": 0.042339,
+            "max_ms": 0.061189
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.009031314666666667,
+            "p50_ms": 0.005315,
+            "p99_ms": 0.042906,
+            "max_ms": 0.061808
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.0080039615,
+            "p50_ms": 0.003971,
+            "p99_ms": 0.043557,
+            "max_ms": 0.05751
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.008481638833333333,
+            "p50_ms": 0.004435,
+            "p99_ms": 0.044113,
+            "max_ms": 0.058137
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": 0.06389205280801669,
+      "exact_delivery_ack_and_handler_order_equal": true,
+      "receive_profiling_cadence_equal": true,
+      "handler_event_count": 604,
+      "order_random_seed": 19,
+      "gc_inside_timed_calls_including_warmup": {
+        "baseline": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        },
+        "candidate": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        }
+      },
+      "timings": {
+        "baseline": {
+          "schema_version": 1,
+          "enabled": true,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 167.633447,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {
+            "control_socket_receive_sample": {
+              "count": 104,
+              "total_ms": 0.196242,
+              "self_ms": 0.196242,
+              "mean_ms": 0.0018869423076923076,
+              "max_ms": 0.00249,
+              "histogram": [
+                104,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_json_decode_sample": {
+              "count": 10,
+              "total_ms": 0.089939,
+              "self_ms": 0.089939,
+              "mean_ms": 0.008993899999999999,
+              "max_ms": 0.011306,
+              "histogram": [
+                8,
+                2,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_event_decode_sample": {
+              "count": 10,
+              "total_ms": 0.115446,
+              "self_ms": 0.115446,
+              "mean_ms": 0.0115446,
+              "max_ms": 0.013184,
+              "histogram": [
+                0,
+                10,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_ack_encode_sample": {
+              "count": 10,
+              "total_ms": 0.060288,
+              "self_ms": 0.060288,
+              "mean_ms": 0.0060288,
+              "max_ms": 0.006964,
+              "histogram": [
+                10,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_socket_send_sample": {
+              "count": 10,
+              "total_ms": 0.022845,
+              "self_ms": 0.022845,
+              "mean_ms": 0.0022845,
+              "max_ms": 0.002383,
+              "histogram": [
+                10,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_drain": {
+              "count": 6032,
+              "total_ms": 35.623664,
+              "self_ms": 35.138904,
+              "mean_ms": 0.005905779840848806,
+              "max_ms": 0.056916,
+              "histogram": [
+                5428,
+                0,
+                601,
+                3,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        },
+        "candidate": {
+          "schema_version": 1,
+          "enabled": true,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 167.522266,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {
+            "control_socket_receive_sample": {
+              "count": 104,
+              "total_ms": 0.168587,
+              "self_ms": 0.168587,
+              "mean_ms": 0.0016210288461538463,
+              "max_ms": 0.007432,
+              "histogram": [
+                104,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_json_decode_sample": {
+              "count": 10,
+              "total_ms": 0.098465,
+              "self_ms": 0.098465,
+              "mean_ms": 0.0098465,
+              "max_ms": 0.018399,
+              "histogram": [
+                9,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_event_decode_sample": {
+              "count": 10,
+              "total_ms": 0.122255,
+              "self_ms": 0.122255,
+              "mean_ms": 0.0122255,
+              "max_ms": 0.020653,
+              "histogram": [
+                0,
+                10,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_ack_encode_sample": {
+              "count": 10,
+              "total_ms": 0.066438,
+              "self_ms": 0.066438,
+              "mean_ms": 0.0066438,
+              "max_ms": 0.009381,
+              "histogram": [
+                10,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_socket_send_sample": {
+              "count": 10,
+              "total_ms": 0.024754,
+              "self_ms": 0.024754,
+              "mean_ms": 0.0024754,
+              "max_ms": 0.003552,
+              "histogram": [
+                10,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_drain": {
+              "count": 6032,
+              "total_ms": 32.628037,
+              "self_ms": 32.147538,
+              "mean_ms": 0.005409157327586207,
+              "max_ms": 0.096558,
+              "histogram": [
+                5427,
+                1,
+                602,
+                2,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "kind": "one_message",
+      "profiling_enabled": true,
+      "iterations": 6000,
+      "warmup_iterations": 32,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.04069104,
+            "p50_ms": 0.040444,
+            "p99_ms": 0.050506,
+            "max_ms": 0.081296
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.041296337,
+            "p50_ms": 0.041047,
+            "p99_ms": 0.051149,
+            "max_ms": 0.081904
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.040860645833333334,
+            "p50_ms": 0.040582,
+            "p99_ms": 0.051007,
+            "max_ms": 0.087599
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.04148220033333333,
+            "p50_ms": 0.041191,
+            "p99_ms": 0.051663,
+            "max_ms": 0.09543
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": -0.004168137096848268,
+      "exact_delivery_ack_and_handler_order_equal": true,
+      "receive_profiling_cadence_equal": true,
+      "handler_event_count": 6032,
+      "order_random_seed": 19,
+      "gc_inside_timed_calls_including_warmup": {
+        "baseline": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        },
+        "candidate": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        }
+      },
+      "timings": {
+        "baseline": {
+          "schema_version": 1,
+          "enabled": true,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 816.664918,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {
+            "control_socket_receive_sample": {
+              "count": 189,
+              "total_ms": 0.39422,
+              "self_ms": 0.39422,
+              "mean_ms": 0.0020858201058201057,
+              "max_ms": 0.004703,
+              "histogram": [
+                189,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_json_decode_sample": {
+              "count": 95,
+              "total_ms": 0.788218,
+              "self_ms": 0.788218,
+              "mean_ms": 0.008297031578947367,
+              "max_ms": 0.010527,
+              "histogram": [
+                93,
+                2,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_event_decode_sample": {
+              "count": 95,
+              "total_ms": 1.026836,
+              "self_ms": 1.026836,
+              "mean_ms": 0.010808799999999999,
+              "max_ms": 0.015055,
+              "histogram": [
+                2,
+                93,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_ack_encode_sample": {
+              "count": 95,
+              "total_ms": 0.533466,
+              "self_ms": 0.533466,
+              "mean_ms": 0.005615431578947369,
+              "max_ms": 0.009338,
+              "histogram": [
+                95,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_socket_send_sample": {
+              "count": 95,
+              "total_ms": 0.213415,
+              "self_ms": 0.213415,
+              "mean_ms": 0.002246473684210526,
+              "max_ms": 0.002473,
+              "histogram": [
+                95,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_drain": {
+              "count": 6032,
+              "total_ms": 217.830534,
+              "self_ms": 214.874379,
+              "mean_ms": 0.036112489058355436,
+              "max_ms": 0.07641,
+              "histogram": [
+                0,
+                0,
+                6021,
+                11,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        },
+        "candidate": {
+          "schema_version": 1,
+          "enabled": true,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 816.547079,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {
+            "control_socket_receive_sample": {
+              "count": 189,
+              "total_ms": 0.4171,
+              "self_ms": 0.4171,
+              "mean_ms": 0.002206878306878307,
+              "max_ms": 0.006954,
+              "histogram": [
+                189,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_json_decode_sample": {
+              "count": 95,
+              "total_ms": 0.800455,
+              "self_ms": 0.800455,
+              "mean_ms": 0.008425842105263159,
+              "max_ms": 0.017535,
+              "histogram": [
+                93,
+                2,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_event_decode_sample": {
+              "count": 95,
+              "total_ms": 1.020848,
+              "self_ms": 1.020848,
+              "mean_ms": 0.010745768421052631,
+              "max_ms": 0.019635,
+              "histogram": [
+                4,
+                91,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_ack_encode_sample": {
+              "count": 95,
+              "total_ms": 0.520745,
+              "self_ms": 0.520745,
+              "mean_ms": 0.005481526315789473,
+              "max_ms": 0.008312,
+              "histogram": [
+                95,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_socket_send_sample": {
+              "count": 95,
+              "total_ms": 0.213046,
+              "self_ms": 0.213046,
+              "mean_ms": 0.0022425894736842105,
+              "max_ms": 0.003173,
+              "histogram": [
+                95,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_drain": {
+              "count": 6032,
+              "total_ms": 218.934933,
+              "self_ms": 215.962739,
+              "mean_ms": 0.03629557907824933,
+              "max_ms": 0.089665,
+              "histogram": [
+                0,
+                0,
+                6020,
+                12,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "kind": "burst",
+      "profiling_enabled": true,
+      "iterations": 6000,
+      "warmup_iterations": 32,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.23661332583333333,
+            "p50_ms": 0.235221,
+            "p99_ms": 0.255839,
+            "max_ms": 0.285221
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.23727122566666667,
+            "p50_ms": 0.235865,
+            "p99_ms": 0.256792,
+            "max_ms": 0.285875
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.23752667233333333,
+            "p50_ms": 0.236212,
+            "p99_ms": 0.256191,
+            "max_ms": 0.279808
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.23819566683333332,
+            "p50_ms": 0.236841,
+            "p99_ms": 0.257112,
+            "max_ms": 0.289583
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": -0.003860080563016677,
+      "exact_delivery_ack_and_handler_order_equal": true,
+      "receive_profiling_cadence_equal": true,
+      "handler_event_count": 48256,
+      "order_random_seed": 19,
+      "gc_inside_timed_calls_including_warmup": {
+        "baseline": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        },
+        "candidate": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        }
+      },
+      "timings": {
+        "baseline": {
+          "schema_version": 1,
+          "enabled": true,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 4512.08638,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {
+            "control_socket_receive_sample": {
+              "count": 849,
+              "total_ms": 2.007675,
+              "self_ms": 2.007675,
+              "mean_ms": 0.0023647526501766785,
+              "max_ms": 0.00425,
+              "histogram": [
+                849,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_json_decode_sample": {
+              "count": 754,
+              "total_ms": 6.616717,
+              "self_ms": 6.616717,
+              "mean_ms": 0.00877548673740053,
+              "max_ms": 0.014191,
+              "histogram": [
+                745,
+                9,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_event_decode_sample": {
+              "count": 754,
+              "total_ms": 8.653196,
+              "self_ms": 8.653196,
+              "mean_ms": 0.011476387267904509,
+              "max_ms": 0.013644,
+              "histogram": [
+                0,
+                754,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_ack_encode_sample": {
+              "count": 754,
+              "total_ms": 4.759335,
+              "self_ms": 4.759335,
+              "mean_ms": 0.006312115384615385,
+              "max_ms": 0.010077,
+              "histogram": [
+                752,
+                2,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_socket_send_sample": {
+              "count": 754,
+              "total_ms": 1.750267,
+              "self_ms": 1.750267,
+              "mean_ms": 0.0023213090185676393,
+              "max_ms": 0.004887,
+              "histogram": [
+                754,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_drain": {
+              "count": 6032,
+              "total_ms": 1396.911428,
+              "self_ms": 1373.124238,
+              "mean_ms": 0.2315834595490716,
+              "max_ms": 0.279814,
+              "histogram": [
+                0,
+                0,
+                0,
+                0,
+                5959,
+                73,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        },
+        "candidate": {
+          "schema_version": 1,
+          "enabled": true,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 4511.976468,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {
+            "control_socket_receive_sample": {
+              "count": 849,
+              "total_ms": 2.038143,
+              "self_ms": 2.038143,
+              "mean_ms": 0.0024006395759717317,
+              "max_ms": 0.007479,
+              "histogram": [
+                849,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_json_decode_sample": {
+              "count": 754,
+              "total_ms": 6.608909,
+              "self_ms": 6.608909,
+              "mean_ms": 0.008765131299734748,
+              "max_ms": 0.017502,
+              "histogram": [
+                746,
+                8,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_event_decode_sample": {
+              "count": 754,
+              "total_ms": 8.698149,
+              "self_ms": 8.698149,
+              "mean_ms": 0.011536006631299734,
+              "max_ms": 0.02241,
+              "histogram": [
+                0,
+                754,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_ack_encode_sample": {
+              "count": 754,
+              "total_ms": 4.769206,
+              "self_ms": 4.769206,
+              "mean_ms": 0.006325206896551723,
+              "max_ms": 0.009456,
+              "histogram": [
+                754,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_socket_send_sample": {
+              "count": 754,
+              "total_ms": 1.744283,
+              "self_ms": 1.744283,
+              "mean_ms": 0.002313372679045093,
+              "max_ms": 0.005547,
+              "histogram": [
+                754,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_drain": {
+              "count": 6032,
+              "total_ms": 1402.545693,
+              "self_ms": 1378.687003,
+              "mean_ms": 0.2325175220490716,
+              "max_ms": 0.302222,
+              "histogram": [
+                0,
+                0,
+                0,
+                0,
+                5946,
+                86,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        }
+      }
+    },
+    {
+      "kind": "duplicate_rejection",
+      "profiling_enabled": true,
+      "iterations": 6000,
+      "warmup_iterations": 32,
+      "costs": {
+        "baseline": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.0601070695,
+            "p50_ms": 0.059727,
+            "p99_ms": 0.071005,
+            "max_ms": 0.103326
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.06074734316666667,
+            "p50_ms": 0.06036,
+            "p99_ms": 0.071704,
+            "max_ms": 0.103969
+          }
+        },
+        "candidate": {
+          "thread_cpu_ms": {
+            "count": 6000,
+            "mean_ms": 0.0604284395,
+            "p50_ms": 0.060048,
+            "p99_ms": 0.071617,
+            "max_ms": 0.094969
+          },
+          "wall_ms": {
+            "count": 6000,
+            "mean_ms": 0.061068361833333334,
+            "p50_ms": 0.060688,
+            "p99_ms": 0.072359,
+            "max_ms": 0.095591
+          }
+        }
+      },
+      "thread_cpu_mean_reduction_fraction": -0.005346625657735693,
+      "exact_delivery_ack_and_handler_order_equal": true,
+      "receive_profiling_cadence_equal": true,
+      "handler_event_count": 0,
+      "order_random_seed": 19,
+      "gc_inside_timed_calls_including_warmup": {
+        "baseline": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        },
+        "candidate": {
+          "count": 0,
+          "thread_cpu_ns": 0
+        }
+      },
+      "timings": {
+        "baseline": {
+          "schema_version": 1,
+          "enabled": true,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 1262.35603,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {
+            "control_socket_receive_sample": {
+              "count": 283,
+              "total_ms": 0.654216,
+              "self_ms": 0.654216,
+              "mean_ms": 0.0023117173144876326,
+              "max_ms": 0.002844,
+              "histogram": [
+                283,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_json_decode_sample": {
+              "count": 189,
+              "total_ms": 1.487679,
+              "self_ms": 1.487679,
+              "mean_ms": 0.00787131746031746,
+              "max_ms": 0.011938,
+              "histogram": [
+                188,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_event_decode_sample": {
+              "count": 189,
+              "total_ms": 2.157793,
+              "self_ms": 2.157793,
+              "mean_ms": 0.01141689417989418,
+              "max_ms": 0.015558,
+              "histogram": [
+                0,
+                189,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_ack_encode_sample": {
+              "count": 189,
+              "total_ms": 1.13021,
+              "self_ms": 1.13021,
+              "mean_ms": 0.00597994708994709,
+              "max_ms": 0.00726,
+              "histogram": [
+                189,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_socket_send_sample": {
+              "count": 189,
+              "total_ms": 0.434411,
+              "self_ms": 0.434411,
+              "mean_ms": 0.0022984708994708996,
+              "max_ms": 0.003667,
+              "histogram": [
+                189,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_drain": {
+              "count": 6032,
+              "total_ms": 333.97859,
+              "self_ms": 328.114281,
+              "mean_ms": 0.055367803381962864,
+              "max_ms": 0.09853,
+              "histogram": [
+                0,
+                0,
+                1,
+                6031,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        },
+        "candidate": {
+          "schema_version": 1,
+          "enabled": true,
+          "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+          "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+          "elapsed_ms": 1262.238941,
+          "bucket_upper_ms": [
+            0.01,
+            0.025,
+            0.05,
+            0.1,
+            0.25,
+            0.5,
+            1.0,
+            2.5,
+            5.0,
+            10.0,
+            25.0,
+            50.0,
+            100.0,
+            250.0,
+            1000.0,
+            null
+          ],
+          "phases": {
+            "control_socket_receive_sample": {
+              "count": 283,
+              "total_ms": 0.678562,
+              "self_ms": 0.678562,
+              "mean_ms": 0.0023977455830388695,
+              "max_ms": 0.006881,
+              "histogram": [
+                283,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_json_decode_sample": {
+              "count": 189,
+              "total_ms": 1.506896,
+              "self_ms": 1.506896,
+              "mean_ms": 0.007972994708994709,
+              "max_ms": 0.017506,
+              "histogram": [
+                187,
+                2,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_event_decode_sample": {
+              "count": 189,
+              "total_ms": 2.151145,
+              "self_ms": 2.151145,
+              "mean_ms": 0.011381719576719577,
+              "max_ms": 0.019254,
+              "histogram": [
+                0,
+                189,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_ack_encode_sample": {
+              "count": 189,
+              "total_ms": 1.147898,
+              "self_ms": 1.147898,
+              "mean_ms": 0.006073534391534392,
+              "max_ms": 0.008148,
+              "histogram": [
+                189,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_socket_send_sample": {
+              "count": 189,
+              "total_ms": 0.434601,
+              "self_ms": 0.434601,
+              "mean_ms": 0.0022994761904761903,
+              "max_ms": 0.003153,
+              "histogram": [
+                189,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            },
+            "control_drain": {
+              "count": 6032,
+              "total_ms": 335.875091,
+              "self_ms": 329.955989,
+              "mean_ms": 0.055682210046419094,
+              "max_ms": 0.11554,
+              "histogram": [
+                0,
+                0,
+                0,
+                6031,
+                1,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0,
+                0
+              ]
+            }
+          }
+        }
+      }
+    }
+  ],
+  "idle_allocation": {
+    "scope": "Separate unprofiled empty drains; tracemalloc is off during CPU comparisons.",
+    "peak_extra_bytes_per_call": {
+      "baseline": [
+        60294,
+        60326,
+        60326,
+        60326,
+        60326,
+        60358,
+        60326,
+        60326,
+        60326,
+        60326,
+        60326,
+        60326,
+        60326,
+        60326,
+        60326,
+        60326
+      ],
+      "candidate": [
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        96,
+        128,
+        128,
+        128,
+        128,
+        128,
+        128
+      ]
+    }
+  },
+  "limitations": [
+    "Real UNIX receive/ACK I/O and deterministic handler; no GPU or full scheduler measurement.",
+    "Deterministic randomized variant order, identical datagrams and exact ACK/handler checks.",
+    "Sparse traffic is one message per ten drains, a scenario rather than a replay of V59.",
+    "Thread CPU is separate from wall time; historical wall sums are not expected JCT savings.",
+    "The existing receive-sample cadence and full parent control_drain timing remain enabled.",
+    "GC remains enabled; collections inside timed calls are recorded and remain in reported costs.",
+    "Handler observations are compared and released after each drain, without a growing artificial history."
+  ]
+}

@@ -90,6 +90,34 @@ def test_prepare_prefix_hint_refreshes_after_host_backup_or_eviction():
     assert missing_prepare_full_prefix_tokens(cache, anchors) == 2
 
 
+def test_prepare_prefix_hint_preserves_backed_input_nodes_but_excludes_output_tail():
+    cache, anchors, nodes = prepare_prefix_fixture(second_leaf=True)
+    for node_id in (1, 3, 4):
+        nodes[node_id].component_data[0].host_value = nodes[node_id].component_data[0].value
+    cache.tree_core.evictable_device_leaves = (nodes[3], nodes[4])
+    backed = []
+    assert missing_prepare_full_prefix_tokens(cache, anchors, backed_nodes=backed) == 2
+    assert backed == [(4, 5.)]
+
+
+def test_prepare_prefix_hint_does_not_publish_partial_or_replaced_backed_identities():
+    cache, anchors, nodes = prepare_prefix_fixture(second_leaf=True)
+    nodes[4].component_data[0].host_value = nodes[4].component_data[0].value
+    cache.tree_core.evictable_device_leaves = (nodes[3], nodes[4])
+    backed = []
+    assert missing_prepare_full_prefix_tokens(cache, anchors, backed_nodes=backed) == 3
+    assert backed == [(4, 5.)]
+    lookup = cache.tree_core.node_by_id
+    cache.tree_core.node_by_id = lambda node_id: (
+        NS(**vars(nodes[4])) if node_id == 4 else lookup(node_id)
+    )
+    unchanged = [(99, 100.)]
+    assert missing_prepare_full_prefix_tokens(
+        cache, anchors, backed_nodes=unchanged,
+    ) is None
+    assert unchanged == [(99, 100.)]
+
+
 @pytest.mark.parametrize("change", (
     lambda anchors, nodes: replace(anchors, reusable_input_tokens=None),
     lambda anchors, nodes: replace(anchors, reusable_input_tokens=-1),
@@ -1275,6 +1303,34 @@ def test_prepare_burst_stays_on_one_leaf_and_excludes_generated_output():
     assert [(step.node_id, step.leaf_node_id) for step in steps] == [(11, 13), (12, 13)]
 
 
+@pytest.mark.parametrize("include_tail", (False, True))
+def test_prepare_single_leaf_uses_ancestry_order_with_nonmonotone_node_ids(include_tail):
+    cache, anchors, nodes = prepare_prefix_fixture()
+    remapped = {0: 42, 1: 17, 2: 3, 3: 9, 4: 99}
+    for previous_id, node in nodes.items():
+        node.id = remapped[previous_id]
+    current = {node.id: node for node in nodes.values()}
+    cache.tree_core.node_by_id = current.__getitem__
+    anchors = replace(
+        anchors, component_leaves=((0, ((9, 4.),)), (2, ((9, 4.),))),
+    )
+    candidate = capture_action_local_shadow(cache, anchors)
+    assert candidate is not None
+    before = [(node.id, node.component_data[0].host_value) for node in nodes.values()]
+    steps = shadow_backup_steps(
+        candidate, reclaim_tail_leaves=frozenset({9}) if include_tail else frozenset(),
+    )
+    assert [(step.node_id, step.missing_full_prefix_tokens) for step in steps] == (
+        [(17, 7), (3, 6), (9, 4)] if include_tail else [(17, 3), (3, 2)]
+    )
+    assert all(step.leaf_node_id == 9 and not step.include_mamba for step in steps)
+    assert shadow_backup_steps(
+        candidate, max_steps=1,
+        reclaim_tail_leaves=frozenset({9}) if include_tail else frozenset(),
+    ) == steps[:1]
+    assert [(node.id, node.component_data[0].host_value) for node in nodes.values()] == before
+
+
 def test_prepare_prefix_budget_excludes_generation_after_reusable_checkpoint():
     anchors = replace(prefetch_anchors(), reusable_input_tokens=12)
     root = prefetch_node(0, None, 1, key_tokens=0)
@@ -1557,16 +1613,20 @@ def test_overlapping_pending_node_or_unbounded_publication_rejected():
 def test_rejected_native_enqueue_releases_reservation_without_reusing_identity():
     ledger = PhysicalTransactionLedger(max_pending=1)
     ledger.register(expected())
+    assert ledger.pending_action_count("PREPARE_HOST") == 1
     ledger.cancel_unsubmitted("cmd")
     assert ledger.pending_count == 0
+    assert ledger.pending_action_count("PREPARE_HOST") == 0
     with pytest.raises(PhysicalReceiptError, match="reused"):
         ledger.register(expected())
     with pytest.raises(PhysicalReceiptError, match="unknown"):
         ledger.cancel_unsubmitted("cmd")
     ledger.register(expected("other"))
+    assert ledger.pending_action_count("PREPARE_HOST") == 1
     with pytest.raises(PhysicalReceiptError, match="unknown"):
         ledger.observe(ack(receipt()), live_context_epochs={"ctx": 3})
     assert ledger.pending_count == 0
+    assert ledger.pending_action_count("PREPARE_HOST") == 0
 
 
 def test_partially_acknowledged_command_cannot_cancel_reservation():
@@ -1579,6 +1639,7 @@ def test_partially_acknowledged_command_cannot_cancel_reservation():
     with pytest.raises(PhysicalReceiptError, match="partially acknowledged"):
         ledger.cancel_unsubmitted("cmd")
     assert ledger.pending_count == 1
+    assert ledger.pending_action_count("PREPARE_HOST") == 1
 
 
 def test_two_child_command_waits_for_full_reconciliation_across_acks():
@@ -1588,6 +1649,7 @@ def test_two_child_command_waits_for_full_reconciliation_across_acks():
         child(13, (13,), 10, 0, 10),
     )))
     assert ledger.observe(ack(receipt()), live_context_epochs={"ctx": 3}) == ()
+    assert ledger.pending_action_count("PREPARE_HOST") == 1
     second = ack(
         receipt(anchor=13, published=(13,), kv=1, mamba=0, total=10),
         nodes=(13,), kv=1, mamba=0,
@@ -1595,6 +1657,7 @@ def test_two_child_command_waits_for_full_reconciliation_across_acks():
     completed, = ledger.observe(second, live_context_epochs={"ctx": 3})
     assert completed.node_ids == (11, 12, 13)
     assert completed.num_bytes == 42
+    assert ledger.pending_action_count("PREPARE_HOST") == 0
 
 
 def test_partial_ack_with_no_child_credit_fails_closed():
@@ -1627,6 +1690,8 @@ def test_malformed_duplicate_unknown_and_mismatch_poison_credit(event):
     with pytest.raises(PhysicalReceiptError):
         ledger.observe(event, live_context_epochs={"ctx": 3})
     assert ledger.pending_count == 0
+    assert ledger.pending_action_count("PREPARE_HOST") == 0
+    assert ledger.pending_action_count("PREFETCH_GPU") == 0
 
 
 def test_stale_context_epoch_and_replay_do_not_credit():
@@ -1711,6 +1776,7 @@ def test_h2d_child_and_mamba_only_pool_counts():
     )
     assert completed.action == "PREFETCH_GPU"
     assert completed.pool_bytes == (("kv", 0), ("mamba", 10))
+    assert ledger.pending_action_count("PREFETCH_GPU") == 0
 
 
 def test_bounds_expiry_and_late_receipt_never_gain_credit(monkeypatch):
@@ -1725,6 +1791,7 @@ def test_bounds_expiry_and_late_receipt_never_gain_credit(monkeypatch):
     clock[0] = 2.0
     assert ledger.expire() == ("cmd",)
     assert ledger.pending_count == 0
+    assert ledger.pending_action_count("PREPARE_HOST") == 0
     with pytest.raises(PhysicalReceiptError):
         ledger.observe(ack(receipt()), live_context_epochs={"ctx": 3})
 
@@ -1742,3 +1809,52 @@ def test_missing_child_credit_with_unknown_nodes_remains_pending_then_expires(mo
     assert ledger.pending_count == 1
     clock[0] = 1.0
     assert ledger.expire() == ("cmd",)
+    assert ledger.pending_action_count("PREPARE_HOST") == 0
+
+
+def test_pending_action_counts_do_not_traverse_unrelated_transactions():
+    ledger = PhysicalTransactionLedger()
+    for index in range(8):
+        ledger.register(expected(
+            f"command-{index}",
+            action="PREPARE_HOST" if index % 2 == 0 else "PREFETCH_GPU",
+            children=(child(100 + index, (100 + index,), 10, 0, 10),),
+        ))
+
+    class NoTraversal(dict):
+        def values(self):
+            raise AssertionError("action count must not traverse transactions")
+
+        def items(self):
+            raise AssertionError("action count must not traverse transactions")
+
+        def __iter__(self):
+            raise AssertionError("action count must not traverse transactions")
+
+    original = ledger._pending
+    with patch.object(ledger, "_pending", NoTraversal(original)):
+        assert ledger.pending_action_count("PREPARE_HOST") == 4
+        assert ledger.pending_action_count("PREFETCH_GPU") == 4
+        assert ledger.pending_action_count("unknown") == 0
+        assert ledger.pending_count == 8
+    for index in range(8):
+        ledger.cancel_unsubmitted(f"command-{index}")
+        assert sum(
+            ledger.pending_action_count(action) for action in ("PREPARE_HOST", "PREFETCH_GPU")
+        ) == ledger.pending_count
+
+
+def test_invalid_merged_receipt_retires_both_action_counts():
+    ledger = PhysicalTransactionLedger()
+    ledger.register(expected("prepare"))
+    ledger.register(expected(
+        "load", action="PREFETCH_GPU",
+        children=(child(13, (13,), 10, 0, 10),),
+    ))
+    assert ledger.pending_action_count("PREPARE_HOST") == 1
+    assert ledger.pending_action_count("PREFETCH_GPU") == 1
+    with pytest.raises(PhysicalReceiptError, match="unknown"):
+        ledger.observe(ack(receipt(command="missing")), live_context_epochs={"ctx": 3})
+    assert ledger.pending_count == 0
+    assert ledger.pending_action_count("PREPARE_HOST") == 0
+    assert ledger.pending_action_count("PREFETCH_GPU") == 0

@@ -8,6 +8,7 @@ ROOT_COUNT="${ROOT_COUNT:-108}"
 SAMPLING_SEED="${SAMPLING_SEED:-21}"
 ARRIVAL_BATCH_SIZE="${ARRIVAL_BATCH_SIZE:-0}"
 ARRIVAL_BATCH_INTERVAL_MS="${ARRIVAL_BATCH_INTERVAL_MS:-0}"
+WORKFLOW_ARRIVAL_SCHEDULE="${WORKFLOW_ARRIVAL_SCHEDULE:-}"
 HOST_SPLIT="${HOST_SPLIT:-80:20}"
 HOST_NUMA_MEMORY_POLICY="${HOST_NUMA_MEMORY_POLICY:-preferred}"
 HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-200}"
@@ -60,9 +61,11 @@ trap 'exit 143' TERM
 if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || (( ROOT_COUNT > 156 )) \
   || [[ ! "$ARRIVAL_BATCH_SIZE" =~ ^[0-9]+$ || ! "$ARRIVAL_BATCH_INTERVAL_MS" =~ ^[0-9]+$ ]] \
-  || { (( ROOT_COUNT > 108 )) && { [[ "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]] \
+  || { [[ -z "$WORKFLOW_ARRIVAL_SCHEDULE" ]] && (( ROOT_COUNT > 108 )) && { [[ "$ARRIVAL_BATCH_INTERVAL_MS" == "0" ]] \
     || { [[ "$ARRIVAL_BATCH_SIZE" != "64" && "$ARRIVAL_BATCH_SIZE" != "108" ]]; }; }; } \
-  || { (( ROOT_COUNT > 128 )) && [[ "$ARRIVAL_BATCH_SIZE" != "108" ]]; } \
+  || { [[ -z "$WORKFLOW_ARRIVAL_SCHEDULE" ]] && (( ROOT_COUNT > 128 )) && [[ "$ARRIVAL_BATCH_SIZE" != "108" ]]; } \
+  || { [[ -n "$WORKFLOW_ARRIVAL_SCHEDULE" ]] && { [[ ! -f "$WORKFLOW_ARRIVAL_SCHEDULE" ]] \
+    || [[ "$ARRIVAL_BATCH_SIZE" != "0" || "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; }; } \
   || { (( ARRIVAL_BATCH_SIZE > 108 )); } \
   || { (( ARRIVAL_BATCH_SIZE > 0 )) && (( ARRIVAL_BATCH_INTERVAL_MS == 0 )); } \
   || { [[ "$ARRIVAL_BATCH_SIZE" == "0" ]] && [[ "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; } \
@@ -95,6 +98,9 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   exit 2
 fi
 "$PYTHON" -c 'import json,sys; rows=json.load(open(sys.argv[1]))["workloads"]; count=int(sys.argv[2]); assert count <= len(rows), "requested roots exceed manifest"; assert len({row["instance_id"] for row in rows[:count]}) == count, "duplicate workload"' "$MANIFEST" "$ROOT_COUNT"
+if [[ -n "$WORKFLOW_ARRIVAL_SCHEDULE" ]]; then
+  PYTHONPATH="$ROOT${PYTHONPATH:+:$PYTHONPATH}" "$PYTHON" -c 'import json,sys; from pathlib import Path; from beliefkv.experiments.arrival_schedule import load_workflow_arrivals; rows=json.load(open(sys.argv[1]))["workloads"][:int(sys.argv[2])]; load_workflow_arrivals(Path(sys.argv[3]), instance_ids=[row["instance_id"] for row in rows])' "$MANIFEST" "$ROOT_COUNT" "$WORKFLOW_ARRIVAL_SCHEDULE"
+fi
 if [[ -e /tmp/beliefkv-experiments.paused ]] \
   || curl --silent --max-time 2 --fail "$BASE_URL/health" >/dev/null \
   || [[ "$(df -Pk "$ROOT" | awk 'NR == 2 {print $4}')" -lt 20971520 ]]; then
@@ -110,6 +116,7 @@ control_flags=(--control-socket "$SOCKET")
 telemetry_env=(BELIEFKV_ADMISSION_TELEMETRY_DIR="$RUN_ROOT/server"
   BELIEFKV_ADMISSION_OPPORTUNITY_DIR="$RUN_ROOT/opportunities")
 if [[ "$NATIVE_POLICY_BASELINE" == "1" ]]; then
+  export BELIEFKV_EMIT_SEMANTIC_TEXT=0
   control_flags=(--native-policy-baseline)
   telemetry_env=(BELIEFKV_NATIVE_TELEMETRY_DIR="$RUN_ROOT/server")
 else
@@ -142,7 +149,6 @@ if [[ "$AB_MODE" != "off" ]]; then
     -u BELIEFKV_TOOL_TIMING_ARTIFACT -u BELIEFKV_TOOL_TIMING_SHA256 \
     -u BELIEFKV_ENABLE_TOOL_PREFETCH \
     -u BELIEFKV_TRANSFER_SERVICE_SEED -u BELIEFKV_TRANSFER_SERVICE_SEED_SHA256)
-  export BELIEFKV_EMIT_SEMANTIC_TEXT=1
   ab_env=(BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY=1 BELIEFKV_ENABLE_PREPARE_HOST="$PREPARE_HOST"
     BELIEFKV_ENABLE_RESIDENT_FIRST=1
     BELIEFKV_PREFETCH_LEAD_MS="$PREFETCH_LEAD_MS"
@@ -162,10 +168,13 @@ if [[ "$AB_MODE" != "off" ]]; then
       BELIEFKV_TRANSFER_SERVICE_SEED_SHA256="$(sha256sum "$TRANSFER_SERVICE_SEED" | cut -d' ' -f1)")
   fi
   if [[ "$AB_MODE" == "reactive" ]]; then
+    export BELIEFKV_EMIT_SEMANTIC_TEXT=0
     ab_env+=(BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=0 BELIEFKV_ENABLE_TOOL_PREFETCH=0
-      BELIEFKV_ENABLE_EXECUTION_HANDOFF=0)
+      BELIEFKV_ENABLE_EXECUTION_HANDOFF=0 BELIEFKV_H2D_OPPORTUNITY_SAMPLING=0)
   else
+    export BELIEFKV_EMIT_SEMANTIC_TEXT=1
     ab_env+=(BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH=1 \
+      BELIEFKV_H2D_OPPORTUNITY_SAMPLING=1 \
       BELIEFKV_ENABLE_EXECUTION_HANDOFF="$EXECUTION_HANDOFF" \
       BELIEFKV_ENABLE_TOOL_PREFETCH="$ENABLE_TOOL_TIMING" \
       BELIEFKV_SEMANTIC_REPORT_ARTIFACT="$SEMANTIC_REPORT_ARTIFACT")
@@ -215,6 +224,9 @@ curl --silent --show-error --max-time 10 --fail --request POST \
 
 set +e
 client_flags=()
+if [[ -n "$WORKFLOW_ARRIVAL_SCHEDULE" ]]; then
+  client_flags+=(--workflow-arrival-schedule "$WORKFLOW_ARRIVAL_SCHEDULE")
+fi
 if [[ "$CHILD_FINAL_REPORT_SHADOW" == "1" ]]; then
   client_flags+=(--child-final-report-shadow)
 fi

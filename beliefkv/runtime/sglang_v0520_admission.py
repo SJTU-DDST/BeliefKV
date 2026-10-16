@@ -8,6 +8,7 @@ PrefillAdder remains the sole authority for resource admission and load-back.
 from __future__ import annotations
 
 from dataclasses import dataclass
+from types import NotImplementedType
 from typing import Mapping, Sequence, TypeVar
 
 
@@ -24,6 +25,21 @@ class PrefillCandidateKey:
     attempt_id: int
     session_id: str | None = None
     session_generation: int | None = None
+
+    def __eq__(self, other: object) -> bool | NotImplementedType:
+        if self is other:
+            return True
+        if other.__class__ is self.__class__:
+            return (
+                self.request_id, self.root_workflow_id, self.invocation_id,
+                self.context_id, self.context_epoch, self.attempt_id,
+                self.session_id, self.session_generation,
+            ) == (
+                other.request_id, other.root_workflow_id, other.invocation_id,
+                other.context_id, other.context_epoch, other.attempt_id,
+                other.session_id, other.session_generation,
+            )
+        return NotImplemented
 
 
 @dataclass(frozen=True)
@@ -158,11 +174,14 @@ def select_native_prefill_candidates(
 
     permitted: dict[str, ReqT] = {}
     rejected: list[tuple[str, str]] = []
+    candidates: list[ReqT] = []
+    tagged_positions: list[int] = []
     seen: set[str] = set()
     stale = plan.semantic_revision != current_semantic_revision
     for req in native_order:
         metadata = getattr(req, "beliefkv_metadata", None)
         if metadata is None:
+            candidates.append(req)
             continue
         request_id = getattr(req, "rid", None)
         if type(request_id) is not str or not request_id:
@@ -184,18 +203,16 @@ def select_native_prefill_candidates(
         )
         if reason is None:
             permitted[request_id] = req
+            tagged_positions.append(len(candidates))
+            candidates.append(req)
         else:
             rejected.append((request_id, reason))
 
-    ordered = iter(
+    ordered = (
         permitted[key.request_id]
         for key in plan.prioritized
         if key.request_id in permitted
     )
-    candidates = tuple(
-        req if getattr(req, "beliefkv_metadata", None) is None else next(ordered)
-        for req in native_order
-        if getattr(req, "beliefkv_metadata", None) is None
-        or getattr(req, "rid", None) in permitted
-    )
-    return NativePrefillSelection(candidates=candidates, rejected=tuple(rejected))
+    for position, req in zip(tagged_positions, ordered):
+        candidates[position] = req
+    return NativePrefillSelection(candidates=tuple(candidates), rejected=tuple(rejected))

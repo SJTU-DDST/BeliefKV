@@ -8,13 +8,17 @@ from collections import Counter
 import csv
 import json
 import hashlib
+import math
 import os
 from pathlib import Path
 import shutil
 from statistics import mean, median
 import subprocess
 
-from beliefkv.experiments.arrival_schedule import build_workflow_arrivals
+from beliefkv.experiments.arrival_schedule import (
+    arrival_schedule_digest, build_poisson_workflow_arrivals,
+    build_workflow_arrivals, load_workflow_arrivals,
+)
 
 
 NON_EXECUTION_SOURCE_PATHS = (
@@ -442,6 +446,8 @@ def main() -> None:
     parser.add_argument("--arm-order", default="predictive_h2d native")
     parser.add_argument("--arrival-batch-size", type=int, default=0)
     parser.add_argument("--arrival-batch-interval-ms", type=int, default=0)
+    parser.add_argument("--arrival-rate-per-second", type=float, default=0.0)
+    parser.add_argument("--arrival-seed", type=int, default=21)
     parser.add_argument("--semantic-artifact", type=Path)
     parser.add_argument("--activation-wall-clock-seconds", type=float, default=14400.)
     parser.add_argument("--workload-manifest", type=Path)
@@ -453,16 +459,29 @@ def main() -> None:
     parser.add_argument("--enable-tool-timing", type=int, choices=(0, 1), default=0)
     parser.add_argument("--prefetch-lead-ms", type=int, default=1000)
     parser.add_argument("--native-reference-run", type=Path)
+    parser.add_argument("--native-reference-timeline", type=Path)
+    parser.add_argument("--native-reference-cache", type=Path)
     parser.add_argument("--semantic-work-statistic", choices=("upper", "center"), default="upper")
     parser.add_argument("--eos-protocol-window-ms", type=int, default=50)
     parser.add_argument("--transfer-service-seed", type=Path)
     parser.add_argument("--sampling-seed", type=int, default=21)
     parser.add_argument("--repetition-id", type=int, default=0)
     args = parser.parse_args()
+    if (
+        args.native_reference_timeline is not None
+        or args.native_reference_cache is not None
+    ) and args.native_reference_run is None:
+        parser.error("native reference artifacts require --native-reference-run")
     if args.verify_frozen_plan:
         root = Path(__file__).resolve().parents[1]
         plan = json.loads((args.run_root / "ab_plan.json").read_text())
         verification = verify_frozen_execution_source(root, plan["code_commit"])
+        if plan.get("arrival_schedule_sha256"):
+            load_workflow_arrivals(
+                args.run_root / "ab_plan.json",
+                instance_ids=plan["workload_instance_ids_in_manifest_order"],
+            )
+            verification["frozen_arrival_schedule_verified"] = True
         paths = [
             (plan["workload_manifest"], plan["workload_sha256"]),
             (plan["semantic_artifact"], plan["semantic_artifact_sha256"]),
@@ -472,6 +491,8 @@ def main() -> None:
             ("h2d_seed_artifact", "h2d_seed_sha256"),
             ("tool_timing_artifact", "tool_timing_sha256"),
             ("transfer_service_seed", "transfer_service_seed_sha256"),
+            ("native_reference_timeline", "native_reference_timeline_sha256"),
+            ("native_reference_cache", "native_reference_cache_sha256"),
         ):
             if plan.get(digest):
                 paths.append((plan[field], plan[digest]))
@@ -514,19 +535,45 @@ def main() -> None:
         if order not in (
             ["reactive", "predictive_h2d"], ["predictive_h2d", "reactive"],
             ["native", "predictive_h2d"], ["predictive_h2d", "native"],
-            ["predictive_h2d"],
+            ["predictive_h2d"], ["reactive"],
         ):
             raise ValueError("unsupported policy arm order")
         if (args.arrival_batch_size == 0) != (args.arrival_batch_interval_ms == 0):
             raise ValueError("arrival batch size and interval must be enabled together")
-        arrivals = build_workflow_arrivals(
-            args.root_count,
-            mode="batched" if args.arrival_batch_size else "simultaneous",
-            batch_size=args.arrival_batch_size or args.root_count,
-            batch_interval_seconds=args.arrival_batch_interval_ms / 1000,
-        )
+        if not math.isfinite(args.arrival_rate_per_second) or args.arrival_rate_per_second < 0:
+            raise ValueError("arrival rate must be finite and non-negative")
+        if args.arrival_rate_per_second:
+            if args.arrival_batch_size:
+                raise ValueError("Poisson arrivals cannot be combined with arrival batches")
+            arrival_mode = "poisson"
+            arrivals = build_poisson_workflow_arrivals(
+                args.root_count, rate_per_second=args.arrival_rate_per_second,
+                seed=args.arrival_seed,
+            )
+        else:
+            arrival_mode = "batched" if args.arrival_batch_size else "simultaneous"
+            arrivals = build_workflow_arrivals(
+                args.root_count, mode=arrival_mode,
+                batch_size=args.arrival_batch_size or args.root_count,
+                batch_interval_seconds=args.arrival_batch_interval_ms / 1000,
+            )
+        arrival_rows = [
+            {"instance_id": row["instance_id"],
+             "offset_seconds": arrival.scheduled_offset_seconds}
+            for row, arrival in zip(workloads, arrivals)
+        ]
         native_pair = "native" in order
         patch = root / "patches/sglang-v0.5.20-beliefkv-staging.patch"
+        reference_artifacts = {}
+        for field, path in (
+            ("native_reference_timeline", args.native_reference_timeline),
+            ("native_reference_cache", args.native_reference_cache),
+        ):
+            if path is not None:
+                reference_artifacts[field] = str(path.resolve())
+                reference_artifacts[f"{field}_sha256"] = hashlib.sha256(
+                    path.read_bytes()
+                ).hexdigest()
         plan = {
             "prefetch_lead_ms": args.prefetch_lead_ms,
             "semantic_work_statistic": args.semantic_work_statistic,
@@ -554,7 +601,7 @@ def main() -> None:
             "tool_prefetch_predictive_only": bool(args.enable_tool_timing),
             "scope": (
                 "single-arm development; historical native references are separate from paired tests"
-                if args.arm_order.split() == ["predictive_h2d"]
+                if len(order) == 1
                 else "single-pair live pressure exploration; trajectory-sensitive, not final paper test"
             ),
             "repetition_id": args.repetition_id,
@@ -562,23 +609,25 @@ def main() -> None:
             "same_seed_is_not_same_trajectory": True,
             "formal_paired_repetition_target": 4,
             "formal_repetition_order": (
+                None if order == ["reactive"] else
                 ["predictive_h2d native"] if native_pair or order == ["predictive_h2d"]
                 else ["predictive_h2d reactive"]
             ),
             "native_reference_run": (
                 str(args.native_reference_run.resolve()) if args.native_reference_run else None
             ),
+            **reference_artifacts,
             "code_commit": subprocess.check_output(
                 ["git", "rev-parse", "HEAD"], cwd=root, text=True,
             ).strip(),
             "root_count": args.root_count, "server_running": 48,
+            "workflow_arrival_mode": arrival_mode,
+            "workflow_arrival_rate_per_second": args.arrival_rate_per_second,
+            "workflow_arrival_seed": args.arrival_seed,
             "workflow_arrival_batch_size": args.arrival_batch_size,
             "workflow_arrival_batch_interval_ms": args.arrival_batch_interval_ms,
-            "arrival_schedule": [
-                {"instance_id": row["instance_id"],
-                 "offset_seconds": arrival.scheduled_offset_seconds}
-                for row, arrival in zip(workloads, arrivals)
-            ],
+            "arrival_schedule": arrival_rows,
+            "arrival_schedule_sha256": arrival_schedule_digest(arrival_rows),
             "activation_wall_clock_seconds": args.activation_wall_clock_seconds,
             "sandbox_command_timeout_s": 180,
             "recursion_limit": 2048, "finalization_reserve_steps": 32,
@@ -641,10 +690,11 @@ def main() -> None:
             "prepare_policy": (
                 "next_prefill_slots_and_active_decode_page_growth;"
                 "exhausted_probe_backoff_1000ms;host_no_reclaim;real_allocator_pressure;"
-                "missing_full_prefix_only;reuse_valid_host_extents;"
-                "budget_all_missing_reusable_checkpoint_full_extents"
+                "missing_full_extents_only;reuse_valid_host_extents;"
+                "safe_input_prefix_and_proven_private_idle_full_tail;"
+                "budget_all_selected_full_extents;no_speculative_mamba_backup"
             ),
-            "prepare_pool_scope": "missing_full_prefix",
+            "prepare_pool_scope": "missing_full_session_path",
             "wait_prefetch_policy": (
                 "safe_next_input_checkpoint_missing_prefix;ancestor_first;"
                 "up_to_16_extents;pool_capacity_and_prefill_reserve;"
@@ -693,6 +743,8 @@ def main() -> None:
                     "final_stage_priority": name != "native",
                     "prepare_host": bool(args.prepare_host) and name != "native",
                     "predictive_h2d": name == "predictive_h2d",
+                    "h2d_opportunity_sampling": name == "predictive_h2d",
+                    "semantic_text_stream": name == "predictive_h2d",
                     "execution_handoff": name == "predictive_h2d" and bool(args.execution_handoff),
                 } for name in order
             },
@@ -777,6 +829,11 @@ def main() -> None:
             and state.get("execution_handoff") != policy["execution_handoff"]
         ):
             raise ValueError(f"{name}: mismatched execution_handoff configuration")
+        if (
+            "h2d_opportunity_sampling" in policy
+            and state.get("h2d_opportunity_sampling") != policy["h2d_opportunity_sampling"]
+        ):
+            raise ValueError(f"{name}: mismatched H2D opportunity sampling configuration")
         for setting in (
             "semantic_work_statistic", "eos_protocol_window_ms",
             "eos_prefetch_evidence_window_ms",

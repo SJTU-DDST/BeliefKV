@@ -175,6 +175,28 @@ def test_invalid_completion_uncertainty_is_not_a_transfer_window(early):
     ) is None
 
 
+@pytest.mark.parametrize("slack,horizon", [(0., 165.), (250., 415.), (1000., 500.)])
+def test_planning_slack_preserves_prediction_and_service_estimates(slack, horizon):
+    estimate = NativeServiceEstimate(10., 15., 0., 8, "matched_pool_shape_and_size")
+    window = transfer_start_window(
+        estimate, max_lead_ms=500., observation_spacing_ms=100.,
+        prediction_early_ms=50., planning_slack_ms=slack,
+    )
+    assert window.horizon_ms == horizon
+    assert window.prediction_early_ms == 50.
+    assert window.planning_slack_ms == slack
+    assert window.service_ms == 15.
+
+
+@pytest.mark.parametrize("slack", [-1., float("inf"), float("nan")])
+def test_invalid_planning_slack_is_not_a_transfer_window(slack):
+    estimate = NativeServiceEstimate(10., 15., 0., 8, "matched_pool_shape_and_size")
+    assert transfer_start_window(
+        estimate, max_lead_ms=500., observation_spacing_ms=100.,
+        planning_slack_ms=slack,
+    ) is None
+
+
 def test_runtime_reads_native_limits_instead_of_treating_idle_memory_as_slots():
     runtime, *_ = locked_runtime()
     runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
@@ -328,6 +350,74 @@ def test_completed_prefill_selections_do_not_consume_next_restore_frontier(
         assert budget.request_slots == expected_slots
         assert budget.reserve_full_tokens == 100 + 16 * (48 + expected_slots)
         assert budget.reserve_mamba_slots == expected_slots
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("current_running", (0, 4, 48))
+def test_post_forward_restore_budget_observes_current_native_running_batch(current_running):
+    runtime, *_ = locked_runtime()
+    runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
+    runtime._native_cache.host_pool_group.entry_map["mamba"].host_pool.size_per_token = 64
+    runtime._observe_native_admission_capacity(
+        running_batch=NS(reqs=[NS()] * 20),
+        adder=NS(
+            max_running_requests=48, max_prefill_bs=8, page_size=16,
+            rem_input_tokens=100,
+        ),
+    )
+    observed = []
+    try:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+            return_value=StaticPoolHeadroomObservation(
+                True, device_full_free_tokens=10_000, device_mamba_free_slots=10,
+            ),
+        ), patch.object(
+            runtime, "dispatch_join_prefetch",
+            side_effect=lambda: observed.append(runtime._current_residency_budget()),
+        ), patch.object(runtime, "dispatch_tool_prefetch"), patch.object(
+            runtime, "dispatch_join_prepare",
+        ), patch.object(runtime, "dispatch_tool_prepare"):
+            runtime.dispatch_after_forward(running_batch=NS(reqs=[NS()] * current_running))
+        expected_slots = min(6, max(1, 48 - current_running))
+        assert len(observed) == 1
+        assert observed[0].request_slots == expected_slots
+        assert observed[0].reserve_full_tokens == 100 + 16 * (
+            current_running + expected_slots
+        )
+    finally:
+        runtime.close()
+
+
+def test_post_forward_without_native_batch_preserves_last_observed_capacity():
+    runtime, *_ = locked_runtime()
+    runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
+    runtime._native_cache.host_pool_group.entry_map["mamba"].host_pool.size_per_token = 64
+    runtime._observe_native_admission_capacity(
+        running_batch=NS(reqs=[NS()] * 48),
+        adder=NS(
+            max_running_requests=48, max_prefill_bs=8, page_size=16,
+            rem_input_tokens=100,
+        ),
+    )
+    observed = []
+    try:
+        with patch(
+            "beliefkv.runtime.sglang_v0520_runtime.observe_static_full_mamba_headroom",
+            return_value=StaticPoolHeadroomObservation(
+                True, device_full_free_tokens=10_000, device_mamba_free_slots=10,
+            ),
+        ), patch.object(
+            runtime, "dispatch_join_prefetch",
+            side_effect=lambda: observed.append(runtime._current_residency_budget()),
+        ), patch.object(runtime, "dispatch_tool_prefetch"), patch.object(
+            runtime, "dispatch_join_prepare",
+        ), patch.object(runtime, "dispatch_tool_prepare"):
+            runtime.dispatch_after_forward()
+        assert len(observed) == 1
+        assert observed[0].request_slots == 1
+        assert observed[0].reserve_full_tokens == 100 + 16 * 49
     finally:
         runtime.close()
 
@@ -932,7 +1022,10 @@ def test_backed_full_without_mamba_is_available_for_pressure_demotion():
     runtime = final_stage_runtime()
     runtime.enable_prepare_host = True
     key = runtime.context_sessions["ctx-parent"]
-    anchors = NS(reusable_input_tokens=100)
+    anchors = NS(key=key, reusable_input_tokens=100, component_leaves=())
+    runtime._native_cache = NS(tree_core=NS(node_by_id=lambda _: NS(
+        creation_time=4, component_data={0: NS(session_ids=None)},
+    )))
     node = NS(
         node_id=11, creation_time=4, parent_id=None, key_tokens=10,
         full_device_tokens=10, full_host_tokens=10,
@@ -940,7 +1033,7 @@ def test_backed_full_without_mamba_is_available_for_pressure_demotion():
     )
     with patch.object(runtime, "snapshot_session_anchors", return_value=anchors), patch(
         "beliefkv.runtime.sglang_v0520_runtime.capture_action_local_shadow",
-        return_value=NS(nodes=(node,)),
+        return_value=NS(anchors=anchors, nodes=(node,)),
     ):
         runtime._register_backed_pressure_nodes(key)
     assert runtime._parent_pressure_candidates[11] == (key, 4)
@@ -960,6 +1053,9 @@ def test_join_cold_candidate_remains_protected_during_live_restore_window():
     runtime = final_stage_runtime()
     runtime.enable_prepare_host = True
     key = runtime.context_sessions["ctx-parent"]
+    runtime._native_cache = NS(tree_core=NS(node_by_id=lambda _: NS(
+        creation_time=4, component_data={0: NS(session_ids=None)},
+    )))
     try:
         runtime._parent_pressure_candidates[11] = (key, 4)
         assert runtime._live_parent_pressure_node(11, 4)
@@ -1145,7 +1241,10 @@ def test_partial_prepare_registers_settled_input_copies_before_remaining_backup(
         id=11, creation_time=4, backuped=True,
         write_through_pending_id=None, load_back_pending_id=None,
         component_data={
-            0: NS(value=[1] * 10, host_value=[1] * 10, lock_ref=0, session_ref=1),
+            0: NS(
+                value=[1] * 10, host_value=[1] * 10, lock_ref=0, session_ref=1,
+                session_ids=None,
+            ),
             2: NS(value=[2], host_value=[2], lock_ref=0, session_ref=1),
         },
     )
@@ -1255,7 +1354,10 @@ def test_join_prepare_publishes_current_pressure_state_once(case):
         id=11, creation_time=4, backuped=True,
         write_through_pending_id=None, load_back_pending_id=None,
         component_data={
-            0: NS(value=[1], host_value=[1], lock_ref=0, session_ref=1),
+            0: NS(
+                value=[1], host_value=[1], lock_ref=0, session_ref=1,
+                session_ids=None,
+            ),
             2: NS(value=None, host_value=None, lock_ref=0, session_ref=0),
         },
     )
@@ -1277,7 +1379,7 @@ def test_join_prepare_publishes_current_pressure_state_once(case):
         if case == "new_backed":
             runtime._parent_pressure_candidates[11] = (key, 4)
         return (
-            ShadowBackupStep(key, 11, 4, 11, 4)
+            (ShadowBackupStep(key, 11, 4, 11, 4), object())
             if case in ("submitted", "declined") else None
         )
 
@@ -1297,7 +1399,7 @@ def test_join_prepare_publishes_current_pressure_state_once(case):
                 device_mamba_free_slots=0 if case == "mamba_only" else 10,
                 host_full_free_tokens=1000, host_mamba_free_slots=10,
             ),
-        ), patch.object(runtime, "refreshed_shadow_backup_step", side_effect=scan), \
+        ), patch.object(runtime, "_refreshed_shadow_backup_selection", side_effect=scan), \
             patch.object(runtime, "_prepare_step_rank", return_value=(-1., 1.)), \
             patch.object(runtime, "issue_shadow_backup_step", side_effect=issue) as submit, \
             patch.object(runtime, "_publish_parent_pressure_candidates",
@@ -1403,7 +1505,7 @@ def test_backed_prepare_rechecks_after_backoff_and_new_epoch_is_immediate():
         return_value=StaticPoolHeadroomObservation(
             True, device_full_free_tokens=0, device_mamba_free_slots=0,
         ),
-    ), patch.object(runtime, "refreshed_shadow_backup_step", return_value=None) as scan, \
+    ), patch.object(runtime, "_refreshed_shadow_backup_selection", return_value=None) as scan, \
         patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=10.) as clock:
         runtime.dispatch_join_prepare([req("child")])
         key = runtime.context_sessions["ctx-parent"]
@@ -1791,11 +1893,16 @@ def test_full_only_pressure_candidate_can_save_missing_mamba_at_actual_eviction(
     assert node.component_data[2].host_value is None
 
 
-def test_tool_latest_start_waits_until_measured_small_transfer_window():
+@pytest.mark.parametrize("remaining,advance", [(300., 0.), (600., .25)])
+def test_tool_planning_slack_reaches_nearby_returns_without_starting_long_waits(
+    remaining, advance,
+):
     from dataclasses import replace
 
     runtime, hint = tool_runtime()
-    hint = replace(hint, wait_p10_ms=300., wait_p90_ms=300.)
+    hint = replace(
+        hint, wait_p10_ms=remaining, wait_p50_ms=remaining, wait_p90_ms=remaining,
+    )
     runtime.tool_wait_hints[hint.key.context_id] = hint
     runtime._native_cache = NS(cache_controller=NS(mem_pool_host=NS(entry_map={
         "kv": NS(host_pool=NS(size_per_token=10)),
@@ -1814,11 +1921,37 @@ def test_tool_latest_start_waits_until_measured_small_transfer_window():
         patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic") as clock:
         clock.return_value = hint.issued_monotonic_ms / 1000.
         runtime.dispatch_tool_prefetch()
-        issue.assert_not_called()
-        clock.return_value += .2
-        runtime.dispatch_tool_prefetch()
+        if advance:
+            issue.assert_not_called()
+            clock.return_value += advance
+            runtime.dispatch_tool_prefetch()
         issue.assert_called_once()
-    assert runtime._tool_ticket.start_window_ms == pytest.approx(130.)
+    assert runtime._tool_ticket.start_window_ms == pytest.approx(380.)
+    runtime.close()
+
+
+@pytest.mark.parametrize("live", [True, False])
+def test_planning_slack_requires_a_live_tool_wait_and_does_not_widen_join(live):
+    runtime, hint = tool_runtime()
+    runtime._native_cache = NS(cache_controller=NS(mem_pool_host=NS(entry_map={
+        "kv": NS(host_pool=NS(size_per_token=10)),
+        "mamba": NS(host_pool=NS(size_per_token=100)),
+    })))
+    opportunity = NS(
+        step=PrefetchLoadStep(hint.key, 11, 4, 11, 4),
+        required_full_tokens=10, required_mamba_slots=0,
+    )
+    estimate = NativeServiceEstimate(10., 20., 10., 3, "matched_pool_shape_and_size")
+    try:
+        with patch.object(runtime, "_live_tool_hint", return_value=hint if live else None), \
+            patch.object(runtime, "_tool_prefetch_remaining", return_value=300.), \
+            patch.object(runtime, "_estimate_h2d_service", return_value=estimate):
+            window = runtime._h2d_start_window(opportunity)
+        assert window.planning_slack_ms == (250. if live else 0.)
+        assert window.prediction_early_ms == 0.
+        assert window.horizon_ms == (380. if live else 130.)
+    finally:
+        runtime.close()
 
 
 def test_tool_starts_long_transfer_with_only_one_hundred_ms_remaining():

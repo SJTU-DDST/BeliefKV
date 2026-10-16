@@ -11,15 +11,18 @@ import gzip
 import hashlib
 from itertools import combinations
 import json
+import math
 from pathlib import Path
 from statistics import mean, median
 import sys
+from zoneinfo import ZoneInfo, ZoneInfoNotFoundError
 
 ROOT = Path(__file__).resolve().parents[1]
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from beliefkv.metrics.execution_timeline import _merge_intervals
+from beliefkv.metrics.native_execution_timeline import resolve_native_gpu_clock
 from scripts.audit_native_h2d_sources import (
     CONTROLLED_CATEGORIES, acknowledged_prefetch_sources, split_h2d_payload,
 )
@@ -157,12 +160,46 @@ def native_reference_metadata(current_run: Path, reference_run: Path) -> dict:
     }
 
 
-def cached_native_reference(reference_run: Path, bin_seconds: int) -> dict | None:
-    path = reference_run / "native_policy_comparison.json"
+def aligned_native_clock(evidence: dict, *, anchor_text: str | None = None) -> tuple[float, ZoneInfo]:
+    if not isinstance(evidence, dict):
+        raise ValueError("regenerate native metrics with explicit, validated clock alignment")
+    anchor = evidence.get("anchor_unix_ms")
+    if (
+        evidence.get("schema_version") != 2 or type(anchor) not in (int, float)
+        or not math.isfinite(anchor) or not isinstance(evidence.get("gpu_timezone"), str)
+    ):
+        raise ValueError("regenerate native metrics with explicit, validated clock alignment")
+    try:
+        zone = ZoneInfo(evidence["gpu_timezone"])
+    except (ValueError, ZoneInfoNotFoundError) as error:
+        raise ValueError("regenerate native metrics with a valid capture timezone") from error
+    if anchor_text is not None:
+        parsed = datetime.fromisoformat(anchor_text)
+        if parsed.tzinfo is None or not math.isclose(
+            parsed.timestamp() * 1000., anchor, rel_tol=0., abs_tol=.001,
+        ):
+            raise ValueError("timeline start_anchor disagrees with its absolute clock evidence")
+    return anchor, zone
+
+
+def cached_native_reference(
+    reference_run: Path, bin_seconds: int, *, cache_path: Path | None = None,
+) -> dict | None:
+    path = cache_path if cache_path is not None else reference_run / "native_policy_comparison.json"
     if not path.is_file():
         return None
     cached = json.loads(path.read_bytes()).get("runs", {}).get("native")
     if cached is None or cached.get("run") != str((reference_run / "native").resolve()):
+        return None
+    clock = cached.get("clock_alignment") or {}
+    try:
+        aligned_native_clock(clock, anchor_text=cached.get("time_origin_local"))
+    except ValueError:
+        return None
+    if any(
+        phase.get("batch_count", 0) > 0 and phase.get("worker_interval_seconds", 0) <= 0
+        for phase in cached.get("phase_statistics", {}).values()
+    ):
         return None
     bands = cached.get("bands", ())
     if len(bands) < 2 or bands[1]["start_seconds"] - bands[0]["start_seconds"] != bin_seconds:
@@ -269,16 +306,24 @@ def restore_wait_statistics(rows) -> dict:
     }
 
 
-def busy_window_statistics(arm: Path, windows: list[tuple[float, float]]) -> dict:
+def busy_window_statistics(
+    arm: Path, windows: list[tuple[float, float]], *, gpu_timezone: str | None = None,
+) -> dict:
     """Read completed service batches without requiring a terminal client summary."""
     clients = list(arm.glob("client_*/gpu_samples.csv"))
     if len(clients) != 1:
         raise ValueError(f"expected one GPU monitor: {arm}")
     with clients[0].open() as stream:
         gpu_rows = list(csv.DictReader(stream))
-    anchor_ms = datetime.strptime(
-        gpu_rows[0]["timestamp"].strip(), "%Y/%m/%d %H:%M:%S.%f",
-    ).timestamp() * 1000.
+    first_service = next(
+        row for row in records(arm / "server/runtime_audit.jsonl")
+        if row.get("event") == "gpu_service_sample"
+    )
+    zone, anchor_ms, clock_evidence = resolve_native_gpu_clock(
+        clients[0], clients[0].parent / "sglang_metrics.jsonl",
+        clock_offset_ms=first_service["complete_ts_ms"] - first_service["complete_monotonic_ms"],
+        timezone_name=gpu_timezone,
+    )
     horizon_ms = anchor_ms + max(end for _, end in windows) * 1000.
     bands = [{
         "start_seconds": begin, "end_seconds": end,
@@ -293,7 +338,7 @@ def busy_window_statistics(arm: Path, windows: list[tuple[float, float]]) -> dic
     for row in gpu_rows:
         ts_ms = datetime.strptime(
             row["timestamp"].strip(), "%Y/%m/%d %H:%M:%S.%f",
-        ).timestamp() * 1000.
+        ).replace(tzinfo=zone).timestamp() * 1000.
         for band in bands:
             if band["start_seconds"] <= (ts_ms - anchor_ms) / 1000. < band["end_seconds"]:
                 band["gpu_utilization"].append(float(row["gpu_utilization_percent"]))
@@ -450,7 +495,8 @@ def busy_window_statistics(arm: Path, windows: list[tuple[float, float]]) -> dic
         result.append(item)
     return {
         "run": str(arm.resolve()), "time_origin": "first GPU-monitor sample",
-        "time_origin_local": gpu_rows[0]["timestamp"].strip(),
+        "time_origin_local": datetime.fromtimestamp(anchor_ms / 1000., zone).isoformat(),
+        "clock_alignment": clock_evidence,
         "windows": result,
         "measurement_notes": [
             "Live generation can produce different request traces in each policy.",
@@ -480,8 +526,8 @@ def compare_run(arm: Path, timeline_path: Path, bin_seconds: int) -> dict:
     manifest = json.loads((client / "manifest.json").read_text())
     with gzip.open(timeline_path, "rt") as stream:
         timeline = json.load(stream)
-    anchor = datetime.fromisoformat(timeline["start_anchor"])
-    anchor_ms = anchor.timestamp() * 1000.
+    clock_evidence = timeline.get("summary", {}).get("clock_alignment") or {}
+    anchor_ms, zone = aligned_native_clock(clock_evidence, anchor_text=timeline["start_anchor"])
     service = next(
         row for row in records(arm / "server/runtime_audit.jsonl")
         if row.get("event") == "gpu_service_sample"
@@ -526,7 +572,7 @@ def compare_run(arm: Path, timeline_path: Path, bin_seconds: int) -> dict:
     with (client / "gpu_samples.csv").open() as stream:
         for row in csv.DictReader(stream):
             timestamp = datetime.strptime(row["timestamp"].strip(), "%Y/%m/%d %H:%M:%S.%f")
-            item = bucket(timestamp.timestamp() * 1000.)
+            item = bucket(timestamp.replace(tzinfo=zone).timestamp() * 1000.)
             if item is not None:
                 item["gpu_utilization"].append(float(row["gpu_utilization_percent"]))
     for row in records(client / "sglang_metrics.jsonl"):
@@ -746,6 +792,7 @@ def compare_run(arm: Path, timeline_path: Path, bin_seconds: int) -> dict:
         "run": str(arm.resolve()), "timeline": str(timeline_path.resolve()),
         "time_origin": "first GPU-monitor sample; matches the HTML timeline",
         "time_origin_local": timeline["start_anchor"],
+        "clock_alignment": clock_evidence,
         "collection_duration_seconds": summary["duration_seconds"],
         "timeline_duration_seconds": duration_ms / 1000,
         "workflow_count": summary["workflow_count"],
@@ -855,21 +902,46 @@ def main() -> None:
     parser.add_argument("--arm", action="append", required=True, help="NAME=RUN_PATH")
     parser.add_argument("--timeline", action="append", default=[], help="NAME=JSON_GZ_PATH")
     parser.add_argument("--busy-window", action="append", help="START_SECONDS:END_SECONDS; supports live arms")
+    parser.add_argument(
+        "--gpu-timezone", action="append", default=[],
+        help="NAME=IANA_ZONE for --busy-window; completed comparisons use each timeline's clock evidence.",
+    )
     parser.add_argument("--bin-seconds", type=int, default=600)
     parser.add_argument("--native-reference-run", type=Path)
+    parser.add_argument(
+        "--native-reference-cache", type=Path,
+        help="Corrected reference comparison JSON; keeps legacy artifacts untouched.",
+    )
     parser.add_argument("--output", type=Path, required=True)
     args = parser.parse_args()
     if args.bin_seconds <= 0:
         parser.error("--bin-seconds must be positive")
     arms = dict(item.split("=", 1) for item in args.arm)
+    try:
+        gpu_timezones = dict(item.split("=", 1) for item in args.gpu_timezone)
+        for name, zone_name in gpu_timezones.items():
+            if name not in arms:
+                raise ValueError(f"unknown arm in --gpu-timezone: {name}")
+            ZoneInfo(zone_name)
+    except (ValueError, ZoneInfoNotFoundError) as error:
+        parser.error(f"invalid --gpu-timezone NAME=IANA_ZONE: {error}")
+    if args.native_reference_cache is not None and args.native_reference_run is None:
+        parser.error("--native-reference-cache requires --native-reference-run")
     if args.busy_window:
+        if args.native_reference_cache is not None:
+            parser.error("--native-reference-cache applies to completed comparisons")
         windows = [tuple(float(value) for value in window.split(":")) for window in args.busy_window]
         if any(len(window) != 2 or not 0 <= window[0] < window[1] for window in windows):
             parser.error("busy windows must have nonnegative start and greater end")
         report = {
             "schema_version": 1,
             "scope": "observed live busy windows, not a completed pair or causal speedup",
-            "runs": {name: busy_window_statistics(Path(path), windows) for name, path in arms.items()},
+            "runs": {
+                name: busy_window_statistics(
+                    Path(path), windows, gpu_timezone=gpu_timezones.get(name),
+                )
+                for name, path in arms.items()
+            },
         }
         args.output.parent.mkdir(parents=True, exist_ok=True)
         args.output.write_text(json.dumps(report, indent=2, allow_nan=False) + "\n")
@@ -877,6 +949,8 @@ def main() -> None:
         for name, run in report["runs"].items():
             print(name, json.dumps(run["windows"]))
         return
+    if gpu_timezones:
+        parser.error("set capture timezone while rendering each completed timeline")
     timelines = dict(item.split("=", 1) for item in args.timeline)
     if set(arms) != set(timelines):
         parser.error("each arm requires its corresponding timeline")
@@ -890,8 +964,19 @@ def main() -> None:
         ):
             parser.error("historical reference requires predictive_h2d and its referenced native arm")
         reference = native_reference_metadata(Path(arms["predictive_h2d"]).parent, reference_run)
-        cached_native = cached_native_reference(reference_run, args.bin_seconds)
+        cache_path = args.native_reference_cache or reference_run / "native_policy_comparison.json"
+        cached_native = cached_native_reference(
+            reference_run, args.bin_seconds, cache_path=cache_path,
+        )
+        if args.native_reference_cache is not None and cached_native is None:
+            parser.error("the supplied native reference cache lacks matching clock, run, or bin evidence")
         reference["reused_cached_native_metrics"] = cached_native is not None
+        reference["native_metrics_cache"] = (
+            {
+                "path": str(cache_path.resolve()),
+                "sha256": hashlib.sha256(cache_path.read_bytes()).hexdigest(),
+            } if cached_native is not None else None
+        )
     report = {
         "schema_version": 2, "scope": "retrospective live-run diagnosis, not causal speedup",
         "runs": {

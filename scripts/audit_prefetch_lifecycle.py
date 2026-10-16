@@ -113,7 +113,8 @@ def terminal_invocation_scopes(arm: Path) -> dict:
             scope = (
                 "runtime_internal"
                 if (row.get("attributes") or {}).get("runtime_internal") is True
-                else "dynamic_subagent" if row.get("relation_type") == "spawn" else "other"
+                else "dynamic_subagent" if row.get("relation_type") == "spawn"
+                else "workflow_root" if row.get("relation_type") == "root" else "other"
             )
             scopes[row["workflow_id"], row["invocation_id"]] = scope
     return scopes
@@ -1013,6 +1014,36 @@ def wait_plan_timing_attribution(
     }
 
 
+REENTRY_REUSE_PHASES = (
+    "completion_to_client_submit", "client_submit_to_native_arrival",
+    "native_arrival_to_first_service",
+)
+
+
+def reentry_full_reuse_phases(
+    reused: list[dict], *, completion: float | None, client_submit: float | None,
+    native_arrival: float | None, service: float | None,
+) -> dict:
+    boundaries = (completion, client_submit, native_arrival, service)
+    result = {}
+    for index, name in enumerate(REENTRY_REUSE_PHASES):
+        prefix = boundaries[:index + 2]
+        valid = all(
+            type(value) in (int, float) and math.isfinite(value) for value in prefix
+        ) and all(left <= right for left, right in zip(prefix, prefix[1:]))
+        selected = [
+            action for action in reused
+            if valid and action["submit_ts_ms"] is not None
+            and prefix[-2] <= action["submit_ts_ms"] < prefix[-1]
+        ]
+        result[name] = {
+            "boundaries_valid": valid,
+            "command_ids": [action["command_id"] for action in selected],
+            "full_bytes": sum(action["pool_bytes"].get("kv", 0) for action in selected),
+        }
+    return result
+
+
 def wait_event_attribution(
     arm: Path, observations: list[dict], issues: dict, actions: list[dict],
     clock_offset: float | None,
@@ -1254,13 +1285,17 @@ def wait_event_attribution(
             rid, group["workflow_id"], group["context_id"], request.get("context_epoch"),
         )) if request else None
         host_tokens = (native.get("attributes") or {}).get("cached_tokens_host") if native else None
-        early_reused = [
+        reused = [
             action for action in pending
             if action["full_first_service_reused"] is True
             and rid is not None and action.get("first_service_request_id") == rid
             and action.get("first_service_context_epoch") == request["context_epoch"]
-            and action["submit_ts_ms"] is not None and completion is not None
-            and action["submit_ts_ms"] < completion and action["pool_bytes"] is not None
+            and action["pool_bytes"] is not None
+        ]
+        early_reused = [
+            action for action in reused
+            if action["submit_ts_ms"] is not None and completion is not None
+            and action["submit_ts_ms"] < completion
         ]
         ready_reused = [
             action for action in early_reused
@@ -1324,6 +1359,10 @@ def wait_event_attribution(
             ),
             "early_ready_and_reused_full_bytes": sum(
                 action["pool_bytes"].get("kv", 0) for action in ready_reused
+            ),
+            "post_completion_reused_full_by_phase": reentry_full_reuse_phases(
+                reused, completion=completion, client_submit=client_submit,
+                native_arrival=native_arrival, service=service,
             ),
             "remaining_native_full_host_hit_tokens": host_tokens,
             "remaining_native_full_host_hit_bytes": (
@@ -1409,6 +1448,23 @@ def wait_event_attribution(
                     "early_started_and_reused_full_bytes": sum(
                         row["early_started_and_reused_full_bytes"] for row in selected
                     ),
+                    "post_completion_reused_full_by_phase": {
+                        phase: {
+                            "events_with_reused_full": sum(
+                                row["post_completion_reused_full_by_phase"][phase]["full_bytes"] > 0
+                                for row in selected
+                            ),
+                            "full_bytes": sum(
+                                row["post_completion_reused_full_by_phase"][phase]["full_bytes"]
+                                for row in selected
+                            ),
+                            "unknown_or_unordered_boundary_events": sum(
+                                not row["post_completion_reused_full_by_phase"][phase]["boundaries_valid"]
+                                for row in selected
+                            ),
+                        }
+                        for phase in REENTRY_REUSE_PHASES
+                    },
                     "remaining_native_full_host_hit_bytes_known": sum(
                         row["remaining_native_full_host_hit_bytes"] or 0 for row in selected
                     ),
@@ -1457,7 +1513,13 @@ def wait_event_attribution(
             "snapshots; conditions do not prove unavailable cold victims, the cause "
             "of an actual rejection, or recoverable bytes after a policy change. "
             "Early FULL requires actual submit before complete JOIN/all-tool END and "
-            "verified reuse by that episode's next request. Tool boundaries require "
+            "verified reuse by that episode's next request. Post-completion FULL is "
+            "partitioned by actual transfer submission into completion-to-client-submit, "
+            "client-submit-to-native-arrival and native-arrival-to-observed-service. "
+            "These disjoint half-open intervals require ordered observed boundaries "
+            "and the same next-request reuse proof; they do not measure isolated "
+            "stall reduction, and issue phase alone does not establish early timing. "
+            "Tool boundaries require "
             "the origin and following request plus every intervening tool, including "
             "sequential calls not active at the sampled plan. The following request "
             "is bound by the origin epoch, even if observation delivery occurs later. "
@@ -1495,7 +1557,11 @@ def audit(arm: Path) -> dict:
         if event == "prefetch_native_issued":
             stage = stages.get(row.get("child_request_id"), {})
             issued[row["command_id"]] = {
-                **row, "trigger_kind": stage.get("trigger_kind", "unrecorded_legacy"),
+                **row, "trigger_kind": (
+                    "confirmed_join" if row.get("source") == "join_ticket"
+                    and row.get("phase") == "confirmed"
+                    else stage.get("trigger_kind", "unrecorded_legacy")
+                ),
             }
         elif event == "final_stage_latest_start":
             stages[row["child_request_id"]] = row
@@ -1505,7 +1571,9 @@ def audit(arm: Path) -> dict:
             parks.append(row)
         elif event == "prepare_candidate_selected":
             prepare_selections.append(row)
-        elif event == "terminal_child_cache_reclaimed":
+        elif event in (
+            "terminal_child_cache_reclaimed", "terminal_workflow_root_cache_reclaimed",
+        ):
             terminal_reclaims.append(row)
         elif event == "parent_capacity_handoff_first_service":
             parent_handoff_services.append(row)
@@ -1620,6 +1688,9 @@ def audit(arm: Path) -> dict:
         results.append({
             "command_id": command, "source": issue["source"],
             "trigger_kind": issue["trigger_kind"],
+            "issue_phase": issue.get("phase"),
+            "timing_policy": issue.get("timing_policy"),
+            "pre_boundary_prediction": issue.get("pre_boundary_prediction"),
             "workflow_id": issue["workflow_id"],
             "invocation_id": issue.get("invocation_id"),
             "request_id": issue.get("request_id"),
