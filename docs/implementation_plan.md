@@ -8,16 +8,43 @@ recomputation checked. All three workstreams remain open: actual short-prefill
 and high-frequency control cost; useful JOIN/tool FULL prefetch conversion;
 recovery, KV lifecycle and first-service coordination. CPU checks, local
 microseconds, ACK counts and transferred bytes are not acceptance. Inspect
-running V71_aged_head/0bcf78f and completed V70_terminal_root/06f031b; use V58
+running V72_workflow_work/f7aec98 and completed V70_terminal_root/06f031b; use V58
 for development and matched repeated formal controls. Keep source/engine frozen.
-V71 cold-started at2026-10-15 23:20:16 PDT,port18475,driver840154/
-start_ticks630187941,scheduler840544/start_ticks630189245. V1058/V1059 bind
-registration/launch,V1060 verifies actual service/source/settings/identical
-pool capacity,V1061 records NUMA. State:ops/v71_aged_head_20261015.state.json.
-At23:28,new quota inspection15/order8/admission8 proves activation only.
-First120-300s window yields225567/246021 steps,-8.31%,15.230s control self-wall.
-Short-prefill52/51 samples run_batch41.111/35.072ms,return-to-result12.376/
-6.013ms. Keep the regression evidence;do not credit activation as performance.
+V72 cold-started at2026-10-16 00:27:06 PDT,port18476,on independent engine
+tree791dd37f. V1080/V1081 bind registration/launch;state is
+ops/v72_workflow_work_20261016.state.json. Keep the agreed156-workflow
+108+48 arrivals and budgets;no new native run is required for development.
+V1082/V1083 verify actual GPU service,source/settings,identical pools and
+NUMA. The00:31 PDT snapshot has108 work accounts,47719 charged output
+tokens,84 work-induced head changes and83 admissions,with healthy migration
+and no observer errors. This is activation,not measured performance gain.
+
+V71 failed at00:12:53 PDT with loading_check KeyError:364,driver exit1.
+V1075 preserves83 completed,13 connection-interruption errors and60 missing
+outcomes,including48 not-yet-arrived workflows. No full-run JCT acceptance.
+Its three sealed windows retain-8.31%/-2.64%/+3.45% request-step changes
+against V58;third-window394946/381775 and23.176s control self-wall do not
+establish stability. A FULL-only prefetch can overlap a same-anchor native
+state load,replacing the in-flight record before two ACKs consume it.
+Reproduce this on exact native methods;decline duplicates before locks/
+preparation and retry only additional restores requiring that live anchor.
+Preserve native layer-fence admission for FULL needing no extra restore.
+Do not infer the unrecorded second live transfer's Mamba bytes.
+
+Broaden the search with workflow ordering based on completed request work.
+BELIEFKV_WORKFLOW_ATTAINED_WORK=1 aggregates completed request output tokens
+across the whole root workflow,not queue time,unfinished output,future
+RETURN or known total length. Prefer lower attained work only within equal
+causal/residency/restore-cost groups. Preserve native discovery order,
+ten-second aging,critical JOIN,recovery consumption and actual admission
+dependencies. Record actual work-induced head changes and native admissions;
+no new tree walks or per-event trace output. Check long-workflow costs.
+Combine verified-root and tool-marked child semantic-history reductions.
+V1072's18 complete-plan CPU cases preserve native inspection counts/order;
+48 candidates add32-40us and156 add90-116us. V1079 binds590 fresh frozen
+application identities,158 native identities and27 successful subtests.
+GPU policy activation,full-run performance,quality,fairness,tails and
+recomputation remain required. Keep prefetch auxiliary;the goal is unmet.
 
 V1067 audits full V70:155 completed/one incomplete,exit0,migration enabled.
 153 completed pairs mean2005.764/2306.855s,-13.05%,95 faster/58 slower;
@@ -36,7 +63,11 @@ confirmed by the graph;keep child/unknown paths,tool token features and first
 reuse. V1065 passes381/skips one unchanged process integration test requiring
 the absent old pinned encoder. V1066 complete-callback CPU fixtures improve
 34.47%/12.52% for all/half roots,but child/unknown negatives cost8.78%/5.40%
-more,about6.0/3.7us. No end-to-end claim;not in frozen V70/V71.
+more,about6.0/3.7us. The67d7685 tool-marker reduction keeps terminal facts;
+V1069's48-child callbacks with0/24/48 tool-marked requests change about
+-1.64%/-11.49%/-29.20%. Both reductions enter V72,not V70/V71.
+V1078 resolves the old fixture skip with the fixed production encoder:
+590 checks pass with no skips. Callback CPU is not end-to-end evidence.
 
 Historical V70 cold-started at2026-10-15 21:10:19 PDT,port18474,supervisor3447145/
 start_ticks629347135,driver3452941/start_ticks629408220 and scheduler3454060/
