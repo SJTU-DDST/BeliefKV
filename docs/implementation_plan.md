@@ -53,6 +53,42 @@ other requests. Sparse observations only bracket loss, not its cause or
 removable JCT. V66 tests missing-byte ordering; no ordinary ready-request
 residency lock or blanket lease extension has been added.
 
+Latest V66 windows120-300/600-900/1800-2100s yield233264/246021,
+382124/386707 and396669/381775 request steps. Control exclusive wall
+is15.226/26.239/19.861s. Third-window short-prefill58/64 samples have
+37.014/40.419ms run_batch and6.854/6.962ms selection thread CPU.
+Early windows still trail; historical V58 differs in version/trajectory.
+V960's opportunity-inclusive pre-completion positive FULL JOIN/tool plans
+are46/118, with21/30 early next-request reuse events and0.315/2.738GB.
+The explicit tool-plan count is108;67 JOIN boundaries remain unknown.
+ACK-to-service P90 remains17.738/18.780s. All11 V962 JOIN starts without
+pre-completion submissions lack free-list capacity after input/decode
+reserves; no waiting victim was published, and native scans mostly find
+unbacked or session-referenced nodes. Later close labels are not exclusive
+causes; evictable totals do not prove safe cold capacity.
+
+V961 reconstructs causal state at client submission:6646 multi-member
+ALL JOIN background requests retain background classification. Of6626
+served requests, median arrival-to-service is11.808s, versus11.980s
+foreground and12.549s stragglers. This is not actual later server ordering
+or a cross-role causal comparison. Do not promote every child on that basis.
+Dev de1f02f instead adds one bounded warm-input bypass after the existing
+four ordinary admissions when the head is aged. Candidate FULL must already
+reside on device, restore bytes must be lower, next prefill input no greater,
+and causal priority no weaker than the head. Existing restore/parent/final
+promotions stay ahead. Native prefix/capacity/dependency checks remain
+authoritative; capacity reclamation remains a separate open issue.
+V963 passes646 checks/two subtests. V964's full CPU fixtures add about
+0.13-0.15ms on eligible48/156-queue paths, up to nine inspections; retain
+the two initial fixture failures and do not infer GPU/JCT benefit.
+Frozen e8dcba7 uses the same dedbe1a0 engine. V966 freshly passes900
+checks/two subtests; V967 binds1731 unique passes/two skips. V968 registers
+V67_aged_warm, waiter431581/start_ticks627925431,port18471. Only after
+complete V66 collection, verified predecessor exit and free resources,
+cold-start the frozen candidate. State is
+ops/v67_aged_warm_20261015.state.json. V66 source/model/engine/helpers
+stay frozen; V67 registration is not launch or measured performance gain.
+
 V65's first three windows are collected. At600-900s, request steps370969/
 386707 exceed V64's365786 but retain different versions/realized work.
 Control exclusive wall is28.203s versus V64's33.956s. Matched full48
