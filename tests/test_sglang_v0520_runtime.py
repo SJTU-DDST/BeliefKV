@@ -1814,7 +1814,8 @@ def test_native_shadow_explicit_decline_cancels_unsubmitted_reservation():
 
 @pytest.mark.parametrize("source", ("join_prepare", "tool_wait"))
 @pytest.mark.parametrize("partial", (False, True))
-def test_native_shadow_burst_reserves_each_node_and_credits_only_its_ack(source, partial):
+@pytest.mark.parametrize("selection", (False, True))
+def test_native_shadow_burst_reserves_each_node_and_credits_only_its_ack(source, partial, selection):
     from beliefkv.runtime.sglang_v0520_physical import next_shadow_backup_step
     from tests.test_sglang_v0520_physical import prefetch_node
 
@@ -1869,8 +1870,11 @@ def test_native_shadow_burst_reserves_each_node_and_credits_only_its_ack(source,
         cache_controller=controller, prepare_host_session_nodes=prepare,
     ))
     with patch.object(runtime, "capture_shadow_candidate", return_value=candidate) as capture:
-        issued = runtime.issue_shadow_backup_steps(step, source=source)
-        capture.assert_called_once()
+        issued = runtime.issue_shadow_backup_steps(
+            step, source=source,
+            _selection_candidate=candidate if selection else None,
+        )
+        assert capture.call_count == int(not selection)
     assert [item.node_id for item, _ in issued] == ([11] if partial else [11, 12])
     assert runtime.physical_ledger.pending_count == len(issued)
     assert runtime.counts["shadow_burst_nodes"] == len(issued)
@@ -1891,6 +1895,99 @@ def test_native_shadow_burst_reserves_each_node_and_credits_only_its_ack(source,
     assert [action.command_id for action in runtime.completed_physical_actions] == [
         command for _, command in issued
     ]
+
+
+@pytest.mark.parametrize("delivery_result", ((), (object(),), None))
+def test_prepare_selection_is_reused_only_after_proven_empty_control_drain(delivery_result):
+    from beliefkv.runtime.sglang_v0520_physical import next_shadow_backup_step
+    from tests.test_sglang_v0520_physical import prefetch_node
+
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    runtime.enable_prepare_host = True
+    key = runtime.context_sessions["ctx-parent"]
+    candidate = ActionLocalShadowCandidate(
+        ContextSessionAnchors(
+            key, ((0, ((11, 4),)), (2, ((11, 4),))), 1.,
+            reusable_input_tokens=8,
+        ),
+        (prefetch_node(0, None, 1, key_tokens=0),
+         prefetch_node(11, 0, 4, full_gpu=8, mamba_gpu=True, key_tokens=8)),
+        8, 1,
+    )
+    runtime.event_server = NS(
+        drain=Mock(return_value=delivery_result), close=lambda: None,
+    )
+    runtime.attach_native_cache(NS(
+        prepare_host_session_nodes=Mock(),
+        prepare_host_shadow=Mock(return_value=NS(issued=False)),
+    ))
+    try:
+        with patch.object(runtime, "capture_shadow_candidate", return_value=candidate) as capture:
+            assert runtime.issue_shadow_backup_steps(
+                next_shadow_backup_step(candidate), source="join_prepare",
+                _selection_candidate=candidate,
+            ) == ()
+        assert capture.call_count == int(delivery_result != ())
+        runtime._native_cache.prepare_host_shadow.assert_called_once()
+        assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("change", ("join_end", "context_rebind", "cache_replaced"))
+@pytest.mark.parametrize("reported_delivery", (False, True))
+def test_prepare_reused_selection_keeps_final_causal_and_cache_checks(change, reported_delivery):
+    from beliefkv.runtime.sglang_v0520_physical import next_shadow_backup_step
+    from tests.test_sglang_v0520_physical import prefetch_node
+
+    runtime = final_stage_runtime()
+    runtime._clear_final_stage("join")
+    runtime.enable_prepare_host = True
+    key = runtime.context_sessions["ctx-parent"]
+    candidate = ActionLocalShadowCandidate(
+        ContextSessionAnchors(
+            key, ((0, ((11, 4),)), (2, ((11, 4),))), 1.,
+            reusable_input_tokens=8,
+        ),
+        (prefetch_node(0, None, 1, key_tokens=0),
+         prefetch_node(11, 0, 4, full_gpu=8, mamba_gpu=True, key_tokens=8)),
+        8, 1,
+    )
+    checks = []
+
+    def decline_after_check(**kwargs):
+        checks.append(True)
+        assert not kwargs["beliefkv_before_enqueue"](NS(
+            beliefkv_command_id=kwargs["beliefkv_command_id"],
+        ))
+        return NS(issued=False)
+
+    cache = NS(
+        prepare_host_session_nodes=Mock(),
+        prepare_host_shadow=Mock(side_effect=decline_after_check),
+    )
+    runtime.attach_native_cache(cache)
+
+    def drain(**kwargs):
+        if change == "join_end":
+            runtime.on_events((event(7, RuntimeEventKind.RETURN, invocation_id="child"),))
+        elif change == "context_rebind":
+            runtime.context_sessions[key.context_id] = replace(key, context_epoch=1)
+        else:
+            runtime._native_cache = NS()
+        return (object(),) if reported_delivery else ()
+
+    runtime.event_server = NS(drain=drain, close=lambda: None)
+    try:
+        assert runtime.issue_shadow_backup_steps(
+            next_shadow_backup_step(candidate), source="join_prepare",
+            _selection_candidate=candidate,
+        ) == ()
+        assert runtime.physical_ledger.pending_count == 0
+        assert checks == ([True] if not reported_delivery and change != "cache_replaced" else [])
+    finally:
+        runtime.close()
 
 
 def test_single_missing_shadow_extent_uses_direct_native_write_with_full_only():
@@ -3942,7 +4039,7 @@ def test_join_prepare_is_selective_and_invalidates_on_parent_reentry():
             True, device_full_free_tokens=0, device_mamba_free_slots=1,
             host_full_free_tokens=1000, host_mamba_free_slots=10,
         ),
-    ), patch.object(runtime, "refreshed_shadow_backup_step", return_value=step), patch.object(
+    ), patch.object(runtime, "_refreshed_shadow_backup_selection", return_value=(step, object())), patch.object(
         runtime, "issue_shadow_backup_step", return_value="prepare",
     ) as issue:
         runtime.dispatch_join_prepare([req("child")])
@@ -3964,7 +4061,7 @@ def test_full_only_prepare_does_not_scan_backups_for_mamba_only_pressure(method)
             True, device_full_free_tokens=100_000, device_mamba_free_slots=0,
             host_full_free_tokens=1000, host_mamba_free_slots=0,
         ),
-    ), patch.object(runtime, "refreshed_shadow_backup_step") as observe, patch.object(
+    ), patch.object(runtime, "_refreshed_shadow_backup_selection") as observe, patch.object(
         runtime, "issue_shadow_backup_step",
     ) as issue:
         getattr(runtime, method)([req("child")])

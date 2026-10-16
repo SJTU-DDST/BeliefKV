@@ -1379,7 +1379,7 @@ def test_join_prepare_publishes_current_pressure_state_once(case):
         if case == "new_backed":
             runtime._parent_pressure_candidates[11] = (key, 4)
         return (
-            ShadowBackupStep(key, 11, 4, 11, 4)
+            (ShadowBackupStep(key, 11, 4, 11, 4), object())
             if case in ("submitted", "declined") else None
         )
 
@@ -1399,7 +1399,7 @@ def test_join_prepare_publishes_current_pressure_state_once(case):
                 device_mamba_free_slots=0 if case == "mamba_only" else 10,
                 host_full_free_tokens=1000, host_mamba_free_slots=10,
             ),
-        ), patch.object(runtime, "refreshed_shadow_backup_step", side_effect=scan), \
+        ), patch.object(runtime, "_refreshed_shadow_backup_selection", side_effect=scan), \
             patch.object(runtime, "_prepare_step_rank", return_value=(-1., 1.)), \
             patch.object(runtime, "issue_shadow_backup_step", side_effect=issue) as submit, \
             patch.object(runtime, "_publish_parent_pressure_candidates",
@@ -1505,7 +1505,7 @@ def test_backed_prepare_rechecks_after_backoff_and_new_epoch_is_immediate():
         return_value=StaticPoolHeadroomObservation(
             True, device_full_free_tokens=0, device_mamba_free_slots=0,
         ),
-    ), patch.object(runtime, "refreshed_shadow_backup_step", return_value=None) as scan, \
+    ), patch.object(runtime, "_refreshed_shadow_backup_selection", return_value=None) as scan, \
         patch("beliefkv.runtime.sglang_v0520_runtime.time.monotonic", return_value=10.) as clock:
         runtime.dispatch_join_prepare([req("child")])
         key = runtime.context_sessions["ctx-parent"]

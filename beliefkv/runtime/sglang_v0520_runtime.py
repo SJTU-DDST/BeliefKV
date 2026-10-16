@@ -4918,11 +4918,20 @@ class NativeAdmissionRuntime:
         host_full_free_tokens: int | None = None,
     ) -> ShadowBackupStep | None:
         """Recheck a waiting context and native closure at the action safe point."""
+        selection = self._refreshed_shadow_backup_selection(
+            context_id=context_id, source=source,
+            host_full_free_tokens=host_full_free_tokens,
+        )
+        return selection[0] if selection is not None else None
+
+    def _refreshed_shadow_backup_selection(
+        self, *, context_id: str | None = None, source: str = "tool_wait",
+        host_full_free_tokens: int | None = None,
+    ) -> tuple[ShadowBackupStep, ActionLocalShadowCandidate] | None:
         candidate = self._refreshed_shadow_backup_candidate(
             context_id=context_id, source=source,
             host_full_free_tokens=host_full_free_tokens,
         )
-        step = None
         if candidate is not None:
             tail_leaves = self._shadow_reclaim_tail_leaves(candidate)
             step = next_shadow_backup_step(candidate, reclaim_tail_leaves=tail_leaves)
@@ -4932,7 +4941,9 @@ class NativeAdmissionRuntime:
                 candidate.anchors.key, candidate=candidate,
                 reclaim_tail_leaves=tail_leaves,
             )
-        return step
+            if step is not None:
+                return step, candidate
+        return None
 
     def _refreshed_shadow_backup_candidate(
         self, *, context_id: str | None = None, source: str = "tool_wait",
@@ -5060,6 +5071,7 @@ class NativeAdmissionRuntime:
 
     def issue_shadow_backup_steps(
         self, step: ShadowBackupStep, *, source: str = "tool_wait",
+        _selection_candidate: ActionLocalShadowCandidate | None = None,
     ) -> tuple[tuple[ShadowBackupStep, str], ...]:
         """Reserve one FULL prefix burst; each extent retains its own ACK."""
         cache = self._native_cache
@@ -5067,18 +5079,31 @@ class NativeAdmissionRuntime:
         if not callable(burst):
             command = self.issue_shadow_backup_step(step, source=source)
             return ((step, command),) if command is not None else ()
-        if self.event_server is not None:
+        deliveries = (
             self.event_server.drain(max_messages=128)
+            if self.event_server is not None else ()
+        )
         if (
             self.physical_disabled
+            or cache is not self._native_cache
             or self.physical_ledger.pending_action_count("PREPARE_HOST")
             or not isinstance(step, ShadowBackupStep)
         ):
             self.counts["shadow_step_stale"] += 1
             return ()
-        candidate = self._refreshed_shadow_backup_candidate(
-            context_id=step.key.context_id, source=source,
-        )
+        # Only the first native attempt in this synchronous dispatch may reuse
+        # its selection. Control delivery or an earlier attempt invalidates it.
+        if (
+            type(deliveries) is tuple and not deliveries
+            and isinstance(_selection_candidate, ActionLocalShadowCandidate)
+            and _selection_candidate.anchors.key == step.key
+        ):
+            candidate = _selection_candidate
+            self.counts["prepare_selection_closure_reused"] += 1
+        else:
+            candidate = self._refreshed_shadow_backup_candidate(
+                context_id=step.key.context_id, source=source,
+            )
         steps = (
             shadow_backup_steps(
                 candidate, reclaim_tail_leaves=self._shadow_reclaim_tail_leaves(candidate),
@@ -5609,6 +5634,7 @@ class NativeAdmissionRuntime:
             self._publish_parent_pressure_candidates()
             return
         candidates = []
+        selected_candidate = selected_order = None
         for offset in range(min(len(parents), 8)):
             key = parents[(self._join_prepare_cursor + offset) % len(parents)]
             if not self._prepare_probe_due(key, now_ms):
@@ -5618,23 +5644,31 @@ class NativeAdmissionRuntime:
             prior = self._join_prepare_commands.get(identity)
             if prior is not None and self.physical_ledger.is_pending(prior):
                 continue
-            step = self.refreshed_shadow_backup_step(
+            selection = self._refreshed_shadow_backup_selection(
                 context_id=key.context_id, source="join_prepare",
                 host_full_free_tokens=headroom.host_full_free_tokens,
             )
-            if step is None:
+            if selection is None:
                 self._prepare_probe_after_ms[key] = now_ms + 1000.
                 continue
+            step, candidate = selection
             rank = self._prepare_step_rank(
                 step, headroom, full_pressure=full_pressure, mamba_pressure=mamba_pressure,
             )
             if rank is not None:
                 candidates.append((rank, offset, identity, step))
+                if selected_order is None or (rank, offset) < selected_order:
+                    selected_order, selected_candidate = (rank, offset), candidate
             else:
                 self._prepare_probe_after_ms[key] = now_ms + 1000.
         self._join_prepare_cursor = (self._join_prepare_cursor + 8) % len(parents)
+        first_attempt = True
         for rank, offset, identity, step in sorted(candidates, key=lambda item: item[:2]):
-            issued = self.issue_shadow_backup_steps(step, source="join_prepare")
+            issued = self.issue_shadow_backup_steps(
+                step, source="join_prepare",
+                _selection_candidate=selected_candidate if first_attempt else None,
+            )
+            first_attempt = False
             if not issued:
                 self._prepare_probe_after_ms[step.key] = now_ms + 250.
                 continue
@@ -5705,30 +5739,38 @@ class NativeAdmissionRuntime:
         if not hints:
             return
         candidates = []
+        selected_candidate = selected_order = None
         for offset in range(min(8, len(hints))):
             hint = hints[(self._tool_prepare_cursor + offset) % len(hints)]
             if not self._prepare_probe_due(hint.key, now_ms):
                 continue
             if not self._long_tool_wait(hint.key):
                 continue
-            step = self.refreshed_shadow_backup_step(
+            selection = self._refreshed_shadow_backup_selection(
                 context_id=hint.key.context_id,
                 host_full_free_tokens=headroom.host_full_free_tokens,
             )
-            if step is not None:
+            if selection is not None:
+                step, candidate = selection
                 rank = self._prepare_step_rank(
                     step, headroom,
                     full_pressure=full_pressure, mamba_pressure=mamba_pressure,
                 )
                 if rank is not None:
                     candidates.append((rank, offset, step))
+                    if selected_order is None or (rank, offset) < selected_order:
+                        selected_order, selected_candidate = (rank, offset), candidate
                 else:
                     self._prepare_probe_after_ms[hint.key] = now_ms + 1000.
             else:
                 self._prepare_probe_after_ms[hint.key] = now_ms + 1000.
         self._tool_prepare_cursor = (self._tool_prepare_cursor + 8) % len(hints)
+        first_attempt = True
         for rank, offset, step in sorted(candidates, key=lambda item: item[:2]):
-            issued = self.issue_shadow_backup_steps(step)
+            issued = self.issue_shadow_backup_steps(
+                step, _selection_candidate=selected_candidate if first_attempt else None,
+            )
+            first_attempt = False
             if issued:
                 for item, command in issued:
                     self._parent_pressure_candidates[item.node_id] = (
