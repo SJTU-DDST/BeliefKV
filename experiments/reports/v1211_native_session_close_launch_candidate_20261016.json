@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-16T11:56:25-07:00",
+  "status": "cpu_engine_and_launcher_qualified_only",
+  "scope": "Prepare a simple native-close reclamation engineering baseline without changing the active V75/V76 candidates or claiming GPU performance or paper novelty.",
+  "application": {
+    "main_base_commit": "ac4a114",
+    "launcher": "scripts/launch_qwen35_native_v0520.sh",
+    "launcher_sha256": "0bc3e76a05bef7726b6314fb8e070e54f3cc8c70eb83f130216f51f73fa13612",
+    "patch_flavor": "native_session_close",
+    "feature_environment_variable": "SGLANG_NATIVE_SESSION_CLOSE_RECLAIM",
+    "feature_default": "0",
+    "feature_enabled_for_future_baseline": "1",
+    "existing_pair_driver_accepts_native_only": false
+  },
+  "engine": {
+    "checkout": "/home/longhao/experiment/.worktrees/sglang-v1210-native-session-close-launch-20261016",
+    "commit": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
+    "combined_patch": "patches/sglang-v0.5.20-native-session-close-staging.patch",
+    "combined_patch_sha256": "dc8b07ac714210f9c0aeae643df6bbcef26cbdf98a330d5a9612fe8c55d321af",
+    "expected_tree": "76cf97d2f462db4f4edbc691cb7e56cf7c8e2568",
+    "actual_tree": "76cf97d2f462db4f4edbc691cb7e56cf7c8e2568",
+    "matches_worktree": true,
+    "tracked_change_tree_sha256": "d74ff30691fa4effeab8e19ecdd4d72d514f3825775cf088d31931efe77d1952",
+    "state_sha256": "9be236a8d6f1cc34006dcf5f4a5ea14a2c5240c4d94a2c7b2b992047ede7ec77",
+    "tracked_change_count": 28,
+    "untracked_files_covered_by_patch": 23,
+    "equivalent_committed_candidate": "f1dc97d2dfda2b311effdfd5266a33e36f2a76ae",
+    "canonical_v75_patch_sha256_unchanged": "ea859cf0e8d02db87e1b586fa149c7a8ddf798e867ee7888e21fa4a25f1785ce"
+  },
+  "validation": {
+    "bash_syntax": "passed",
+    "engine_diff_check": "passed",
+    "source_provenance": "Actual tree exactly reconstructs the combined patch from the required base; no extra untracked source.",
+    "cpu_suite": {
+      "report": "experiments/reports/v1212_native_session_close_launcher_constraints_cpu_20261016.xml",
+      "sha256": "81bce1fdee8f56ff1a662a38f13467dbe9a39d8bb574e23713fa9a8b70f0f9eb",
+      "tests": 58,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0,
+      "new_cases": 6,
+      "coverage": "Combined-patch selection, explicit 0/1 forwarding, wrong HEAD, rejected patch, absent source and mismatched feature/patch before server exec, existing launcher/NUMA/regime/provenance contracts."
+    },
+    "initial_launcher_suite": {
+      "report": "experiments/reports/v1210_native_session_close_launcher_cpu_20261016.xml",
+      "sha256": "92613e623bb5112eff310d06482e606dacb2838eff32a75e89fe9c4bc8f2e398",
+      "tests": 56,
+      "failures": 0,
+      "scope": "Earlier passing snapshot, retained before the two silent-inactivity configuration checks were added."
+    },
+    "actual_cpu_import": {
+      "module": "/home/longhao/experiment/.worktrees/sglang-v1210-native-session-close-launch-20261016/python/sglang/srt/mem_cache/unified_radix_cache.py",
+      "fixture": "test_beliefkv_terminal_capacity.cache",
+      "disabled": {
+        "enabled": false,
+        "freed_private_full_tokens": 0,
+        "pending_sessions": 0,
+        "live_parent_prefix_preserved": true
+      },
+      "enabled": {
+        "enabled": true,
+        "freed_private_full_tokens": 2,
+        "pending_sessions": 0,
+        "live_parent_prefix_preserved": true
+      }
+    },
+    "prior_engine_suite": {
+      "report": "experiments/reports/v1205_native_session_close_lifecycle_cpu_20261016.xml",
+      "tests": 103,
+      "basis_for_reuse": "Exactly the same complete engine tree, not a fresh GPU or repeated test claim."
+    }
+  },
+  "source_sha256": {
+    "tests/test_qwen35_host_pool.py": "72a9a310af81463a023e97312275ed6a0d5e32afdb5ac5bdbded40de04961ca2",
+    "engine/python/sglang/srt/mem_cache/unified_radix_cache.py": "1ee64e2e6f959a2df50449a7d467790cbe68cb98d25aaa32bb3d6c46d69d398a",
+    "engine/python/sglang/srt/environ.py": "57656d0bc77e709dc702ce66c75e9b15008cdb30d45d14d5a93737793d11b71b",
+    "engine/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py": "60869b9a6820e27625b305b9a1f68382048f37ea326c7d8ca7a05a50c1619f5b",
+    "engine/test/srt/test_beliefkv_native_session_close.py": "d6d5854314752d5ee79af51045504794a95002eb6f23530a57a6958b1dfdffb3"
+  },
+  "latest_observed_window": {
+    "report": "experiments/reports/v1209_v75_same_batch_service_3000_4200_20261016.json",
+    "sha256": "6be62a147a1ee111362bd992cbe7631d19b2d1eaa56295c103c5f950320dfbeb",
+    "seconds": [3000, 4200],
+    "both_windows_complete": true,
+    "per_input_prefix_hashes_sealed": false,
+    "scope": "Development observation; input work and queue populations differ. Not a causal speedup or complete-pair JCT result.",
+    "predictive": {
+      "decode_tokens_per_second": 1293.3033333333333,
+      "d2h_bytes": 306328965120,
+      "d2h_transfer_stream_ms": 38956.69732218981,
+      "all_h2d_transfer_stream_ms": 221.50083248317242
+    },
+    "native": {
+      "decode_tokens_per_second": 1273.9725,
+      "d2h_bytes": 421348986880,
+      "d2h_transfer_stream_ms": 62568.13622205332,
+      "all_h2d_transfer_stream_ms": 234.22928190231323
+    }
+  },
+  "limits": [
+    "No new GPU run, registration or waiting supervisor is created.",
+    "A future native-only collection needs its own frozen application and matched arrival/task/resource plan.",
+    "Keep V75, V76 and registered quality evaluation dependencies frozen.",
+    "No GPU throughput, JCT, quality or novel mechanism is established.",
+    "Single-rank HiCache FULL or FULL+Mamba qualification only."
+  ]
+}

@@ -14,6 +14,10 @@ The default-off native session-close reclamation candidate is preserved as an
 [incremental engine patch](patches/sglang-v0.5.20-native-session-close-gc.patch)
 over the frozen V75 engine tree, with low-frequency counter support and a
 [CPU qualification record](experiments/reports/v1208_native_session_close_main_integration_20261016.json).
+The launcher now accepts the explicit `native_session_close` patch flavor using
+the [combined patch](patches/sglang-v0.5.20-native-session-close-staging.patch)
+over the pinned `94602c9` checkout; source-tree and CPU launch qualification are
+recorded in [V1211](experiments/reports/v1211_native_session_close_launch_candidate_20261016.json).
 It is a simple engineering baseline, not an established paper contribution or
 GPU performance result. Existing V75/V76 candidates and launch contracts remain frozen.
 

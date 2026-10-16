@@ -165,13 +165,17 @@ def _stub(tmp_path: Path) -> dict[str, str]:
         "printf '%s' \"${BELIEFKV_NATIVE_TELEMETRY_DIR:-}\" > \"$TELEMETRY_LOG\"\n"
         "printf '%s' \"${BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH:-}\" > \"$STAGE_LOG\"\n"
         "printf '%s' \"${SGLANG_AUTO_NUMA_BIND:-}\" > \"$AUTO_NUMA_LOG\"\n"
+        "printf '%s' \"${SGLANG_NATIVE_SESSION_CLOSE_RECLAIM:-0}\" > \"$CLOSE_GC_LOG\"\n"
     )
     numactl.chmod(0o755)
     git = tmp_path / "git"
     git.write_text(
         "#!/bin/sh\n"
         "if [ \"$3\" = 'rev-parse' ]; then\n"
-        "  printf '%s\\n' '94602c9c2b7cbdb8efd5c52802dac6a1c180089e'\n"
+        "  printf '%s\\n' \"${GIT_HEAD:-94602c9c2b7cbdb8efd5c52802dac6a1c180089e}\"\n"
+        "elif [ \"$3\" = 'apply' ]; then\n"
+        "  printf '%s\\n' \"$@\" > \"$GIT_ARGS_LOG\"\n"
+        "  exit \"${GIT_APPLY_STATUS:-0}\"\n"
         "fi\n"
     )
     git.chmod(0o755)
@@ -187,6 +191,8 @@ def _stub(tmp_path: Path) -> dict[str, str]:
         "TELEMETRY_LOG": str(tmp_path / "telemetry"),
         "STAGE_LOG": str(tmp_path / "final-stage"),
         "AUTO_NUMA_LOG": str(tmp_path / "auto-numa"),
+        "CLOSE_GC_LOG": str(tmp_path / "close-gc"),
+        "GIT_ARGS_LOG": str(tmp_path / "git-args"),
         "HICACHE_SIZE_GB": "200",
         "HOST_NUMA_NODE": "1",
         "HOST_NUMA_MEMORY_POLICY": "bind",
@@ -223,6 +229,87 @@ def test_launch_accepts_selective_write_through(tmp_path: Path) -> None:
     assert result.returncode == 0, result.stderr
     args = (tmp_path / "numactl-args").read_text().splitlines()
     assert args[args.index("--hicache-write-policy") + 1] == "write_through_selective"
+
+
+@pytest.mark.parametrize("enabled", ("0", "1"))
+def test_native_close_candidate_checks_combined_patch_and_forwards_opt_in(
+    tmp_path: Path, enabled: str,
+) -> None:
+    env = _stub(tmp_path)
+    checkout = tmp_path / "sglang"
+    scheduler = checkout / "python/sglang/srt/managers/scheduler.py"
+    scheduler.parent.mkdir(parents=True)
+    scheduler.write_text("")
+    env.update(
+        SGLANG_SOURCE_CHECKOUT=str(checkout),
+        SGLANG_PATCH_FLAVOR="native_session_close",
+        SGLANG_NATIVE_SESSION_CLOSE_RECLAIM=enabled,
+        ENABLE_SESSION_RADIX_CACHE="1",
+    )
+    result = subprocess.run(
+        ["bash", str(LAUNCH)], env=env, capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert (tmp_path / "git-args").read_text().splitlines()[-4:] == [
+        "apply", "--reverse", "--check",
+        str(ROOT / "patches/sglang-v0.5.20-native-session-close-staging.patch"),
+    ]
+    assert (tmp_path / "close-gc").read_text() == enabled
+    args = (tmp_path / "numactl-args").read_text().splitlines()
+    assert "--enable-session-radix-cache" in args
+    assert "--enable-beliefkv-admission" not in args
+    assert (tmp_path / "final-stage").read_text() == "0"
+
+
+@pytest.mark.parametrize("mismatch", ("head", "patch"))
+def test_native_close_candidate_retains_source_checks_before_server_launch(
+    tmp_path: Path, mismatch: str,
+) -> None:
+    env = _stub(tmp_path)
+    checkout = tmp_path / "sglang"
+    scheduler = checkout / "python/sglang/srt/managers/scheduler.py"
+    scheduler.parent.mkdir(parents=True)
+    scheduler.write_text("")
+    env.update(
+        SGLANG_SOURCE_CHECKOUT=str(checkout),
+        SGLANG_PATCH_FLAVOR="native_session_close",
+        SGLANG_NATIVE_SESSION_CLOSE_RECLAIM="1",
+        ENABLE_SESSION_RADIX_CACHE="1",
+    )
+    if mismatch == "head":
+        env["GIT_HEAD"] = "f1dc97d2dfda2b311effdfd5266a33e36f2a76ae"
+    else:
+        env["GIT_APPLY_STATUS"] = "1"
+    result = subprocess.run(
+        ["bash", str(LAUNCH)], env=env, capture_output=True, text=True,
+    )
+    assert result.returncode != 0
+    assert not (tmp_path / "numactl-args").exists()
+    if mismatch == "head":
+        assert "Expected patched v0.5.20 checkout" in result.stderr
+
+
+@pytest.mark.parametrize(
+    "overrides,error",
+    (
+        ({"SGLANG_PATCH_FLAVOR": "native_session_close"}, "SGLANG_SOURCE_CHECKOUT"),
+        (
+            {"SGLANG_NATIVE_SESSION_CLOSE_RECLAIM": "1", "SGLANG_PATCH_FLAVOR": "staging"},
+            "requires native_session_close patch flavor",
+        ),
+    ),
+)
+def test_native_close_rejects_silently_inactive_configuration(
+    tmp_path: Path, overrides: dict[str, str], error: str,
+) -> None:
+    env = {**_stub(tmp_path), **overrides}
+    result = subprocess.run(
+        ["bash", str(LAUNCH)], env=env, capture_output=True, text=True,
+    )
+    assert result.returncode == 2
+    assert error in result.stderr
+    assert not (tmp_path / "numactl-args").exists()
+    assert not (tmp_path / "python-args").exists()
 
 
 def test_launch_preferred_retains_cpu_binding_and_matches_preflight(tmp_path: Path) -> None:

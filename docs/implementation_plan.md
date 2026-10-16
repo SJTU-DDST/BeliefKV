@@ -2,6 +2,24 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 11:56 PDT: qualify the simple native-close baseline launch path.
+Use explicit native_session_close flavor with its combined patch over pinned
+HEAD94602c9; the isolated V1210 engine reconstructs exactly tree76cf97d2,
+already covered by the103-case V1205 suite.58 launcher/NUMA/provenance cases
+pass, plus actual-import CPU checks for disabled/enabled close reclamation.
+Reject a missing source checkout or a feature/patch mismatch before server exec.
+V1211/V1212 bind source/patch/evidence; no new GPU run is registered. Future single-arm
+collection still needs a separate frozen application, matched plan and registration;
+do not use unsupported ARM_ORDER=native in the existing pair driver.
+Keep the current V75/V76/quality order and registered helpers unchanged.
+V1209's latest complete3000-4200s window shows1293.30/1273.97 decode token/s,
+306.329/421.349GB D2H and38.957/62.568s D2H stream time, predictive/native.
+All H2D stream time is only0.222/0.234s. Input work and queues differ; these
+numbers motivate lifecycle/write-back controls, not causal savings or novelty.
+V75 native and its waiters remain actually live; full quality/JCT are pending.
+Continue systems research and strong-simple-baseline falsification before
+extending control paths or selecting a new paper mechanism.
+
 2026-10-16 local-main integration: earlier V76/audit/output-token changes are
 already on main. Preserve the independent native session-close GC candidate as
 patches/sglang-v0.5.20-native-session-close-gc.patch on top of the complete V75

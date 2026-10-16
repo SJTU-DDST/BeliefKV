@@ -4,6 +4,21 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 11:56 PDT：V1211补齐关闭回收的引擎/launcher资格。新候选使用
+`SGLANG_PATCH_FLAVOR=native_session_close`，完整组合补丁为
+`patches/sglang-v0.5.20-native-session-close-staging.patch`，摘要dc8b07ac，
+直接应用于HEAD94602c9。独立检出tree76cf97d2精确匹配，不能把f1dc97d的
+已提交检出直接交给仍固定94602c9的launcher。前一段所述增量补丁继续保留，
+其基线不同，不把两份patch重复应用。开关SGLANG_NATIVE_SESSION_CLOSE_RECLAIM
+仍默认0，后续简单对照须显式设1，并保留相同native应用、session与资源配置。
+58项CPU启动检查和实际导入0/1模式检查通过；GPU端到端启动、性能和质量尚无
+结果。原pair driver尚不支持单独ARM_ORDER=native，不通过伪造predictive标签
+绕过；未来单臂实验另作计划和登记。当前V75/V76及质量队列顺序、冻结文件不变。
+新flavor缺少源码检出、或启用开关却选择旧补丁时必须在server exec前报错，
+不能把环境变量被旧引擎忽略的运行视作有效消融。V1210原检查保留，V1212为最终检查。
+V1209只报告已完整观测窗口，未给出全轮性能或因果结论；动态输入文件未记录
+逐文件封存前缀摘要，正式验收仍需绑定完整来源或封存窗口来源。
+
 2026-10-16 主线新增原生关闭回收候选：增量补丁
 `patches/sglang-v0.5.20-native-session-close-gc.patch` 仅适用于已应用规范
 staging patch 的完整 V75 树53020ce3，不直接应用到干净94602c9。

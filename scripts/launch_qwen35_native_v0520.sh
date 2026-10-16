@@ -26,6 +26,17 @@ ENABLE_SESSION_RADIX_CACHE="${ENABLE_SESSION_RADIX_CACHE:-0}"
 CUDA_VISIBLE_DEVICES="${CUDA_VISIBLE_DEVICES:-0}"
 BELIEFKV_ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 
+if [[ "${SGLANG_PATCH_FLAVOR}" == native_session_close \
+    && -z "${SGLANG_SOURCE_CHECKOUT}" ]]; then
+  printf 'native_session_close requires SGLANG_SOURCE_CHECKOUT\n' >&2
+  exit 2
+fi
+if [[ "${SGLANG_NATIVE_SESSION_CLOSE_RECLAIM:-0}" == "1" \
+    && "${SGLANG_PATCH_FLAVOR}" != native_session_close ]]; then
+  printf 'SGLANG_NATIVE_SESSION_CLOSE_RECLAIM requires native_session_close patch flavor\n' >&2
+  exit 2
+fi
+
 if [[ ${BELIEFKV_NATIVE_TELEMETRY_DIR+x} ]]; then
   if [[ -z "${SGLANG_SOURCE_CHECKOUT}" ]]; then
     printf 'BELIEFKV_NATIVE_TELEMETRY_DIR requires SGLANG_SOURCE_CHECKOUT (patched v0.5.20)\n' >&2
@@ -165,6 +176,9 @@ if [[ -n "${SGLANG_SOURCE_CHECKOUT}" ]]; then
   case "${SGLANG_PATCH_FLAVOR}" in
     staging)
       sglang_patch="${BELIEFKV_ROOT}/patches/sglang-v0.5.20-beliefkv-staging.patch"
+      ;;
+    native_session_close)
+      sglang_patch="${BELIEFKV_ROOT}/patches/sglang-v0.5.20-native-session-close-staging.patch"
       ;;
     confirmed_join_canary)
       sglang_patch="${BELIEFKV_ROOT}/patches/sglang-v0.5.20-beliefkv-confirmed-join-canary.patch"
