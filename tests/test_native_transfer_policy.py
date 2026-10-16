@@ -357,6 +357,7 @@ def test_completed_prefill_selections_do_not_consume_next_restore_frontier(
 @pytest.mark.parametrize("current_running", (0, 4, 48))
 def test_post_forward_restore_budget_observes_current_native_running_batch(current_running):
     runtime, *_ = locked_runtime()
+    runtime.enable_final_stage_prefetch = True
     runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
     runtime._native_cache.host_pool_group.entry_map["mamba"].host_pool.size_per_token = 64
     runtime._observe_native_admission_capacity(
@@ -392,6 +393,7 @@ def test_post_forward_restore_budget_observes_current_native_running_batch(curre
 
 def test_post_forward_without_native_batch_preserves_last_observed_capacity():
     runtime, *_ = locked_runtime()
+    runtime.enable_final_stage_prefetch = True
     runtime._native_cache.req_to_token_pool = NS(available_size=lambda: 6)
     runtime._native_cache.host_pool_group.entry_map["mamba"].host_pool.size_per_token = 64
     runtime._observe_native_admission_capacity(

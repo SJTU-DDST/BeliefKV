@@ -375,6 +375,10 @@ class NativeAdmissionRuntime:
                 require_physical_actions=enable_admission_prefetch,
             )
         self.semantic_revision = 0
+        native_order_setting = os.environ.get("BELIEFKV_NATIVE_PREFILL_ORDER", "0")
+        if native_order_setting not in ("0", "1"):
+            raise ValueError("native prefill order setting must be 0 or 1")
+        self._native_prefill_order = native_order_setting == "1"
         self._workflow_attained_work_enabled = (
             os.environ.get("BELIEFKV_WORKFLOW_ATTAINED_WORK", "0") == "1"
         )
@@ -1921,6 +1925,9 @@ class NativeAdmissionRuntime:
                     "latest_session_branch_retirements", None,
                 ),
                 "resident_first": self.enable_resident_first,
+                "prefill_ordering_mode": (
+                    "native" if self._native_prefill_order else "workflow"
+                ),
                 "workflow_attained_work": self._workflow_attained_work_enabled,
                 "workflow_work_metric": "completed_request_output_tokens",
                 "workflow_work_accounts": len(self._workflow_attained_output_tokens),
@@ -8632,6 +8639,27 @@ class NativeAdmissionRuntime:
             index: _request_key(req, known_keys=self.visible)
             for index, req in tagged
         }
+        self._final_priority_promoted = None
+        self._final_priority_native_rank = None
+        self._prefetch_priority_promoted = None
+        self._parent_handoff_priority_promoted = None
+        self._prefetch_priority_native_rank = None
+        self._prefetch_priority_aged_head_bypassed = False
+        self._prefetch_priority_complete_ready_quota = None
+        self._prefetch_priority_partial_restore_details = None
+        self._resident_priority_promoted = None
+        self._resident_priority_details = None
+        if self._native_prefill_order:
+            self.counts["native_prefill_order_plans"] += 1
+            return compile_native_prefill_plan(
+                [
+                    key for index, _ in tagged
+                    if (key := keys[index]) is not None
+                    and self.visible.get(key.request_id) == key
+                    and not self._terminal(key)
+                ],
+                semantic_revision=self.semantic_revision,
+            )
         # Reuse only versioned causal ranks across unchanged scheduler iterations.
         ranks = self._prefill_causal_ranks(tagged, keys)
         now_ms = time.monotonic() * 1000
@@ -8787,16 +8815,6 @@ class NativeAdmissionRuntime:
             and min(work_baseline_ranks, key=work_baseline_ranks.__getitem__) != ordered[0][0]
         ):
             work_selected = ordered[0][1].rid
-        self._final_priority_promoted = None
-        self._final_priority_native_rank = None
-        self._prefetch_priority_promoted = None
-        self._parent_handoff_priority_promoted = None
-        self._prefetch_priority_native_rank = None
-        self._prefetch_priority_aged_head_bypassed = False
-        self._prefetch_priority_complete_ready_quota = None
-        self._prefetch_priority_partial_restore_details = None
-        self._resident_priority_promoted = None
-        self._resident_priority_details = None
         priority_candidates = []
         ready_restores = len({
             lease.key for lease in self._prefetch_service_leases.values()
@@ -9089,7 +9107,8 @@ class NativeAdmissionRuntime:
         self, req: object, *, native_budget_available: bool, bypassed: int,
     ) -> bool:
         if (
-            not self.enable_resident_first or not native_budget_available
+            self._native_prefill_order
+            or not self.enable_resident_first or not native_budget_available
             or bypassed >= 8 or self._executable_waiting_key(req) is None
             or time.monotonic() - self._visible_since.get(req.rid, time.monotonic()) >= 10.
         ):
@@ -9107,7 +9126,10 @@ class NativeAdmissionRuntime:
                     self.counts["workflow_work_head_admitted"] += 1
                     self._workflow_work_promoted = None
                 key = self.visible.get(req.rid)
-                hinted = self._residency_ordering_hints.get(key)
+                hinted = (
+                    None if self._native_prefill_order
+                    else self._residency_ordering_hints.get(key)
+                )
                 if hinted is not None and hinted[0] > time.monotonic() * 1000.:
                     self.counts["residency_ordering_hint_admitted"] += 1
                     # Native fills the tier breakdown in prepare_for_extend,
