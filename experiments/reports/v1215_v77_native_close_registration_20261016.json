@@ -1,0 +1,214 @@
+{
+  "at": "2026-10-16T12:18:28.462734-07:00",
+  "status": "prepared_waiting_for_complete_v76",
+  "source": {
+    "commit": "52a2b8e75e715216b8bec7d2a5a57d9565380af3",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "bb023c5b16ad852f0d3f914b3188cf6ad45e1e5374c6bd4269447a50bb2eaf38"
+  },
+  "engine": {
+    "commit": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
+    "dirty": true,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [
+      "python/sglang/srt/arg_groups/fields/schedule.py",
+      "python/sglang/srt/entrypoints/openai/protocol.py",
+      "python/sglang/srt/entrypoints/openai/serving_chat.py",
+      "python/sglang/srt/environ.py",
+      "python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py",
+      "python/sglang/srt/layers/attention/linear/gdn_backend.py",
+      "python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py",
+      "python/sglang/srt/managers/cache_controller.py",
+      "python/sglang/srt/managers/io_struct.py",
+      "python/sglang/srt/managers/schedule_batch.py",
+      "python/sglang/srt/managers/scheduler.py",
+      "python/sglang/srt/managers/scheduler_components/idle_sleeper.py",
+      "python/sglang/srt/managers/tokenizer_manager.py",
+      "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+      "python/sglang/srt/mem_cache/hybrid_cache/hybrid_pool_assembler.py",
+      "python/sglang/srt/mem_cache/memory_pool.py",
+      "python/sglang/srt/mem_cache/radix_cache.py",
+      "python/sglang/srt/mem_cache/unified_cache/components/full.py",
+      "python/sglang/srt/mem_cache/unified_cache/components/mamba.py",
+      "python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py",
+      "python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py",
+      "python/sglang/srt/mem_cache/unified_cache/unified_tree_core_interface.py",
+      "python/sglang/srt/mem_cache/unified_radix_cache.py",
+      "python/sglang/srt/model_executor/forward_batch_info.py",
+      "python/sglang/srt/observability/req_time_stats.py",
+      "python/sglang/srt/session/session_controller.py",
+      "test/registered/unit/mem_cache/test_hybrid_pool_assembler.py",
+      "test/registered/unit/mem_cache/test_unified_radix_cache_unittest.py"
+    ],
+    "untracked_paths": [
+      "test/srt/test_beliefkv_backed_full_scan.py",
+      "test/srt/test_beliefkv_execution_handoff.py",
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_gdn_prefill_mask.py",
+      "test/srt/test_beliefkv_host_eviction_observer.py",
+      "test/srt/test_beliefkv_latest_mamba_state.py",
+      "test/srt/test_beliefkv_layer_wait_probe.py",
+      "test/srt/test_beliefkv_lifecycle.py",
+      "test/srt/test_beliefkv_mamba_request_mapping.py",
+      "test/srt/test_beliefkv_metadata.py",
+      "test/srt/test_beliefkv_native_session_close.py",
+      "test/srt/test_beliefkv_prefill_track_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_slots.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_scheduler_hook.py",
+      "test/srt/test_beliefkv_session_anchors.py",
+      "test/srt/test_beliefkv_shadow_dispatch.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py",
+      "test/srt/test_beliefkv_transfer_receipts.py",
+      "test/srt/test_beliefkv_unified_ack.py",
+      "test/srt/test_beliefkv_write_back_batch.py",
+      "test/srt/test_beliefkv_write_back_batch_integration.py"
+    ],
+    "tracked_change_tree_sha256": "d74ff30691fa4effeab8e19ecdd4d72d514f3825775cf088d31931efe77d1952",
+    "canonical_patch": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v1213-native-close-gpu-20261016/patches/sglang-v0.5.20-native-session-close-staging.patch",
+      "sha256": "dc8b07ac714210f9c0aeae643df6bbcef26cbdf98a330d5a9612fe8c55d321af",
+      "expected_tree": "76cf97d2f462db4f4edbc691cb7e56cf7c8e2568",
+      "actual_tree": "76cf97d2f462db4f4edbc691cb7e56cf7c8e2568",
+      "matches_worktree": true,
+      "covered_untracked_paths": [
+        "test/srt/test_beliefkv_backed_full_scan.py",
+        "test/srt/test_beliefkv_execution_handoff.py",
+        "test/srt/test_beliefkv_full_host_eviction.py",
+        "test/srt/test_beliefkv_gdn_prefill_mask.py",
+        "test/srt/test_beliefkv_host_eviction_observer.py",
+        "test/srt/test_beliefkv_latest_mamba_state.py",
+        "test/srt/test_beliefkv_layer_wait_probe.py",
+        "test/srt/test_beliefkv_lifecycle.py",
+        "test/srt/test_beliefkv_mamba_request_mapping.py",
+        "test/srt/test_beliefkv_metadata.py",
+        "test/srt/test_beliefkv_native_session_close.py",
+        "test/srt/test_beliefkv_prefill_track_metadata.py",
+        "test/srt/test_beliefkv_prefill_track_slots.py",
+        "test/srt/test_beliefkv_radix_prefix.py",
+        "test/srt/test_beliefkv_scheduler_hook.py",
+        "test/srt/test_beliefkv_session_anchors.py",
+        "test/srt/test_beliefkv_shadow_dispatch.py",
+        "test/srt/test_beliefkv_terminal_capacity.py",
+        "test/srt/test_beliefkv_text_prompt_ids.py",
+        "test/srt/test_beliefkv_transfer_receipts.py",
+        "test/srt/test_beliefkv_unified_ack.py",
+        "test/srt/test_beliefkv_write_back_batch.py",
+        "test/srt/test_beliefkv_write_back_batch_integration.py"
+      ]
+    },
+    "state_sha256": "d5fe139f20515e79b6e21ac9867e9d273c6895e819e4616efae085b3860fded0"
+  },
+  "qualification": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1214_v77_native_close_candidate_20261016.json",
+    "sha256": "d19bcd0702b3d2e1f023c2c9c6c39203f54e5cd23367720dee2a42faff5d0313"
+  },
+  "helper": {
+    "path": "/home/longhao/experiment/.worktrees/beliefkv-v1213-native-close-gpu-20261016/scripts/start_v77_native_close_20261016.py",
+    "sha256": "25193c17452ea4eba3e3df7122b819061408d11207bab617ffea2ca7160ba4f4"
+  },
+  "helpers": [
+    {
+      "path": "/home/longhao/experiment/ops/server_reservation.py",
+      "sha256": "234b8d5e54cc1fd67b2a542d091d212ad7baeff40b479493fdbab2e43b81e33c"
+    },
+    {
+      "path": "/home/longhao/experiment/ops/start_v64_latest_read_feedback_20261015.py",
+      "sha256": "5fc3c5a29dbf72039ae87e447b98a49d983eda1c48059c803121f471de2dc92f"
+    },
+    {
+      "path": "/home/longhao/experiment/ops/observe_v60_startup.py",
+      "sha256": "c07976b636c49a527dfd69fb5ae35e6c3ef5e30a35938f2c65efb59865d3e9fd"
+    },
+    {
+      "path": "/home/longhao/experiment/ops/observe_v55_numa_placement.py",
+      "sha256": "c02f32409fd938fd9f0748fb96ba69ca556a48121c54a656bc70f700502c8ebc"
+    }
+  ],
+  "plan": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/ab_plan.json",
+    "sha256": "6f56700ec880ec3f4f245f4d67ffc493c72ac7b137d602dfd6cf652f6d90c65d"
+  },
+  "reference_plan": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/ab_plan.json",
+    "sha256": "f5f64b2e20bf2f50bbb24583a9a2764c7c27007768f975e848696f33e3c741ea"
+  },
+  "reference_capacity": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/server/native_capacity_census.json",
+    "sha256": "082e9ce01284523f3e1171dace715a2fdd20ff49103850a23717a0e125c1ad64"
+  },
+  "wait_state": "/home/longhao/experiment/ops/v76_no_prefetch_20261016.state.json",
+  "wait_supervisor": {
+    "pid": 3035460,
+    "state": "R",
+    "ppid": 1,
+    "start_ticks": "633722974",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/ops/start_v76_no_prefetch_20261016.py",
+      "--watch"
+    ]
+  },
+  "wait_registration": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1165_v76_no_prefetch_registration_20261016.json",
+    "sha256": "dc6d8f62cc1c0dae3509c196fc90128c105e8010209ed25ce33f0847fa953db9"
+  },
+  "environment": {
+    "PYTHON": "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+    "PYTHONPATH": "/home/longhao/experiment/.worktrees/beliefkv-v1213-native-close-gpu-20261016",
+    "CUDA_VISIBLE_DEVICES": "0",
+    "PORT": "18481",
+    "RUN_ROOT": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native",
+    "ROOT_COUNT": "156",
+    "WORKLOAD_MANIFEST": "/home/longhao/experiment/.worktrees/beliefkv-v1213-native-close-gpu-20261016/configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json",
+    "WORKFLOW_ARRIVAL_SCHEDULE": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/ab_plan.json",
+    "ARRIVAL_BATCH_SIZE": "0",
+    "ARRIVAL_BATCH_INTERVAL_MS": "0",
+    "SAMPLING_SEED": "21",
+    "ACTIVATION_WALL_CLOCK_SECONDS": "14400.0",
+    "HOST_SPLIT": "80:20",
+    "HOST_NUMA_MEMORY_POLICY": "preferred",
+    "HICACHE_SIZE_GB": "200",
+    "HICACHE_WRITE_POLICY": "write_back",
+    "FANOUT_PROFILE": "native_in_graph_2to4",
+    "CHILD_FINAL_REPORT_SHADOW": "1",
+    "NATIVE_POLICY_BASELINE": "1",
+    "AB_MODE": "off",
+    "CONFIRMED_JOIN_CANARY": "0",
+    "PREPARE_HOST": "0",
+    "EXECUTION_HANDOFF": "0",
+    "ENABLE_TOOL_TIMING": "0",
+    "SGLANG_PATCH_FLAVOR": "native_session_close",
+    "SGLANG_NATIVE_SESSION_CLOSE_RECLAIM": "1",
+    "SGLANG_HICACHE_WRITE_BACK_BATCH_NODES": "32",
+    "BELIEFKV_CONTEXT_SUMMARY_INPUT_MODE": "xml",
+    "BELIEFKV_WORKFLOW_PROGRESS": "0",
+    "BELIEFKV_WORKFLOW_ATTAINED_WORK": "0",
+    "BELIEFKV_TOOL_COMPLETION_RESTORE": "0",
+    "BELIEFKV_RECORD_OUTPUT_TOKEN_IDS": "0",
+    "BELIEFKV_EMIT_SEMANTIC_TEXT": "0",
+    "BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH": "0",
+    "BELIEFKV_ENABLE_FINAL_STAGE_PRIORITY": "0",
+    "BELIEFKV_ENABLE_PREPARE_HOST": "0",
+    "BELIEFKV_ENABLE_TOOL_PREFETCH": "0",
+    "BELIEFKV_ENABLE_EXECUTION_HANDOFF": "0",
+    "BELIEFKV_ENABLE_RESIDENT_FIRST": "0",
+    "BELIEFKV_H2D_OPPORTUNITY_SAMPLING": "0"
+  },
+  "prepare_process": {
+    "pid": 1068244,
+    "state": "R",
+    "ppid": 4100225,
+    "start_ticks": "634857009",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "scripts/start_v77_native_close_20261016.py",
+      "--prepare"
+    ]
+  }
+}

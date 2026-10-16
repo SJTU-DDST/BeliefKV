@@ -4,6 +4,23 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 12:20 PDT：V77已由独立单臂驱动登记，源码52a2b8e、引擎76cf97d2、
+V1214资格、V1215登记、V1218监督记录及其依赖此后冻结，不修改等待中的候选。
+监督1076769已实测存活，仅等待完整V76及真实进程/资源释放；不得再启动第二份。
+状态为ops/v77_native_close_20261016.state.json。运行命令从登记的独立APP
+检出执行，main中的同名脚本不能代替已登记helper；新增34项CPU检查通过。
+V77使用native regime probe单臂，未更改旧pair driver，不将native伪装成predictive。
+原生调度，显式关闭回收开启；batch32、同表156任务、工具180s、root14400s、
+输出8192、HBM ratio0.9、Host200GB/80:20、通知及既有终态规则全部保持。
+预取/PREPARE/额外优先级/工作流控制器和生成IDs采集关闭。启动验收必须看实际
+native_session_close_reclaim.enabled、首服、到达/并发/物理池及NUMA，不能只看env。
+前驱状态completed仍有真实监督或driver存活时继续等待；观测超时或PID消失本身
+不能代替成功收尾。错误停止只操作本候选的准确进程组，等待真实退出后记终态。
+保留全部156项及incomplete/guard标签、HTML、物理传输/复用/控制数据；V77与
+历史native是开发比较，原CPU质量评测可能并行，需据实记录资源，不能称正式匹配。
+V77的官方质量评测尚未登记，完整收集后另补，不修改V1185冻结队列；当前没有GPU
+或质量结果。V1216/V1217/V1219未生成，不能把准备或等待写成执行/收益证明。
+
 2026-10-16 11:56 PDT：V1211补齐关闭回收的引擎/launcher资格。新候选使用
 `SGLANG_PATCH_FLAVOR=native_session_close`，完整组合补丁为
 `patches/sglang-v0.5.20-native-session-close-staging.patch`，摘要dc8b07ac，

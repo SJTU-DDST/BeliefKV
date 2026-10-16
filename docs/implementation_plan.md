@@ -2,6 +2,28 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 12:20 PDT: V77 native-close is frozen at application52a2b8e and
+engine tree76cf97d2. The independent native-only driver passes34 new CPU cases;
+V1214 binds the existing103 engine/151 telemetry/58 launcher checks and sources.
+V1215 registers the same156 tasks, Poisson table and38 matched configuration
+fields, batch32, Host80:20 and unchanged model/prompt/tool code. The complete
+frozen plan is archived as V1220 with the registered raw-plan digest. Enable
+native session-close reclamation with native admission; leave workflow control,
+PREPARE/prefetch/priorities/semantic/output-ID collection off. Keep existing
+announcements and termination labels. This is a strong simple engineering
+baseline, not a new paper mechanism or a prefetch-only causal ablation.
+Supervisor1076769/start_ticks634866646 is actually live and waiting for complete
+V76. V75 native is still running. Start only after successful complete V76
+postprocessing, exact predecessor process exit and resource/port release.
+Verify actual close-GC activation, service, arrivals, capacities, NUMA and native
+configuration after launch. V1216/V1217/V1219 are future startup/completion/
+placement outputs. V77 GPU has not started. Existing one-core/8GiB CPU quality
+grading may overlap this development run; record it and do not claim matched
+formal resources. Grade all156 V77 tasks separately after its complete run,
+without editing the frozen V75/V76 quality queue. Compare complete quality,
+all-task outcomes/JCT, useful throughput and costs before selecting a mechanism.
+Research screening4.16 records the falsification criteria; the broad goal is active.
+
 2026-10-16 11:56 PDT: qualify the simple native-close baseline launch path.
 Use explicit native_session_close flavor with its combined patch over pinned
 HEAD94602c9; the isolated V1210 engine reconstructs exactly tree76cf97d2,

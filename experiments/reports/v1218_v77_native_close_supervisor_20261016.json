@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-16T12:20:03.366212-07:00",
+  "supervisor": {
+    "pid": 1076769,
+    "state": "R",
+    "ppid": 1076610,
+    "start_ticks": "634866646",
+    "argv": [
+      "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+      "/home/longhao/experiment/.worktrees/beliefkv-v1213-native-close-gpu-20261016/scripts/start_v77_native_close_20261016.py",
+      "--watch"
+    ]
+  },
+  "registration": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1215_v77_native_close_registration_20261016.json",
+    "sha256": "be5995c755d7cb78b9a98ffd3c3f830383b0d669c27729eb81b877504fbda86b"
+  }
+}

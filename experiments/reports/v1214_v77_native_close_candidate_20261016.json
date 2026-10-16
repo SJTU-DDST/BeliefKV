@@ -1,0 +1,138 @@
+{
+  "at": "2026-10-16T12:18:28.461851-07:00",
+  "source": {
+    "commit": "52a2b8e75e715216b8bec7d2a5a57d9565380af3",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "bb023c5b16ad852f0d3f914b3188cf6ad45e1e5374c6bd4269447a50bb2eaf38"
+  },
+  "engine": {
+    "commit": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
+    "dirty": true,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [
+      "python/sglang/srt/arg_groups/fields/schedule.py",
+      "python/sglang/srt/entrypoints/openai/protocol.py",
+      "python/sglang/srt/entrypoints/openai/serving_chat.py",
+      "python/sglang/srt/environ.py",
+      "python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py",
+      "python/sglang/srt/layers/attention/linear/gdn_backend.py",
+      "python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py",
+      "python/sglang/srt/managers/cache_controller.py",
+      "python/sglang/srt/managers/io_struct.py",
+      "python/sglang/srt/managers/schedule_batch.py",
+      "python/sglang/srt/managers/scheduler.py",
+      "python/sglang/srt/managers/scheduler_components/idle_sleeper.py",
+      "python/sglang/srt/managers/tokenizer_manager.py",
+      "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+      "python/sglang/srt/mem_cache/hybrid_cache/hybrid_pool_assembler.py",
+      "python/sglang/srt/mem_cache/memory_pool.py",
+      "python/sglang/srt/mem_cache/radix_cache.py",
+      "python/sglang/srt/mem_cache/unified_cache/components/full.py",
+      "python/sglang/srt/mem_cache/unified_cache/components/mamba.py",
+      "python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py",
+      "python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py",
+      "python/sglang/srt/mem_cache/unified_cache/unified_tree_core_interface.py",
+      "python/sglang/srt/mem_cache/unified_radix_cache.py",
+      "python/sglang/srt/model_executor/forward_batch_info.py",
+      "python/sglang/srt/observability/req_time_stats.py",
+      "python/sglang/srt/session/session_controller.py",
+      "test/registered/unit/mem_cache/test_hybrid_pool_assembler.py",
+      "test/registered/unit/mem_cache/test_unified_radix_cache_unittest.py"
+    ],
+    "untracked_paths": [
+      "test/srt/test_beliefkv_backed_full_scan.py",
+      "test/srt/test_beliefkv_execution_handoff.py",
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_gdn_prefill_mask.py",
+      "test/srt/test_beliefkv_host_eviction_observer.py",
+      "test/srt/test_beliefkv_latest_mamba_state.py",
+      "test/srt/test_beliefkv_layer_wait_probe.py",
+      "test/srt/test_beliefkv_lifecycle.py",
+      "test/srt/test_beliefkv_mamba_request_mapping.py",
+      "test/srt/test_beliefkv_metadata.py",
+      "test/srt/test_beliefkv_native_session_close.py",
+      "test/srt/test_beliefkv_prefill_track_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_slots.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_scheduler_hook.py",
+      "test/srt/test_beliefkv_session_anchors.py",
+      "test/srt/test_beliefkv_shadow_dispatch.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py",
+      "test/srt/test_beliefkv_transfer_receipts.py",
+      "test/srt/test_beliefkv_unified_ack.py",
+      "test/srt/test_beliefkv_write_back_batch.py",
+      "test/srt/test_beliefkv_write_back_batch_integration.py"
+    ],
+    "tracked_change_tree_sha256": "d74ff30691fa4effeab8e19ecdd4d72d514f3825775cf088d31931efe77d1952",
+    "canonical_patch": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v1213-native-close-gpu-20261016/patches/sglang-v0.5.20-native-session-close-staging.patch",
+      "sha256": "dc8b07ac714210f9c0aeae643df6bbcef26cbdf98a330d5a9612fe8c55d321af",
+      "expected_tree": "76cf97d2f462db4f4edbc691cb7e56cf7c8e2568",
+      "actual_tree": "76cf97d2f462db4f4edbc691cb7e56cf7c8e2568",
+      "matches_worktree": true,
+      "covered_untracked_paths": [
+        "test/srt/test_beliefkv_backed_full_scan.py",
+        "test/srt/test_beliefkv_execution_handoff.py",
+        "test/srt/test_beliefkv_full_host_eviction.py",
+        "test/srt/test_beliefkv_gdn_prefill_mask.py",
+        "test/srt/test_beliefkv_host_eviction_observer.py",
+        "test/srt/test_beliefkv_latest_mamba_state.py",
+        "test/srt/test_beliefkv_layer_wait_probe.py",
+        "test/srt/test_beliefkv_lifecycle.py",
+        "test/srt/test_beliefkv_mamba_request_mapping.py",
+        "test/srt/test_beliefkv_metadata.py",
+        "test/srt/test_beliefkv_native_session_close.py",
+        "test/srt/test_beliefkv_prefill_track_metadata.py",
+        "test/srt/test_beliefkv_prefill_track_slots.py",
+        "test/srt/test_beliefkv_radix_prefix.py",
+        "test/srt/test_beliefkv_scheduler_hook.py",
+        "test/srt/test_beliefkv_session_anchors.py",
+        "test/srt/test_beliefkv_shadow_dispatch.py",
+        "test/srt/test_beliefkv_terminal_capacity.py",
+        "test/srt/test_beliefkv_text_prompt_ids.py",
+        "test/srt/test_beliefkv_transfer_receipts.py",
+        "test/srt/test_beliefkv_unified_ack.py",
+        "test/srt/test_beliefkv_write_back_batch.py",
+        "test/srt/test_beliefkv_write_back_batch_integration.py"
+      ]
+    },
+    "state_sha256": "d5fe139f20515e79b6e21ac9867e9d273c6895e819e4616efae085b3860fded0"
+  },
+  "checks": [
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1205_native_session_close_lifecycle_cpu_20261016.xml",
+      "sha256": "e7fbd48ee80e6cac46706c6629b647c9300eee08db70a39d3e4b8615ea178121",
+      "passed_cases": 103
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1206_native_close_counter_telemetry_cpu_20261016.xml",
+      "sha256": "b178b0c509432f597795879202176093e72f845bda004cc3ed7465f3b785ac46",
+      "passed_cases": 151
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1212_native_session_close_launcher_constraints_cpu_20261016.xml",
+      "sha256": "81bce1fdee8f56ff1a662a38f13467dbe9a39d8bb574e23713fa9a8b70f0f9eb",
+      "passed_cases": 58
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1213_native_close_baseline_driver_cpu_20261016.xml",
+      "sha256": "c48097b4660025d5cd1fe92dcebaf814a345b5d729bb91fa0419ffc1b338de26",
+      "passed_cases": 34
+    }
+  ],
+  "engine_launcher_qualification": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1211_native_session_close_launch_candidate_20261016.json",
+    "sha256": "3f2ea1554e44abdccbd52f9e630ef34bfa7120042ba8cca0db5f24419f18470b"
+  },
+  "native_application_changed_paths": [
+    "beliefkv/runtime/sglang_v0520_runtime.py",
+    "beliefkv/runtime/v0520_native_telemetry.py"
+  ],
+  "native_application_semantics": "Model, prompt and tool code unchanged. Native admission is disabled; output-ID collection remains off and close counters use existing low-frequency snapshots.",
+  "scope": "CPU qualification and fixed configuration only; no GPU gain or paper novelty established."
+}
