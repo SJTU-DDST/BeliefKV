@@ -39,7 +39,37 @@ Pending/ineligible outcomes count the full horizon;all V68 identities have
 passed it. This comparison does not join independent quality evidence;
 V68 quality is unverified,while V906 retains the native quality audit.
 
-V1024 is the newer independently sealed prefix audit,ending at19:40:41 PDT:
+All five fixed V68 windows are now collected. The4800-5100s window yields
+378536/330775 request steps,+14.44%,with10.500s control exclusive wall.
+Short-prefill36/73 samples have5.056/4.959ms selection thread CPU,
+38.473/37.723ms run_batch and11.685/8.514ms return-to-result.
+V1033 scores all108 first-wave identities at a fully observed3600s horizon:
+2264.675/2328.684s capped completion time,-2.75%,90/89 natural completions.
+Forty-eight pairs improve,52 worsen and8 tie/both cap. Keep the earlier
+1800s result and trailing windows;this is not full JCT,stable throughput,
+causal prefetch gain,matched repeated acceptance or independent task quality.
+
+V1032 is the newer sealed prefix,ending20:15:11 PDT:62/34 early verified
+FULL JOIN/tool events,1.614/3.185GB;18 JOIN/five tool boundaries unknown.
+V1034 partitions the same independent ACK intervals. All-action P90 remains
+15.840/20.919s. In the outcome-conditioned early-FULL cohort,arrival-to-service
+P90 is454.923/273.754ms;before-completion dominates51/62 and24/34 events.
+Eight tool events without early FULL reuse still wait13.907s median after
+arrival and all have later native FULL hits. Separate early prediction and
+post-restore consumption failures;do not claim causal gain or full Mamba
+readiness from this selected cohort. Per-file seals are not atomic;
+V1032 plan snapshots are not the V1024 explicit-dispatch funnel.
+
+The full156 V68 official quality evaluator is queued,supervisor3204505/
+start_ticks629116499,ops/quality_eval/run_v68_quality_cpu_20261015.py.
+State:quality_v68_cpu_20261015.state.json. Wait for the genuine full summary,
+then export V1035 and bind environment V1036. One CPU worker,one-core quota,
+8GiB,no GPU,cached pinned official images/harness;all outcomes stay in the
+denominator. Record possible overlap with later GPU development,not a formal
+matched-resource performance trial. Registration or worker exit0 is not a
+verified complete quality result.
+
+Historical V1024 independently sealed prefix audit,ending at19:40:41 PDT:
 107/153 explicit pre-completion positive FULL JOIN/tool events,76/42
 pre-completion submissions and57/34 early next-request reuse events,
 1.367/3.185GB FULL. Twenty-nine JOIN starts lack a pre-completion submit;
