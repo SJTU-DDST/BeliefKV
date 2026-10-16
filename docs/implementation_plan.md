@@ -18,6 +18,35 @@ e8dcba7 source,dedbe1a0 engine,actual configuration and unchanged physical pool
 capacities. Scheduler598387/start_ticks628031986 serves with migration enabled
 and no observer errors; NUMA remains preferred. Same frozen
 V966/V967-qualified candidate,engine,model and workload; predictive only.
+V67 windows120-300/600-900/1800-2100s yield235209/246021,
+363328/386707 and387939/381775 request steps versus historical V58.
+Control exclusive wall is14.934/29.368/21.373s. Early windows still trail;
+third-window short-prefill56/64 samples have38.608/40.419ms run_batch
+and7.673/4.461ms return-to-result. No stable full-run gain is established.
+V989 uses all108 matched first-wave identities at a fixed1800s per-workflow
+horizon: capped completion times1554.608/1612.092s and43/32 verified
+natural completions. Pending/errors/ineligible outcomes count the full horizon,
+and every predictive workflow has passed it. This is not full mean JCT,
+global throughput or causal attribution; task quality remains unverified.
+V990 independently seals97/155 explicit pre-completion positive FULL JOIN/
+tool events,66/38 pre-completion submissions,52/36 early next-request reuse
+events and1.634/3.704GB FULL. Sixteen JOIN and one tool boundaries remain
+unknown. Last-ACK-to-service P90 is15.393/2.232s; the tool maximum124.766s
+and14 prefetched-FULL commands later natively reloaded remain unresolved.
+
+V978 replays the exact V977 prefixes without failure:9764 of19635 locally
+emitted semantic frames are definite intermediate multi-member ALL JOIN
+bodies,49.7 percent. This precedes asynchronous coalescing and is not saved
+datagrams or CPU time. Dev0c2bbb2 coalesces these body controls, retaining
+first/final frames, first negative tool evidence, every child notice and
+complete local content. Normal periodic delivery resumes for the last member;
+unknown membership keeps the original path. Frozen6815795 uses the same
+dedbe1a0 engine; V983 freshly passes251 checks/two subtests with two skips.
+V984 binds1733 unique passes/two skips. V985 registers V68_join_body,
+waiter1297304/start_ticks628272250,port18472; state is
+ops/v68_join_body_20261015.state.json. Preserve complete V67 collection,
+verify predecessor exit/free GPU, then cold-start the candidate. V67 sources
+stay frozen. V68 has neither launched nor demonstrated GPU/JCT benefit.
 V973 explicitly interrupts V66 after four complete fixed windows including
 3600-3900s:96 completed,60 without terminal results,original driver exit-15.
 Retain raw evidence and censored identities; no complete summary or full-run
