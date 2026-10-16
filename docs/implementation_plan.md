@@ -37,6 +37,10 @@ Run predictive first,then one same-table native baseline:old V58 has different
 external arrivals and cannot measure this workload's native-relative speedup.
 No task reordering,rate sweep or repetitions during this development iteration.
 Wait for frozen V72 to finish and owned resources to exit before the next run.
+V1095 freezes6e85b0a with the unchanged791dd37f engine;V1096 registers V73
+supervisor2907350/start_ticks631065999 on port18477. Authoritative state:
+ops/v73_online_root_20261016.state.json. Verified waiting at01:47 PDT;
+registration is not actual GPU pressure or performance evidence.
 Observe actual FULL/Mamba headroom,Host usage,native H2D,cold reclaim,recomputation
 and first-service stalls;retain all failures and full task-quality denominators.
 Keep native per-layer H2D/prefill overlap and its Mamba state-COW dependencies;

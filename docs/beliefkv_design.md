@@ -19,6 +19,9 @@ V1082/V1083核验实际GPU服务、源码/配置、相同容量及NUMA；
 847项不重复CPU检查通过，V1093历史时长平移仅用于单配置压力筛选，
 不能当实际迁移或收益。新负载须先predictive、后同表native一次，
 不做到达率扫描或重复；V72及历史两波保持原状。
+V1095绑定6e85b0a及相同791dd37f引擎，V1096已登记V73接续进程
+2907350/start_ticks631065999；状态ops/v73_online_root_20261016.state.json。
+01:47 PDT仍等待V72完整结束和GPU释放，登记不代表GPU效果验证完成。
 已有原生HiCache在H2D流逐层发完成事件，prefill访问每层KV时等待；
 FULL预测恢复也通过defer_prefill_for_prefetch沿用原生层依赖，
 不要求全部FULL ACK后才能计算。Mamba状态COW仍有就绪约束，GPU
