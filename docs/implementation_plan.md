@@ -48,6 +48,17 @@ do not add a second pipeline engine. Page/state capacity is reserved before DMA.
 Owner-grouped cold-candidate maintenance and sparse ordered publication pass
 CPU equivalence;whole-dispatch CPU changes remain about0.1%-9.3%,not GPU/JCT.
 
+Evaluate prefetch against residual stalls after native layer overlap,not total
+H2D duration. Completion-triggered restoration may start the same pipeline
+before client submission/native admission without predicting future RETURN;
+report it separately from pre-completion prediction. Short prefills can still
+stall on later layers;early-layer readiness is not complete overlap or capacity.
+V1103 bounds latest V72 receipts:tool535 node commands,4.890GB FULL transferred,
+1.941GB confirmed first-service reuse,ACK-to-service P50/P90 20.560/68.305s.
+The interval includes pre-completion and admission time;unconfirmed bytes are
+not all waste. No isolated same-code tool-prefetch net effect is established.
+Keep V72/V73 source,registered helpers and experiment settings frozen.
+
 V1084 audits external arrivals:V72 and historical V58 share the root
 timestamps/task order,but the first108 tasks span seven repositories with47
 Django tasks and all48 second-wave tasks are Django. Treat two bursts as
