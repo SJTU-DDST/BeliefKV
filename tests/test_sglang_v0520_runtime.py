@@ -3637,7 +3637,7 @@ def test_native_decode_tool_marker_invalidates_forecast_before_client_tool_chunk
         context_id="ctx-child", context_epoch=1, attributes={"request_id": "child"},
     ),))
     runtime.register_visible_request(child)
-    runtime._semantic_worker = NS()
+    runtime._semantic_worker = NS(close=lambda: None)
     runtime._tool_open_token_ids = frozenset({248058})
     key = runtime.visible["child"]
     runtime.on_batch_completed(NS(reqs=[child]))
@@ -3646,6 +3646,23 @@ def test_native_decode_tool_marker_invalidates_forecast_before_client_tool_chunk
     assert not runtime._semantic_key_live(key, time.monotonic() * 1000)
     assert not runtime._final_stages
     assert runtime.graph.invocations["child"].state is InvocationState.RUNNING_LLM
+    progress = tuple(runtime._semantic_progress["child"])
+    scanned = runtime._decoded_scan_positions["child"]
+    child.output_ids.extend([5, 6, 7])
+    runtime.on_batch_completed(NS(reqs=[child]))
+    assert tuple(runtime._semantic_progress["child"]) == progress
+    assert runtime._decoded_scan_positions["child"] == scanned
+    assert runtime._context_tokens["ctx-child"][2] == len(child.output_ids)
+    assert runtime.counts["semantic_native_tool_marker_invalidated"] == 1
+    child.finished = lambda: True
+    child.finished_reason = NS(to_json=lambda: {"type": "stop"})
+    runtime.on_batch_completed(NS(reqs=[child]))
+    assert runtime._semantic_finished["child"][1] == len(child.output_ids)
+    assert runtime._semantic_eos_proofs["child"] is False
+    assert "child" not in runtime._semantic_normal_stops
+    assert "child" not in runtime.visible
+    assert not runtime._final_stages
+    runtime.close()
 
 
 def test_semantic_eos_window_creates_only_h2d_candidate_not_final_priority():

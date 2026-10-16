@@ -9188,6 +9188,15 @@ class NativeAdmissionRuntime:
                         and invocation.context_id == key.context_id
                     ):
                         key = None
+                if key is not None and key.request_id in self._decoded_tool_requests:
+                    # A tool marker rules out a natural RETURN for this request.
+                    if req.finished():
+                        self._semantic_finished[key.request_id] = (
+                            time.monotonic() * 1000,
+                            len(getattr(req, "output_ids", ()) or ()),
+                        )
+                        self._semantic_eos_proofs[key.request_id] = False
+                    key = None
                 if key is not None:
                     self._semantic_keys[key.request_id] = key
                     history = self._semantic_progress.get(key.request_id)
@@ -9198,10 +9207,7 @@ class NativeAdmissionRuntime:
                     start = self._decoded_scan_positions.get(key.request_id, 0)
                     outputs = getattr(req, "output_ids", ()) or ()
                     self._decoded_scan_positions[key.request_id] = len(outputs)
-                    if (
-                        key.request_id not in self._decoded_tool_requests
-                        and any(token in self._tool_open_token_ids for token in outputs[start:])
-                    ):
+                    if any(token in self._tool_open_token_ids for token in outputs[start:]):
                         self._child_report_notices.pop(key.invocation_id, None)
                         self._decoded_tool_requests.add(key.request_id)
                         self._semantic_forecasts.pop(key.request_id, None)
