@@ -4,6 +4,15 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 主线收口：V1241–V1246及两个审计器、对应测试一并归入main，
+V1247回归46项通过。固定时点统计须保留全部应到任务，失败/未完成继续累计
+观察期内逗留；workflow_finished含setup与收集，不等于result.duration_seconds，
+也不是最终JCT或质量匹配吞吐。Host需求按首次服务匹配路径的observed_ts_ms归窗，
+cached_tokens_host合计是重复请求需求，不是独占物理页或forward复用证明。
+2400–3000s的V76没有PREPARE，不能把该段原生迁移增加归为预测H2D；
+队列到服务观测包含准入、恢复和控制。V1244的worker邻接区间亦非纯kernel。
+原生顺序消融仅为后续待实现项；本次不改变已登记源码、引擎或实验接续。
+
 2026-10-16 13:35 PDT：关闭机会采样的V76没有safe_point_census；旧工具卸载审计
 会因缺少配对时钟拒绝，不可伪造时钟或把forecast出队时间直接当客户端事件时间。
 新audit_wait_state_recovery只用服务端wall时间封存回收/恢复关联，工具预测精度

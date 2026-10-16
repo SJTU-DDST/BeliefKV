@@ -2,6 +2,17 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 local-main integration: preserve the two completed auditors, their
+tests and sealed V1241-V1246 evidence on main. V1247 passes all46 CPU cases.
+The all-due cohort keeps unfinished and failed tasks in the denominator:
+at3600s V76/native recorded completions are80/105 out of156. These are runner
+completion observations, not quality-matched JCT. In2400-3000s V76/native
+demand H2D is637.786/7.190GB; matched full48 decode intervals are close, while
+47-request intervals neighboring prefill differ. Isolate ordering, lifecycle
+and request turnover before assigning cause or selecting another GPU candidate.
+Native-prefill-order ablation remains unimplemented; no experiment registration
+or frozen source changes are part of this integration. See screening4.21.
+
 2026-10-16 13:35 PDT: V1233/V1234 seal V76 waiting-state demotions and following
 native requests.516 records span142 context epochs;112 have same-node H2D and
 following match-path associations, with no observed reload/repark sequence before
