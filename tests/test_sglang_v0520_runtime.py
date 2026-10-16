@@ -3065,6 +3065,175 @@ def select(runtime, native):
     )
 
 
+def workflow_attained_work_fixture(monkeypatch, *, enabled=True):
+    monkeypatch.setenv("BELIEFKV_WORKFLOW_ATTAINED_WORK", "1" if enabled else "0")
+    runtime = NativeAdmissionRuntime()
+    requests = []
+    for invocation, tokens in (("heavy", 80), ("short", 8)):
+        workflow, context = f"wf-{invocation}", f"ctx-{invocation}"
+
+        def observed(sequence, kind, **kwargs):
+            return RuntimeEvent(
+                f"{invocation}-{sequence}", float(sequence), kind, workflow,
+                invocation_id=invocation, context_id=context, **kwargs,
+            )
+
+        runtime.on_events((
+            observed(0, RuntimeEventKind.WORKFLOW_START),
+            observed(1, RuntimeEventKind.INVOCATION_CREATE, context_epoch=0),
+            observed(2, RuntimeEventKind.LLM_SUBMIT, context_epoch=0,
+                     attributes={"request_id": f"{invocation}-first"}),
+        ))
+        previous = req(f"{invocation}-first")
+        previous.beliefkv_metadata.update(
+            root_workflow_id=workflow, invocation_id=invocation,
+            context_id=context, context_epoch=0,
+        )
+        previous.output_ids = list(range(tokens))
+        previous.finished = lambda: True
+        assert runtime.register_visible_request(previous)
+        runtime.on_batch_completed(NS(reqs=(previous,)))
+        runtime.on_batch_completed(NS(reqs=(previous,)))
+        runtime.on_events((
+            observed(3, RuntimeEventKind.LLM_RESULT, context_epoch=0),
+            observed(4, RuntimeEventKind.CONTEXT_ADVANCE, context_epoch=1),
+            observed(5, RuntimeEventKind.LLM_SUBMIT, context_epoch=1,
+                     attributes={"request_id": invocation}),
+        ))
+        request = req(invocation)
+        request.origin_input_ids, request.output_ids = list(range(32)), []
+        request.beliefkv_metadata.update(
+            root_workflow_id=workflow, invocation_id=invocation,
+            context_id=context, context_epoch=1,
+        )
+        assert runtime.register_visible_request(request)
+        requests.append(request)
+    return runtime, requests
+
+
+@pytest.mark.parametrize("enabled,resident_first", [
+    (False, True), (True, True), (True, False),
+])
+def test_workflow_attained_work_uses_completed_output_and_preserves_default(
+    monkeypatch, enabled, resident_first,
+):
+    runtime, requests = workflow_attained_work_fixture(monkeypatch, enabled=enabled)
+    runtime.enable_resident_first = resident_first
+    try:
+        selected = select(runtime, requests)
+        assert selected.candidates == tuple(reversed(requests) if enabled else requests)
+        assert not selected.rejected
+        assert runtime._workflow_attained_output_tokens == (
+            {"wf-heavy": 80, "wf-short": 8} if enabled else {}
+        )
+        assert runtime.counts["workflow_completed_output_tokens_charged"] == (88 if enabled else 0)
+        assert runtime.counts["workflow_work_head_ordered"] == int(enabled)
+        selected_head = selected.candidates[0]
+        runtime.on_prefill_candidate_result(selected_head, admitted=False, result="OTHER")
+        assert runtime.counts["workflow_work_head_admitted"] == 0
+        runtime.on_prefill_candidate_result(selected_head, admitted=True, result="CONTINUE")
+        runtime.on_prefill_candidate_result(selected_head, admitted=True, result="CONTINUE")
+        assert runtime.counts["workflow_work_head_admitted"] == int(enabled)
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_workflow_attained_work_preserves_hbm_locality(monkeypatch):
+    runtime, (heavy, short) = workflow_attained_work_fixture(monkeypatch)
+    runtime.enable_resident_first = True
+    runtime._residency_pool_bytes = (1024, 65536)
+    inspected = []
+
+    def residency(request, **kwargs):
+        inspected.append(request.rid)
+        return {
+            "checkpoint_tokens": 16, "device_checkpoint_tokens": 16,
+            "missing_full_tokens": 0 if request is heavy else 8,
+            "missing_mamba_slots": 0,
+        }
+
+    try:
+        with patch.object(runtime, "_read_request_residency_hint", side_effect=residency):
+            assert select(runtime, [heavy, short]).candidates[0] is heavy
+        assert inspected == ["heavy", "short"]
+        assert runtime.counts["workflow_work_head_ordered"] == 0
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_workflow_attained_work_does_not_charge_active_or_duplicate_finishes(monkeypatch):
+    runtime, (heavy, _) = workflow_attained_work_fixture(monkeypatch)
+    try:
+        heavy.output_ids = [1, 2]
+        runtime.on_batch_completed(NS(reqs=(heavy,)))
+        assert runtime._workflow_attained_output_tokens["wf-heavy"] == 80
+        heavy.finished = lambda: True
+        runtime.on_batch_completed(NS(reqs=(heavy,)))
+        runtime.on_batch_completed(NS(reqs=(heavy,)))
+        assert runtime._workflow_attained_output_tokens["wf-heavy"] == 82
+        assert runtime.counts["workflow_completed_output_tokens_charged"] == 90
+    finally:
+        runtime.close()
+
+
+def test_workflow_attained_work_preserves_aged_head(monkeypatch):
+    runtime, (heavy, short) = workflow_attained_work_fixture(monkeypatch)
+    runtime._visible_since["heavy"] = time.monotonic() - 11.
+    try:
+        assert select(runtime, [heavy, short]).candidates[0] is heavy
+        assert runtime.counts["workflow_work_head_ordered"] == 0
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_workflow_attained_work_preserves_blocking_join_priority(monkeypatch):
+    from beliefkv.core.events import RelationType
+
+    runtime, (_, short) = workflow_attained_work_fixture(monkeypatch)
+    runtime.on_events((
+        RuntimeEvent(
+            "critical-create", 6., RuntimeEventKind.INVOCATION_CREATE, "wf-heavy",
+            invocation_id="critical", context_id="ctx-critical", context_epoch=0,
+            parent_invocation_id="heavy", relation_type=RelationType.SPAWN,
+        ),
+        RuntimeEvent(
+            "join-create", 7., RuntimeEventKind.JOIN_CREATE, "wf-heavy",
+            join_id="critical-join", member_invocation_ids=("critical",),
+        ),
+        RuntimeEvent(
+            "join-wait", 8., RuntimeEventKind.JOIN_WAIT, "wf-heavy",
+            invocation_id="heavy", join_id="critical-join",
+        ),
+    ))
+    critical = req("critical")
+    critical.origin_input_ids, critical.output_ids = list(range(32)), []
+    critical.beliefkv_metadata.update(root_workflow_id="wf-heavy")
+    assert runtime.register_visible_request(critical)
+    try:
+        assert select(runtime, [short, critical]).candidates[0] is critical
+        assert runtime.counts["workflow_work_head_ordered"] == 0
+        assert not runtime.physical_ledger.pending_count
+    finally:
+        runtime.close()
+
+
+def test_workflow_attained_work_retires_accounts_without_late_resurrection(monkeypatch):
+    runtime, (heavy, _) = workflow_attained_work_fixture(monkeypatch)
+    runtime.on_events((RuntimeEvent(
+        "heavy-end", 9., RuntimeEventKind.WORKFLOW_END, "wf-heavy",
+    ),))
+    try:
+        heavy.output_ids, heavy.finished = [1, 2, 3], lambda: True
+        runtime.on_batch_completed(NS(reqs=(heavy,)))
+        assert "wf-heavy" not in runtime._workflow_attained_output_tokens
+        assert runtime._workflow_attained_output_tokens["wf-short"] == 8
+    finally:
+        runtime.close()
+
+
 def final_stage_runtime(*, stage_only=False, event_socket_path=None, stage_records=None):
     runtime = NativeAdmissionRuntime(
         event_socket_path=event_socket_path,

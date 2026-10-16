@@ -375,6 +375,11 @@ class NativeAdmissionRuntime:
                 require_physical_actions=enable_admission_prefetch,
             )
         self.semantic_revision = 0
+        self._workflow_attained_work_enabled = (
+            os.environ.get("BELIEFKV_WORKFLOW_ATTAINED_WORK", "0") == "1"
+        )
+        self._workflow_attained_output_tokens: dict[str, int] = {}
+        self._workflow_work_promoted: str | None = None
         self.predictor_sha256 = predictor_sha256
         self.demand_hints: dict[str, NativeDemandHint] = {}
         self.tool_wait_hints: dict[str, NativeToolWaitHint] = {}
@@ -712,6 +717,7 @@ class NativeAdmissionRuntime:
         self._terminal_child_reclaims.clear()
         self._terminal_root_contexts.clear()
         self._parent_capacity_handoffs.clear()
+        self._workflow_attained_output_tokens.clear()
         if self._opportunity_writer is not None:
             self._record_runtime_state(final=True)
             self._opportunity_writer.close()
@@ -1151,6 +1157,7 @@ class NativeAdmissionRuntime:
                             self._tool_prefetch_survival_evidence.pop(key, None)
                         self.shadow_candidate = None
                 if event.kind is RuntimeEventKind.WORKFLOW_END:
+                    self._workflow_attained_output_tokens.pop(event.workflow_id, None)
                     self._execution_handoff_capacity_blocked = {
                         key for key in self._execution_handoff_capacity_blocked
                         if key.root_workflow_id != event.workflow_id
@@ -1895,6 +1902,9 @@ class NativeAdmissionRuntime:
                     "latest_session_branch_retirements", None,
                 ),
                 "resident_first": self.enable_resident_first,
+                "workflow_attained_work": self._workflow_attained_work_enabled,
+                "workflow_work_metric": "completed_request_output_tokens",
+                "workflow_work_accounts": len(self._workflow_attained_output_tokens),
                 "execution_handoff": self.enable_execution_handoff,
                 "overlap_prefetch_supported": self.can_prefetch_during_overlap(),
                 "execution_handoff_request_id": (
@@ -8527,6 +8537,7 @@ class NativeAdmissionRuntime:
     def plan_native_prefill(
         self, native_order: Sequence[object], *, running_batch: object, adder: object
     ) -> NativePrefillPlan:
+        self._workflow_work_promoted = None
         self._observe_native_admission_capacity(running_batch=running_batch, adder=adder)
         # Reuse causal classification only; residency, hint expiry and aging
         # remain live because native allocation may change between the two calls.
@@ -8577,16 +8588,30 @@ class NativeAdmissionRuntime:
                     and hinted[ranks[index][:2]] == members[ranks[index][:2]]
                 }
 
+        work_baseline_ranks: dict[int, tuple] | None = (
+            {} if self._workflow_attained_work_enabled else None
+        )
+
         def waiting_rank(pair: tuple[int, object]) -> tuple:
             index, request = pair
             since = self._visible_since.get(getattr(request, "rid", ""), now_ms / 1000.)
             if now_ms / 1000. - since >= 10.:
                 return (-1, since, index, index)
-            return (
+            rank = (
                 *ranks[index][:2],
                 length_ranks.get(index, index),
                 index,
             )
+            if self._workflow_attained_work_enabled and not self.enable_resident_first:
+                work_baseline_ranks[index] = rank
+                key = keys[index]
+                work = self._workflow_attained_output_tokens.get(
+                    key.root_workflow_id, 0,
+                ) if key is not None else 0
+                return (
+                    *rank[:2], work, *rank[2:],
+                )
+            return rank
 
         waiting_ranks = {pair[0]: waiting_rank(pair) for pair in tagged}
         ordered = sorted(tagged, key=lambda pair: waiting_ranks[pair[0]])
@@ -8662,12 +8687,28 @@ class NativeAdmissionRuntime:
                     # Compare missing bytes instead of requiring an older
                     # complete device checkpoint for all partial hits.
                     resident = int(restore_bytes > 0)
-                return rank[:2] + (resident, restore_bytes) + rank[2:]
+                tail = rank[2:]
+                if self._workflow_attained_work_enabled:
+                    work_baseline_ranks[pair[0]] = (
+                        rank[:2] + (resident, restore_bytes) + tail
+                    )
+                    work = self._workflow_attained_output_tokens.get(
+                        key.root_workflow_id, 0,
+                    ) if key is not None else 0
+                    tail = (work, *tail)
+                return rank[:2] + (resident, restore_bytes) + tail
 
             resident_ordered = sorted(ordered, key=residency_rank)
             if resident_ordered != ordered:
                 self.counts["resident_first_ordered"] += 1
             ordered = resident_ordered
+        work_selected = None
+        if (
+            work_baseline_ranks and ordered
+            and waiting_ranks[ordered[0][0]][0] != -1
+            and min(work_baseline_ranks, key=work_baseline_ranks.__getitem__) != ordered[0][0]
+        ):
+            work_selected = ordered[0][1].rid
         self._final_priority_promoted = None
         self._final_priority_native_rank = None
         self._prefetch_priority_promoted = None
@@ -8906,7 +8947,7 @@ class NativeAdmissionRuntime:
                 self.counts["resident_aged_priority_ordered"] += 1
                 if details["ordinary_admission_quota"] < 4:
                     self.counts["resident_aged_native_quota_ordered"] += 1
-        return compile_native_prefill_plan(
+        plan = compile_native_prefill_plan(
             [
                 key for index, _ in ordered
                 if (key := keys[index]) is not None
@@ -8915,6 +8956,10 @@ class NativeAdmissionRuntime:
             ],
             semantic_revision=self.semantic_revision,
         )
+        if plan.prioritized and plan.prioritized[0].request_id == work_selected:
+            self._workflow_work_promoted = work_selected
+            self.counts["workflow_work_head_ordered"] += 1
+        return plan
 
     def _submit_local_predictions(
         self,
@@ -8980,6 +9025,9 @@ class NativeAdmissionRuntime:
         if getattr(req, "beliefkv_metadata", None) is not None:
             self.counts["native_admitted" if admitted else f"native_{result}"] += 1
             if admitted:
+                if req.rid == self._workflow_work_promoted:
+                    self.counts["workflow_work_head_admitted"] += 1
+                    self._workflow_work_promoted = None
                 key = self.visible.get(req.rid)
                 hinted = self._residency_ordering_hints.get(key)
                 if hinted is not None and hinted[0] > time.monotonic() * 1000.:
@@ -9259,6 +9307,15 @@ class NativeAdmissionRuntime:
             if visible_key is not None and req.finished():
                 context_id = visible_key.context_id
                 key = visible_key
+                if self._workflow_attained_work_enabled:
+                    workflow = self.graph.workflows.get(key.root_workflow_id)
+                    if workflow is not None and workflow.end_ts_ms is None:
+                        tokens = len(getattr(req, "output_ids", ()) or ())
+                        self._workflow_attained_output_tokens[key.root_workflow_id] = (
+                            self._workflow_attained_output_tokens.get(key.root_workflow_id, 0)
+                            + tokens
+                        )
+                        self.counts["workflow_completed_output_tokens_charged"] += tokens
                 del self.visible[rid]
                 self._visible_since.pop(rid, None)
                 self.demand_hints.pop(rid, None)

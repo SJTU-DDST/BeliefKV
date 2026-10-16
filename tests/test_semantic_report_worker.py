@@ -1,6 +1,7 @@
 from pathlib import Path
 from collections import OrderedDict
 import multiprocessing as mp
+import os
 import select
 import time
 
@@ -14,7 +15,9 @@ from beliefkv.runtime.semantic_report_worker import (
 )
 
 
-ARTIFACT = Path(__file__).resolve().parents[1] / (
+ARTIFACT = Path(os.environ["BELIEFKV_TEST_SEMANTIC_ARTIFACT"]) if (
+    "BELIEFKV_TEST_SEMANTIC_ARTIFACT" in os.environ
+) else Path(__file__).resolve().parents[1] / (
     "experiments/models/child_semantic_work_stage2_adapted_20260930_v1/"
     "semantic_event_calibrated.json"
 )
