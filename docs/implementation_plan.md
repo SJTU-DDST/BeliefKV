@@ -2,6 +2,23 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 local-main integration: earlier V76/audit/output-token changes are
+already on main. Preserve the independent native session-close GC candidate as
+patches/sglang-v0.5.20-native-session-close-gc.patch on top of the complete V75
+engine tree53020ce3; candidate f1dc97d/tree76cf97d2. It is default-off and uses
+explicit close, existing reference/identity checks and bounded native safe-point
+retries, without a workflow controller or speculative transfer. This is a simple
+engineering baseline, not the selected new paper mechanism.103 engine and151
+application CPU checks pass; V1204's initial fixture failure remains preserved.
+V1207 measures200 randomized close calls per mode: thread-CPU P50 is0.011349/
+0.068110ms for native/GC, with32 private FULL tokens freed only by GC. Different
+work is performed, so do not interpret the difference as an isolated speedup or
+GPU/JCT result. V1208 binds patch, source, test and benchmark hashes. The
+canonical staging patch, V75/V76 sources and registered helpers remain unchanged.
+Current launchers still require94602c9 plus the canonical patch; this candidate
+needs separate launch preparation and qualification before any GPU registration.
+No additional GPU run is registered; quality and end-to-end acceptance remain open.
+
 2026-10-16 11:13 PDT: V1195/V1198/V1200 compare two complete V75 windows
 against its same-batch native. Full48 decode intervals are near parity; output
 rate ordering changes with prefill demand, so do not infer causal prefetch gain

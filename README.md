@@ -5,6 +5,18 @@ management on one HBM-constrained GPU. It discovers workflow structure from
 runtime TOOL, SPAWN, RETURN, JOIN, HANDOFF, and MESSAGE events; applications do
 not need to submit a complete DAG in advance.
 
+## Current Development (2026-10-16)
+
+Current Qwen3.5 / SGLang v0.5.20 work is described in the
+[architecture status](docs/architecture_status_zh.md) and
+[execution plan](docs/implementation_plan.md); the P5/P6 profile below is historical.
+The default-off native session-close reclamation candidate is preserved as an
+[incremental engine patch](patches/sglang-v0.5.20-native-session-close-gc.patch)
+over the frozen V75 engine tree, with low-frequency counter support and a
+[CPU qualification record](experiments/reports/v1208_native_session_close_main_integration_20261016.json).
+It is a simple engineering baseline, not an established paper contribution or
+GPU performance result. Existing V75/V76 candidates and launch contracts remain frozen.
+
 ## Current Scope
 
 The current target is:

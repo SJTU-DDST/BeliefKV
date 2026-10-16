@@ -1,0 +1,453 @@
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index 56ed772..7f416b8 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -751,6 +751,7 @@ class Envs:
+     SGLANG_HICACHE_DECODE_OFFLOAD_STRIDE = EnvInt(None)
+     SGLANG_HICACHE_SKIP_HOST_DUPLICATE_RECLAIM = EnvBool(False)
+     SGLANG_HICACHE_WRITE_BACK_BATCH_NODES = EnvInt(1)
++    SGLANG_NATIVE_SESSION_CLOSE_RECLAIM = EnvBool(False)
+     SGLANG_HICACHE_FILE_BACKEND_STORAGE_DIR = EnvStr(None)
+     # File-backend LRU eviction (opt-in; sizes accept SI/IEC suffixes, "0" disables).
+     SGLANG_HICACHE_FILE_BACKEND_MAX_SIZE = EnvStr(None)
+diff --git a/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py b/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py
+index 7fad7d9..6a04db8 100644
+--- a/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py
++++ b/python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py
+@@ -112,6 +112,12 @@ class UnifiedSessionRefTracker:
+             generation = self.open_radix_session(session_id)
+         return generation
+ 
++    def current_session_generation(self, session_id: str) -> Optional[int]:
++        """Read an active incarnation without reopening a closed session."""
++        if not self.enable_session_radix_cache:
++            return None
++        return self._session_generations.get(session_id)
++
+     def snapshot_session_leaf_anchors(
+         self, session_id: str, generation: int, *, max_leaves: int | None = 8
+     ) -> tuple[tuple[int, tuple[tuple[int, int | float], ...]], ...] | None:
+diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
+index 51cf1b5..d68e744 100644
+--- a/python/sglang/srt/mem_cache/unified_radix_cache.py
++++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
+@@ -4,7 +4,7 @@ import atexit
+ import logging
+ import threading
+ import time
+-from collections import deque
++from collections import OrderedDict, deque
+ from dataclasses import replace
+ from queue import Queue
+ from typing import TYPE_CHECKING, Callable, Iterator, NamedTuple, Optional, Sequence, TypeVar
+@@ -427,6 +427,21 @@ class UnifiedRadixCache(BasePrefixCache):
+ 
+     def _reset_full(self) -> None:
+         """Full reset: destroy entire tree and all state."""
++        self.native_session_close_reclaim_enabled = (
++            envs.SGLANG_NATIVE_SESSION_CLOSE_RECLAIM.get()
++            and self.enable_session_radix_cache
++            and not self.disable
++            and set(self.tree_components) <= {ComponentType.FULL, ComponentType.MAMBA}
++        )
++        self._native_session_close_reclaims = OrderedDict()
++        self._native_session_close_reclaim_ready = False
++        self.native_session_close_reclaim_counts = {
++            "close_calls": 0, "unknown_or_duplicate_closes": 0,
++            "reclaim_batches": 0, "attempted_nodes": 0, "discarded_nodes": 0,
++            "freed_device_full_tokens": 0, "freed_device_mamba_slots": 0,
++            "freed_host_full_tokens": 0, "freed_host_mamba_slots": 0,
++            "late_finished_requests": 0, "stale_generations_skipped": 0,
++        }
+         self.write_back_batch_nodes = max(
+             1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+         )
+@@ -997,6 +1012,7 @@ class UnifiedRadixCache(BasePrefixCache):
+         empty = {
+             "freed_device_units": {}, "freed_host_units": {},
+             "discarded_nodes": (), "retry_anchors": (), "reason": None,
++            "attempted_nodes": 0, "budget_exhausted": False,
+         }
+         if not self.enable_session_radix_cache or not callable(discard):
+             return {**empty, "reason": "unsupported_cache"}
+@@ -1005,7 +1021,7 @@ class UnifiedRadixCache(BasePrefixCache):
+                 session_id, session_generation, max_leaves=None,
+             )
+             if anchors is not None:
+-                self.release_radix_session(session_id)
++                self.session_refs.release_radix_session(session_id)
+             else:
+                 anchors = self.session_refs.snapshot_released_session_leaf_anchors(
+                     session_id, session_generation,
+@@ -1071,6 +1087,74 @@ class UnifiedRadixCache(BasePrefixCache):
+                 if anchor not in visited
+             ),
+             "reason": None,
++            "attempted_nodes": attempts,
++            "budget_exhausted": bool(pending),
++        }
++
++    def _queue_native_session_reclaim(self, session_id, generation, anchors) -> None:
++        identity = session_id, generation
++        combined = tuple(dict.fromkeys((
++            *self._native_session_close_reclaims.get(identity, ()), *anchors,
++        )))
++        if combined:
++            self._native_session_close_reclaims[identity] = combined
++            self._native_session_close_reclaim_ready = True
++
++    def _drain_native_session_reclaims(
++        self, *, max_sessions: int = 4, max_nodes: int = 64,
++    ) -> None:
++        pending = self._native_session_close_reclaims
++        initial = len(pending)
++        self._native_session_close_reclaim_ready = initial > max_sessions
++        counts = self.native_session_close_reclaim_counts
++        for _ in range(min(max_sessions, initial)):
++            (session_id, generation), anchors = pending.popitem(last=False)
++            result = self.retire_beliefkv_child_session(
++                session_id=session_id, session_generation=generation,
++                retry_anchors=anchors, max_nodes=max_nodes,
++            )
++            counts["reclaim_batches"] += 1
++            counts["attempted_nodes"] += result["attempted_nodes"]
++            counts["discarded_nodes"] += len(result["discarded_nodes"])
++            counts["stale_generations_skipped"] += int(
++                result["reason"] == "released_session_changed"
++            )
++            for location in ("device", "host"):
++                freed = result[f"freed_{location}_units"]
++                counts[f"freed_{location}_full_tokens"] += freed.get(0, 0)
++                counts[f"freed_{location}_mamba_slots"] += freed.get(2, 0)
++            if result["retry_anchors"]:
++                pending[session_id, generation] = result["retry_anchors"]
++                self._native_session_close_reclaim_ready |= result["budget_exhausted"]
++
++    def _observe_native_closed_request(self, req: Req) -> None:
++        session_id = self.session_refs.session_id_for_req(req)
++        generation = getattr(req, "session_generation", None)
++        if (
++            session_id is None or generation is None or req.last_node is None
++            or self.session_refs.snapshot_released_session_leaf_anchors(
++                session_id, generation,
++            ) is None
++        ):
++            return
++        try:
++            node = self.tree_core.node_by_id(req.last_node)
++        except (KeyError, RuntimeError, ValueError):
++            return
++        if node is self.tree_core.root_node:
++            return
++        self.native_session_close_reclaim_counts["late_finished_requests"] += 1
++        # Cache-finish callers may still inspect last_node. Reclaim at the next
++        # native HiCache poll, after request cleanup and transfer bookkeeping.
++        self._queue_native_session_reclaim(
++            session_id, generation, ((node.id, node.creation_time),),
++        )
++
++    def native_session_close_reclaim_stats(self) -> dict:
++        return {
++            "enabled": self.native_session_close_reclaim_enabled,
++            "pending_sessions": len(self._native_session_close_reclaims),
++            "counts": dict(self.native_session_close_reclaim_counts),
+         }
+ 
+     def reclaim_beliefkv_handoff_capacity(
+@@ -1571,7 +1655,10 @@ class UnifiedRadixCache(BasePrefixCache):
+             return result
+         if self.disable:
+             return DecLockRefResult()
+-        return self.tree_core.dec_lock_ref(node_id, params, skip_swa)
++        result = self.tree_core.dec_lock_ref(node_id, params, skip_swa)
++        if getattr(self, "_native_session_close_reclaims", None):
++            self._native_session_close_reclaim_ready = True
++        return result
+ 
+     def _dec_req_lock(self, req: Req, *, skip_swa: bool = False) -> None:
+         """Release the tree lock a request holds on its last_node with the
+@@ -1598,7 +1685,10 @@ class UnifiedRadixCache(BasePrefixCache):
+     ) -> DecLockRefResult:
+         if self.disable:
+             return DecLockRefResult()
+-        return self.tree_core.dec_host_lock_ref(node_id, params)
++        result = self.tree_core.dec_host_lock_ref(node_id, params)
++        if getattr(self, "_native_session_close_reclaims", None):
++            self._native_session_close_reclaim_ready = True
++        return result
+ 
+     def _finished_session_anchor(self, req: Req, result: InsertResult) -> NodeId:
+         if (
+@@ -1750,6 +1840,8 @@ class UnifiedRadixCache(BasePrefixCache):
+                 req.finished_reason, FINISH_ABORT
+             ):
+                 self.session_refs.register_session_ref(req)
++        if getattr(self, "native_session_close_reclaim_enabled", False):
++            self._observe_native_closed_request(req)
+ 
+     @rank_consensus(same_params=["req.rid", "chunked"])
+     def cache_unfinished_req(self, req: Req, chunked: bool = False, **kwargs) -> None:
+@@ -4855,6 +4947,11 @@ class UnifiedRadixCache(BasePrefixCache):
+         ) = self._sync_hicache_ready_counts()
+         self.writing_check(finish_count=write_finish_count)
+         self.loading_check(finish_count=load_finish_count)
++        if getattr(self, "_native_session_close_reclaims", None) and (
++            write_finish_count or load_finish_count
++            or self._native_session_close_reclaim_ready
++        ):
++            self._drain_native_session_reclaims()
+ 
+         if self.enable_storage and storage_queue_sizes:
+             n_storage_hit, n_ack_prefetch, n_backup, n_release = storage_queue_sizes[:4]
+@@ -4987,7 +5084,25 @@ class UnifiedRadixCache(BasePrefixCache):
+         return self.session_refs.ensure_session_generation(session_id)
+ 
+     def release_radix_session(self, session_id: str) -> int:
+-        return self.session_refs.release_radix_session(session_id)
++        if not getattr(self, "native_session_close_reclaim_enabled", False):
++            return self.session_refs.release_radix_session(session_id)
++        counts = self.native_session_close_reclaim_counts
++        counts["close_calls"] += 1
++        generation = self.session_refs.current_session_generation(session_id)
++        result = self.session_refs.release_radix_session(session_id)
++        if generation is None:
++            counts["unknown_or_duplicate_closes"] += 1
++            return result
++        anchors = self.session_refs.snapshot_released_session_leaf_anchors(
++            session_id, generation,
++        )
++        if anchors is not None:
++            self._queue_native_session_reclaim(
++                session_id, generation,
++                tuple(anchor for _, nodes in anchors for anchor in nodes),
++            )
++            self._drain_native_session_reclaims()
++        return result
+ 
+     # ---- Streaming session API (delegates to composed StreamingSession) ----
+ 
+diff --git a/test/srt/test_beliefkv_native_session_close.py b/test/srt/test_beliefkv_native_session_close.py
+new file mode 100644
+index 0000000..50af98a
+--- /dev/null
++++ b/test/srt/test_beliefkv_native_session_close.py
+@@ -0,0 +1,219 @@
++"""Explicit session-close GC through the real CPU cache and allocator."""
++
++from array import array
++from types import SimpleNamespace as NS
++from unittest.mock import Mock
++
++import pytest
++
++from sglang.srt.managers.schedule_batch import FINISH_LENGTH
++from sglang.srt.mem_cache.unified_cache.component_type import ComponentType
++from test_beliefkv_terminal_capacity import (
++    cache,
++    hybrid_cache,
++    insert_session,
++    match_length,
++)
++
++
++@pytest.fixture(autouse=True)
++def close_reclaim_mode(request, monkeypatch):
++    monkeypatch.setenv(
++        "SGLANG_NATIVE_SESSION_CLOSE_RECLAIM", getattr(request, "param", "1"),
++    )
++
++
++def poll(cache, *, writes=0, loads=0):
++    cache._drain_async_work = Mock()
++    cache._sync_hicache_ready_counts = Mock(return_value=(writes, loads, (), ()))
++    cache.writing_check = Mock()
++    cache.loading_check = Mock()
++    cache.check_hicache_events()
++
++
++@pytest.mark.parametrize("close_reclaim_mode", ("0",), indirect=True)
++def test_disabled_close_keeps_native_cache_and_does_not_queue_gc(cache):
++    insert_session(cache, [1, 2], "child")
++    before = cache.token_to_kv_pool_allocator.available_size()
++    cache.release_radix_session("child")
++    assert cache.token_to_kv_pool_allocator.available_size() == before
++    assert match_length(cache, [1, 2]) == 2
++    stats = cache.native_session_close_reclaim_stats()
++    assert stats["enabled"] is False
++    assert stats["pending_sessions"] == 0
++    assert stats["counts"]["close_calls"] == 0
++
++
++def test_explicit_close_reclaims_private_suffix_without_return_graph_or_dma(cache):
++    insert_session(cache, [1, 2, 8, 8], "parent")
++    insert_session(cache, [1, 2, 3, 4], "child")
++    before = cache.token_to_kv_pool_allocator.available_size()
++    cache.release_radix_session("child")
++    assert cache.token_to_kv_pool_allocator.available_size() == before + 2
++    assert match_length(cache, [1, 2, 8, 8]) == 4
++    assert match_length(cache, [1, 2, 3, 4]) == 2
++    assert cache.native_session_close_reclaim_stats()["counts"][
++        "freed_device_full_tokens"
++    ] == 2
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++def test_duplicate_and_unknown_close_do_not_reopen_or_double_free(cache):
++    insert_session(cache, [1, 2], "child")
++    cache.release_radix_session("child")
++    before = cache.token_to_kv_pool_allocator.available_size()
++    cache.release_radix_session("child")
++    cache.release_radix_session("unknown")
++    assert cache.token_to_kv_pool_allocator.available_size() == before
++    assert cache.session_refs.current_session_generation("child") is None
++    assert cache.session_refs.current_session_generation("unknown") is None
++    assert cache.native_session_close_reclaim_stats()["counts"][
++        "unknown_or_duplicate_closes"
++    ] == 2
++
++
++@pytest.mark.parametrize("blocked", ("device_lock", "host_lock", "d2h", "h2d"))
++def test_dependencies_delay_gc_until_safe_native_poll(cache, blocked):
++    leaf, _ = insert_session(cache, [3, 4], "child")
++    data = leaf.component_data[ComponentType.FULL]
++    if blocked == "device_lock":
++        receipt = cache.inc_lock_ref(leaf.id).to_dec_params()
++    elif blocked == "host_lock":
++        data.host_lock_ref = 1
++    elif blocked == "d2h":
++        leaf.write_through_pending_id = 7
++    else:
++        leaf.load_back_pending_id = 7
++    before = cache.token_to_kv_pool_allocator.available_size()
++    cache.release_radix_session("child")
++    stats = cache.native_session_close_reclaim_stats()
++    assert stats["pending_sessions"] == 1
++    batches = stats["counts"]["reclaim_batches"]
++    poll(cache)
++    assert cache.native_session_close_reclaim_stats()["counts"]["reclaim_batches"] == batches
++    if blocked == "device_lock":
++        cache.dec_lock_ref(leaf.id, receipt)
++    elif blocked == "host_lock":
++        data.host_lock_ref = 0
++    elif blocked == "d2h":
++        leaf.write_through_pending_id = None
++    else:
++        leaf.load_back_pending_id = None
++    assert cache.token_to_kv_pool_allocator.available_size() == before
++    poll(cache, writes=int(blocked in ("host_lock", "d2h")), loads=int(blocked == "h2d"))
++    assert cache.token_to_kv_pool_allocator.available_size() == before + 2
++    assert cache.native_session_close_reclaim_stats()["pending_sessions"] == 0
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++def test_another_sessions_exact_prefix_reference_survives(cache):
++    leaf, _ = insert_session(cache, [1, 2], "first")
++    insert_session(cache, [1, 2], "second")
++    before = cache.token_to_kv_pool_allocator.available_size()
++    cache.release_radix_session("first")
++    assert cache.token_to_kv_pool_allocator.available_size() == before
++    assert leaf.component_data[ComponentType.FULL].session_ref == 1
++    assert match_length(cache, [1, 2]) == 2
++    cache.release_radix_session("second")
++    assert cache.token_to_kv_pool_allocator.available_size() == before + 2
++
++
++def test_reopened_generation_invalidates_pending_old_retirement(cache):
++    leaf, old = insert_session(cache, [1, 2], "child")
++    receipt = cache.inc_lock_ref(leaf.id).to_dec_params()
++    cache.release_radix_session("child")
++    new = cache.open_radix_session("child")
++    assert new != old
++    insert_session(cache, [1, 2], "child")
++    before = cache.token_to_kv_pool_allocator.available_size()
++    cache.dec_lock_ref(leaf.id, receipt)
++    poll(cache)
++    assert cache.token_to_kv_pool_allocator.available_size() == before
++    assert match_length(cache, [1, 2]) == 2
++    stats = cache.native_session_close_reclaim_stats()
++    assert stats["pending_sessions"] == 0
++    assert stats["counts"]["stale_generations_skipped"] == 1
++    cache.release_radix_session("child")
++    assert cache.token_to_kv_pool_allocator.available_size() == before + 2
++
++
++@pytest.mark.parametrize("cache", (512,), indirect=True)
++def test_large_close_drains_in_bounded_rounds_and_keeps_live_parent(cache):
++    insert_session(cache, [1, 9000, 9000], "parent")
++    for index in range(140):
++        insert_session(cache, [1, 1000 + index], "child")
++    before = cache.token_to_kv_pool_allocator.available_size()
++    cache.release_radix_session("child")
++    assert cache.native_session_close_reclaim_stats()["pending_sessions"] == 1
++    for _ in range(20):
++        old = cache.native_session_close_reclaim_stats()["counts"]["attempted_nodes"]
++        poll(cache)
++        stats = cache.native_session_close_reclaim_stats()
++        assert stats["counts"]["attempted_nodes"] - old <= 4 * 64
++        if not stats["pending_sessions"]:
++            break
++    assert stats["pending_sessions"] == 0
++    assert stats["counts"]["freed_device_full_tokens"] == 140
++    assert cache.token_to_kv_pool_allocator.available_size() == before + 140
++    assert match_length(cache, [1, 9000, 9000]) == 3
++
++
++def test_request_finishing_after_close_is_queued_after_cache_cleanup(cache):
++    generation = cache.ensure_session_generation("child")
++    cache.release_radix_session("child")
++    indices = cache.token_to_kv_pool_allocator.alloc(3)
++    cache.req_to_token_pool.req_to_token[0, :3] = indices
++    request = NS(
++        rid="late", session=None, session_id="child", session_generation=generation,
++        origin_input_ids=array("q", [5, 6]), output_ids=array("q", [7]),
++        last_node=None, extra_key=None, cache_salt=None, kv_rotation_base=0,
++        swa_prefix_lock_released=False, finished_reason=FINISH_LENGTH(1),
++        kv=NS(req_pool_idx=0, cache_protected_len=0, swa_evicted_seqlen=0),
++    )
++    before = cache.token_to_kv_pool_allocator.available_size()
++    cache.cache_finished_req(request, kv_len_to_handle=3)
++    assert match_length(cache, [5, 6, 7]) == 3
++    assert cache.native_session_close_reclaim_stats()["pending_sessions"] == 1
++    assert cache.token_to_kv_pool_allocator.available_size() == before
++    poll(cache)
++    assert cache.token_to_kv_pool_allocator.available_size() == before + 3
++    assert cache.native_session_close_reclaim_stats()["counts"]["late_finished_requests"] == 1
++
++
++def test_closed_request_from_reopened_id_cannot_reclaim_new_generation(cache):
++    old = cache.ensure_session_generation("child")
++    cache.release_radix_session("child")
++    new = cache.open_radix_session("child")
++    leaf, _ = insert_session(cache, [5, 6], "child")
++    cache._observe_native_closed_request(NS(
++        session=None, session_id="child", session_generation=old, last_node=leaf.id,
++    ))
++    assert new != old
++    assert cache.native_session_close_reclaim_stats()["pending_sessions"] == 0
++    assert match_length(cache, [5, 6]) == 2
++
++
++def test_hybrid_close_frees_actual_full_and_mamba_capacity(hybrid_cache):
++    cache, full, request_pool = hybrid_cache
++    insert_session(cache, [1, 2, 8, 8], "parent")
++    insert_session(cache, [1, 2, 3, 4], "child")
++    before_full = full.available_size()
++    before_state = request_pool.mamba_allocator.available_size()
++    cache.release_radix_session("child")
++    assert full.available_size() == before_full + 2
++    assert request_pool.mamba_allocator.available_size() == before_state + 1
++    assert match_length(cache, [1, 2, 8, 8]) == 4
++    stats = cache.native_session_close_reclaim_stats()
++    assert stats["counts"]["freed_device_full_tokens"] == 2
++    assert stats["counts"]["freed_device_mamba_slots"] == 1
++
++
++def test_reset_discards_pending_provenance_before_tree_ids_are_reused(cache):
++    leaf, _ = insert_session(cache, [1, 2], "child")
++    cache.inc_lock_ref(leaf.id)
++    cache.release_radix_session("child")
++    assert cache.native_session_close_reclaim_stats()["pending_sessions"] == 1
++    cache.reset()
++    stats = cache.native_session_close_reclaim_stats()
++    assert stats["pending_sessions"] == 0
++    assert stats["counts"]["close_calls"] == 0

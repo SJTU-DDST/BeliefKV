@@ -4,6 +4,18 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 主线新增原生关闭回收候选：增量补丁
+`patches/sglang-v0.5.20-native-session-close-gc.patch` 仅适用于已应用规范
+staging patch 的完整 V75 树53020ce3，不直接应用到干净94602c9。
+候选f1dc97d/tree76cf97d2；开关SGLANG_NATIVE_SESSION_CLOSE_RECLAIM默认0，
+不会随合入main自动启用。当前launcher仍固定HEAD94602c9和规范patch摘要，
+不能直接指向f1dc97d启动。后续须另建候选、准备匹配的组合补丁及资格记录，
+不得改写现有V75/V76引擎、源码或已登记helper。
+V1205引擎103项、V1206应用151项检查通过；V1207是小型CPU关闭调用成本，
+不是GPU/JCT收益。V1204首次夹具失败保留，不以最终通过覆盖原始证据。
+低频计数仅在引擎提供getter时记录，无证据不填零。当前资格限单rank HiCache
+FULL/FULL+Mamba路径，不外推多GPU、非HiCache或其他缓存模式；未登记新GPU实验。
+
 2026-10-16 11:13 PDT：后续独立候选可显式登记
 `BELIEFKV_RECORD_OUTPUT_TOKEN_IDS=1`，默认0；不得热改V75/V76或登记helper。
 它仅在已完成LLM请求中保存引擎保留的生成IDs，不代表自然child RETURN，

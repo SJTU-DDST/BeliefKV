@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="14" time="1.146" timestamp="2026-10-16T11:32:38.471395-07:00" hostname="ddst-12"><testcase classname="srt.test_beliefkv_native_session_close" name="test_disabled_close_keeps_native_cache_and_does_not_queue_gc[0]" time="0.003" /><testcase classname="srt.test_beliefkv_native_session_close" name="test_explicit_close_reclaims_private_suffix_without_return_graph_or_dma" time="0.002" /><testcase classname="srt.test_beliefkv_native_session_close" name="test_duplicate_and_unknown_close_do_not_reopen_or_double_free" time="0.002" /><testcase classname="srt.test_beliefkv_native_session_close" name="test_dependencies_delay_gc_until_safe_native_poll[device_lock]" time="0.003" /><testcase classname="srt.test_beliefkv_native_session_close" name="test_dependencies_delay_gc_until_safe_native_poll[host_lock]" time="0.003" /><testcase classname="srt.test_beliefkv_native_session_close" name="test_dependencies_delay_gc_until_safe_native_poll[d2h]" time="0.003" /><testcase classname="srt.test_beliefkv_native_session_close" name="test_dependencies_delay_gc_until_safe_native_poll[h2d]" time="0.003" /><testcase classname="srt.test_beliefkv_native_session_close" name="test_another_sessions_exact_prefix_reference_survives" time="0.002" /><testcase classname="srt.test_beliefkv_native_session_close" name="test_reopened_generation_invalidates_pending_old_retirement" time="0.002" /><testcase classname="srt.test_beliefkv_native_session_close" name="test_large_close_drains_in_bounded_rounds_and_keeps_live_parent[512]" time="0.016" /><testcase classname="srt.test_beliefkv_native_session_close" name="test_request_finishing_after_close_is_queued_after_cache_cleanup" time="0.002"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'swa_evicted_seqlen'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x767d3e1d41d0&gt;
+
+    def test_request_finishing_after_close_is_queued_after_cache_cleanup(cache):
+        generation = cache.ensure_session_generation("child")
+        cache.release_radix_session("child")
+        indices = cache.token_to_kv_pool_allocator.alloc(3)
+        cache.req_to_token_pool.req_to_token[0, :3] = indices
+        request = NS(
+            rid="late", session=None, session_id="child", session_generation=generation,
+            origin_input_ids=array("q", [5, 6]), output_ids=array("q", [7]),
+            last_node=None, extra_key=None, cache_salt=None, kv_rotation_base=0,
+            swa_prefix_lock_released=False, finished_reason=FINISH_LENGTH(1),
+            kv=NS(req_pool_idx=0, cache_protected_len=0),
+        )
+        before = cache.token_to_kv_pool_allocator.available_size()
+&gt;       cache.cache_finished_req(request, kv_len_to_handle=3)
+
+test/srt/test_beliefkv_native_session_close.py:174: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:1819: in cache_finished_req
+    self.free_kv_row(req.kv, ranges)
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x767d3e1d41d0&gt;
+kv = namespace(req_pool_idx=0, cache_protected_len=0), ranges = [(3, 3)]
+
+    def free_kv_row(self, kv: Any, ranges: list[tuple[int, int]]) -&gt; None:
+        """Give back ascending, disjoint, half-open row-position ranges
+        of the ``kv`` record's row; one call keeps a shared page freed once.
+        """
+        from sglang.srt.mem_cache.common import coalesce_ranges, free_kv_row_segments
+    
+        row = self.req_to_token_pool.req_to_token[kv.req_pool_idx]
+        # Adjacent pieces whose seam falls inside one (DCP-widened) page would
+        # free that page twice; the allocator rejects that, so merge them first.
+        free_kv_row_segments(
+            self.token_to_kv_pool_allocator,
+            [(row[start:end], start) for start, end in coalesce_ranges(ranges)],
+&gt;           swa_evicted_seqlen=kv.swa_evicted_seqlen,
+                               ^^^^^^^^^^^^^^^^^^^^^
+        )
+E       AttributeError: 'types.SimpleNamespace' object has no attribute 'swa_evicted_seqlen'
+
+python/sglang/srt/mem_cache/base_prefix_cache.py:451: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_native_session_close" name="test_closed_request_from_reopened_id_cannot_reclaim_new_generation" time="0.002" /><testcase classname="srt.test_beliefkv_native_session_close" name="test_hybrid_close_frees_actual_full_and_mamba_capacity" time="0.835" /><testcase classname="srt.test_beliefkv_native_session_close" name="test_reset_discards_pending_provenance_before_tree_ids_are_reused" time="0.002" /></testsuite></testsuites>

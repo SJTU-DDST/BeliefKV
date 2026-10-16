@@ -1,0 +1,57 @@
+{
+  "created_at": "2026-10-16T18:44:22.373816+00:00",
+  "scope": "Randomized CPU-only close calls; construction/insertion excluded. Close-GC includes physical private-page release; native retains it. Not identical-work latency, GPU DMA, isolated control saving or JCT.",
+  "engine_module": "/home/longhao/experiment/.worktrees/sglang-v1204-native-session-close-gc-20261016/python/sglang/srt/mem_cache/unified_radix_cache.py",
+  "sources_sha256": {
+    "/home/longhao/experiment/BeliefKV/scripts/benchmark_native_session_close_cpu.py": "600a85cd7b47721eee7110ed316083c10105df20e16a75f3cb2356d4868c0622",
+    "/home/longhao/experiment/.worktrees/sglang-v1204-native-session-close-gc-20261016/python/sglang/srt/mem_cache/unified_radix_cache.py": "1ee64e2e6f959a2df50449a7d467790cbe68cb98d25aaa32bb3d6c46d69d398a",
+    "/home/longhao/experiment/.worktrees/sglang-v1204-native-session-close-gc-20261016/test/srt/test_beliefkv_terminal_capacity.py": "d1706a7119af783deb481452dd320471c46f3c89d729f381bd4a29a6cbb60754"
+  },
+  "iterations_per_mode": 200,
+  "warmup_per_mode": 16,
+  "private_full_tokens_per_close": 32,
+  "results": {
+    "native": {
+      "cpu_ms": {
+        "count": 200,
+        "sum": 2.3109730000000006,
+        "min": 0.010509,
+        "p50": 0.011349,
+        "p90": 0.012327099999999999,
+        "p99": 0.015955289999999997,
+        "max": 0.016425
+      },
+      "wall_ms": {
+        "count": 200,
+        "sum": 2.0561919999999994,
+        "min": 0.009285,
+        "p50": 0.0101245,
+        "p90": 0.010870099999999999,
+        "p99": 0.014737119999999998,
+        "max": 0.01514
+      },
+      "released_full_tokens": 0
+    },
+    "close_gc": {
+      "cpu_ms": {
+        "count": 200,
+        "sum": 13.758055,
+        "min": 0.061041,
+        "p50": 0.06811,
+        "p90": 0.0722473,
+        "p99": 0.07737099999999998,
+        "max": 0.197196
+      },
+      "wall_ms": {
+        "count": 200,
+        "sum": 13.474851999999995,
+        "min": 0.059757,
+        "p50": 0.066705,
+        "p90": 0.07069360000000001,
+        "p99": 0.07608954,
+        "max": 0.195888
+      },
+      "released_full_tokens": 6400
+    }
+  }
+}

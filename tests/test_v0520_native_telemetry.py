@@ -1667,10 +1667,14 @@ def test_host_pool_usage_and_evictions_are_persisted_by_pool(
     scan_counts = {
         "calls": 5, "already_satisfied": 3, "heap_builds": 2, "heap_candidates": 24,
     }
+    close_counts = {"close_calls": 3, "freed_device_full_tokens": 7}
     if with_scan_counts:
         cache.components = {0: SimpleNamespace(host_eviction_counts=scan_counts)}
         cache.write_back_batch_nodes = 32
         cache.write_back_batch_counts = {"attempts": 6, "batches": 2, "nodes": 7}
+        cache.native_session_close_reclaim_stats = lambda: {
+            "enabled": True, "pending_sessions": 1, "counts": close_counts,
+        }
     monkeypatch.setattr(
         sglang_v0520_observer,
         "observe_static_full_mamba_host_usage",
@@ -1696,6 +1700,7 @@ def test_host_pool_usage_and_evictions_are_persisted_by_pool(
     scan_counts["calls"] = 6
     if with_scan_counts:
         cache.write_back_batch_counts["batches"] = 3
+        close_counts["freed_device_full_tokens"] = 999
 
     from sglang.srt.mem_cache.unified_cache.component_type import ComponentType
 
@@ -1730,6 +1735,15 @@ def test_host_pool_usage_and_evictions_are_persisted_by_pool(
     assert status["host_pool_evidence"]["full"]["evicted_bytes"] == 192
     assert status["host_pool_evidence"]["mamba"]["h2d_ack_units"] == 2
     assert status["write_back_batch"] == usage["write_back_batch"]
+    if with_scan_counts:
+        assert usage["native_session_close_reclaim"] == {
+            "enabled": True, "pending_sessions": 1,
+            "counts": {"close_calls": 3, "freed_device_full_tokens": 7},
+        }
+        assert status["native_session_close_reclaim"] == usage["native_session_close_reclaim"]
+    else:
+        assert "native_session_close_reclaim" not in usage
+        assert "native_session_close_reclaim" not in status
 
 
 def test_post_eviction_cache_hits_and_recompute_are_split_by_pool(

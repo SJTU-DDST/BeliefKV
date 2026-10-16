@@ -136,6 +136,7 @@ class NativeReactiveTelemetry:
         self._host_snapshot_interval_ms = 1000.0
         self._last_host_snapshot_ms = float("-inf")
         self._write_back_batch: dict[str, Any] = {}
+        self._native_session_close_reclaim_stats: dict[str, Any] | None = None
         self._cache: object | None = None
         self._restore_wait_probe = RestoreWaitProbe()
         self.prefill_turnover_probe = PrefillTurnoverProbe(self._emit)
@@ -242,7 +243,16 @@ class NativeReactiveTelemetry:
                 int(observation.host_mamba_used_bytes or 0),
             ),
         }
+        close_stats = getattr(cache, "native_session_close_reclaim_stats", None)
+        close_stats = close_stats() if callable(close_stats) else None
+        if isinstance(close_stats, dict):
+            close_stats = {
+                **close_stats, "counts": dict(close_stats.get("counts") or {}),
+            }
+        else:
+            close_stats = None
         with self._state_lock:
+            self._native_session_close_reclaim_stats = close_stats
             self._write_back_batch = {
                 "max_nodes": getattr(cache, "write_back_batch_nodes", None),
                 "counts": dict(getattr(cache, "write_back_batch_counts", {}) or {}),
@@ -276,6 +286,10 @@ class NativeReactiveTelemetry:
                     getattr(cache, "components", {}).get(0),
                     "host_eviction_counts", {},
                 )),
+                **(
+                    {"native_session_close_reclaim": close_stats}
+                    if close_stats is not None else {}
+                ),
             }
         self._emit("host_pool", record)
         self._last_host_snapshot_ms = now_ms
@@ -2095,6 +2109,7 @@ class NativeReactiveTelemetry:
                 "max_nodes": self._write_back_batch.get("max_nodes"),
                 "counts": dict(self._write_back_batch.get("counts") or {}),
             }
+            close_stats = self._native_session_close_reclaim_stats
         status = {
             "schema_version": 1,
             "source": "native_sglang_v0520",
@@ -2108,6 +2123,10 @@ class NativeReactiveTelemetry:
             "dropped_records": 0 if self._error is None else None,
             "host_pool_evidence": pool_evidence,
             "write_back_batch": write_back_batch,
+            **(
+                {"native_session_close_reclaim": close_stats}
+                if close_stats is not None else {}
+            ),
             "request_cache_evidence": request_cache_evidence,
             "context_prefix_reuse_evidence": {
                 "counts": dict(self._context_prefix_counts),

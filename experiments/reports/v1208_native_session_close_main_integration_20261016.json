@@ -1,0 +1,94 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-16",
+  "timezone": "America/Los_Angeles",
+  "status": "cpu_qualified_only",
+  "scope": "Preserve the opt-in native session-close reclamation engineering baseline and remaining application changes on local main; no new GPU experiment.",
+  "main_before": "0195108a14a3ec7edbbc5ee32c46c0438c04c8b8",
+  "already_on_main": {
+    "development_branch_tip": "7f0cb5cbbab79112ee3c6d70b2513f77cd576b17",
+    "v76_no_prefetch": "b2adf481a3c8d7cc004fff8ebf74cb6425e9a183"
+  },
+  "engine": {
+    "checkout": "/home/longhao/experiment/.worktrees/sglang-v1204-native-session-close-gc-20261016",
+    "snapshot_commit": "e9dca308f5e3c651402fe00908e7a92feab1e897",
+    "base_tree": "53020ce3efef3ed362e9af0db77147b39070f064",
+    "candidate_commit": "f1dc97d2dfda2b311effdfd5266a33e36f2a76ae",
+    "candidate_tree": "76cf97d2f462db4f4edbc691cb7e56cf7c8e2568",
+    "incremental_patch": "patches/sglang-v0.5.20-native-session-close-gc.patch",
+    "incremental_patch_sha256": "84f7fbff7907abdb34595d0dde0e9c64ce1422d2b610261e38ba4ea6d4856f0d",
+    "incremental_patch_matches_exact_commit_diff": true,
+    "reverse_patch_check_on_candidate": "passed",
+    "canonical_patch": "patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "canonical_patch_sha256_unchanged": "ea859cf0e8d02db87e1b586fa149c7a8ddf798e867ee7888e21fa4a25f1785ce",
+    "enable_environment_variable": "SGLANG_NATIVE_SESSION_CLOSE_RECLAIM",
+    "enabled_by_default": false,
+    "launch_ready": false,
+    "launch_limit": "Existing launchers require HEAD94602c9 and the canonical staging patch. Prepare and qualify a separate combined candidate before registering a GPU run."
+  },
+  "implementation": {
+    "trigger": "Explicit native radix-session close.",
+    "reclaim": "Existing retirement checks reject live/shared references, locks, children, in-flight transfers, reused node identities and stale generations.",
+    "retry": "Bounded FIFO at native HiCache safe points; lock release only marks readiness. Late-finishing closed requests are queued after cache cleanup.",
+    "per_drain_budget": {
+      "sessions": 4,
+      "node_attempts_per_session": 64
+    },
+    "telemetry": "Copy optional engine counters at the existing once-per-second Host snapshot; omit absent engine evidence."
+  },
+  "validation": {
+    "engine_diff_check": "passed",
+    "main_diff_check_before_documentation": "passed",
+    "staged_diff_check_excluding_original_pytest_failure_xml": "passed",
+    "preserved_evidence_format": "The original V1204 pytest failure XML contains traceback trailing whitespace. Its bytes and SHA256 are preserved; it is the only diff-check exclusion.",
+    "engine_lifecycle_suite": {
+      "report": "experiments/reports/v1205_native_session_close_lifecycle_cpu_20261016.xml",
+      "tests": 103,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "application_telemetry_suite": {
+      "report": "experiments/reports/v1206_native_close_counter_telemetry_cpu_20261016.xml",
+      "tests": 151,
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "initial_engine_attempt": {
+      "report": "experiments/reports/v1204_native_session_close_first_cpu_20261016.xml",
+      "tests": 14,
+      "failures": 1,
+      "reason": "The late-finished-request test fixture lacked kv.swa_evicted_seqlen. The fixture was corrected and the original failing XML retained."
+    },
+    "benchmark": {
+      "report": "experiments/reports/v1207_native_session_close_cpu_cost_20261016.json",
+      "iterations_per_mode": 200,
+      "warmup_per_mode": 16,
+      "native_thread_cpu_p50_ms": 0.011349,
+      "close_gc_thread_cpu_p50_ms": 0.06811,
+      "native_wall_p50_ms": 0.0101245,
+      "close_gc_wall_p50_ms": 0.066705,
+      "private_full_tokens_freed_per_gc_close": 32,
+      "live_parent_prefix_preserved": true,
+      "scope": "Real CPU cache fixture; only explicit-close calls timed, excluding construction and insertion. GC performs additional physical release; different-work costs are not isolated speedup, GPU DMA or JCT."
+    }
+  },
+  "source_and_evidence_sha256": {
+    "beliefkv/runtime/v0520_native_telemetry.py": "e6738d912f2fde65a6697258e7a4efbac75003f525ee003bcf8842ba1c7b1e9d",
+    "tests/test_v0520_native_telemetry.py": "9bece262b6d70b86f4624ecfb3bb222c50981f5455cd70b463b48a56e85b5016",
+    "scripts/benchmark_native_session_close_cpu.py": "600a85cd7b47721eee7110ed316083c10105df20e16a75f3cb2356d4868c0622",
+    "experiments/reports/v1204_native_session_close_first_cpu_20261016.xml": "7238acaa25206dda5c3dcdaeaee0008e5d4e0fc069b22490ac3b806402b6c7f3",
+    "experiments/reports/v1205_native_session_close_lifecycle_cpu_20261016.xml": "e7fbd48ee80e6cac46706c6629b647c9300eee08db70a39d3e4b8615ea178121",
+    "experiments/reports/v1206_native_close_counter_telemetry_cpu_20261016.xml": "b178b0c509432f597795879202176093e72f845bda004cc3ed7465f3b785ac46",
+    "experiments/reports/v1207_native_session_close_cpu_cost_20261016.json": "7d6dc9a6ea80837013577643f58ca62e75159981f67b70cd1af30940df8e5f9a"
+  },
+  "limits": [
+    "Simple engineering baseline, not a claimed new paper contribution.",
+    "CPU qualification is limited to single-rank HiCache FULL and FULL+Mamba paths.",
+    "No GPU throughput, workflow JCT, quality or all-run overhead result exists for this candidate.",
+    "No new GPU experiment, application worktree, registration or quality queue is created by this integration.",
+    "Frozen V75/V76 application worktrees, engine and registered helpers are unchanged.",
+    "Independent paper generators and assets remain outside this system-code integration."
+  ]
+}
