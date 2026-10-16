@@ -8456,7 +8456,10 @@ class NativeAdmissionRuntime:
             return None
         head_observation = observation(head, head_key)
         head_cost = self._request_restore_cost(head, head_observation)
-        if head_cost is None or head_cost[0] == 0:
+        if (
+            head_cost is None and budget is None
+            or head_cost is not None and head_cost[0] == 0
+        ):
             return None
         candidates = []
         for pair in self._resident_prefill_scan(ordered, keys):
@@ -8471,8 +8474,10 @@ class NativeAdmissionRuntime:
             candidate_cost = self._request_restore_cost(request, hint)
             if (
                 candidate_cost is None or hint["missing_full_tokens"] != 0
-                or candidate_cost[0] >= head_cost[0]
-                or candidate_cost[1] > head_cost[1]
+                or head_cost is not None and (
+                    candidate_cost[0] >= head_cost[0]
+                    or candidate_cost[1] > head_cost[1]
+                )
             ):
                 continue
             candidates.append((candidate_cost, index, pair))
@@ -8486,8 +8491,8 @@ class NativeAdmissionRuntime:
             )))
             if normal_admissions < ordinary_quota:
                 return None
-            # An ordering hint alone cannot earn an earlier turn. Recheck
-            # actual input compatibility and current missing state for both.
+            # Aged heads need not retain a discovery hint. A known warm
+            # candidate earns only this comparison, not an admission bypass.
             self.counts["resident_aged_native_quota_inspected"] += 1
             selected_observation = self._read_request_reentry(
                 selected[1], key=keys[selected[0]], refresh=True,

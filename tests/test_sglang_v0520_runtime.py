@@ -424,7 +424,7 @@ def test_native_decline_does_not_spend_resident_quota_or_credit_completion():
         runtime.close()
 
 
-@pytest.mark.parametrize("change", ("none", "expired_head", "expired_candidate", "old_epoch"))
+@pytest.mark.parametrize("change", ("none", "expired_candidate", "old_epoch"))
 def test_reduced_resident_quota_does_not_add_discovery_scans_without_fresh_hints(change):
     from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
 
@@ -452,6 +452,59 @@ def test_reduced_resident_quota_does_not_add_discovery_scans_without_fresh_hints
             assert select(runtime, queue).candidates[0].rid == "head"
         cache.inspect_beliefkv_reentry.assert_not_called()
         assert runtime.counts["resident_aged_native_quota_inspected"] == 0
+    finally:
+        runtime.close()
+
+
+@pytest.mark.parametrize("head_hint", ("missing", "expired"))
+@pytest.mark.parametrize("native_change", (
+    "unchanged", "candidate_prefix", "candidate_full", "head_hot", "head_unknown",
+    "larger_input",
+))
+def test_known_warm_candidate_rechecks_aged_head_without_a_fresh_head_hint(
+    head_hint, native_change,
+):
+    from beliefkv.runtime.native_transfer_policy import PrefetchResidencyBudget
+
+    runtime, queue, observations, cache = _aged_warm_fixture(cached=True)
+    runtime._prefetch_priority_normal_admissions = 1
+    head_key = runtime.visible["head"]
+    if head_hint == "missing":
+        runtime._residency_ordering_hints.pop(head_key)
+    else:
+        runtime._residency_ordering_hints[head_key] = (
+            time.monotonic() * 1000. - 1., observations["head"],
+        )
+    native = {name: row.copy() for name, row in observations.items()}
+    if native_change == "candidate_prefix":
+        native["warm"] = None
+    elif native_change == "candidate_full":
+        native["warm"]["missing_full_tokens"] = 1
+    elif native_change == "head_hot":
+        native["head"].update(missing_full_tokens=0, missing_mamba_slots=0)
+    elif native_change == "head_unknown":
+        native["head"] = None
+    elif native_change == "larger_input":
+        native["warm"]["checkpoint_tokens"] -= 1
+    cache.inspect_beliefkv_reentry.side_effect = lambda request: native[request.rid]
+    try:
+        with patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+            1, 1024 ** 3, source="native_next_prefill",
+        )), patch.object(runtime, "_read_request_residency_hint", side_effect=AssertionError(
+            "an earlier locality turn must not discover more candidates",
+        )):
+            chosen = select(runtime, queue).candidates[0]
+        assert chosen.rid == ("warm" if native_change == "unchanged" else "head")
+        assert [call.args[0].rid for call in cache.inspect_beliefkv_reentry.call_args_list] == [
+            "warm", "head",
+        ]
+        assert runtime.counts["resident_aged_native_quota_ordered"] == int(
+            native_change == "unchanged"
+        )
+        assert runtime._prefetch_priority_normal_admissions == 1
+        assert not runtime.physical_ledger.pending_count
+        assert not runtime._prefetch_service_leases
+        cache.prefetch_gpu_session_nodes.assert_not_called()
     finally:
         runtime.close()
 
