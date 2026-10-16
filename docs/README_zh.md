@@ -7,14 +7,23 @@ write-back 补丁、当前研究文档和只读审计器。日常查看和后续
 实验仍使用各自登记的独立 worktree 固定版本。V75/V76 的运行源码、引擎和
 helper 保持冻结，不随 `main` 的新提交变化。
 
+13:35 PDT：V76目前实际运行，V77保持登记等待。最新封存V1233/V1234关联等待
+回收与后继原生恢复；JOIN回收到服务观测P50约366s，不能仅凭新增H2D断言卸载
+无效，也不能由同node ID称确认复用。V1235完整1200–1800s窗口的V76/native
+decode为1339.85/1333.46token/s，工作量不同，尚非端到端收益。独立FULL-only
+回收候选de4118f保留无Mamba缺额时的有效状态，CPU资格及冻结核验见V1240；
+尚未登记GPU，不替换当前引擎或作为新贡献。完整口径见
+[研究筛选4.20](research/non_scheduling_directions_20261016_zh.md#420-v76-等待状态回收恢复关联与独立分池候选)。
+
 11:13 PDT：V1195/V1198/V1200补齐V75同配置native的两个完整窗口，满48 decode
 worker区间接近，输出速率的相对关系随prefill工作量变化，不能宣布预取因果收益。
 新增默认关闭的完成请求token采集，供下一独立候选核对生成复用，151项CPU检查
 通过；当前V75/V76不启用，也不额外登记GPU。原生NGRAM/ReplaySSM与已有
 agent推测方法的边界见[研究筛选4.12/4.13](research/non_scheduling_directions_20261016_zh.md#412-v75-同配置-native-的两个完整窗口)。
 
-V75 predictive 已完整结束：155 completed、1 incomplete，全部156项原始duration
-均值1806.897s，质量未评分；native于10:37 PDT核验真实服务，V76仍等待。
+V75两侧已完整结束：predictive/native为155/153 completed、1/3 incomplete；
+全部156项原始duration均值1806.897/1665.374s，官方质量未评分。完整流程和
+三个native length终态依据见V1226；V76于12:34:09接续，V1166核验真实首服。
 完整审计确认原生H2D流累计3.899s，decode约占已记录worker区间84%，不能直接
 折算收益。367个真实child均为一层，200个JOIN均单等待者；多轮workflow为29个。
 19项CPU检查通过。完整结果、阶段成本、TokenDance共享条件和已有工作边界维护在
@@ -36,9 +45,10 @@ V75 predictive 已完整结束：155 completed、1 incomplete，全部156项原�
 性能收益。新增 Lachesis/EfficientAgent 原始来源约束，见
 [研究筛选第 4.6/4.7 节](research/non_scheduling_directions_20261016_zh.md#46-v75终态回收与普通-checkpoint-失效必须分开)。
 
-当前 GPU 仍为 V75。无预取候选 V76/b2adf481 已通过 343 项不同 CPU 用例，
-等待完整 V75 结束后仅跑同表 reactive，保留 PREPARE、工具时长预测和运行时
-优化，复用 V75 native 参考。资格 V1164、登记 V1165，尚无新 GPU 性能结果；
+当前GPU为V76/b2adf481，沿用其343项不同CPU用例、V1164资格和V1165登记，
+实际保留PREPARE、工具时长预测、生命周期及驻留/收尾优先，关闭预取/语义/
+机会扫描。V75 native作同batch参考；完整V76结束后再接V77原生关闭回收基线，
+原官方质量队列及V77独立队列保持等待，完整性能和质量仍未验收；
 配置边界见[研究筛选第 4.5 节](research/non_scheduling_directions_20261016_zh.md#45-v76无预取保留备份与工作流运行时的独立候选)。
 
 最新只读结果 V1150–V1158：V75 的两个封闭窗口已验证真实批量写回，尚未证明

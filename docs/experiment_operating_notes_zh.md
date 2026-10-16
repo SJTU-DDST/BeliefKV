@@ -4,6 +4,21 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 13:35 PDT：关闭机会采样的V76没有safe_point_census；旧工具卸载审计
+会因缺少配对时钟拒绝，不可伪造时钟或把forecast出队时间直接当客户端事件时间。
+新audit_wait_state_recovery只用服务端wall时间封存回收/恢复关联，工具预测精度
+仍未测量。每个JSONL按首次stat长度、最后完整换行及SHA256固定；跨文件非原子，
+未服务/缺时刻保持未知。node ID不能代替creation identity；整批字节不按候选
+数量重复计入，也不当作确认forward复用、浪费或可减JCT。V1232–V1234绑定证据。
+V1235/V1238的1200–1800s窗口已覆盖完整边界，实际工作/排队不同；decode相近及
+self墙钟下降均不能宣布完整端到端收益，native控制器不存在也不补造计时。
+新waiting-full-only补丁是基于完整V75树53020ce3的独立增量，不直接用于94602c9，
+也不叠在V77关闭回收组合补丁上宣称已验证。候选de4118f/tree35cf6411仅CPU资格，
+保留状态时仍须能在后续真实Mamba压力下原生备份、ACK、回收，并保持FULL恢复
+后checkpoint可复用。236项回归/27子测试与13项候选检查有重叠，不相加报数量。
+规范patch、V76/V77及已登记helper保持冻结；V1240重核29份文件指纹，当前没有
+新GPU登记或launcher选择。完成现有对照及全任务质量后再决定是否验证该工程候选。
+
 2026-10-16 12:52 PDT：V76当前臂名是reactive，不能为复用旧分析器伪装成
 predictive_h2d目录/标签。V1228直接调用既有monitor_window/control_profile，
 保留真实臂名、模块摘要、方法及封存的控制前缀/边界行摘要；V1229使用支持任意

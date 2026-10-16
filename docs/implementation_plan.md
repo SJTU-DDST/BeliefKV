@@ -2,6 +2,26 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 13:35 PDT: V1233/V1234 seal V76 waiting-state demotions and following
+native requests.516 records span142 context epochs;112 have same-node H2D and
+following match-path associations, with no observed reload/repark sequence before
+that service. JOIN release-to-service observation P50 is366.300s, tool2.773s;
+missing boundaries and node generation remain unknown. These are not reuse proofs.
+V1235's complete1200-1800s window has V76/native decode1339.85/1333.46token/s,
+weighted batch about47.5 and prefill worker totals120.821/123.336s. Different
+realized work prevents a causal or complete quality-matched result. V1238 control
+self-wall totals32.778/49.376s for V76/V75-predictive are not removable JCT.
+The separate-pool FULL eviction path cascaded264 live Mamba releases. Independent
+engine candidate de4118f/tree35cf6411 preserves state when no Mamba deficit remains,
+retaining native joint-deficit and later state-pressure backup/reclaim paths.
+V1237 covers236 regressions/27 subtests; V1239 covers13 final candidate checks,
+including later native backup and reclamation.237 unique testcase identities across
+the overlapping suites pass. V1240 binds the incremental waiting-full-only patch,
+CPU evidence and unchanged V75/V76/V77 application/engine/29 registered file hashes.
+This is an engineering candidate, not novelty or GPU gain; no new launch selection
+or experiment is registered. Complete frozen V76, then V77 and official quality
+before selecting the next GPU candidate or a paper mechanism. See screening4.20.
+
 2026-10-16 12:52 PDT: V1228 seals complete first600s control prefixes with the
 existing read-only monitor/control functions. V76/V75-predictive Python self
 wall totals15.043/25.377s over actual snapshot intervals600.617/600.036s.

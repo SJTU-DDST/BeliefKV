@@ -1,6 +1,30 @@
 # SGLang Runtime Patches
 
-Updated: 2026-10-13.
+Updated: 2026-10-16.
+
+The frozen V75/V76 canonical staging patch is
+`sglang-v0.5.20-beliefkv-staging.patch`, SHA256
+`ea859cf0e8d02db87e1b586fa149c7a8ddf798e867ee7888e21fa4a25f1785ce`,
+reconstructing tree `53020ce3efef3ed362e9af0db77147b39070f064` over
+native HEAD `94602c9`. V77 independently selects the registered native
+session-close combined patch/tree `76cf97d2`; these running and queued
+sources remain unchanged.
+
+`sglang-v0.5.20-waiting-full-only.patch` is an independent incremental
+engineering candidate over the complete V75 tree `53020ce3`, not over
+clean `94602c9` or the V77 tree. Candidate `de4118f`, tree `35cf6411`,
+retains a waiting session's live Mamba state when native FULL reclamation
+has no remaining Mamba deficit. Joint deficits retain native cascading;
+later Mamba pressure can still back up, ACK and reclaim retained state.
+The original causal, identity, reference and DMA checks remain in force.
+V1237 covers 236 CPU regressions and 27 subtests; the overlapping final
+candidate file passes 13 checks in V1239, including later state pressure.
+V1240 binds sources and 237 distinct testcase identities across the suites.
+This patch is not selected by current launchers and has no GPU performance
+or quality result. It does not replace the canonical patch or establish
+a paper contribution.
+
+The follow-up descriptions and patch hashes below are historical records.
 
 The V267 followup stops FULL Host eviction before building the leaf heap
 when write-back duplicate reclamation has already met the requested capacity.

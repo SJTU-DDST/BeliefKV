@@ -1,0 +1,65 @@
+{
+  "created_at": "2026-10-16T13:31:09.459895-07:00",
+  "source_report": {
+    "path": "experiments/reports/v1233_v76_wait_state_recovery_prefix_20261016.json",
+    "sha256": "069517850538f8f117caab55200c0231456dd7eb50803a27b11bc9941ee606da"
+  },
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/opportunities/admission_opportunities.jsonl": {
+      "complete_prefix_bytes": 448206853,
+      "complete_prefix_sha256": "8c9818201c8b1a67a0615fb1b4437f1a6b7ab60329fbe70f24ef3aba59192944",
+      "first_read_limit_bytes": 448206853
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/server/physical_action_ack.jsonl": {
+      "complete_prefix_bytes": 419394,
+      "complete_prefix_sha256": "782fb454157c88f1886ba624dcf1fa50283de15ffe03a1563cc0597884a66d86",
+      "first_read_limit_bytes": 419394
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 36642270,
+      "complete_prefix_sha256": "80852382cd3e92100c545a472f92ac701bbe9b44699c718d793f1d638f7cf9f1",
+      "first_read_limit_bytes": 36642270
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/server/transfer_telemetry.jsonl": {
+      "complete_prefix_bytes": 13203219,
+      "complete_prefix_sha256": "8ab17b1641a1c65d0a9eb106de861dd47b90978f1f8fd8680ea934d78102a372",
+      "first_read_limit_bytes": 13203219
+    }
+  },
+  "demotion_event_shapes_and_all_h2d": {
+    "join_wait:full_and_mamba": 238,
+    "join_wait:full_only": 251,
+    "tool_wait:full_and_mamba": 26,
+    "tool_wait:full_only": 1,
+    "all_h2d_batches": 613
+  },
+  "observed_runtime_flag_combinations": {
+    "(False, False, False)": 2713
+  },
+  "all_h2d_pool_units": {
+    "kv": 8089852,
+    "mamba": 1386
+  },
+  "all_h2d_receipts": {
+    "stream_ms": 7938.566069602966,
+    "submit_to_ack_ms": 35448.987275362015,
+    "actual_bytes": 254923489280
+  },
+  "pool_layout": "static_separate_full_mamba",
+  "full_bytes_per_token": 20480,
+  "mamba_bytes_per_slot": 64389120,
+  "collateral_mamba_release_slots": 264,
+  "frozen_engine_cache": {
+    "path": "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/python/sglang/srt/mem_cache/unified_radix_cache.py",
+    "sha256": "18949216e70f177de70b4368f50a9ef63ea56233936d29fa8a178a25ba00984e",
+    "matches_snapshot": "e9dca308f5e3c651402fe00908e7a92feab1e897"
+  },
+  "mechanism": "All recorded waiting demotions release positive FULL. Frozen V76 has no controlled H2D/handoff. Native FULL waiting-victim eviction calls full-node demote and can cascade Mamba despite static separate pools. A component-only release is an engineering candidate, not a novel contribution or a demonstrated saving.",
+  "limits": [
+    "Per-call allocator deficits and node creation identities are absent.",
+    "Cumulative released slots are not simultaneously free capacity or unique bytes.",
+    "Matched H2D batch bytes do not prove avoidable component transfers.",
+    "No GPU throughput/JCT/quality gain is established."
+  ],
+  "legacy_auditor_attempt": "The unmodified audit_wait_offload.audit rejected this V76 trace because safe_point_census is absent. V1233 uses server wall timestamps and leaves tool prediction accuracy unmeasured."
+}

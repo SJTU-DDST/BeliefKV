@@ -1,0 +1,252 @@
+diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
+index 51cf1b5..5d9d252 100644
+--- a/python/sglang/srt/mem_cache/unified_radix_cache.py
++++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
+@@ -968,7 +968,7 @@ class UnifiedRadixCache(BasePrefixCache):
+ 
+     def _reclaim_beliefkv_full_preserving_mamba(
+         self, node: UnifiedTreeNode, tracker: dict[ComponentType, int], *,
+-        full_session_ref: int,
++        full_session_ref: int, preserve_backed_state: bool = False,
+     ) -> bool:
+         state = node.component_data[ComponentType.MAMBA]
+         components = getattr(self, "tree_components", ())
+@@ -976,7 +976,8 @@ class UnifiedRadixCache(BasePrefixCache):
+         if (
+             not callable(demote) or ComponentType.MAMBA not in components
+             or not set(components) <= {BASE_COMPONENT_TYPE, ComponentType.MAMBA}
+-            or state.value is None or state.host_value is not None or state.session_ref <= 0
++            or state.value is None or state.session_ref <= 0
++            or (state.host_value is not None and not preserve_backed_state)
+             or not self._can_beliefkv_full_demote(
+                 node, full_session_ref=full_session_ref,
+             )
+@@ -1323,6 +1324,7 @@ class UnifiedRadixCache(BasePrefixCache):
+ 
+     def _evict_backed_join_parent(
+         self, component_type: ComponentType, tracker: dict[ComponentType, int],
++        preserve_mamba: bool = False,
+     ) -> None:
+         """Prefer a proven cold parent only during a real allocator shortfall."""
+         validate = getattr(self, "beliefkv_join_pressure_validator", None)
+@@ -1354,9 +1356,16 @@ class UnifiedRadixCache(BasePrefixCache):
+                 continue
+             before = dict(tracker)
+             if component_type == BASE_COMPONENT_TYPE:
+-                if not self._prepare_beliefkv_full_demote(node, full_session_ref=1):
+-                    continue
+-                self._demote(node.id, tracker)
++                kept_state = (
++                    preserve_mamba and ComponentType.MAMBA in self.tree_components
++                    and self._reclaim_beliefkv_full_preserving_mamba(
++                        node, tracker, full_session_ref=1, preserve_backed_state=True,
++                    )
++                )
++                if not kept_state:
++                    if not self._prepare_beliefkv_full_demote(node, full_session_ref=1):
++                        continue
++                    self._demote(node.id, tracker)
+             else:
+                 result = self.tree_core.demote_backed_mamba_state(node.id)
+                 self._free_values(result.device_frees, result.host_frees)
+@@ -1474,7 +1483,14 @@ class UnifiedRadixCache(BasePrefixCache):
+             # on a shared pool, released enough bytes to satisfy its allocation.
+             if tracker[ct] >= request_cnt or target_reached(ct):
+                 continue
+-            self._evict_backed_join_parent(ct, tracker)
++            # Separate pools need no state migration for a FULL-only shortfall.
++            # Joint deficits retain the original cascade and state backup path.
++            preserve_mamba = ct == BASE_COMPONENT_TYPE and (
++                tracker.get(ComponentType.MAMBA, 0)
++                >= request_by_type.get(ComponentType.MAMBA, 0)
++                or target_reached(ComponentType.MAMBA)
++            )
++            self._evict_backed_join_parent(ct, tracker, preserve_mamba)
+             if tracker[ct] >= request_cnt or target_reached(ct):
+                 continue
+             if ct == ComponentType.MAMBA:
+diff --git a/test/srt/test_beliefkv_waiting_full_only.py b/test/srt/test_beliefkv_waiting_full_only.py
+new file mode 100644
+index 0000000..298f6d9
+--- /dev/null
++++ b/test/srt/test_beliefkv_waiting_full_only.py
+@@ -0,0 +1,179 @@
++"""CPU allocator checks for waiting FULL reclamation without collateral state loss."""
++
++from array import array
++from collections import defaultdict
++from types import SimpleNamespace
++from unittest.mock import Mock
++
++import pytest
++
++from test_beliefkv_terminal_capacity import hybrid_cache, insert_session, match_length
++from sglang.srt.mem_cache.base_prefix_cache import EvictParams
++from sglang.srt.mem_cache.unified_cache.component_type import ComponentType
++
++
++def waiting_checkpoint(hybrid_cache, *, backed_state):
++    cache, allocator, request_pool = hybrid_cache
++    leaf, _ = insert_session(cache, [1, 2, 3, 4], "waiting-parent")
++    full, state = (
++        leaf.component_data[ComponentType.FULL],
++        leaf.component_data[ComponentType.MAMBA],
++    )
++    full.host_value = full.value.clone()
++    if backed_state:
++        state.host_value = state.value.clone()
++    cache.is_write_back = True
++    cache.host_memory_mode = "cache"
++    cache.beliefkv_join_pressure_candidates_by_component = {
++        0: ((leaf.id, leaf.creation_time),),
++        2: ((leaf.id, leaf.creation_time),) if backed_state else (),
++    }
++    cache.beliefkv_join_pressure_validator = lambda *_: True
++    cache.beliefkv_join_pressure_parked = Mock()
++    cache.tree_core._update_duplicate_tracking(leaf)
++    return cache, allocator, request_pool, leaf, full, state
++
++
++@pytest.mark.parametrize("backed_state", (False, True))
++def test_native_full_deficit_frees_pages_and_keeps_real_state(hybrid_cache, backed_state):
++    cache, allocator, request_pool, leaf, full, state = waiting_checkpoint(
++        hybrid_cache, backed_state=backed_state,
++    )
++    full_before = allocator.available_size()
++    state_before = request_pool.mamba_allocator.available_size()
++    device_state, host_state = state.value, state.host_value
++    full_host = full.host_value
++    result = cache.evict_for_alloc(EvictParams(num_tokens=4))
++    assert result.num_tokens_evicted == 4
++    assert result.mamba_num_evicted == 0
++    assert allocator.available_size() == full_before + 4
++    assert request_pool.mamba_allocator.available_size() == state_before
++    assert full.value is None and full.host_value is full_host
++    assert state.value is device_state and state.host_value is host_state
++    assert state.session_ref == 1
++    assert leaf.id in cache.tree_core.lru_lists[ComponentType.MAMBA].cache
++    cache._execute_and_commit_kv_backup.assert_not_called()
++    cache.beliefkv_join_pressure_parked.assert_called_once_with(leaf.id, {0: 4})
++
++
++@pytest.mark.parametrize("component", ("joint", "mamba"))
++def test_real_mamba_shortfall_still_recovers_a_backed_slot(hybrid_cache, component):
++    cache, allocator, request_pool, leaf, full, state = waiting_checkpoint(
++        hybrid_cache, backed_state=True,
++    )
++    full_before = allocator.available_size()
++    state_before = request_pool.mamba_allocator.available_size()
++    result = cache.evict_for_alloc(EvictParams(
++        num_tokens=4 if component == "joint" else 0, mamba_num=1,
++    ))
++    assert result.mamba_num_evicted == 1
++    assert request_pool.mamba_allocator.available_size() == state_before + 1
++    assert state.value is None and state.host_value is not None
++    assert allocator.available_size() == full_before + (4 if component == "joint" else 0)
++    assert (full.value is None) == (component == "joint")
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++@pytest.mark.parametrize("blocked", ("locked", "shared", "stale", "d2h", "h2d"))
++def test_full_only_path_preserves_existing_transaction_and_reference_checks(
++    hybrid_cache, blocked,
++):
++    cache, allocator, request_pool, leaf, full, state = waiting_checkpoint(
++        hybrid_cache, backed_state=True,
++    )
++    full_before, state_before = allocator.available_size(), request_pool.mamba_allocator.available_size()
++    if blocked == "locked":
++        full.lock_ref = 1
++    elif blocked == "shared":
++        full.session_ref = state.session_ref = 2
++    elif blocked == "stale":
++        cache.beliefkv_join_pressure_candidates_by_component[0] = (
++            (leaf.id, leaf.creation_time - 1),
++        )
++    elif blocked == "d2h":
++        leaf.write_through_pending_id = 7
++    else:
++        leaf.load_back_pending_id = 7
++    tracker = defaultdict(int)
++    cache._evict_backed_join_parent(ComponentType.FULL, tracker, preserve_mamba=True)
++    assert not tracker
++    assert full.value is not None and state.value is not None
++    assert allocator.available_size() == full_before
++    assert request_pool.mamba_allocator.available_size() == state_before
++    cache._execute_and_commit_kv_backup.assert_not_called()
++    cache.beliefkv_join_pressure_parked.assert_not_called()
++
++
++def test_retained_unbacked_state_can_be_reclaimed_later_after_a_real_backup(hybrid_cache):
++    cache, _, request_pool, leaf, _, state = waiting_checkpoint(
++        hybrid_cache, backed_state=False,
++    )
++    result = cache.evict_for_alloc(EvictParams(num_tokens=4))
++    assert result.num_tokens_evicted == 4
++    before = request_pool.mamba_allocator.available_size()
++    state.host_value = state.value.clone()
++    cache.beliefkv_join_pressure_candidates_by_component[2] = ((leaf.id, leaf.creation_time),)
++    result = cache.evict_for_alloc(EvictParams(mamba_num=1))
++    assert result.mamba_num_evicted == 1
++    assert request_pool.mamba_allocator.available_size() == before + 1
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++@pytest.mark.parametrize("backed_state", (False, True))
++def test_native_full_restoration_reuses_the_retained_hybrid_checkpoint(
++    hybrid_cache, backed_state,
++):
++    cache, allocator, request_pool, leaf, _, state = waiting_checkpoint(
++        hybrid_cache, backed_state=backed_state,
++    )
++    original_state = state.value
++    original_free_states = request_pool.mamba_allocator.available_size()
++    cache.evict_for_alloc(EvictParams(num_tokens=4))
++    observation = cache.inspect_beliefkv_reentry(SimpleNamespace(
++        origin_input_ids=array("q", [1, 2, 3, 4, 9]), session_id="waiting-parent",
++        session_generation=cache.ensure_session_generation("waiting-parent"), extra_key=None,
++    ))
++    assert observation["checkpoint_tokens"] == 4
++    assert observation["missing_full_tokens"] == 4
++    assert observation["missing_mamba_slots"] == 0
++    assert match_length(cache, [1, 2, 3, 4]) == 0
++    cache.tree_core._unevict_node_on_insert(leaf, allocator.alloc(4))
++    assert match_length(cache, [1, 2, 3, 4]) == 4
++    assert state.value is original_state
++    assert request_pool.mamba_allocator.available_size() == original_free_states
++    cache._execute_and_commit_kv_backup.assert_not_called()
++
++
++def test_native_mamba_pressure_backs_up_and_reclaims_a_previously_retained_state(hybrid_cache):
++    cache, _, request_pool, leaf, _, state = waiting_checkpoint(
++        hybrid_cache, backed_state=False,
++    )
++    cache.evict_for_alloc(EvictParams(num_tokens=4))
++    before = request_pool.mamba_allocator.available_size()
++    device_state = state.value
++    order = []
++    cache.cache_controller = SimpleNamespace(write_policy="write_back")
++
++    def enqueue(action, *, write_back, no_host_reclaim):
++        assert action.node_ids == [leaf.id]
++        assert write_back and no_host_reclaim
++        assert state.value is device_state and state.host_value is None
++        order.append("backup")
++        cache.ongoing_write_through[leaf.id] = SimpleNamespace()
++        return 1
++
++    def acknowledge(*, write_back):
++        assert write_back
++        if leaf.id in cache.ongoing_write_through:
++            assert state.value is device_state
++            state.host_value = device_state.clone()
++            cache.ongoing_write_through.clear()
++            order.append("ack")
++
++    cache._execute_and_commit_kv_backup = Mock(side_effect=enqueue)
++    cache.writing_check = Mock(side_effect=acknowledge)
++    result = cache.evict_for_alloc(EvictParams(mamba_num=1))
++    assert order == ["backup", "ack"]
++    assert result.mamba_num_evicted == 1
++    assert request_pool.mamba_allocator.available_size() == before + 1
++    assert state.value is None and state.host_value is not None
