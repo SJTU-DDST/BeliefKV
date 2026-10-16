@@ -57,6 +57,16 @@ all eight exclusions have guard_intervened_completion,five also missing
 semantic completion. Historical versions,realized demand,native tool tails
 and pending quality prevent causal prefetch or stable acceptance claims.
 
+V1051 audits realized demand in those same cohorts. The151 pairs use
+35768/40988 LLM requests and35386/40666 tool calls,-12.74%/-12.98%.
+The143 eligible pairs use29085/37084 requests and28771/36796 tools,
+-21.57%/-21.81%. The11.50% JCT difference cannot be credited to scheduling.
+Fourteen pairs with both call counts within10% and equal delegation rounds
+have1535.346/1483.330s mean JCT,5 faster/nine slower. This post-hoc rough
+subset does not match token demand,tool time or quality and proves no causal
+slowdown. Keep all outcomes. Distinguish ordering,exposed restore waits,
+KV lifecycle and realized execution demand;lower mean need not worsen tails.
+
 V1037 exploratory terminal samples mixed context-epoch advancement with
 workflow completion. Correct V1038 requires ROOT RETURN and WORKFLOW_END:
 117 roots observed at least10s after end sum19.07/19.90GB device FULL/Mamba
