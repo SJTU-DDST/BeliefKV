@@ -8,9 +8,23 @@ recomputation checked. All three workstreams remain open: actual short-prefill
 and high-frequency control cost; useful JOIN/tool FULL prefetch conversion;
 recovery, KV lifecycle and first-service coordination. CPU checks, local
 microseconds, ACK counts and transferred bytes are not acceptance. Inspect
-running V66_restore_cost/2374925 and completed V63 retry1; use V58
+running V67_aged_warm/e8dcba7 and completed V63 retry1; use V58
 for development and matched repeated formal controls. Keep source/engine frozen.
-V66 cold-started at2026-10-15 16:10:48 PDT, port18470, supervisor3804658/
+V67 cold-started at2026-10-15 17:20:43 PDT,port18471,supervisor546742/
+start_ticks628002818 and driver597989. V972/V974 bind registration/launch;
+ops/v67_aged_warm_direct_20261015.state.json is authoritative. Two free-GPU
+observations passed before launch. V975/V976 verify actual first GPU service,
+e8dcba7 source,dedbe1a0 engine,actual configuration and unchanged physical pool
+capacities. Scheduler598387/start_ticks628031986 serves with migration enabled
+and no observer errors; NUMA remains preferred. Same frozen
+V966/V967-qualified candidate,engine,model and workload; predictive only.
+V973 explicitly interrupts V66 after four complete fixed windows including
+3600-3900s:96 completed,60 without terminal results,original driver exit-15.
+Retain raw evidence and censored identities; no complete summary or full-run
+JCT is synthesized. Verified predecessor processes/containers exited and
+GPU resources were released. V968's original waiter was explicitly superseded
+before GPU launch; retain its original registration/helpers.
+Historical V66 cold-started at2026-10-15 16:10:48 PDT, port18470, supervisor3804658/
 start_ticks627607837 and driver3804888. V956/V957 bind registration/launch;
 ops/v66_restore_cost_after_tail_20261015.state.json is authoritative.
 V958/V959 verify actual first GPU service,2374925 source,dedbe1a0 engine,
@@ -58,6 +72,12 @@ Latest V66 windows120-300/600-900/1800-2100s yield233264/246021,
 is15.226/26.239/19.861s. Third-window short-prefill58/64 samples have
 37.014/40.419ms run_batch and6.854/6.962ms selection thread CPU.
 Early windows still trail; historical V58 differs in version/trajectory.
+At3600-3900s,request steps are336089/388781 and control exclusive wall21.922s.
+Decode-batch counts9237/9266 are close but mean batch is36.385/41.958.
+Short-prefill49/75 samples show49.424/39.102ms run_batch,6.319/4.027ms
+selection thread CPU and10.544/4.853ms return-to-result. Batch filling and
+turnover remain open; the third window does not establish a second-wave
+or full-run advantage.
 V960's opportunity-inclusive pre-completion positive FULL JOIN/tool plans
 are46/118, with21/30 early next-request reuse events and0.315/2.738GB.
 The explicit tool-plan count is108;67 JOIN boundaries remain unknown.
@@ -82,12 +102,12 @@ V963 passes646 checks/two subtests. V964's full CPU fixtures add about
 0.13-0.15ms on eligible48/156-queue paths, up to nine inspections; retain
 the two initial fixture failures and do not infer GPU/JCT benefit.
 Frozen e8dcba7 uses the same dedbe1a0 engine. V966 freshly passes900
-checks/two subtests; V967 binds1731 unique passes/two skips. V968 registers
-V67_aged_warm, waiter431581/start_ticks627925431,port18471. Only after
-complete V66 collection, verified predecessor exit and free resources,
-cold-start the frozen candidate. State is
-ops/v67_aged_warm_20261015.state.json. V66 source/model/engine/helpers
-stay frozen; V67 registration is not launch or measured performance gain.
+checks/two subtests; V967 binds1731 unique passes/two skips. The old V968
+waiter431581/start_ticks627925431 was explicitly superseded before GPU launch.
+Its original state retains superseded_before_gpu_launch. V972 registration
+and V973 explicit censoring/release authorize the actual V974 launch.
+V67 has no measured GPU benefit yet; historical V66 source/model/engine,
+registered helpers and original driver-failure exit record remain untouched.
 
 V65's first three windows are collected. At600-900s, request steps370969/
 386707 exceed V64's365786 but retain different versions/realized work.
