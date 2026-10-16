@@ -8,9 +8,52 @@ recomputation checked. All three workstreams remain open: actual short-prefill
 and high-frequency control cost; useful JOIN/tool FULL prefetch conversion;
 recovery, KV lifecycle and first-service coordination. CPU checks, local
 microseconds, ACK counts and transferred bytes are not acceptance. Inspect
-running V68_partial_restore/e4aa180 and completed V63 retry1; use V58
+running V70_terminal_root/06f031b and completed V68_partial_restore/e4aa180; use V58
 for development and matched repeated formal controls. Keep source/engine frozen.
-V68 cold-started at2026-10-15 18:51:42 PDT,port18472,supervisor1944353/
+V70 cold-started at2026-10-15 21:10:19 PDT,port18474,supervisor3447145/
+start_ticks629347135,driver3452941/start_ticks629408220 and scheduler3454060/
+start_ticks629409521. V1043/V1045 bind registration/launch;V1046 verifies
+actual GPU service,source,dedbe1a0 engine and unchanged physical pools.
+V1047 records NUMA preferred. Authoritative state:
+ops/v70_terminal_root_20261015.state.json. Keep156 workflows,108+48 arrivals,
+running48,context131072,output8192,tools180s,Host200GB/80:20,HBM ratio.9,
+prefill4096/interval0 and PREPARE_HOST/JOIN/tool predictive migration.
+V1044 superseded only the unlaunched V69 waiter,preserving its evidence.
+V68 fully exited and two free-resource observations passed before V70.
+
+The current GPU candidate includes acae8a1 resident-consumption quota,
+e284084 same-dispatch first-attempt PREPARE closure reuse and364fa23
+post-WORKFLOW_END root retirement. Require explicit ROOT RETURN provenance
+and actual workflow end;keep native private-suffix eligibility,shared
+prefixes,session/generation,locks and pending-transfer checks. Retry native
+deferred anchors only. Root releases stay separate from child handoff/H2D.
+V1040/V1041 each pass1109 checks;V1042 binds the qualified source.
+Allocator releases and PREPARE reuse are observed,not performance acceptance.
+V1048 records first-three-window request steps236154/246021,
+371594/386707 and366491/381775,still4.01%/3.91%/4.00% behind V58.
+Control exclusive wall is15.321/30.649/27.014s. New earlier-resident-quota
+inspection/order/admission counters remain zero;investigate activation
+without crediting legacy resident-priority events to the new quota.
+
+V68 completed at21:10:00 PDT,driver exit0,153 completed/3 incomplete/no
+errors and migration enabled. The three length-ended roots,django11206,
+django13964 andpytest6197,lack semantic completion;children/JOIN ended
+without guard intervention. V1048 audits151 both-completed pairs:
+mean2156.276/2302.910s,but P95 is5603.914/4999.253s and worsens.
+The143 explicitly eligible pairs yield1946.816/2199.727s mean,-11.50%,
+76 faster/67 slower. Keep the eight additional pairs and all156 outcomes;
+all eight exclusions have guard_intervened_completion,five also missing
+semantic completion. Historical versions,realized demand,native tool tails
+and pending quality prevent causal prefetch or stable acceptance claims.
+
+V1037 exploratory terminal samples mixed context-epoch advancement with
+workflow completion. Correct V1038 requires ROOT RETURN and WORKFLOW_END:
+117 roots observed at least10s after end sum19.07/19.90GB device FULL/Mamba
+and5.70/6.37GB Host FULL/Mamba across different observation times.
+Shared ancestry and native discard eligibility remain unresolved;these are
+not simultaneous,exclusive or proven reclaimable capacity.
+
+Historical V68 cold-started at2026-10-15 18:51:42 PDT,port18472,supervisor1944353/
 start_ticks628571885 and driver1946108. V997/V999 bind registration/launch;
 ops/v68_partial_restore_20261015.state.json is authoritative. V996 binds
 1832 unique passes/two skips;708 fresh checks pass in the frozen checkout.
@@ -60,10 +103,11 @@ post-restore consumption failures;do not claim causal gain or full Mamba
 readiness from this selected cohort. Per-file seals are not atomic;
 V1032 plan snapshots are not the V1024 explicit-dispatch funnel.
 
-The full156 V68 official quality evaluator is queued,supervisor3204505/
+The full156 V68 official quality evaluator is running on CPU,supervisor3204505/
 start_ticks629116499,ops/quality_eval/run_v68_quality_cpu_20261015.py.
-State:quality_v68_cpu_20261015.state.json. Wait for the genuine full summary,
-then export V1035 and bind environment V1036. One CPU worker,one-core quota,
+State:quality_v68_cpu_20261015.state.json. The genuine full summary has
+been exported as V1035 and environment V1036 is bound;worker3450470/
+start_ticks629378270 is live. One CPU worker,one-core quota,
 8GiB,no GPU,cached pinned official images/harness;all outcomes stay in the
 denominator. Record possible overlap with later GPU development,not a formal
 matched-resource performance trial. Registration or worker exit0 is not a
@@ -98,7 +142,7 @@ V1006's four observed large cases have zero FULL missing at their last
 pre-boundary snapshot,yet0.65-0.81GB native hits and13.31-14.63s subsequent
 arrival-to-service waits. Sparse snapshots cannot date the eviction.
 
-Devacae8a1 is frozen as c27ca37,qualified by V1013 with1850 unique
+Historical Devacae8a1 was frozen as c27ca37,qualified by V1013 with1850 unique
 passes/two skips and726 fresh frozen checks. Earlier locality turns use only
 existing fresh hints,then validate both candidate/head native reentry and
 cost/work dominance. Quota follows imminent native slots and eligible
@@ -116,7 +160,8 @@ fresh reads;32k/256-depth and1024-depth add0.974/3.472ms. Input-mismatch
 controls still inspect the head,adding0.095-1.943ms without reordering.
 All-cold controls add no native reads but about0.018ms. This strengthens
 the fixture evidence without measuring live deep-tree frequency or GPU gain.
-Keep the registered candidate and judge service waits,control CPU and full JCT.
+V1044 replaced this unlaunched candidate;the change is now in V70.
+Judge service waits,control CPU and full JCT.
 The V68 fourth3600-3900s window yields372397/388781 request steps,
 about4.2% behind,with17.930s control exclusive wall. Short-prefill53/75
 samples have7.539/4.027ms selection thread CPU,45.464/39.102ms run_batch
@@ -132,17 +177,17 @@ Final16/256-depth eligible means improve0.147/1.405ms;64-depth median
 improves4.926 to4.562ms,but a37.840ms outlier raises the mean4.933 to5.218ms.
 Control-delivery negatives add0.039-0.068ms with no extra native reads.
 Retain both cost and outlier evidence;this is not GPU/JCT acceptance.
-Do not replace registered V69/c27ca37 on this narrow evidence or hot-edit V68.
-The new PREPARE change remains Dev-only while V69 tests resident consumption.
+V68 was not hot-edited. This PREPARE change later passed V1042 qualification
+with completed-root retirement and entered V70;it is no longer Dev-only.
 V1018 preserves a registration bug:the imported generic register function
 spawned its old defining-module watcher,which exited before GPU launch.
 No driver/raw collection was created;its old observer state was overwritten.
 Retain the failure and avoid inventing its unretained exit status.
-Correct V1019 registers V69_cached_resident,waiter2567402/start_ticks628810592,
+Historical V1019 registers V69_cached_resident,waiter2567402/start_ticks628810592,
 port18473,explicit ops/start_v69_cached_resident_registered_20261015.py.
-Its PID/argv are verified live;ops/v69_cached_resident_registered_20261015.state.json
-must wait for genuinely complete156 V68 results,exit0,healthy migration,
-old process exit and two free-resource polls. V69 has not launched.
+Its PID/argv were verified;V1044 later stopped it before GPU launch.
+The complete156 V68 results,exit0,healthy migration,old process exit and
+two free-resource polls were verified before the actual V70 launch.
 
 V998 supersedes only the unlaunched V985/6815795 waiter,retaining its source,
 registration and helper. V1002 explicitly interrupts V67 after all five
