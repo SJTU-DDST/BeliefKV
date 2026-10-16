@@ -4,6 +4,15 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 11:13 PDT：后续独立候选可显式登记
+`BELIEFKV_RECORD_OUTPUT_TOKEN_IDS=1`，默认0；不得热改V75/V76或登记helper。
+它仅在已完成LLM请求中保存引擎保留的生成IDs，不代表自然child RETURN，
+也不证明草稿接受率。必须绑定模型/tokenizer和因果时间，不能用未来完整
+response作草稿；当前旧trace缺失不能按零重复率处理。151项CPU检查见V1197。
+原生虽有NGRAM/ReplaySSM入口，admission与speculation组合仍受初始化检查
+限制，不可直接删除检查或声称已兼容。V1195/V1198/V1200是同配置已闭合窗口，
+输出工作不同，仍非完整性能/质量验收，当前实验和质量队列顺序不变。
+
 2026-10-16 10:49 PDT：V75 predictive完整结果为155 completed/1 incomplete；
 11个workflow有既有guard介入，必须保留原标签和全部任务，不能统一称自然完成。
 pytest-7490末次响应为length，不能因工具180s上限或deadline未到就重标成功。

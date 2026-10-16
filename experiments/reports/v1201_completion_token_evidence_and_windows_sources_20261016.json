@@ -1,0 +1,62 @@
+[
+  {
+    "sha256": "8af9b45c153ef93a72dc604ef1607884fb40218c0ce0b64d36271b72bea121d5",
+    "path": "beliefkv/runtime/v0520_native_telemetry.py"
+  },
+  {
+    "sha256": "8bde85c7ecdd37dbdc5ba4c729c7d1a04befb6224bec52fb5b02e4e8fbdaafa6",
+    "path": "tests/test_v0520_native_telemetry.py"
+  },
+  {
+    "sha256": "032b6c61d41c29692c7ba474882aa46ce149373142838c63d33c5123519cc789",
+    "path": "scripts/analyze_busy_context_control.py"
+  },
+  {
+    "sha256": "9f316c7f97e9af0e9ce74a6435d7c1a42f91f81366eca6f8e02d9b78b4a46f8c",
+    "path": "scripts/compare_native_policy_runs.py"
+  },
+  {
+    "sha256": "e096f363d0eaa65155d3d5fe1ee75ef4e3360cc3b4422c6f72ce2b1a429f90e9",
+    "path": "experiments/reports/v1195_v75_same_batch_busy_control_600_900_20261016.json"
+  },
+  {
+    "sha256": "786a7f8388874e4c63c632db252b3a5ab162cebc9766047290a69be9d7dcd600",
+    "path": "experiments/reports/v1196_v75_same_batch_service_600_900_20261016.json"
+  },
+  {
+    "sha256": "e770348974182e83119171010f7846ccb6c5b56a553f0482e215c982e92db327",
+    "path": "experiments/reports/v1197_completion_token_evidence_cpu_20261016.xml"
+  },
+  {
+    "sha256": "89951c21f7e00a11c2188451dde9efde566ee1bd9c147f4bed1c91503183e3c7",
+    "path": "experiments/reports/v1198_v75_same_batch_busy_control_900_1200_20261016.json"
+  },
+  {
+    "sha256": "a723c8fdc07141c88a1fd5c459ec2255f908e8e32db0a8b746d8dee77be41f2a",
+    "path": "experiments/reports/v1199_generation_related_work_primary_20261016/SHA256SUMS"
+  },
+  {
+    "sha256": "b67c0114e190656da46e706425179e4f2bc755517169be95f0f7f070c35dd943",
+    "path": "experiments/reports/v1199_generation_related_work_primary_20261016/README.md"
+  },
+  {
+    "sha256": "e14f45c66cbdaaa738e6f9064914812e307b8a72479e6134361f65c3710fc721",
+    "path": "experiments/reports/v1200_v75_same_batch_service_600_1200_20261016.json"
+  },
+  {
+    "sha256": "960f80d1ca1cf54ead8688607aabf52d128e465baec693fc93028c2021453eab",
+    "path": "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/python/sglang/srt/managers/scheduler.py"
+  },
+  {
+    "sha256": "b87cd021256ed1d9719514e1f585f31acec84dd5969aa033baa99b950b8c14d9",
+    "path": "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/python/sglang/srt/speculative/ngram_worker.py"
+  },
+  {
+    "sha256": "f7b6db9995357dd99a221b763a642fda1a26b5ec21bc33cb7e350f2a5bcd6343",
+    "path": "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/python/sglang/srt/speculative/spec_utils.py"
+  },
+  {
+    "sha256": "32b72ed4afc8ece83cf430561687e43f30296990b6d9d6b18ba3766a8bbd46df",
+    "path": "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/python/sglang/srt/mem_cache/memory_pool.py"
+  }
+]

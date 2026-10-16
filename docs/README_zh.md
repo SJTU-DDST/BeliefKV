@@ -7,6 +7,12 @@ write-back 补丁、当前研究文档和只读审计器。日常查看和后续
 实验仍使用各自登记的独立 worktree 固定版本。V75/V76 的运行源码、引擎和
 helper 保持冻结，不随 `main` 的新提交变化。
 
+11:13 PDT：V1195/V1198/V1200补齐V75同配置native的两个完整窗口，满48 decode
+worker区间接近，输出速率的相对关系随prefill工作量变化，不能宣布预取因果收益。
+新增默认关闭的完成请求token采集，供下一独立候选核对生成复用，151项CPU检查
+通过；当前V75/V76不启用，也不额外登记GPU。原生NGRAM/ReplaySSM与已有
+agent推测方法的边界见[研究筛选4.12/4.13](research/non_scheduling_directions_20261016_zh.md#412-v75-同配置-native-的两个完整窗口)。
+
 V75 predictive 已完整结束：155 completed、1 incomplete，全部156项原始duration
 均值1806.897s，质量未评分；native于10:37 PDT核验真实服务，V76仍等待。
 完整审计确认原生H2D流累计3.899s，decode约占已记录worker区间84%，不能直接

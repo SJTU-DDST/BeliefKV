@@ -2,6 +2,15 @@
 
 更新日期：2026-10-16（PDT）。
 
+2026-10-16 11:13 PDT：V1195/V1198/V1200同配置窗口确认满48 decode区间接近，
+predictive输出速率相对native在两窗口方向不同，prefill工作量也不同；
+不能把self墙钟或局部速率差直接当作策略因果收益。预取消融V76顺序保持。
+新增默认关闭BELIEFKV_RECORD_OUTPUT_TOKEN_IDS，仅完成请求附不可变生成IDs，
+无逐步采集/新worker，151项CPU检查通过（V1197）。已有NGRAM/Mamba verify/
+ReplaySSM与admission拒绝speculation的边界记录于研究筛选4.13；未移除检查、
+未启用新GPU或修改冻结候选。原生方法和生成token数据不足以证明新贡献，
+任务质量及相对native端到端收益仍待完整结果。
+
 2026-10-16 10:49 PDT：V75 predictive已完整结束，155 completed/1 incomplete，
 原始全部156项duration均值1806.897s；11个workflow有既有guard介入，质量未评分。
 唯一incomplete的pytest-7490末次finish_reason=length，非工具/deadline超时。

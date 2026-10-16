@@ -1,6 +1,6 @@
 # 动态多 Agent 的系统层研究筛选与最新 Trace 证据
 
-更新：2026-10-16 10:49 PDT。研究筛选记录，尚未选定新论文贡献。
+更新：2026-10-16 11:13 PDT。研究筛选记录，尚未选定新论文贡献。
 
 ## 1. 本次调整
 
@@ -579,6 +579,65 @@ V1193 的实际依赖图有367个 dynamic child，全部为深度1；708个内�
 就不实现近似 recurrent 状态复用，也不人为制造相同输出来提高共享率。
 SAGA 的 AEG、缓存保留和公平调度仍是对照边界，不能靠换名称绕开。
 
+### 4.12 V75 同配置 native 的两个完整窗口
+
+V1195/V1198 复用已验证的 worker/控制分析器，改用 V75 当前 native；
+应用2ad32d0、引擎53020ce3、batch32相同，不再用旧 V73 解释共用修复收益。
+两个窗口均已完整观察，时钟按 America/Los_Angeles 校验；native 全程仍未结束。
+V1200 汇总相同窗口的实际 decode token delta、监控和传输。
+
+| 指标 | 600–900s predictive/native | 900–1200s predictive/native |
+| --- | ---: | ---: |
+| 实际 decode token/s | 1175.06 / 1237.65 | 1314.06 / 1188.10 |
+| GPU 利用率 | 91.38% / 94.05% | 93.78% / 94.66% |
+| prefill worker 区间累计 | 75.961 / 71.606s | 56.640 / 76.413s |
+| 提交时 uncached 输入 token | 2,141,241 / 2,052,828 | 2,221,941 / 2,624,996 |
+| predictive 已埋点 Python self 墙钟累计 | 17.024s | 22.191s |
+
+满48、相近上下文且 graph replay 的 decode 均值比例为1.003–1.005和
+0.999–1.007。短单请求 prefill 的均值比例随窗口、工作量和邻接执行变化，
+中位数仍有差距；不能把均值下降当作隔离提速，也不能将某一窗口倍数推广为
+固定内核差距。worker 区间包含排队、依赖和结果处理；self 墙钟也不是可直接
+扣除的 GPU stall。
+
+当前 native 在这两个窗口未记录已完成 H2D payload，而 predictive 有恢复和
+PREPARE。后者的 H2D 不能直接称为替代 native 的恢复等待，仍需结合容量、
+有用重算和完整 JCT/质量判断。第二窗口多出的 decode 服务同时对应约20秒
+更少的 prefill worker 区间与更少 uncached 输入；不是已证明的预取收益。
+保留 V76 无预取消融以核对净控制/状态效果，不据此新增高频控制或改动冻结实验。
+
+### 4.13 生成加速的必要证据与原生能力边界
+
+通用 agent 草稿不能直接作为新主机制：AgSpec [R4] 已有检索共享语料；
+AgentSpec [R13] 已有共享 n-gram、批次预算和工具/提示词边界复用。
+ReplaySSM [R14] 已有 Mamba-2/GDN 的局部状态回放与推测回滚。
+V1199 封存本次核对的后两篇原始 HTML 和 SHA256，不搬用其 kernel/模型
+加速比解释当前 workflow。
+
+本地原生引擎已有 `NGRAMWorker`、共享 corpus/外部语料 API、
+`commit_mamba_states_after_verify` 和 ReplaySSM 入口。BeliefKV admission
+初始化在 `scheduler.py` 明确拒绝 non-NONE speculation；它们的组合尚未验证。
+不能删掉这一正确性约束就宣称支持，也不能把简单开启原生选项当作论文贡献。
+
+现有 trace 的计数、正文和解析后的工具参数不足以还原实际生成 token。
+补充默认关闭的 `BELIEFKV_RECORD_OUTPUT_TOKEN_IDS=1`，仅在原生请求完成时，
+把不可变 `req.output_ids` 快照附在既有 `llm_result.attributes.output_token_evidence`
+中；ready/status 明确记录开关。没有逐 decode 上送或额外 worker，没有记录
+prompt token。native/admission 两条观测路径使用同一实现，不改变模型/工具/
+终态行为。V1197 的151项CPU检查通过，包括11项新增检查：默认关闭不复制、
+两模式、0/3/8192 token、后续列表修改及重复完成、非法配置。
+
+这些是引擎保留的生成 IDs，可包含 reasoning、工具序列化和特殊 token；
+一次 LLM 请求完成不等于 child RETURN。后续因果重放必须绑定模型/tokenizer、
+同一时钟及请求身份，草稿源只能使用当时已可见的数据。仅有完成序列时，应先
+保守地限制为目标请求提交前已完成的源，不利用未来 response 或本轮完整输出
+构造草稿。离线 token 一致仍不证明真实接受率、Mamba 回滚正确性或净提速。
+
+V75/V76 的已冻结候选未加入此采集，当前旧 trace 的缺口仍存在；没有补造
+历史 token、登记新 GPU 任务或改变已排队实验。它是下一独立候选的数据能力，
+尚无实机开销/推测接受率结果。下一机制仍须以实际减少的模型工作、控制/恢复
+成本、资源预算和完整任务质量证明价值。
+
 ## 5. 既有候选一：降低上下文摘要和重建的计算量
 
 这是目前最有规模证据的性能对象。当前 `_summary_input` 把历史消息转成 XML，
@@ -735,3 +794,9 @@ agent 相关草稿长度控制；其生成吞吐结果不能直接当本项目 J
 - [R12] SAGA: Workflow-Atomic Scheduling for AI Agent Inference on GPU
   Clusters，arXiv:2605.00528v2；本次重新核对第3–6节的 AEG、概率保留、
   session-affinity batching 和 agent 级公平。`https://arxiv.org/abs/2605.00528v2`
+- [R13] AgentSpec: Speculative Decoding for Batch Inference of LLM Agents，
+  arXiv:2608.24004v1；本次核对第3.2–3.4节。
+  `https://arxiv.org/html/2608.24004v1`
+- [R14] ReplaySSM: Fast Memory-Efficient State Replay for State Space Model
+  Inference，arXiv:2608.20961v1；本次核对摘要和第3–4节。
+  `https://arxiv.org/html/2608.20961v1`

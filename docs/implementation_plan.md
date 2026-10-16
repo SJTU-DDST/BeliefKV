@@ -2,6 +2,20 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 11:13 PDT: V1195/V1198/V1200 compare two complete V75 windows
+against its same-batch native. Full48 decode intervals are near parity; output
+rate ordering changes with prefill demand, so do not infer causal prefetch gain
+or removable JCT from Python self-wall sums. Continue frozen V75/V76 and quality.
+Add default-off BELIEFKV_RECORD_OUTPUT_TOKEN_IDS for a future independent
+candidate: immutable generated-ID evidence once per completed request, no
+per-decode collection or prompt IDs.151 CPU cases pass (V1197,11 new cases).
+Bind tokenizer/model, identities and causal availability before any draft replay.
+AgentSpec/AgSpec and ReplaySSM already cover generic corpus speculation/state
+replay. Native has relevant entry points, while current BeliefKV admission
+rejects speculation; keep that check until full integration is justified and
+verified. No speculative GPU run is registered. Research screening4.12/4.13
+records the current gap and baseline constraints; the broad goal remains active.
+
 2026-10-16 10:49 PDT: V75 predictive is complete (155 completed/1 incomplete).
 The all156 raw workflow-duration mean is1806.897s;11 workflows carry existing
 guard-intervention labels and official quality remains ungraded. The incomplete

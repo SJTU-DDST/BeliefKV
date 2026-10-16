@@ -46,6 +46,10 @@ class NativeReactiveTelemetry:
             "native_reactive", "admission_observation", "confirmed_join_canary"
         }:
             raise ValueError("unsupported native telemetry collection mode")
+        token_evidence = os.environ.get("BELIEFKV_RECORD_OUTPUT_TOKEN_IDS", "0")
+        if token_evidence not in ("0", "1"):
+            raise ValueError("BELIEFKV_RECORD_OUTPUT_TOKEN_IDS must be 0 or 1")
+        self._record_output_token_ids = token_evidence == "1"
         self.collection_mode = collection_mode
         self.directory = Path(directory).resolve()
         self.scheduler_path = (
@@ -1461,19 +1465,28 @@ class NativeReactiveTelemetry:
                         "workflow_id", "invocation_id", "context_id", "context_epoch"
                     )
                 }, served=True)
+                attributes = {
+                    "request_id": rid,
+                    "output_tokens": len(req.output_ids),
+                    "complete_monotonic_ms": complete_mono * 1000,
+                    "monotonic_clock_domain": local_monotonic_clock_domain(),
+                    "reentry_checkpoint": self._reentry_checkpoint_evidence(req),
+                }
+                if self._record_output_token_ids:
+                    attributes["output_token_evidence"] = {
+                        "schema_version": 1,
+                        "representation": "engine_retained_generated_output_ids",
+                        "token_ids": tuple(req.output_ids),
+                        "availability": "observed_request_completion",
+                        "prompt_token_ids_included": False,
+                    }
                 self._emit("events", {
                     "kind": "llm_result",
                     "ts_ms": complete_wall,
                     **{key: sample[key] for key in (
                         "workflow_id", "invocation_id", "context_id", "context_epoch"
                     )},
-                    "attributes": {
-                        "request_id": rid,
-                        "output_tokens": len(req.output_ids),
-                        "complete_monotonic_ms": complete_mono * 1000,
-                        "monotonic_clock_domain": local_monotonic_clock_domain(),
-                        "reentry_checkpoint": self._reentry_checkpoint_evidence(req),
-                    },
+                    "attributes": attributes,
                 })
                 self._active.discard(rid)
                 self._completed.add(rid)
@@ -1951,6 +1964,7 @@ class NativeReactiveTelemetry:
                         "schema_version": 1,
                         "source": "native_sglang_v0520",
                         "collection_mode": self.collection_mode,
+                        "record_output_token_ids": self._record_output_token_ids,
                         "scheduler_pid": os.getpid(),
                         "scheduler_path": (
                             str(self.scheduler_path) if self.scheduler_path else None
@@ -2085,6 +2099,7 @@ class NativeReactiveTelemetry:
             "schema_version": 1,
             "source": "native_sglang_v0520",
             "collection_mode": self.collection_mode,
+            "record_output_token_ids": self._record_output_token_ids,
             "record_counts": dict(self._counts),
             "pending_request_count": len(self._pending) + len(self._active),
             "pending_batch_count": len(self._launched),

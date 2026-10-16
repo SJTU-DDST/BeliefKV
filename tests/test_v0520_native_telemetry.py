@@ -1469,6 +1469,114 @@ def test_native_request_service_and_ack_are_evidence_not_invented_dma(
     }
 
 
+@pytest.mark.parametrize("collection_mode", ("native_reactive", "admission_observation"))
+@pytest.mark.parametrize("token_count", (0, 3, 8192))
+def test_completed_output_token_evidence_is_opt_in_immutable_and_once(
+    tmp_path, monkeypatch, collection_mode, token_count,
+):
+    monkeypatch.setenv("BELIEFKV_RECORD_OUTPUT_TOKEN_IDS", "1")
+    audit = NativeReactiveTelemetry(
+        tmp_path / "server", collection_mode=collection_mode,
+    )
+    request = SimpleNamespace(
+        rid="tokens", beliefkv_metadata={
+            "root_workflow_id": "w", "invocation_id": "i",
+            "context_id": "c", "context_epoch": 7,
+        },
+        origin_input_ids=[90000, 90001], output_ids=[],
+        cached_tokens_device=0, cached_tokens_host=0,
+        mamba_host_hit_length=0, extend_input_len=2,
+        sampling_params=SimpleNamespace(max_new_tokens=8192),
+        finished=lambda: False,
+    )
+    audit.on_enqueue(request)
+    batch = SimpleNamespace(
+        forward_mode=_Mode("prefill"), launch_ts=time.monotonic(),
+        forward_iter=1, reqs=[request],
+    )
+    audit.on_launch(batch)
+    audit.on_completed(batch)
+    request.output_ids.extend(range(token_count))
+    request.finished = lambda: True
+    batch.forward_mode = _Mode("decode")
+    batch.forward_iter = 2
+    batch.launch_ts = time.monotonic()
+    audit.on_launch(batch)
+    audit.on_completed(batch)
+    request.output_ids.append(99999)
+    batch.forward_iter = 3
+    batch.launch_ts = time.monotonic()
+    audit.on_launch(batch)
+    audit.on_completed(batch)
+    audit.close()
+    events = _read(tmp_path / "server/runtime_events.sglang.jsonl")
+    completed = [event for event in events if event["kind"] == "llm_result"]
+    assert len(completed) == 1
+    result = completed[0]
+    assert result["context_epoch"] == 7
+    attrs = result["attributes"]
+    evidence = attrs["output_token_evidence"]
+    assert evidence["token_ids"] == list(range(token_count))
+    assert len(evidence["token_ids"]) == attrs["output_tokens"] == token_count
+    assert evidence["availability"] == "observed_request_completion"
+    assert evidence["prompt_token_ids_included"] is False
+    assert evidence["representation"] == "engine_retained_generated_output_ids"
+    assert "output_token_evidence" not in events[0]["attributes"]
+    for filename in ("native_telemetry_ready.json", "native_telemetry_status.json"):
+        state = json.loads((tmp_path / "server" / filename).read_text())
+        assert state["record_output_token_ids"] is True
+
+
+@pytest.mark.parametrize("setting", (None, "0"))
+def test_disabled_output_token_evidence_does_not_copy_generated_ids(
+    tmp_path, monkeypatch, setting,
+):
+    if setting is None:
+        monkeypatch.delenv("BELIEFKV_RECORD_OUTPUT_TOKEN_IDS", raising=False)
+    else:
+        monkeypatch.setenv("BELIEFKV_RECORD_OUTPUT_TOKEN_IDS", setting)
+
+    class NoIteration(list):
+        def __iter__(self):
+            raise AssertionError("disabled output-token collection copied generated IDs")
+
+    audit = NativeReactiveTelemetry(tmp_path / "server")
+    request = SimpleNamespace(
+        rid="disabled", beliefkv_metadata={
+            "root_workflow_id": "w", "invocation_id": "i",
+            "context_id": "c", "context_epoch": 0,
+        },
+        origin_input_ids=[90000], output_ids=NoIteration([1, 2]),
+        cached_tokens_device=0, cached_tokens_host=0,
+        mamba_host_hit_length=0, extend_input_len=1,
+        sampling_params=SimpleNamespace(max_new_tokens=8192),
+        finished=lambda: True,
+    )
+    audit.on_enqueue(request)
+    batch = SimpleNamespace(
+        forward_mode=_Mode("prefill"), launch_ts=time.monotonic(),
+        forward_iter=1, reqs=[request],
+    )
+    audit.on_launch(batch)
+    audit.on_completed(batch)
+    audit.close()
+    events = _read(tmp_path / "server/runtime_events.sglang.jsonl")
+    result = next(event for event in events if event["kind"] == "llm_result")
+    assert "output_token_evidence" not in result["attributes"]
+    status = json.loads((tmp_path / "server/native_telemetry_status.json").read_text())
+    assert status["record_output_token_ids"] is False
+
+
+@pytest.mark.parametrize("setting", ("true", "2", ""))
+def test_invalid_output_token_evidence_setting_fails_before_collection(
+    tmp_path, monkeypatch, setting,
+):
+    monkeypatch.setenv("BELIEFKV_RECORD_OUTPUT_TOKEN_IDS", setting)
+    with pytest.raises(ValueError, match="must be 0 or 1"):
+        NativeReactiveTelemetry(tmp_path / "server")
+    assert not (tmp_path / "server").exists()
+
+
 def test_unattributed_startup_prefill_does_not_pollute_native_telemetry(
     tmp_path: Path,
 ) -> None:
