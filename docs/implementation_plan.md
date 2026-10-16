@@ -2,6 +2,19 @@
 
 Status date: 2026-10-16 (Asia/Shanghai).
 
+2026-10-16 10:04 PDT: V1175/V1176 audit the current V75 prefix and complete
+V73 native with sealed input hashes.27/89 load-consuming samples pair exactly;
+10/8 show the pre-forward Mamba fence. Native's42 short samples have0.075ms
+median and0.616ms maximum total layer waits. Mixed-request composition alone
+does not exclude COW source-slot dependencies. Keep native waits; do not add a
+pipeline rewrite or dedicated GPU run without evidence of material exposure.
+V1177 verifies all156-per-arm quality inputs, official test specs and156 cached
+instance images; it invokes prepare only and launches no grading worker.
+Actual correctness remains ungraded. V1178 binds reused sources, execution
+overrides and corrected old status text; see research screening4.8.
+Continue the frozen V75 pair and queued V76; select the next systems mechanism
+from remaining measured cost under the existing quality/all-task acceptance.
+
 2026-10-16 09:40 PDT evidence update: V1171 separates actual terminal releases
 from ordinary retired context checkpoints. Dynamic-child/internal-summary/root
 FULL releases are12.887/236.873/4.097GB, cumulative rather than simultaneous.

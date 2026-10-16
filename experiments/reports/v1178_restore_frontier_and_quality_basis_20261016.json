@@ -1,0 +1,108 @@
+{
+  "schema_version": 1,
+  "bindings_observed_at": "2026-10-16T10:04:41-07:00",
+  "status": "read_only_dependency_audit_and_official_quality_preflight",
+  "reports": [
+    {
+      "path": "experiments/reports/v1175_v75_v73native_mamba_restore_frontier_20261016.json",
+      "sha256": "1cabe6fed0524541408bdeef1bfb3c2650c55f8f6574443a8dcf02ffa974410c"
+    },
+    {
+      "path": "experiments/reports/v1176_v75_v73native_mamba_batch_coupling_20261016.json",
+      "sha256": "56cc0c5c4e57cc03643e21f21966f5599226c22b03d6b0492789e363f1f09107"
+    },
+    {
+      "path": "experiments/reports/v1177_v73_official_quality_preflight_20261016.json",
+      "sha256": "066ff1b18bd3657500750a8dc9af6057acf094dd8c69f00899b8b6e4b245a09b"
+    }
+  ],
+  "reused_sources": [
+    {
+      "path": "experiments/reports/v1178_reused_analysis_sources_20261016/audit_v1109_mamba_cow_restore_frontier_20261016.py",
+      "sha256": "2a02ce6a88b80e3afcaf0b0075eec0ac298021119053203ca5097ae2d49def5c"
+    },
+    {
+      "path": "experiments/reports/v1178_reused_analysis_sources_20261016/audit_v1110_mamba_barrier_batch_coupling_20261016.py",
+      "sha256": "9e29b10d812951d5f0c153ddc39b6607fc9c631bc8e30af5852ab7bf42677412"
+    },
+    {
+      "path": "experiments/reports/v1178_reused_analysis_sources_20261016/run_official_quality_cpu_20261015.py",
+      "sha256": "7d71a5d36ccf05419f70f3bdb7209d4da8c00f61afd5ba2554570b6097ed8379"
+    }
+  ],
+  "execution_overrides": {
+    "frontier": {
+      "NAME": "v1175_v75_v73native_mamba_restore_frontier_20261016.json",
+      "ENGINE": "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016",
+      "CASES": {
+        "v75_predictive_live_prefix": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d",
+        "v73_native_complete": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v73/native"
+      }
+    },
+    "coupling": {
+      "SOURCE": "experiments/reports/v1175_v75_v73native_mamba_restore_frontier_20261016.json",
+      "NAME": "v1176_v75_v73native_mamba_batch_coupling_20261016.json"
+    },
+    "quality": {
+      "method": "prepare only, with V73 native/predictive ARMS; no worker or supervisor call",
+      "SNAPSHOT": "experiments/reports/v1177_v73_official_quality_preflight_20261016.json",
+      "historical_deadlines": "disabled in memory; future-dated snapshot limits do not register or launch grading"
+    }
+  },
+  "corrected_scope": {
+    "superseded_metadata": "The first two limitations strings in V1175 were inherited from the old V1109 main function and do not describe the selected cases. Original numeric evidence and bytes remain preserved.",
+    "live_collection": "V75 predictive is a bounded complete-line prefix, not V73",
+    "completed_reference": "V73 native is complete, with all156 original outcomes; it is not waiting for a native run",
+    "comparison": "Cross-version diagnostic only: V75 uses batched write-back cap32, V73 uses the earlier engine, and realized model trajectories differ",
+    "source_binding": "The V1175 source list binds the actual V75 engine files and reused analyzer; V1176 rechecks the exact sealed first-service event digests"
+  },
+  "observations": {
+    "v75_predictive_live_prefix": {
+      "prefill_batches": 36628,
+      "paired_load_consuming_samples": 27,
+      "pre_forward_mamba_barrier_samples": 10,
+      "barrier_first_wait_p50_ms": 3.5125280618667603,
+      "barrier_all_wait_sum_ms": 37.1720960267121,
+      "short_single_request_samples": 7,
+      "short_all_wait_p50_ms": 0.09273599972948432,
+      "short_all_wait_max_ms": 3.41971204103902,
+      "mixed_host_and_no_host_barrier_samples": 6
+    },
+    "v73_native_complete": {
+      "prefill_batches": 38206,
+      "paired_load_consuming_samples": 89,
+      "pre_forward_mamba_barrier_samples": 8,
+      "barrier_first_wait_p50_ms": 0.017583999782800674,
+      "barrier_all_wait_sum_ms": 15.42934389342554,
+      "short_single_request_samples": 42,
+      "short_all_wait_p50_ms": 0.07547199970576912,
+      "short_all_wait_max_ms": 0.6159680066630244,
+      "mixed_host_and_no_host_barrier_samples": 8
+    }
+  },
+  "quality_preflight": {
+    "official_harness_commit": "f7bbbb2ccdf479001d6467c9e34af59e44a840f9",
+    "denominator_per_arm": 156,
+    "cached_instance_images_verified": 156,
+    "per_arm_original_outcomes": {
+      "completed": 154,
+      "incomplete": 2
+    },
+    "nonempty_patches_per_arm": 155,
+    "dataset_patch_and_export_bindings_verified": true,
+    "new_containers_requested": false,
+    "worker_or_supervisor_registered": false,
+    "official_correctness_evaluated": false
+  },
+  "limitations": [
+    "Dependency probes sample one in16 load-consuming prefills, not all prefills or all COW operations",
+    "CUDA wait timing includes event overhead and is not a per-request queue-delay or JCT saving",
+    "Mixed request composition does not prove that each COW source slot is absent from every pending load",
+    "Do not remove native state or transfer dependencies from this association alone",
+    "The sampled native short-prefill waits do not establish a large remaining restore-pipeline benefit",
+    "No new unit tests or GPU probes were added; reused analyzers checked wait sums, exact request pairing, sealed event digests and pool-byte conservation",
+    "Cached official images and nonempty patches are preparation evidence, not task correctness",
+    "The selected paper mechanism, quality parity and end-to-end performance goals remain unproven"
+  ],
+  "goal_complete": false
+}

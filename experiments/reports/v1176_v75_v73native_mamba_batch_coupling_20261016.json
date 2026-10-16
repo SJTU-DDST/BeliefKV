@@ -1,0 +1,693 @@
+{
+  "status": "exact_request_cache_association_not_COW_source_allocation_proof",
+  "at": "2026-10-16T09:54:47.513463-07:00",
+  "input": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1175_v75_v73native_mamba_restore_frontier_20261016.json",
+    "bytes": 78872,
+    "sha256": "1cabe6fed0524541408bdeef1bfb3c2650c55f8f6574443a8dcf02ffa974410c"
+  },
+  "arms": {
+    "v75_predictive_live_prefix": {
+      "verified_events_prefix": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/server/runtime_events.sglang.jsonl",
+        "snapshot_size_bytes": 61372521,
+        "snapshot_at": "2026-10-16T09:51:43.714095-07:00",
+        "read_prefix_bytes": 61372521,
+        "read_prefix_sha256": "2d7941f79b4819e92d38a337a17e72057f12cabc49d9829c7784f83a7d89bb94",
+        "scan_finished_at": "2026-10-16T09:52:01.782327-07:00"
+      },
+      "groups": {
+        "layerwise_entry_no_observed_pre_forward_barrier": {
+          "sample_count": 17,
+          "batch_size_counts": {
+            "1": 16,
+            "2": 1
+          },
+          "multi_request_batches": 1,
+          "all_dependency_wait_sum_ms": 1.3689600037178025,
+          "first_dependency_wait_p50_ms": 0.004031999967992306,
+          "first_service_cache_complete_batches": 17,
+          "mixed_first_service_host_and_no_host_requests": 0,
+          "mamba_host_hit_request_count_histogram": {
+            "1": 15,
+            "2": 1,
+            "0": 1
+          }
+        },
+        "pre_forward_last_mamba_barrier": {
+          "sample_count": 10,
+          "batch_size_counts": {
+            "1": 3,
+            "2": 6,
+            "3": 1
+          },
+          "multi_request_batches": 7,
+          "all_dependency_wait_sum_ms": 37.1720960267121,
+          "first_dependency_wait_p50_ms": 3.5125280618667603,
+          "first_service_cache_complete_batches": 10,
+          "mixed_first_service_host_and_no_host_requests": 6,
+          "mamba_host_hit_request_count_histogram": {
+            "0": 4,
+            "1": 6
+          }
+        }
+      },
+      "pre_forward_barrier_rows": [
+        {
+          "forward_iter": 50862,
+          "request_ids": [
+            "beliefkv:01a1455b-d2f8-73d2-a18f-6e51edc78b82"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 650,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 3.5383360385894775,
+          "total_wait_ms": 3.6036800384754315,
+          "probe_ts_ms": 1792165008289.5977,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a1455b-d2f8-73d2-a18f-6e51edc78b82",
+              "cached_tokens_device": 27904,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 0,
+          "requests_without_any_host_hit": 1
+        },
+        {
+          "forward_iter": 68242,
+          "request_ids": [
+            "beliefkv:01a14563-6259-7033-9287-f70e37c42f54"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1168,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 3.486720085144043,
+          "total_wait_ms": 3.5521600855281577,
+          "probe_ts_ms": 1792165506723.3225,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a14563-6259-7033-9287-f70e37c42f54",
+              "cached_tokens_device": 9720,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 0,
+          "requests_without_any_host_hit": 1
+        },
+        {
+          "forward_iter": 76859,
+          "request_ids": [
+            "beliefkv:01a14567-146c-7ba3-b564-662a3a50906f"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 112,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 3.3556480407714844,
+          "total_wait_ms": 3.41971204103902,
+          "probe_ts_ms": 1792165756088.363,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a14567-146c-7ba3-b564-662a3a50906f",
+              "cached_tokens_device": 22836,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 0,
+          "requests_without_any_host_hit": 1
+        },
+        {
+          "forward_iter": 87805,
+          "request_ids": [
+            "beliefkv:01a1456c-0ec6-77d3-9a04-5146dee55be7",
+            "beliefkv:01a1456c-09e7-7e70-ba34-bdbe9228f0be"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1916,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 5.845983982086182,
+          "total_wait_ms": 5.909407982020639,
+          "probe_ts_ms": 1792166075760.3003,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a1456c-0ec6-77d3-9a04-5146dee55be7",
+              "cached_tokens_device": 17061,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            },
+            {
+              "request_id": "beliefkv:01a1456c-09e7-7e70-ba34-bdbe9228f0be",
+              "cached_tokens_device": 8351,
+              "cached_tokens_host": 454,
+              "mamba_host_hit_slots": 1
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 1,
+          "requests_without_any_host_hit": 1
+        },
+        {
+          "forward_iter": 102917,
+          "request_ids": [
+            "beliefkv:01a14572-cf5e-7ab1-be21-0f5962a35b1c",
+            "beliefkv:01a14572-d0b1-7f40-b7b9-bfe4f8915627"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1444,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.04879999905824661,
+          "total_wait_ms": 0.11055999912787229,
+          "probe_ts_ms": 1792166525788.6091,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a14572-cf5e-7ab1-be21-0f5962a35b1c",
+              "cached_tokens_device": 20224,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            },
+            {
+              "request_id": "beliefkv:01a14572-d0b1-7f40-b7b9-bfe4f8915627",
+              "cached_tokens_device": 5477,
+              "cached_tokens_host": 13467,
+              "mamba_host_hit_slots": 1
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 1,
+          "requests_without_any_host_hit": 1
+        },
+        {
+          "forward_iter": 103260,
+          "request_ids": [
+            "beliefkv:01a14573-015b-74e3-85bc-2cff8a59f954",
+            "beliefkv:01a14573-0151-71a2-a47b-555e4e95b45c",
+            "beliefkv:01a14573-035d-76d1-902f-9af5df46118b"
+          ],
+          "batch_size": 3,
+          "extend_tokens": 2183,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.019071999937295914,
+          "total_wait_ms": 0.23263999843038619,
+          "probe_ts_ms": 1792166538006.124,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a14573-015b-74e3-85bc-2cff8a59f954",
+              "cached_tokens_device": 5497,
+              "cached_tokens_host": 25799,
+              "mamba_host_hit_slots": 1
+            },
+            {
+              "request_id": "beliefkv:01a14573-0151-71a2-a47b-555e4e95b45c",
+              "cached_tokens_device": 20416,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            },
+            {
+              "request_id": "beliefkv:01a14573-035d-76d1-902f-9af5df46118b",
+              "cached_tokens_device": 26688,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 1,
+          "requests_without_any_host_hit": 2
+        },
+        {
+          "forward_iter": 103407,
+          "request_ids": [
+            "beliefkv:01a14573-169b-7512-90e1-d6944ef33f41",
+            "beliefkv:01a14573-1718-75f2-bfe1-4e366c034cba"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 872,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 7.498432159423828,
+          "total_wait_ms": 7.569664159207605,
+          "probe_ts_ms": 1792166543440.3896,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a14573-169b-7512-90e1-d6944ef33f41",
+              "cached_tokens_device": 20928,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            },
+            {
+              "request_id": "beliefkv:01a14573-1718-75f2-bfe1-4e366c034cba",
+              "cached_tokens_device": 12864,
+              "cached_tokens_host": 16640,
+              "mamba_host_hit_slots": 1
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 1,
+          "requests_without_any_host_hit": 1
+        },
+        {
+          "forward_iter": 103706,
+          "request_ids": [
+            "beliefkv:01a14573-3f78-7b11-a735-fd6df1877e19",
+            "beliefkv:01a14573-3f99-7773-9175-5cdee5afec0a"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1375,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 4.317599773406982,
+          "total_wait_ms": 4.377503773430362,
+          "probe_ts_ms": 1792166554022.0894,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a14573-3f78-7b11-a735-fd6df1877e19",
+              "cached_tokens_device": 5497,
+              "cached_tokens_host": 26759,
+              "mamba_host_hit_slots": 1
+            },
+            {
+              "request_id": "beliefkv:01a14573-3f99-7773-9175-5cdee5afec0a",
+              "cached_tokens_device": 25994,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 1,
+          "requests_without_any_host_hit": 1
+        },
+        {
+          "forward_iter": 104995,
+          "request_ids": [
+            "beliefkv:01a14573-e52c-72a0-a68e-9fcf7d015c71",
+            "beliefkv:01a14573-e708-7801-b115-3c5c0e3e3cef"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1069,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 7.131999969482422,
+          "total_wait_ms": 7.209087969386019,
+          "probe_ts_ms": 1792166597449.0476,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a14573-e52c-72a0-a68e-9fcf7d015c71",
+              "cached_tokens_device": 11712,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            },
+            {
+              "request_id": "beliefkv:01a14573-e708-7801-b115-3c5c0e3e3cef",
+              "cached_tokens_device": 8350,
+              "cached_tokens_host": 19335,
+              "mamba_host_hit_slots": 1
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 1,
+          "requests_without_any_host_hit": 1
+        },
+        {
+          "forward_iter": 106551,
+          "request_ids": [
+            "beliefkv:01a14574-cfeb-7de3-ba6e-32d243fa91bd",
+            "beliefkv:01a14574-c707-7e52-a026-7b9b49f591a1"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 4096,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 1.1216319799423218,
+          "total_wait_ms": 1.187679980066605,
+          "probe_ts_ms": 1792166646336.0952,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a14574-cfeb-7de3-ba6e-32d243fa91bd",
+              "cached_tokens_device": 29227,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            },
+            {
+              "request_id": "beliefkv:01a14574-c707-7e52-a026-7b9b49f591a1",
+              "cached_tokens_device": 192,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 0,
+          "requests_without_any_host_hit": 2
+        }
+      ]
+    },
+    "v73_native_complete": {
+      "verified_events_prefix": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v73/native/server/runtime_events.sglang.jsonl",
+        "snapshot_size_bytes": 67461470,
+        "snapshot_at": "2026-10-16T09:51:43.714148-07:00",
+        "read_prefix_bytes": 67461470,
+        "read_prefix_sha256": "2d1ae7866ca1ab8bc5d0a1d3e071babf243c92def31c8846cfbce399899790d0",
+        "scan_finished_at": "2026-10-16T09:52:23.312465-07:00"
+      },
+      "groups": {
+        "layerwise_entry_no_observed_pre_forward_barrier": {
+          "sample_count": 81,
+          "batch_size_counts": {
+            "1": 73,
+            "2": 6,
+            "4": 1,
+            "3": 1
+          },
+          "multi_request_batches": 8,
+          "all_dependency_wait_sum_ms": 8.252128038206138,
+          "first_dependency_wait_p50_ms": 0.014751999638974667,
+          "first_service_cache_complete_batches": 81,
+          "mixed_first_service_host_and_no_host_requests": 0,
+          "mamba_host_hit_request_count_histogram": {
+            "1": 73,
+            "2": 6,
+            "4": 1,
+            "3": 1
+          }
+        },
+        "pre_forward_last_mamba_barrier": {
+          "sample_count": 8,
+          "batch_size_counts": {
+            "3": 2,
+            "2": 6
+          },
+          "multi_request_batches": 8,
+          "all_dependency_wait_sum_ms": 15.42934389342554,
+          "first_dependency_wait_p50_ms": 0.017583999782800674,
+          "first_service_cache_complete_batches": 8,
+          "mixed_first_service_host_and_no_host_requests": 8,
+          "mamba_host_hit_request_count_histogram": {
+            "2": 2,
+            "1": 6
+          }
+        }
+      },
+      "pre_forward_barrier_rows": [
+        {
+          "forward_iter": 106836,
+          "request_ids": [
+            "beliefkv:01a144cd-aa27-7ad2-ac66-56f1f0de8f10",
+            "beliefkv:01a144cd-aa74-7a02-9929-b42cfce9f70f",
+            "beliefkv:01a144cd-ac0d-7180-b922-d8a7319037eb"
+          ],
+          "batch_size": 3,
+          "extend_tokens": 398,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.01740800030529499,
+          "total_wait_ms": 0.8300479918252677,
+          "probe_ts_ms": 1792155701978.7,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a144cd-aa27-7ad2-ac66-56f1f0de8f10",
+              "cached_tokens_device": 22144,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            },
+            {
+              "request_id": "beliefkv:01a144cd-aa74-7a02-9929-b42cfce9f70f",
+              "cached_tokens_device": 5494,
+              "cached_tokens_host": 13194,
+              "mamba_host_hit_slots": 1
+            },
+            {
+              "request_id": "beliefkv:01a144cd-ac0d-7180-b922-d8a7319037eb",
+              "cached_tokens_device": 5513,
+              "cached_tokens_host": 22967,
+              "mamba_host_hit_slots": 1
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 2,
+          "requests_without_any_host_hit": 1
+        },
+        {
+          "forward_iter": 107593,
+          "request_ids": [
+            "beliefkv:01a144ce-2118-7ab1-bf33-12b35f3b9627",
+            "beliefkv:01a144ce-21fd-7cd2-a342-b9ec94a307a9"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1821,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.02067199908196926,
+          "total_wait_ms": 0.08198399911634624,
+          "probe_ts_ms": 1792155733375.551,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a144ce-2118-7ab1-bf33-12b35f3b9627",
+              "cached_tokens_device": 22208,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            },
+            {
+              "request_id": "beliefkv:01a144ce-21fd-7cd2-a342-b9ec94a307a9",
+              "cached_tokens_device": 5497,
+              "cached_tokens_host": 6407,
+              "mamba_host_hit_slots": 1
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 1,
+          "requests_without_any_host_hit": 1
+        },
+        {
+          "forward_iter": 111900,
+          "request_ids": [
+            "beliefkv:01a144d1-4ff0-72f0-85cc-1573546e1952",
+            "beliefkv:01a144d1-509b-7810-a409-7676b4055b56"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1888,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.016672000288963318,
+          "total_wait_ms": 0.08464000024832785,
+          "probe_ts_ms": 1792155946658.831,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a144d1-4ff0-72f0-85cc-1573546e1952",
+              "cached_tokens_device": 15808,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            },
+            {
+              "request_id": "beliefkv:01a144d1-509b-7810-a409-7676b4055b56",
+              "cached_tokens_device": 5493,
+              "cached_tokens_host": 7819,
+              "mamba_host_hit_slots": 1
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 1,
+          "requests_without_any_host_hit": 1
+        },
+        {
+          "forward_iter": 113656,
+          "request_ids": [
+            "beliefkv:01a144d2-7f7b-7fe3-8e80-d9ef9d5901e8",
+            "beliefkv:01a144d2-80fd-7060-a27a-87d1cb73701a"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1760,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.017152000218629837,
+          "total_wait_ms": 0.7076799714704975,
+          "probe_ts_ms": 1792156022724.1904,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a144d2-7f7b-7fe3-8e80-d9ef9d5901e8",
+              "cached_tokens_device": 5824,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            },
+            {
+              "request_id": "beliefkv:01a144d2-80fd-7060-a27a-87d1cb73701a",
+              "cached_tokens_device": 5492,
+              "cached_tokens_host": 19980,
+              "mamba_host_hit_slots": 1
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 1,
+          "requests_without_any_host_hit": 1
+        },
+        {
+          "forward_iter": 113919,
+          "request_ids": [
+            "beliefkv:01a144d2-b202-72b1-936a-60b30b68b938",
+            "beliefkv:01a144d2-b2a6-7162-8e55-2db29c514a90"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 859,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.015552000142633915,
+          "total_wait_ms": 0.2521279964130372,
+          "probe_ts_ms": 1792156034766.672,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a144d2-b202-72b1-936a-60b30b68b938",
+              "cached_tokens_device": 28954,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            },
+            {
+              "request_id": "beliefkv:01a144d2-b2a6-7162-8e55-2db29c514a90",
+              "cached_tokens_device": 8350,
+              "cached_tokens_host": 6562,
+              "mamba_host_hit_slots": 1
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 1,
+          "requests_without_any_host_hit": 1
+        },
+        {
+          "forward_iter": 116207,
+          "request_ids": [
+            "beliefkv:01a144d3-f1c3-7832-a7df-050a9544c3b6",
+            "beliefkv:01a144d3-f293-7e42-98a4-ac4ed3209db1"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 690,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.01775999926030636,
+          "total_wait_ms": 0.13222399959340692,
+          "probe_ts_ms": 1792156110216.632,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a144d3-f1c3-7832-a7df-050a9544c3b6",
+              "cached_tokens_device": 8350,
+              "cached_tokens_host": 5474,
+              "mamba_host_hit_slots": 1
+            },
+            {
+              "request_id": "beliefkv:01a144d3-f293-7e42-98a4-ac4ed3209db1",
+              "cached_tokens_device": 20416,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 1,
+          "requests_without_any_host_hit": 1
+        },
+        {
+          "forward_iter": 116765,
+          "request_ids": [
+            "beliefkv:01a144d4-3293-7313-a0fe-28fe4db28531",
+            "beliefkv:01a144d4-33ed-7ae2-8007-30d28a551723",
+            "beliefkv:01a144d4-351b-7061-b4ef-062e2c3e8e52"
+          ],
+          "batch_size": 3,
+          "extend_tokens": 698,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 13.1911039352417,
+          "total_wait_ms": 13.257983935181983,
+          "probe_ts_ms": 1792156127963.2307,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a144d4-3293-7313-a0fe-28fe4db28531",
+              "cached_tokens_device": 5514,
+              "cached_tokens_host": 19126,
+              "mamba_host_hit_slots": 1
+            },
+            {
+              "request_id": "beliefkv:01a144d4-33ed-7ae2-8007-30d28a551723",
+              "cached_tokens_device": 8312,
+              "cached_tokens_host": 6728,
+              "mamba_host_hit_slots": 1
+            },
+            {
+              "request_id": "beliefkv:01a144d4-351b-7061-b4ef-062e2c3e8e52",
+              "cached_tokens_device": 25216,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 2,
+          "requests_without_any_host_hit": 1
+        },
+        {
+          "forward_iter": 122855,
+          "request_ids": [
+            "beliefkv:01a144d6-eeae-78e0-ae21-e29e094ee86f",
+            "beliefkv:01a144d6-eefd-7583-8770-811b4710f9e2"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1850,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.021215999498963356,
+          "total_wait_ms": 0.08265599957667291,
+          "probe_ts_ms": 1792156303629.918,
+          "request_cache": [
+            {
+              "request_id": "beliefkv:01a144d6-eeae-78e0-ae21-e29e094ee86f",
+              "cached_tokens_device": 8350,
+              "cached_tokens_host": 354,
+              "mamba_host_hit_slots": 1
+            },
+            {
+              "request_id": "beliefkv:01a144d6-eefd-7583-8770-811b4710f9e2",
+              "cached_tokens_device": 31040,
+              "cached_tokens_host": 0,
+              "mamba_host_hit_slots": 0
+            }
+          ],
+          "first_service_cache_complete": true,
+          "requests_with_mamba_host_hit": 1,
+          "requests_without_any_host_hit": 1
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "First-service request counters identify requests, not each later prefill chunk.",
+    "One request's COW at batch entry can gate the whole forward stream on the shared batch layer38 completion event.",
+    "Mixed request composition and a coarse wait identify a coupling candidate, not proof that the particular COW source is absent from the in-flight load.",
+    "General trace records do not contain every source/destination COW slot identity; retain native safety checks until exact dependence is proven.",
+    "No all-run timing extrapolation, native-relative causality or JCT saving."
+  ],
+  "goal_complete": false
+}

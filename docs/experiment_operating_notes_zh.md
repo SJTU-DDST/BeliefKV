@@ -4,6 +4,13 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 10:04 PDT：恢复依赖探针只覆盖每16个load-consuming prefill中的一个，
+不能把其累计等待或屏障比例推广到整轮请求/JCT。混合Host-hit/no-Host请求并不
+证明COW源槽没有在途依赖。V1175/V1176保留原量测，旧工具残留状态文字由V1178
+更正；当前完整native参考为V73、live前缀为V75。复用one-off main时必须检查
+硬编码状态/限制，不只替换输入路径。V1177的官方评测检查仅prepare，156个镜像
+可用不等于156项已评分，也未登记新worker；两侧incomplete/空补丁仍保留。
+
 2026-10-16 09:40 PDT 新增统计约束：terminal_child_reclaim_calls 包含内部摘要，
 必须按 invocation_create 元数据或明确 invocation_scope 拆分，不能由名称猜角色。
 terminal_context_cache_sample 也会在普通 context epoch 失效时产生；旧 checkpoint

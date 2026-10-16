@@ -1,0 +1,1408 @@
+{
+  "arms": {
+    "v73_native": {
+      "manifest_sha256": "e52379f0d13f9c0515db7036a3b14017e4f53d654fb51213ae0208b558897428",
+      "predictions_sha256": "6609aa01d484c733677c8f2fa7e2bfaf585d35757263285ee069aca3f46946b3",
+      "source_summary_sha256": "d76459fd945ccf95e64ea22b26ab7f8cd2fed48d325621aa0db50e5fe47f4157",
+      "workflow_outcomes": {
+        "completed": 154,
+        "incomplete": 2
+      }
+    },
+    "v73_predictive": {
+      "manifest_sha256": "f429cf384790e96f06263458b9b931decdfe03604c77788a34145d0ed860a58c",
+      "predictions_sha256": "2487d246da0ef0f1762b2d27fdaad629f780c89e287fd4bf904d2ea847d51731",
+      "source_summary_sha256": "fe24271150ec0637383fb2260433d5bcfa1d2159931f796f7b62cfcbf70a848f",
+      "workflow_outcomes": {
+        "completed": 154,
+        "incomplete": 2
+      }
+    }
+  },
+  "cached_images": {
+    "swebench/sweb.eval.x86_64.django_1776_django-10097:latest": {
+      "id": "sha256:148894532806828ddd882c6617387910c1be8d064e2496fbe7ec046a30eff6fb",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-10097@sha256:148894532806828ddd882c6617387910c1be8d064e2496fbe7ec046a30eff6fb"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-10554:latest": {
+      "id": "sha256:3e799bbbf2aa8ad8201cf7fa1302d3a8c2d0885bcd8141dbfcf67ae9d68ab2d1",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-10554@sha256:3e799bbbf2aa8ad8201cf7fa1302d3a8c2d0885bcd8141dbfcf67ae9d68ab2d1"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-10880:latest": {
+      "id": "sha256:94e6ba5d96b1a1db8bc6fd117c03728d6a7453ddb723dc4484f48bd22efc968d",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-10880@sha256:94e6ba5d96b1a1db8bc6fd117c03728d6a7453ddb723dc4484f48bd22efc968d"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-10914:latest": {
+      "id": "sha256:f26f0db931c6c1e785ab8287e1ea4f5f948846267db159deaf90b3fe7adea4e9",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-10914@sha256:f26f0db931c6c1e785ab8287e1ea4f5f948846267db159deaf90b3fe7adea4e9"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-10973:latest": {
+      "id": "sha256:ed086eeedcb33feb3d298d97764c0413e078d1e6144f0a145c5defa34bb077c8",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-10973@sha256:ed086eeedcb33feb3d298d97764c0413e078d1e6144f0a145c5defa34bb077c8"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-10999:latest": {
+      "id": "sha256:22a35ae325dc5abdd397b1d474d66aad62da6d23c4e9c8763478e82bcf63af7b",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-10999@sha256:22a35ae325dc5abdd397b1d474d66aad62da6d23c4e9c8763478e82bcf63af7b"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11066:latest": {
+      "id": "sha256:533a239ec38726f2cfe0ed08a18d081f71cfc9ec7c459e08fbfc0f39d19112bd",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11066@sha256:533a239ec38726f2cfe0ed08a18d081f71cfc9ec7c459e08fbfc0f39d19112bd"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11087:latest": {
+      "id": "sha256:978680ec9fef5526ee919404380e983928cbeaa4079731ff133e1a53daf5f6b5",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11087@sha256:978680ec9fef5526ee919404380e983928cbeaa4079731ff133e1a53daf5f6b5"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11095:latest": {
+      "id": "sha256:0d2973f2ef6308ebe0309814503143869edce1f057e7ca565d4305ffbfbceb76",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11095@sha256:0d2973f2ef6308ebe0309814503143869edce1f057e7ca565d4305ffbfbceb76"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11099:latest": {
+      "id": "sha256:cca302934edd881cc4f1e4647a389a25cdaa3c02bfa33667a4204934a09c4fb1",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11099@sha256:cca302934edd881cc4f1e4647a389a25cdaa3c02bfa33667a4204934a09c4fb1"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11119:latest": {
+      "id": "sha256:19e88bd69fb66bbf1b1ee7502c185fd074726eebf384f4c5334135acc9a297f3",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11119@sha256:19e88bd69fb66bbf1b1ee7502c185fd074726eebf384f4c5334135acc9a297f3"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11133:latest": {
+      "id": "sha256:cf92d32f28cfa31224ccde2077ec8efd46d5c79cb9b1758c7ab4b4b245bfcb08",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11133@sha256:cf92d32f28cfa31224ccde2077ec8efd46d5c79cb9b1758c7ab4b4b245bfcb08"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11138:latest": {
+      "id": "sha256:ddc0080158473b72206a30e5333bcb04f19c4631c49bc039e396b721e47a11cc",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11138@sha256:ddc0080158473b72206a30e5333bcb04f19c4631c49bc039e396b721e47a11cc"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11141:latest": {
+      "id": "sha256:78dd49837eaf63d6ebd3f05013bc3a2f77152bb9192b6bbbf1849f319fbb9909",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11141@sha256:78dd49837eaf63d6ebd3f05013bc3a2f77152bb9192b6bbbf1849f319fbb9909"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11149:latest": {
+      "id": "sha256:275c2ed9e322b52aea53ce7045403c7bf0f851a6455c5747b224f6f4040340f2",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11149@sha256:275c2ed9e322b52aea53ce7045403c7bf0f851a6455c5747b224f6f4040340f2"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11163:latest": {
+      "id": "sha256:22424bbf0a4c54e8a7fce6b9d78bd3807589f727ff5de3e5b0c2b89c6ceab414",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11163@sha256:22424bbf0a4c54e8a7fce6b9d78bd3807589f727ff5de3e5b0c2b89c6ceab414"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11179:latest": {
+      "id": "sha256:23e061f0071647d4c459b2c3aa84081011080f57a4580727c16997cf01e0d477",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11179@sha256:23e061f0071647d4c459b2c3aa84081011080f57a4580727c16997cf01e0d477"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11206:latest": {
+      "id": "sha256:1478ff091b2e702e3eeda873e40054431d9f2b592f8e0f61d9dc6b7ec18455b7",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11206@sha256:1478ff091b2e702e3eeda873e40054431d9f2b592f8e0f61d9dc6b7ec18455b7"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11211:latest": {
+      "id": "sha256:22312ea6c7a536440aa0bae32e97a213d617b58dcbba962d7630c1b6ea635e0c",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11211@sha256:22312ea6c7a536440aa0bae32e97a213d617b58dcbba962d7630c1b6ea635e0c"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11239:latest": {
+      "id": "sha256:e260b7489ea9fe2c6d99f0a727badf69ff1d0fc44b4f45163f1bd7a997db2587",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11239@sha256:e260b7489ea9fe2c6d99f0a727badf69ff1d0fc44b4f45163f1bd7a997db2587"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11265:latest": {
+      "id": "sha256:70a39003fb3ce8f01ee82dfeb16b09bc3714ab669d3743fb3e1e5689f18ea1ef",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11265@sha256:70a39003fb3ce8f01ee82dfeb16b09bc3714ab669d3743fb3e1e5689f18ea1ef"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11276:latest": {
+      "id": "sha256:727317e7a8eb50abb663af37206c595a9171295157add746c3f2b3cc42da7323",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11276@sha256:727317e7a8eb50abb663af37206c595a9171295157add746c3f2b3cc42da7323"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11292:latest": {
+      "id": "sha256:ed10ed40b40643a9ebf70b08e7e93f1edadf47fee5b453ae2412dbb6ed340b80",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11292@sha256:ed10ed40b40643a9ebf70b08e7e93f1edadf47fee5b453ae2412dbb6ed340b80"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11299:latest": {
+      "id": "sha256:e43ae327b6a8ee64f9bc09c17c0c919ff1ea381fcf69404f32914607daea9590",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11299@sha256:e43ae327b6a8ee64f9bc09c17c0c919ff1ea381fcf69404f32914607daea9590"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11333:latest": {
+      "id": "sha256:ac29b993b4361ddb0d77756862f5738f64a1d3332591f09e5a1d222e5dda78c9",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11333@sha256:ac29b993b4361ddb0d77756862f5738f64a1d3332591f09e5a1d222e5dda78c9"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11400:latest": {
+      "id": "sha256:435433409f08e5fce3f1385aced327baac5df8d14377b00616238729721e323a",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11400@sha256:435433409f08e5fce3f1385aced327baac5df8d14377b00616238729721e323a"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11433:latest": {
+      "id": "sha256:81293f20095c8b9d78ae951f21c3dbf813e7b0fd2950773651c7666e5c3bd113",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11433@sha256:81293f20095c8b9d78ae951f21c3dbf813e7b0fd2950773651c7666e5c3bd113"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11451:latest": {
+      "id": "sha256:573a31e77453fc4fbdaa85582c4d611ebbaf52f47e3630e02cc32c2f5826f82e",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11451@sha256:573a31e77453fc4fbdaa85582c4d611ebbaf52f47e3630e02cc32c2f5826f82e"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11477:latest": {
+      "id": "sha256:2a11b9c6bd131e3af00119e975a04f00ed4d9e6c41f8606bc0792459fd538293",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11477@sha256:2a11b9c6bd131e3af00119e975a04f00ed4d9e6c41f8606bc0792459fd538293"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11490:latest": {
+      "id": "sha256:efe0a8e57dfa92d296fb017ad7931d842b506ad05ef7582195b4bd9a890c3a9e",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11490@sha256:efe0a8e57dfa92d296fb017ad7931d842b506ad05ef7582195b4bd9a890c3a9e"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11532:latest": {
+      "id": "sha256:8abdd4a9c5f66b458599cb3b1418861dd16c1ac7cc29a226f6e0148f1ecb966c",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11532@sha256:8abdd4a9c5f66b458599cb3b1418861dd16c1ac7cc29a226f6e0148f1ecb966c"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11551:latest": {
+      "id": "sha256:2c2327cffde3e63d1d2631235539e57622eb3c60b118302148ce0e6fe109a0dd",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11551@sha256:2c2327cffde3e63d1d2631235539e57622eb3c60b118302148ce0e6fe109a0dd"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11555:latest": {
+      "id": "sha256:e2c6d6293c8ad66c921754ee2bc13206b0f30166465ad71be92703c11ffaa3cb",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11555@sha256:e2c6d6293c8ad66c921754ee2bc13206b0f30166465ad71be92703c11ffaa3cb"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11603:latest": {
+      "id": "sha256:6b53eb34c74acff36eb2709ba2f239e213ecb386948e14a3101b9fa16be8b74d",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11603@sha256:6b53eb34c74acff36eb2709ba2f239e213ecb386948e14a3101b9fa16be8b74d"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11728:latest": {
+      "id": "sha256:20c1140ad7480854ca794a512fd7db9345e16d8fed19edf8f7f8759f6658ee08",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11728@sha256:20c1140ad7480854ca794a512fd7db9345e16d8fed19edf8f7f8759f6658ee08"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11734:latest": {
+      "id": "sha256:44b05ec403a902fe4625cf8c557b7d7697799c0bd359d14b130a7ef0ea187a02",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11734@sha256:44b05ec403a902fe4625cf8c557b7d7697799c0bd359d14b130a7ef0ea187a02"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11740:latest": {
+      "id": "sha256:6a057a8a78fefed32c70c306c4843a12a9a83147a75e20a523d2fa7bdca392f4",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11740@sha256:6a057a8a78fefed32c70c306c4843a12a9a83147a75e20a523d2fa7bdca392f4"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11749:latest": {
+      "id": "sha256:8fd290a544ff73ae75fc4331e4c5f0ff1d80a2458665e484f3d4a5862ba10e50",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11749@sha256:8fd290a544ff73ae75fc4331e4c5f0ff1d80a2458665e484f3d4a5862ba10e50"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11790:latest": {
+      "id": "sha256:061b5e37b0dfc15512b9604c843618b47aece8e603d08d0926c3990e0e9b3ac4",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11790@sha256:061b5e37b0dfc15512b9604c843618b47aece8e603d08d0926c3990e0e9b3ac4"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11815:latest": {
+      "id": "sha256:19b66392c9872e6d07b331b0ed59466c3e6c3588bc4cdd89f56f8767dc774f8a",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11815@sha256:19b66392c9872e6d07b331b0ed59466c3e6c3588bc4cdd89f56f8767dc774f8a"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11820:latest": {
+      "id": "sha256:3989ce1800981ee4f20d1dda0b1e8ea85c39468fb415039924f0af5a84bd1b06",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11820@sha256:3989ce1800981ee4f20d1dda0b1e8ea85c39468fb415039924f0af5a84bd1b06"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11848:latest": {
+      "id": "sha256:08eac9219e5d4b15b445fde26c587157a0ad8a2d9209e4b1e266259edf51bb4b",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11848@sha256:08eac9219e5d4b15b445fde26c587157a0ad8a2d9209e4b1e266259edf51bb4b"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11880:latest": {
+      "id": "sha256:ce0c7fd75b0fe8d24632c627359c5e2bc1a4922843d889870931f80f2f98c311",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11880@sha256:ce0c7fd75b0fe8d24632c627359c5e2bc1a4922843d889870931f80f2f98c311"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11885:latest": {
+      "id": "sha256:dcc7a94bc42733bb59e7ce45a83e7df1f203ae55ad570a1a1f098c438c5f5ca2",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11885@sha256:dcc7a94bc42733bb59e7ce45a83e7df1f203ae55ad570a1a1f098c438c5f5ca2"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11951:latest": {
+      "id": "sha256:8b2b92376eadf6ac500e6c79798d18e46c506a76508fbb4417fde91c29cf1239",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11951@sha256:8b2b92376eadf6ac500e6c79798d18e46c506a76508fbb4417fde91c29cf1239"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11964:latest": {
+      "id": "sha256:098474801410af7303f0814d0d8557791ca2f55e455e5db766c3b3d0a9826df2",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11964@sha256:098474801410af7303f0814d0d8557791ca2f55e455e5db766c3b3d0a9826df2"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-11999:latest": {
+      "id": "sha256:3c7e7f035f611b17f2093ee6409364bc28cce8b9bac266b9590db762d197607e",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-11999@sha256:3c7e7f035f611b17f2093ee6409364bc28cce8b9bac266b9590db762d197607e"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12039:latest": {
+      "id": "sha256:bd4dc8875144f8f3e0b8866575f9ab564b51774a71fa954cb8e4a9d34484a90c",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12039@sha256:bd4dc8875144f8f3e0b8866575f9ab564b51774a71fa954cb8e4a9d34484a90c"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12050:latest": {
+      "id": "sha256:34773901589784072af940b29697018dc17b32e37b4ff135a153c99ac2c38dec",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12050@sha256:34773901589784072af940b29697018dc17b32e37b4ff135a153c99ac2c38dec"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12125:latest": {
+      "id": "sha256:4345ad65eec0da8a32063c2c9a32df380e10b4fb4ccebfcfed9c4be9a185e5ff",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12125@sha256:4345ad65eec0da8a32063c2c9a32df380e10b4fb4ccebfcfed9c4be9a185e5ff"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12143:latest": {
+      "id": "sha256:c1b074e08c0e181ade18e1469908457b35de6ca5a2029dba393e32ba100aef0f",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12143@sha256:c1b074e08c0e181ade18e1469908457b35de6ca5a2029dba393e32ba100aef0f"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12155:latest": {
+      "id": "sha256:e039b37f460b99a0cf541ea6759ac5a31e94ce9959d3755d99775792421e44dc",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12155@sha256:e039b37f460b99a0cf541ea6759ac5a31e94ce9959d3755d99775792421e44dc"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12193:latest": {
+      "id": "sha256:f2f0882bb350e6c7b073569444629513f4c0bd6821f3610d243a26b2b4eae26e",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12193@sha256:f2f0882bb350e6c7b073569444629513f4c0bd6821f3610d243a26b2b4eae26e"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12209:latest": {
+      "id": "sha256:6781fe1de96e581d385aa7797a580274023f7a625a891f1ecd751ff303e6a256",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12209@sha256:6781fe1de96e581d385aa7797a580274023f7a625a891f1ecd751ff303e6a256"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12262:latest": {
+      "id": "sha256:23c0777e08a37bd0643f7638eaca9c57d1ee16fca79b6312b8d6de7fd1b5e7da",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12262@sha256:23c0777e08a37bd0643f7638eaca9c57d1ee16fca79b6312b8d6de7fd1b5e7da"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12273:latest": {
+      "id": "sha256:ceea46664eff0d02e627ee17f0f9230e5c20a1debf3eb1ca2b53c7ca476210aa",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12273@sha256:ceea46664eff0d02e627ee17f0f9230e5c20a1debf3eb1ca2b53c7ca476210aa"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12276:latest": {
+      "id": "sha256:903942f778dbcf0b61c62031697c4a5f3655569c11c84204bdfa307b844ec2ae",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12276@sha256:903942f778dbcf0b61c62031697c4a5f3655569c11c84204bdfa307b844ec2ae"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12304:latest": {
+      "id": "sha256:46ad662e0ab1ab9417a26ceae392395f255634a054c25faf0fcfcd43aa52702c",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12304@sha256:46ad662e0ab1ab9417a26ceae392395f255634a054c25faf0fcfcd43aa52702c"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12308:latest": {
+      "id": "sha256:6250d2a608d52b82cd4eb03eb33082bb9927397c01876025499430b782cce9a6",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12308@sha256:6250d2a608d52b82cd4eb03eb33082bb9927397c01876025499430b782cce9a6"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12325:latest": {
+      "id": "sha256:9c15847c3fd7d269adf15233bd7034bb9e0491e45fefe87454013d2bdf7a6efe",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12325@sha256:9c15847c3fd7d269adf15233bd7034bb9e0491e45fefe87454013d2bdf7a6efe"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12406:latest": {
+      "id": "sha256:7d3be89e5d04229df52612992c678659e25a38908edbb465f9b83549a54d9294",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12406@sha256:7d3be89e5d04229df52612992c678659e25a38908edbb465f9b83549a54d9294"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12419:latest": {
+      "id": "sha256:7e32534eba09fd9214fd5b0cc6c1d418923b381d09493a1e3cf65abb1309d09a",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12419@sha256:7e32534eba09fd9214fd5b0cc6c1d418923b381d09493a1e3cf65abb1309d09a"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12663:latest": {
+      "id": "sha256:c1beb1a0d8fc303f8ae8197bdd81b3d80e2e86cb04a579d5bd10435fb87e3c73",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12663@sha256:c1beb1a0d8fc303f8ae8197bdd81b3d80e2e86cb04a579d5bd10435fb87e3c73"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12708:latest": {
+      "id": "sha256:3722a130f618602e5636c8c7ddd821550e2c2462b569907c4140fc162e24671e",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12708@sha256:3722a130f618602e5636c8c7ddd821550e2c2462b569907c4140fc162e24671e"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12713:latest": {
+      "id": "sha256:cc6a38b67ce149e7db25db27dfd0075a3c28e4b85bc17c46f2606a3558a970eb",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12713@sha256:cc6a38b67ce149e7db25db27dfd0075a3c28e4b85bc17c46f2606a3558a970eb"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12741:latest": {
+      "id": "sha256:4a5b2a8509849f2046fe578542cf7355000ee8d9e141d5bf85763422e2da49c2",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12741@sha256:4a5b2a8509849f2046fe578542cf7355000ee8d9e141d5bf85763422e2da49c2"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12754:latest": {
+      "id": "sha256:0afab24d63fd4753314e07af78fb2c6ec5f8805a83456012c30badd87822a49b",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12754@sha256:0afab24d63fd4753314e07af78fb2c6ec5f8805a83456012c30badd87822a49b"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12774:latest": {
+      "id": "sha256:583b8062be9c05f1ca69b25e4b4aff7e3de9f522ecfdeda7959c61b17dc4d386",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12774@sha256:583b8062be9c05f1ca69b25e4b4aff7e3de9f522ecfdeda7959c61b17dc4d386"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12858:latest": {
+      "id": "sha256:c9865ad6e7a0907fa9a449b6f7541a72904777036515d539b38186fe01e09f2b",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12858@sha256:c9865ad6e7a0907fa9a449b6f7541a72904777036515d539b38186fe01e09f2b"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-12965:latest": {
+      "id": "sha256:0b7b7b2916ab66921ba020ad0356cf968cc4729470000e6c40f641286af3ee6d",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-12965@sha256:0b7b7b2916ab66921ba020ad0356cf968cc4729470000e6c40f641286af3ee6d"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-13012:latest": {
+      "id": "sha256:29c0e742cb37711bd8439df0ab91e29900dcac93d81121b2f2c4fcfaf995eceb",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-13012@sha256:29c0e742cb37711bd8439df0ab91e29900dcac93d81121b2f2c4fcfaf995eceb"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-13023:latest": {
+      "id": "sha256:aaf6d5643d9e9bc9308de9c8736ed0c46c12dd75cfbd5c89d5089391fe15fce0",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-13023@sha256:aaf6d5643d9e9bc9308de9c8736ed0c46c12dd75cfbd5c89d5089391fe15fce0"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-13028:latest": {
+      "id": "sha256:4250631872579b9eb6731a16a489ba31be1efff3e0c1e0eb2a7feb24215ce92b",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-13028@sha256:4250631872579b9eb6731a16a489ba31be1efff3e0c1e0eb2a7feb24215ce92b"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-13033:latest": {
+      "id": "sha256:1acb49e9389a6df0df9fe52bc0c87ced013e323015b4313b7397857b41166138",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-13033@sha256:1acb49e9389a6df0df9fe52bc0c87ced013e323015b4313b7397857b41166138"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-13089:latest": {
+      "id": "sha256:44447df3e17b1fb5f4708a810fa0d425edefbedc0cf092c05150ad5adfc623e8",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-13089@sha256:44447df3e17b1fb5f4708a810fa0d425edefbedc0cf092c05150ad5adfc623e8"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-13109:latest": {
+      "id": "sha256:99485703b09250cf48812b5f24e4449c3f179b5bf7673b96cd398aa7f1179295",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-13109@sha256:99485703b09250cf48812b5f24e4449c3f179b5bf7673b96cd398aa7f1179295"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-13112:latest": {
+      "id": "sha256:a5e22b373f35ce538ae14aa9b2eb2c6552379ff97a560128270e45e18984eaf1",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-13112@sha256:a5e22b373f35ce538ae14aa9b2eb2c6552379ff97a560128270e45e18984eaf1"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-13121:latest": {
+      "id": "sha256:435fa9739e9d7142814efc5cd79871a275919523a825c212adf74dd08736f43f",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-13121@sha256:435fa9739e9d7142814efc5cd79871a275919523a825c212adf74dd08736f43f"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-13128:latest": {
+      "id": "sha256:5d3032e45ec74dcdd31d6893ba098f72b97b565334909b265921b9cfb45b01bd",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-13128@sha256:5d3032e45ec74dcdd31d6893ba098f72b97b565334909b265921b9cfb45b01bd"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-13158:latest": {
+      "id": "sha256:b05beccc82fc00cbc3a3090ebe207b122dd31585aefcf7d9c1fc0c4147c664b6",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-13158@sha256:b05beccc82fc00cbc3a3090ebe207b122dd31585aefcf7d9c1fc0c4147c664b6"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-13195:latest": {
+      "id": "sha256:b42fb9c9d19e0f503e0353b77195524e6dff1997ce7cf2e53e38950af3f1cc11",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-13195@sha256:b42fb9c9d19e0f503e0353b77195524e6dff1997ce7cf2e53e38950af3f1cc11"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-13212:latest": {
+      "id": "sha256:6d5203003bd83e110cc1dd5426a80da290a39d40717a94b51c9260b66fd79bcd",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-13212@sha256:6d5203003bd83e110cc1dd5426a80da290a39d40717a94b51c9260b66fd79bcd"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-13279:latest": {
+      "id": "sha256:d1f9e91af87dc9ca48cb66b36b718aa2dc63ea009d03fa815bfa10af1318eeaa",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-13279@sha256:d1f9e91af87dc9ca48cb66b36b718aa2dc63ea009d03fa815bfa10af1318eeaa"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-13964:latest": {
+      "id": "sha256:5f2cb52f69e604cccef320b464b1445e46a0a7d1a65572c6d2ddda9c2f35002e",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-13964@sha256:5f2cb52f69e604cccef320b464b1445e46a0a7d1a65572c6d2ddda9c2f35002e"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-14349:latest": {
+      "id": "sha256:14c321e2fe0a6cfe42ed1d3b401371c3929f5fd1781852100e2c80cf5e85cefc",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-14349@sha256:14c321e2fe0a6cfe42ed1d3b401371c3929f5fd1781852100e2c80cf5e85cefc"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-14500:latest": {
+      "id": "sha256:e08147a94e1ad89c5f247a0c55b50141a602e2066c2758459bc2230509aae0f0",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-14500@sha256:e08147a94e1ad89c5f247a0c55b50141a602e2066c2758459bc2230509aae0f0"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-14631:latest": {
+      "id": "sha256:d94b6b8f16628752c95ddbbd97a303a905c3b6b695f49e83efdbb5e50979e2d3",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-14631@sha256:d94b6b8f16628752c95ddbbd97a303a905c3b6b695f49e83efdbb5e50979e2d3"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-15103:latest": {
+      "id": "sha256:3a17ac2d5ea0f9aa6b9d0380ae818e82019e05e285bf5d91ea682e5ab1ba8ce2",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-15103@sha256:3a17ac2d5ea0f9aa6b9d0380ae818e82019e05e285bf5d91ea682e5ab1ba8ce2"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-15315:latest": {
+      "id": "sha256:c2dc517689fd4f750f7fe936bb1f63af05f8536179c06b2573928c9e94a0316a",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-15315@sha256:c2dc517689fd4f750f7fe936bb1f63af05f8536179c06b2573928c9e94a0316a"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-15368:latest": {
+      "id": "sha256:f50a82a62873f2afa35a7c10c8faa6bc564e6e6a3bf5a9a59bece8c15b00feb8",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-15368@sha256:f50a82a62873f2afa35a7c10c8faa6bc564e6e6a3bf5a9a59bece8c15b00feb8"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-16255:latest": {
+      "id": "sha256:b17a97d7776b6e0fa61c477ad9ba67b8d1615862041578faa7aff6a542a00d30",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-16255@sha256:b17a97d7776b6e0fa61c477ad9ba67b8d1615862041578faa7aff6a542a00d30"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-16502:latest": {
+      "id": "sha256:2e2c16208fe0de3dcb2fd338acfac7e7997dd89b8131e6898f698dde06bb58a9",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-16502@sha256:2e2c16208fe0de3dcb2fd338acfac7e7997dd89b8131e6898f698dde06bb58a9"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-16667:latest": {
+      "id": "sha256:ca495c7bf8aaa56020cf79ec5f73cd820094f0abcbf1d2bef8c5815626bf0abe",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-16667@sha256:ca495c7bf8aaa56020cf79ec5f73cd820094f0abcbf1d2bef8c5815626bf0abe"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-16877:latest": {
+      "id": "sha256:88f6b400cf3281bef2596b1864c9dcf25053723877d644d3e84c024b3ceab9fd",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-16877@sha256:88f6b400cf3281bef2596b1864c9dcf25053723877d644d3e84c024b3ceab9fd"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.django_1776_django-16938:latest": {
+      "id": "sha256:82386fb686d8ee5f56219ed6e8b8b222837803dbe8236510cca48cf2443ef4da",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.django_1776_django-16938@sha256:82386fb686d8ee5f56219ed6e8b8b222837803dbe8236510cca48cf2443ef4da"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.mwaskom_1776_seaborn-3069:latest": {
+      "id": "sha256:3feccf3ece6ca73c10ee665b62679937b7dbc2db28c35c9b4a1f192ed540e2dd",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.mwaskom_1776_seaborn-3069@sha256:3feccf3ece6ca73c10ee665b62679937b7dbc2db28c35c9b4a1f192ed540e2dd"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.mwaskom_1776_seaborn-3187:latest": {
+      "id": "sha256:aea7e43b20703256f5cb807b54cd78a12601f21086d3a62a41de18c254771f4e",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.mwaskom_1776_seaborn-3187@sha256:aea7e43b20703256f5cb807b54cd78a12601f21086d3a62a41de18c254771f4e"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pallets_1776_flask-5014:latest": {
+      "id": "sha256:ffa7af7191f8aca58cc00db4582c7b0cb1aab91d395dc470baeac8cd7a5758ee",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pallets_1776_flask-5014@sha256:ffa7af7191f8aca58cc00db4582c7b0cb1aab91d395dc470baeac8cd7a5758ee"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.psf_1776_requests-1142:latest": {
+      "id": "sha256:b2733e57feb4cfaeac24ab5ec496d4cb89a37db53bd0ca72eaededdb2ce19d1c",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.psf_1776_requests-1142@sha256:b2733e57feb4cfaeac24ab5ec496d4cb89a37db53bd0ca72eaededdb2ce19d1c"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.psf_1776_requests-1724:latest": {
+      "id": "sha256:b39d757343e41aac1307a87f5b35e6005c76e3706a361cfa9be8ac596db3d43d",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.psf_1776_requests-1724@sha256:b39d757343e41aac1307a87f5b35e6005c76e3706a361cfa9be8ac596db3d43d"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.psf_1776_requests-1766:latest": {
+      "id": "sha256:e248394d2cfb08b2ab912f05bb4777ad4b78d1892b624cb92417b5b8567b0f2f",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.psf_1776_requests-1766@sha256:e248394d2cfb08b2ab912f05bb4777ad4b78d1892b624cb92417b5b8567b0f2f"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.psf_1776_requests-1921:latest": {
+      "id": "sha256:394cd3621cbf2aa70794d91f5eb9009c169da649d9b9ee9e3944b661dfb72088",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.psf_1776_requests-1921@sha256:394cd3621cbf2aa70794d91f5eb9009c169da649d9b9ee9e3944b661dfb72088"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.psf_1776_requests-2317:latest": {
+      "id": "sha256:d130bea34677191120d7355e93404cf07c5317c6bcfe1e59f76e71f61bb63cbd",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.psf_1776_requests-2317@sha256:d130bea34677191120d7355e93404cf07c5317c6bcfe1e59f76e71f61bb63cbd"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.psf_1776_requests-2931:latest": {
+      "id": "sha256:f3c752f9cb9f48461c61bb2afc89ae8ef5eaea20f7f1d1f05ae2a098b161abd5",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.psf_1776_requests-2931@sha256:f3c752f9cb9f48461c61bb2afc89ae8ef5eaea20f7f1d1f05ae2a098b161abd5"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.psf_1776_requests-5414:latest": {
+      "id": "sha256:71c78211f16803c111ed1807ded20f8defd5f6917fb958ace4e076d5ea7d8b10",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.psf_1776_requests-5414@sha256:71c78211f16803c111ed1807ded20f8defd5f6917fb958ace4e076d5ea7d8b10"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.psf_1776_requests-6028:latest": {
+      "id": "sha256:e7bb372d262c4888eedb833e3c0685f9c3e6d6b1b1b1c2fe638fe5170160dafe",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.psf_1776_requests-6028@sha256:e7bb372d262c4888eedb833e3c0685f9c3e6d6b1b1b1c2fe638fe5170160dafe"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-2905:latest": {
+      "id": "sha256:641f8c9abffbac1bde7a81dcb5c98d48dbbbf7deef0d9244252b0542b1f5e67b",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-2905@sha256:641f8c9abffbac1bde7a81dcb5c98d48dbbbf7deef0d9244252b0542b1f5e67b"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-3095:latest": {
+      "id": "sha256:ad5af107b0b590bb5002ed8b66226a625d34741b6e7fa008c04c481745a2d2eb",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-3095@sha256:ad5af107b0b590bb5002ed8b66226a625d34741b6e7fa008c04c481745a2d2eb"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-3151:latest": {
+      "id": "sha256:09721f5b03c618a5deec9be24a1acf69a2242598e1b8f35bcef5d33f54e99fc4",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-3151@sha256:09721f5b03c618a5deec9be24a1acf69a2242598e1b8f35bcef5d33f54e99fc4"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-3305:latest": {
+      "id": "sha256:9b73fb7020ad0612489f960fde717f94869c288afc3a8237cebc824925717665",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-3305@sha256:9b73fb7020ad0612489f960fde717f94869c288afc3a8237cebc824925717665"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-3677:latest": {
+      "id": "sha256:4a68ac272a07b3b4762756ae9d24b5de1cce82aae696b6dc3deb9676a4b0c14e",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-3677@sha256:4a68ac272a07b3b4762756ae9d24b5de1cce82aae696b6dc3deb9676a4b0c14e"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-3993:latest": {
+      "id": "sha256:458f613aa80bea29430b780dce74bf142551db01650d46a0fa49f72a54cbf735",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-3993@sha256:458f613aa80bea29430b780dce74bf142551db01650d46a0fa49f72a54cbf735"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-4075:latest": {
+      "id": "sha256:641b520efc4712d06af38c8ab447457a89d736a8781cab333be7b583cb291047",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-4075@sha256:641b520efc4712d06af38c8ab447457a89d736a8781cab333be7b583cb291047"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-4094:latest": {
+      "id": "sha256:45e6b9897c749159b749a3737a7e79e5458baa7c8387844bc70ef0cbf46035c1",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-4094@sha256:45e6b9897c749159b749a3737a7e79e5458baa7c8387844bc70ef0cbf46035c1"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-4356:latest": {
+      "id": "sha256:3ac6ea67e0b366a6c8899a957cfbc47bf615b23dab6dd61d739bb661eb30a468",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-4356@sha256:3ac6ea67e0b366a6c8899a957cfbc47bf615b23dab6dd61d739bb661eb30a468"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-4629:latest": {
+      "id": "sha256:033589865b8522fd28ad477db28dccb4fcfcc3e56174bbc95e7996b2a948135b",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-4629@sha256:033589865b8522fd28ad477db28dccb4fcfcc3e56174bbc95e7996b2a948135b"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-4687:latest": {
+      "id": "sha256:6a108e6ed8ef1eb43094cee8a1c1fc800929e06849ef0de08fa6217b15dea1c2",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-4687@sha256:6a108e6ed8ef1eb43094cee8a1c1fc800929e06849ef0de08fa6217b15dea1c2"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-4966:latest": {
+      "id": "sha256:969b0daa221e4a71c48ff20f69774d7a5654f1715be7536635669e4b152d9b9b",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-4966@sha256:969b0daa221e4a71c48ff20f69774d7a5654f1715be7536635669e4b152d9b9b"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-6461:latest": {
+      "id": "sha256:99e7f2e762c13e8750b88748226660c8a6e40c43923fef3f9a707677f72c334e",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-6461@sha256:99e7f2e762c13e8750b88748226660c8a6e40c43923fef3f9a707677f72c334e"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-6599:latest": {
+      "id": "sha256:463d272c674a22f2b43baed42f7359643bae48606ecdfc636178092fe3846751",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-6599@sha256:463d272c674a22f2b43baed42f7359643bae48606ecdfc636178092fe3846751"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-6721:latest": {
+      "id": "sha256:82a4385a61a1b80eacb889fa79fe7c2f8c1d45a46c9a6c7748040e181a050ba0",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-6721@sha256:82a4385a61a1b80eacb889fa79fe7c2f8c1d45a46c9a6c7748040e181a050ba0"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-6744:latest": {
+      "id": "sha256:bab4ae59e807fe43016929f298de12ceda67353330d80b9be0b2ab3920115163",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-6744@sha256:bab4ae59e807fe43016929f298de12ceda67353330d80b9be0b2ab3920115163"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-6938:latest": {
+      "id": "sha256:84869986b46974382c5aaebd909f84068cad2605736db21b6f5f557c28d0e331",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-6938@sha256:84869986b46974382c5aaebd909f84068cad2605736db21b6f5f557c28d0e331"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-6992:latest": {
+      "id": "sha256:ab8e4c77f4f3c183a9894269fe9a3c9ded0b62b52c10f5259ac19eaafd67bda3",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-6992@sha256:ab8e4c77f4f3c183a9894269fe9a3c9ded0b62b52c10f5259ac19eaafd67bda3"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-7229:latest": {
+      "id": "sha256:b5b680bedbb2f0329f937451ed0feb894d003bb031e704045757a2d56dc7a4ee",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-7229@sha256:b5b680bedbb2f0329f937451ed0feb894d003bb031e704045757a2d56dc7a4ee"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-7233:latest": {
+      "id": "sha256:18a59c45762eacd27ab219e0f09e847d7f8333f46ab8b35a3438a48397d18aba",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-7233@sha256:18a59c45762eacd27ab219e0f09e847d7f8333f46ab8b35a3438a48397d18aba"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pydata_1776_xarray-7393:latest": {
+      "id": "sha256:8d92f63564f3cfa7497bdc9fd4bacb5cfac11459f658621a00ebe3eb55832278",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pydata_1776_xarray-7393@sha256:8d92f63564f3cfa7497bdc9fd4bacb5cfac11459f658621a00ebe3eb55832278"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4551:latest": {
+      "id": "sha256:70e1fceb2743ca68df6703f4d79b77e2d23db2b00b7a64ce4c6347bfe8ceefbb",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4551@sha256:70e1fceb2743ca68df6703f4d79b77e2d23db2b00b7a64ce4c6347bfe8ceefbb"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4604:latest": {
+      "id": "sha256:ba19da0f98e0dc7d259bafe71f3638b69fcd8a89c66a3f7a5039f5a40c8a4765",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4604@sha256:ba19da0f98e0dc7d259bafe71f3638b69fcd8a89c66a3f7a5039f5a40c8a4765"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4661:latest": {
+      "id": "sha256:d75c28c821cdb42ea1b9f96b57ce2de833b639c28d36c65a9cd9de6758d063df",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4661@sha256:d75c28c821cdb42ea1b9f96b57ce2de833b639c28d36c65a9cd9de6758d063df"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4970:latest": {
+      "id": "sha256:d5b68120595f1541cadc12b08a01b7db2d4b0eddedf67e92f7ef065c1e46b82b",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-4970@sha256:d5b68120595f1541cadc12b08a01b7db2d4b0eddedf67e92f7ef065c1e46b82b"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6386:latest": {
+      "id": "sha256:30eb26bb7e907efb8dcf8a6d4ea08c184b27b779ef517e659874aec612280d62",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6386@sha256:30eb26bb7e907efb8dcf8a6d4ea08c184b27b779ef517e659874aec612280d62"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6528:latest": {
+      "id": "sha256:5c06fb2da69edf15900ebda1217c485fcddf38a4e6744e1d848f0e311aa5971d",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6528@sha256:5c06fb2da69edf15900ebda1217c485fcddf38a4e6744e1d848f0e311aa5971d"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6903:latest": {
+      "id": "sha256:e7d9fbb7ef58d03ce827264f5202c2ef09ce44c8a2d57d31d04c4721459a2e60",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-6903@sha256:e7d9fbb7ef58d03ce827264f5202c2ef09ce44c8a2d57d31d04c4721459a2e60"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-7080:latest": {
+      "id": "sha256:7fce42c811782808fe6d87edc55d39423742727b35128e82ae28a3c209b95fd5",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-7080@sha256:7fce42c811782808fe6d87edc55d39423742727b35128e82ae28a3c209b95fd5"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-7277:latest": {
+      "id": "sha256:c7121ec1ea545d8116c960b75dcfc80ed4911539964bfbb446121ce0a2c8b4e7",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-7277@sha256:c7121ec1ea545d8116c960b75dcfc80ed4911539964bfbb446121ce0a2c8b4e7"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-8898:latest": {
+      "id": "sha256:4b8b097129a8100a92099844231b9df25fa79c77dcba22a4923afe70d978d885",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pylint-dev_1776_pylint-8898@sha256:4b8b097129a8100a92099844231b9df25fa79c77dcba22a4923afe70d978d885"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-10051:latest": {
+      "id": "sha256:46de1ca632c3caa994438bb74a500fe78f9aa05c1cc7e8becba34f98d785fd7c",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-10051@sha256:46de1ca632c3caa994438bb74a500fe78f9aa05c1cc7e8becba34f98d785fd7c"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-10081:latest": {
+      "id": "sha256:cb98e7a43ca4a8499a80ae446d100c6afb9ecac747dfafe1f4eca287a8321ecb",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-10081@sha256:cb98e7a43ca4a8499a80ae446d100c6afb9ecac747dfafe1f4eca287a8321ecb"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-10356:latest": {
+      "id": "sha256:363458d4698f5d985f6476d189d3f1cf902253cd9518705fd395516cd30138da",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-10356@sha256:363458d4698f5d985f6476d189d3f1cf902253cd9518705fd395516cd30138da"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5262:latest": {
+      "id": "sha256:1bae236b754ecd87cf6bee435f27ecf8db6950b68e8359cff20cf6053104dc28",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5262@sha256:1bae236b754ecd87cf6bee435f27ecf8db6950b68e8359cff20cf6053104dc28"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5631:latest": {
+      "id": "sha256:bc80a8c7e1cfa8f29df70faad774a4331f9fa010127a0397272a5d7675baee7b",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5631@sha256:bc80a8c7e1cfa8f29df70faad774a4331f9fa010127a0397272a5d7675baee7b"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5787:latest": {
+      "id": "sha256:9d6e01b806ce60ae0123ece94d19de1cc543c586994460df596446922eb7e1e3",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5787@sha256:9d6e01b806ce60ae0123ece94d19de1cc543c586994460df596446922eb7e1e3"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5809:latest": {
+      "id": "sha256:96831af3073043bdb3f3729f4613c7f7cfd480e7ce4f6707e76c82e30b394f4d",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5809@sha256:96831af3073043bdb3f3729f4613c7f7cfd480e7ce4f6707e76c82e30b394f4d"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5840:latest": {
+      "id": "sha256:3c9e0ec6b046fbd56428dee85ad9575908828d35c1da4bc06f675d7e8cfde418",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-5840@sha256:3c9e0ec6b046fbd56428dee85ad9575908828d35c1da4bc06f675d7e8cfde418"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-6197:latest": {
+      "id": "sha256:5dbfbcf23210a5a0ccdc4dbf1a55c894255b28fe6c56c13c9a4724d6c13bab4e",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-6197@sha256:5dbfbcf23210a5a0ccdc4dbf1a55c894255b28fe6c56c13c9a4724d6c13bab4e"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-6202:latest": {
+      "id": "sha256:3e2c03f931584b3e58caa0c6c12222b021b100d3b4bba8a1a0561fd8eaeae5e3",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-6202@sha256:3e2c03f931584b3e58caa0c6c12222b021b100d3b4bba8a1a0561fd8eaeae5e3"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7205:latest": {
+      "id": "sha256:796f4016fa7dd0f3c663c518ad3282ba6aa4c1dbbc741d803e47f0fd51bcc740",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7205@sha256:796f4016fa7dd0f3c663c518ad3282ba6aa4c1dbbc741d803e47f0fd51bcc740"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7236:latest": {
+      "id": "sha256:894656eb23fe14441e3ff684bafeac20b9f2ec33afb99323a07277152ac8d5f5",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7236@sha256:894656eb23fe14441e3ff684bafeac20b9f2ec33afb99323a07277152ac8d5f5"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7324:latest": {
+      "id": "sha256:7d1d5bd35428e27380cb983165df9e243c76d814617720b136e863874a689625",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7324@sha256:7d1d5bd35428e27380cb983165df9e243c76d814617720b136e863874a689625"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7432:latest": {
+      "id": "sha256:8c3e3a3b9bc22d51c79424211e1e4e659d753b2f5eb6e434abf1a334dd7ef252",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7432@sha256:8c3e3a3b9bc22d51c79424211e1e4e659d753b2f5eb6e434abf1a334dd7ef252"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7490:latest": {
+      "id": "sha256:9e10d2e75d41e6f6325949d19d6a8a033d1f5d5fd6d4ce53ad483eb8951a417f",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7490@sha256:9e10d2e75d41e6f6325949d19d6a8a033d1f5d5fd6d4ce53ad483eb8951a417f"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7521:latest": {
+      "id": "sha256:4932f2ac87a27bd46ce8078ca9a9971b55e46d35cadaaa88a958c6d626cd624c",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7521@sha256:4932f2ac87a27bd46ce8078ca9a9971b55e46d35cadaaa88a958c6d626cd624c"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7571:latest": {
+      "id": "sha256:68380eca74a6071e072a65f84cdc012bf17bd9f443174dde350b353ff4b675d4",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7571@sha256:68380eca74a6071e072a65f84cdc012bf17bd9f443174dde350b353ff4b675d4"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7982:latest": {
+      "id": "sha256:1d20feb739d39ea1451b52fa89cfd22ab902972bfc9fb03b8b738330b42ed8c7",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-7982@sha256:1d20feb739d39ea1451b52fa89cfd22ab902972bfc9fb03b8b738330b42ed8c7"
+      ]
+    },
+    "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-8399:latest": {
+      "id": "sha256:3aab9323e15fa084e404f097ed2867ef9d8dfb0b997a843db3f0b17f4c0d4d6f",
+      "repo_digests": [
+        "swebench/sweb.eval.x86_64.pytest-dev_1776_pytest-8399@sha256:3aab9323e15fa084e404f097ed2867ef9d8dfb0b997a843db3f0b17f4c0d4d6f"
+      ]
+    }
+  },
+  "created_at": "2026-10-16T10:02:40.556585-07:00",
+  "dataset_arrow_sha256": "0d119efe73413554335bd410a04d82fd4a586bfd312cee677ee40af5de2ac46e",
+  "harness_commit": "f7bbbb2ccdf479001d6467c9e34af59e44a840f9",
+  "harness_version": "4.1.0",
+  "instance_ids": [
+    "pydata__xarray-7229",
+    "pydata__xarray-7233",
+    "pydata__xarray-7393",
+    "pylint-dev__pylint-4551",
+    "pylint-dev__pylint-4661",
+    "pylint-dev__pylint-6386",
+    "pylint-dev__pylint-7080",
+    "pylint-dev__pylint-8898",
+    "django__django-10554",
+    "django__django-11400",
+    "django__django-14631",
+    "pallets__flask-5014",
+    "psf__requests-1766",
+    "psf__requests-1921",
+    "psf__requests-2317",
+    "psf__requests-6028",
+    "pydata__xarray-3993",
+    "pydata__xarray-6461",
+    "pydata__xarray-6599",
+    "pydata__xarray-6721",
+    "pydata__xarray-6744",
+    "pydata__xarray-6938",
+    "pytest-dev__pytest-10051",
+    "pytest-dev__pytest-5262",
+    "pytest-dev__pytest-5787",
+    "pytest-dev__pytest-5840",
+    "pytest-dev__pytest-6202",
+    "pytest-dev__pytest-7236",
+    "pytest-dev__pytest-7324",
+    "pytest-dev__pytest-7571",
+    "pylint-dev__pylint-4970",
+    "pylint-dev__pylint-6528",
+    "pylint-dev__pylint-6903",
+    "pytest-dev__pytest-5631",
+    "pydata__xarray-4356",
+    "pydata__xarray-3305",
+    "pydata__xarray-4966",
+    "psf__requests-2931",
+    "pytest-dev__pytest-7205",
+    "django__django-15368",
+    "django__django-16877",
+    "psf__requests-1724",
+    "django__django-11141",
+    "mwaskom__seaborn-3069",
+    "pylint-dev__pylint-7277",
+    "django__django-14500",
+    "pytest-dev__pytest-7521",
+    "pytest-dev__pytest-8399",
+    "pydata__xarray-3151",
+    "django__django-13023",
+    "django__django-12741",
+    "django__django-14349",
+    "pydata__xarray-2905",
+    "django__django-15315",
+    "django__django-16938",
+    "django__django-16255",
+    "django__django-11734",
+    "django__django-10097",
+    "django__django-12754",
+    "django__django-15103",
+    "django__django-11820",
+    "django__django-13964",
+    "django__django-16667",
+    "django__django-16502",
+    "django__django-10880",
+    "mwaskom__seaborn-3187",
+    "psf__requests-1142",
+    "pydata__xarray-3095",
+    "pylint-dev__pylint-4604",
+    "pytest-dev__pytest-10081",
+    "django__django-10914",
+    "psf__requests-5414",
+    "pydata__xarray-3677",
+    "pytest-dev__pytest-10356",
+    "django__django-10973",
+    "pydata__xarray-4075",
+    "pytest-dev__pytest-5809",
+    "django__django-10999",
+    "pydata__xarray-4094",
+    "pytest-dev__pytest-6197",
+    "django__django-11066",
+    "pydata__xarray-4629",
+    "pytest-dev__pytest-7432",
+    "django__django-11087",
+    "pydata__xarray-4687",
+    "pytest-dev__pytest-7490",
+    "django__django-11095",
+    "pydata__xarray-6992",
+    "pytest-dev__pytest-7982",
+    "django__django-11099",
+    "django__django-11119",
+    "django__django-11138",
+    "django__django-11149",
+    "django__django-11163",
+    "django__django-11179",
+    "django__django-11206",
+    "django__django-11211",
+    "django__django-11239",
+    "django__django-11265",
+    "django__django-11276",
+    "django__django-11292",
+    "django__django-11299",
+    "django__django-11333",
+    "django__django-11433",
+    "django__django-11451",
+    "django__django-11477",
+    "django__django-11490",
+    "django__django-11532",
+    "django__django-11133",
+    "django__django-11551",
+    "django__django-11555",
+    "django__django-11603",
+    "django__django-11728",
+    "django__django-11740",
+    "django__django-11749",
+    "django__django-11790",
+    "django__django-11815",
+    "django__django-11848",
+    "django__django-11880",
+    "django__django-11885",
+    "django__django-11951",
+    "django__django-11964",
+    "django__django-11999",
+    "django__django-12039",
+    "django__django-12050",
+    "django__django-12125",
+    "django__django-12143",
+    "django__django-12155",
+    "django__django-12193",
+    "django__django-12209",
+    "django__django-12262",
+    "django__django-12273",
+    "django__django-12276",
+    "django__django-12304",
+    "django__django-12308",
+    "django__django-12325",
+    "django__django-12406",
+    "django__django-12419",
+    "django__django-12663",
+    "django__django-12708",
+    "django__django-12713",
+    "django__django-12774",
+    "django__django-12858",
+    "django__django-12965",
+    "django__django-13012",
+    "django__django-13028",
+    "django__django-13033",
+    "django__django-13089",
+    "django__django-13109",
+    "django__django-13112",
+    "django__django-13121",
+    "django__django-13128",
+    "django__django-13158",
+    "django__django-13195",
+    "django__django-13212",
+    "django__django-13279"
+  ],
+  "limits": {
+    "cpu_shares": 128,
+    "hard_stop": "9999-12-31T23:59:59.999999+00:00",
+    "memory_bytes": 8589934592,
+    "nano_cpus": 1000000000,
+    "no_new_task_after": "9999-12-31T23:59:59.999999+00:00",
+    "task_timeout_seconds": 1800,
+    "workers": 1
+  },
+  "official_correctness_evaluated": false,
+  "package_versions": {
+    "Cython": "3.3.0",
+    "GitPython": "3.2.1",
+    "Jinja2": "3.1.6",
+    "MarkupSafe": "3.0.3",
+    "PyYAML": "6.0.3",
+    "Pygments": "2.21.0",
+    "aiohappyeyeballs": "2.7.1",
+    "aiohttp": "3.14.3",
+    "aiosignal": "1.4.0",
+    "airportsdata": "20260905",
+    "annotated-doc": "0.0.5",
+    "annotated-types": "0.8.0",
+    "anthropic": "1.7.0",
+    "anyio": "4.15.1",
+    "apache-tvm-ffi": "0.1.11",
+    "asttokens": "3.0.2",
+    "attrs": "26.1.0",
+    "beautifulsoup4": "4.15.0",
+    "beliefkv": "0.1.0",
+    "blobfile": "3.0.0",
+    "bracex": "3.0.1",
+    "build": "1.6.1",
+    "cbor2": "6.1.5",
+    "certifi": "2026.7.22",
+    "cffi": "2.1.1",
+    "cfgv": "3.5.0",
+    "chardet": "7.6.0",
+    "charset-normalizer": "3.5.1",
+    "click": "8.5.0",
+    "cloudpickle": "3.1.2",
+    "compressed-tensors": "0.18.0",
+    "cryptography": "50.0.1",
+    "cuda-bindings": "13.4.2",
+    "cuda-core": "1.2.0",
+    "cuda-pathfinder": "1.8.2",
+    "cuda-python": "13.4.1",
+    "cuda-tile": "1.6.0rc5",
+    "cuda-toolkit": "13.0.3.0",
+    "datasets": "5.0.1",
+    "deepagents": "0.6.12",
+    "dill": "0.4.1",
+    "diskcache": "5.6.3",
+    "distlib": "0.4.3",
+    "distro": "1.9.0",
+    "docker": "7.2.0",
+    "docstring_parser": "0.18.0",
+    "easydict": "1.13",
+    "einops": "0.8.2",
+    "executing": "2.2.1",
+    "fastapi": "0.141.1",
+    "fastcore": "2.2.33",
+    "fastspec": "0.2.5",
+    "fasttransport": "0.0.4",
+    "filelock": "4.0.1",
+    "filetype": "1.2.0",
+    "flash-attn-4": "4.0.0b19",
+    "flashinfer-python": "0.6.18",
+    "frozenlist": "1.8.0",
+    "fsspec": "2026.6.0",
+    "gguf": "0.19.0",
+    "ghapi": "2.1.4",
+    "gitdb": "4.0.12",
+    "google-auth": "2.58.0",
+    "google-genai": "2.24.0",
+    "grpcio": "1.84.0",
+    "grpcio-health-checking": "1.81.1",
+    "grpcio-reflection": "1.81.1",
+    "grpclib": "0.4.9",
+    "h11": "0.16.0",
+    "h2": "4.4.1",
+    "hf-xet": "1.6.0",
+    "hpack": "4.2.0",
+    "httpcore": "1.0.9",
+    "httpcore2": "2.13.0",
+    "httpx": "0.28.1",
+    "httpx2": "2.13.0",
+    "huggingface_hub": "1.32.0",
+    "humming-kernels": "0.1.12",
+    "hyperframe": "6.1.0",
+    "identify": "2.6.20",
+    "idna": "3.20",
+    "iniconfig": "2.3.0",
+    "interegular": "0.3.3",
+    "ipython": "9.17.1",
+    "ipython_pygments_lexers": "1.1.1",
+    "jedi": "0.20.0",
+    "jiter": "0.17.0",
+    "jsonpatch": "1.33",
+    "jsonpointer": "3.1.1",
+    "jsonschema": "4.26.0",
+    "jsonschema-specifications": "2025.9.1",
+    "kernels": "0.14.1",
+    "kernels-data": "0.16.2",
+    "langchain": "1.3.14",
+    "langchain-anthropic": "1.7.2",
+    "langchain-core": "1.6.4",
+    "langchain-google-genai": "4.4.0",
+    "langchain-openai": "1.1.9",
+    "langchain-protocol": "0.0.19",
+    "langgraph": "1.2.9",
+    "langgraph-checkpoint": "4.2.0",
+    "langgraph-prebuilt": "1.1.0",
+    "langgraph-sdk": "0.4.5",
+    "langsmith": "0.14.0",
+    "lark": "1.3.1",
+    "lightgbm": "4.7.0",
+    "llguidance": "1.8.0",
+    "llvmlite": "0.47.0",
+    "loguru": "0.7.3",
+    "lxml": "6.1.3",
+    "markdown-it-py": "4.2.0",
+    "matplotlib-inline": "0.2.2",
+    "mdurl": "0.1.2",
+    "mistral_common": "1.11.7",
+    "ml_dtypes": "0.6.0",
+    "modal": "1.6.1",
+    "modelscope": "1.40.1",
+    "modelscope-hub": "0.4.5",
+    "mpmath": "1.3.0",
+    "msgspec": "0.21.1",
+    "multidict": "6.9.1",
+    "multiprocess": "0.70.19",
+    "narwhals": "2.26.0",
+    "nccl4py": "0.5.0",
+    "nest-asyncio": "1.6.0",
+    "networkx": "3.6.1",
+    "ninja": "1.13.2",
+    "nodeenv": "1.11.0",
+    "numba": "0.65.1",
+    "numpy": "2.3.5",
+    "nvidia-cublas": "13.1.1.3",
+    "nvidia-cuda-cccl": "13.3.4.3.1",
+    "nvidia-cuda-crt": "13.4.92",
+    "nvidia-cuda-cupti": "13.0.85",
+    "nvidia-cuda-nvcc": "13.4.92",
+    "nvidia-cuda-nvdisasm": "13.4.92",
+    "nvidia-cuda-nvrtc": "13.0.88",
+    "nvidia-cuda-runtime": "13.0.96",
+    "nvidia-cudnn-cu13": "9.20.0.48",
+    "nvidia-cudnn-frontend": "1.29.0",
+    "nvidia-cufft": "12.0.0.61",
+    "nvidia-cufile": "1.15.1.6",
+    "nvidia-curand": "10.4.0.35",
+    "nvidia-cusolver": "12.0.4.66",
+    "nvidia-cusparse": "12.6.3.3",
+    "nvidia-cusparselt-cu13": "0.8.1",
+    "nvidia-cutlass-dsl": "4.6.2",
+    "nvidia-cutlass-dsl-libs-base": "4.6.2",
+    "nvidia-cutlass-dsl-libs-core": "4.6.2",
+    "nvidia-cutlass-dsl-libs-cu12": "4.6.2",
+    "nvidia-cutlass-dsl-libs-cu13": "4.6.2",
+    "nvidia-mathdx": "25.6.0",
+    "nvidia-ml-py": "13.610.43",
+    "nvidia-nccl-cu13": "2.29.7",
+    "nvidia-nvjitlink": "13.4.92",
+    "nvidia-nvshmem-cu13": "3.4.5",
+    "nvidia-nvtx": "13.0.85",
+    "nvidia-nvvm": "13.4.92",
+    "nvshmem4py-cu13": "0.3.1",
+    "openai": "2.6.1",
+    "openai-harmony": "0.0.4",
+    "orjson": "3.12.0",
+    "ormsgpack": "1.12.2",
+    "outlines": "0.1.11",
+    "outlines_core": "0.1.26",
+    "packaging": "26.2",
+    "pandas": "3.0.6",
+    "parso": "0.8.7",
+    "partial-json-parser": "0.2.1.1.post7",
+    "pexpect": "4.9.0",
+    "pillow": "12.3.0",
+    "pip": "26.1.2",
+    "platformdirs": "4.13.0",
+    "pluggy": "1.6.0",
+    "pre_commit": "4.7.0",
+    "prometheus_client": "0.26.0",
+    "prompt_toolkit": "3.0.53",
+    "propcache": "0.5.4",
+    "protobuf": "6.33.6",
+    "psutil": "7.2.2",
+    "ptyprocess": "0.7.0",
+    "pure_eval": "0.2.4",
+    "py-spy": "0.4.2",
+    "pyarrow": "25.0.1",
+    "pyasn1": "0.6.4",
+    "pyasn1_modules": "0.4.2",
+    "pybase64": "1.5.0",
+    "pycountry": "26.2.16",
+    "pycparser": "3.0",
+    "pycryptodomex": "3.23.0",
+    "pydantic": "2.13.5",
+    "pydantic-extra-types": "2.11.1",
+    "pydantic_core": "2.46.5",
+    "pyproject_hooks": "1.3.3",
+    "pytest": "9.1.1",
+    "python-dateutil": "2.9.0.post0",
+    "python-discovery": "1.6.2",
+    "python-dotenv": "1.2.4",
+    "python-multipart": "0.0.32",
+    "pyzmq": "27.2.0",
+    "quack-kernels": "0.6.4",
+    "referencing": "0.37.0",
+    "regex": "2026.9.10",
+    "requests": "2.34.2",
+    "requests-toolbelt": "1.0.0",
+    "rich": "15.0.0",
+    "rpds-py": "2026.6.3",
+    "safetensors": "0.8.0",
+    "scipy": "1.17.1",
+    "sentencepiece": "0.2.2",
+    "setproctitle": "1.3.7",
+    "setuptools": "83.0.0",
+    "sgl-deep-ep": "0.1.2",
+    "sgl-deep-gemm": "0.2.0",
+    "sglang": "0.5.20",
+    "sglang-kernel": "0.4.7",
+    "shellingham": "1.5.4",
+    "six": "1.17.0",
+    "smg-grpc-proto": "0.4.20",
+    "smg-grpc-servicer": "0.12.0",
+    "smmap": "5.0.3",
+    "sniffio": "1.3.1",
+    "soundfile": "0.13.1",
+    "soupsieve": "3.0.3",
+    "stack-data": "0.6.3",
+    "starlette": "1.6.0",
+    "swebench": "4.1.0",
+    "sympy": "1.14.0",
+    "synchronicity": "0.12.6",
+    "tabulate": "0.10.0",
+    "tenacity": "9.1.4",
+    "tiktoken": "0.14.0",
+    "tilelang": "0.1.12",
+    "timm": "1.0.16",
+    "tokenizers": "0.22.2",
+    "tokenspeed-mla": "0.1.8",
+    "tokenspeed-triton": "3.8.10.post20260920",
+    "toml": "0.10.2",
+    "tomlkit": "0.15.1",
+    "torch": "2.13.0",
+    "torch_c_dlpack_ext": "0.1.5",
+    "torch_memory_saver": "0.0.10",
+    "torchaudio": "2.11.0",
+    "torchcodec": "0.15.0",
+    "torchvision": "0.28.0",
+    "tqdm": "4.70.1",
+    "traitlets": "5.16.1",
+    "transformers": "5.12.1",
+    "triton": "3.7.1",
+    "truststore": "0.10.4",
+    "typer": "0.27.2",
+    "types-certifi": "2021.10.8.3",
+    "types-toml": "0.10.8.20260518",
+    "typing-inspection": "0.4.4",
+    "typing_extensions": "4.16.0",
+    "ujson": "5.12.1",
+    "unidiff": "1.0.1",
+    "urllib3": "2.8.0",
+    "uuid_utils": "0.17.1",
+    "uvicorn": "0.53.0",
+    "uvloop": "0.22.1",
+    "virtualenv": "21.14.7",
+    "watchfiles": "1.3.0",
+    "wcmatch": "11.0.1",
+    "wcwidth": "0.8.4",
+    "websockets": "16.1.1",
+    "wheel": "0.47.0",
+    "xgrammar": "0.2.1",
+    "xxhash": "4.0.1",
+    "yarl": "1.25.1",
+    "z3-solver": "4.15.4.0",
+    "zstandard": "0.25.0"
+  },
+  "python": "/home/longhao/experiment/ops/quality_eval/venv/bin/python",
+  "runner_sha256": "7d71a5d36ccf05419f70f3bdb7209d4da8c00f61afd5ba2554570b6097ed8379"
+}

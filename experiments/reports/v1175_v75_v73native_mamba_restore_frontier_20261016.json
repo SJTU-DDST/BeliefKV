@@ -1,0 +1,2158 @@
+{
+  "status": "bounded_cpu_route_and_dependency_audit_not_causal_speedup",
+  "analysis_started_at": "2026-10-16T09:51:43.714638-07:00",
+  "model_layout": {
+    "source": {
+      "path": "/srv/ai/models/Qwen/Qwen3.5-35B-A3B/config.json",
+      "bytes": 3544,
+      "sha256": "5e4d7f74fec2f360eb9cfbfcd6ec0c4c76e684d3a11caaed259d9fd9bfbc7944"
+    },
+    "full_attention_layers": [
+      3,
+      7,
+      11,
+      15,
+      19,
+      23,
+      27,
+      31,
+      35,
+      39
+    ],
+    "mamba_layers": [
+      0,
+      1,
+      2,
+      4,
+      5,
+      6,
+      8,
+      9,
+      10,
+      12,
+      13,
+      14,
+      16,
+      17,
+      18,
+      20,
+      21,
+      22,
+      24,
+      25,
+      26,
+      28,
+      29,
+      30,
+      32,
+      33,
+      34,
+      36,
+      37,
+      38
+    ],
+    "pre_forward_cow_wait_layer": 38,
+    "full_layer_fraction_completed_by_cow_barrier": 0.9,
+    "mamba_layer_fraction_completed_by_cow_barrier": 1.0,
+    "semantics": "For the current serial layer-ordered H2D batch when COW waits on layer38: all Mamba transfers and 9/10 equal-sized FULL layers in that batch precede the barrier. This is not a proportion of the entire agent context or evidence of exposed GPU stall."
+  },
+  "sources": [
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/python/sglang/srt/mem_cache/memory_pool.py",
+      "bytes": 234325,
+      "sha256": "32b72ed4afc8ece83cf430561687e43f30296990b6d9d6b18ba3766a8bbd46df"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/python/sglang/srt/model_executor/model_runner.py",
+      "bytes": 91869,
+      "sha256": "df38e26ace5deae708f2353b56962afab7f92fac35d1bd4f274b7d6d62356372"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/python/sglang/srt/mem_cache/l2_transfer.py",
+      "bytes": 4532,
+      "sha256": "d78f93396f2798dac12dc42e977592f24326c3445f253c671fa64e84137193f0"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/python/sglang/srt/mem_cache/unified_cache/components/mamba.py",
+      "bytes": 39315,
+      "sha256": "64f1590aafe1cb84345fb230439eed8bc4213f0cd235930fa59702e596ae9097"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/python/sglang/srt/managers/cache_controller.py",
+      "bytes": 56401,
+      "sha256": "304a789de188f5535156c831e54609ce90a13b61618018ec1a9de542c59ab740"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v25-followup-20261011/beliefkv/runtime/restore_wait_probe.py",
+      "bytes": 5209,
+      "sha256": "baaa1ba9eb273d31fdeef7a8fdadd60cff9d6c2bcbd73c49fed145517d26a6fb"
+    },
+    {
+      "path": "/home/longhao/experiment/ops/audit_v1109_mamba_cow_restore_frontier_20261016.py",
+      "bytes": 15575,
+      "sha256": "2a02ce6a88b80e3afcaf0b0075eec0ac298021119053203ca5097ae2d49def5c"
+    }
+  ],
+  "arms": {
+    "v75_predictive_live_prefix": {
+      "label": "v75_predictive_live_prefix",
+      "arm_path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d",
+      "receipts": {
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/server/runtime_audit.jsonl",
+          "snapshot_size_bytes": 3074590066,
+          "snapshot_at": "2026-10-16T09:51:43.714054-07:00",
+          "read_prefix_bytes": 3074590066,
+          "read_prefix_sha256": "ac78078e41c0a040dadc36176bf45cfeb83d71341714a5eccfb0a8d95b05c486",
+          "scan_finished_at": "2026-10-16T09:52:01.152764-07:00"
+        },
+        "events": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/server/runtime_events.sglang.jsonl",
+          "snapshot_size_bytes": 61372521,
+          "snapshot_at": "2026-10-16T09:51:43.714095-07:00",
+          "read_prefix_bytes": 61372521,
+          "read_prefix_sha256": "2d7941f79b4819e92d38a337a17e72057f12cabc49d9829c7784f83a7d89bb94",
+          "scan_finished_at": "2026-10-16T09:52:01.782327-07:00"
+        },
+        "transfer": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/server/transfer_telemetry.jsonl",
+          "snapshot_size_bytes": 22621755,
+          "snapshot_at": "2026-10-16T09:51:43.714113-07:00",
+          "read_prefix_bytes": 22621755,
+          "read_prefix_sha256": "b5d4f9f4a26bb14640ede18a038ed7758ceba2d2123a94c74e1483c2dd0f63d2",
+          "scan_finished_at": "2026-10-16T09:52:02.070282-07:00"
+        }
+      },
+      "prefill_batches_with_completed_service": 36628,
+      "load_consuming_probe_batches": 27,
+      "paired_probe_batches": 27,
+      "rejected_probes": {},
+      "pre_forward_barrier_fraction_of_paired_samples": 0.37037037037037035,
+      "routes": {
+        "layerwise_entry_no_observed_pre_forward_barrier": {
+          "batch_count": 17,
+          "first_dependency_wait_ms": {
+            "count": 17,
+            "sum": 0.17846400081180036,
+            "mean": 0.01049788240069414,
+            "p50": 0.004031999967992306,
+            "p90": 0.020927999168634415,
+            "max": 0.03097599931061268
+          },
+          "all_dependency_wait_ms": {
+            "count": 17,
+            "sum": 1.3689600037178025,
+            "mean": 0.08052705904222368,
+            "p50": 0.08191999956034124,
+            "p90": 0.09596799989230931,
+            "max": 0.09916800004430115
+          },
+          "wait_over_1ms": 0,
+          "wait_over_5ms": 0,
+          "short_single_request_batches": 6
+        },
+        "pre_forward_last_mamba_barrier": {
+          "batch_count": 10,
+          "first_dependency_wait_ms": {
+            "count": 10,
+            "sum": 36.36422402784228,
+            "mean": 3.6364224027842282,
+            "p50": 3.5125280618667603,
+            "p90": 7.131999969482422,
+            "max": 7.498432159423828
+          },
+          "all_dependency_wait_ms": {
+            "count": 10,
+            "sum": 37.1720960267121,
+            "mean": 3.71720960267121,
+            "p50": 3.5779200620017946,
+            "p90": 7.209087969386019,
+            "max": 7.569664159207605
+          },
+          "wait_over_1ms": 8,
+          "wait_over_5ms": 3,
+          "short_single_request_batches": 1
+        }
+      },
+      "short_prefill_probes": {
+        "batch_count": 7,
+        "first_dependency_wait_ms": {
+          "count": 7,
+          "sum": 3.440704042557627,
+          "mean": 0.49152914893680383,
+          "p50": 0.01648000068962574,
+          "p90": 3.3556480407714844,
+          "max": 3.3556480407714844
+        },
+        "all_dependency_wait_ms": {
+          "count": 7,
+          "sum": 3.9535360439913347,
+          "mean": 0.5647908634273335,
+          "p50": 0.09273599972948432,
+          "p90": 3.41971204103902,
+          "max": 3.41971204103902
+        },
+        "wait_over_1ms": 1,
+        "wait_over_5ms": 0,
+        "short_single_request_batches": 7
+      },
+      "first_service_request_cache": {
+        "no_host_hit_at_first_service": {
+          "request_count": 35836,
+          "cached_host_full_tokens_at_first_service": 0,
+          "logical_host_full_bytes_at_first_service": 0,
+          "host_full_tokens_per_request": {
+            "count": 35836,
+            "sum": 0,
+            "mean": 0,
+            "p50": 0.0,
+            "p90": 0,
+            "max": 0
+          },
+          "mamba_host_hit_slots": 0
+        },
+        "full_and_mamba_host_hit": {
+          "request_count": 345,
+          "cached_host_full_tokens_at_first_service": 3582272,
+          "logical_host_full_bytes_at_first_service": 73364930560,
+          "host_full_tokens_per_request": {
+            "count": 345,
+            "sum": 3582272,
+            "mean": 10383.397101449274,
+            "p50": 9408,
+            "p90": 21390,
+            "max": 33408
+          },
+          "mamba_host_hit_slots": 345
+        },
+        "full_host_hit_without_mamba_host_hit": {
+          "request_count": 14,
+          "cached_host_full_tokens_at_first_service": 164615,
+          "logical_host_full_bytes_at_first_service": 3371315200,
+          "host_full_tokens_per_request": {
+            "count": 14,
+            "sum": 164615,
+            "mean": 11758.214285714286,
+            "p50": 7345.0,
+            "p90": 25216,
+            "max": 33664
+          },
+          "mamba_host_hit_slots": 0
+        },
+        "mamba_host_hit_without_full_host_hit": {
+          "request_count": 7,
+          "cached_host_full_tokens_at_first_service": 0,
+          "logical_host_full_bytes_at_first_service": 0,
+          "host_full_tokens_per_request": {
+            "count": 7,
+            "sum": 0,
+            "mean": 0,
+            "p50": 0,
+            "p90": 0,
+            "max": 0
+          },
+          "mamba_host_hit_slots": 7
+        }
+      },
+      "native_h2d_ack_batches_including_tagged_prefetch": {
+        "full_only": {
+          "batch_count": 97,
+          "actual_bytes": 3604951040,
+          "full_bytes": 3604951040,
+          "mamba_slots": 0,
+          "mamba_bytes": 0,
+          "transfer_stream_elapsed_ms": {
+            "count": 97,
+            "sum": 110.17011192440987,
+            "mean": 1.1357743497361843,
+            "p50": 0.4447999894618988,
+            "p90": 2.804352045059204,
+            "max": 11.925248146057129
+          }
+        },
+        "full_and_mamba": {
+          "batch_count": 401,
+          "actual_bytes": 118653747200,
+          "full_bytes": 70039961600,
+          "mamba_slots": 755,
+          "mamba_bytes": 48613785600,
+          "transfer_stream_elapsed_ms": {
+            "count": 401,
+            "sum": 4117.435264587402,
+            "mean": 10.26791836555462,
+            "p50": 9.659680366516113,
+            "p90": 16.07766342163086,
+            "max": 38.47110366821289
+          }
+        },
+        "mamba_only": {
+          "batch_count": 49,
+          "actual_bytes": 4249681920,
+          "full_bytes": 0,
+          "mamba_slots": 66,
+          "mamba_bytes": 4249681920,
+          "transfer_stream_elapsed_ms": {
+            "count": 49,
+            "sum": 349.3947193622589,
+            "mean": 7.130504476780794,
+            "p50": 5.895232200622559,
+            "p90": 12.265983581542969,
+            "max": 16.179840087890625
+          }
+        }
+      },
+      "samples": [
+        {
+          "forward_iter": 28355,
+          "request_ids": [
+            "beliefkv:01a14552-44b5-7222-8c48-95b59ee01d42"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1619,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.0030400000978261232,
+          "total_wait_ms": 0.07519999984651804,
+          "probe_ts_ms": 1792164381950.2773
+        },
+        {
+          "forward_iter": 44590,
+          "request_ids": [
+            "beliefkv:01a14559-21a6-7480-9c68-4910a72741ee"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 624,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.03097599931061268,
+          "total_wait_ms": 0.08691199962049723,
+          "probe_ts_ms": 1792164832333.1536
+        },
+        {
+          "forward_iter": 50862,
+          "request_ids": [
+            "beliefkv:01a1455b-d2f8-73d2-a18f-6e51edc78b82"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 650,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 3.5383360385894775,
+          "total_wait_ms": 3.6036800384754315,
+          "probe_ts_ms": 1792165008289.5977
+        },
+        {
+          "forward_iter": 57074,
+          "request_ids": [
+            "beliefkv:01a1455e-8829-7150-bac6-d4be952216c9"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 834,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.020927999168634415,
+          "total_wait_ms": 0.08191999956034124,
+          "probe_ts_ms": 1792165186354.5073
+        },
+        {
+          "forward_iter": 63456,
+          "request_ids": [
+            "beliefkv:01a14561-5810-71c0-9bd0-c804081b4298"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 2384,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.003135999897494912,
+          "total_wait_ms": 0.07446400006301701,
+          "probe_ts_ms": 1792165370204.5527
+        },
+        {
+          "forward_iter": 68242,
+          "request_ids": [
+            "beliefkv:01a14563-6259-7033-9287-f70e37c42f54"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1168,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 3.486720085144043,
+          "total_wait_ms": 3.5521600855281577,
+          "probe_ts_ms": 1792165506723.3225
+        },
+        {
+          "forward_iter": 76859,
+          "request_ids": [
+            "beliefkv:01a14567-146c-7ba3-b564-662a3a50906f"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 112,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 3.3556480407714844,
+          "total_wait_ms": 3.41971204103902,
+          "probe_ts_ms": 1792165756088.363
+        },
+        {
+          "forward_iter": 87805,
+          "request_ids": [
+            "beliefkv:01a1456c-0ec6-77d3-9a04-5146dee55be7",
+            "beliefkv:01a1456c-09e7-7e70-ba34-bdbe9228f0be"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1916,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 5.845983982086182,
+          "total_wait_ms": 5.909407982020639,
+          "probe_ts_ms": 1792166075760.3003
+        },
+        {
+          "forward_iter": 102743,
+          "request_ids": [
+            "beliefkv:01a14572-b66f-72c2-8524-7b5d3deb9caf"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 646,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.02038400061428547,
+          "total_wait_ms": 0.07779200084041804,
+          "probe_ts_ms": 1792166518811.3745
+        },
+        {
+          "forward_iter": 102917,
+          "request_ids": [
+            "beliefkv:01a14572-cf5e-7ab1-be21-0f5962a35b1c",
+            "beliefkv:01a14572-d0b1-7f40-b7b9-bfe4f8915627"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1444,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.04879999905824661,
+          "total_wait_ms": 0.11055999912787229,
+          "probe_ts_ms": 1792166525788.6091
+        },
+        {
+          "forward_iter": 103114,
+          "request_ids": [
+            "beliefkv:01a14572-e986-7452-ad6a-44f5cdb6a948",
+            "beliefkv:01a14572-e9e1-71d2-bc83-41c713b474b9"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1277,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.004031999967992306,
+          "total_wait_ms": 0.09190399991348386,
+          "probe_ts_ms": 1792166532467.3164
+        },
+        {
+          "forward_iter": 103260,
+          "request_ids": [
+            "beliefkv:01a14573-015b-74e3-85bc-2cff8a59f954",
+            "beliefkv:01a14573-0151-71a2-a47b-555e4e95b45c",
+            "beliefkv:01a14573-035d-76d1-902f-9af5df46118b"
+          ],
+          "batch_size": 3,
+          "extend_tokens": 2183,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.019071999937295914,
+          "total_wait_ms": 0.23263999843038619,
+          "probe_ts_ms": 1792166538006.124
+        },
+        {
+          "forward_iter": 103407,
+          "request_ids": [
+            "beliefkv:01a14573-169b-7512-90e1-d6944ef33f41",
+            "beliefkv:01a14573-1718-75f2-bfe1-4e366c034cba"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 872,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 7.498432159423828,
+          "total_wait_ms": 7.569664159207605,
+          "probe_ts_ms": 1792166543440.3896
+        },
+        {
+          "forward_iter": 103706,
+          "request_ids": [
+            "beliefkv:01a14573-3f78-7b11-a735-fd6df1877e19",
+            "beliefkv:01a14573-3f99-7773-9175-5cdee5afec0a"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1375,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 4.317599773406982,
+          "total_wait_ms": 4.377503773430362,
+          "probe_ts_ms": 1792166554022.0894
+        },
+        {
+          "forward_iter": 104048,
+          "request_ids": [
+            "beliefkv:01a14573-68b1-7b23-94d4-6d86b80ece88"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 106,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.003008000086992979,
+          "total_wait_ms": 0.09596799989230931,
+          "probe_ts_ms": 1792166564212.5144
+        },
+        {
+          "forward_iter": 104320,
+          "request_ids": [
+            "beliefkv:01a14573-8b49-7693-a07b-b5e1cea4a367"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 242,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.016736000776290894,
+          "total_wait_ms": 0.0856960010714829,
+          "probe_ts_ms": 1792166574121.6304
+        },
+        {
+          "forward_iter": 104590,
+          "request_ids": [
+            "beliefkv:01a14573-aa9d-78d3-841f-abcfc58ffc0f"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1032,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.0013760000001639128,
+          "total_wait_ms": 0.06454400031361729,
+          "probe_ts_ms": 1792166583692.7437
+        },
+        {
+          "forward_iter": 104789,
+          "request_ids": [
+            "beliefkv:01a14573-c8e2-73d1-8e67-9ceb30de592d"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 251,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.017823999747633934,
+          "total_wait_ms": 0.09916800004430115,
+          "probe_ts_ms": 1792166590795.0176
+        },
+        {
+          "forward_iter": 104995,
+          "request_ids": [
+            "beliefkv:01a14573-e52c-72a0-a68e-9fcf7d015c71",
+            "beliefkv:01a14573-e708-7801-b115-3c5c0e3e3cef"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1069,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 7.131999969482422,
+          "total_wait_ms": 7.209087969386019,
+          "probe_ts_ms": 1792166597449.0476
+        },
+        {
+          "forward_iter": 105156,
+          "request_ids": [
+            "beliefkv:01a14573-fe18-7210-aca3-4d9c9bd4d51f"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 141,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.01648000068962574,
+          "total_wait_ms": 0.07129600096959621,
+          "probe_ts_ms": 1792166603140.5906
+        },
+        {
+          "forward_iter": 105311,
+          "request_ids": [
+            "beliefkv:01a14574-1201-79f3-b95e-68134a885be6"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 147,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.015231999568641186,
+          "total_wait_ms": 0.09273599972948432,
+          "probe_ts_ms": 1792166608557.2256
+        },
+        {
+          "forward_iter": 105534,
+          "request_ids": [
+            "beliefkv:01a14574-32d2-7c50-bef7-5dda26c857ca"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 141,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.015776000916957855,
+          "total_wait_ms": 0.08896000124514103,
+          "probe_ts_ms": 1792166615936.2178
+        },
+        {
+          "forward_iter": 106551,
+          "request_ids": [
+            "beliefkv:01a14574-cfeb-7de3-ba6e-32d243fa91bd",
+            "beliefkv:01a14574-c707-7e52-a026-7b9b49f591a1"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 4096,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 1.1216319799423218,
+          "total_wait_ms": 1.187679980066605,
+          "probe_ts_ms": 1792166646336.0952
+        },
+        {
+          "forward_iter": 107642,
+          "request_ids": [
+            "beliefkv:01a14575-2ab5-73e3-90ed-e9231781c715"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1575,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.001408000010997057,
+          "total_wait_ms": 0.06470400025136769,
+          "probe_ts_ms": 1792166679777.8848
+        },
+        {
+          "forward_iter": 128994,
+          "request_ids": [
+            "beliefkv:01a1457e-b601-7992-8501-6c8cf178a072"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 4096,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.003295999951660633,
+          "total_wait_ms": 0.0824960001045838,
+          "probe_ts_ms": 1792167295011.7375
+        },
+        {
+          "forward_iter": 159742,
+          "request_ids": [
+            "beliefkv:01a1458b-b38a-7660-b138-d50847c41745"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1475,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.00342399999499321,
+          "total_wait_ms": 0.07168000016827136,
+          "probe_ts_ms": 1792168145875.421
+        },
+        {
+          "forward_iter": 190998,
+          "request_ids": [
+            "beliefkv:01a14596-7df7-7d43-ab2f-8c99e2a08f26"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1615,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.001408000010997057,
+          "total_wait_ms": 0.063520000083372,
+          "probe_ts_ms": 1792168853172.2612
+        }
+      ]
+    },
+    "v73_native_complete": {
+      "label": "v73_native_complete",
+      "arm_path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v73/native",
+      "receipts": {
+        "audit": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v73/native/server/runtime_audit.jsonl",
+          "snapshot_size_bytes": 3564209575,
+          "snapshot_at": "2026-10-16T09:51:43.714134-07:00",
+          "read_prefix_bytes": 3564209575,
+          "read_prefix_sha256": "62570e5268a972127a9bfde3f6a95cc92aa3112881a28df53ef5c3bf7ec95c1f",
+          "scan_finished_at": "2026-10-16T09:52:22.616486-07:00"
+        },
+        "events": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v73/native/server/runtime_events.sglang.jsonl",
+          "snapshot_size_bytes": 67461470,
+          "snapshot_at": "2026-10-16T09:51:43.714148-07:00",
+          "read_prefix_bytes": 67461470,
+          "read_prefix_sha256": "2d1ae7866ca1ab8bc5d0a1d3e071babf243c92def31c8846cfbce399899790d0",
+          "scan_finished_at": "2026-10-16T09:52:23.312465-07:00"
+        },
+        "transfer": {
+          "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v73/native/server/transfer_telemetry.jsonl",
+          "snapshot_size_bytes": 87401817,
+          "snapshot_at": "2026-10-16T09:51:43.714165-07:00",
+          "read_prefix_bytes": 87401817,
+          "read_prefix_sha256": "7f853fe81fbf490c986068f41ecd2924e7418352ba0f5b04d3e8e0e133e4301a",
+          "scan_finished_at": "2026-10-16T09:52:24.421804-07:00"
+        }
+      },
+      "prefill_batches_with_completed_service": 38206,
+      "load_consuming_probe_batches": 89,
+      "paired_probe_batches": 89,
+      "rejected_probes": {},
+      "pre_forward_barrier_fraction_of_paired_samples": 0.0898876404494382,
+      "routes": {
+        "layerwise_entry_no_observed_pre_forward_barrier": {
+          "batch_count": 81,
+          "first_dependency_wait_ms": {
+            "count": 81,
+            "sum": 3.042912023840472,
+            "mean": 0.03756681510914163,
+            "p50": 0.014751999638974667,
+            "p90": 0.04233599826693535,
+            "max": 0.606112003326416
+          },
+          "all_dependency_wait_ms": {
+            "count": 81,
+            "sum": 8.252128038206138,
+            "mean": 0.10187812392847084,
+            "p50": 0.0770239996491,
+            "p90": 0.11056000017561018,
+            "max": 0.6880640044109896
+          },
+          "wait_over_1ms": 0,
+          "wait_over_5ms": 0,
+          "short_single_request_batches": 42
+        },
+        "pre_forward_last_mamba_barrier": {
+          "batch_count": 8,
+          "first_dependency_wait_ms": {
+            "count": 8,
+            "sum": 13.31753593403846,
+            "mean": 1.6646919917548075,
+            "p50": 0.017583999782800674,
+            "p90": 13.1911039352417,
+            "max": 13.1911039352417
+          },
+          "all_dependency_wait_ms": {
+            "count": 8,
+            "sum": 15.42934389342554,
+            "mean": 1.9286679866781924,
+            "p50": 0.19217599800322205,
+            "p90": 13.257983935181983,
+            "max": 13.257983935181983
+          },
+          "wait_over_1ms": 1,
+          "wait_over_5ms": 1,
+          "short_single_request_batches": 0
+        }
+      },
+      "short_prefill_probes": {
+        "batch_count": 42,
+        "first_dependency_wait_ms": {
+          "count": 42,
+          "sum": 1.2996800022665411,
+          "mean": 0.03094476195872717,
+          "p50": 0.015632000286132097,
+          "p90": 0.035840000957250595,
+          "max": 0.5605120062828064
+        },
+        "all_dependency_wait_ms": {
+          "count": 42,
+          "sum": 3.901504013687372,
+          "mean": 0.0928929527068422,
+          "p50": 0.07547199970576912,
+          "p90": 0.10489599918946624,
+          "max": 0.6159680066630244
+        },
+        "wait_over_1ms": 0,
+        "wait_over_5ms": 0,
+        "short_single_request_batches": 42
+      },
+      "first_service_request_cache": {
+        "no_host_hit_at_first_service": {
+          "request_count": 36010,
+          "cached_host_full_tokens_at_first_service": 0,
+          "logical_host_full_bytes_at_first_service": 0,
+          "host_full_tokens_per_request": {
+            "count": 36010,
+            "sum": 0,
+            "mean": 0,
+            "p50": 0.0,
+            "p90": 0,
+            "max": 0
+          },
+          "mamba_host_hit_slots": 0
+        },
+        "full_and_mamba_host_hit": {
+          "request_count": 1596,
+          "cached_host_full_tokens_at_first_service": 22107515,
+          "logical_host_full_bytes_at_first_service": 452761907200,
+          "host_full_tokens_per_request": {
+            "count": 1596,
+            "sum": 22107515,
+            "mean": 13851.826441102758,
+            "p50": 14282.5,
+            "p90": 23498,
+            "max": 37562
+          },
+          "mamba_host_hit_slots": 1596
+        },
+        "mamba_host_hit_without_full_host_hit": {
+          "request_count": 6,
+          "cached_host_full_tokens_at_first_service": 0,
+          "logical_host_full_bytes_at_first_service": 0,
+          "host_full_tokens_per_request": {
+            "count": 6,
+            "sum": 0,
+            "mean": 0,
+            "p50": 0.0,
+            "p90": 0,
+            "max": 0
+          },
+          "mamba_host_hit_slots": 6
+        }
+      },
+      "native_h2d_ack_batches_including_tagged_prefetch": {
+        "full_and_mamba": {
+          "batch_count": 1416,
+          "actual_bytes": 658291978240,
+          "full_bytes": 452761907200,
+          "mamba_slots": 3192,
+          "mamba_bytes": 205530071040,
+          "transfer_stream_elapsed_ms": {
+            "count": 1416,
+            "sum": 19160.08160018921,
+            "mean": 13.53113107357995,
+            "p50": 13.03499174118042,
+            "p90": 18.668607711791992,
+            "max": 50.705440521240234
+          }
+        },
+        "mamba_only": {
+          "batch_count": 6,
+          "actual_bytes": 772669440,
+          "full_bytes": 0,
+          "mamba_slots": 12,
+          "mamba_bytes": 772669440,
+          "transfer_stream_elapsed_ms": {
+            "count": 6,
+            "sum": 38.32806348800659,
+            "mean": 6.388010581334432,
+            "p50": 5.977807998657227,
+            "p90": 7.959199905395508,
+            "max": 7.959199905395508
+          }
+        }
+      },
+      "samples": [
+        {
+          "forward_iter": 103793,
+          "request_ids": [
+            "beliefkv:01a144cc-5def-7410-bef2-a4e52447859e"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1940,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.001408000010997057,
+          "total_wait_ms": 0.06915200012736022,
+          "probe_ts_ms": 1792155615760.2444
+        },
+        {
+          "forward_iter": 106348,
+          "request_ids": [
+            "beliefkv:01a144cd-6e51-7272-a5d7-c5c1ce2d22bb"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 158,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.002047999994829297,
+          "total_wait_ms": 0.08835200022440404,
+          "probe_ts_ms": 1792155683679.485
+        },
+        {
+          "forward_iter": 106575,
+          "request_ids": [
+            "beliefkv:01a144cd-88b2-7252-94ec-ddb671bec3e8"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 202,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.022431999444961548,
+          "total_wait_ms": 0.10489599918946624,
+          "probe_ts_ms": 1792155691220.8064
+        },
+        {
+          "forward_iter": 106723,
+          "request_ids": [
+            "beliefkv:01a144cd-9ce5-7c73-87da-6ee7fcf81410"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 153,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.017535999417304993,
+          "total_wait_ms": 0.08179199951700866,
+          "probe_ts_ms": 1792155697346.7502
+        },
+        {
+          "forward_iter": 106836,
+          "request_ids": [
+            "beliefkv:01a144cd-aa27-7ad2-ac66-56f1f0de8f10",
+            "beliefkv:01a144cd-aa74-7a02-9929-b42cfce9f70f",
+            "beliefkv:01a144cd-ac0d-7180-b922-d8a7319037eb"
+          ],
+          "batch_size": 3,
+          "extend_tokens": 398,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.01740800030529499,
+          "total_wait_ms": 0.8300479918252677,
+          "probe_ts_ms": 1792155701978.7
+        },
+        {
+          "forward_iter": 106976,
+          "request_ids": [
+            "beliefkv:01a144cd-bde0-7ae2-87b9-f2816876fdd8",
+            "beliefkv:01a144cd-be65-7d43-9031-0c2fe80387a0"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 2860,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.001408000010997057,
+          "total_wait_ms": 0.07488000066950917,
+          "probe_ts_ms": 1792155707422.535
+        },
+        {
+          "forward_iter": 107078,
+          "request_ids": [
+            "beliefkv:01a144cd-cbd3-7b80-9414-bda9e1dca441",
+            "beliefkv:01a144cd-cc94-7ca1-9d18-350a6cccb482"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1744,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.001408000010997057,
+          "total_wait_ms": 0.06316800008062273,
+          "probe_ts_ms": 1792155712489.5583
+        },
+        {
+          "forward_iter": 107238,
+          "request_ids": [
+            "beliefkv:01a144cd-e189-7523-8e26-5b4c72318e9e"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 285,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014751999638974667,
+          "total_wait_ms": 0.06988799991086125,
+          "probe_ts_ms": 1792155719256.8787
+        },
+        {
+          "forward_iter": 107356,
+          "request_ids": [
+            "beliefkv:01a144cd-fa69-71b3-91be-3f092ae57f56"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 286,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014399999752640724,
+          "total_wait_ms": 0.07491200009826571,
+          "probe_ts_ms": 1792155723956.9666
+        },
+        {
+          "forward_iter": 107472,
+          "request_ids": [
+            "beliefkv:01a144ce-0e33-7dd3-87be-f538b148779a",
+            "beliefkv:01a144ce-0e87-7b83-ba38-032fc34b8302"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 543,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.04233599826693535,
+          "total_wait_ms": 0.11103999859187752,
+          "probe_ts_ms": 1792155728617.1077
+        },
+        {
+          "forward_iter": 107593,
+          "request_ids": [
+            "beliefkv:01a144ce-2118-7ab1-bf33-12b35f3b9627",
+            "beliefkv:01a144ce-21fd-7cd2-a342-b9ec94a307a9"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1821,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.02067199908196926,
+          "total_wait_ms": 0.08198399911634624,
+          "probe_ts_ms": 1792155733375.551
+        },
+        {
+          "forward_iter": 107684,
+          "request_ids": [
+            "beliefkv:01a144ce-2da4-7072-a57c-522cd564638f",
+            "beliefkv:01a144ce-2dcf-7383-a1b6-23fcc51c4ba7",
+            "beliefkv:01a144ce-2ed4-7483-8284-c6b771219579",
+            "beliefkv:01a144ce-2fcf-77c0-9d0e-12dd69da1770"
+          ],
+          "batch_size": 4,
+          "extend_tokens": 4096,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.03094400092959404,
+          "total_wait_ms": 0.09532800095621496,
+          "probe_ts_ms": 1792155738081.6296
+        },
+        {
+          "forward_iter": 107797,
+          "request_ids": [
+            "beliefkv:01a144ce-3db6-7782-bef0-8bc332a44d97"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 381,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.015584000386297703,
+          "total_wait_ms": 0.07590400078333914,
+          "probe_ts_ms": 1792155742967.7776
+        },
+        {
+          "forward_iter": 107895,
+          "request_ids": [
+            "beliefkv:01a144ce-4e49-7b73-aa14-499b172b11e2"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 573,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.01206399966031313,
+          "total_wait_ms": 0.09039999975357205,
+          "probe_ts_ms": 1792155747051.3528
+        },
+        {
+          "forward_iter": 107989,
+          "request_ids": [
+            "beliefkv:01a144ce-5e61-71a3-b16d-27e9500ebd23"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1639,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.001408000010997057,
+          "total_wait_ms": 0.06252799998037517,
+          "probe_ts_ms": 1792155751369.0444
+        },
+        {
+          "forward_iter": 108081,
+          "request_ids": [
+            "beliefkv:01a144ce-6ffe-71e0-9534-9d0f458e379c"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 235,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014751999638974667,
+          "total_wait_ms": 0.07417600019834936,
+          "probe_ts_ms": 1792155756129.6274
+        },
+        {
+          "forward_iter": 108188,
+          "request_ids": [
+            "beliefkv:01a144ce-7d5b-7da0-9564-afc32e4efeb8"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1331,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.003488000016659498,
+          "total_wait_ms": 0.07177600008435547,
+          "probe_ts_ms": 1792155760540.4895
+        },
+        {
+          "forward_iter": 108284,
+          "request_ids": [
+            "beliefkv:01a144ce-8c86-76c0-aded-1499ec118c67"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1017,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.041760001331567764,
+          "total_wait_ms": 0.10313600150402635,
+          "probe_ts_ms": 1792155764532.445
+        },
+        {
+          "forward_iter": 108388,
+          "request_ids": [
+            "beliefkv:01a144ce-a16d-7870-a58e-447fe6bd87a2"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 540,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014560000039637089,
+          "total_wait_ms": 0.07878400001209229,
+          "probe_ts_ms": 1792155770203.6155
+        },
+        {
+          "forward_iter": 108479,
+          "request_ids": [
+            "beliefkv:01a144ce-b333-7b22-be6d-15c9bec451e4"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 129,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.013919999822974205,
+          "total_wait_ms": 0.06950400024652481,
+          "probe_ts_ms": 1792155774479.0337
+        },
+        {
+          "forward_iter": 108550,
+          "request_ids": [
+            "beliefkv:01a144ce-c06a-7fa0-b23b-35a0d2d19441"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 485,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014720000326633453,
+          "total_wait_ms": 0.0799040001584217,
+          "probe_ts_ms": 1792155778982.905
+        },
+        {
+          "forward_iter": 108632,
+          "request_ids": [
+            "beliefkv:01a144ce-d5ff-7772-a7d6-e97dd3d20f56"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 204,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.013504000380635262,
+          "total_wait_ms": 0.0747200008481741,
+          "probe_ts_ms": 1792155782597.5422
+        },
+        {
+          "forward_iter": 108715,
+          "request_ids": [
+            "beliefkv:01a144ce-e2e9-7322-94ae-5c5b5a6ca9d7"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1298,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.01462399959564209,
+          "total_wait_ms": 0.0770239996491,
+          "probe_ts_ms": 1792155786766.5664
+        },
+        {
+          "forward_iter": 108801,
+          "request_ids": [
+            "beliefkv:01a144ce-f16c-7e73-9631-2c30555193c6"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 151,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.01852799952030182,
+          "total_wait_ms": 0.07318399986252189,
+          "probe_ts_ms": 1792155790627.1406
+        },
+        {
+          "forward_iter": 108889,
+          "request_ids": [
+            "beliefkv:01a144ce-ffaf-78c1-8a66-44048ecf152f",
+            "beliefkv:01a144cf-0192-7c93-a5bc-73917a2f15ea",
+            "beliefkv:01a144cf-01f2-7670-a91b-009fdcd10cbf"
+          ],
+          "batch_size": 3,
+          "extend_tokens": 2804,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.03215999901294708,
+          "total_wait_ms": 0.12006399838719517,
+          "probe_ts_ms": 1792155795487.9717
+        },
+        {
+          "forward_iter": 108964,
+          "request_ids": [
+            "beliefkv:01a144cf-0e70-7cb2-a085-a56e39bf6d06"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 115,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.018079999834299088,
+          "total_wait_ms": 0.07289600023068488,
+          "probe_ts_ms": 1792155799448.778
+        },
+        {
+          "forward_iter": 109043,
+          "request_ids": [
+            "beliefkv:01a144cf-20cd-70c1-91e6-bb52c4276f33"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 348,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.0427200011909008,
+          "total_wait_ms": 0.09788800159003586,
+          "probe_ts_ms": 1792155803928.944
+        },
+        {
+          "forward_iter": 109111,
+          "request_ids": [
+            "beliefkv:01a144cf-3083-7412-b1ef-98cca346abe1"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 175,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.018079999834299088,
+          "total_wait_ms": 0.07308800017926842,
+          "probe_ts_ms": 1792155807887.9646
+        },
+        {
+          "forward_iter": 109194,
+          "request_ids": [
+            "beliefkv:01a144cf-3edb-7183-907c-b9878261398a"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 403,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.042688000947237015,
+          "total_wait_ms": 0.10915200097952038,
+          "probe_ts_ms": 1792155811806.506
+        },
+        {
+          "forward_iter": 109270,
+          "request_ids": [
+            "beliefkv:01a144cf-50f0-7142-b997-a82b981350aa"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 189,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.03968000039458275,
+          "total_wait_ms": 0.11056000017561018,
+          "probe_ts_ms": 1792155815869.421
+        },
+        {
+          "forward_iter": 109358,
+          "request_ids": [
+            "beliefkv:01a144cf-5fd7-72e1-bd2f-e9d1e561fdda"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 422,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014208000153303146,
+          "total_wait_ms": 0.07926400017458946,
+          "probe_ts_ms": 1792155819986.541
+        },
+        {
+          "forward_iter": 109442,
+          "request_ids": [
+            "beliefkv:01a144cf-7286-73e2-8dbb-b8811e7ed2cf"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 194,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014655999839305878,
+          "total_wait_ms": 0.0743680001469329,
+          "probe_ts_ms": 1792155823809.6968
+        },
+        {
+          "forward_iter": 109518,
+          "request_ids": [
+            "beliefkv:01a144cf-8285-7450-a2ed-4a2b1b394392"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 66,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.01724799908697605,
+          "total_wait_ms": 0.07247999939136207,
+          "probe_ts_ms": 1792155827671.2698
+        },
+        {
+          "forward_iter": 109607,
+          "request_ids": [
+            "beliefkv:01a144cf-90a0-7cc0-b9ec-dd80818d1f80"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 370,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014879999682307243,
+          "total_wait_ms": 0.07897599972784519,
+          "probe_ts_ms": 1792155832992.0107
+        },
+        {
+          "forward_iter": 109694,
+          "request_ids": [
+            "beliefkv:01a144cf-a0cb-74c2-98ee-d13bbc197ac4"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 224,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.5605120062828064,
+          "total_wait_ms": 0.6159680066630244,
+          "probe_ts_ms": 1792155836986.6611
+        },
+        {
+          "forward_iter": 109779,
+          "request_ids": [
+            "beliefkv:01a144cf-aeda-7541-bb22-35991e39444f"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 775,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.015584000386297703,
+          "total_wait_ms": 0.07971200020983815,
+          "probe_ts_ms": 1792155840868.1428
+        },
+        {
+          "forward_iter": 109859,
+          "request_ids": [
+            "beliefkv:01a144cf-c05a-7091-96a6-8ebec9975f40"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 2295,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.001408000010997057,
+          "total_wait_ms": 0.0648639997234568,
+          "probe_ts_ms": 1792155844730.1619
+        },
+        {
+          "forward_iter": 109931,
+          "request_ids": [
+            "beliefkv:01a144cf-d205-78a3-a3b8-e0205c327dcd"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 887,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.013728000223636627,
+          "total_wait_ms": 0.07548800052609295,
+          "probe_ts_ms": 1792155848368.2363
+        },
+        {
+          "forward_iter": 110001,
+          "request_ids": [
+            "beliefkv:01a144cf-dfcf-7382-af76-766c92081a50"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 120,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.016063999384641647,
+          "total_wait_ms": 0.07148799975402653,
+          "probe_ts_ms": 1792155852189.076
+        },
+        {
+          "forward_iter": 110076,
+          "request_ids": [
+            "beliefkv:01a144cf-f2f2-7c22-8736-17eab4e1f7a4"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 801,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014336000196635723,
+          "total_wait_ms": 0.07878400024492294,
+          "probe_ts_ms": 1792155856424.8167
+        },
+        {
+          "forward_iter": 110198,
+          "request_ids": [
+            "beliefkv:01a144d0-071e-7710-93a4-9221c68116be"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 88,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.016767999157309532,
+          "total_wait_ms": 0.07580799970310181,
+          "probe_ts_ms": 1792155863489.407
+        },
+        {
+          "forward_iter": 110293,
+          "request_ids": [
+            "beliefkv:01a144d0-160d-76a2-94df-72cecca95981"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 2297,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.0013760000001639128,
+          "total_wait_ms": 0.0640000004786998,
+          "probe_ts_ms": 1792155868226.1553
+        },
+        {
+          "forward_iter": 110389,
+          "request_ids": [
+            "beliefkv:01a144d0-2d71-7b41-acb4-2041bcdca86d"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 420,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.01484800036996603,
+          "total_wait_ms": 0.07952000037766993,
+          "probe_ts_ms": 1792155873506.6929
+        },
+        {
+          "forward_iter": 110480,
+          "request_ids": [
+            "beliefkv:01a144d0-4091-71e3-9481-95192ec0a6af"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1291,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.0013760000001639128,
+          "total_wait_ms": 0.06492799986153841,
+          "probe_ts_ms": 1792155878929.4565
+        },
+        {
+          "forward_iter": 110573,
+          "request_ids": [
+            "beliefkv:01a144d0-5740-7f41-9ee4-5b161ffef104"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 835,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.046560000628232956,
+          "total_wait_ms": 0.11660800070967525,
+          "probe_ts_ms": 1792155884125.6702
+        },
+        {
+          "forward_iter": 110667,
+          "request_ids": [
+            "beliefkv:01a144d0-6909-7082-8125-6b82b0b1a250"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 236,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.017023999243974686,
+          "total_wait_ms": 0.08988799946382642,
+          "probe_ts_ms": 1792155888981.7568
+        },
+        {
+          "forward_iter": 110754,
+          "request_ids": [
+            "beliefkv:01a144d0-7a2b-78f2-991f-cecce96894cd"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 668,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.013279999606311321,
+          "total_wait_ms": 0.07807999942451715,
+          "probe_ts_ms": 1792155893562.6045
+        },
+        {
+          "forward_iter": 110839,
+          "request_ids": [
+            "beliefkv:01a144d0-8e6b-7c50-9b25-e3a46c83f0ab"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 206,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.035840000957250595,
+          "total_wait_ms": 0.10758400114718825,
+          "probe_ts_ms": 1792155897994.2983
+        },
+        {
+          "forward_iter": 110935,
+          "request_ids": [
+            "beliefkv:01a144d0-a30b-7a12-bc54-a5fbc04ca985"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1469,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.0013760000001639128,
+          "total_wait_ms": 0.06479999970179051,
+          "probe_ts_ms": 1792155902176.5151
+        },
+        {
+          "forward_iter": 111037,
+          "request_ids": [
+            "beliefkv:01a144d0-b559-77d3-810b-ba9e114cd161",
+            "beliefkv:01a144d0-b682-7c91-b5a0-7033c1bdef12"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 760,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014751999638974667,
+          "total_wait_ms": 0.07958400005009025,
+          "probe_ts_ms": 1792155906413.52
+        },
+        {
+          "forward_iter": 111129,
+          "request_ids": [
+            "beliefkv:01a144d0-c470-7a01-896e-cebd5c9d1122",
+            "beliefkv:01a144d0-c53d-70f0-9a87-99099091c5fb"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1915,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.001408000010997057,
+          "total_wait_ms": 0.06608000013511628,
+          "probe_ts_ms": 1792155910709.0244
+        },
+        {
+          "forward_iter": 111218,
+          "request_ids": [
+            "beliefkv:01a144d0-d8a2-76e3-b611-d051fe23080b"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 624,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.5982400178909302,
+          "total_wait_ms": 0.663200017879717,
+          "probe_ts_ms": 1792155915197.191
+        },
+        {
+          "forward_iter": 111301,
+          "request_ids": [
+            "beliefkv:01a144d0-e6c4-7212-a720-b63982abcf40"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1152,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.001408000010997057,
+          "total_wait_ms": 0.06393599999137223,
+          "probe_ts_ms": 1792155919465.097
+        },
+        {
+          "forward_iter": 111382,
+          "request_ids": [
+            "beliefkv:01a144d0-f562-7a52-9bd9-9e33d24c2f26"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 138,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014271999709308147,
+          "total_wait_ms": 0.06889600004069507,
+          "probe_ts_ms": 1792155923153.4802
+        },
+        {
+          "forward_iter": 111463,
+          "request_ids": [
+            "beliefkv:01a144d1-08a0-73d3-9b77-cf661cf6e5a6"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 166,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014560000039637089,
+          "total_wait_ms": 0.06912000034935772,
+          "probe_ts_ms": 1792155927077.4377
+        },
+        {
+          "forward_iter": 111579,
+          "request_ids": [
+            "beliefkv:01a144d1-1b5a-7193-8530-7203e8439b24"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 631,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014336000196635723,
+          "total_wait_ms": 0.07923200051300228,
+          "probe_ts_ms": 1792155932476.252
+        },
+        {
+          "forward_iter": 111687,
+          "request_ids": [
+            "beliefkv:01a144d1-2d7b-7081-841b-255ee53386e9"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 204,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.01945599913597107,
+          "total_wait_ms": 0.07471999956760556,
+          "probe_ts_ms": 1792155937162.9104
+        },
+        {
+          "forward_iter": 111796,
+          "request_ids": [
+            "beliefkv:01a144d1-3d2e-7af1-8082-b0a8ad7512b6"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1364,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.001408000010997057,
+          "total_wait_ms": 0.06988800002727658,
+          "probe_ts_ms": 1792155941798.182
+        },
+        {
+          "forward_iter": 111900,
+          "request_ids": [
+            "beliefkv:01a144d1-4ff0-72f0-85cc-1573546e1952",
+            "beliefkv:01a144d1-509b-7810-a409-7676b4055b56"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1888,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.016672000288963318,
+          "total_wait_ms": 0.08464000024832785,
+          "probe_ts_ms": 1792155946658.831
+        },
+        {
+          "forward_iter": 112007,
+          "request_ids": [
+            "beliefkv:01a144d1-6600-7660-a25f-e10d3e1f6f32"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 860,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.04819199815392494,
+          "total_wait_ms": 0.11311999813187867,
+          "probe_ts_ms": 1792155952221.0469
+        },
+        {
+          "forward_iter": 112094,
+          "request_ids": [
+            "beliefkv:01a144d1-763e-7472-b329-f4a9fc694b42",
+            "beliefkv:01a144d1-76aa-73e1-a15e-fcbf53cc6622"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 341,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.606112003326416,
+          "total_wait_ms": 0.6880640044109896,
+          "probe_ts_ms": 1792155955977.963
+        },
+        {
+          "forward_iter": 112183,
+          "request_ids": [
+            "beliefkv:01a144d1-90d0-7d43-b3a2-522e5f95985f"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 417,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.017791999503970146,
+          "total_wait_ms": 0.07513599970843643,
+          "probe_ts_ms": 1792155961022.9373
+        },
+        {
+          "forward_iter": 112297,
+          "request_ids": [
+            "beliefkv:01a144d1-aaec-7972-9af4-e9c5d74581e4"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1480,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.001408000010997057,
+          "total_wait_ms": 0.0691520000109449,
+          "probe_ts_ms": 1792155966767.8916
+        },
+        {
+          "forward_iter": 112444,
+          "request_ids": [
+            "beliefkv:01a144d1-c04a-7982-89f6-9713d5955b73"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1666,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.02627200074493885,
+          "total_wait_ms": 0.09145600092597306,
+          "probe_ts_ms": 1792155973046.0916
+        },
+        {
+          "forward_iter": 112551,
+          "request_ids": [
+            "beliefkv:01a144d1-d3de-7492-b7cf-504f0cc01d26"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1430,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.0013760000001639128,
+          "total_wait_ms": 0.06591999996453524,
+          "probe_ts_ms": 1792155977820.3298
+        },
+        {
+          "forward_iter": 112661,
+          "request_ids": [
+            "beliefkv:01a144d1-e7a7-7031-8c4c-3b3ffa946060"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 591,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.013024000450968742,
+          "total_wait_ms": 0.07820800051558763,
+          "probe_ts_ms": 1792155983523.5166
+        },
+        {
+          "forward_iter": 112803,
+          "request_ids": [
+            "beliefkv:01a144d1-fd5a-76c3-b14e-123bec1e072c"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 122,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.01532800029963255,
+          "total_wait_ms": 0.08761600079014897,
+          "probe_ts_ms": 1792155988821.4814
+        },
+        {
+          "forward_iter": 112903,
+          "request_ids": [
+            "beliefkv:01a144d2-0f27-7441-8942-e747d4777f4e"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 699,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.0658240020275116,
+          "total_wait_ms": 0.12979200202971697,
+          "probe_ts_ms": 1792155993445.3977
+        },
+        {
+          "forward_iter": 112997,
+          "request_ids": [
+            "beliefkv:01a144d2-1c3d-7912-b275-7b4619ea3f9d"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 843,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014495999552309513,
+          "total_wait_ms": 0.084063999238424,
+          "probe_ts_ms": 1792155997337.3767
+        },
+        {
+          "forward_iter": 113167,
+          "request_ids": [
+            "beliefkv:01a144d2-31d2-78b1-85c5-92294ef61873"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 129,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.019360000267624855,
+          "total_wait_ms": 0.07462400069925934,
+          "probe_ts_ms": 1792156003375.5466
+        },
+        {
+          "forward_iter": 113256,
+          "request_ids": [
+            "beliefkv:01a144d2-4244-77a2-878e-6d37b90a5382"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 257,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014495999552309513,
+          "total_wait_ms": 0.07308799971360713,
+          "probe_ts_ms": 1792156007458.0178
+        },
+        {
+          "forward_iter": 113372,
+          "request_ids": [
+            "beliefkv:01a144d2-5bd4-7ad1-bced-2c482fed6355"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 185,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.01321600005030632,
+          "total_wait_ms": 0.08076800080016255,
+          "probe_ts_ms": 1792156012036.814
+        },
+        {
+          "forward_iter": 113495,
+          "request_ids": [
+            "beliefkv:01a144d2-6ca4-7e52-acc2-cb974560c2e5"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 105,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.015359999611973763,
+          "total_wait_ms": 0.08633600000757724,
+          "probe_ts_ms": 1792156016710.8455
+        },
+        {
+          "forward_iter": 113656,
+          "request_ids": [
+            "beliefkv:01a144d2-7f7b-7fe3-8e80-d9ef9d5901e8",
+            "beliefkv:01a144d2-80fd-7060-a27a-87d1cb73701a"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1760,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.017152000218629837,
+          "total_wait_ms": 0.7076799714704975,
+          "probe_ts_ms": 1792156022724.1904
+        },
+        {
+          "forward_iter": 113773,
+          "request_ids": [
+            "beliefkv:01a144d2-9328-7d13-aa08-7e7607301501"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1531,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.004416000097990036,
+          "total_wait_ms": 0.0763840003637597,
+          "probe_ts_ms": 1792156027507.899
+        },
+        {
+          "forward_iter": 113919,
+          "request_ids": [
+            "beliefkv:01a144d2-b202-72b1-936a-60b30b68b938",
+            "beliefkv:01a144d2-b2a6-7162-8e55-2db29c514a90"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 859,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.015552000142633915,
+          "total_wait_ms": 0.2521279964130372,
+          "probe_ts_ms": 1792156034766.672
+        },
+        {
+          "forward_iter": 114105,
+          "request_ids": [
+            "beliefkv:01a144d2-cbdb-71d3-b6d0-c0f59642ad1d"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 84,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.016383999958634377,
+          "total_wait_ms": 0.07849600026383996,
+          "probe_ts_ms": 1792156042339.3093
+        },
+        {
+          "forward_iter": 114256,
+          "request_ids": [
+            "beliefkv:01a144d2-e5f6-7462-afca-05b24fd72716"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 77,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.014688000082969666,
+          "total_wait_ms": 0.07161600049585104,
+          "probe_ts_ms": 1792156048066.1006
+        },
+        {
+          "forward_iter": 114405,
+          "request_ids": [
+            "beliefkv:01a144d2-fae3-7c01-adc8-2884c69b739d"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 109,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.013504000380635262,
+          "total_wait_ms": 0.08700800000224262,
+          "probe_ts_ms": 1792156053498.6897
+        },
+        {
+          "forward_iter": 114590,
+          "request_ids": [
+            "beliefkv:01a144d3-18c7-76e2-834d-ceb696822088"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 239,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.01500799972563982,
+          "total_wait_ms": 0.07030400005169213,
+          "probe_ts_ms": 1792156060598.11
+        },
+        {
+          "forward_iter": 114734,
+          "request_ids": [
+            "beliefkv:01a144d3-2fca-7b72-ae27-2f375dd8c145"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 83,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.01568000018596649,
+          "total_wait_ms": 0.08195200061891228,
+          "probe_ts_ms": 1792156066156.5774
+        },
+        {
+          "forward_iter": 114982,
+          "request_ids": [
+            "beliefkv:01a144d3-5397-7dc3-a8e2-9c6c4021f99f"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 160,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.017311999574303627,
+          "total_wait_ms": 0.07222400000318885,
+          "probe_ts_ms": 1792156074449.7664
+        },
+        {
+          "forward_iter": 116207,
+          "request_ids": [
+            "beliefkv:01a144d3-f1c3-7832-a7df-050a9544c3b6",
+            "beliefkv:01a144d3-f293-7e42-98a4-ac4ed3209db1"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 690,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.01775999926030636,
+          "total_wait_ms": 0.13222399959340692,
+          "probe_ts_ms": 1792156110216.632
+        },
+        {
+          "forward_iter": 116765,
+          "request_ids": [
+            "beliefkv:01a144d4-3293-7313-a0fe-28fe4db28531",
+            "beliefkv:01a144d4-33ed-7ae2-8007-30d28a551723",
+            "beliefkv:01a144d4-351b-7061-b4ef-062e2c3e8e52"
+          ],
+          "batch_size": 3,
+          "extend_tokens": 698,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 13.1911039352417,
+          "total_wait_ms": 13.257983935181983,
+          "probe_ts_ms": 1792156127963.2307
+        },
+        {
+          "forward_iter": 117283,
+          "request_ids": [
+            "beliefkv:01a144d4-63ee-79b3-bdec-e77c881258d8"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 172,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.017791999503970146,
+          "total_wait_ms": 0.07343999983277172,
+          "probe_ts_ms": 1792156144908.7576
+        },
+        {
+          "forward_iter": 122855,
+          "request_ids": [
+            "beliefkv:01a144d6-eeae-78e0-ae21-e29e094ee86f",
+            "beliefkv:01a144d6-eefd-7583-8770-811b4710f9e2"
+          ],
+          "batch_size": 2,
+          "extend_tokens": 1850,
+          "route": "pre_forward_last_mamba_barrier",
+          "first_observed_layer": 38,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.021215999498963356,
+          "total_wait_ms": 0.08265599957667291,
+          "probe_ts_ms": 1792156303629.918
+        },
+        {
+          "forward_iter": 136825,
+          "request_ids": [
+            "beliefkv:01a144dd-258b-7b71-b808-af22f9d57a22"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 897,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.019007999449968338,
+          "total_wait_ms": 0.07875199953559786,
+          "probe_ts_ms": 1792156709119.4841
+        },
+        {
+          "forward_iter": 149218,
+          "request_ids": [
+            "beliefkv:01a144e2-a749-7cb2-984a-7e7e77423de5"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1713,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.001408000010997057,
+          "total_wait_ms": 0.06688000017311424,
+          "probe_ts_ms": 1792157067292.527
+        },
+        {
+          "forward_iter": 164113,
+          "request_ids": [
+            "beliefkv:01a144e8-d5b0-7882-a906-ca4493c4d59e"
+          ],
+          "batch_size": 1,
+          "extend_tokens": 1510,
+          "route": "layerwise_entry_no_observed_pre_forward_barrier",
+          "first_observed_layer": 0,
+          "observed_dependency_count": 40,
+          "first_wait_ms": 0.0035520000383257866,
+          "total_wait_ms": 0.0823679999448359,
+          "probe_ts_ms": 1792157472240.029
+        }
+      ]
+    }
+  },
+  "limitations": [
+    "Live V73 inputs are separate bounded complete-line prefixes, not an atomic snapshot.",
+    "V73 has no completed same-arrival-table native comparison yet.",
+    "Historical native and predictive arms differ in versions and realized demand.",
+    "Dependency probes sample every16 load-consuming prefills; no extrapolation to all requests.",
+    "A first wait at layer38 identifies the current pre-forward COW fence; a first wait at layer0 records no such Python fence in that sample.",
+    "Direct Host-to-request Mamba loading can avoid checkpoint-to-request D2D COW; Host-hit counters alone do not identify every per-request copy.",
+    "Resident Mamba COW with no current H2D consumer is outside these load-consuming samples and does not imply new state restoration.",
+    "Transfer ACK batches include tagged predictive loads; first-service cached_host counters are logical request evidence, not physical byte receipts.",
+    "Waiting until layer38 constrains data readiness, but elapsed waiting can be tiny when earlier CPU/GPU work already overlaps the copy.",
+    "Only missing data in the current restore batch is covered by the 90percent FULL /100percent Mamba frontier, not already resident context.",
+    "Wait-event CUDA timing includes event overhead; small values are not identifiable DMA stalls. No per-module JCT saving is inferred."
+  ],
+  "goal_complete": false,
+  "analysis_finished_at": "2026-10-16T09:52:24.447109-07:00"
+}
