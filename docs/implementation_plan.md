@@ -35,6 +35,17 @@ Control exclusive wall is15.321/30.649/27.014s. New earlier-resident-quota
 inspection/order/admission counters remain zero;investigate activation
 without crediting legacy resident-priority events to the new quota.
 
+V1049 seals the V70 first-wave prefix:53/34 early next-request FULL reuse
+JOIN/tool events,1.074/2.485GB,13/one unknown completion boundaries.
+Last-ACK-to-service P90 is15.927/96.278s. V1050 partitions81/44 valid
+intervals:tool pre-completion P90 is84.757s and after-native-arrival P90
+11.960s;JOIN after-arrival P90 is10.643s. Quantiles do not add.
+Address premature restoration and later service waiting separately.
+At21:59 PDT,82 completed/one incomplete outcomes are written. Django11087
+ends on length with34845 repetitive characters and no semantic completion;
+children/JOIN finished,no timeout or guard intervention. Preserve it and
+the output budget.
+
 V68 completed at21:10:00 PDT,driver exit0,153 completed/3 incomplete/no
 errors and migration enabled. The three length-ended roots,django11206,
 django13964 andpytest6197,lack semantic completion;children/JOIN ended

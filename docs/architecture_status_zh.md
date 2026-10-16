@@ -35,6 +35,16 @@ V1048收齐V70前三窗，请求步数236154/246021、371594/386707、
 return到result9.578/4.461ms。新增提前驻留配额三项计数均为0，
 不能把原有resident_aged_priority触发当成新配额有效。
 
+V1049密封V70首批前缀，完成前启动且下一请求确认FULL复用为
+JOIN53/tool34事件、1.074/2.485GB；未知完成边界13/1项。
+事件最后ACK到服务P90为15.927/96.278秒。V1050对可分段的81/44项
+按实际端点求交：工具完成前区间P90为84.757秒，原生到达后服务等待
+P90仍11.960秒；JOIN相应原生等待P90为10.643秒。
+这些分位数不可相加，不能把过早恢复、客户端工作和准入等待混为一谈。
+截至PDT 21:59已写出82 completed/1 incomplete；django11087末轮
+length、34845字符重复正文、无语义完成，child/JOIN已结束，
+无超时或guard干预。保留失败，不自动增加输出预算。
+
 V68于PDT 21:10:00完整结束、driver退出0，153 completed、
 3 incomplete、0 error，物理迁移未禁用。三个incomplete为django11206、
 django13964、pytest6197：root末轮length且无语义完成，child/JOIN
