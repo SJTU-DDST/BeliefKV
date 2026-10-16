@@ -1,0 +1,124 @@
+{
+  "date_local": "2026-10-16",
+  "status": "offline_evidence_and_cpu_validation_not_final_performance_acceptance",
+  "sources": {
+    "v1271_v77_native_close_first600_service_20261016.json": "1cbd645157ea363bd97584699fb8a4a89b1d46fedff5f0a67e3f582e22f4314f",
+    "v1272_v77_native_close_first600_host_demand_20261016.json": "1e8facd92712ff791e062a2f41022596e942588c189f22615a180f2ecc464fc2",
+    "v1273_v77_first600_completion_cohort_20261016.json": "83d9410074dc2c284c2905a23cc7edfd0d91703e7a7a39adca4098e25c16c204",
+    "v1274_served_continuation_cohort_cpu_20261016.xml": "bad03e6b47d6ffd21374a1782a908350fd4daa6b27b7f8c6b98f43d1f959f3cd",
+    "v1275_v76_native_served_continuation_denominators_20261016.json": "2482a59b64cc9eeb2174d315584af573d4e355cc9aa18097f70e59f2a33fa1d9",
+    "v1229_v76_first600_service_20261016.json": "6dd40bb53111762f77bf2635b86b9fee43cc29b89725b2f9c5130ad47dea1d3a",
+    "v1277_v77_native_close_service_600_1200_20261016.json": "8b96b6f613b6d9e1340e91d2e5d6ba60c19e6c4fd55117a9cce0c393e67b96e8"
+  },
+  "implementation": {
+    "scripts/audit_native_host_demand.py": "3438f2091ef908d3a95a77bd9ca601657cba9caab81521b0aa0470748caa987f",
+    "tests/test_native_host_demand.py": "572b93e4c3027b0ec7b0b67257c78f2c5a45d246b653d55f40f6f9483bf1e6e3",
+    "change": "Add a separate first-served request queue-time cohort including zero and unknown Host counters and immediate-predecessor continuation evidence.",
+    "cpu_cases_passed": 85,
+    "new_cases": 13,
+    "prior_positive_host_service_cohort_fields": "Exactly equal to V1256 for all three arms, including rows and existing summaries."
+  },
+  "v77_first600_observation": {
+    "service_window_complete": true,
+    "v77_native_close": {
+      "decode_token_per_second": 946.6166666666667,
+      "d2h_bytes": 102134292480,
+      "h2d_bytes": 0,
+      "prefill_worker_interval_seconds": 117.51678759765625,
+      "due_workflows": 42,
+      "recorded_completed": 9,
+      "runner_capped_sojourn_mean_seconds": 271.6635705108357
+    },
+    "v75_native": {
+      "decode_token_per_second": 932.7216666666667,
+      "d2h_bytes": 139943976960,
+      "h2d_bytes": 0,
+      "prefill_worker_interval_seconds": 123.82369409179688,
+      "due_workflows": 42,
+      "recorded_completed": 7,
+      "runner_capped_sojourn_mean_seconds": 272.9931925208043
+    },
+    "source_limit": "The existing service-window CLI does not seal each JSONL input prefix. This remains a development observation, not formal provenance acceptance. V1272 and V1273 separately bind their actual JSONL prefixes and result sources."
+  },
+  "v77_later_complete_service_window_600_1200": {
+    "native_close": {
+      "decode_token_per_second": 1211.4533333333334,
+      "decode_time_weighted_batch_size": 42.7525925513243,
+      "d2h_bytes": 168700211200,
+      "d2h_stream_seconds": 20.903561941282824,
+      "h2d_bytes": 0
+    },
+    "native": {
+      "decode_token_per_second": 1212.875,
+      "decode_time_weighted_batch_size": 44.269726318292754,
+      "d2h_bytes": 226189066240,
+      "d2h_stream_seconds": 32.441055348927155,
+      "h2d_bytes": 0
+    },
+    "reactive": {
+      "decode_token_per_second": 1323.3583333333333,
+      "decode_time_weighted_batch_size": 46.51430907490328,
+      "d2h_bytes": 182522019840,
+      "h2d_bytes": 4170608640
+    },
+    "interpretation": "Less D2H does not coincide with a material decode-throughput advantage for V77 in this window. Realized work and batches differ; this is neither causal GC attribution nor a final performance or JCT result."
+  },
+  "queue_window_2400_3000_rapid_continuation_1000ms": {
+    "reactive": {
+      "served_requests": 3243,
+      "positive_full_host_requests": 1328,
+      "positive_fraction": 0.4094973789700894,
+      "reported_full_host_bytes": 408622653440
+    },
+    "native": {
+      "served_requests": 3475,
+      "positive_full_host_requests": 7,
+      "positive_fraction": 0.002014388489208633,
+      "reported_full_host_bytes": 935301120
+    },
+    "predictive": {
+      "served_requests": 3249,
+      "positive_full_host_requests": 199,
+      "positive_fraction": 0.06124961526623576,
+      "reported_full_host_bytes": 47736852480
+    }
+  },
+  "complete_v76_and_native": {
+    "reactive_summary": {
+      "path": "experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/summary.json",
+      "sha256": "c02846df2b1a66e42e8c86e7427c4189f7211901505c58b11d11e309346909a5",
+      "tasks": 156,
+      "completed": 156,
+      "all_task_raw_duration_mean_seconds": 1974.4213377185858
+    },
+    "native_summary": {
+      "path": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/client_156/summary.json",
+      "sha256": "acf285972bc44c1b1f4210d697583e499af6fdc304b0fd43ec840bb70a71e96c",
+      "tasks": 156,
+      "completed": 153,
+      "incomplete": 3,
+      "all_task_raw_duration_mean_seconds": 1665.373886756396
+    },
+    "quality": "Official grading is running; retain incomplete and guard labels. Raw durations are not quality-matched JCT."
+  },
+  "next_independent_test": {
+    "selection": "Prefer the CPU-qualified native-order ablation before combining other changes.",
+    "retain": "Full V75 engine tree 53020ce3, matched workload, PREPARE and lifecycle.",
+    "disable": "Prefetch and handoff, matching V76.",
+    "do_not_combine": [
+      "FULL-only waiting reclamation",
+      "Native session-close GC",
+      "ReplaySSM"
+    ],
+    "gpu_registration": "Not registered. Frozen V77 and quality queues are unchanged."
+  },
+  "limits": [
+    "Queue-window observed served requests are not all submitted or outstanding requests; first service can follow the queue window.",
+    "The positive-Host first-service cohort has different membership and cannot use the new queue cohort as its denominator.",
+    "Reported Host bytes are not unique pages, proven waste or a removable JCT bound.",
+    "The association does not establish that ordering caused the extra restoration.",
+    "Service and completion horizons use their separately recorded GPU-monitor and runner-arrival origins; they are not joined as identical per-request critical-path intervals.",
+    "Early V77 observations and historical single runs do not establish causal GC gains, final throughput or task-quality parity.",
+    "Engineering cost isolation is not a selected novel paper contribution."
+  ]
+}

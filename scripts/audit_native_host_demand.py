@@ -63,7 +63,7 @@ def repeated_context_demand(rows):
     }
 
 
-def continuation_prefix_evidence(event, previous, completed):
+def preceding_completion_evidence(event, previous, completed):
     identity = event.get("workflow_id"), event.get("context_id"), event.get("invocation_id")
     if any(type(value) is not str or not value for value in identity):
         return {"status": "context_identity_unobserved"}
@@ -83,6 +83,18 @@ def continuation_prefix_evidence(event, previous, completed):
         completed["ts_ms"] > event["ts_ms"]
     ):
         return {**result, "status": "completion_not_before_queue_registration"}
+    return {
+        **result, "status": "previous_completed_request",
+        "previous_context_epoch": previous.get("context_epoch"),
+        "previous_completion_to_current_queue_ms": event["ts_ms"] - completed["ts_ms"],
+    }
+
+
+def continuation_prefix_evidence(event, previous, completed):
+    result = preceding_completion_evidence(event, previous, completed)
+    if result["status"] != "previous_completed_request":
+        return result
+    prior = previous.get("attributes") or {}
     attrs = event.get("attributes") or {}
     path = (attrs.get("native_host_hit_match_path") or {}).get("best_match_path")
     if not isinstance(path, list) or not path:
@@ -133,8 +145,69 @@ def continuation_prefix_evidence(event, previous, completed):
     }
 
 
+def served_request_queue_cohort(rows):
+    def summary(group):
+        known = [
+            row for row in group if row["reported_host_full_tokens"] is not None
+        ]
+        positive = [
+            row for row in known if row["reported_host_full_tokens"] > 0
+        ]
+        completed = [
+            row for row in group
+            if row["preceding_completion"]["status"] == "previous_completed_request"
+        ]
+        return {
+            "first_served_requests_queued_in_window": len(group),
+            "host_counter_known_requests": len(known),
+            "positive_full_host_requests": len(positive),
+            "zero_full_host_requests": len(known) - len(positive),
+            "full_host_counter_unknown_requests": len(group) - len(known),
+            "positive_full_host_fraction_of_known": (
+                len(positive) / len(known) if known else None
+            ),
+            "reported_host_full_bytes": sum(
+                row["reported_host_full_bytes"] for row in known
+            ),
+            "previous_completed_same_invocation_requests": len(completed),
+            "preceding_completion_status_counts": dict(Counter(
+                row["preceding_completion"]["status"] for row in group
+            )),
+            "previous_completion_to_queue_ms": distribution(
+                row["preceding_completion"]["previous_completion_to_current_queue_ms"]
+                for row in completed
+            ),
+        }
+
+    rapid = {}
+    for threshold in (100, 500, 1000, 5000):
+        selected = [
+            row for row in rows
+            if row["preceding_completion"]["status"] == "previous_completed_request"
+            and row["preceding_completion"]["previous_completion_to_current_queue_ms"] <= threshold
+        ]
+        rapid[str(threshold)] = summary(selected)
+    return {
+        "summary": summary(rows),
+        "rapid_continuation_by_threshold_ms": rapid,
+        "by_role": {
+            role: summary([row for row in rows if row["role"] == role])
+            for role in sorted({row["role"] for row in rows})
+        },
+        "semantics": (
+            "Native llm_submit is emitted at first launch and retains its earlier queue "
+            "timestamp. This cohort bins those observed served requests by queue time, "
+            "including zero and unknown FULL Host counters. Requests still unserved "
+            "in the sealed prefix are absent; later service can follow the queue window. "
+            "These are not the positive-Host service-time cohort, all submitted requests, "
+            "physical page reuse, wasted traffic or a causal scheduling effect."
+        ),
+    }
+
+
 def host_demand(events, scopes, begin, end, bytes_per_token):
     rows, seen, unknown = [], set(), Counter()
+    queue_cohort = []
     previous_requests, completed_requests = {}, {}
     for event in events:
         identity = event.get("workflow_id"), event.get("context_id")
@@ -154,12 +227,22 @@ def host_demand(events, scopes, begin, end, bytes_per_token):
         if not rid or rid in seen:
             raise ValueError(f"missing or duplicate native first-service identity: {rid!r}")
         seen.add(rid)
+        if not finite_number(event.get("ts_ms")):
+            raise ValueError("invalid native queue timestamp")
         tokens = attrs.get("cached_tokens_host")
+        if tokens is not None and (type(tokens) is not int or tokens < 0):
+            raise ValueError("invalid native Host-hit token count")
+        if begin <= event["ts_ms"] < end:
+            scope = scopes.get((event.get("workflow_id"), event.get("invocation_id"))) or {}
+            queue_cohort.append({
+                "role": scope.get("role", "unknown"),
+                "reported_host_full_tokens": tokens,
+                "reported_host_full_bytes": tokens * bytes_per_token if tokens is not None else None,
+                "preceding_completion": preceding_completion_evidence(event, previous, completed),
+            })
         if tokens is None:
             unknown["host_tokens_unrecorded_in_prefix"] += 1
             continue
-        if type(tokens) is not int or tokens < 0:
-            raise ValueError("invalid native Host-hit token count")
         if tokens == 0:
             continue
         path = attrs.get("native_host_hit_match_path") or {}
@@ -220,6 +303,7 @@ def host_demand(events, scopes, begin, end, bytes_per_token):
         continuation_bytes[status] += row["reported_host_full_bytes"]
     return {
         "summary": summary(rows),
+        "served_request_queue_cohort": served_request_queue_cohort(queue_cohort),
         "repeated_context_demand": repeated_context_demand(rows),
         "continuation_prefix_evidence": {
             "request_counts_by_status": dict(continuation_counts),
@@ -305,6 +389,7 @@ def main():
             "Role uses exact workflow/invocation creation metadata. Missing identity or timing remains unknown; it is not a zero-demand observation.",
             "Host FULL counters describe native request accounting. Their sum is repeated demand, not unique physical pages, actual transferred bytes or component forward-use proof.",
             "Queue-to-observation includes native admission, restore and control work. It is not pure H2D delay or a removable JCT bound.",
+            "The separate served-request queue cohort includes zero and unknown Host counters and bins by queue time. Native llm_submit is emitted at first launch; still-unserved requests are absent, and service may follow the queue window. It is not a denominator for the positive-Host service-time cohort.",
             "Continuation evidence associates the immediately preceding completed request's safe-input checkpoint node ID with the current effective match path. Checkpoint creation identity is unrecorded; this does not prove identical physical pages, forward use or avoidable traffic.",
             "Each JSONL uses a stat-bounded complete-line prefix with length/SHA256. Cross-file prefixes are not an atomic snapshot.",
         ],

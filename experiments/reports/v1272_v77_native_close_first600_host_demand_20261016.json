@@ -1,0 +1,331 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-16T22:36:48.359589+00:00",
+  "start_seconds": 0.0,
+  "end_seconds": 600.0,
+  "window_source": {
+    "path": "experiments/reports/v1271_v77_native_close_first600_service_20261016.json",
+    "bytes": 7654,
+    "sha256": "1cbd645157ea363bd97584699fb8a4a89b1d46fedff5f0a67e3f582e22f4314f"
+  },
+  "arms": {
+    "native_close": {
+      "summary": {
+        "host_hit_requests": 0,
+        "contexts": 0,
+        "reported_host_full_tokens": 0,
+        "reported_host_full_bytes": 0,
+        "host_full_tokens_per_request": {
+          "count": 0
+        },
+        "queue_to_first_service_observation_ms": {
+          "count": 0
+        }
+      },
+      "repeated_context_demand": {
+        "known_identity_contexts": 0,
+        "contexts_with_multiple_positive_observations": 0,
+        "first_positive_observations_in_window": 0,
+        "later_positive_observations_in_same_context": 0,
+        "first_reported_host_full_bytes": 0,
+        "later_reported_host_full_bytes": 0,
+        "later_fraction_of_known_reported_host_full_bytes": null,
+        "later_positive_observations_by_role": {},
+        "interval_between_positive_observations_ms": {
+          "count": 0
+        },
+        "unknown_context_identity_rows": 0,
+        "semantics": "First/later refer only to positive Host observations within the sealed window, not to the context lifetime or consecutive model requests. Intervening resident requests may exist. Repeated request accounting does not prove identical physical pages, redundant traffic, or avoidable restore time; epochs and prefixes can change."
+      },
+      "continuation_prefix_evidence": {
+        "request_counts_by_status": {},
+        "reported_host_full_bytes_by_status": {}
+      },
+      "by_role": {},
+      "by_workflow": [],
+      "by_context": [],
+      "rows": [],
+      "unknown_timing_or_size_across_full_recorded_prefix": {},
+      "arm": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native",
+      "input_jsonl_prefixes": {
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-10554/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 1355973,
+          "complete_prefix_sha256": "6b04745671beb046a0ea077c5fc18d0b274cf3eabf577e407d31980d19555e72",
+          "first_read_limit_bytes": 1355973
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11141/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 555245,
+          "complete_prefix_sha256": "0c9bc7c0a8eef237257196f5e8a255f7c70f2342b1727c26a35c1fe660268050",
+          "first_read_limit_bytes": 555245
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-11400/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 463105,
+          "complete_prefix_sha256": "2ecbfd75d9a1758272e9cadb2ca13ea9afb2ddfc030bd324a5c9bed09343309d",
+          "first_read_limit_bytes": 463105
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-12741/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 24178,
+          "complete_prefix_sha256": "6686e3d7a4e5cea9be9c2d597df935c5759668e3446b0b61a82dda8021737670",
+          "first_read_limit_bytes": 24178
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-13023/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 85699,
+          "complete_prefix_sha256": "9656d4316ddf708d23e78f33fccc2a32a410d517c0c35d1e7b905b94a9b3f3e9",
+          "first_read_limit_bytes": 85699
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-14349/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 2736,
+          "complete_prefix_sha256": "e59a267272690b7847f5ed3c27e39ed539e80f4555c852d1a6a129de2dcaf1a6",
+          "first_read_limit_bytes": 2736
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-14500/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 272416,
+          "complete_prefix_sha256": "adaf412f876f9c14da23f286308bc3ce81baf4df572f7cca910d851a344d335e",
+          "first_read_limit_bytes": 272416
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-14631/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 573685,
+          "complete_prefix_sha256": "c36eabb32bef9da175b325a98872c23e6e52b90aace2a54af4853bfb9c792999",
+          "first_read_limit_bytes": 573685
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-15368/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 390540,
+          "complete_prefix_sha256": "7aecd82c3911253a9770a3f6a5b65cf08f65cc942fab5df8dbdc13eb3bbca01e",
+          "first_read_limit_bytes": 390540
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/django__django-16877/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 397235,
+          "complete_prefix_sha256": "4dfb0747a4e923ac402d98134915ac820b20121767bda350ab51f308bc5c3d1f",
+          "first_read_limit_bytes": 397235
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/mwaskom__seaborn-3069/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 479385,
+          "complete_prefix_sha256": "562c59b32b25c37ca3aaf077df52891e2a484d45292af1be1e522bc2b67f774e",
+          "first_read_limit_bytes": 479385
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pallets__flask-5014/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 550019,
+          "complete_prefix_sha256": "eb3ab0493192d54f3db24bfd95d5d1011837a7abfe30d280ae0022f8828da2ba",
+          "first_read_limit_bytes": 550019
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/psf__requests-1724/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 599565,
+          "complete_prefix_sha256": "0badb22de8658be365f3a44a8b079a33e9269249eb14ad719cbb1ed6d01e6bd0",
+          "first_read_limit_bytes": 599565
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/psf__requests-1766/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 650482,
+          "complete_prefix_sha256": "ac14853245d91a5e1da8b66976af28099b7283a2316e59d6de9e6bd04b5008e6",
+          "first_read_limit_bytes": 650482
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/psf__requests-1921/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 672821,
+          "complete_prefix_sha256": "52ba8e52eec2dcd98834ae88f5b18ba47fce0e2b4cacd7c34d2ced6369efa494",
+          "first_read_limit_bytes": 672821
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/psf__requests-2317/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 708243,
+          "complete_prefix_sha256": "ad6631482c07d8a7930ffaa8b6a92d5b2166bb9a87dc70fe156cfd361e610e6b",
+          "first_read_limit_bytes": 708243
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/psf__requests-2931/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 578389,
+          "complete_prefix_sha256": "10f61d9b8d504d967490ade9bd971d060425a256773d0465d5090b389624917c",
+          "first_read_limit_bytes": 578389
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/psf__requests-6028/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 1118904,
+          "complete_prefix_sha256": "b9508777543dc2904d5e220b3318f21a8cbf9c5d89951c1e65f2d114f15023a0",
+          "first_read_limit_bytes": 1118904
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-3151/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 166947,
+          "complete_prefix_sha256": "1d5403f12ba4a98337f5d3cccb27dc493b68434f766e618b8bed3756801ebf2e",
+          "first_read_limit_bytes": 166947
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-3305/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 270721,
+          "complete_prefix_sha256": "225873477a6df1236734f9eacd58b280441bac5993c9ef72317773d5e74da06a",
+          "first_read_limit_bytes": 270721
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-3993/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 365925,
+          "complete_prefix_sha256": "d0eae6c6ff67d9f4f1145a9af7ed6b292096522f96c129a1d1ca7677775af136",
+          "first_read_limit_bytes": 365925
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-4356/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 405738,
+          "complete_prefix_sha256": "a602616e7a7d4b5f627636549e2592ee0c11093e01c0298ca0a4a80045de790e",
+          "first_read_limit_bytes": 405738
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-4966/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 453385,
+          "complete_prefix_sha256": "1cc1871fa64853901fc4b330ddff138939bd58ef837b5e861e6cf2d8c2990327",
+          "first_read_limit_bytes": 453385
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-6461/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 1128586,
+          "complete_prefix_sha256": "7d94d94e1c6ba33bb69ba521318ac883fb7901a235815b2051f2054e719ea210",
+          "first_read_limit_bytes": 1128586
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-6599/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 680280,
+          "complete_prefix_sha256": "576322284ef8222d80a38be39481283d35f2777fc8b4e0f5d4e6862facdaf126",
+          "first_read_limit_bytes": 680280
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-6721/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 1023196,
+          "complete_prefix_sha256": "73ea37e466678a79a98874b93333706ff0d31ef7f8a15043eef12020aca457ea",
+          "first_read_limit_bytes": 1023196
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-6744/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 326318,
+          "complete_prefix_sha256": "dce4a948f85d1a78fa3d7bdf030ad50c7af8d3ad375215df8459e60b63c462d2",
+          "first_read_limit_bytes": 326318
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-6938/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 537845,
+          "complete_prefix_sha256": "06a56f19b8ec1edba51eaa05b4a4e7f21c2ade8b5ade5ea6ede1cd0f1f5b6337",
+          "first_read_limit_bytes": 537845
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-7229/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 1699829,
+          "complete_prefix_sha256": "7ad2e0be157e3aae9eaf67abfba2c72dcd774ae19c9a42e1a155eaa1c4f9a05a",
+          "first_read_limit_bytes": 1699829
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-7233/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 937747,
+          "complete_prefix_sha256": "814656e186dbcd2c9c6e2f9c3bce217a426c86f9e8e3708b5383a5281ab08722",
+          "first_read_limit_bytes": 937747
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pydata__xarray-7393/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 1306973,
+          "complete_prefix_sha256": "87a8a5a2a3c7cb4eb19f7a1133247448b56e5af719cf6fd18a21f0673aa75ec5",
+          "first_read_limit_bytes": 1306973
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-4551/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 951507,
+          "complete_prefix_sha256": "be13a87d4c1713693902e43e444acdb9f14bf95d367d4a2f45b2b42be48603a6",
+          "first_read_limit_bytes": 951507
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-4661/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 1353707,
+          "complete_prefix_sha256": "fe946ccd6b3178a2c6d9300d2a90029d26549552116b07bd2f82fe849286e10e",
+          "first_read_limit_bytes": 1353707
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-4970/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 540548,
+          "complete_prefix_sha256": "f33b3802490e663548eb34282ee3f60d3e9fac4a4546b498fc7bd299d10a9e04",
+          "first_read_limit_bytes": 540548
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-6386/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 630127,
+          "complete_prefix_sha256": "2667e6d536506c9c0140fd7ed989c8591fa857cf604eafbcfe1ac0e253f228a5",
+          "first_read_limit_bytes": 630127
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-6528/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 664261,
+          "complete_prefix_sha256": "87a49856f2ade4a250bf5d6a80cb411a7986dcadf34e78fc5dc7334956fb9842",
+          "first_read_limit_bytes": 664261
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-6903/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 786298,
+          "complete_prefix_sha256": "15df2af96f26dcdc183886af93690c79509186f670ac96dc5245e6dea8488a73",
+          "first_read_limit_bytes": 786298
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-7080/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 1427472,
+          "complete_prefix_sha256": "a61857ebf578651179f6de037e98b11005b0bd390f1dcfdb0bdf355d7e549b5d",
+          "first_read_limit_bytes": 1427472
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-7277/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 348250,
+          "complete_prefix_sha256": "c21091f4b4e0aa9492d1af66eb4139e284e9eb7ea408b12004451fab44cc8aae",
+          "first_read_limit_bytes": 348250
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pylint-dev__pylint-8898/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 784846,
+          "complete_prefix_sha256": "eb56519d8371da39f468c2eb15f7079115ce6f44f021715f25c01ccd097b8196",
+          "first_read_limit_bytes": 784846
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-10051/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 522975,
+          "complete_prefix_sha256": "99573c321c7f5c52d249720c82ac3b8f54fa6ffde408d3001ef21d6980436912",
+          "first_read_limit_bytes": 522975
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-5262/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 516336,
+          "complete_prefix_sha256": "5fc753b10c6577376006dde3b64bfa53a95776c074cf1b90ce3dc590cbf70bda",
+          "first_read_limit_bytes": 516336
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-5631/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 575873,
+          "complete_prefix_sha256": "301ab56206b920d56ec93932146118dc94141dbca53b3361749b666249d22c76",
+          "first_read_limit_bytes": 575873
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-5787/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 947185,
+          "complete_prefix_sha256": "b655f9d51900536961670e9a474bab76f6002fc62e97eb851a4027e0d58f15d1",
+          "first_read_limit_bytes": 947185
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-5840/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 1392982,
+          "complete_prefix_sha256": "bb39eb290bf31e9c1a79ffbbd4e7f2644be8f7fcff74188b589a5ce12c705b43",
+          "first_read_limit_bytes": 1392982
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-6202/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 1206230,
+          "complete_prefix_sha256": "49d24bb5286bdde855d9997dbfdbd4860d7163360ad2f0f6b03ff0531fd9bade",
+          "first_read_limit_bytes": 1206230
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-7205/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 456070,
+          "complete_prefix_sha256": "ae04f158e9f3376bf9198ed7e9f127e32028bcc647d37ff9a42b79ae40be0190",
+          "first_read_limit_bytes": 456070
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-7236/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 1141307,
+          "complete_prefix_sha256": "9d81d37f11de4d2e3bbf795f96bd3f9ab7f98742b28ce8dd046dd72d9792fcd8",
+          "first_read_limit_bytes": 1141307
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-7324/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 555826,
+          "complete_prefix_sha256": "51f8f5edb785b21ce1fa5c52ac3834a90a5da295c16c25c4b39439d535c82147",
+          "first_read_limit_bytes": 555826
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-7521/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 256410,
+          "complete_prefix_sha256": "3962b4632a66a115ad04ea0d3aefd1b10f93eeae11eba4db7ea835a4610092cc",
+          "first_read_limit_bytes": 256410
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-7571/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 365453,
+          "complete_prefix_sha256": "915e20025fc91b45b36365bb58cd45440248efda6287c32872fdd3bff518cf51",
+          "first_read_limit_bytes": 365453
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/client_156/workflows/pytest-dev__pytest-8399/runtime_events.deepagents.jsonl": {
+          "complete_prefix_bytes": 211094,
+          "complete_prefix_sha256": "738dc5b89a2bc5becc49750d1042b365c5ff0e0170a271222addb0b2200c5b16",
+          "first_read_limit_bytes": 211094
+        },
+        "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/native/server/runtime_events.sglang.jsonl": {
+          "complete_prefix_bytes": 9147412,
+          "complete_prefix_sha256": "ee16e8b3e2d99d4d33152c3d6b108440bf8f2f9766fe9aa6de460744741c5c5c",
+          "first_read_limit_bytes": 9147412
+        }
+      }
+    }
+  },
+  "auditor_sources": {
+    "scripts/audit_native_host_demand.py": "7a534bb514a33c736f03de16e0dc4c564a3e307ec4978b6d5da549d4a1c03aa8",
+    "scripts/audit_sealed_wait_prefetch.py": "1bb8064854266d012423ce3bf4eea5b3aa1865a1fcc59308642ee645e7361db3"
+  },
+  "semantics": [
+    "Positive native cached_tokens_host counters are grouped by the first-service match-path observation timestamp, not earlier queue timestamps.",
+    "Role uses exact workflow/invocation creation metadata. Missing identity or timing remains unknown; it is not a zero-demand observation.",
+    "Host FULL counters describe native request accounting. Their sum is repeated demand, not unique physical pages, actual transferred bytes or component forward-use proof.",
+    "Queue-to-observation includes native admission, restore and control work. It is not pure H2D delay or a removable JCT bound.",
+    "Continuation evidence associates the immediately preceding completed request's safe-input checkpoint node ID with the current effective match path. Checkpoint creation identity is unrecorded; this does not prove identical physical pages, forward use or avoidable traffic.",
+    "Each JSONL uses a stat-bounded complete-line prefix with length/SHA256. Cross-file prefixes are not an atomic snapshot."
+  ]
+}

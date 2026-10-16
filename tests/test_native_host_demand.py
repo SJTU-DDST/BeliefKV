@@ -186,3 +186,93 @@ def test_continuation_does_not_skip_an_uncompleted_intervening_request():
     assert report["rows"][0]["continuation_prefix_evidence"]["status"] == (
         "previous_completion_unobserved_or_identity_changed"
     )
+
+
+def test_queue_cohort_counts_zero_and_unknown_host_counters():
+    report = host_demand([
+        event("zero", queued=10., tokens=0),
+        event("positive", queued=11., tokens=5),
+        event("unknown", queued=12., tokens=None),
+    ], {}, 0., 30., 10)
+    cohort = report["served_request_queue_cohort"]["summary"]
+    assert cohort["first_served_requests_queued_in_window"] == 3
+    assert cohort["host_counter_known_requests"] == 2
+    assert cohort["positive_full_host_requests"] == 1
+    assert cohort["zero_full_host_requests"] == 1
+    assert cohort["full_host_counter_unknown_requests"] == 1
+    assert cohort["positive_full_host_fraction_of_known"] == .5
+    assert cohort["reported_host_full_bytes"] == 50
+    assert report["summary"]["host_hit_requests"] == 1
+
+
+def test_queue_cohort_does_not_relabel_later_service_as_in_window():
+    report = host_demand([
+        event("queued_before", queued=1., served=20.),
+        event("served_after", queued=20., served=40.),
+        event("at_end", queued=30., served=40., tokens=0),
+    ], {}, 10., 30., 10)
+    assert [row["request_id"] for row in report["rows"]] == ["queued_before"]
+    assert report["served_request_queue_cohort"]["summary"][
+        "first_served_requests_queued_in_window"
+    ] == 1
+
+
+@pytest.mark.parametrize("host_tokens", [0, 5, None])
+def test_rapid_continuations_include_all_observed_host_counter_classes(host_tokens):
+    previous, completed, current = continuation_events()
+    current["ts_ms"] = 1025.
+    current["attributes"]["cached_tokens_host"] = host_tokens
+    current["attributes"].pop("native_host_hit_match_path")
+    cohort = host_demand(
+        [previous, completed, current], {}, 1000., 1030., 10,
+    )["served_request_queue_cohort"]
+    assert cohort["rapid_continuation_by_threshold_ms"]["500"][
+        "first_served_requests_queued_in_window"
+    ] == 0
+    at_one_second = cohort["rapid_continuation_by_threshold_ms"]["1000"]
+    assert at_one_second["first_served_requests_queued_in_window"] == 1
+    assert at_one_second["positive_full_host_fraction_of_known"] == (
+        None if host_tokens is None else float(host_tokens > 0)
+    )
+
+
+def test_queue_cohort_retains_role_and_requires_immediate_completed_predecessor():
+    previous, completed, current = continuation_events()
+    intervening = event("intervening", queued=26., served=28., tokens=0)
+    report = host_demand(
+        [previous, completed, intervening, current],
+        {("wf", "root"): {"role": "root"}}, 30., 50., 10,
+    )["served_request_queue_cohort"]
+    assert report["by_role"]["root"]["first_served_requests_queued_in_window"] == 1
+    assert report["rapid_continuation_by_threshold_ms"]["1000"][
+        "first_served_requests_queued_in_window"
+    ] == 0
+    assert report["summary"]["preceding_completion_status_counts"] == {
+        "previous_completion_unobserved_or_identity_changed": 1,
+    }
+
+
+@pytest.mark.parametrize("change", ["workflow", "invocation"])
+def test_queue_cohort_does_not_cross_completion_identity(change):
+    previous, completed, current = continuation_events()
+    current[f"{change}_id"] = "different"
+    cohort = host_demand(
+        [previous, completed, current], {}, 30., 50., 10,
+    )["served_request_queue_cohort"]
+    assert cohort["rapid_continuation_by_threshold_ms"]["1000"][
+        "first_served_requests_queued_in_window"
+    ] == 0
+
+
+@pytest.mark.parametrize("queued", [None, float("nan"), float("inf"), True])
+def test_invalid_queue_time_cannot_define_a_continuation_cohort(queued):
+    with pytest.raises(ValueError, match="invalid native queue timestamp"):
+        host_demand([event(queued=queued, tokens=0)], {}, 0., 30., 10)
+
+
+def test_empty_queue_cohort_keeps_unknown_fraction():
+    cohort = host_demand([], {}, 0., 30., 10)["served_request_queue_cohort"]
+    assert cohort["summary"]["positive_full_host_fraction_of_known"] is None
+    assert cohort["rapid_continuation_by_threshold_ms"]["1000"][
+        "positive_full_host_fraction_of_known"
+    ] is None

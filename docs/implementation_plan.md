@@ -2,19 +2,26 @@
 
 Status date: 2026-10-16 (PDT).
 
-2026-10-16 main integration: application changes through65503eb already
-include V76, native-order ablation and reactive reporting recovery. Preserve
-the independent ReplaySSM decode-budget candidate91a9359 as an incremental
-patch over53020ce3, with V1264 qualification and39 CPU cases/eight subtests.
-Do not select it in current launchers or combine it with frozen V77.
-V76 collected all156 tasks; its original exit2 is a comparator postprocessing
-failure and remains recorded. V1267-V1269 document the verified reporting
-recovery and unchanged V77 continuation. V77 launched15:20:49 PDT; V1216/V1219
-verified actual GPU service, native close GC, physical pools, arrivals and NUMA
-at15:23:51. Official quality grading is running, not complete. Correct the
-ReplaySSM/TreeWY citation identity using V1260 while retaining the old archive.
-The quality-matched native-relative goal remains active; later candidates
-require independent selection and GPU qualification. See screening4.26-4.28.
+2026-10-16 latest evidence: V77 remains frozen and running. Its first600s
+has102.134GB D2H versus139.944GB native, no H2D on either side, and946.62/
+932.72 decode token/s. All42 due workflows remain in the completion cohort:
+9/7 recorded completions and271.664/272.993s capped runner sojourn. These are
+early development observations, not quality-matched final or causal gains.
+The later complete600-1200s V1277 window has168.700/226.189GB D2H yet
+1211.45/1212.88 decode token/s for V77/native. Both still have no H2D;
+lower traffic is not a substitute for observed system performance.
+V76's complete all156 raw duration mean is1974.421s versus1665.374s native;
+official quality grading is running. V1275 adds the missing zero/unknown-Host
+denominator: among served requests queued in2400-3000s within1s of their
+previous completion, positive FULL Host fractions are40.95%/0.20%/6.12% for
+V76/native/predictive.85 CPU cases pass; existing positive-Host service-window
+fields exactly match V1256. Queue cohorts and service cohorts are distinct.
+Prioritize a future isolated native-order comparison with the same53020ce3
+engine, PREPARE/lifecycle retained and prefetch/handoff off. Do not combine
+FULL-only, native close GC or ReplaySSM. No new GPU run is registered; keep
+V77 and both quality queues unchanged. V1276 binds evidence including V1277;
+screening4.29/4.30 records the next falsification. Earlier main integration,
+ReplaySSM source correction and recovery provenance remain in4.26-4.28.
 Timestamped entries below retain their historical observation scope.
 
 2026-10-16 14:50 PDT: V1256/V1257 extend the same complete2400-3000s cohort
