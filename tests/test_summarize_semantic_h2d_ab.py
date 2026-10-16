@@ -250,6 +250,33 @@ def test_initialize_records_explicit_long_budget_and_manifest_selection(tmp_path
     assert plan["formal_repetition_order"] == ["predictive_h2d native"]
 
 
+def test_single_reactive_arm_keeps_prepare_without_predictive_inputs(tmp_path, monkeypatch):
+    artifact = tmp_path / "model.json"
+    artifact.write_text("{}")
+    manifest = tmp_path / "workload.json"
+    manifest.write_text(json.dumps({"workloads": [
+        {"instance_id": "z"}, {"instance_id": "a"},
+    ]}))
+    monkeypatch.setattr(sys, "argv", [
+        "summarize", "--run-root", str(tmp_path), "--initialize",
+        "--root-count", "2", "--arm-order", "reactive",
+        "--semantic-artifact", str(artifact), "--workload-manifest", str(manifest),
+        "--arrival-rate-per-second", str(1 / 15), "--arrival-seed", "21",
+        "--prepare-host", "1", "--enable-tool-timing", "1",
+    ])
+    main()
+    plan = json.loads((tmp_path / "ab_plan.json").read_text())
+    assert plan["order"] == ["reactive"]
+    assert plan["workload_instance_ids_in_manifest_order"] == ["z", "a"]
+    assert plan["workflow_arrival_mode"] == "poisson"
+    assert "single-arm development" in plan["scope"]
+    assert plan["tool_timing_enabled"]
+    policy = plan["policy_configuration"]["reactive"]
+    assert policy["prepare_host"] and policy["resident_first"]
+    assert not policy["predictive_h2d"] and not policy["execution_handoff"]
+    assert not policy["h2d_opportunity_sampling"] and not policy["semantic_text_stream"]
+
+
 @pytest.mark.parametrize("changed_field", ("native_reference_timeline", "native_reference_cache"))
 def test_initialize_freezes_selected_reference_artifacts_and_verifies_their_hashes(
     tmp_path, monkeypatch, changed_field,

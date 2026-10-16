@@ -182,11 +182,27 @@ def test_explicit_reference_artifacts_need_a_predictive_only_reference_run():
             plan(), Path("/fresh-run"), **arguments,
             native_reference_cache=Path("/corrected/cache.json"),
         )
-    with pytest.raises(ValueError, match="predictive-only"):
+    with pytest.raises(ValueError, match="single-arm"):
         launcher.fresh_pair_environment(
             plan(), Path("/fresh-run"), **arguments,
             arm_order="predictive_h2d native", native_reference_run=Path("/old-native-run"),
         )
+
+
+def test_reactive_single_arm_preserves_prepare_and_fixed_native_reference():
+    configuration = plan()
+    snapshot = json.dumps(configuration, sort_keys=True)
+    environment = launcher.fresh_pair_environment(
+        configuration, Path("/fresh-reactive"), python="/python", port=18480,
+        arm_order="reactive", execution_handoff=False,
+        native_reference_run=Path("/v75"),
+    )
+    assert environment["ARM_ORDER"] == "reactive"
+    assert environment["PREPARE_HOST"] == "1"
+    assert environment["ENABLE_TOOL_TIMING"] == "1"
+    assert environment["EXECUTION_HANDOFF"] == "0"
+    assert environment["NATIVE_REFERENCE_RUN"] == "/v75"
+    assert json.dumps(configuration, sort_keys=True) == snapshot
 
 
 def test_completed_single_arm_needs_no_local_native_but_preserves_reference_report(tmp_path):

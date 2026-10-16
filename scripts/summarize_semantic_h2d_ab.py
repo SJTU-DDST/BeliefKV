@@ -535,7 +535,7 @@ def main() -> None:
         if order not in (
             ["reactive", "predictive_h2d"], ["predictive_h2d", "reactive"],
             ["native", "predictive_h2d"], ["predictive_h2d", "native"],
-            ["predictive_h2d"],
+            ["predictive_h2d"], ["reactive"],
         ):
             raise ValueError("unsupported policy arm order")
         if (args.arrival_batch_size == 0) != (args.arrival_batch_interval_ms == 0):
@@ -601,7 +601,7 @@ def main() -> None:
             "tool_prefetch_predictive_only": bool(args.enable_tool_timing),
             "scope": (
                 "single-arm development; historical native references are separate from paired tests"
-                if args.arm_order.split() == ["predictive_h2d"]
+                if len(order) == 1
                 else "single-pair live pressure exploration; trajectory-sensitive, not final paper test"
             ),
             "repetition_id": args.repetition_id,
@@ -609,6 +609,7 @@ def main() -> None:
             "same_seed_is_not_same_trajectory": True,
             "formal_paired_repetition_target": 4,
             "formal_repetition_order": (
+                None if order == ["reactive"] else
                 ["predictive_h2d native"] if native_pair or order == ["predictive_h2d"]
                 else ["predictive_h2d reactive"]
             ),
@@ -742,6 +743,8 @@ def main() -> None:
                     "final_stage_priority": name != "native",
                     "prepare_host": bool(args.prepare_host) and name != "native",
                     "predictive_h2d": name == "predictive_h2d",
+                    "h2d_opportunity_sampling": name == "predictive_h2d",
+                    "semantic_text_stream": name == "predictive_h2d",
                     "execution_handoff": name == "predictive_h2d" and bool(args.execution_handoff),
                 } for name in order
             },
@@ -826,6 +829,11 @@ def main() -> None:
             and state.get("execution_handoff") != policy["execution_handoff"]
         ):
             raise ValueError(f"{name}: mismatched execution_handoff configuration")
+        if (
+            "h2d_opportunity_sampling" in policy
+            and state.get("h2d_opportunity_sampling") != policy["h2d_opportunity_sampling"]
+        ):
+            raise ValueError(f"{name}: mismatched H2D opportunity sampling configuration")
         for setting in (
             "semantic_work_statistic", "eos_protocol_window_ms",
             "eos_prefetch_evidence_window_ms",

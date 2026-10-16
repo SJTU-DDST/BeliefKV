@@ -59,8 +59,8 @@ if [[ $# -ne 0 || ! -f "$ARTIFACT" ]] \
   || [[ ! "$ARRIVAL_SEED" =~ ^[0-9]+$ ]] \
   || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ || ! "$REPETITION_ID" =~ ^[0-9]+$ ]] \
   || [[ "$EXECUTION_HANDOFF" != "0" && "$EXECUTION_HANDOFF" != "1" ]] \
-  || [[ "$ARM_ORDER" != "predictive_h2d reactive" && "$ARM_ORDER" != "reactive predictive_h2d" && "$ARM_ORDER" != "predictive_h2d" && "$ARM_ORDER" != "native predictive_h2d" && "$ARM_ORDER" != "predictive_h2d native" ]]; then
-  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=108|156 ARRIVAL_BATCH_SIZE=0|108 ARRIVAL_BATCH_INTERVAL_MS=0|3600000 FANOUT_PROFILE=native_in_graph_2to4 ARM_ORDER="predictive_h2d native"|"predictive_h2d reactive"|predictive_h2d SAMPLING_SEED=21 REPETITION_ID=0 ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
+  || [[ "$ARM_ORDER" != "predictive_h2d reactive" && "$ARM_ORDER" != "reactive predictive_h2d" && "$ARM_ORDER" != "predictive_h2d" && "$ARM_ORDER" != "reactive" && "$ARM_ORDER" != "native predictive_h2d" && "$ARM_ORDER" != "predictive_h2d native" ]]; then
+  printf 'Usage: RUN_ROOT=<new path> ROOT_COUNT=108|156 ARRIVAL_BATCH_SIZE=0|108 ARRIVAL_BATCH_INTERVAL_MS=0|3600000 FANOUT_PROFILE=native_in_graph_2to4 ARM_ORDER="predictive_h2d native"|"predictive_h2d reactive"|predictive_h2d|reactive SAMPLING_SEED=21 REPETITION_ID=0 ACTIVATION_WALL_CLOCK_SECONDS=14400 PORT=18454 bash %s\n' "$0" >&2
   exit 2
 fi
 mkdir -p "$RUN_ROOT"
@@ -154,14 +154,14 @@ for arm in $ARM_ORDER; do
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
     --cleanup-arm "$RUN_ROOT/$arm" > "$RUN_ROOT/$arm.workspace_cleanup.json"
 done
-if [[ "$ARM_ORDER" == "predictive_h2d" ]]; then
+if [[ "$ARM_ORDER" == "predictive_h2d" || "$ARM_ORDER" == "reactive" ]]; then
   "$PYTHON" "$ROOT/scripts/summarize_semantic_h2d_ab.py" \
     --run-root "$RUN_ROOT" --allow-incomplete
   if [[ -n "$NATIVE_REFERENCE_RUN" ]]; then
     "$PYTHON" "$ROOT/scripts/compare_native_policy_runs.py" \
-      --arm "predictive_h2d=$RUN_ROOT/predictive_h2d" \
+      --arm "$ARM_ORDER=$RUN_ROOT/$ARM_ORDER" \
       --arm "native=$NATIVE_REFERENCE_RUN/native" \
-      --timeline "predictive_h2d=$RUN_ROOT/timelines/predictive_h2d.json.gz" \
+      --timeline "$ARM_ORDER=$RUN_ROOT/timelines/$ARM_ORDER.json.gz" \
       --timeline "native=${NATIVE_REFERENCE_TIMELINE:-$NATIVE_REFERENCE_RUN/timelines/native.json.gz}" \
       --native-reference-run "$NATIVE_REFERENCE_RUN" \
       "${reference_comparison_args[@]}" \

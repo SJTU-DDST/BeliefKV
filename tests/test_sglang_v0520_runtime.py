@@ -523,6 +523,8 @@ def test_waiting_migration_deferral_requires_overlap_and_native_demand_recovery(
 
 def test_after_forward_planning_retains_existing_waiting_context_handlers():
     runtime = NativeAdmissionRuntime()
+    runtime.enable_final_stage_prefetch = True
+    runtime.enable_tool_prefetch = True
     runtime._hotpath_timing.enabled = True
     calls = []
     runtime.dispatch_join_prefetch = lambda: calls.append("join")
@@ -544,6 +546,7 @@ def test_after_forward_planning_retains_existing_waiting_context_handlers():
 
 def test_after_forward_skips_only_existing_backoff_work():
     runtime = NativeAdmissionRuntime()
+    runtime.enable_final_stage_prefetch = True
     runtime.enable_tool_prefetch = True
     runtime._hotpath_timing.enabled = True
     runtime._tool_prefetch_next_ms = 1050.
@@ -588,6 +591,7 @@ def test_after_forward_processes_acknowledged_ticket_before_scan_deadline():
 
 def test_after_forward_rechecks_clock_after_prior_handler_crosses_deadline():
     runtime = NativeAdmissionRuntime()
+    runtime.enable_final_stage_prefetch = True
     runtime.enable_tool_prefetch = True
     runtime._tool_prefetch_next_ms = 1050.
     runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 1050.
@@ -607,6 +611,7 @@ def test_after_forward_rechecks_clock_after_prior_handler_crosses_deadline():
 
 def test_after_forward_prior_handler_can_rearm_tool_scan_immediately():
     runtime = NativeAdmissionRuntime()
+    runtime.enable_final_stage_prefetch = True
     runtime.enable_tool_prefetch = True
     runtime._tool_prefetch_next_ms = 5000.
     runtime._join_prepare_next_ms = runtime._tool_prepare_next_ms = 5000.

@@ -1,8 +1,11 @@
 from __future__ import annotations
 
 import os
+import json
 from pathlib import Path
 import subprocess
+
+import pytest
 
 
 SCRIPT = Path(__file__).resolve().parents[1] / "scripts/run_qwen35_native_regime_probe.sh"
@@ -121,3 +124,57 @@ def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: P
     )
     assert result.returncode == 2
     assert not run_root.exists()
+
+
+@pytest.mark.parametrize("mode,native", (("reactive", False), ("predictive_h2d", False), ("off", True)))
+def test_effective_policy_environment_without_launching_gpu(tmp_path, mode, native):
+    from sys import executable
+
+    binary = tmp_path / "bin"
+    binary.mkdir()
+    capture = binary / "bash"
+    capture.write_text(
+        "#!/bin/sh\nexec " + executable + " -c '"
+        'import json,os;print(json.dumps({k:v for k,v in os.environ.items() '
+        'if k.startswith("BELIEFKV_")}))'
+        "'\n"
+    )
+    capture.chmod(0o755)
+    artifact = tmp_path / "model.json"
+    artifact.write_text("{}")
+    run_root = tmp_path / "probe"
+    result = subprocess.run(
+        ["/bin/bash", str(SCRIPT)],
+        env={
+            **os.environ, "PATH": str(binary) + os.pathsep + os.environ["PATH"],
+            "RUN_ROOT": str(run_root), "AB_MODE": mode,
+            "NATIVE_POLICY_BASELINE": str(int(native)),
+            "PREPARE_HOST": "1", "ENABLE_TOOL_TIMING": "1", "PORT": "1",
+            "CONFIRMED_JOIN_CANARY": "0",
+            "SEMANTIC_REPORT_ARTIFACT": str(artifact),
+            "TOOL_TIMING_ARTIFACT": str(artifact),
+            "TRANSFER_SERVICE_SEED": str(artifact),
+            "BELIEFKV_SEMANTIC_REPORT_ARTIFACT": "/inherited/unused-semantic.json",
+            "BELIEFKV_EMIT_SEMANTIC_TEXT": "1",
+        },
+        text=True, capture_output=True, timeout=10,
+    )
+    assert result.returncode == 1
+    rows = (run_root / "server.log").read_text().splitlines()
+    environment = json.loads(next(line for line in rows if line.startswith("{")))
+    predictive = mode == "predictive_h2d"
+    assert environment["BELIEFKV_EMIT_SEMANTIC_TEXT"] == str(int(predictive))
+    assert environment["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] == str(int(predictive))
+    assert environment["BELIEFKV_ENABLE_TOOL_PREFETCH"] == str(int(predictive))
+    assert environment["BELIEFKV_ENABLE_PREPARE_HOST"] == str(int(not native))
+    assert environment["BELIEFKV_ENABLE_RESIDENT_FIRST"] == str(int(not native))
+    if predictive:
+        assert environment["BELIEFKV_SEMANTIC_REPORT_ARTIFACT"] == str(artifact)
+        assert environment["BELIEFKV_H2D_OPPORTUNITY_SAMPLING"] == "1"
+    else:
+        assert "BELIEFKV_SEMANTIC_REPORT_ARTIFACT" not in environment
+    if not native:
+        assert environment["BELIEFKV_TOOL_TIMING_ARTIFACT"] == str(artifact)
+    if mode == "reactive":
+        assert environment["BELIEFKV_H2D_OPPORTUNITY_SAMPLING"] == "0"
+        assert environment["BELIEFKV_ENABLE_EXECUTION_HANDOFF"] == "0"

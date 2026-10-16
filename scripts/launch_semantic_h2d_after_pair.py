@@ -44,8 +44,8 @@ def fresh_pair_environment(
         native_reference_timeline is not None or native_reference_cache is not None
     ) and native_reference_run is None:
         raise ValueError("native reference artifacts require a native reference run")
-    if native_reference_run is not None and arm_order != "predictive_h2d":
-        raise ValueError("historical native references apply to predictive-only runs")
+    if native_reference_run is not None and arm_order not in ("predictive_h2d", "reactive"):
+        raise ValueError("historical native references apply to single-arm runs")
     environment = resume_environment(plan, run_root, python=python, port=port)
     environment.update(RESUME_PENDING="0", ARM_ORDER=arm_order)
     environment["HOST_NUMA_MEMORY_POLICY"] = (

@@ -478,6 +478,10 @@ class NativeAdmissionRuntime:
             None if priority_setting is None else priority_setting == "1"
         )
         self.enable_prepare_host = os.environ.get("BELIEFKV_ENABLE_PREPARE_HOST", "1") == "1"
+        sampling_setting = os.environ.get("BELIEFKV_H2D_OPPORTUNITY_SAMPLING", "1")
+        if sampling_setting not in ("0", "1"):
+            raise ValueError("H2D opportunity sampling setting must be 0 or 1")
+        self.enable_h2d_opportunity_sampling = sampling_setting == "1"
         semantic_artifact = os.environ.get("BELIEFKV_SEMANTIC_REPORT_ARTIFACT")
         self._semantic_worker = None
         self._semantic_score_threshold = .5
@@ -813,15 +817,21 @@ class NativeAdmissionRuntime:
         if running_batch is not None:
             self._observe_native_admission_capacity(running_batch=running_batch, adder=None)
         self.counts["physical_planning_after_forward"] += 1
-        self.dispatch_join_prefetch()
         if (
-            self.enable_tool_prefetch and not self.physical_disabled
-            and self._tool_ticket is None
-            and time.monotonic() * 1000. < self._tool_prefetch_next_ms
+            self.enable_final_stage_prefetch or self.enable_admission_prefetch
+            or self.enable_confirmed_join_canary or self._join_ticket is not None
+            or self._confirmed_join_tickets
         ):
-            self.counts["tool_prefetch_scan_deferred"] += 1
-        else:
-            self.dispatch_tool_prefetch()
+            self.dispatch_join_prefetch()
+        if self.enable_tool_prefetch or self._tool_ticket is not None:
+            if (
+                self.enable_tool_prefetch and not self.physical_disabled
+                and self._tool_ticket is None
+                and time.monotonic() * 1000. < self._tool_prefetch_next_ms
+            ):
+                self.counts["tool_prefetch_scan_deferred"] += 1
+            else:
+                self.dispatch_tool_prefetch()
         # Earlier handlers can cross a deadline or rearm another source.
         # Read each existing deadline at its original dispatch position.
         if time.monotonic() * 1000. >= self._join_prepare_next_ms:
@@ -1877,7 +1887,7 @@ class NativeAdmissionRuntime:
             return
         if now_ms is None:
             now_ms = time.monotonic() * 1000
-        if now_ms >= self._opportunity_next_ms:
+        if self.enable_h2d_opportunity_sampling and now_ms >= self._opportunity_next_ms:
             self._sample_h2d_opportunities(waiting_queue, now_ms=now_ms)
         if (
             self._terminal_cache_diagnostics
@@ -1901,6 +1911,7 @@ class NativeAdmissionRuntime:
                     else self.enable_admission_prefetch or self.enable_final_stage_prefetch
                 ),
                 "prepare_host": self.enable_prepare_host,
+                "h2d_opportunity_sampling": self.enable_h2d_opportunity_sampling,
                 "prepare_pool_scope": "missing_full_session_path",
                 "latest_full_session_branches_retired": getattr(
                     getattr(
@@ -2019,7 +2030,10 @@ class NativeAdmissionRuntime:
         self, waiting_queue: Sequence[object], *, now_ms: float,
     ) -> None:
         writer = self._opportunity_writer
-        if writer is None or now_ms < self._opportunity_next_ms:
+        if (
+            not self.enable_h2d_opportunity_sampling
+            or writer is None or now_ms < self._opportunity_next_ms
+        ):
             return
         self._opportunity_next_ms = now_ms + 1000.0
         sample_start = time.perf_counter()
