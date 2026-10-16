@@ -7,10 +7,14 @@ write-back 补丁、当前研究文档和只读审计器。日常查看和后续
 实验仍使用各自登记的独立 worktree 固定版本。V75/V76 的运行源码、引擎和
 helper 保持冻结，不随 `main` 的新提交变化。
 
-14:32 PDT：V1253/V1254补齐同context重复Host需求审计和50项离线回归。V76该段
-93.07%的报告FULL需求来自窗口内后续正Host观测，native为9.32%；这不是相同页
-浪费证明，解释边界见
-[研究筛选4.23](research/non_scheduling_directions_20261016_zh.md#423-重复-context-的-host-需求集中度)。
+14:50 PDT：V1256/V1257补齐前后请求checkpoint关联，覆盖修复后66项离线检查通过。
+V76该段1473项正Host请求均关联上一轮安全前缀；1s内续接占389.613GB报告FULL
+需求，native为0.935GB。该统计仍缺逐页/代际消费证明，先隔离快速续接的驻留
+和准入因素，详见
+[研究筛选4.24](research/non_scheduling_directions_20261016_zh.md#424-安全输入-checkpoint-与快速续接的-host-需求)。
+V1259进一步比较7000s，V76/native原始runner截断逗留1963.595/1666.324s；
+这不是质量匹配JCT，完成队列覆盖与单调下界见
+[研究筛选4.25](research/non_scheduling_directions_20261016_zh.md#425-已结束队列的更晚时点覆盖与-v76-原始均值下界)。
 
 14:22 PDT：原生prefill顺序消融已在独立候选b698416实现并合入main，开关
 BELIEFKV_NATIVE_PREFILL_ORDER默认0；599项CPU回归通过，其中20项新用例。

@@ -135,3 +135,31 @@ def test_live_prefix_and_closed_results_produce_an_all_due_snapshot(tmp_path):
     assert early["counts"]["due_workflows"] == late["counts"]["due_workflows"] == 1
     assert early["capped_sojourn_mean_seconds"]["recorded_completed_capped_seconds"] == 4.
     assert late["capped_sojourn_mean_seconds"]["recorded_completed_capped_seconds"] == 10.
+
+
+def test_fully_finished_planned_cohort_covers_later_comparison_horizons():
+    closed = {
+        "a": {"scheduled_seconds": 0., "submitted_seconds": 1., "started_seconds": 2., "finished_seconds": 5.},
+        "b": {"scheduled_seconds": 2., "submitted_seconds": 3., "started_seconds": 4., "finished_seconds": 6.},
+    }
+    report = snapshot(closed, {
+        "a": {"outcome": "completed", "native_agent_jct_eligible": True},
+        "b": {"outcome": "incomplete", "native_agent_jct_eligible": False},
+    }, 20., observed_through=6.)
+    assert report["counts"]["due_workflows"] == report["counts"]["runner_finished"] == 2
+    assert report["counts"]["recorded_completed"] == 1
+    assert report["capped_sojourn_mean_seconds"]["runner_finish_capped_seconds"] == 4.5
+    assert report["capped_sojourn_mean_seconds"]["recorded_completed_capped_seconds"] == 11.5
+
+
+@pytest.mark.parametrize("uncovered", ["future_planned_task", "finish_after_observed_prefix"])
+def test_partial_or_inconsistent_cohort_cannot_cover_later_horizons(uncovered):
+    closed = {
+        "a": {"scheduled_seconds": 0., "submitted_seconds": 1., "started_seconds": 2., "finished_seconds": 5.},
+    }
+    if uncovered == "future_planned_task":
+        closed["b"] = {"scheduled_seconds": 8.}
+    else:
+        closed["a"]["finished_seconds"] = 15.
+    with pytest.raises(ValueError, match="covered"):
+        snapshot(closed, {}, 20., observed_through=5.)

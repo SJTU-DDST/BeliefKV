@@ -76,7 +76,14 @@ def arrival_states(schedule, events):
 def snapshot(states, results, horizon, *, observed_through):
     if not finite_number(horizon) or horizon <= 0:
         raise ValueError("horizon must be finite and positive")
-    if observed_through is None or observed_through < horizon:
+    complete_cohort = bool(states) and all(
+        state.get("finished_seconds") is not None
+        and finite_number(state["finished_seconds"])
+        and observed_through is not None
+        and state["finished_seconds"] <= observed_through
+        for state in states.values()
+    )
+    if observed_through is None or observed_through < horizon and not complete_cohort:
         raise ValueError("arrival/finish log has not covered the requested horizon")
     counts, outcomes, eligibility, quality = Counter(), Counter(), Counter(), Counter()
     totals = Counter()
@@ -195,6 +202,9 @@ def audit_arm(arm, horizons):
     return {
         "arm": str(arm), "arrival_schedule_sha256": digest,
         "planned_workflows": len(schedule),
+        "all_planned_runner_finishes_observed": bool(states) and all(
+            "finished_seconds" in state for state in states.values()
+        ),
         "arrival_or_finish_observed_through_seconds": covered,
         "missing_finished_results_in_requested_horizons": missing,
         "source_json_bindings": bindings, "input_jsonl_prefixes": sealed.prefixes,
@@ -272,6 +282,7 @@ def main():
             "Completed outcome, JCT eligibility and task correctness are different. Ungraded outcomes cannot establish quality-matched completion or useful throughput.",
             "Arrival tables match; realized model/tool work can differ. Historical references and single development runs do not establish causal speedup.",
             "JSONL uses complete stat-bounded prefixes. Results are read only for runner-finished tasks within the requested horizons; missing metadata stays unknown.",
+            "A cohort with every planned runner finish observed covers later comparison horizons without fabricating log timestamps. Failed or unknown outcomes continue to accrue age under completed-only metrics.",
         ],
     }
     with args.output.open("x") as stream:

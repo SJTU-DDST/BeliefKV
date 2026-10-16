@@ -1,0 +1,173 @@
+{
+  "created_at": "2026-10-16T14:45:13.186684-07:00",
+  "window_seconds": [
+    2400,
+    3000
+  ],
+  "source_report": {
+    "path": "experiments/reports/v1256_native_host_continuation_prefix_20261016.json",
+    "sha256": "53e477632650df5e5e38ca1dd6038958659fe8134745e1c7f4cffd0f6b235e07"
+  },
+  "earlier_same_window_report": {
+    "path": "experiments/reports/v1246_v76_native_host_demand_2400_3000_20261016.json",
+    "sha256": "2d02c48b52aa34a207faebc687a569829d74a36bc10a233677e3fb850c813919",
+    "all_existing_request_rows_unchanged": true
+  },
+  "cpu_validation": {
+    "path": "experiments/reports/v1255_continuation_prefix_cpu_20261016.xml",
+    "sha256": "45e7f55742e6a1387c84aa86660878d8625c75eaaa4160777a453cb6d86d5996",
+    "passed": 63,
+    "skipped": 0
+  },
+  "analysis_sources_sha256": {
+    "scripts/audit_native_host_demand.py": "7a534bb514a33c736f03de16e0dc4c564a3e307ec4978b6d5da549d4a1c03aa8",
+    "scripts/audit_sealed_wait_prefetch.py": "1bb8064854266d012423ce3bf4eea5b3aa1865a1fcc59308642ee645e7361db3"
+  },
+  "arms": {
+    "reactive": {
+      "positive_host_requests": 1473,
+      "previous_safe_input_checkpoint_path_associations": 1473,
+      "previous_completion_to_current_queue_ms": {
+        "count": 1473,
+        "sum": 15952401.063476562,
+        "min": 91.459716796875,
+        "p50": 400.354248046875,
+        "p90": 1135.4588378906249,
+        "p99": 305702.4549609345,
+        "max": 1824407.1147460938
+      },
+      "current_queue_to_first_service_observation_ms": {
+        "count": 1473,
+        "sum": 22378445.62841797,
+        "min": 10075.0244140625,
+        "p50": 15574.0654296875,
+        "p90": 17074.4638671875,
+        "p99": 18824.43755859375,
+        "max": 19201.80615234375
+      },
+      "quick_continuations_among_positive_host_requests": [
+        {
+          "maximum_previous_completion_to_queue_ms": 500,
+          "requests": 889,
+          "reported_host_full_bytes": 266825605120
+        },
+        {
+          "maximum_previous_completion_to_queue_ms": 1000,
+          "requests": 1273,
+          "reported_host_full_bytes": 389612953600
+        },
+        {
+          "maximum_previous_completion_to_queue_ms": 2000,
+          "requests": 1416,
+          "reported_host_full_bytes": 434907770880
+        },
+        {
+          "maximum_previous_completion_to_queue_ms": 10000,
+          "requests": 1449,
+          "reported_host_full_bytes": 444953600000
+        }
+      ]
+    },
+    "native": {
+      "positive_host_requests": 34,
+      "previous_safe_input_checkpoint_path_associations": 34,
+      "previous_completion_to_current_queue_ms": {
+        "count": 34,
+        "sum": 18904496.639648438,
+        "min": 208.916015625,
+        "p50": 547128.8498535156,
+        "p90": 1249876.8991455077,
+        "p99": 1949743.4833007813,
+        "max": 1954583.4682617188
+      },
+      "current_queue_to_first_service_observation_ms": {
+        "count": 34,
+        "sum": 218813.763671875,
+        "min": 3902.5,
+        "p50": 6386.8087158203125,
+        "p90": 8101.290087890625,
+        "p99": 9257.246525878907,
+        "max": 9333.762939453125
+      },
+      "quick_continuations_among_positive_host_requests": [
+        {
+          "maximum_previous_completion_to_queue_ms": 500,
+          "requests": 5,
+          "reported_host_full_bytes": 649809920
+        },
+        {
+          "maximum_previous_completion_to_queue_ms": 1000,
+          "requests": 7,
+          "reported_host_full_bytes": 935301120
+        },
+        {
+          "maximum_previous_completion_to_queue_ms": 2000,
+          "requests": 7,
+          "reported_host_full_bytes": 935301120
+        },
+        {
+          "maximum_previous_completion_to_queue_ms": 10000,
+          "requests": 9,
+          "reported_host_full_bytes": 1395036160
+        }
+      ]
+    },
+    "predictive": {
+      "positive_host_requests": 273,
+      "previous_safe_input_checkpoint_path_associations": 273,
+      "previous_completion_to_current_queue_ms": {
+        "count": 273,
+        "sum": 9468518.896972656,
+        "min": 105.04296875,
+        "p50": 505.319580078125,
+        "p90": 4491.082031250001,
+        "p99": 688134.1134277318,
+        "max": 1075371.609375
+      },
+      "current_queue_to_first_service_observation_ms": {
+        "count": 273,
+        "sum": 2996462.4899902344,
+        "min": 5607.933837890625,
+        "p50": 10897.741455078125,
+        "p90": 11988.588134765625,
+        "p99": 13109.523769531246,
+        "max": 13432.06005859375
+      },
+      "quick_continuations_among_positive_host_requests": [
+        {
+          "maximum_previous_completion_to_queue_ms": 500,
+          "requests": 136,
+          "reported_host_full_bytes": 31616778240
+        },
+        {
+          "maximum_previous_completion_to_queue_ms": 1000,
+          "requests": 199,
+          "reported_host_full_bytes": 47736852480
+        },
+        {
+          "maximum_previous_completion_to_queue_ms": 2000,
+          "requests": 232,
+          "reported_host_full_bytes": 57004175360
+        },
+        {
+          "maximum_previous_completion_to_queue_ms": 10000,
+          "requests": 251,
+          "reported_host_full_bytes": 63628410880
+        }
+      ]
+    }
+  },
+  "interpretation": [
+    "All positive Host requests in these three observed windows associate with the immediately preceding completed same-context request safe-input checkpoint on the current effective matched prefix.",
+    "This evidence supports continuing native prefix matching; input-format loss alone does not explain the large V76 Host-demand cohort.",
+    "V76 frequently needs Host data even when its next request is queued shortly after the previous completion. Isolate request ordering, residency changes and native request turnover."
+  ],
+  "limits": [
+    "Samples are conditional on positive Host demand and are not the denominator of all rapid continuations or a per-request miss rate.",
+    "Previous checkpoint records lack creation identity; current matched paths do not prove physical page identity, forward reuse, or avoidable traffic.",
+    "Observed checkpoint association does not rule out changes after the checkpoint or quantify input recomputation.",
+    "Previous-completion-to-queue includes generation-to-client delivery and real tools/JOIN/application work. Queue-to-service includes admission/restore/control.",
+    "Medians cannot be subtracted to assign causal time; single realized trajectories do not isolate a scheduling effect.",
+    "No GPU experiment, frozen source, helper, quality queue or application behavior changed."
+  ]
+}

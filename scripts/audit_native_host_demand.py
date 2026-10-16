@@ -63,11 +63,92 @@ def repeated_context_demand(rows):
     }
 
 
+def continuation_prefix_evidence(event, previous, completed):
+    identity = event.get("workflow_id"), event.get("context_id"), event.get("invocation_id")
+    if any(type(value) is not str or not value for value in identity):
+        return {"status": "context_identity_unobserved"}
+    if previous is None:
+        return {"status": "previous_request_unobserved"}
+    prior = previous.get("attributes") or {}
+    result = {"previous_request_id": prior.get("request_id")}
+    if completed is None or (
+        (completed.get("attributes") or {}).get("request_id") != prior.get("request_id")
+        or any(
+            row.get("invocation_id") != event.get("invocation_id")
+            for row in (previous, completed)
+        )
+    ):
+        return {**result, "status": "previous_completion_unobserved_or_identity_changed"}
+    if not all(finite_number(row.get("ts_ms")) for row in (event, completed)) or (
+        completed["ts_ms"] > event["ts_ms"]
+    ):
+        return {**result, "status": "completion_not_before_queue_registration"}
+    attrs = event.get("attributes") or {}
+    path = (attrs.get("native_host_hit_match_path") or {}).get("best_match_path")
+    if not isinstance(path, list) or not path:
+        return {**result, "status": "current_match_path_unobserved"}
+    path_ids = {
+        pair[0] for pair in path
+        if isinstance(pair, (list, tuple)) and len(pair) == 2 and type(pair[0]) is int
+    }
+    checkpoint = (completed.get("attributes") or {}).get("reentry_checkpoint") or {}
+    prompt = prior.get("prompt_tokens")
+    candidates = [
+        row for row in checkpoint.get("mamba_states", []) or ()
+        if isinstance(row, dict) and type(row.get("node_id")) is int
+        and type(row.get("prefix_tokens")) is int and type(prompt) is int
+        and 0 < row["prefix_tokens"] < prompt
+        and row.get("within_safe_input") is True
+    ] if checkpoint.get("status") == "observed" else []
+    if not candidates:
+        return {**result, "status": "previous_safe_input_checkpoint_unobserved"}
+    tokens = attrs.get("cached_tokens_device"), attrs.get("cached_tokens_host")
+    cached = sum(tokens) if all(type(value) is int and value >= 0 for value in tokens) else None
+    if (
+        type(attrs.get("prompt_tokens")) is not int
+        or cached is not None and cached > attrs["prompt_tokens"]
+    ):
+        cached = None
+    matching = [
+        row for row in candidates
+        if row["node_id"] in path_ids and cached is not None and row["prefix_tokens"] <= cached
+    ]
+    return {
+        **result,
+        "status": (
+            "previous_safe_input_checkpoint_on_current_match_path"
+            if matching else "previous_checkpoint_not_proven_on_current_match_path"
+        ),
+        "previous_context_epoch": previous.get("context_epoch"),
+        "previous_completion_to_current_queue_ms": event["ts_ms"] - completed["ts_ms"],
+        "current_effective_cached_tokens": cached,
+        "matched_previous_safe_prefix_tokens": max(
+            (row["prefix_tokens"] for row in matching), default=None,
+        ),
+        "matched_previous_checkpoint_node_ids": [row["node_id"] for row in matching],
+        "evidence": (
+            "previous_completion_node_id_on_current_effective_matched_prefix;"
+            "checkpoint_creation_identity_unrecorded;not_component_forward_reuse"
+        ),
+    }
+
+
 def host_demand(events, scopes, begin, end, bytes_per_token):
     rows, seen, unknown = [], set(), Counter()
+    previous_requests, completed_requests = {}, {}
     for event in events:
+        identity = event.get("workflow_id"), event.get("context_id")
+        scoped = all(type(value) is str and value for value in identity)
+        if event.get("kind") == "llm_result":
+            if scoped:
+                completed_requests[identity] = event
+            continue
         if event.get("kind") != "llm_submit":
             continue
+        previous = previous_requests.get(identity) if scoped else None
+        completed = completed_requests.get(identity) if scoped else None
+        if scoped:
+            previous_requests[identity] = event
         attrs = event.get("attributes") or {}
         rid = attrs.get("request_id")
         if not rid or rid in seen:
@@ -105,6 +186,7 @@ def host_demand(events, scopes, begin, end, bytes_per_token):
             "reported_host_full_bytes": tokens * bytes_per_token,
             "reported_device_full_tokens": device, "prompt_tokens": prompt,
             "mamba_host_hit_slots": attrs.get("mamba_host_hit_slots"),
+            "continuation_prefix_evidence": continuation_prefix_evidence(event, previous, completed),
         })
 
     def summary(group):
@@ -130,11 +212,19 @@ def host_demand(events, scopes, begin, end, bytes_per_token):
     ]
     contexts.sort(key=lambda row: row["reported_host_full_tokens"], reverse=True)
     workflows = defaultdict(list)
+    continuation_counts, continuation_bytes = Counter(), Counter()
     for row in rows:
         workflows[row["instance_id"]].append(row)
+        status = row["continuation_prefix_evidence"]["status"]
+        continuation_counts[status] += 1
+        continuation_bytes[status] += row["reported_host_full_bytes"]
     return {
         "summary": summary(rows),
         "repeated_context_demand": repeated_context_demand(rows),
+        "continuation_prefix_evidence": {
+            "request_counts_by_status": dict(continuation_counts),
+            "reported_host_full_bytes_by_status": dict(continuation_bytes),
+        },
         "by_role": {
             role: summary([row for row in rows if row["role"] == role])
             for role in sorted({row["role"] for row in rows})
@@ -215,6 +305,7 @@ def main():
             "Role uses exact workflow/invocation creation metadata. Missing identity or timing remains unknown; it is not a zero-demand observation.",
             "Host FULL counters describe native request accounting. Their sum is repeated demand, not unique physical pages, actual transferred bytes or component forward-use proof.",
             "Queue-to-observation includes native admission, restore and control work. It is not pure H2D delay or a removable JCT bound.",
+            "Continuation evidence associates the immediately preceding completed request's safe-input checkpoint node ID with the current effective match path. Checkpoint creation identity is unrecorded; this does not prove identical physical pages, forward use or avoidable traffic.",
             "Each JSONL uses a stat-bounded complete-line prefix with length/SHA256. Cross-file prefixes are not an atomic snapshot.",
         ],
     }

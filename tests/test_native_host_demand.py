@@ -104,3 +104,85 @@ def test_empty_repeated_demand_keeps_unknown_fraction():
     report = repeated_context_demand([])
     assert report["first_reported_host_full_bytes"] == report["later_reported_host_full_bytes"] == 0
     assert report["later_fraction_of_known_reported_host_full_bytes"] is None
+
+
+def continuation_events():
+    previous = event("previous", queued=10., served=20., tokens=0)
+    completed = {
+        "kind": "llm_result", "workflow_id": "wf", "context_id": "ctx",
+        "invocation_id": "root", "ts_ms": 25., "attributes": {
+            "request_id": "previous", "reentry_checkpoint": {
+                "status": "observed", "mamba_states": [{
+                    "node_id": 11, "prefix_tokens": 4, "within_safe_input": True,
+                    "device_present": True,
+                }],
+            },
+        },
+    }
+    current = event("current", queued=30., served=40., context_epoch=1)
+    current["attributes"]["native_host_hit_match_path"]["best_match_path"] = [[11, 1.]]
+    return previous, completed, current
+
+
+def test_previous_completed_safe_checkpoint_can_match_after_epoch_advance():
+    previous, completed, current = continuation_events()
+    report = host_demand([previous, completed, current], {}, 30., 50., 10)
+    evidence = report["rows"][0]["continuation_prefix_evidence"]
+    assert evidence["status"] == "previous_safe_input_checkpoint_on_current_match_path"
+    assert evidence["previous_context_epoch"] == 0
+    assert evidence["matched_previous_safe_prefix_tokens"] == 4
+    assert evidence["previous_completion_to_current_queue_ms"] == 5.
+    assert report["continuation_prefix_evidence"]["reported_host_full_bytes_by_status"] == {
+        "previous_safe_input_checkpoint_on_current_match_path": 50,
+    }
+
+
+@pytest.mark.parametrize("change,expected", [
+    ("completion_missing", "previous_completion_unobserved_or_identity_changed"),
+    ("completion_request_changed", "previous_completion_unobserved_or_identity_changed"),
+    ("invocation_changed", "previous_completion_unobserved_or_identity_changed"),
+    ("completion_after_queue", "completion_not_before_queue_registration"),
+    ("path_missing", "current_match_path_unobserved"),
+    ("unsafe_checkpoint", "previous_safe_input_checkpoint_unobserved"),
+    ("checkpoint_states_missing", "previous_safe_input_checkpoint_unobserved"),
+    ("checkpoint_not_on_path", "previous_checkpoint_not_proven_on_current_match_path"),
+    ("cached_prefix_too_short", "previous_checkpoint_not_proven_on_current_match_path"),
+    ("invalid_cached_prefix", "previous_checkpoint_not_proven_on_current_match_path"),
+    ("context_identity_missing", "context_identity_unobserved"),
+])
+def test_continuation_unknowns_do_not_become_prefix_matches(change, expected):
+    previous, completed, current = continuation_events()
+    events = [previous, completed, current]
+    if change == "completion_missing":
+        events.remove(completed)
+    elif change == "completion_request_changed":
+        completed["attributes"]["request_id"] = "unrelated"
+    elif change == "invocation_changed":
+        current["invocation_id"] = "new-invocation"
+    elif change == "completion_after_queue":
+        completed["ts_ms"] = 31.
+    elif change == "path_missing":
+        del current["attributes"]["native_host_hit_match_path"]["best_match_path"]
+    elif change == "unsafe_checkpoint":
+        completed["attributes"]["reentry_checkpoint"]["mamba_states"][0]["within_safe_input"] = False
+    elif change == "checkpoint_states_missing":
+        completed["attributes"]["reentry_checkpoint"]["mamba_states"] = None
+    elif change == "checkpoint_not_on_path":
+        current["attributes"]["native_host_hit_match_path"]["best_match_path"] = [[12, 1.]]
+    elif change == "cached_prefix_too_short":
+        completed["attributes"]["reentry_checkpoint"]["mamba_states"][0]["prefix_tokens"] = 9
+    elif change == "invalid_cached_prefix":
+        current["attributes"]["cached_tokens_device"] = 100
+    else:
+        current["context_id"] = None
+    report = host_demand(events, {}, 30., 50., 10)
+    assert report["rows"][0]["continuation_prefix_evidence"]["status"] == expected
+
+
+def test_continuation_does_not_skip_an_uncompleted_intervening_request():
+    previous, completed, current = continuation_events()
+    intervening = event("intervening", queued=26., served=28., tokens=0)
+    report = host_demand([previous, completed, intervening, current], {}, 30., 50., 10)
+    assert report["rows"][0]["continuation_prefix_evidence"]["status"] == (
+        "previous_completion_unobserved_or_identity_changed"
+    )

@@ -2,13 +2,21 @@
 
 Status date: 2026-10-16 (PDT).
 
-2026-10-16 14:32 PDT: V1253 reuses sealed V1246 rows to separate the first
-positive Host observation in the window from later demand in the same context.
-V76 later observations account for417.048GB/93.07% of reported FULL demand,
-versus native0.262GB/9.32%. This is request accounting, not identical-page
-reload proof or avoidable JCT. V1254 passes50 offline cases. Prioritize isolated
-ordering/lifecycle/turnover attribution; retain frozen V76/V77 and quality queues.
-See screening4.23; no new GPU registration or production behavior changed.
+2026-10-16 14:50 PDT: V1256/V1257 extend the same complete2400-3000s cohort
+with immediately preceding request completion and safe-input checkpoint evidence.
+All1473/34 V76/native positive Host requests associate with the previous
+checkpoint on the current effective matched path; existing V1246 row fields match.
+Positive-Host completion-to-next-queue medians are0.400/547.129s; queue-to-service
+observations15.574/6.387s. Requests queued within1s account for389.613/0.935GB
+reported FULL demand. Isolate rapid continuation residency and admission before
+attributing this to input-format loss. Missing checkpoint generation and page
+evidence prevent a physical reuse/waste or removable-JCT claim. V1255 passes63
+offline cases; after closed-cohort coverage correction V1258 passes66, not129.
+V1259 compares7000s without fabricating native log time: its complete planned
+cohort covers later horizons. V76/native raw runner capped sojourn1963.595/1666.324s
+already rules out reversing this raw all-task mean by finishing the last workflow;
+quality-matched JCT is still unknown. Keep frozen V76/V77 and quality queues;
+155 runner finishes are observed, the last workflow remains active. See4.24/4.25.
 
 2026-10-16 14:22 PDT: independent ordering candidate b698416 is now on main.
 BELIEFKV_NATIVE_PREFILL_ORDER=1 is read once at startup; default0 retains
