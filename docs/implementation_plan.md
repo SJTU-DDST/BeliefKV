@@ -1,6 +1,1599 @@
 # BeliefKV Current Execution Plan
 
-Status date: 2026-10-14 (PDT).
+Status date: 2026-10-16 (Asia/Shanghai).
+
+2026-10-16 09:10 PDT next candidate: V76 b2adf481 is frozen, using the unchanged
+V75 engine53020ce3/batch32. It disables JOIN/tool H2D anticipation, semantic
+content prediction/streaming and opportunity census; retains tool timing for
+PREPARE/offload, terminal reclamation, causal/resident admission and native
+demand recovery.343 distinct CPU cases pass (340 regression plus3 effective-env
+checks). V1164/V1165 bind qualification and registration. Supervisor3035460
+waits for the full V75 pair and postprocessing to end and resources to be free,
+then runs reactive only on the identical156-task Poisson schedule and budgets.
+Use V75's same-batch native as the historical development reference, not formal
+paired evidence. Keep both candidates/engine/helpers frozen. V76 has no GPU
+results yet; quantify net control/work/quality/JCT/throughput before selection.
+Canonical evidence: research screening4.5 and ops/v76_no_prefetch_20261016.state.json.
+
+Current execution, 2026-10-16 08:45 PDT: select systems mechanisms in the
+serving/runtime execution, physical-state and transfer paths under matched
+application behavior. Harness events are inputs, not the selected optimization.
+V75 closed windows 600-900s/900-1200s confirm509/536 coalesced batches with
+zero enqueue failures. Full48 decode is near historical native, but short
+prefill geometry and CPU/control costs still need attribution; window variation
+precludes a single slowdown factor. V1150-V1158 and3 new CPU audit checks are
+documented in research screening4.4. Keep V75 source/engine/helper frozen;
+compare against its same-cap native arm before accepting net gains. Prioritize
+actual CPU dispatch, state-copy/dependency and control costs, then choose a
+mechanism with demonstrated prior-art differences. The withdrawn three-mechanism
+agenda and harness prototypes are not reinstated; overall goal remains active.
+
+2026-10-16 08:23 PDT: V75 is running the frozen 2ad32d0 application with engine
+tree53020ce3, predictive first then native, both with write-back batch cap32.
+Cold launch08:15:55 and actual predictive GPU/source/arrival/capacity verification
+08:18:46 are recorded in V1140-V1142. The final candidate has230 CPU tests and27
+subtests. Keep156 V73 tasks/Poisson table and all model/application/resource
+settings unchanged. Inspect attempted/eligible/issued coalescing and real DMA,
+cache/recompute/control costs before interpreting JCT. After an initial period
+without FULL attempts, V1149 now confirms202 multi-node D2H ACKs/865 nodes,
+matching native coalescing counts with zero enqueue failures. This proves
+execution, not net speedup or quality/JCT gains.
+State:ops/v75_batched_writeback_20261016.state.json;source/engine/helper frozen.
+V73 all156-per-arm official-quality inputs are exported in V1146/V1147 and bound
+by V1148; grading has not started. No qwen_prefix or V74 launch. Goal remains
+active; earlier no-new-GPU statements below are historical.
+
+2026-10-16 07:58 PDT update: V1135 matches actual prefill geometry and client
+stages. Only 29 of native's 775 large FULL-match gaps are ordinary continuations.
+V1136 targets the observed 125,158 singleton write-back D2H batches with an
+independent, default-off ancestor-chain backup candidate. It preserves native
+device FULL ordering, required state, Host reclaim and ACK-before-free.
+90 CPU tests and 27 subtests pass, including real CPU cache/tree plus simulated
+DMA. The first wrong-installed-package failures are retained; the final run
+asserts candidate imports. Next validate real batching opportunities, overhead,
+GPU transfers and cache effects before any throughput/quality claim. This is
+shared-path engineering, not established novelty; match successful common
+fixes in both baselines. No GPU launch has been registered and V73 is frozen.
+See the canonical research screening and V1136 candidate receipt.
+
+Current steering, 2026-10-16 07:26 PDT: focus the paper on serving/runtime
+infrastructure under unchanged application behavior. Harness summary, evidence
+feedback and agent-decision prototypes are optional engineering controls, not
+the selected contribution. Keep qwen_prefix off; no GPU run is queued for it.
+First establish exposed costs in native, then compare against existing session,
+incremental-input and hybrid-prefix-cache methods before choosing a mechanism.
+V1134 audits 37,612 native and 40,186 predictive requests with 7 CPU checks.
+Conversation-conversion P50 is 51.39/53.42ms; the FULL-match/effective-prefix gap
+accounts for 7.26%/7.27% of uncached tokens, not attainable speedup. Only 775/797
+requests have a gap of at least 512 tokens. See the current research screening
+for scope, prior art and limits. V73 has now ended in both arms, each with
+154 completed/2 incomplete, and all owned run processes exited. V74 remains
+cancelled before launch; no replacement GPU experiment is registered.
+The overall performance/quality goal is active. Earlier native-live observations
+and historical three-mechanism commitments below do not override this paragraph.
+
+V1125 completes the current non-scheduling opportunity audit; see
+[the research screening](research/non_scheduling_directions_20261016_zh.md).
+Actual native batch geometry confirms33.58% of V73 predictive prefill extends
+belong to summaries and14.78% to first ordinary requests after compaction.
+These are measured work shares, not attainable speedups or exclusively waste.
+Evaluate context processing, version-dependent evidence reuse and generation
+acceleration against the relevant strong existing methods before selecting a
+new candidate. The read-only auditor has8 CPU passes. V73 native continues;
+V74 remains cancelled and no replacement GPU experiment is registered.
+
+Latest steering, 2026-10-16 06:04 PDT: withdraw executable-branch admission,
+complete-state budgets and continuation handoff as the selected research agenda.
+Keep the prototype and its evidence as unproven alternatives. FULL/Mamba pool
+imbalance must first be addressed as a configuration/capacity issue, not a novelty
+argument. Quantify repeated tool execution, context summarization/reprocessing,
+and model inference from the latest traces before selecting another design.
+Investigate beyond scheduling; retain matched native, quality and all-task JCT/
+useful-throughput acceptance. The broad goal remains active.
+V74 was cancelled while waiting, before any GPU arm launched; preserve its frozen
+plan, application, engine and helper. V73 native continues unchanged. Receipt:
+`experiments/reports/v74_cancelled_before_gpu_20261016.json`.
+
+The V1121/V74 launch and three-mechanism plan below are historical and superseded.
+
+V1121 freezes independent candidate ace2283 and engine tree ad3e62df for V74.
+Its156 ordered tasks and Poisson table digest exactly match V73. Supervisor
+1182383/start_ticks632519352 is confirmed live and waits for the entire V73
+driver3179209 to exit and the GPU to become idle, then runs workflow_progress
+followed by same-application native. See ops/v74_workflow_progress_20261016.state.json
+and the V1121 registration. No V74 GPU work or performance result exists yet.
+Keep this source, engine and newly registered helper frozen as well.
+
+The latest authorized mainline is specified in
+[the research argument](research/workflow_progress_and_state_20261016_zh.md):
+dynamic executable-branch admission, complete next-step FULL/Mamba/request
+resource budgets, and identity-bound child-to-parent continuation handoff.
+The goal remains active; novelty and end-to-end gains are unproven.
+The previous exposure/prefetch plan below is supporting evidence and optional
+mechanism work, not a substitute for these three mechanisms.
+
+1. Keep V73, its engine and registered helpers frozen. Use V1112 rather than
+   V1111 for JOIN counts. Do not claim dynamic nested behavior from depth-one traces.
+2. Validate the new independent progress mode at native prefill boundaries.
+   Account missing and evictable resident source state, shared physical identity,
+   private active/tracking Mamba slots, rows, running growth and input budgets.
+   Unknowns retain native attempts; final allocation/dependencies remain native.
+3. Validate the natural hierarchical application with real framework callbacks,
+   two JOIN levels, private-state isolation, cancellation and epoch invalidation.
+   Apply identical prompts/tools/limits to all arms; do not force useless delegation.
+4. Measure the complete control cycle against FIFO/count/vector controls.
+   The development vendor engine predates the V73 engine; create a fresh engine
+   candidate from the latter, then add only the new scheduling hook. Never launch
+   the old vendor snapshot as if it included the latest service fixes.
+5. Run the new policy first, followed by matched native on the new application
+   and one frozen Poisson table. Compare quality, all-task JCT/completions, tails,
+   batch filling, physical waiting occupancy, repeated recovery and CPU costs.
+   Add reasonable yield-on-wait, vector best-fit and program/graph-order controls
+   before claiming contribution beyond TokenCake/CONCUR/SAGA.
+
+Current progress: the independent mode and hierarchical application are implemented.
+V1119 has728 application/runtime passes with1 unrun Docker case; the copied latest
+engine has165 passes and14 subtests. V1120 replays all156 V73 predictive traces with
+equal logical states at batch sizes1/32. These are CPU results, not quality/JCT gains.
+The controller now discovers demands lazily up to the next native batch frontier.
+V1118's bound-source fixture costs0.222/0.567/1.580ms at47 running and8/48/156
+queued requests; cold empty batches still cost0.759/5.921/9.533ms. Reduce or
+amortize repeated verified-prefix work if GPU evidence shows this cost matters.
+The new sglang-v1116 engine preserves the entire V73 parent engine and adds only
+the new scheduling hook/tests; the old development vendor was not used as the base.
+Prepare via scripts/run_workflow_progress_ab.py using the latest156-item manifest.
+Policies fifo/count/graph/vector/joint are mechanism controls, not prior-paper replicas.
+V73 predictive collected154 completed/2 incomplete in8201.434s; both incompletes end
+with length/repetitive output, not scheduler failure. Native scheduler686242 and
+client687742 are actually running. Preserve that frozen same-arrival comparison.
+
+The goal was reset on2026-10-16 PDT and remains active: use dynamic workflow
+events on the native service path to lower mean workflow JCT and raise useful
+completion throughput, preserving quality, completion, fairness, tails and
+useful-KV recomputation. Prioritize exposed recovery waits, short-prefill/control
+cost and recovery/lifecycle/admission coordination. Treat pre-completion
+prediction as an optional extension; widespread subsecond RETURN accuracy and
+more transferred bytes are not prerequisites or acceptance criteria.
+
+Latest steering on2026-10-16 PDT: if later copies are already hidden, saving
+only a few milliseconds of startup cannot justify an expensive prefetch path.
+First-layer readiness alone does not guarantee later layers are hidden, but
+neither does it establish a useful opportunity. Prioritize shared service/
+control cost, repeated restoration and useless KV occupancy. Both completion-
+triggered and pre-completion restoration require measured net benefit.
+
+V1109 corrects the all-first-layer assumption for hybrid Qwen: pre-forward
+Mamba checkpoint COW waits on the shared layer38 event, after9/10 FULL layers
+and all30 Mamba layers of the current missing-data batch. Direct Host-to-request
+state restoration can avoid that D2D COW and retain layer-wise execution.
+Layer indices start at0; the frontier covers only data needing transfer in
+that batch. Partial early copies can still reduce residual waiting without
+making the whole pre-forward dependency ready.
+Classify these routes before sizing early restoration;90percent is not the
+fraction of an entire agent context. The existing on_launch wait probe already
+covers the COW fence; V1105's short cohort did not sample that route.
+Complete V72 has23/323 barrier samples;historical native6/597;live V73 prefix
+5/7,too few for a new-workload majority claim. First COW wait P50 is7.320/
+2.856/0.115ms,respectively;D2D copy cost itself is outside those wait events.
+V72's23 samples contribute about79percent of sampled dependency waits.
+V1110 finds22/23 V72 barriers in multi-request batches,20 with both Host-hit
+and no-Host-hit first-service request records;all six native barriers are
+such mixed batches. Inspect whether source-specific dependencies can avoid
+coupling a resident COW to another request's restoration. General traces do
+not prove every source is independent;do not remove the native fence.
+Receipts:v1109_mamba_cow_restore_frontier_20261016.json and
+v1110_mamba_barrier_batch_coupling_20261016.json under experiments/reports.
+
+Execute the following stage sequence:
+
+1. Audit residual exposure after native layer overlap using existing traces.
+   Separate forward-stream layer waits from pre-admission planning,load queue,
+   capacity/state preparation,client work and summaries. Bucket by actual
+   extend tokens,missing FULL,necessary Mamba and concurrency. Keep absent
+   evidence unknown. Report independent JOIN/tool episodes and actual consumers.
+2. Reduce shared short-prefill and high-frequency control work, repeated
+   restoration and useless KV occupancy. Use existing phase timings and CPU
+   equivalence fixtures before adding runtime work. Preserve native ownership,
+   state dependencies, action ordering and pressure-reclaim eligibility.
+3. Measure the usable completion-to-submit/admission window and its exposed
+   restoration cost. Only if evidence supports it, reuse the existing per-layer
+   pipeline with safe-checkpoint continuity, actual capacity, bounded residency
+   and near-term admission. Do not add fixed sleeps or assume a complete copy.
+   Attribute pre-completion prediction, post-completion early restoration and
+   post-arrival demand restoration separately. Keep long-tool-wait prediction
+   as an independent possible input to cold-KV management.
+4. Select one promising change only after identifying operational exposure.
+   Validate its isolated net effect with a minimal same-code ablation: actual
+   dependency/first-service delay,CPU work,residency,eviction/recomputation,
+   mean JCT and useful completions. Shrink paths without demonstrated benefit.
+   Do not fund extra scans or restore volume with unmeasured stall estimates.
+
+V1105 completes the first bounded CPU audit over five disjoint V72/V58 sealed
+windows. Of9329/10445 observed prefills,4282/4986 are single-request,extend<512.
+Pair load-consuming probes directly with services instead of intersecting
+independent turnover sampling. Short-prefill layer-wait samples are46/79:
+V72 P50/P90/max0.096/0.267/1.356ms;historical native0.091/0.105/0.782ms.
+No native short sample exceeds1ms. This currently gives little evidence for
+large extra forward-stream overlap gains. Timing includes event overhead,
+sampling is sparse/window-concentrated,and earlier recovery/state/admission
+cost is not ruled out. Do not extrapolate to all batches or JCT,or infer the
+tool module's net effect from these different-version/demand arms.
+CPU preparation may already overlap transfers;reassess exposure after reducing
+that CPU cost instead of treating the current small waits as a hardware limit.
+Receipt:experiments/reports/v1105_short_prefill_existing_layer_restore_space_20261016.json.
+V1104 independently aggregates41 exact tool episodes:ACK-to-service P50/P90
+1.117/68.304s. V1103's20.560s P50 is node-weighted. Two44/72s client phases
+include internal model summaries;existing context_summary_started lease
+invalidation must be checked before proposing duplicate fixes.
+
+V1106 resolves native cache counters and lease stages for those41 episodes:
+17 still require6.968GB native FULL;24 require none. Among14 ACK-to-service
+gaps over5s,13 lose339 node protections before tool completion through
+service_window_expired;the other releases five at summary start. Eleven
+long-gap requests still restore4.137GB FULL and hit Host Mamba. Release is
+not proof of eviction,and native bytes are not all proven repeated copies.
+Xarray6744/epoch30 reuses187.433MB early FULL with zero native FULL restore,
+yet waits10.629s after arrival;queued snapshots retain a state deficit and
+low pool headroom. Do not label the whole gap H2D or pure priority waiting.
+Receipt:experiments/reports/v1106_v72_tool_reentry_residency_and_native_restore_20261016.json.
+
+The frozen tool path requires a live WAIT_TOOL forecast and does not recreate
+an expired restore merely on TOOL_END. A development prototype adds completion-
+driven restoration and next-consumer binding, default off through
+BELIEFKV_TOOL_COMPLETION_RESTORE. Its17 initial CPU checks do not qualify late
+ACK/epoch handling, full correctness, control cost or GPU benefit. It is absent
+from frozen V73 and is not a default next experiment. Establish removable
+exposure and an affordable implementation before further rollout. Keep native
+capacity checks, summary invalidation and bounded consumption; do not globally
+extend old leases. Confirmed JOIN restoration already exists.
+Development diagnostics now label fits_current_free_lists as selected-step
+capacity and record selected_restore_step_count;first-extent fit is not
+whole-checkpoint/input/decode admission proof. V1107 passes three existing
+opportunity/sampling CPU checks. No migration,ordering,budget or sampling
+cadence change,and the development-only schema is not in frozen V72/V73.
+
+Inspect live V73 and completed V72_workflow_work/f7aec98 before older traces.
+V72 ended at2026-10-16 02:52:20 PDT with driver exit0,155 completed and one
+incomplete out of156,client duration8278.345s. Task quality remains ungraded.
+Use V58 for historical diagnosis;the online workload requires V73's same-table
+native arm. Formal acceptance adds matched repetitions and uncertainty.
+Keep V72/V73 source,engine and registered launch helpers frozen.
+V72 cold-started at2026-10-16 00:27:06 PDT,port18476,on independent engine
+tree791dd37f. V1080/V1081 bind registration/launch;state is
+ops/v72_workflow_work_20261016.state.json. Keep the agreed156-workflow
+108+48 arrivals and budgets for the frozen V72 only.
+V1082/V1083 verify actual GPU service,source/settings,identical pools and
+NUMA. The00:31 PDT snapshot has108 work accounts,47719 charged output
+tokens,84 work-induced head changes and83 admissions,with healthy migration
+and no observer errors. This is activation,not measured performance gain.
+The first120-300s window has219279/246021 request steps,-10.87%,and17.632s
+control self-wall. Short-prefill37/51 samples select at5.392/2.734ms CPU,
+run_batch41.563/35.072ms and return-to-result11.087/6.013ms. Keep this
+negative evidence;inspect later fixed windows and full quality/JCT outcomes.
+The600-900s window yields330045/386707 steps,-14.65%,and36.832s control
+self-wall;actual work-priority activation has not established a service gain.
+
+The next development workload uses one Poisson root-arrival process:
+156 unchanged tasks in the same order,rate1/15 roots/s,independent seed21.
+Freeze the exact table and digest in ab_plan;both arms read it,with no
+completion-driven replenishment or hidden client-worker backlog. Log scheduled,
+submitted and actual worker-start offsets. V1091 passes837 fresh CPU checks;
+V1092 adds10 disjoint harness-config checks. The initial80 are included in837.
+V1093 retimed historical durations predict116/126 peak roots and last arrival
+at2477.769s;this does not prove real cache pressure or a performance gain.
+Run predictive first,then one same-table native baseline:old V58 has different
+external arrivals and cannot measure this workload's native-relative speedup.
+No task reordering,rate sweep or repetitions during this development iteration.
+V72 finished and owned resources exited before the V73 cold start.
+V1095 freezes6e85b0a with the unchanged791dd37f engine;V1096 registers V73
+supervisor2907350/start_ticks631065999 on port18477. Authoritative state:
+ops/v73_online_root_20261016.state.json. Actual V73 start was02:52:38 PDT;
+at03:26 PDT supervisor/driver identities match, migration is enabled and no
+observer errors are recorded. The same-table native arm is still pending;
+startup and a healthy observer do not establish relative performance.
+Observe actual FULL/Mamba headroom,Host usage,native H2D,cold reclaim,recomputation
+and first-service stalls;retain all failures and full task-quality denominators.
+Keep native per-layer H2D/prefill overlap and its Mamba state-COW dependencies;
+do not add a second pipeline engine. Page/state capacity is reserved before DMA.
+Owner-grouped cold-candidate maintenance and sparse ordered publication pass
+CPU equivalence;whole-dispatch CPU changes remain about0.1%-9.3%,not GPU/JCT.
+
+Evaluate prefetch against residual stalls after native layer overlap,not total
+H2D duration. Completion-triggered restoration may start the same pipeline
+before client submission/native admission without predicting future RETURN;
+report it separately from pre-completion prediction. Short prefills can still
+stall on later layers;early-layer readiness is not complete overlap or capacity.
+V1103 bounds latest V72 receipts:tool535 node commands,4.890GB FULL transferred,
+1.941GB confirmed first-service reuse,ACK-to-service P50/P90 20.560/68.305s.
+The interval includes pre-completion and admission time;unconfirmed bytes are
+not all waste. No isolated same-code tool-prefetch net effect is established.
+Keep V72/V73 source,registered helpers and experiment settings frozen.
+
+V1084 audits external arrivals:V72 and historical V58 share the root
+timestamps/task order,but the first108 tasks span seven repositories with47
+Django tasks and all48 second-wave tasks are Django. Treat two bursts as
+a controlled development stress test,not sufficient online-load generality.
+For formal evaluation,freeze a shared root-arrival schedule for each pair,
+assign tasks independently by randomization/stratification,and vary offered
+load,continuous arrival timing,burstiness and two-wave gap/batch sizes.
+Keep live internal agent/tool/spawn/JOIN behavior;no fixed demand replay.
+Repeating one fixed mapping does not remove mixture/time confounding.
+Report warmup,measurement and drain/tool tails explicitly,all failures and
+quality,and repeated matched uncertainty. Real LLM request timestamps may
+test arrival shape but cannot be labeled real multi-agent workflow traces.
+Current V72 and budgets remain frozen;Poisson is now implemented and CPU-checked,
+with GPU validation in the running V73 development pair. Broader formal
+evaluation remains pending.
+
+V71 failed at00:12:53 PDT with loading_check KeyError:364,driver exit1.
+V1075 preserves83 completed,13 connection-interruption errors and60 missing
+outcomes,including48 not-yet-arrived workflows. No full-run JCT acceptance.
+Its three sealed windows retain-8.31%/-2.64%/+3.45% request-step changes
+against V58;third-window394946/381775 and23.176s control self-wall do not
+establish stability. A FULL-only prefetch can overlap a same-anchor native
+state load,replacing the in-flight record before two ACKs consume it.
+Reproduce this on exact native methods;decline duplicates before locks/
+preparation and retry only additional restores requiring that live anchor.
+Preserve native layer-fence admission for FULL needing no extra restore.
+Do not infer the unrecorded second live transfer's Mamba bytes.
+
+Broaden the search with workflow ordering based on completed request work.
+BELIEFKV_WORKFLOW_ATTAINED_WORK=1 aggregates completed request output tokens
+across the whole root workflow,not queue time,unfinished output,future
+RETURN or known total length. Prefer lower attained work only within equal
+causal/residency/restore-cost groups. Preserve native discovery order,
+ten-second aging,critical JOIN,recovery consumption and actual admission
+dependencies. Record actual work-induced head changes and native admissions;
+no new tree walks or per-event trace output. Check long-workflow costs.
+Combine verified-root and tool-marked child semantic-history reductions.
+V1072's18 complete-plan CPU cases preserve native inspection counts/order;
+48 candidates add32-40us and156 add90-116us. V1079 binds590 fresh frozen
+application identities,158 native identities and27 successful subtests.
+GPU policy activation,full-run performance,quality,fairness,tails and
+recomputation remain required. Keep prefetch auxiliary;the goal is unmet.
+
+V1067 audits full V70:155 completed/one incomplete,exit0,migration enabled.
+153 completed pairs mean2005.764/2306.855s,-13.05%,95 faster/58 slower;
+P95 is4424.256/4987.354s. The144 explicitly eligible pairs mean1820.834/
+2237.344s,-18.62%,but request/tool counts are24.10%/24.03% lower.
+Early verified FULL is59/34 JOIN/tool events,1.271/2.485GB,combined0.192%
+of same-run native FULL H2D. First5400s terminal counts138/132 are not
+independently correct completions. V70 quality is ungraded;do not reuse V68
+quality or attribute historical tail/demand differences to transfer modules.
+
+V1064 rejects raw tool median routing:positive-FULL last-second P90 worsens
+1054.8->1132.1ms in V70 and756.7->1473.2ms in V68,without fewer first windows
+over10s early,despite better overall quantiles. Keep existing model/routing.
+Devef2b782 skips native child-semantic decode history only for declared roots
+confirmed by the graph;keep child/unknown paths,tool token features and first
+reuse. V1065 passes381/skips one unchanged process integration test requiring
+the absent old pinned encoder. V1066 complete-callback CPU fixtures improve
+34.47%/12.52% for all/half roots,but child/unknown negatives cost8.78%/5.40%
+more,about6.0/3.7us. The67d7685 tool-marker reduction keeps terminal facts;
+V1069's48-child callbacks with0/24/48 tool-marked requests change about
+-1.64%/-11.49%/-29.20%. Both reductions enter V72,not V70/V71.
+V1078 resolves the old fixture skip with the fixed production encoder:
+590 checks pass with no skips. Callback CPU is not end-to-end evidence.
+
+Historical V70 cold-started at2026-10-15 21:10:19 PDT,port18474,supervisor3447145/
+start_ticks629347135,driver3452941/start_ticks629408220 and scheduler3454060/
+start_ticks629409521. V1043/V1045 bind registration/launch;V1046 verifies
+actual GPU service,source,dedbe1a0 engine and unchanged physical pools.
+V1047 records NUMA preferred. Authoritative state:
+ops/v70_terminal_root_20261015.state.json. Keep156 workflows,108+48 arrivals,
+running48,context131072,output8192,tools180s,Host200GB/80:20,HBM ratio.9,
+prefill4096/interval0 and PREPARE_HOST/JOIN/tool predictive migration.
+V1044 superseded only the unlaunched V69 waiter,preserving its evidence.
+V68 fully exited and two free-resource observations passed before V70.
+
+The current GPU candidate includes acae8a1 resident-consumption quota,
+e284084 same-dispatch first-attempt PREPARE closure reuse and364fa23
+post-WORKFLOW_END root retirement. Require explicit ROOT RETURN provenance
+and actual workflow end;keep native private-suffix eligibility,shared
+prefixes,session/generation,locks and pending-transfer checks. Retry native
+deferred anchors only. Root releases stay separate from child handoff/H2D.
+V1040/V1041 each pass1109 checks;V1042 binds the qualified source.
+Allocator releases and PREPARE reuse are observed,not performance acceptance.
+V1048 records first-three-window request steps236154/246021,
+371594/386707 and366491/381775,still4.01%/3.91%/4.00% behind V58.
+Control exclusive wall is15.321/30.649/27.014s. New earlier-resident-quota
+inspection/order/admission counters remain zero;investigate activation
+without crediting legacy resident-priority events to the new quota.
+
+The a4108c8 follow-up permits a missing/expired aged-head discovery hint only
+on the existing reduced-quota/native-frontier path. A candidate still needs
+a fresh warm hint and two actual native reentry checks;compare missing FULL+
+necessary-Mamba bytes,next-input work and causal rank before reordering.
+Keep ordinary turns,native capacity/dependencies and the old four-turn path.
+V1054/V1056 each pass361 checks;V1057 retains759 unchanged identities and
+replaces the two modules with361 frozen passes,1120 unique total,not1120 fresh.
+V1055 retains real native-matcher CPU costs:0.121-0.126ms at32k/eight nodes,
+0.347-0.351ms at98k/24 nodes and3.36-3.45ms at1024 nodes. No fresh candidate
+adds no native reads but7-11us;input mismatch still pays two checks.
+V1058 registers frozen0bcf78f as V71_aged_head,supervisor610069/
+start_ticks629926832,ops/v71_aged_head_20261015.state.json. Require full156
+V70 summary,exit0,healthy migration,old process exit and two free-resource
+observations. Preserve V70;no GPU benefit or later quality is yet verified.
+
+V1062 joins all five complete V70 windows to sampled native queue metrics.
+At3600-3900s,request steps are19.74% lower;mean queue38.43/43.26 and running
+40.96/44.21. At4800-5100s,steps are1.43% lower and empty-queue/below48-running
+time fractions are96.29%/92.96%,mean queue0.051/0.122. Inspect tool/client
+supply there. Sample holding and a6.99s maximum gap in the fourth window
+limit attribution;below48 with queued requests can reflect prefill,capacity
+or dependencies. Control self-wall24.598/14.875s is not removable JCT.
+
+Broaden the search under the same end-to-end goal. Prioritize a native service
+path with sparse event-driven workflow information,whole-workflow bounded
+service/cache locality,terminal private-KV release and tool/JOIN-to-submit
+supply. Separate backlogged and empty-queue windows before choosing a change.
+Current resident/final-report admission is not full workflow attained-service
+scheduling;the old workflow_fairness policy is not wired into this native path.
+Keep prefetch as an auxiliary with real Host-only opportunities. Do not retain
+a feature at the expense of quality,fairness,tails or recomputation,and keep
+the workload,budgets,no-new-guard and no-new-PrefillAdder constraints.
+
+V1049 seals the V70 first-wave prefix:53/34 early next-request FULL reuse
+JOIN/tool events,1.074/2.485GB,13/one unknown completion boundaries.
+Last-ACK-to-service P90 is15.927/96.278s. V1050 partitions81/44 valid
+intervals:tool pre-completion P90 is84.757s and after-native-arrival P90
+11.960s;JOIN after-arrival P90 is10.643s. Quantiles do not add.
+Address premature restoration and later service waiting separately.
+At21:59 PDT,82 completed/one incomplete outcomes are written. Django11087
+ends on length with34845 repetitive characters and no semantic completion;
+children/JOIN finished,no timeout or guard intervention. Preserve it and
+the output budget.
+
+V68 completed at21:10:00 PDT,driver exit0,153 completed/3 incomplete/no
+errors and migration enabled. The three length-ended roots,django11206,
+django13964 andpytest6197,lack semantic completion;children/JOIN ended
+without guard intervention. V1048 audits151 both-completed pairs:
+mean2156.276/2302.910s,but P95 is5603.914/4999.253s and worsens.
+The143 explicitly eligible pairs yield1946.816/2199.727s mean,-11.50%,
+76 faster/67 slower. Keep the eight additional pairs and all156 outcomes;
+all eight exclusions have guard_intervened_completion,five also missing
+semantic completion. Historical versions,realized demand and native tool tails
+still prevent causal prefetch or stable acceptance claims.
+
+V1063 now verifies all156 official V68 task outcomes against frozen patches,
+source results,individual reports and CPU container receipts:93 resolved/
+63 unresolved,no empty patches or infrastructure errors. V58/V906 remains
+90 resolved/62 unresolved/four empty. Paired74 both resolved,19 current-only,
+16 native-only and47 neither. Preserve the original incomplete/JCT-ineligible
+status of resolved django11206. V68 quality is no longer awaiting report audit;
+this single historical comparison does not establish noninferiority,causal
+policy gains or V70/V71 quality. Retain the one-CPU/8GiB resource overlap.
+
+V1051 audits realized demand in those same cohorts. The151 pairs use
+35768/40988 LLM requests and35386/40666 tool calls,-12.74%/-12.98%.
+The143 eligible pairs use29085/37084 requests and28771/36796 tools,
+-21.57%/-21.81%. The11.50% JCT difference cannot be credited to scheduling.
+Fourteen pairs with both call counts within10% and equal delegation rounds
+have1535.346/1483.330s mean JCT,5 faster/nine slower. This post-hoc rough
+subset does not match token demand,tool time or quality and proves no causal
+slowdown. Keep all outcomes. Distinguish ordering,exposed restore waits,
+KV lifecycle and realized execution demand;lower mean need not worsen tails.
+
+V1052/V1053 use the complete V68 lifecycle/offload evidence. Early verified
+FULL reuse is65/34 JOIN/tool events,1.649/3.185GB,0.081%/0.156% of same-run
+native FULL H2D;combined0.236% is byte scale,not speedup or replacement.
+PREPARE has1163 node ACKs/12.017GB FULL,337 associated with later restore,
+28.98%;unassociated copies are not automatically waste. Tool demotion has
+2246 node events/176 tools,cumulative18.871/28.782GB FULL/Mamba;
+first actions remain open at least1s for162/176 tools,92.05%,not benefit.
+No same-code module ablation identifies separate or combined net speedup.
+V58's final single-workflow tail is6351.045s,43.87% of collection,GPU0.332%.
+The full-run83.64% completion-throughput difference is tail-confounded.
+Both arms end132 workflows in the first5400s;outputs differ+1.54%.
+Terminal counts are not independently correct completions. All108 first-wave
+3600s restricted time differs-2.75%,90/89 natural completions;versions,
+demand and quality remain limitations. Keep full outcomes and fixed-window/
+all-identity restricted views;do not silently remove the tail or sum module gains.
+
+V1037 exploratory terminal samples mixed context-epoch advancement with
+workflow completion. Correct V1038 requires ROOT RETURN and WORKFLOW_END:
+117 roots observed at least10s after end sum19.07/19.90GB device FULL/Mamba
+and5.70/6.37GB Host FULL/Mamba across different observation times.
+Shared ancestry and native discard eligibility remain unresolved;these are
+not simultaneous,exclusive or proven reclaimable capacity.
+
+Historical V68 cold-started at2026-10-15 18:51:42 PDT,port18472,supervisor1944353/
+start_ticks628571885 and driver1946108. V997/V999 bind registration/launch;
+ops/v68_partial_restore_20261015.state.json is authoritative. V996 binds
+1832 unique passes/two skips;708 fresh checks pass in the frozen checkout.
+V1000/V1001 verify actual GPU service,configuration and identical physical
+pool capacities;scheduler1946507/start_ticks628577888 serves with physical
+migration enabled and no observer/writer errors. Keep the same dedbe1a0 engine and agreed workload,
+including PREPARE_HOST; no task-quality or performance acceptance is claimed.
+The candidate includes qualified multi-child semantic control coalescing
+and a reduced ordinary-admission quota for a partly restored demand with
+fresh strictly lower FULL+necessary-Mamba restore cost,no greater next-chunk
+input and no weaker causal priority. Native input/capacity/dependencies
+remain authoritative. Ordinary admissions are preserved;inspect an aged
+head only when comparison can change the order. V994 adds8-12us in CPU
+fixtures and at most one native read;real native-tree cost remains a risk.
+Measure partial-priority consumption,ACK-to-service,reloads,batch filling,
+control CPU and actual workflow JCT before accepting this hypothesis.
+
+Latest V68 windows120-300/600-900/1800-2100s yield233896/246021,
+376399/386707 and392816/381775 request steps versus V58,with
+14.094/27.311/21.897s control exclusive wall. Third-window short-prefill
+66/64 samples have40.346/40.419ms run_batch and7.477/4.461ms return-to-result.
+V1023 scores all108 first-wave identities at the same1800s per-workflow
+horizon:1623.358/1612.092s capped time and34/32 natural completions.
+The metric still trails native;it is not full mean JCT or formal acceptance.
+Pending/ineligible outcomes count the full horizon;all V68 identities have
+passed it. This comparison does not join independent quality evidence;
+V68 quality is unverified,while V906 retains the native quality audit.
+
+All five fixed V68 windows are now collected. The4800-5100s window yields
+378536/330775 request steps,+14.44%,with10.500s control exclusive wall.
+Short-prefill36/73 samples have5.056/4.959ms selection thread CPU,
+38.473/37.723ms run_batch and11.685/8.514ms return-to-result.
+V1033 scores all108 first-wave identities at a fully observed3600s horizon:
+2264.675/2328.684s capped completion time,-2.75%,90/89 natural completions.
+Forty-eight pairs improve,52 worsen and8 tie/both cap. Keep the earlier
+1800s result and trailing windows;this is not full JCT,stable throughput,
+causal prefetch gain,matched repeated acceptance or independent task quality.
+
+V1032 is the newer sealed prefix,ending20:15:11 PDT:62/34 early verified
+FULL JOIN/tool events,1.614/3.185GB;18 JOIN/five tool boundaries unknown.
+V1034 partitions the same independent ACK intervals. All-action P90 remains
+15.840/20.919s. In the outcome-conditioned early-FULL cohort,arrival-to-service
+P90 is454.923/273.754ms;before-completion dominates51/62 and24/34 events.
+Eight tool events without early FULL reuse still wait13.907s median after
+arrival and all have later native FULL hits. Separate early prediction and
+post-restore consumption failures;do not claim causal gain or full Mamba
+readiness from this selected cohort. Per-file seals are not atomic;
+V1032 plan snapshots are not the V1024 explicit-dispatch funnel.
+
+The full156 V68 official quality evaluator is running on CPU,supervisor3204505/
+start_ticks629116499,ops/quality_eval/run_v68_quality_cpu_20261015.py.
+State:quality_v68_cpu_20261015.state.json. The genuine full summary has
+been exported as V1035 and environment V1036 is bound;worker3450470/
+start_ticks629378270 is live. One CPU worker,one-core quota,
+8GiB,no GPU,cached pinned official images/harness;all outcomes stay in the
+denominator. Record possible overlap with later GPU development,not a formal
+matched-resource performance trial. Registration or worker exit0 is not a
+verified complete quality result.
+
+Historical V1024 independently sealed prefix audit,ending at19:40:41 PDT:
+107/153 explicit pre-completion positive FULL JOIN/tool events,76/42
+pre-completion submissions and57/34 early next-request reuse events,
+1.367/3.185GB FULL. Twenty-nine JOIN starts lack a pre-completion submit;
+12 JOIN/one tool completion boundaries remain unknown. Independent-event
+last-ACK-to-service P90 is16.156/20.919s,with184.704s maximum for tools.
+Twenty-two FULL commands have later native reload associations based on
+legacy batch-pool presence,not reconciled per-request receipts. Prefixes
+are sealed per file,not atomically across files. Do not claim full-run gain.
+At19:51 PDT,88 outcomes are written:87 completed and one incomplete.
+The django11206 root ends with two length results,repetitive final text
+and no semantic completion;no guard intervened and both children/JOIN ended.
+Preserve it without automatically increasing output or changing live harness.
+At19:55 PDT,90 are completed and two incomplete. New pytest6197 also
+ends on length with repetitive text,no semantic completion or guard action;
+children/JOIN finished. Keep117 repeat-tool observations/165 feedback records
+separate from physical-migration failures.
+
+V1004's503.998-525.815s native stack diagnosis is outside fixed windows;
+941 main-thread samples include50 local closure captures,not CPU duration.
+V1005 seals18/42 explicit positive pre-completion FULL JOIN/tool plans,
+13/14 submissions and9/11 early next-request reuse events,74.14MB/1.093GB.
+Eighty-nine JOIN and one tool boundaries remain unknown. ACK-to-service
+P90 remains11.656/20.339s. Of1140 zero/unobserved-positive tool waits,
+later native FULL Host hits total385.50GB;this is not an early opportunity.
+V1006's four observed large cases have zero FULL missing at their last
+pre-boundary snapshot,yet0.65-0.81GB native hits and13.31-14.63s subsequent
+arrival-to-service waits. Sparse snapshots cannot date the eviction.
+
+Historical Devacae8a1 was frozen as c27ca37,qualified by V1013 with1850 unique
+passes/two skips and726 fresh frozen checks. Earlier locality turns use only
+existing fresh hints,then validate both candidate/head native reentry and
+cost/work dominance. Quota follows imminent native slots and eligible
+residents,with ordinary turns preserved. Separate locality accounting lets
+restore/final-stage priority credit accumulate;decline spends no quota.
+The V1008 initial extra-discovery variant is rejected:all-cold controls added
+nine native reads and128-134us. Final V1010 adds no native discovery on
+negative controls,two validation reads on eligible turns and69-78us complete
+CPU planning cost;cached all-cold controls still add42-51us. GPU benefit is
+unproven;do not hot-edit or interrupt V68 for these CPU observations.
+V1025 uses the actual current-engine RadixKey and native reentry method in
+complete CPU admission planning,with synthetic ancestry/index metadata and
+no DMA. Eligible32k/8-depth and98k/24-depth turns add0.133-0.404ms/two
+fresh reads;32k/256-depth and1024-depth add0.974/3.472ms. Input-mismatch
+controls still inspect the head,adding0.095-1.943ms without reordering.
+All-cold controls add no native reads but about0.018ms. This strengthens
+the fixture evidence without measuring live deep-tree frequency or GPU gain.
+V1044 replaced this unlaunched candidate;the change is now in V70.
+Judge service waits,control CPU and full JCT.
+The V68 fourth3600-3900s window yields372397/388781 request steps,
+about4.2% behind,with17.930s control exclusive wall. Short-prefill53/75
+samples have7.539/4.027ms selection thread CPU,45.464/39.102ms run_batch
+and8.745/4.853ms return-to-result;different samples are not removable JCT.
+
+Deve284084 reuses only the best PREPARE selection within one synchronous
+dispatch and its first native attempt. Nonempty/unknown control delivery or
+an earlier native attempt forces recapture. Keep native session,node,prefix,
+Host-capacity checks,final causal validation and per-extent ledger/ACK.
+V1031 passes730 checks against the same real engine on CPU fixtures.
+V1028/V1030 preserve complete-dispatch transfer selection/publication.
+Final16/256-depth eligible means improve0.147/1.405ms;64-depth median
+improves4.926 to4.562ms,but a37.840ms outlier raises the mean4.933 to5.218ms.
+Control-delivery negatives add0.039-0.068ms with no extra native reads.
+Retain both cost and outlier evidence;this is not GPU/JCT acceptance.
+V68 was not hot-edited. This PREPARE change later passed V1042 qualification
+with completed-root retirement and entered V70;it is no longer Dev-only.
+V1018 preserves a registration bug:the imported generic register function
+spawned its old defining-module watcher,which exited before GPU launch.
+No driver/raw collection was created;its old observer state was overwritten.
+Retain the failure and avoid inventing its unretained exit status.
+Historical V1019 registers V69_cached_resident,waiter2567402/start_ticks628810592,
+port18473,explicit ops/start_v69_cached_resident_registered_20261015.py.
+Its PID/argv were verified;V1044 later stopped it before GPU launch.
+The complete156 V68 results,exit0,healthy migration,old process exit and
+two free-resource polls were verified before the actual V70 launch.
+
+V998 supersedes only the unlaunched V985/6815795 waiter,retaining its source,
+registration and helper. V1002 explicitly interrupts V67 after all five
+fixed windows:135 completed,21 without terminal outcomes,driver exit-15.
+Preserve raw evidence and administrative censoring;do not synthesize full
+JCT or label missing outcomes failures. Old processes/containers exited
+and two free-GPU observations passed before V68 launch.
+V67's4800-5100s window yields329589/330775 request steps and11.211s
+control exclusive wall;short-prefill33/73 samples have36.584/37.723ms
+run_batch and7.523/8.514ms return-to-result versus historical V58.
+V991 partitions separate failure modes:one JOIN still waits14.136s after
+native arrival with182.19MB native FULL remaining;one tool ACK precedes
+completion by109.922s despite7.84ms client-submit delay,then waits14.507s
+after native arrival. Another tool's18.626s client interval includes
+summarization. Do not confuse prediction timing,summary work and admission
+waiting,or equate one lease exit with release of all covering locks.
+
+Historical V67:
+V67 cold-started at2026-10-15 17:20:43 PDT,port18471,supervisor546742/
+start_ticks628002818 and driver597989. V972/V974 bind registration/launch;
+ops/v67_aged_warm_direct_20261015.state.json is authoritative. Two free-GPU
+observations passed before launch. V975/V976 verify actual first GPU service,
+e8dcba7 source,dedbe1a0 engine,actual configuration and unchanged physical pool
+capacities. Scheduler598387/start_ticks628031986 serves with migration enabled
+and no observer errors; NUMA remains preferred. Same frozen
+V966/V967-qualified candidate,engine,model and workload; predictive only.
+V67 windows120-300/600-900/1800-2100s yield235209/246021,
+363328/386707 and387939/381775 request steps versus historical V58.
+Control exclusive wall is14.934/29.368/21.373s. Early windows still trail;
+third-window short-prefill56/64 samples have38.608/40.419ms run_batch
+and7.673/4.461ms return-to-result. No stable full-run gain is established.
+V989 uses all108 matched first-wave identities at a fixed1800s per-workflow
+horizon: capped completion times1554.608/1612.092s and43/32 verified
+natural completions. Pending/errors/ineligible outcomes count the full horizon,
+and every predictive workflow has passed it. This is not full mean JCT,
+global throughput or causal attribution; task quality remains unverified.
+V990 independently seals97/155 explicit pre-completion positive FULL JOIN/
+tool events,66/38 pre-completion submissions,52/36 early next-request reuse
+events and1.634/3.704GB FULL. Sixteen JOIN and one tool boundaries remain
+unknown. Last-ACK-to-service P90 is15.393/2.232s; the tool maximum124.766s
+and14 prefetched-FULL commands later natively reloaded remain unresolved.
+
+V978 replays the exact V977 prefixes without failure:9764 of19635 locally
+emitted semantic frames are definite intermediate multi-member ALL JOIN
+bodies,49.7 percent. This precedes asynchronous coalescing and is not saved
+datagrams or CPU time. Dev0c2bbb2 coalesces these body controls, retaining
+first/final frames, first negative tool evidence, every child notice and
+complete local content. Normal periodic delivery resumes for the last member;
+unknown membership keeps the original path. Frozen6815795 uses the same
+dedbe1a0 engine; V983 freshly passes251 checks/two subtests with two skips.
+V984 binds1733 unique passes/two skips. Historical V985 registered V68_join_body,
+waiter1297304/start_ticks628272250,port18472; state is
+ops/v68_join_body_20261015.state.json. V998 explicitly superseded it before
+GPU launch;its frozen source remains unchanged. Do not attribute the latest
+combined V68_partial_restore result to this unlaunched semantic-only candidate.
+V973 explicitly interrupts V66 after four complete fixed windows including
+3600-3900s:96 completed,60 without terminal results,original driver exit-15.
+Retain raw evidence and censored identities; no complete summary or full-run
+JCT is synthesized. Verified predecessor processes/containers exited and
+GPU resources were released. V968's original waiter was explicitly superseded
+before GPU launch; retain its original registration/helpers.
+Historical V66 cold-started at2026-10-15 16:10:48 PDT, port18470, supervisor3804658/
+start_ticks627607837 and driver3804888. V956/V957 bind registration/launch;
+ops/v66_restore_cost_after_tail_20261015.state.json is authoritative.
+V958/V959 verify actual first GPU service,2374925 source,dedbe1a0 engine,
+settings and unchanged physical pool capacities; scheduler3805292 serves
+with physical migration enabled and no observer errors. NUMA is preferred,
+not a hard all-Host-memory binding.
+The unlaunched V950 waiter was superseded to prioritize the latest qualified
+candidate within limited GPU availability. V955 explicitly censors V65 after
+all five fixed windows:152 completed,one incomplete,three without terminal
+results. Preserve every raw source,result,driver exit-15 and censored identity;
+do not synthesize a complete summary or full-run JCT. Verified old processes/
+containers exited and GPU resources were released. V949 binds1615 unique
+passes/two skips; V948 freshly passes592 checks in the frozen checkout
+against the unchanged dedbe1a0 engine. Includes73a4a33 missing-FULL+Mamba
+byte ordering within existing non-aged causal groups, plus the previously
+checked250ms tool planning slack. Keep V65 model/harness/workload/budgets.
+Unknown pool geometry retains old ordering; ordering grants no DMA or
+execution authorization. V947 adds no native inspections and48/156-queue
+CPU plans are near flat, not GPU benefit. Registration is not launch.
+Historical V65 cold-started at2026-10-15 14:00:16 PDT (2026-10-16 05:00:16
+Asia/Shanghai), supervisor2241585,driver2241737,port18469. V920 binds1455
+unique passing checks/two skips; V921/V922/V923 bind release, registration
+and actual launch. V924/V925 verify actual GPU service,614069b source,
+dedbe1a0 engine,configuration and unchanged V64 physical pool capacities.
+Scheduler2241980 served with physical migration enabled and no
+telemetry writer error. FULL branch-retirement counts increased;
+these are not freed-byte, prefetch-use or benefit evidence. The observer
+collected all five fixed windows; end-to-end acceptance remains open.
+Keep156 workflows,108+48 arrivals,running48,131072 context,8192 output,
+180s tools,200GB Host80:20,HBM Mamba/FULL=.9 and NUMA preferred.
+V64 was intentionally interrupted after155 completed in V916; retain
+django__django-12273 as censored with no terminal result and all five
+fixed windows. Do not invent a complete summary or full-run JCT comparison.
+
+V954 reuses the exact V944 prefixes for three selected large tool restores.
+Native-arrival-to-service is12.891-13.816s; observations still show zero
+missing FULL after arrival, then two show loss. Native batches including
+the served Host leaf take42.008-55.048ms submit-to-ACK and may include
+other requests. Sparse observations only bracket loss, not its cause or
+removable JCT. V66 tests missing-byte ordering; no ordinary ready-request
+residency lock or blanket lease extension has been added.
+
+Latest V66 windows120-300/600-900/1800-2100s yield233264/246021,
+382124/386707 and396669/381775 request steps. Control exclusive wall
+is15.226/26.239/19.861s. Third-window short-prefill58/64 samples have
+37.014/40.419ms run_batch and6.854/6.962ms selection thread CPU.
+Early windows still trail; historical V58 differs in version/trajectory.
+At3600-3900s,request steps are336089/388781 and control exclusive wall21.922s.
+Decode-batch counts9237/9266 are close but mean batch is36.385/41.958.
+Short-prefill49/75 samples show49.424/39.102ms run_batch,6.319/4.027ms
+selection thread CPU and10.544/4.853ms return-to-result. Batch filling and
+turnover remain open; the third window does not establish a second-wave
+or full-run advantage.
+V960's opportunity-inclusive pre-completion positive FULL JOIN/tool plans
+are46/118, with21/30 early next-request reuse events and0.315/2.738GB.
+The explicit tool-plan count is108;67 JOIN boundaries remain unknown.
+ACK-to-service P90 remains17.738/18.780s. All11 V962 JOIN starts without
+pre-completion submissions lack free-list capacity after input/decode
+reserves; no waiting victim was published, and native scans mostly find
+unbacked or session-referenced nodes. Later close labels are not exclusive
+causes; evictable totals do not prove safe cold capacity.
+
+V961 reconstructs causal state at client submission:6646 multi-member
+ALL JOIN background requests retain background classification. Of6626
+served requests, median arrival-to-service is11.808s, versus11.980s
+foreground and12.549s stragglers. This is not actual later server ordering
+or a cross-role causal comparison. Do not promote every child on that basis.
+Dev de1f02f instead adds one bounded warm-input bypass after the existing
+four ordinary admissions when the head is aged. Candidate FULL must already
+reside on device, restore bytes must be lower, next prefill input no greater,
+and causal priority no weaker than the head. Existing restore/parent/final
+promotions stay ahead. Native prefix/capacity/dependency checks remain
+authoritative; capacity reclamation remains a separate open issue.
+V963 passes646 checks/two subtests. V964's full CPU fixtures add about
+0.13-0.15ms on eligible48/156-queue paths, up to nine inspections; retain
+the two initial fixture failures and do not infer GPU/JCT benefit.
+Frozen e8dcba7 uses the same dedbe1a0 engine. V966 freshly passes900
+checks/two subtests; V967 binds1731 unique passes/two skips. The old V968
+waiter431581/start_ticks627925431 was explicitly superseded before GPU launch.
+Its original state retains superseded_before_gpu_launch. V972 registration
+and V973 explicit censoring/release authorize the actual V974 launch.
+V67 has no measured GPU benefit yet; historical V66 source/model/engine,
+registered helpers and original driver-failure exit record remain untouched.
+
+V65's first three windows are collected. At600-900s, request steps370969/
+386707 exceed V64's365786 but retain different versions/realized work.
+Control exclusive wall is28.203s versus V64's33.956s. Matched full48
+worker intervals approach native; short-prefill63/62 samples run_batch
+37.750/37.587ms and selection thread CPU18.432/17.141ms. At120-300s,
+steps219559/246021 remain behind. These are not stable end-to-end gains.
+V928's20s out-of-window GIL sample retains102 read errors and285 main
+samples; sample counts are not CPU duration or removable control cost.
+V929's independently fixed prefix has13/40 explicit pre-completion positive
+FULL JOIN/tool plans,10/4 pre-completion submissions,8/4 early next-request
+reuse events and0.109/0.323GB FULL;92 JOIN boundaries remain unknown.
+V932's separate prefix has85 internal summaries:82 nonempty stop results,
+three pending,zero empty length. The48.641s median model span includes
+queue/service; it is not client idle or saved JCT. Content/task quality is open.
+
+The separate Dev candidate adds250ms runtime planning slack only for live
+tool H2D. Report planning_slack_ms independently from prediction uncertainty;
+preserve the existing2s maximum lead, all capacity/identity/dependency/enqueue
+checks and the existing scan/model cadence. V930 observes725 additional
+timing candidates in V64,658 within1s, and13 in V65,all within1s.
+Most lack observed free capacity; no achievable prefetch or benefit follows.
+Do not widen JOIN's already-premature signals. V931/V933 pass448 related
+checks and V934 binds the source/evidence. Not GPU-deployed or a replacement
+for full qualification; do not hot-edit or restart the live V65 for this alone.
+
+Latest V935 fixed prefixes show63/182 explicit pre-completion positive FULL
+JOIN/tool plans,52/31 pre-completion submissions,41/30 early next-request
+reuse events and1.079/3.211GB FULL.47 JOIN/three tool boundaries are unknown.
+V937 includes opportunity snapshots and counts188 positive tool plans; keep
+that denominator separate. JOIN ACK-to-service P90 remains15.376s; early
+FULL events have2.275s median ACK-to-completion and10.619s P90 native-arrival
+to service. Repeated same-parent restores without reuse require exact
+prediction/lease/eviction/admission diagnosis, not longer leases everywhere.
+At1800-2100s, steps389293/381775 and control exclusive wall21.663s;
+short-prefill80/64 samples run_batch36.566/40.419ms and selection thread
+CPU5.575/6.962ms. Full48/context-matched ratios are1.005-1.008. Mixed
+windows still do not prove complete JCT or stable benefit. V938 groups by
+same JOIN/session/node generation/FULL length:21 of39 repeat restores
+have confirmed first-service reuse. Reject a blanket one-restore limit;
+registered-target identity is not an exact page-content/allocation fingerprint.
+
+V939 binds the selected child request to exact native output totals. Of51
+first estimated-work triggers,45 lead native EOS by over2s; median actual/
+predicted remaining work is188/44.64 tokens, signed error-136.96.
+The last pre-native-EOS snapshot instead overestimates by16.93 tokens
+(median absolute33.78). Client notice features align. A global seconds
+shift cannot correct both directions; retain phase/work/rate separation.
+
+beff01e adds sealed delivered-input exports, baseline reproduction and
+per-role notice coverage;43 CPU checks pass. V940 binds5869 snapshots/
+63 natural requests,5359 notice-active. Work-only train/calibration/evaluation
+have35/18/6 project-disjoint workflows; calibration contains1488 active
+notice snapshots. Baseline work reproduces within0.0009 tokens.
+Both workload waves contain only the existing seven project families, not
+Astropy/Sphinx. These new roles are development work-head holdouts; the
+frozen phase/encoder previously saw their families, not a sealed new test.
+On six evaluation requests, unweighted refit changes last-snapshot median
+absolute error 47.737->30.703 tokens but P90 114.993->180.378; late4 gives
+40.235/88.032 with a worse selector pinball score. Original-progress replay
+does not establish stable subsecond triggers. Neither candidate is selected
+for GPU; retain both results. Fits use CPU only and do not change live V65.
+
+V65's second-wave3600-3900s window is complete:312147/388781 request
+steps,23.217s control exclusive wall. Short-prefill48/75 samples have
+58.237/39.102ms mean run_batch and7.669/4.027ms selection thread CPU.
+Most full48/context-matched decode worker groups remain close, with one
+at1.114x; bucketed short-prefill differences remain. Earlier close groups
+do not close the control-cost workstream. Retain trajectory/configuration
+limits and continue the fifth fixed window and full-run observation.
+Two-thread CPU work refits overlap part of this second-wave window;
+retain this resource intervention, not a formal matched comparison.
+V941 samples native stacks only at4129-4150s:377 of927 main samples
+include forward_extend, with GDN/Triton/CUTLASS and breakable graph eager
+calls. This is neither recapture evidence nor CPU/CUDA duration.
+Native unwinding can briefly pause threads; retain the diagnostic interval.
+
+The fifth4800-5100s window has386637/330775 request steps,15.954s
+control exclusive wall; short-prefill65/73 samples run_batch40.410/
+37.723ms, selection thread CPU7.016/4.959ms. V943's exact adjacent-forward
+second-wave48/75 samples have mean return-to-result gaps13.707/4.853ms,
+including return-to-next-launch10.426/2.977ms; these are not exclusive
+function costs or removable JCT. Mixed windows retain trajectory limits.
+V942's fixed108 first-wave identities at4200s have94/92 eligible finishes
+and2243.551/2405.262s mean restricted time to eligible root completion,
+about6.72% lower. This event-clock censoring statistic is not final mean
+result.duration_seconds; V65 quality and matched-version acceptance remain open.
+V944/V945 include opportunity snapshots:138/198 positive pre-completion
+FULL JOIN/tool plans,103/35 actual early FULL submissions,86/32 next-request
+reuse events and2.376/3.232GB FULL;22 JOIN boundaries remain unknown.
+Selected large later-native-restore episodes had zero FULL missing in
+waiting snapshots, only missing state; their later demand is not proof
+of earlier prefetchable pages. At15:51 PDT V65 has147 completed,
+one incomplete and8 pending. django-11087 ended length without semantic
+completion; retain its failure and the8192 output budget.
+
+V64's1800-2100s window has392903/381775 request steps,23.081s control
+exclusive wall and39.240/40.419ms short-prefill run_batch. Mixed windows,
+different contexts and work leave end-to-end acceptance open.
+V883 sealed prefixes confirm early next-request FULL reuse on39 JOIN/
+118 tool events,0.811/6.754GB;23 JOIN completion boundaries stay unknown.
+V884 audits31 JOIN starts without pre-boundary submit:29 positive FULL
+plans and2 recorded slot changes. Reclaim often rejects session-referenced
+leaves; aggregate native evictable tokens are not safely reclaimable tokens.
+Tool ACK residence is decomposed per event: median pre-completion/client/
+delivery/native-to-service intervals250.8/14.8/195.3/160.8ms; tails differ.
+
+The next independent candidate retires obsolete FULL branch session coverage
+after a tagged BeliefKV continuation registers its latest path. Cached data,
+Host copies, other sessions and active locks remain native-owned. Real CPU
+radix/allocator checks demonstrate that an obsolete backed branch becomes
+reclaimable. V887-V891 merge1420 unique passing identities and two skips;
+retain V889's fixture-only missing-load_fence_stream failure and replace
+those six identities with V891. CPU Host-copy stand-ins do not establish
+GPU applicability, DMA performance, recomputation or benefit.
+Combine this repair with the checked semantic-delivery and single-leaf
+PREPARE work in current frozen V65; none was hot-edited into V64.
+Tagged native also changes, so formal controls need this same new engine.
+
+V894 freezes candidate2d1d75e with engine treededbe1a0 and canonical patch
+SHA256640ab9281cbcb4b95732ff005854a73b4e8901b250240dc51c32c304d797d35c.
+V895's original V65_full_latest waiter1770086 was identity-checked and
+stopped before GPU launch in V907; preserve its registration/state and absent
+run directory. The latest tail contains empty length-limited summaries.
+A shared summary-model factory now explicitly disables summary thinking,
+retaining2048 summary output,8192 agent output, prompts, retry/fallback,
+guards and eligibility. Root/in-graph/planned-child and peer paths use it.
+The first184 checks did not cover final identity tagging. V917's two failing
+checks expose dropped thinking defaults;5be126e merges model extra_body defaults
+with per-call overrides. V918 passes247/skips one; final V920 binds1455 unique
+passes/two skips. Preserve the failures and V912 registration: that intermediate
+waiter exited on nvidia-smi timeout before GPU launch, with no run directory.
+Final V65 includes tagged-summary and retryable observation repairs. Actual
+summary quality, failure reduction and GPU benefit remain unverified.
+V64's3600-3900s window has325909/388781 steps, mean decode batch30.95/
+41.96, contexts16207/17278 and20.070s control exclusive wall. Short-prefill
+63/75 samples run_batch47.227/39.102ms; service cost remains an open issue,
+and different batch sizes do not explain away every performance gap.
+
+All five V64 windows are now collected. At4800-5100s, steps279568/330775,
+mean decode batch21.01/30.92, contexts23335/23139 and control exclusive
+wall13.453s. Short-prefill44/73 samples run_batch38.967/37.723ms and
+selection thread CPU7.151/4.959ms. Full JCT/quality acceptance remains open.
+V903/V904 samples native stacks for20s after5110s:955 main-thread samples,
+427 launch and341 result. Model execution/graph replay remain in launch;
+thread CPU is not all extra control, and _execute_body_capture is a replay
+wrapper, not evidence of repeated capture. Sampling can briefly pause threads;
+exclude that diagnostic interval from unperturbed fixed-window claims.
+
+V899 links24 selected tool residence tails to their exact completed calls.
+All five client gaps over5s contain internal summaries:265.575s aggregate
+summary call span within266.292s aggregate gap. These spans include model
+queue/service and callbacks, not plain client idle or tool-return error.
+A180.098s test call initially predicts a conditional median of669.5ms.
+V901 tests causal shape/project/role history on4383 independent single-execute
+waits,997 roots and3386 children. Ten checks pass. Overall last-second median
+error improves, but1195 positive-FULL-plan waits worsen P90 from720.6 to
+772.8ms and over10s premature windows from25 to35. Keep it offline; do not
+select a predictor from the favorable pooled median. V65 stays registered
+with unchanged runtime/model/source. Replay windows are not feasible H2D
+actions or end-to-end benefit.
+
+V905 seals the later V64 prefix:189 JOIN waits,three unknown boundaries,
+83 early-started next-request FULL reuse events/1.648GB;18432 tool waits,
+120 such events/6.836GB. Explicit wait_prefetch_plan rows show150/1175
+pre-completion positive plans and100/149 pre-completion submits. These
+denominators differ from155/1234 classifications including opportunity
+snapshots. JOIN/tool final-ACK-to-service P90 is10.332/27.895s, retaining
+pre-completion residence, summaries and service waits as distinct causes.
+
+V906 verifies V58's complete156 quality denominator:90 resolved,62
+unresolved,four empty patches. All152 nonempty-patch reports agree with the
+official summary; no missing nonempty reports or grading infrastructure
+errors.152 container receipts retain1 CPU/8GiB/runc/no GPU. Source workflow
+outcomes are154 completed,one incomplete,one error; grading completion is
+separate. All90 resolved workflows are completed and JCT eligible. The
+all156 resolved fraction is57.69%. V936 now verifies all156 V63 task reports:
+93 resolved,63 unresolved,no empty patches,missing reports or infrastructure
+errors;59.62% of156. Paired counts are74 both,19 V63-only,16 native-only
+and47 neither. This historical single run does not establish noninferiority
+or policy causality. Resolved pytest-8399 remains JCT-ineligible.
+
+The first two V64 windows are complete. Steps228359/246021 at120-300s;
+365786/386707 at600-900s,2.6% above V63 but5.4% below historical native.
+Contexts24319/23674 differ. Matched full48 worker ratios are0.997-1.002,
+yet control exclusive wall remains33.956s; short-prefill selection/run_batch
+20.720/39.403ms compare with17.794/37.587ms. V879 binds the evidence.
+V872's sealed prefixes confirm JOIN3/21.26MB and tool16/408.99MB early
+next-request FULL reuse, with91 JOIN boundaries still unknown.
+V874/V876 active/GIL samples were collected outside fixed windows; preserve
+155/121 read errors and avoid converting sample shares into CPU/GPU savings.
+Dev PREPARE now reuses a validated single-leaf root-first ancestry, following
+the existing H2D pattern. Generic multi-leaf handling, tail proof and enqueue
+checks remain. V877 passes443 checks; V878's depth64 complete CPU plan is
+0.510/0.486ms with identical output. Small local repair, not deployed in V64
+and not a reason to restart the live GPU collection. All workstreams stay open.
+V882 supplements16 real native CPU radix/allocator/tail-reclaim checks over
+the qualified engine,459 unique passing checks total. Preserve the initial16
+optional skips without an engine path; the configured rerun passed all16.
+
+V870 binds completed V63:156 completed,145 native-agent-JCT eligible,
+8002.294s and physical migration enabled throughout. Outer driver exit0 does
+not erase the inner client's exit1 for eleven eligibility exclusions. On143
+explicitly eligible historical pairs, means2000.953/2240.077s differ10.67%,
+but LLM requests31073/36896 and different harness/engine prevent attribution.
+Pre-completion next-request FULL reuse: JOIN75 events/1.542GB and tool140/
+8.700GB. ACK-to-service P90 remains12.552/19.516s. All workstreams stay open.
+
+Independent official CPU quality grading has completed for V58/V63 and
+V906/V936 verify every task. Retain V864's one worker,1 CPU,8GiB,no GPU
+and overlap with V64/V65; this does not validate V65 quality or the full goal.
+Separate Dev repair V871 suppresses only semantic control frames after a
+generation's first tool-negative marker, retaining local snapshots, cadence
+and following final-report generations. Old code fails two reproductions;
+239 checks pass and two skip. V866's29390/140532 historical prefix frames
+show applicability, not saved CPU or JCT. This repair is not in frozen V64.
+
+Current facts override later historical scheduling notes. V62 collected156
+workflows in7653.886s:154 completed/two incomplete,148 natural terminal and
+143 agent-JCT-eligible. Both incomplete12754/14500 final responses hit length;
+retain8192 output cap. Eleven completed workflows retain finalization
+intervention. V62's frozen HTML import failure was repaired offline, with
+the original driver failure retained and no physical migration disablement.
+V823 supplements, without rewriting, the152 outcome-completed pairs with141
+explicitly eligible pairs: mean2053.910/2172.270s,5.45% lower than historical
+native. Realized LLM requests are also11.25% fewer30483/34346. Different harness/
+engine and absent independent quality checks leave comparison_eligible=false.
+
+V63's first attempt failed before GPU use because TCP preflight missed a
+stale Unix control socket. PreserveV817/V818 and the original directory.
+After connection refusal verified it stale, the samea297462 startedV63_retry1
+at2026-10-16 00:16:43 Asia/Shanghai. V821/V822 bind recovery and launch;
+V824/V826 verify actual service, source/configuration and matching capacity.
+NUMA remains preferred, with large mapsN0=41.52GB/N1=160.44GB, not hard bind.
+Actual supervisor/driver/scheduler3157362/3157516/3157952 are recorded in
+ops/v63_latest_capacity_retry1_20261015.state.json. Observer3208346 uses frozen
+analyzers for120-300/600-900/1800-2100/3600-3900/4800-5100s. The first window
+has228469/246021 request steps, short-prefill selection CPU4.999/2.734ms and
+run_batch37.354/34.842ms. Real deadline coalescing and indexed reclaim execute,
+but no measured net benefit is established; all three workstreams stay open.
+In600-900s, steps356509/386707 exceed V62's346953 by2.8%, and control
+exclusive wall falls33.710 to31.284s. Mean context23794/23674 is close,
+yet decode worker intervals34.078/31.212ms remain different. Continue
+actual CUDA-graph, batch-geometry and adjacent-phase attribution.
+
+The1800-2100s window has398898/381775 request steps. Short-prefill59/64
+samples have run_batch wall38.669/40.419ms and thread CPU37.977/39.234ms;
+control exclusive wall is21.409s. Full48 matched graph cohorts differ by
+about1.0%-2.3%, while47-decode to one-prefill intervals are shorter here.
+Do not infer a fixed decode-kernel regression or overall policy success.
+V839 binds these windows and V834's independently sealed live prefixes:
+JOIN/tool early-started and next-request-reused FULL1.070/8.686GB across
+38/139 waits. Tool's last submit is1777.130s after first service; capacity
+and weak conversion remain unresolved.
+
+The cold-output-tail hypothesis is now reproduced and repaired in development,
+not deployed in frozenV63. Real CPU radix/session/allocator checks show that
+an unbacked2-token FULL output leaf can block reclaim of32 backed input tokens.
+PREPARE may back up a proven current private idle device leaf's missing FULL
+tail; already-backed tails join cold candidates with live owner revalidation.
+Native reclaim frees34 FULL tokens while preserving live input Mamba, and
+H2D still restores only the32-token safe input checkpoint. No speculative
+Mamba backup. V838/V840 pass839 unique checks. Host metadata/copies are
+stand-ins; actual tree, allocation, reference tracking, reclaim and reentry
+are native CPU paths. Applicability is not quantified because historical
+waiting rows lack device-leaf topology. Validate that and GPU benefit on a
+later cold candidate; do not hot-editV63 or restart solely for a CPU pass.
+
+V841/V842 partition the same691624950-byte V63 opportunity prefix. Tool
+FULL capacity refusals affect1635 recorded waits in600-1200s; positive FULL
+plans almost disappear after1800s, with zero missing Host-backed FULL in the
+tool opportunity samples after2400s. These are distinct mechanisms. Native
+full-token usage subtracts both free and evictable cache, so19% usage does
+not mean81% physical allocator headroom. Keep these capacity views separate.
+
+The3600-3900s window has364157/388781 request steps and10094/9266 decode
+batches: mean requests per batch36.08/41.96. Short-prefill70/75 samples have
+run_batch wall38.973/39.102ms; control exclusive wall remains18.291s.
+V844 fixes all108 original first-wave identities, keeping unfinished and
+ineligible outcomes censored. At3000s, eligible completions84/78 and restricted
+root-completion time2118.599/2166.941s favor predictive by2.23%. This is not
+complete result.duration_seconds mean JCT, matched trajectories or quality.
+
+The next cold candidate is5229d98/V855. It inherits V849/24a83c9's996
+checks and FULL session-path scope correction, and adds32 relevant checks
+for factual read-result feedback. V852 observes309 same-input grep calls
+in one child; different serialized output hashes do not prove changed visible
+content. The old feedback covered execute only. grep/read_file/glob/ls now
+retain physical execution and append history for identical visible text and
+outcome within the same conversation/workspace epoch. Scripted-model checks
+use a real LangChain agent and preserve earlier messages and observation bounds.
+No new guard, suppression or forced RETURN. Actual loop and quality gains
+remain unverified; total distinct passing checks1028.
+
+V859 verifies the old queue was still unlaunched, stops only launcher238495
+and observer275192, and preserves V845 plus original state snapshots.
+V64_latest is registered inV857 with launcher493245 and observer494540,
+V63 has completed and released GPU0; V858 binds the actual cold V64 launch.
+Keep the156-workflow setup and V58 development reference. The shared harness
+change can alter trajectories, JOIN timing and pressure: formal native controls
+must use the same harness and resources, and gains cannot be assigned to
+scheduling from the historical comparison. V63 and V64 source remain frozen.
+
+The fifth4800-5100s window is complete:343212/330775 request steps,
+mean context23055/23153 and worker interval22.367/22.231ms. Short-prefill
+58/73 samples have run_batch wall38.142/37.723ms and selection CPU
+5.318/4.959ms; control exclusive wall is14.569s. All five windows have
+mixed outcomes. At01:46 Asia/Shanghai,132 results are completed and130
+eligible, with physical migration enabled; full-run acceptance stays open.
+
+V819/V820 bind a recent sealed prefix: JOIN/tool early verified FULL reuse
+1.570/8.594GB. Tool's last submit is1835.983s after first GPU service. Among
+zero-size pre-completion FULL plans,1809 later tool requests restore449.164GB
+native FULL and wait12.684s median after arrival. Those later bytes do not
+prove the same pages could be prefetched earlier. Same-event ACK partitions
+show arrival-to-service P90 0.388/0.988s while ACK-to-service remains6.846/
+7.101s; early residence must not be mislabeled pure GPU queueing. Investigate
+capacity/reserve, cold-candidate registration and admission using these
+separate boundaries; this prefix is not a complete-run oracle bound.
+The live indexed scan's235 duplicate entries with zero candidate leaves was
+diagnostic motivation, not proof of tail eligibility or permission to discard
+unbacked output. The subsequent repair preserves it with incremental backup.
+
+The free-GPU instruction supersedes the19:51 reservation. The identity-checked
+old waiter4030423 has exited and must not restart. V61/824cd44 has finished:
+155 completed, one incomplete,7541.539s. At approximately582s, a valid confirmed
+JOIN ACK reached the runtime before native registration of its next consumer;
+the same-epoch session bridge was missing and physical migration was disabled.
+Retain this run as degraded_diagnostic with comparison_eligible=false.
+Preserve django__django-12125's incomplete outcome and all failure evidence.
+
+Repair a63d524 requires a live confirmed client-bound ticket, matching session/
+generation and actual native anchors for the same-epoch registration gap.
+Explicit COMPACT/ADVANCE invalidates credit for pending old-prefix transfers
+without cancelling submitted DMA or weakening structural receipt validation.
+All714 related checks pass; retain the original failing reproduction.
+V62/cd53d19 cold-started at2026-10-15 22:01:11 Asia/Shanghai with all latest
+code available at launch, this repair and the unchangedaca4c6a8 engine. V788/V789 bind launch and
+actual service; V790 records NUMA placement. Workload, pool capacities,
+running48/context131072/prefill4096 and disabled new batching remain unchanged.
+It has passed the original failure stage with continuing JOIN/tool ACKs.
+
+Observe ops/v62_join_ack_20261015.state.json and the window observer1639353
+in ops/v62_join_ack_observer_20261015.state.json. The supervisor stops only
+its owned experiment group if authoritative physical_disabled becomes true,
+avoiding a long degraded GPU run; no workflow completion guard is added.
+Compare120-300,600-900,1800-2100 and3600-3900s using the unchanged analyzers and
+corrected native.clock_v2/cache. Historical native has an older harness and
+is a development reference only. JCT, throughput, quality and useful FULL
+consumption remain unverified. Offline exporters must import their matching
+checkout package; the development CLI now inserts its own root. Keep running
+sources frozen. Subsequent old candidate,19:51 and deployment statements below
+are historical and do not override the current state.
+
+V799 binds the latest V62 sealed-prefix audits, adjacent CPU evidence and a
+separate tool-scan candidate. V794 retains each complete-line prefix and hash.
+Verified FULL reuse is1.306/8.951GB for JOIN/tool commands; independent
+pre-completion started-and-reused events are40/132 with0.943/8.594GB.
+Positive FULL-plan event counts are113/1174; command counts208/1140 have a
+different denominator. Native FULL H2D in that prefix remains about1.159TB.
+Independent last-ACK-to-first-service P90 is6.264/7.101s over64/150 events.
+Next diagnose the capacity chain: a recorded reclaim freed3155 tokens, leaving
+3267 free, yet a4145-token input/decode reserve blocked a328-token target.
+Separate immediate execution needs from future input reservation and revocable
+restoration before changing this budget; do not infer that no cold KV existed.
+Residency/first-service tails and incomplete conversion remain open.
+
+In1800-2100s, decode request steps395596/381775 are about3.6% above historical
+native;600-900s remains346953/386707. The latter64 exact adjacent short-prefill
+samples measure9.410ms to the successor launch observer,8.458ms scheduler-thread
+CPU:2.435 predecessor results,2.614 physical planning,2.925 successor selection,
+0.036 WAR publication and0.448 between phases. V795 validates neighbor identities. No GPU-idle or
+removable-JCT inference is justified, and native lacks the same CPU endpoints.
+Keep V791's12s49Hz nonblocking stack sample with543 samples/58 errors as
+diagnostic evidence, not a CPU-time allocation.
+
+The new undeployed tool scanner sleeps until the earliest possible entry when
+no live forecast can yet enter the window. Near entry it may wake before the
+old100ms cadence; new forecasts, verified D2H and pending tickets still wake
+immediately, while eligible capacity failures retain the old retry cadence.
+V797 has225 passing related checks; preserve V796's initial failures.
+V798 compares complete CPU maintenance/dispatch fixtures: stable far waits
+reduce scans30 to1 and156-context thread CPU16.3%-17.4%; refreshed/eligible
+controls are near-flat, including the worst0.44% regression. This omits model
+inference, writer I/O, native allocation, DMA and GPU service. Keep V62 frozen
+and running; this conditional saving does not justify an immediate restart.
+Full JCT, throughput, quality, fairness, tails and recomputation remain unproven.
+
+At23:31 Asia/Shanghai, V62 has129 written completed outcomes, of which127
+qualify as natural/JCT outcomes. Preserve graph-budget-intervened results for
+django__django-11490 and mwaskom__seaborn-3069; do not count them as natural.
+The run remains physically enabled and incomplete. In4800-5100s, observed
+decode request steps356829/330775 exceed historical native by about7.9%,
+while worker means23.205/22.231ms remain slower. The70/73 short-prefill samples
+show selection CPU6.259/4.959ms, run_batch35.181/36.381ms and post-launch
+0.255/0.002ms. Control exclusive wall12.054s is not removable workflow JCT.
+
+V809 binds separate engine tree64641f62,157 passing checks and48 CPU cases
+inV807. Only the reclaim production method and two test files extend the
+running engine. Use native settled FULL Host duplicates when that index is
+smaller than device leaves; retain the native leaf path for dense indexes.
+No per-decode index maintenance or weakened live refs/locks/DMA checks.
+Sparse cases both reduce CPU50.4%-83.0% and recover capacity missed by the
+fresh bounded baseline; they do different valid work. Empty-index CPU falls
+74.4%-95.6%. Retain dense-index worst+1.37us and already-enough worst+0.25us.
+PreserveV805's initial dense-index regression and all initial failed receipts;
+V803's mistakenly broad masked-CUDA suite was interrupted, not qualified.
+This candidate ande62e1e7's tool-scan reduction remain undeployed. Keep V62
+frozen and do not restart a healthy full run for conditional CPU gains.
+Input/decode reservation, useful FULL conversion and end-to-end acceptance
+remain open; no GPU, DMA, JCT or throughput benefit is established here.
+
+V810/V814 inspect the same1116125886-byte V62 prefix, SHA2566f1bdc44...
+06b1e424. Tool/JOIN counts2889/106 identify waits with no FULL allowance
+after reservation. Across recorded reclaim diagnoses,493 wait identities
+have a selected payload fitting without reserve and2674 have a payload
+that itself exceeds free space; categories may overlap over time. These
+are not successful opportunities, a complete census or permission to remove
+input/decode reservation. Native rejection checks include109917 unbacked
+and257591 session-referenced records, with only23 published-waiter checks.
+
+Post-forward dispatch now refreshes the native running-batch reference before
+JOIN/tool planning. Missing batch observations preserve the previous state.
+The original reproduced six restore slots despite an actual full48 batch.
+KeepV811's three failures/one pass;V812 has406 passing related checks.
+No adder reread, input-reserve change, KV scan or weakened check is added.
+V813 has26 passing offline audit checks. At23:46 Asia/Shanghai,146 outcomes
+include145 completed/one incomplete and142 natural/JCT-qualified results.
+django__django-14500 ends with finish_reason=length; retain8192 output cap.
+Three other completions retain their existing finalization intervention.
+This repair remains outside V62. Candidatea297462 now freezes622ae92 runtime
+with engine64641f62 and its matching canonical patch. V815 binds589 unique
+passing checks:406 runtime,157 engine and26 offline-audit identities.
+It is not launched or GPU-qualified. The development default staging patch
+is older and must not silently replace this engine.
+
+The two development optimizations now form independent candidate45f46b7,
+directly extending V61/9e8a574. Only dispatch, its tests and that candidate's
+canonical engine patch change. Engine treeaca4c6a8 changes only the reclamation
+production method and its two test files relative to the frozen engine.
+V779 binds89 sources and the complete engine tree. All1838 unique checks plus
+2 subtests pass, covering1691 inherited runtime and143 engine identities.
+The initial Docker check used a cached Django image lacking pytest; preserve
+that failure and replace only its identity with the passing cached pytest-image
+check. No new registration/deployment is performed. Keep original V61, engine
+and19:51 waiter unchanged; earlier conditional CPU timings are not measured
+GPU, mean-JCT or completion-throughput benefits for this combined candidate.
+
+V773 adds recorded multi-reference FULL volume to the exact same V59 prefix
+as V685, with measured bytes/token and all prior audit fields unchanged.
+Only four listed checks have multiple references. The three still-short
+snapshots list20.48/471.04/757.76KB, or0.0141%/0.7869%/0.9898% of their
+individual deficits. This is not a global cache census or reclaimable-volume
+upper bound; other owners' waiting states are unknown. Three real CPU radix
+cases show that FULL session_ref counts branch ancestry coverage, not distinct
+sessions. One session with two branches can produce2 and release to0.
+Keep shared reclamation checks unchanged. All16 audit checks pass; V774 binds
+the evidence and source semantics. Continue the existing capacity/registration
+and control-cost repairs without changing frozen V61 or its19:51 registration.
+
+The new development engine defers native leaf census until known waiting
+victims and their safely exposed ancestors leave a real capacity deficit.
+Only the reclaim method and two engine test files differ from the frozen tree;
+the separate overlay reproduces the entire development tree. All143 unique
+checks pass, including80 real CPU radix/allocator cases. V765 compares60
+identical CPU scenes: sufficient known victims reduce thread CPU76.9%-82.9%;
+worst no-waiter/invalid/partial controls regress1.74%/1.45%/2.87%.
+Preserve V764's earlier nested-function regressions as well. This is not a
+whole-scheduler, GPU or JCT result and does not replace V61's registration/
+capacity repairs. V767 binds sources, receipts and the separate overlay;
+the default staging patch, frozen V61/9e8a574 and19:51 registration are intact.
+
+Development dispatch now skips calls already deferred by existing retry
+deadlines. An existing tool ticket always reaches its handler; each PREPARE
+deadline is read at its original position, after preceding handlers can rearm
+or cross it. No deadline, event/ACK handling or observation configuration changes.
+V771 binds557 final checks and12 complete CPU-cycle cases with equal actions,
+counters, deadlines, native reads, publication and observations. High-frequency
+1/3ms scenes improve0.2%-19.5% thread CPU;3ms profiling-enabled24/156-workflow
+scenes improve11.2%/5.2%. The60ms scenes are near-flat. Parent timing counts
+match; child counts now omit actual skipped no-ops, so per-child means are not
+directly comparable. No trace-frequency weighting or GPU/JCT claim, and this
+development change is not in registered V61 or its frozen engine.
+
+Independent quality export now retains all156 tasks in both V59/V58 inputs,
+including native's154 completed, one error and one incomplete. Export requires
+the saved patch, frozen task identity and matching hashes; empty patches remain
+in the denominator. Preserve original terminal outcomes and report officially
+resolved partial patches separately from correctly completed workflows.
+The existing JCT-eligibility and comparable-rate completeness rules remain.
+All23 checks pass (V754); V755/V756 retain the inputs, with source bindings
+and semantics in V757. V758/V759 bind the pinned official harness and156
+cached images and start CPU grading: one worker, one CPU,8GiB, no GPU device
+requests. Stop admitting tasks at19:13 and stop/clean owned containers at19:45,
+preserving completed logs before V61. Unattempted/interrupted grading is
+missing evaluation evidence, not a model failure. No complete official score
+or performance gain is established; raw outcomes and frozen V61 stay unchanged.
+The CPU job has now exited after its19:13 admission cutoff. V59 admitted116
+containers and produced115 official reports:80 resolved and35 unresolved.
+One Docker API read timeout and40 unattempted tasks remain missing evidence.
+The unchanged official summary combines these as41 errors; V775 separates
+their meanings. V58 is still ungraded. This nonrandom partial cohort cannot
+support a complete quality score or cross-arm comparison. No evaluator worker
+or owned running container remains; frozen V61 and19:51 stay unchanged.
+
+Development diagnostics now retain predecessor result processing, successor
+selection and successor launch-observer endpoints for exact adjacent forwards,
+including absolute scheduler-thread CPU clocks. Complete nonoverlapping phases
+and their gaps are additive; absent/ambiguous identities or clock overlap stay
+unknown. Native service-row identity validation is still required.
+The new endpoint is inside the launch observer, after run_batch entry;
+retain the separate actual-entry wall timestamp and do not subtract this
+new full interval from V743's entry-bounded interval.
+There are215 unique passing checks plus12 subtests after replacing the21 old probe
+cases with24 final cases. V752's three wrong-engine failures are preserved;
+V753 explicitly uses the frozen SGLANG_SOURCE_CHECKOUT and passes all24.
+V751 compares enabled old/current probes on the same frozen overlap-loop AST:
+added thread CPU is1.921/0.378/0.026us per iteration at prefill periods1/5/16.
+This excludes writer JSON and real CUDA/GPU cost, proves no throughput gain,
+and cannot recover missing old-trace clocks. Keep this future diagnostic
+change outside registeredV61/9e8a574; its19:51 launch and original source,
+engine/workload remain fixed. First inspect V61's actual residual and FULL
+consumption, then cold-qualify the diagnostics only if the residual persists.
+
+Development selection now retains permitted tagged positions during its full
+identity-validation pass and fills only those positions from the same plan.
+Native untagged positions, rejections, session/attempt checks and duplicate-ID
+failures stay unchanged. V746 passes254 admission/runtime/prediction/benchmark
+checks, replacing the overlapping55 V744 checks. V745 checks four queue sizes
+and matching/mixed/changed/stale cases. V747 explicitly loads the old3d5f5c4
+selector in the baseline arm:20 complete CPU-cycle cases retain equal graph,
+plan, selection, counters and timing counts, with no physical actions.
+Observed thread-CPU means improve only0.7-19.3us (0.07%-2.96%); near-flat
+cases remain near-flat and this does not explain the millisecond residual.
+Keep this small change in development. RegisteredV61/9e8a574, the engine,
+workload and19:51 launch stay fixed; inspect its actual turnover and next
+consumer FULL before further cold changes. GPU/JCT/throughput acceptance
+remains open.
+
+V743 accounts for per-sample measured interval unions in the same four
+V59/V58 windows. In the decode47 -> short-prefill1 -> decode48 subset,
+the mean residual after the previous telemetry-observer entry and before
+the next run_batch entry is2.614-3.310ms predictive versus1.201-1.579ms
+native, after excluding measured physical/barrier intervals. Therefore
+physical planning alone cannot explain the remaining turnover gap.
+The residual mixes telemetry tail, sampling, ingest, next maintenance/
+selection and waits; it is not measured thread CPU or removable JCT.
+New audit19 checks and inherited24 checks pass; replace overlapping
+V741/V742 identities rather than adding them. Compare V61's residual and
+actual next-consumer FULL against this baseline. If the gap persists,
+separate those remaining stages in a future cold diagnostic candidate.
+This is offline evidence only: retain the frozen V61/9e8a574, engine,
+four registered analyzers, workload and19:51 deadline. Full turnover,
+quality/fairness, mean-JCT and completion-throughput acceptance stays open.
+
+V736 cold-qualifies9e8a574 directly on73518: only runtime and JOIN tests
+change, with89 source bindings and the same engine. All1691 unique checks
+plus2 subtests pass across36 inherited modules, covering1662 old identities.
+The single initial Docker skip is replaced by a passing check using an
+existing cached image; preserve both receipts without adding duplicate counts.
+V734 empty-dispatch CPU delta ranges from-0.03175 to+0.00758us/call.
+This is near-flat idle cost, not active-event, GPU or JCT evidence.
+
+Development2d78ab1 keeps a separately bound submitted consumer when an old
+parent request retires on epoch advancement. Only explicit prefix continuity,
+complete JOIN, known prior input and the same native session/generation permit
+continuation. Target epoch matches the graph; old checkpoint bytes remain
+bounded by their original input. Compaction, cancellation, expiry and native
+visibility invalidate continuation. Completed restores retain consumer identity
+for residency checks while another JOIN can progress. Three additional audit
+cases retain immediate-consumer and post-submit attribution without changing
+registered analysis sources. Internal visibility does not establish HTTP
+arrival order; use actual submit/arrival/first-service FULL evidence.
+
+V737-V739 now register this candidate for the still-unstarted V61, superseding
+the exact73518 waiter and retaining its frozen records. The user deadline stays
+2026-10-15 19:51 Asia/Shanghai, followed by exclusive-resource checks. New waiter
+PID4030423 is live; isolated execution remains at exactV59 until cold launch.
+Model/workload/engine/budgets and disabled new prefill batching settings stay
+fixed. The separate V721 adapter coalescing patch is not included. Do not count
+post-completion recovery as pre-RETURN prediction or declare turnover,
+FULL-consumption, quality/fairness or mean-JCT/throughput acceptance before GPU evidence.
+
+V718-V720 audit all156 V59 and156 V58-native client sources. There are
+786/749 internal summary requests, with71/77 empty length responses.
+Their request spans include queueing, generation and transport, not pure
+GPU computation or client idle. Two-empty-response compactions occur in
+10/14 episodes, implying the unchanged source-history fallback. Generic
+raw tool rounds are broader than prior WAIT_TOOL opportunity cohorts.
+Use JOIN_WAIT for parent identity; exclude preliminaryV716/V717 JOIN
+conclusions. The audit has17 passing checks and binds every raw source.
+
+The summary-related compaction-to-submit P50 is80.17/11.80ms. Development
+V721 coalesces CONTEXT_COMPACT and LLM_SUBMIT into one ordered control
+batch while retaining the compaction ACK barrier, local session rotation
+and delivery-failure degradation. All108 related checks plus2 subtests pass.
+This removes one logical delivery, not a demonstrated GPU/JCT cost.
+LLM_SUBMIT is now timestamped before that ACK; assess actual HTTP/native
+arrival, complete turnover and FULL consumption instead of this moved
+phase boundary. Keep scheduledV61/73518e2 and19:51 unchanged. The new
+development patch requires its own cold qualification; do not silently
+alter the frozen run, summary budget/thinking, model or workload. Shared
+summary changes require matching native treatment and quality validation.
+The original short-prefill and mean-JCT/throughput acceptance remains open.
+
+Development48838cd repairs normal-mode confirmed JOIN restoration.
+RETURN/complete JOIN can create a ticket without a time forecast; an
+existing burst keeps its command/ACK identities. Concurrent confirmed
+JOINs retain separate targets and rotate past temporarily unplannable
+ones. Parent submission, epoch/session changes and physical revalidation
+still bind issuance. Earlier semantic/EOS triggering remains available;
+the alternative trigger policies have not yet been compared.
+V706 cold-qualifies isolated73518e2 directly on43b6310:89 sources,
+36 modules,1662 checks plus2 subtests, all1645 inherited identities covered.
+V704's no-candidate control adds0.081-0.108us per dispatch, not a speedup.
+V701 seals all193 V59 JOIN windows: completion-to-client-submit P50/P90
+24.00/94.31ms and completion-to-native-arrival130.51/341.47ms.
+Count actual reused FULL separately before completion, between completion
+and client submit, between submit and native arrival, and after native
+arrival. Missing or unordered boundaries remain unknown; window length
+is not guaranteed DMA overlap or isolated JCT saving.
+V707/V708 now register V61 with73518e2 and supersede only the exact owned,
+unstarted V60 wait process. Retain all V60 frozen files and qualifications.
+Use isolatedV709 execution, initially at exactV59 and then fast-forwarded
+to the candidate: Main has newer document commits, so its old fast-forward
+assumption no longer holds. Do not modify Main or its local documents.
+The user moved the start to2026-10-15 19:51 Asia/Shanghai. V713-V715
+stop the old15:00 waiter and register the revised one-time deadline.
+Wait until that deadline and confirm exclusive resources
+before starting predictive only with the historicalV58 reference. The new
+wait process is live; actual service and full JCT/throughput remain pending.
+
+V695 cold-qualifies isolated43b6310 in the V691 worktree: two capacity
+repairs plus a test-identity-only commit extend9c79eee. Production AST
+diff is restricted to two runtime methods and one physical function;
+88 sources and the unchanged engine are bound. All1645 checks across
+35 modules plus2 subtests pass, covering all1620 inherited identities.
+Replace the64 renamed-module checks with their targeted final recheck,
+without double counting. Existing cached Docker validation passed.
+This does not deploy the candidate or replace registeredV60/9c79eee.
+V693 partitions85 JOIN and267 tool restore events in completeV59.
+Outcome-conditioned early-FULL cohorts have post-native-arrival P90
+292.48/337.52ms, versus10604.85/10222.71ms in all restore events.
+JOIN pre-completion residence still has2286.62ms P50 in that successful
+cohort. Do not infer causal admission success from selected survivors;
+next distinguish early restoration, residency loss and incomplete
+checkpoints while retaining the original turnover/JCT/throughput goal.
+
+V679 seals the complete V59 tool-window audit; last-second conditional
+absolute error P50/P90 is69.06/542.66ms over25321 rounds. V685 binds
+the same1457985716-byte opportunity prefix:10099 plan snapshots retain
+an unsatisfied FULL reclaim target,10096 without a published waiting
+candidate. These observations can repeat attempts and do not prove a
+safe cold victim existed; no native zero-byte budget was recorded.
+Development2e37ed2 repairs the independently reproduced zero-byte probe
+boundary. Developmentc7bd6ee retains already-backed safe input leaf/state
+identities when new Host backup cannot fit, without a second closure scan.
+Native publication/reclaim still validates ownership, locks and inflight state.
+V688 passes881 checks across10 modules. V689's unchanged-action control
+costs0.0195ms/iteration at the original cadence,0.0463ms with forced probes;
+retain the added CPU cost. V690 binds the receipts and source versions.
+Neither repair changes qualified9c79eee, frozenV60, the reservation or workload.
+V695 now qualifies them separately as43b6310; actual candidate/reclaim/
+consumption coverage and unresolved turnover/full-JCT acceptance remain open.
+
+V678 cold-qualifies isolated candidate9c79eee, directly extending d925278
+with only three additional production-file changes: key equality, same-call
+prefill state checks and compact event wire. AST and87 source bindings retain
+the original harness/models/budgets and f7b1942b/5262707a engine.
+All1620 unique checks across35 modules plus2 subtests pass; the sole initial
+Docker skip was rerun against an existing cached image and passed. Retain both
+receipts and count the repaired identity once. All967 inherited identities
+remain covered.
+V676 remeasures the exact candidate's equality fast path: complete CPU
+admission improves8.5%-10.9%; rebuilt identities range from0.22% slower to
+3.46% faster. Reuse source-identical V667/V671/V672/V656 evidence without
+rerunning unchanged scenes or adding component percentages. This candidate
+does not replace the existing frozen V60 reservation or claim deployment,
+GPU turnover, FULL consumption, quality or mean-JCT/throughput acceptance.
+
+Developmentf29ccb4 omits only top-level None fields from control wire events.
+V670 has215 passing checks plus2 subtests. V671 seals four V59 prefixes of
+128 events each: bytes fall23.6%-24.1%, combined encode/server CPU3.9%-4.3%,
+with identical graph/counters/exact ACKs/timing counts. V672's all-fields
+control costs2.2%-2.7% more CPU; retain it and avoid universal speedup claims.
+Raw wire batching is unavailable; per-record CPU replay does not establish
+socket waiting, online coalescing or GPU/JCT gains. Authoritative logs and
+decoded event contents remain complete.
+V669 profiles actual cadence/backoff on a156-context/64-node CPU fixture.
+Closure capture dominates even without new actions; do not drop native
+checks or extend retry times without evidence. The original service-turnover,
+FULL-consumption and JCT/throughput goals remain open. V60/d925278 and
+the reservation stay unchanged; V678 now qualifies this extension, not deployment.
+
+Development24054ca removes redundant causal-classification terminal reads
+and skips final-stage queue indexing when no stage exists. Final authorization
+and live native identity checks remain. V664 has231 passing runtime/admission/
+prediction checks; V668 adds12 passing benchmark timing/control checks.
+Use V667's equal-parent-timing comparison against60275db: complete CPU local
+rounds improve9.8%-10.4%, message updates7.6%-8.7%, stable queues3.1%-5.7%.
+Event cases save about0.07-0.12ms per iteration; active-stage/disabled-priority
+controls are near-flat at0.7%-1.7%. Plans, live selection, full graphs, counters
+and timing counts match. V665/V666 omit baseline parent wrappers and must not
+support performance claims; retain their receipts and source revisions.
+This excludes native residency inspection, neural inference, sockets and DMA.
+V678 now qualifies this extension for cold observation; V60/d925278 remain untouched.
+Continue toward actual turnover, useful FULL consumption and complete JCT/
+throughput acceptance; do not substitute these CPU gains for the full goal.
+
+V662 splits the same sealed V59/V58 prefixes at adjacent run_batch entries.
+Across four windows, decode/short-prefill/decode return-to-next-entry P50
+is4.9-6.0ms predictive versus2.3-2.6ms native; next-entry-to-result is
+about1.3-1.6ms. The second-wave previous-completion-observer-to-entry
+P50 is3.595/1.392ms, or3.715/1.297ms for47->1->48 neighbors.
+Continue isolating telemetry tail, sampling, deferred physical planning and
+next-iteration receive/maintenance/selection before changing another path.
+An observer timestamp is not all result work completed, and scheduler entry
+is not CUDA launch. Quantiles are not additive or removable JCT bounds.
+The24 analyzer checks pass; V60, d925278 and registered observers are unchanged.
+Actual engine trees91daa419/5262707a differ only in scheduler ordering and
+tests; model/attention/cache/worker and telemetry source equality does not
+control realized cache pressure, prefixes or trajectories. Keep the original
+GPU, quality, mean-JCT and completion-throughput acceptance open.
+
+V658 binds7386610's immutable-key identity equality fast path. Complete CPU
+event/maintenance/planning/live-selection fixtures improve7.5%-8.5%,
+about0.07-0.11ms per canonical-key iteration; all graph/plans/selection match.
+Rebuilt-key controls improve1.0%-3.4%, while isolated foreign-type controls
+cost6.9%-9.5% more and remain explicit. The66 contract checks overlap the
+1118 passing integration checks; one real encoder worker check lacks its
+local pinned artifact. V678 subsequently cold-qualifies this extension and
+does not replace V60 or d925278. Continue addressing the remaining complete
+forward/turnover gap; CPU equality savings are not GPU/JCT acceptance.
+
+V651 cold-qualifies the isolated scheduling candidate d925278:80 bound
+sources, unchanged f7b1942b/5262707a engine,967 unique checks and2 subtests
+passed. Fifteen missing-engine-fixture failures were corrected by linking
+the existing engine and rerunning only those15; retain the first receipt.
+The candidate preserves the original harness and exporter; feedback5bc57d0
+and clock/reference repairbc3820e are separate commits. It does not replace
+the existing frozen V60 reservation/registration or claim GPU/JCT acceptance.
+V652 completes both historical clock_v2 timelines and the corrected native
+comparison cache. Clock-independent demand/JCT/bytes and paired JCT match
+the originals. Use the new artifact paths for offline full-window diagnosis.
+Native95.376% H2D before1800s and96.847% before the second wave establish
+nonuniform migration demand, not a counterfactual benefit or a workload change.
+
+The complete V59 event audit separates implementation loss from workload fit:
+69/162 JOIN and216/2529 tool episodes with positive pre-completion FULL plans
+achieved early verified reuse, totaling11.398GB. Continue CPU qualification
+and lower control/turnover cost before attributing losses to the workload.
+V648 adds514 passing previously uncovered cold-path checks; combined with
+V646 this is1266 passes plus2 passing subtests and1 explicit-Docker skip,
+not a cold deployment or GPU/JCT acceptance.
+Nested child delegation is an investigated hypothesis, not an enabled feature
+or a change to frozen V60. Current raw child specs lack task middleware.
+Any later depth-two harness must preserve direct-parent JOIN/RETURN identity,
+stage reset after new work, scoped cancellation, reference safety and the
+same hierarchy/quality contract in native. Grandchild completion does not
+make root runnable. Require measured queue/cache/JCT benefit, not ACK volume.
+
+The user now explicitly authorizes historical analysis and CPU validation during
+the reservation; GPU experiments remain forbidden until2026-10-15 15:00 +08:00.
+V643-V647 compare current development with frozen V60/5391a6b: local-rank
+event/maintenance/admission CPU improves20.9%-24.3%, while message controls
+cost2.0%-3.0% more. Profiled complete tool retries improve23.4%-69.1%.
+Adaptive empty-socket polling improves idle18.6% and sparse6.4%, with busy
+controls0.4%-0.5% slower. Exact graph/plans, transaction credit and real
+socket delivery/ACKs match. GC and parent timing remain enabled.
+V646 has752 passing tests plus2 passing subtests and1 explicit-Docker skip.
+CPU evidence is not cold qualification or GPU/JCT acceptance; preserve V60.
+
+V636 targets a measured repeated lookup: V59 ran2856427 tool-prefetch calls,
+2743143 deferred to the existing retry time. Development code maintains action
+counts on registration/retirement and uses O(1) reads; the original retry deadline
+now precedes pending inspection after ticket/ACK handling. Accepted hints still
+rearm immediately. Five retirement sites share one helper; partial ACK remains
+pending. Regressions pass in V646 under the new user authorization. Preserve
+frozen V60 and check action/graph equivalence plus thread CPU before qualification.
+The old84.916s self wall sum is not a promised saving. Sampling64 of writer
+processing does not sample HotpathTiming, which still measures every call.
+
+V635 quarantines old full-timeline timing evidence: the naive local winter epoch
+shifted V59's origin by one hour and collapsed all cached V58 native worker
+intervals to zero despite468433 decode/42403 prefill batches. Independent V614
+windows and original JCT/bytes remain separate evidence. The development loader
+now records an aware anchor/capture zone, checks native/client clocks, excludes
+pre-monitor service, and rejects obsolete caches; a new cache path preserves old
+artifacts. CPU regressions pass; complete traces have not been regenerated.
+Regenerate into clock_v2 paths before optimizing from full-band results.
+Frozen V60 remains unchanged; its fixed-window observer already passes both zones.
+Development launch/resume now carries explicit native-reference timeline/cache
+paths, freezes their digests and verifies them on resume. Inherit only for the
+same reference; switching references or collecting fresh native clears stale
+process environment values. Integration CPU regressions pass.
+
+V634 addresses the V58 child execution loop as a development harness change.
+The same command completed76 times with stdout `1\n`; there was no compaction,
+and child message count grew2->222. Successful nonempty results were not retained
+for repeated-result feedback. Append factual result counts/cost to tool history,
+keep source evidence separate, respect observation budgets, and clarify delegated
+deliverables/checkpoints. Existing tool availability and termination remain.
+The nine feedback cases and related CPU regressions pass; frozen V60
+does not include this candidate. After permitted validation, cold-deploy with
+matched native harness changes and measure recurrence, natural return and quality.
+This is not yet evidence that the live loop or end-to-end performance is fixed.
+The real-agent-graph regression also covers the observation budget outside
+feedback/status handling and stable earlier messages. A scripted fake model's
+final return tests message delivery, not real-model termination.
+
+One-time user reservation: no GPU experiments before
+2026-10-15 15:00 Asia/Shanghai (2026-10-15 00:00 PDT). V630 stops
+the original V60 launch/startup waiters; V632 waits for this absolute time,
+then rechecks the frozen source and exclusive resources before attempting
+the existing V60 plan. The user's latest instruction allows CPU optimization,
+tests and small CPU comparisons. Do not reinstate the revoked daily rule.
+V59 collected156 client completions in8743.634s; its GPU service has exited.
 
 Next cold observation V60 uses the V615-qualified observation cache change;
 V620/V621 retain the frozen source and actual registration. Wait for V59's
