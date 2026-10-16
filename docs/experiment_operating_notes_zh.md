@@ -4,6 +4,19 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 主线整合：实验臂名必须保留真实reactive/native等身份，历史native
+比较器不得要求当前臂必须叫predictive_h2d。V76全部156项收集后仅后处理退出2，
+恢复时保留原driver_failed/exit2，独立核验完整任务、报告、原进程退出和冻结
+来源，再通过新wrapper接续；不得改写原状态冒充原driver成功。V1267–V1269为
+本次凭据，V1270的117项CPU检查通过。V77真实启动另以V1216/V1219核验，
+不能只凭driver存活判断。已登记wrapper、应用52a2b8e和引擎76cf97d2继续冻结。
+
+ReplaySSM decode预算候选91a9359仅作为独立增量patch保存，基线为完整53020ce3，
+不是干净94602c9或V77树；39项CPU检查及8个subtest和精确树重建不代表GPU资格。
+当前extra_buffer与普通ReplaySSM decode不兼容，不能为启动删除原生检查。
+当前实验没有开启该模式，其遗漏预算不是V76故障的原因。R14改为ReplaySSM
+2610.13778v1；2608.20961v1实际为TreeWY，旧V1199归档及失败凭据不得覆盖。
+
 2026-10-16 14:32 PDT：repeated_context_demand按workflow/context隔离，在封存
 窗口内按首次服务观测排序；“首次”不是context生命周期首次，“后续”之间可能
 夹有HBM命中请求。缺失身份不合并成一个context，无分母比例保持未知。

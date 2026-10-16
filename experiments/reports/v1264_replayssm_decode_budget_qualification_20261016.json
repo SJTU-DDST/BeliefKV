@@ -1,0 +1,64 @@
+{
+  "status": "cpu_qualified_only_preserved_on_main_no_gpu_selection",
+  "date_local": "2026-10-16",
+  "engine": {
+    "checkout": "/home/longhao/experiment/.worktrees/sglang-v1262-replayssm-decode-budget-20261016",
+    "base_commit": "e9dca308f5e3c651402fe00908e7a92feab1e897",
+    "base_tree": "53020ce3efef3ed362e9af0db77147b39070f064",
+    "candidate_commit": "91a93593fed7381c973c10f88c670bee31fee47e",
+    "candidate_tree": "f231ed2420212d072e8d0ad4061f45e9690d1f31",
+    "incremental_patch": "patches/sglang-v0.5.20-replayssm-decode-budget.patch",
+    "patch_sha256": "86d92bd69687816088b55109e5d74d6bb3b6ebfc07f452b3774359c1a5ad94a1",
+    "forward_check": "passed using a temporary Git index over the base commit",
+    "reconstructed_tree": "f231ed2420212d072e8d0ad4061f45e9690d1f31",
+    "reverse_check": "passed on the clean candidate checkout",
+    "source_sha256": {
+      "python/sglang/srt/configs/mamba_utils.py": "bac4dad727706d00c83c11898e000ca0f37b1cc4fc63da1be63eea42e3cd0245",
+      "python/sglang/srt/mem_cache/kv_cache_configurator.py": "bf04f94a54ddfcb24586a10b7ee934e513319b37b2dd43d294f5fc7991f76344",
+      "test/srt/test_replayssm_decode_budget.py": "e18aa32638815e86241d7d80d001c44159970a669ac4493d80db6386c80e582c"
+    }
+  },
+  "implementation": {
+    "ordinary_decode": "Charge persistent d/k/g rings per Mamba cache slot, including padding, according to temporal dtype and GDN scalar or KDA vector gates.",
+    "spec_verification": "Retain the separate existing scratch accounting; ordinary decode and ReplaySSM spec flags remain mutually exclusive.",
+    "legacy_verify_scratch": "Include the ordinary decode ring only in the main-state side of joint sizing.",
+    "disabled_mode": "Existing sizing behavior is unchanged.",
+    "default_experiment_selection": "Unchanged. This incremental patch is not selected by the launcher or added to V77."
+  },
+  "validation": {
+    "cpu_primary_cases_passed": 39,
+    "cpu_subtests_passed": 8,
+    "cpu_junit_tests": 47,
+    "cpu_receipt": {
+      "path": "experiments/reports/v1263_replayssm_decode_budget_cpu_20261016.xml",
+      "sha256": "b2d5bbdaa885d83eb97fa54fe9028d2b8633730688771a9a8f8ee1587af01966",
+      "failures": 0,
+      "errors": 0,
+      "skipped": 0
+    },
+    "base_reproduction": {
+      "path": "experiments/reports/v1261_replayssm_decode_budget_base_reproduction_20261016.xml",
+      "sha256": "d523301a539a2ff4082d3328a9f69e88156f20c965ed47a5672f18a56cf7d38d",
+      "expected_failures": 1
+    },
+    "frozen_source_actual_allocation_reproduction": {
+      "path": "experiments/reports/v1265_replayssm_decode_budget_frozen_source_reproduction_20261016.xml",
+      "sha256": "344b35151ac7519443d5e828014b106b376a861593806f3a309954b576ca8ada",
+      "expected_failures": 1
+    },
+    "coverage": [
+      "Actual CPU MambaPool d/k/g allocations for GDN and KDA",
+      "FP32 and BF16 temporal states, ring lengths 1 and 16",
+      "Automatic sizing, explicit slot caps and radix-disabled counts",
+      "Joint legacy speculative verification scratch budget",
+      "Existing ReplaySSM ring, unified byte-budget and request-mapping regressions"
+    ]
+  },
+  "limits": [
+    "Current experiments disable ordinary ReplaySSM decode, so this omission is not a V76 performance cause.",
+    "Current extra_buffer is incompatible with ordinary ReplaySSM decode; the native initialization check remains.",
+    "CPU data-array accounting does not qualify CUDA memory peaks, cursor overhead, numerical correctness or speedup.",
+    "The patch is an engineering fix, not an established paper contribution.",
+    "Frozen V75/V76/V77 applications, engines and operational helpers are unchanged."
+  ]
+}

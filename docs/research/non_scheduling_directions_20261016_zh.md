@@ -1,6 +1,6 @@
 # 动态多 Agent 的系统层研究筛选与最新 Trace 证据
 
-更新：2026-10-16 14:50 PDT。研究筛选记录，尚未选定新论文贡献。
+更新：2026-10-16，主线整合已含15:23 PDT启动证据。研究筛选记录，尚未选定新论文贡献。
 
 ## 1. 本次调整
 
@@ -610,9 +610,9 @@ PREPARE。后者的 H2D 不能直接称为替代 native 的恢复等待，仍需
 
 通用 agent 草稿不能直接作为新主机制：AgSpec [R4] 已有检索共享语料；
 AgentSpec [R13] 已有共享 n-gram、批次预算和工具/提示词边界复用。
-ReplaySSM [R14] 已有 Mamba-2/GDN 的局部状态回放与推测回滚。
-V1199 封存本次核对的后两篇原始 HTML 和 SHA256，不搬用其 kernel/模型
-加速比解释当前 workflow。
+ReplaySSM [R14] 的状态回放与 TreeWY [R15] 的 GDN 推测验证须分开比较。
+旧 V1199 中标为 ReplaySSM 的 HTML 实际属于 TreeWY；V1260 补存正确来源，
+保留原归档及摘要。其 kernel/模型加速比均不能解释当前 workflow 收益。
 
 本地原生引擎已有 `NGRAMWorker`、共享 corpus/外部语料 API、
 `commit_mamba_states_after_verify` 和 ReplaySSM 入口。BeliefKV admission
@@ -632,6 +632,10 @@ prompt token。native/admission 两条观测路径使用同一实现，不改变
 同一时钟及请求身份，草稿源只能使用当时已可见的数据。仅有完成序列时，应先
 保守地限制为目标请求提交前已完成的源，不利用未来 response 或本轮完整输出
 构造草稿。离线 token 一致仍不证明真实接受率、Mamba 回滚正确性或净提速。
+
+普通 ReplaySSM decode 与 speculative verification 是两个入口；admission
+拒绝 non-NONE speculation 本身不等于拒绝普通 buffered decode。当前
+extra_buffer 策略与普通 decode 入口仍有独立兼容性约束，见4.27。
 
 V75/V76 的已冻结候选未加入此采集，当前旧 trace 的缺口仍存在；没有补造
 历史 token、登记新 GPU 任务或改变已排队实验。它是下一独立候选的数据能力，
@@ -1069,6 +1073,54 @@ completed口径对失败继续计龄，也不能套用runner均值在结束后�
 V76/V77与质量接续继续冻结；原生顺序消融及已有回收对照仍用于后续隔离原因，
 本轮没有新GPU登记或已成立的论文贡献。
 
+### 4.26 原始来源身份更正
+
+V1260保存原始HTML、实际标题和SHA256：ReplaySSM是2610.13778v1，
+标题为“ReplaySSM: Cache SSM Inputs, Not State”；2608.20961v1实际是
+“TreeWY: Speculative Verification for Gated DeltaNet Hybrids”。
+旧V1199错误的文件名、README和指纹原样保留，以本节及R14/R15更正当前引用，
+不再把TreeWY的内容称为已核对ReplaySSM。
+
+同批来源包括Hydragen [R16]和Semantic Parallelism [R17]；Sem-MoE是后者
+的框架名。共享前缀attention分解已有强方法，不能把一般共享计算作为新意。
+专家并行通信方法还需区分当前TP1/EP1、无all-to-all的配置。此次只完成来源
+身份和方法边界核对，没有复现论文性能，也没有确立新的workflow系统贡献。
+
+### 4.27 普通 ReplaySSM decode 的预算修复候选
+
+当前引擎普通decode的d/k/g ring按持久Mamba槽分配，原预算路径仅在
+spec-verify启用时计入ring。独立候选91a9359/treef231ed24补齐普通decode
+每槽ring、padding和剩余内存核算；联合legacy verify scratch仅在主状态侧
+计入ring，保持spec专用scratch独立。关闭该功能时保留原有容量推导。
+
+V1261和V1265保留原始复现失败；V1263的39项CPU检查及8个subtest通过，
+包含真实CPU MambaPool的GDN/KDA、FP32/BF16、不同ring长度、自动/显式/
+radix关闭容量和legacy verify scratch。V1264绑定提交、代码、测试和增量patch，
+在临时Git index中从完整53020ce3精确重建候选树，反向应用检查也通过。
+
+该patch已纳入主线保存，未被launcher选用，也未启用新的GPU候选。当前实验
+enable_linear_replayssm=false，因此该预算遗漏不是V76退化的原因；当前
+extra_buffer与普通ReplaySSM还不兼容，保留原生拒绝检查。CPU预算资格不覆盖
+GPU峰值、数值正确性或性能。这是工程修复，不是新论文机制。
+
+### 4.28 V76 后处理恢复与 V77 真实接续
+
+V76全部156个workflow已完成收集，recorded completed为156，保留13个既有
+guard介入标签，官方质量仍未完成。原driver因最终历史比较器硬编码当前臂名
+predictive_h2d而退出2；65503eb改为接受真实当前臂，同时要求正确native引用
+和单一当前运行目录。恢复后补齐原缺失的native_reference_comparison.json，
+没有把reactive改名，也没有改写原driver_failed/exit2状态。
+
+V1267–V1269记录完整任务/终态、同表/容量、遥测、旧进程退出和冻结来源核验，
+新wrapper仅向原V77 helper提供带失败来源的已验证收集/报告完成凭据。
+V1270的117项CPU检查通过；与较早72项有重叠，不相加。V77应用52a2b8e、
+引擎76cf97d2及原启动检查不变，没有加入本轮ReplaySSM或FULL-only候选。
+
+V77于2026-10-16 15:20:49 PDT接续，V1216在15:23:51核验真实首服，
+scheduler2646481/start_ticks635952682，native close GC启用、原生准入、
+同156项到达表与物理池，V1219记录NUMA放置。此前“V77等待”是历史状态。
+官方质量队列已开始评分，尚无完整质量结果；完整性能和系统贡献继续待验。
+
 ## 5. 既有候选一：降低上下文摘要和重建的计算量
 
 这是目前最有规模证据的性能对象。当前 `_summary_input` 把历史消息转成 XML，
@@ -1228,6 +1280,15 @@ agent 相关草稿长度控制；其生成吞吐结果不能直接当本项目 J
 - [R13] AgentSpec: Speculative Decoding for Batch Inference of LLM Agents，
   arXiv:2608.24004v1；本次核对第3.2–3.4节。
   `https://arxiv.org/html/2608.24004v1`
-- [R14] ReplaySSM: Fast Memory-Efficient State Replay for State Space Model
-  Inference，arXiv:2608.20961v1；本次核对摘要和第3–4节。
+- [R14] ReplaySSM: Cache SSM Inputs, Not State，arXiv:2610.13778v1；
+  正确来源保存于V1260，替代此前错误编号。
+  `https://arxiv.org/html/2610.13778v1`
+- [R15] TreeWY: Speculative Verification for Gated DeltaNet Hybrids，
+  arXiv:2608.20961v1；旧V1199误标为ReplaySSM的内容实际来自本文。
   `https://arxiv.org/html/2608.20961v1`
+- [R16] Hydragen: High-Throughput LLM Inference with Shared Prefixes，
+  arXiv:2402.05099v1，原始HTML与标题保存于V1260。
+  `https://arxiv.org/html/2402.05099v1`
+- [R17] Semantic Parallelism: Redefining Efficient MoE Inference via
+  Model-Data Co-Scheduling，arXiv:2503.04398v5；框架名Sem-MoE。
+  `https://arxiv.org/html/2503.04398v5`

@@ -1,0 +1,1616 @@
+{
+  "at": "2026-10-16T15:20:21.344313-07:00",
+  "status": "complete_collection_with_recovered_reporting",
+  "original_v76_state": {
+    "status": "driver_failed",
+    "supervisor": {
+      "pid": 3035460,
+      "state": "R",
+      "ppid": 1,
+      "start_ticks": "633722974",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/ops/start_v76_no_prefetch_20261016.py",
+        "--watch"
+      ]
+    },
+    "registration": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1165_v76_no_prefetch_registration_20261016.json",
+      "sha256": "dc6d8f62cc1c0dae3509c196fc90128c105e8010209ed25ce33f0847fa953db9"
+    },
+    "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch",
+    "at": "2026-10-16T09:09:27.080117-07:00",
+    "observed_at": "2026-10-16T15:05:34.491663-07:00",
+    "previous_live_pids": [],
+    "previous_status": "completed",
+    "driver": {
+      "pid": 1102028,
+      "state": "R",
+      "ppid": 3035460,
+      "start_ticks": "634951253",
+      "argv": [
+        "bash",
+        "/home/longhao/experiment/.worktrees/beliefkv-v1160-no-prefetch-20261016/scripts/run_qwen35_semantic_h2d_ab.sh"
+      ]
+    },
+    "started_at": "2026-10-16T12:34:09.432536-07:00",
+    "runtime": {
+      "event": "admission_runtime_state",
+      "ts_ms": 1792188207821.2722,
+      "final": true,
+      "counts": {
+        "join_wait_expired": 0,
+        "wait_context_groups_built": 32171,
+        "physical_expired": 0,
+        "physical_planning_after_forward": 1756965,
+        "prepare_no_service_demand": 6237,
+        "wait_context_groups_invalidated": 31958,
+        "wait_context_cache_retained": 196580,
+        "admission_rank_dependencies_preserved": 152462,
+        "admission_residency_scan_targets": 224674,
+        "native_admitted": 38412,
+        "admission_causal_cache_hits": 995,
+        "workflow_completed_output_tokens_charged": 7544501,
+        "tool_wait_submitted": 86187,
+        "tool_wait_accepted": 67089,
+        "tool_hint_physical_inspection_deferred": 67089,
+        "tool_wait_context_stale": 37914,
+        "tool_wait_result_stale": 16555,
+        "tool_unchanged_wait_prediction_skipped": 81024,
+        "residency_ordering_hint_read": 163548,
+        "resident_first_ordered": 22158,
+        "workflow_work_head_ordered": 3966,
+        "workflow_work_head_admitted": 3396,
+        "residency_ordering_hint_admitted": 15279,
+        "residency_ordering_hint_feedback_deferred": 15279,
+        "residency_ordering_hint_native_observed": 15279,
+        "residency_ordering_hint_shorter_native_prefix": 6189,
+        "tool_wait_parallel_group_pending": 1328,
+        "native_OTHER": 573,
+        "terminal_cache_anchor_unavailable": 480,
+        "terminal_child_reclaim_calls": 1019,
+        "terminal_child_discarded_nodes": 6162,
+        "terminal_child_freed_full_tokens": 15474444,
+        "terminal_child_freed_mamba_slots": 4115,
+        "join_intent_stale": 343,
+        "native_physical_completed": 1227,
+        "child_report_notice_observed": 337,
+        "prepare_mamba_pressure_only": 12773,
+        "terminal_cache_watch_time_expired": 575,
+        "residency_ordering_hint_unavailable": 9489,
+        "final_stage_accepted": 181,
+        "final_stage_resumed_after_sibling_return": 13,
+        "terminal_cache_watch_anchors_gone": 780,
+        "parent_capacity_handoff_first_service": 199,
+        "final_request_bound": 168,
+        "final_priority_candidates_inspected": 162,
+        "final_priority_selected_notice_budget": 160,
+        "final_priority_best_already_first": 122,
+        "terminal_root_reclaim_calls": 156,
+        "terminal_root_discarded_nodes": 549,
+        "terminal_root_freed_full_tokens": 446440,
+        "terminal_root_freed_mamba_slots": 432,
+        "join_intent_accepted": 24,
+        "join_intent_natural_final_accepted": 24,
+        "join_intent_delivery_le_100ms": 22,
+        "join_intent_delivery_le_250ms": 24,
+        "join_intent_delivery_le_500ms": 24,
+        "residency_ordering_hint_reused": 1002,
+        "prepare_selection_closure_reused": 135,
+        "shadow_native_issued": 1227,
+        "shadow_bursts": 276,
+        "shadow_burst_nodes": 1227,
+        "join_prepare_issued": 649,
+        "prepare_publication_candidate_index": 108,
+        "parent_pressure_demoted": 518,
+        "join_wait_pressure_demoted": 491,
+        "prepare_probe_backoff": 175719,
+        "h2d_service_sample": 2266,
+        "d2h_service_estimate_computed": 473,
+        "h2d_service_estimate_computed": 346,
+        "tool_prepare_issued": 578,
+        "h2d_service_cache_retained_after_d2h": 6656,
+        "prepare_candidate_short_wait_window": 393,
+        "h2d_service_estimate_reused": 119,
+        "admission_residency_scan_slot_bounded": 27725,
+        "tool_wait_pressure_demoted": 27,
+        "join_intent_delivery_le_50ms": 17,
+        "tool_wait_expired": 4,
+        "final_priority_ordered": 38,
+        "final_priority_admitted": 37,
+        "final_stage_tool_invalidated": 7,
+        "resident_aged_priority_ordered": 697,
+        "resident_aged_priority_admitted": 622,
+        "admission_causal_cache_preserved_observation": 11,
+        "resident_aged_native_quota_inspected": 17,
+        "d2h_service_estimate_reused": 1,
+        "shadow_step_stale": 2,
+        "prepare_prefix_budget_rejected_early": 68538,
+        "prepare_backed_budget_registration": 411,
+        "prefetch_priority_aged_head_kept": 1,
+        "parent_handoff_priority_ordered": 4,
+        "prefetch_priority_aged_head_bounded_bypass": 1,
+        "parent_handoff_priority_admitted": 3,
+        "resident_aged_native_quota_ordered": 2,
+        "resident_aged_native_quota_admitted": 2,
+        "residency_ordering_hint_feedback_unserved": 0
+      },
+      "physical_disabled": false,
+      "final_stage_prefetch": false,
+      "final_stage_priority": true,
+      "prepare_host": true,
+      "h2d_opportunity_sampling": false,
+      "prepare_pool_scope": "missing_full_session_path",
+      "latest_full_session_branches_retired": 16395,
+      "resident_first": true,
+      "workflow_attained_work": true,
+      "workflow_work_metric": "completed_request_output_tokens",
+      "workflow_work_accounts": 0,
+      "execution_handoff": false,
+      "overlap_prefetch_supported": true,
+      "execution_handoff_request_id": null,
+      "tool_timing_only": true,
+      "tool_predictor_configured": true,
+      "tool_predictor_disabled": false,
+      "tool_prefetch": false,
+      "tool_prefetch_planning_slack_ms": 250.0,
+      "prefetch_lead_ms": 2000.0,
+      "semantic_work_statistic": "center",
+      "final_admission_policy": "remaining_report_work",
+      "eos_protocol_window_ms": 250.0,
+      "eos_prefetch_evidence_window_ms": 2000.0,
+      "terminal_cache_diagnostics": true,
+      "h2d_seed_samples": 0,
+      "h2d_service_samples": 64,
+      "prefetch_residency_budget": {
+        "request_slots": 48,
+        "byte_limit": 0,
+        "reserve_full_tokens": 4144,
+        "reserve_mamba_slots": 48,
+        "source": "native_next_prefill",
+        "evictable_full_tokens": 0,
+        "evictable_mamba_slots": 0
+      },
+      "prefetch_residency_headroom": {
+        "observable": true,
+        "device_full_free_tokens": 1367,
+        "device_mamba_free_slots": 1,
+        "host_full_free_tokens": 3802,
+        "host_mamba_free_slots": 0,
+        "physical_actions_supported": false,
+        "reason": null,
+        "full_frees_deferred": false,
+        "mamba_batch_reserved": true
+      },
+      "prefetch_locked_count": 0,
+      "prefetch_locked_contexts_by_role": {
+        "demand": 0,
+        "speculative": 0
+      },
+      "prefetch_protected_bytes": 0,
+      "semantic_worker_configured": false,
+      "semantic_worker_error": "",
+      "shared_path_timing": {
+        "schema_version": 1,
+        "enabled": true,
+        "clock": "perf_counter_ns; CPU wall intervals, not GPU kernel time",
+        "scope": "cumulative completed calls; exclusive totals avoid nested double counting",
+        "elapsed_ms": 8792200.05476,
+        "bucket_upper_ms": [
+          0.01,
+          0.025,
+          0.05,
+          0.1,
+          0.25,
+          0.5,
+          1.0,
+          2.5,
+          5.0,
+          10.0,
+          25.0,
+          50.0,
+          100.0,
+          250.0,
+          1000.0,
+          null
+        ],
+        "phases": {
+          "control_socket_receive_sample": {
+            "count": 29530,
+            "total_ms": 178.272727,
+            "self_ms": 178.272727,
+            "mean_ms": 0.0060370039620724686,
+            "max_ms": 2.629333,
+            "histogram": [
+              27060,
+              1681,
+              512,
+              151,
+              77,
+              27,
+              15,
+              6,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "control_drain": {
+            "count": 1756965,
+            "total_ms": 73360.582447,
+            "self_ms": 37310.619436,
+            "mean_ms": 0.041754151304664575,
+            "max_ms": 12.668341,
+            "histogram": [
+              1610895,
+              51715,
+              2471,
+              1933,
+              19164,
+              26935,
+              21084,
+              21058,
+              1574,
+              133,
+              3,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "scheduler_maintenance": {
+            "count": 1756965,
+            "total_ms": 132836.815054,
+            "self_ms": 58577.386529,
+            "mean_ms": 0.0756058402153714,
+            "max_ms": 13.290904,
+            "histogram": [
+              0,
+              881044,
+              692492,
+              37204,
+              50227,
+              40504,
+              27371,
+              25762,
+              2164,
+              192,
+              5,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "terminal_sampling": {
+            "count": 8649,
+            "total_ms": 17236.575871,
+            "self_ms": 17236.575871,
+            "mean_ms": 1.9928981235981038,
+            "max_ms": 1192.766767,
+            "histogram": [
+              60,
+              1,
+              1,
+              1,
+              0,
+              36,
+              1835,
+              4827,
+              1870,
+              17,
+              0,
+              0,
+              0,
+              0,
+              0,
+              1
+            ]
+          },
+          "join_prepare": {
+            "count": 139777,
+            "total_ms": 49227.067248,
+            "self_ms": 31840.453027,
+            "mean_ms": 0.35218288593974684,
+            "max_ms": 119.467941,
+            "histogram": [
+              30,
+              727,
+              93929,
+              2175,
+              1939,
+              14072,
+              10783,
+              13699,
+              2241,
+              95,
+              41,
+              19,
+              25,
+              2,
+              0,
+              0
+            ]
+          },
+          "tool_prepare": {
+            "count": 77384,
+            "total_ms": 9676.877431,
+            "self_ms": 6836.964021,
+            "mean_ms": 0.125050106365657,
+            "max_ms": 119.08735,
+            "histogram": [
+              147,
+              15756,
+              40944,
+              1240,
+              11294,
+              7135,
+              450,
+              338,
+              3,
+              2,
+              35,
+              25,
+              14,
+              1,
+              0,
+              0
+            ]
+          },
+          "post_launch_physical": {
+            "count": 1756965,
+            "total_ms": 66953.126386,
+            "self_ms": 8049.181707,
+            "mean_ms": 0.03810726245884238,
+            "max_ms": 120.405396,
+            "histogram": [
+              1564389,
+              5794,
+              103556,
+              31952,
+              3568,
+              17497,
+              12717,
+              14545,
+              2674,
+              110,
+              77,
+              42,
+              41,
+              3,
+              0,
+              0
+            ]
+          },
+          "admission_plan": {
+            "count": 38691,
+            "total_ms": 37554.000059,
+            "self_ms": 14962.889741,
+            "mean_ms": 0.9706133224522498,
+            "max_ms": 6.574587,
+            "histogram": [
+              0,
+              128,
+              1077,
+              1926,
+              13228,
+              1199,
+              3004,
+              16198,
+              1906,
+              25,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "batch_completed": {
+            "count": 830907,
+            "total_ms": 16910.181583,
+            "self_ms": 16910.181583,
+            "mean_ms": 0.020351473249112115,
+            "max_ms": 0.37557,
+            "histogram": [
+              532564,
+              140145,
+              47594,
+              96564,
+              13988,
+              52,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "control_json_decode_sample": {
+            "count": 2073,
+            "total_ms": 59.264762,
+            "self_ms": 59.264762,
+            "mean_ms": 0.028588886637723108,
+            "max_ms": 0.126018,
+            "histogram": [
+              0,
+              795,
+              1207,
+              68,
+              3,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "control_event_decode_sample": {
+            "count": 2409,
+            "total_ms": 57.738757,
+            "self_ms": 57.738757,
+            "mean_ms": 0.023967935657949357,
+            "max_ms": 0.097084,
+            "histogram": [
+              0,
+              1457,
+              921,
+              31,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "graph_apply": {
+            "count": 154638,
+            "total_ms": 3398.706088,
+            "self_ms": 3398.706088,
+            "mean_ms": 0.02197846640541135,
+            "max_ms": 2.891778,
+            "histogram": [
+              33,
+              121615,
+              30362,
+              2181,
+              437,
+              7,
+              0,
+              2,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "event_apply": {
+            "count": 154638,
+            "total_ms": 35626.780141,
+            "self_ms": 30595.116968,
+            "mean_ms": 0.23038826252926187,
+            "max_ms": 8.198867,
+            "histogram": [
+              0,
+              0,
+              5026,
+              75449,
+              38362,
+              9193,
+              22730,
+              3801,
+              75,
+              2,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "control_ack_encode_sample": {
+            "count": 2073,
+            "total_ms": 32.672306,
+            "self_ms": 32.672306,
+            "mean_ms": 0.015760880849011095,
+            "max_ms": 0.056361,
+            "histogram": [
+              195,
+              1795,
+              81,
+              2,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "control_socket_send_sample": {
+            "count": 2073,
+            "total_ms": 161.646946,
+            "self_ms": 161.646946,
+            "mean_ms": 0.07797730149541728,
+            "max_ms": 1.117941,
+            "histogram": [
+              439,
+              790,
+              151,
+              163,
+              347,
+              161,
+              20,
+              2,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "tool_features": {
+            "count": 86187,
+            "total_ms": 1593.299152,
+            "self_ms": 1593.299152,
+            "mean_ms": 0.018486536855906344,
+            "max_ms": 0.722469,
+            "histogram": [
+              831,
+              79258,
+              5938,
+              156,
+              2,
+              1,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "residency_hint": {
+            "count": 174043,
+            "total_ms": 21874.171038,
+            "self_ms": 21726.788337,
+            "mean_ms": 0.12568256717018209,
+            "max_ms": 1.019325,
+            "histogram": [
+              952,
+              2353,
+              19100,
+              56320,
+              82417,
+              12468,
+              432,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "terminal_child_reclaim": {
+            "count": 1175,
+            "total_ms": 938.504011,
+            "self_ms": 938.504011,
+            "mean_ms": 0.7987268178723405,
+            "max_ms": 5.825877,
+            "histogram": [
+              0,
+              0,
+              0,
+              0,
+              0,
+              145,
+              887,
+              120,
+              22,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "prepare_candidate_maintenance": {
+            "count": 42964,
+            "total_ms": 6922.086491,
+            "self_ms": 6922.086491,
+            "mean_ms": 0.16111364144399962,
+            "max_ms": 0.629661,
+            "histogram": [
+              95,
+              65,
+              656,
+              6525,
+              32318,
+              3278,
+              27,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "prepare_candidate_publication": {
+            "count": 62433,
+            "total_ms": 11169.891867,
+            "self_ms": 11169.891867,
+            "mean_ms": 0.17891006145788285,
+            "max_ms": 1.007863,
+            "histogram": [
+              3,
+              379,
+              674,
+              8382,
+              41950,
+              10846,
+              198,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "reentry_inspection": {
+            "count": 14452,
+            "total_ms": 864.321981,
+            "self_ms": 864.321981,
+            "mean_ms": 0.05980639226404649,
+            "max_ms": 2.812214,
+            "histogram": [
+              1587,
+              7676,
+              403,
+              632,
+              3806,
+              345,
+              2,
+              0,
+              1,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          },
+          "prepare_backed_registration": {
+            "count": 39325,
+            "total_ms": 2068.136645,
+            "self_ms": 2068.136645,
+            "mean_ms": 0.05259088734901462,
+            "max_ms": 0.487578,
+            "histogram": [
+              29,
+              404,
+              17343,
+              21100,
+              444,
+              5,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0,
+              0
+            ]
+          }
+        }
+      },
+      "control_timing_sample_every": 64,
+      "opportunity_writer_timing": {
+        "schema_version": 1,
+        "sample_every": 64,
+        "snapshot_ts_ms": 1792188207821.4558,
+        "cpu_clock": "thread_time_ns",
+        "wall_clock": "perf_counter_ns",
+        "scope": "Every 64th record per category, starting with its first record. Measured processing samples only; queue waiting and status publication are excluded. Wall includes scheduling and GIL waiting; thread CPU excludes waiting. No full-run cost, GPU stall, GIL attribution or JCT saving is inferred.",
+        "categories": {
+          "admission_runtime_state": {
+            "records_seen": 8649,
+            "samples": 136,
+            "sampled_cpu_ms": 50.584002,
+            "sampled_wall_ms": 64.662222,
+            "mean_sample_cpu_ms": 0.3719411911764706,
+            "mean_sample_wall_ms": 0.4754575147058823,
+            "max_sample_cpu_ms": 1.128247,
+            "max_sample_wall_ms": 1.60153
+          },
+          "tool_wait_forecast": {
+            "records_seen": 67089,
+            "samples": 1049,
+            "sampled_cpu_ms": 60.152305,
+            "sampled_wall_ms": 61.432322,
+            "mean_sample_cpu_ms": 0.05734252144899905,
+            "mean_sample_wall_ms": 0.058562747378455675,
+            "max_sample_cpu_ms": 0.536032,
+            "max_sample_wall_ms": 0.538358
+          },
+          "terminal_context_cache_sample": {
+            "records_seen": 62853,
+            "samples": 983,
+            "sampled_cpu_ms": 224.86356,
+            "sampled_wall_ms": 482.548253,
+            "mean_sample_cpu_ms": 0.2287523499491353,
+            "mean_sample_wall_ms": 0.4908934415055951,
+            "max_sample_cpu_ms": 1.341415,
+            "max_sample_wall_ms": 5.131472
+          },
+          "terminal_cache_anchor_unavailable": {
+            "records_seen": 480,
+            "samples": 8,
+            "sampled_cpu_ms": 0.152082,
+            "sampled_wall_ms": 0.150121,
+            "mean_sample_cpu_ms": 0.01901025,
+            "mean_sample_wall_ms": 0.018765125,
+            "max_sample_cpu_ms": 0.034395,
+            "max_sample_wall_ms": 0.034275
+          },
+          "terminal_child_cache_reclaimed": {
+            "records_seen": 1019,
+            "samples": 16,
+            "sampled_cpu_ms": 0.884528,
+            "sampled_wall_ms": 2.84508,
+            "mean_sample_cpu_ms": 0.055283,
+            "mean_sample_wall_ms": 0.1778175,
+            "max_sample_cpu_ms": 0.187672,
+            "max_sample_wall_ms": 2.040332
+          },
+          "child_final_stage_accepted": {
+            "records_seen": 181,
+            "samples": 3,
+            "sampled_cpu_ms": 0.059112,
+            "sampled_wall_ms": 0.058281,
+            "mean_sample_cpu_ms": 0.019704,
+            "mean_sample_wall_ms": 0.019427,
+            "max_sample_cpu_ms": 0.039776,
+            "max_sample_wall_ms": 0.039483
+          },
+          "parent_capacity_handoff_first_service": {
+            "records_seen": 199,
+            "samples": 4,
+            "sampled_cpu_ms": 0.133733,
+            "sampled_wall_ms": 0.132079,
+            "mean_sample_cpu_ms": 0.03343325,
+            "mean_sample_wall_ms": 0.03301975,
+            "max_sample_cpu_ms": 0.035395,
+            "max_sample_wall_ms": 0.034594
+          },
+          "terminal_workflow_root_cache_reclaimed": {
+            "records_seen": 156,
+            "samples": 3,
+            "sampled_cpu_ms": 0.107296,
+            "sampled_wall_ms": 0.106374,
+            "mean_sample_cpu_ms": 0.035765333333333336,
+            "mean_sample_wall_ms": 0.035458,
+            "max_sample_cpu_ms": 0.075444,
+            "max_sample_wall_ms": 0.075307
+          },
+          "prepare_native_issued": {
+            "records_seen": 1227,
+            "samples": 20,
+            "sampled_cpu_ms": 0.340416,
+            "sampled_wall_ms": 0.554704,
+            "mean_sample_cpu_ms": 0.0170208,
+            "mean_sample_wall_ms": 0.0277352,
+            "max_sample_cpu_ms": 0.071337,
+            "max_sample_wall_ms": 0.271357
+          },
+          "prepare_candidate_selected": {
+            "records_seen": 276,
+            "samples": 5,
+            "sampled_cpu_ms": 0.108942,
+            "sampled_wall_ms": 0.108614,
+            "mean_sample_cpu_ms": 0.021788400000000003,
+            "mean_sample_wall_ms": 0.0217228,
+            "max_sample_cpu_ms": 0.039373,
+            "max_sample_wall_ms": 0.039376
+          },
+          "parent_pressure_demoted": {
+            "records_seen": 518,
+            "samples": 9,
+            "sampled_cpu_ms": 0.213598,
+            "sampled_wall_ms": 0.21183,
+            "mean_sample_cpu_ms": 0.02373311111111111,
+            "mean_sample_wall_ms": 0.023536666666666668,
+            "max_sample_cpu_ms": 0.030905,
+            "max_sample_wall_ms": 0.030909
+          },
+          "final_request_priority_admitted": {
+            "records_seen": 37,
+            "samples": 1,
+            "sampled_cpu_ms": 0.012184,
+            "sampled_wall_ms": 0.011712,
+            "mean_sample_cpu_ms": 0.012184,
+            "mean_sample_wall_ms": 0.011712,
+            "max_sample_cpu_ms": 0.012184,
+            "max_sample_wall_ms": 0.011712
+          },
+          "resident_aged_priority_admitted": {
+            "records_seen": 622,
+            "samples": 10,
+            "sampled_cpu_ms": 0.311887,
+            "sampled_wall_ms": 0.313018,
+            "mean_sample_cpu_ms": 0.0311887,
+            "mean_sample_wall_ms": 0.0313018,
+            "max_sample_cpu_ms": 0.091474,
+            "max_sample_wall_ms": 0.093537
+          }
+        }
+      }
+    },
+    "startup": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1166_v76_reactive_actual_startup_20261016.json",
+      "sha256": "e1bb04887ea08e31fa047d56a9e34ff0ae0c101751235f5ea313d7cad620ffb3"
+    },
+    "exit_code": 2,
+    "finished_at": "2026-10-16T15:05:44.495157-07:00"
+  },
+  "original_stopped_v77_state": {
+    "status": "stopped_for_diagnosis",
+    "supervisor": {
+      "pid": 1076769,
+      "state": "R",
+      "ppid": 1,
+      "start_ticks": "634866646",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-v1213-native-close-gpu-20261016/scripts/start_v77_native_close_20261016.py",
+        "--watch"
+      ]
+    },
+    "registration": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1215_v77_native_close_registration_20261016.json",
+      "sha256": "be5995c755d7cb78b9a98ffd3c3f830383b0d669c27729eb81b877504fbda86b"
+    },
+    "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77",
+    "started_at": "2026-10-16T12:20:03.587024-07:00",
+    "observed_at": "2026-10-16T15:05:45.574346-07:00",
+    "previous_status": "driver_failed",
+    "wait_supervisor_live": false,
+    "wait_driver_live": false,
+    "error": "ValueError('V76 ended without a complete successful collection')",
+    "finished_at": "2026-10-16T15:05:45.574442-07:00"
+  },
+  "inputs": [
+    {
+      "path": "/home/longhao/experiment/ops/v76_no_prefetch_20261016.state.json",
+      "sha256": "64ea228660224f53443d6dcb95ba288d3a651b842695a59c18bcb827b06f3fcd"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/summary.json",
+      "sha256": "c02846df2b1a66e42e8c86e7427c4189f7211901505c58b11d11e309346909a5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/native_reference_comparison.json",
+      "sha256": "3245c09665f3a1a3333c1a61a6e95374026962013667dbcf7754c0aa24fb437d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflow_arrivals.jsonl",
+      "sha256": "ebaac23d0537031d1a745c5d5472959e98174f15e7dc4223e6b6404cb25eba2a"
+    },
+    {
+      "path": "/home/longhao/experiment/ops/v76_no_prefetch_20261016.log",
+      "sha256": "35c280692b27a5c92666ee53f43c779f4c9954d215b357eb31885accd8d9f9a7"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/server/native_telemetry_status.json",
+      "sha256": "ba5e31baf5440fe2c1314c06916098189639a620de66f773f4ad50344bc4cf29"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/manifest.json",
+      "sha256": "dddffb0e64c5d43cec2ae98cdd7e6809202bff503fabbe8f1a34385bd8e0a2f1"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_close_gc_online_poisson_156root_20261016_v77/ab_plan.json",
+      "sha256": "6f56700ec880ec3f4f245f4d67ffc493c72ac7b137d602dfd6cf652f6d90c65d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-7229/result.json",
+      "sha256": "4cf8bf7261051ba42accde794a180f1a4b5efa7fb9425f81617d1cbdf1b6ba63"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-7233/result.json",
+      "sha256": "4e56666a5be679e06e97a1c65ae530a06050d71f742e28d2d2a5b29e9765635d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-7393/result.json",
+      "sha256": "8d46eedb4c143bf20c3b4a7eaaf73fe47b0eb6c93c2467fbe7d2cf0bf6e10775"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pylint-dev__pylint-4551/result.json",
+      "sha256": "753eed75fe88ba937e4a56cbcce89d26b0cb2d5288317e08c2331c34fb60033d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pylint-dev__pylint-4661/result.json",
+      "sha256": "d81c44ab21cb7341d38aedf2c409a84b0e9572b442fd49fc25051952b8c0ec1b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pylint-dev__pylint-6386/result.json",
+      "sha256": "114173300957b60da1ad83f03b6c20710272f4613614194589ab39162091851c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pylint-dev__pylint-7080/result.json",
+      "sha256": "b8ee4f89df057602a9293cd74e4865bc88d11807f543a148fba14cd8f9046d64"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pylint-dev__pylint-8898/result.json",
+      "sha256": "7a7498c4922a78841f36c1aaa02694756ec053dc442cdb0d3d90d6b01eff338b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-10554/result.json",
+      "sha256": "beba303afc202e4ec32c5dbe1d1640ad4ca7b8889940dc987dd3ef4f603d696e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11400/result.json",
+      "sha256": "bd5cf7d7dbd07b4ae3ca0bbe32698d9a4565996d0fc4e45159d7627d3c106d92"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-14631/result.json",
+      "sha256": "f1f6df36bde1e89a8deed9bf3fd62ed7731f79c20d5a939686c2a5d81c44bbd6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pallets__flask-5014/result.json",
+      "sha256": "07f3d0ed3419036c42b9685e5ddfa71a3d242d08c3fffae687f7f92045633576"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/psf__requests-1766/result.json",
+      "sha256": "c031dd34958f0a516bc41eac737c3961685ba9b8c1f78fe408eae2d4ab6b3e3c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/psf__requests-1921/result.json",
+      "sha256": "2cb39f607237b62b21a10b625ccb1c4533ca4f646194a37872e4068d21b3dfa4"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/psf__requests-2317/result.json",
+      "sha256": "11db339ebb5d749a94a18be8ff58c088bd7974d1765e857abae028898565d0f8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/psf__requests-6028/result.json",
+      "sha256": "b87f6ad9d8de3b44117f6381279d36bfa839163321b563e18bc0c8a04b3e3805"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-3993/result.json",
+      "sha256": "3bde3d575dc73ca2ef3c57d7caa18d72c34c2496216f28fb61fdcddb690a35ae"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-6461/result.json",
+      "sha256": "4d17dd5367039d407f7caf11e9e9450f6260902fa5c0448e5ec8e728646c2d4a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-6599/result.json",
+      "sha256": "ea889c1cb30422da2a6c3943172a19095bca28b667fc5931ccd46fe67b76bb15"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-6721/result.json",
+      "sha256": "37dadff07374f79c0f96789bb1c5d95c263a8bdb1bcf960f0bdd78e6d0b75d7d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-6744/result.json",
+      "sha256": "af9841bb6c69e31d7fad854b2ad170bcbc2e8a354175ad6464d371507855b99b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-6938/result.json",
+      "sha256": "328780c7eb9cd7bb3534f9b8e3c31414586146106f5e1d74f57c3caec998ee95"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-10051/result.json",
+      "sha256": "25cd76fb3df2e1409f7732d64fb02566ff4ee433e6ada3b00fedf6c8a94b8cac"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-5262/result.json",
+      "sha256": "6c94fab481cfeac46d0612e4ebc9e1e6208099849200987fa2b40d92c2cf291b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-5787/result.json",
+      "sha256": "cbda6acdc0401efbcddcd3d14281642fd1683ff17f61d1e7d8863c1ebd5b89ce"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-5840/result.json",
+      "sha256": "a70ca92af05ccd067c1bfe10586510d2524319b0fa0dfe8a341bf8d177f6574d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-6202/result.json",
+      "sha256": "49c8545639a55546601b7d4a10dbc2fe841e6ff3166918d8e0f97b6e1b0bcf2d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-7236/result.json",
+      "sha256": "ab73c67021acf4f594544cd9835561eab2fc062896bbac01f41183b28f230575"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-7324/result.json",
+      "sha256": "3ff7071e6a56a6c20ebea2023641f51119cb616b61c886340b972242449d73d6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-7571/result.json",
+      "sha256": "e7c56eb3774831f09f58befccb17e1e9d036e8395b48950f7253563782f6d29f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pylint-dev__pylint-4970/result.json",
+      "sha256": "6b8db6d9a887dd1a54d6e7da3b20078469b351bfe0011e3ae7d862c2775c62aa"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pylint-dev__pylint-6528/result.json",
+      "sha256": "49996cd9054e06125f62beb9ca6d82ada58ca7eae87c0eb23da12c20a85949be"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pylint-dev__pylint-6903/result.json",
+      "sha256": "d4c2160c20c9767c9c02015e7b16d97d8169e043498181308b74e5f04aa2458b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-5631/result.json",
+      "sha256": "ec9235b4b38d64afe4a801560135e4b06bbf7323240afedbd77a0603a5cc3878"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-4356/result.json",
+      "sha256": "7d1bc86e04a70f2019237fe93bb0b8ea658ce733c12385a049115e4e4a85fa4d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-3305/result.json",
+      "sha256": "301e1180d5bfd3a51ac004c3769a359bd4acb07227a9f21ec6ecf45b2aef6d5f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-4966/result.json",
+      "sha256": "34b4c6c9af68b23b7c48828bf4c59dd4b7043f783d3d5b8e2fa6fe5846d0664d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/psf__requests-2931/result.json",
+      "sha256": "8f0797e3f8a502317f8df67cb6f9788eff67cdd857e02d8b517b73f00bf8dd07"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-7205/result.json",
+      "sha256": "7f85783e8ddc128343d5e97c98807afcc1833a11dae605cd2d1e7edf4a08fa6a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-15368/result.json",
+      "sha256": "4e5e0a51956b0ae50dcb05e123e9d5248254a444ce76ee35111a66fc45f44fa5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-16877/result.json",
+      "sha256": "878756750e827089c0501570ffcd4519bf0eae1a6851e7b351a174fbf41e2ca5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/psf__requests-1724/result.json",
+      "sha256": "dcdc015e8acc8e4326f269e3c1294d5dae95dd9a3a5de4efba5063f309bd117a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11141/result.json",
+      "sha256": "7779626baab2d666ef6188180ec6fd816eb1d9424e1bb4f77c6977ab3102f1a2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/mwaskom__seaborn-3069/result.json",
+      "sha256": "c2c09e0d0d7c4e61a514e71f5679de67e40bc8137e75fd32848e7310fec4568d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pylint-dev__pylint-7277/result.json",
+      "sha256": "4cd2c11520d22101adc5548f354adbc97715a23958b9d39b760a602a56bc7691"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-14500/result.json",
+      "sha256": "dd711fe589be0b6f253c118cfbb3d6dd52890d6399d1d96a6b9eeddc39cd9d71"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-7521/result.json",
+      "sha256": "8e7e480bdad2a86fdffb1fbc4711d1eba80d48444d438517670d3eedb029a44f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-8399/result.json",
+      "sha256": "ed78669a2dd1582b77479279f7260e6591d3081ef82bd64bd6a9b9b27cb99d3f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-3151/result.json",
+      "sha256": "754b9e5fb898995892c608aaf617bb43b92b49f2fa7f39b437e28569a5602176"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-13023/result.json",
+      "sha256": "a3e818965b539e8eaa08e3547f843d60eb4baf0a982a70073a707339d91c5525"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12741/result.json",
+      "sha256": "296d1cdcea002f456658370fd979c1383337f07d53065fdea4dbed56ee3bbc3f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-14349/result.json",
+      "sha256": "46fb5fea78cc9badb5e385ce690143108df36af2af7b74ab0c79cb089e4c06c5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-2905/result.json",
+      "sha256": "c45867ac2fba0ae0d7451f9bdb87fb2f17b671c46a380b986a79f14dcec61f8b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-15315/result.json",
+      "sha256": "76d7ac581f0edf6ab9050cbe6d3fb07b6dd5142f0642c78d503f5affa9757405"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-16938/result.json",
+      "sha256": "1afb6242b5d6d14c38a04dd9b1e8f3e950c7a433ee0661a342dc78f82190ec31"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-16255/result.json",
+      "sha256": "0aaa180bd29c6912f374adeb2e9d68795e514817a54dee2806d40fa3db7e3b93"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11734/result.json",
+      "sha256": "923f0d640e5c65c4c6691205c9a89a2b9b14e46467108b7978c60c26ea37d618"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-10097/result.json",
+      "sha256": "e41ed00bacc970f320d433bf1eaeaa2bbe72c4731fce61a8d36dfcb9d93dfbc8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12754/result.json",
+      "sha256": "b411dc423c811cd4b0b641ea7bc05962dad3896597566e1ab28fdab3298c0ddd"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-15103/result.json",
+      "sha256": "5f5ab1ee5bca903bc06049511a53f717d0c29053c280db35d270e033d92b40f2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11820/result.json",
+      "sha256": "d65f89321d2960d9f63ad1bba9bf00099e4d587aeb86af0ded99a95fc726dc49"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-13964/result.json",
+      "sha256": "33ff5b2436afdfd0d9539e35ba57f08f66489003d9118ed3292f39d70e58fa14"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-16667/result.json",
+      "sha256": "01084604a22ffd9824a258343481a7bd97f639f37c422c4b8462a79b38de5dcd"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-16502/result.json",
+      "sha256": "b00f8a60d1e052df9bfd89db76d25a055b3a1fa40bf546aa7b4876f02ea64149"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-10880/result.json",
+      "sha256": "c1373f07a51d78358c6275de06f484a0817bcc2b87f950c5cd60daf804b82fa9"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/mwaskom__seaborn-3187/result.json",
+      "sha256": "0cf141cc09cb8f7b783a868deed760447782691665f24ad610da3592cff7e39b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/psf__requests-1142/result.json",
+      "sha256": "83126530ab96dd33dce803cca8093adb465e85de0a8e5a384cd7670f474ac262"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-3095/result.json",
+      "sha256": "5e1d75919b7d81fbf65c429e743e43508d0e5d8fe1edb812fd9fa8a3101d09ea"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pylint-dev__pylint-4604/result.json",
+      "sha256": "cf51f5bd9394043913b606d5c6a903d503243d91ee786ca09136b38a4a0b9ae2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-10081/result.json",
+      "sha256": "cba427e424bc86d696c98d4af3480e49562034b05689bc9f5bb29104b39d18a7"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-10914/result.json",
+      "sha256": "93163f5a9a4b726a14d62adf8e0928b1d2f33efdde8f6ae6ed22e5e65c28133d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/psf__requests-5414/result.json",
+      "sha256": "b58d90bf8f43952fea3499be433aa1e583cd42db3894952a32364eab1211ca53"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-3677/result.json",
+      "sha256": "14b0cc169c1926c99e6f4cff94f4aabf9c8e309f4c4946e72c6543355e515abc"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-10356/result.json",
+      "sha256": "78ce5732fed50daa6028f0128f334caf45f4513d1fae394824cf6818ac8ac7f8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-10973/result.json",
+      "sha256": "36bc6d24dd9ae07d3bf8fbcb42ebdb74902fd84adbabab2e8d2caab027657e7c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-4075/result.json",
+      "sha256": "a81d0138d913ce8b454798a91e384a4ec398a955a63a651b708da68e78d138d7"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-5809/result.json",
+      "sha256": "cc47d0acd4c10019eafb25af3d25b4f3176bbe423e6783b94ccfa0bc972b397f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-10999/result.json",
+      "sha256": "8c9d07549a7eb47bf774f312e6a4b28dac511ea5bdde169bbd4aed3fbf0cfa1f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-4094/result.json",
+      "sha256": "bea096e1c596b68f9c6488de6c5baebe2ae7fc5f2b2768098e10d0f8fcb32a7f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-6197/result.json",
+      "sha256": "29bcb96bfcee9a5d45ff9258f981e933a54bfa48db0334b9c5a4bf5548c27fea"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11066/result.json",
+      "sha256": "cee0faf61aac95fce639fdde47ff5000115ce890fc526c8b92808035d6806646"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-4629/result.json",
+      "sha256": "7284f5c56d16e938d1f2a543781273a0a3494ff106c9438b02c225a77e7bf28c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-7432/result.json",
+      "sha256": "f5b7592a855138f324cbc40ea21387e8a526839633fcaabe8669c1dd8ed69ada"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11087/result.json",
+      "sha256": "1b804e6a44a2b1739b09ca2409054e5ed97d69de3ab6890ccb2b257b91ff9d26"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-4687/result.json",
+      "sha256": "464adb17a0e768a5e9697a8ee57e10f8cf63f0d6aa98a711431a1f77a8824eee"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-7490/result.json",
+      "sha256": "6d6af2deb2defe48d653c701bafae97b284e42860d9ed877d0b9cb99ab03f3a0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11095/result.json",
+      "sha256": "9fb301b3abb135732c49353698807174ad5622594703346dc9ec62806d7faffa"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pydata__xarray-6992/result.json",
+      "sha256": "35d6bebd3197845f903ff1f80dccb798b2bae7cd0fd8b70c1787bc27792f8897"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/pytest-dev__pytest-7982/result.json",
+      "sha256": "b60336353b8f493bd3a1d1a2ff4d6f947c7dceab889e2691bb3f86dca05b8f11"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11099/result.json",
+      "sha256": "12103de6ddae2380e1ee512dc691615ce2c224ad6c7b676b24914b06b77c00d8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11119/result.json",
+      "sha256": "49f10a1b01b2689d1bd3b744df996671f508aa822d2ba364ceb3c378ffa6092a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11138/result.json",
+      "sha256": "9a32e2742b574dfe7ae4fb385ace976c907df40417c4c219a6a69f588de30ba0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11149/result.json",
+      "sha256": "dd1caeaa284593f8a6d8e2bff8dc772fc16e5c209c9e0057d239dd18dc428ddc"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11163/result.json",
+      "sha256": "57dd434d5c812384db90372c9856a7c80f1a3def4f39609da152e3c3bf9b65e8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11179/result.json",
+      "sha256": "69a65d85570efc421945aa9cf6d20ed59c61e473a4e96678d3912a41053aad39"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11206/result.json",
+      "sha256": "c4fdff7d7bd966429b1be182d18f81a42a034a946aad0d1a8d2820e1aca9506c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11211/result.json",
+      "sha256": "4ebf6e6623625689969900d84548d29d722b76a5ad8dde757ee7446e74a1e4fc"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11239/result.json",
+      "sha256": "4a3d3fe665c187dd3ac431aa2743c159df008830b6e0f40f709cf736f89b6b07"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11265/result.json",
+      "sha256": "aaacdd90a7ffb93e1423a2dbc9bb559b3b5edfc23065931a8da0a4b91d4d81b3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11276/result.json",
+      "sha256": "2aec756e73a308e6f6308f191512ff983b553ed0255870c7153bb04cc7763d1e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11292/result.json",
+      "sha256": "49ef5eeded6a12da74446d29123034f58aec6151a0949d3e1e3fe968e907d62a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11299/result.json",
+      "sha256": "fd5b1b8574faf2ca392391569ea49b4ec682f1dc8333787992a023409d21ddf5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11333/result.json",
+      "sha256": "b84fc7df9858380a3f338ff17904f41c190482f36c15e23691a114b94ec99ea3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11433/result.json",
+      "sha256": "023e63ef3d02f48aefdfaec1c4c7bd832b4988c0f6d736b2724b12cee5fe925b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11451/result.json",
+      "sha256": "d3b7e99a1c68d4176946f2eb12f1872ebb82f1eb7ef63afdf4517c5d605b6708"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11477/result.json",
+      "sha256": "ee5bbc6f27fee922b640fb818b75074d5ca7d276be4d9f310455035c71b89a29"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11490/result.json",
+      "sha256": "283d2ce36d923338077b0ec79b5d6e105e78e0c769af8f6b6ac1b3b749e059ed"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11532/result.json",
+      "sha256": "6cc6a73c53b212d1f1c517f63646f62540e8493a44d523d23e3bf331542fca0f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11133/result.json",
+      "sha256": "cb52a5536e53a659721436124d71817205aecfeedf6bd3c1248646036f8ffb7f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11551/result.json",
+      "sha256": "b7c04e447cb642c36171ee62c1769d046262b9c1fd906f1a7111640fb5fc920c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11555/result.json",
+      "sha256": "b7de082d272dd40c57e8bcfbcf844180bac0f673fe400d5aef37354c74d99065"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11603/result.json",
+      "sha256": "e786c5520150ab1a530fa1a26c4c8171b423d620fb19c994c9e508c97f7f1510"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11728/result.json",
+      "sha256": "21971de469364e65e2c3adc36b6357e77d4121033883d4dcc9dc62a8d048b2a6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11740/result.json",
+      "sha256": "a0b920f2f51313f4b625ff10db16bba1e7ab28cede63787c6c67381751261370"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11749/result.json",
+      "sha256": "53aece56b3d22081d43b03673f70072134dee981ad2a3adf74afd15d6dbe499c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11790/result.json",
+      "sha256": "acb0b44a4a5d8c7ff5e7c2962655b0cb7631985ffb478914d66d9adfb79ccdd5"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11815/result.json",
+      "sha256": "f7f41c41948d50a5d5f102f041c85c78047c0c09793138ea183df1ac6376ebf6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11848/result.json",
+      "sha256": "7e3114536f2b575a919c13a1b0578d36a6b22d7605772ace398b2294fbe495dc"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11880/result.json",
+      "sha256": "5d7a5b416e5e4eedeb52ebb1514d0760bb66eba297ef09884a616552f79d6d30"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11885/result.json",
+      "sha256": "531475feafb386f1701d90587dd5a9bd9a7cb22aa37242604492212887487daa"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11951/result.json",
+      "sha256": "d952f8c4b5deb856633a882009d7b2b343214570671232b9523ded3dfe213646"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11964/result.json",
+      "sha256": "76374afe4b29783c6f23f2ea1521eac780c82d93709d8a3c649249fcc683c8e1"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-11999/result.json",
+      "sha256": "cae8066a5de2e6e4cafc95b54ee8c536d63d04b433e3e18a7b7c23939b8d8c21"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12039/result.json",
+      "sha256": "794c07417e1db3ab7a37d8ee448b3485de6801c99f0e3d32c87d66ad625c021b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12050/result.json",
+      "sha256": "40535b2b6f801924c552e4e35be7dd4604a12d450ee89f25c5c600f1578886cc"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12125/result.json",
+      "sha256": "d4ab522e30b0efbd32b3d57e7dd3a0a5ceb5c0f9ccbc620794b6e09b7169402b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12143/result.json",
+      "sha256": "faa79fe5aae868be446feccf912404aa75ea045070346db4f925477ee9444cd8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12155/result.json",
+      "sha256": "7efd5a116e5b42bfbf483d9c6c8d3639e10e9b0b0a993d76dad1a1a1fc62bcb0"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12193/result.json",
+      "sha256": "b20e79656e9b19275987e39e7978174a75fff9347ba6ceb3beb605b077b9b78d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12209/result.json",
+      "sha256": "cce3e6bd48c59e3bbde12c0d43d4029c6321bb380ae513527e12041562d6ecf8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12262/result.json",
+      "sha256": "d3560b00a785f7790e9f4ce1e7cc6fbe0e9037c7ebee5d2a927c6748d5c79a8f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12273/result.json",
+      "sha256": "ce5294ed5cdb4fa7a1e8633873591dcc7d6293d9e0ac2f1decfc297dcb0bfccc"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12276/result.json",
+      "sha256": "2efc39e6b301c1c5da97c59d5e5ed296078bd95a578f4da859d08adcc2b188ef"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12304/result.json",
+      "sha256": "2e018638349e86481c997bca823a2afd1fc0af1fe744b548916c8ff75829ce49"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12308/result.json",
+      "sha256": "2a3b6cfacff1445de5c216ec24cc4ebb7d713309d78b21e46f78dbe18ed90f59"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12325/result.json",
+      "sha256": "92d4074462eae5d40af82d662c9cdef6a116cf5eeebceebd10e660e9b6979be9"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12406/result.json",
+      "sha256": "4ea884ef06ab95b237c33c53e9e168b707c8bf65fe3b47899026e21d2f4ea531"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12419/result.json",
+      "sha256": "c2a08cefcce6b0f29a1884dc97fd0ae4b2a2ddb47fc4a303deb45e1a0fa90104"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12663/result.json",
+      "sha256": "ffdfc554cf43b87c9ba305eff852df05f7b1060c825122b5d962032fc9f75746"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12708/result.json",
+      "sha256": "0da3a739b35b35ef78846c42a2c652b1c1ec7050ac93ec39eeed71ac7c153a2d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12713/result.json",
+      "sha256": "d6eca3903766c38d07946d96d06f9857546b612d11f2fafe240bb4d4c2531684"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12774/result.json",
+      "sha256": "97e81b4d3b733d679846e853205a9fb2572aa301c02df886de9a264211344770"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12858/result.json",
+      "sha256": "083f5a721a7f6940e75adc02046980ef9ce88486ab01d278c743f04574e46d5d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-12965/result.json",
+      "sha256": "f8a8f0a0c3528b98b15e6802767b5b013bc2f0456b82eac72f25f93054305e9b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-13012/result.json",
+      "sha256": "58d8d8a1ff5c4365bb1ced67a138a8587e7bc43fc6b6d5bfa3429b5304801ae9"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-13028/result.json",
+      "sha256": "bb660cdaae4bb5402d78dfe8e8b9c402e9ae487457bf0aa821e4f7f2632122a3"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-13033/result.json",
+      "sha256": "7a84d3115b88384610c274958dcc1d55ce5ce3c0a554fc70d50ceae765c9b784"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-13089/result.json",
+      "sha256": "fc6c3661c2b8de31b31a8301f052e02678b98f6f5791ab0744ace6bf26f189fb"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-13109/result.json",
+      "sha256": "fd17cbe21504e7a3db54b9b6ac9234e49099439a735d3c2e14f4a5bd18f51125"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-13112/result.json",
+      "sha256": "ce33e2300f0b6b1121fe49de321c4d63cf6b41c77c1c5960559c5f0c0c5ba2b6"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-13121/result.json",
+      "sha256": "707cffd6d9b55b1c056eee12d6ae52f009e5ad33757665549a7015e8121744ca"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-13128/result.json",
+      "sha256": "f73871d6ab1b6b23abede7cf6ef7d594d1d29778179c1214c56485d6c35df636"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-13158/result.json",
+      "sha256": "e2470da83c380af4963db5e0055fa0f497d99f4427756461bfc8ebb488a9a1c2"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-13195/result.json",
+      "sha256": "dc27017dadf42f936d655ada9500bd5468634f3bfda5222e0dd5b3b1b531575b"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-13212/result.json",
+      "sha256": "40899b42a563fa5029349506f8b60c4cf382c242f4893dfae6f774118ac8c7a8"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/workflows/django__django-13279/result.json",
+      "sha256": "7048fb8af6c30fd31c5e564519c294b877ed238f4d88ba17f4991c86910fc6c2"
+    }
+  ],
+  "comparison_source": {
+    "path": "/home/longhao/experiment/BeliefKV/scripts/compare_native_policy_runs.py",
+    "sha256": "a526b7e177ac10132bf1d50834d6e7ac8fc2c97392dbe247dd0aa9d3ac4e004a"
+  },
+  "cpu_receipt": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1266_reactive_native_reference_cpu_20261016.xml",
+    "sha256": "70fa824e2ead15dc84b123200d653b097cee519355fec4a395873f94091dd92b"
+  },
+  "recovery_cpu_receipt": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1270_v77_recovery_cpu_20261016.xml",
+    "sha256": "cd3f41c46051065bf599fb0810da0129dea947e60bbf253eb72aea1cf056c994"
+  },
+  "scope": "Reporting recovery only; no relabeling of outcomes, guards, quality or original driver exit2."
+}

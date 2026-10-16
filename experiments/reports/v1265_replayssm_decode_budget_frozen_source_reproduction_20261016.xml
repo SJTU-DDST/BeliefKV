@@ -1,0 +1,12 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="1" skipped="0" tests="1" time="6.844" timestamp="2026-10-16T15:10:49.458806-07:00" hostname="ddst-12"><testcase classname="srt.test_replayssm_decode_budget" name="test_standard_decode_ring_is_included_in_auto_sizing" time="0.002"><failure message="assert 2764800 &lt;= ((0.001 * (1 &lt;&lt; 30)) / 2)">monkeypatch = &lt;_pytest.monkeypatch.MonkeyPatch object at 0x7a59a844ce90&gt;
+
+    def test_standard_decode_ring_is_included_in_auto_sizing(monkeypatch):
+        cache_params = params()
+        count, remaining, budget = solve(monkeypatch, cache_params, enabled=True)
+        actual_bytes = (count + 1) * (
+            cache_params.mamba_cache_per_req + decode_ring_bytes(cache_params, 16)
+        )
+&gt;       assert actual_bytes &lt;= budget * (1 &lt;&lt; 30) / 2
+E       assert 2764800 &lt;= ((0.001 * (1 &lt;&lt; 30)) / 2)
+
+../sglang-v1262-replayssm-decode-budget-20261016/test/srt/test_replayssm_decode_budget.py:90: AssertionError</failure></testcase></testsuite></testsuites>

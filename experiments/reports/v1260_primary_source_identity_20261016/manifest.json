@@ -1,0 +1,51 @@
+{
+  "created_at": "2026-10-16T15:23:30.416258-07:00",
+  "sources": [
+    {
+      "paper": "ReplaySSM",
+      "arxiv_version": "2610.13778v1",
+      "requested_primary_url": "https://arxiv.org/html/2610.13778v1",
+      "path": "experiments/reports/v1260_primary_source_identity_20261016/replayssm-2610.13778v1.html",
+      "html_title": "ReplaySSM: Cache SSM Inputs, Not State",
+      "bytes": 774444,
+      "sha256": "ef4c2d41abf13552685f641e437599ce8925b4be31dd6673ebb5624ce11874b1"
+    },
+    {
+      "paper": "TreeWY",
+      "arxiv_version": "2608.20961v1",
+      "requested_primary_url": "https://arxiv.org/html/2608.20961v1",
+      "path": "experiments/reports/v1260_primary_source_identity_20261016/treewy-2608.20961v1.html",
+      "html_title": "TreeWY: Speculative Verification for Gated DeltaNet Hybrids",
+      "bytes": 206753,
+      "sha256": "48a05e90fbe298f4d43c3e5ebf97c06f09f2ee38f3c86a691d8467512923d658"
+    },
+    {
+      "paper": "Hydragen",
+      "arxiv_version": "2402.05099v1",
+      "requested_primary_url": "https://arxiv.org/html/2402.05099v1",
+      "path": "experiments/reports/v1260_primary_source_identity_20261016/hydragen-2402.05099v1.html",
+      "html_title": "Hydragen: High-Throughput LLM Inference with Shared Prefixes",
+      "bytes": 765469,
+      "sha256": "63f57ac07caebcac9697c2dbbcde354364b03eb44b857c35056fa886f51073f6"
+    },
+    {
+      "paper": "Semantic Parallelism / Sem-MoE",
+      "arxiv_version": "2503.04398v5",
+      "requested_primary_url": "https://arxiv.org/html/2503.04398v5",
+      "path": "experiments/reports/v1260_primary_source_identity_20261016/sem-moe-2503.04398v5.html",
+      "html_title": "Semantic Parallelism: Redefining Efficient MoE Inference via Model-Data Co-Scheduling",
+      "bytes": 356737,
+      "sha256": "d7333c84120fb278cdada150acf78f08792519ef4003263c8cae57ae8c211e0f"
+    }
+  ],
+  "unchanged_mislabeled_archive": {
+    "path": "experiments/reports/v1199_generation_related_work_primary_20261016/replayssm-2608.20961v1.html",
+    "html_title": "TreeWY: Speculative Verification for Gated DeltaNet Hybrids",
+    "sha256": "48a05e90fbe298f4d43c3e5ebf97c06f09f2ee38f3c86a691d8467512923d658"
+  },
+  "correction": "The archived content is TreeWY, not ReplaySSM. Sem-MoE is the framework name; its article title is Semantic Parallelism. Preserve prior source archives.",
+  "limits": [
+    "Primary-source identity and methods screening, not reproduction of reported GPU results.",
+    "Paper results do not establish BeliefKV workflow performance or task quality."
+  ]
+}

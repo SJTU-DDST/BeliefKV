@@ -10,6 +10,20 @@ native HEAD `94602c9`. V77 independently selects the registered native
 session-close combined patch/tree `76cf97d2`; these running and queued
 sources remain unchanged.
 
+`sglang-v0.5.20-replayssm-decode-budget.patch` preserves the independent
+ordinary ReplaySSM decode memory-accounting fix, candidate `91a9359`,
+tree `f231ed2420212d072e8d0ad4061f45e9690d1f31`. It applies over the complete
+V75 tree `53020ce3`, not clean `94602c9` or the V77 tree. Persistent d/k/g
+decode rings, including padding, are charged per Mamba slot; speculative
+verification scratch remains separately accounted. Disabled ReplaySSM retains
+the existing sizing behavior. V1263 passes 39 CPU cases and eight subtests,
+including actual CPU MambaPool allocations; V1261/V1265 retain the failing
+base reproductions. Forward application reconstructs the exact candidate
+tree and reverse application passes. V1264 binds sources, patch and receipts.
+The patch is not selected by the launcher and does not enable ReplaySSM or
+change the frozen experiments. GPU memory peaks, numerical correctness and
+performance have not been qualified.
+
 `sglang-v0.5.20-waiting-full-only.patch` is an independent incremental
 engineering candidate over the complete V75 tree `53020ce3`, not over
 clean `94602c9` or the V77 tree. Candidate `de4118f`, tree `35cf6411`,

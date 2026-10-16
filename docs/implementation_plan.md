@@ -2,6 +2,21 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 main integration: application changes through65503eb already
+include V76, native-order ablation and reactive reporting recovery. Preserve
+the independent ReplaySSM decode-budget candidate91a9359 as an incremental
+patch over53020ce3, with V1264 qualification and39 CPU cases/eight subtests.
+Do not select it in current launchers or combine it with frozen V77.
+V76 collected all156 tasks; its original exit2 is a comparator postprocessing
+failure and remains recorded. V1267-V1269 document the verified reporting
+recovery and unchanged V77 continuation. V77 launched15:20:49 PDT; V1216/V1219
+verified actual GPU service, native close GC, physical pools, arrivals and NUMA
+at15:23:51. Official quality grading is running, not complete. Correct the
+ReplaySSM/TreeWY citation identity using V1260 while retaining the old archive.
+The quality-matched native-relative goal remains active; later candidates
+require independent selection and GPU qualification. See screening4.26-4.28.
+Timestamped entries below retain their historical observation scope.
+
 2026-10-16 14:50 PDT: V1256/V1257 extend the same complete2400-3000s cohort
 with immediately preceding request completion and safe-input checkpoint evidence.
 All1473/34 V76/native positive Host requests associate with the previous
