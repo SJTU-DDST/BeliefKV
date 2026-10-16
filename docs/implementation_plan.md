@@ -39,6 +39,20 @@ Pending/ineligible outcomes count the full horizon;all V68 identities have
 passed it. This comparison does not join independent quality evidence;
 V68 quality is unverified,while V906 retains the native quality audit.
 
+V1024 is the newer independently sealed prefix audit,ending at19:40:41 PDT:
+107/153 explicit pre-completion positive FULL JOIN/tool events,76/42
+pre-completion submissions and57/34 early next-request reuse events,
+1.367/3.185GB FULL. Twenty-nine JOIN starts lack a pre-completion submit;
+12 JOIN/one tool completion boundaries remain unknown. Independent-event
+last-ACK-to-service P90 is16.156/20.919s,with184.704s maximum for tools.
+Twenty-two FULL commands have later native reload associations based on
+legacy batch-pool presence,not reconciled per-request receipts. Prefixes
+are sealed per file,not atomically across files. Do not claim full-run gain.
+At19:51 PDT,88 outcomes are written:87 completed and one incomplete.
+The django11206 root ends with two length results,repetitive final text
+and no semantic completion;no guard intervened and both children/JOIN ended.
+Preserve it without automatically increasing output or changing live harness.
+
 V1004's503.998-525.815s native stack diagnosis is outside fixed windows;
 941 main-thread samples include50 local closure captures,not CPU duration.
 V1005 seals18/42 explicit positive pre-completion FULL JOIN/tool plans,
@@ -61,6 +75,14 @@ nine native reads and128-134us. Final V1010 adds no native discovery on
 negative controls,two validation reads on eligible turns and69-78us complete
 CPU planning cost;cached all-cold controls still add42-51us. GPU benefit is
 unproven;do not hot-edit or interrupt V68 for these CPU observations.
+V1025 uses the actual current-engine RadixKey and native reentry method in
+complete CPU admission planning,with synthetic ancestry/index metadata and
+no DMA. Eligible32k/8-depth and98k/24-depth turns add0.133-0.404ms/two
+fresh reads;32k/256-depth and1024-depth add0.974/3.472ms. Input-mismatch
+controls still inspect the head,adding0.095-1.943ms without reordering.
+All-cold controls add no native reads but about0.018ms. This strengthens
+the fixture evidence without measuring live deep-tree frequency or GPU gain.
+Keep the registered candidate and judge service waits,control CPU and full JCT.
 V1018 preserves a registration bug:the imported generic register function
 spawned its old defining-module watcher,which exited before GPU launch.
 No driver/raw collection was created;its old observer state was overwritten.
