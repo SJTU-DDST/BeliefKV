@@ -8,8 +8,43 @@ recomputation checked. All three workstreams remain open: actual short-prefill
 and high-frequency control cost; useful JOIN/tool FULL prefetch conversion;
 recovery, KV lifecycle and first-service coordination. CPU checks, local
 microseconds, ACK counts and transferred bytes are not acceptance. Inspect
-running V67_aged_warm/e8dcba7 and completed V63 retry1; use V58
+running V68_partial_restore/e4aa180 and completed V63 retry1; use V58
 for development and matched repeated formal controls. Keep source/engine frozen.
+V68 cold-started at2026-10-15 18:51:42 PDT,port18472,supervisor1944353/
+start_ticks628571885 and driver1946108. V997/V999 bind registration/launch;
+ops/v68_partial_restore_20261015.state.json is authoritative. V996 binds
+1832 unique passes/two skips;708 fresh checks pass in the frozen checkout.
+V1000/V1001 verify actual GPU service,configuration and identical physical
+pool capacities;scheduler1946507/start_ticks628577888 serves with physical
+migration enabled and no observer/writer errors. Keep the same dedbe1a0 engine and agreed workload,
+including PREPARE_HOST; no task-quality or performance acceptance is claimed.
+The candidate includes qualified multi-child semantic control coalescing
+and a reduced ordinary-admission quota for a partly restored demand with
+fresh strictly lower FULL+necessary-Mamba restore cost,no greater next-chunk
+input and no weaker causal priority. Native input/capacity/dependencies
+remain authoritative. Ordinary admissions are preserved;inspect an aged
+head only when comparison can change the order. V994 adds8-12us in CPU
+fixtures and at most one native read;real native-tree cost remains a risk.
+Measure partial-priority consumption,ACK-to-service,reloads,batch filling,
+control CPU and actual workflow JCT before accepting this hypothesis.
+
+V998 supersedes only the unlaunched V985/6815795 waiter,retaining its source,
+registration and helper. V1002 explicitly interrupts V67 after all five
+fixed windows:135 completed,21 without terminal outcomes,driver exit-15.
+Preserve raw evidence and administrative censoring;do not synthesize full
+JCT or label missing outcomes failures. Old processes/containers exited
+and two free-GPU observations passed before V68 launch.
+V67's4800-5100s window yields329589/330775 request steps and11.211s
+control exclusive wall;short-prefill33/73 samples have36.584/37.723ms
+run_batch and7.523/8.514ms return-to-result versus historical V58.
+V991 partitions separate failure modes:one JOIN still waits14.136s after
+native arrival with182.19MB native FULL remaining;one tool ACK precedes
+completion by109.922s despite7.84ms client-submit delay,then waits14.507s
+after native arrival. Another tool's18.626s client interval includes
+summarization. Do not confuse prediction timing,summary work and admission
+waiting,or equate one lease exit with release of all covering locks.
+
+Historical V67:
 V67 cold-started at2026-10-15 17:20:43 PDT,port18471,supervisor546742/
 start_ticks628002818 and driver597989. V972/V974 bind registration/launch;
 ops/v67_aged_warm_direct_20261015.state.json is authoritative. Two free-GPU
@@ -42,11 +77,11 @@ first/final frames, first negative tool evidence, every child notice and
 complete local content. Normal periodic delivery resumes for the last member;
 unknown membership keeps the original path. Frozen6815795 uses the same
 dedbe1a0 engine; V983 freshly passes251 checks/two subtests with two skips.
-V984 binds1733 unique passes/two skips. V985 registers V68_join_body,
+V984 binds1733 unique passes/two skips. Historical V985 registered V68_join_body,
 waiter1297304/start_ticks628272250,port18472; state is
-ops/v68_join_body_20261015.state.json. Preserve complete V67 collection,
-verify predecessor exit/free GPU, then cold-start the candidate. V67 sources
-stay frozen. V68 has neither launched nor demonstrated GPU/JCT benefit.
+ops/v68_join_body_20261015.state.json. V998 explicitly superseded it before
+GPU launch;its frozen source remains unchanged. Do not attribute the latest
+combined V68_partial_restore result to this unlaunched semantic-only candidate.
 V973 explicitly interrupts V66 after four complete fixed windows including
 3600-3900s:96 completed,60 without terminal results,original driver exit-15.
 Retain raw evidence and censored identities; no complete summary or full-run
