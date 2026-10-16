@@ -1,0 +1,61 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-16",
+  "timezone": "America/Los_Angeles",
+  "status": "registered_and_waiting_no_grading_started",
+  "scope": "Independent V77 official-quality queue using the unchanged frozen series/core/exporter/scorer, after complete V77 and the prior quality queue.",
+  "helper": "/home/longhao/experiment/ops/quality_eval/run_v77_quality_cpu_20261016.py",
+  "helper_sha256": "9377aaa16c5a847c6e4032454b6f5494a6793ea0b2bcf921efd46af475f596be",
+  "main_source": "scripts/run_v77_official_quality_after_series.py",
+  "test_source": "tests/test_v77_official_quality_queue.py",
+  "test_source_sha256": "e70e1903fb037bc64037fbf02d792115592a7fdfb3ca5a2ecd305b64dcb6c43a",
+  "checks": {
+    "report": "experiments/reports/v1221_v77_quality_queue_cpu_20261016.xml",
+    "sha256": "9eb2e8d9ca39d2f33ca5fdd3ca718ec619de67e2783cd5ab86f2fec5a9e1f259",
+    "passed_cases": 17,
+    "failures": 0,
+    "skipped": 0,
+    "coverage": "Full native cohort, independent paths/run ID, dynamic future worker/driver identity, PID reuse/zombies, failed CPU qualification and inherited all-outcome retention."
+  },
+  "actual_quality_environment_composition": {
+    "python": "/home/longhao/experiment/ops/quality_eval/venv/bin/python",
+    "frozen_application": "/home/longhao/experiment/.worktrees/beliefkv-v1213-native-close-gpu-20261016",
+    "series_source_sha256": "fe32d22eac0ae6098b7931664a66632d67633e3bc82a3f1fb22e9be4a9159a4d",
+    "core_source_sha256": "7d71a5d36ccf05419f70f3bdb7209d4da8c00f61afd5ba2554570b6097ed8379",
+    "exporter_sha256": "ded360d7c046c77fb6c66b0cbccf7f01e0f33c878c3ff26ca1440c3f50149574",
+    "scorer_sha256": "2f9242155a93fd224b2d70372fa9022b7f18aaf6b337d687e91665a4612d4cad",
+    "arms": ["v77_native_close"],
+    "run_id": "beliefkv-v77-native-close-quality-cpu-20261016",
+    "snapshot": "experiments/reports/v1224_v77_quality_environment_20261016.json",
+    "deadline": "9999-12-31T23:59:59.999999+00:00",
+    "worker_started_during_composition_check": false,
+    "containers_started_during_composition_check": false,
+    "gpu_access": false
+  },
+  "registration": {
+    "path": "experiments/reports/v1223_v77_quality_registration_20261016.json",
+    "sha256": "81cfb74281424d5be27de6af460e2c5e4621ec5e3ddec982887ae69802bb0b52"
+  },
+  "supervisor": {
+    "pid": 1121673,
+    "start_ticks": "634983330",
+    "actual_live_check": "2026-10-16T12:41",
+    "state": "/home/longhao/experiment/ops/quality_eval/quality_v77_cpu_20261016.state.json",
+    "status": "waiting_for_complete_v77_and_prior_quality",
+    "grading_started": false
+  },
+  "limits": {
+    "workers": 1,
+    "nano_cpus": 1000000000,
+    "memory_bytes": 8589934592,
+    "official_task_timeout_seconds": 1800,
+    "gpu_access": false
+  },
+  "semantics": [
+    "Wait for exact recorded supervisors and any dynamically observed live driver/worker; no concurrent old/new grader.",
+    "Retain all156 tasks, incomplete outcomes, empty patches and guard labels.",
+    "Keep the frozen scorer measurement_complete condition unchanged.",
+    "Future V1222 inputs and V1224 environment are not existing grading results.",
+    "Do not mutate the registered wrapper, its CPU receipt, frozen dependencies or prior queue."
+  ]
+}

@@ -24,7 +24,10 @@ to run after complete V76 collection and resource release. It uses the same
 156 tasks, [Poisson schedule and budgets](experiments/reports/v1220_v77_native_close_frozen_plan_20261016.json),
 with native admission and no workflow
 controller. Its supervisor is waiting; GPU performance and task quality are pending.
-It is a simple engineering baseline, not an established paper contribution or
+V75 is now complete; V76 has verified actual no-prefetch service.
+The independent [V77 quality queue](experiments/reports/v1223_v77_quality_registration_20261016.json)
+waits for V77 and the existing quality series, retaining all 156 outcomes.
+The native-close arm is a simple engineering baseline, not an established paper contribution or
 GPU performance result. Existing V75/V76 candidates and launch contracts remain frozen.
 
 ## Current Scope

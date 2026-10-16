@@ -1,0 +1,18 @@
+{
+  "at": "2026-10-16T12:39:30.203075-07:00",
+  "supervisor": {
+    "pid": 1121673,
+    "state": "R",
+    "ppid": 1121665,
+    "start_ticks": "634983330",
+    "argv": [
+      "/home/longhao/experiment/ops/quality_eval/venv/bin/python",
+      "/home/longhao/experiment/ops/quality_eval/run_v77_quality_cpu_20261016.py",
+      "--watch"
+    ]
+  },
+  "registration": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1223_v77_quality_registration_20261016.json",
+    "sha256": "81cfb74281424d5be27de6af460e2c5e4621ec5e3ddec982887ae69802bb0b52"
+  }
+}

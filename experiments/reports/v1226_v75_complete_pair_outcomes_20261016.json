@@ -1,0 +1,134 @@
+{
+  "schema_version": 1,
+  "date": "2026-10-16",
+  "timezone": "America/Los_Angeles",
+  "scope": "Complete V75 development pair; same planned tasks/arrivals/resources, different realized model work. Official quality is ungraded. Raw durations include incomplete and guard-labeled workflows and are not quality-matched JCT.",
+  "run": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback",
+  "sources_sha256": {
+    "ab_plan.json": "f5f64b2e20bf2f50bbb24583a9a2764c7c27007768f975e848696f33e3c741ea",
+    "native_policy_comparison.json": "4a27f38abd80a40d679adf4cab4aa9b382c5aa870c8aa11389b75a01af3693eb",
+    "predictive_h2d/client_156/summary.json": "918dd99baee4e36d0ef97d0ebc2cc50170c4c6cd2875325bc40b4c1817a1daa0",
+    "native/client_156/summary.json": "acf285972bc44c1b1f4210d697583e499af6fdc304b0fd43ec840bb70a71e96c",
+    "predictive_h2d/memory_opportunity.json": "3e511daf4df224f7d70ae83248b75a48ec93591a0b1fa12c855b1294601128fe",
+    "native/memory_opportunity.json": "efe367675994e3b1015625641baf3b5df7762dabcf113510efd4e84be5b0e85f"
+  },
+  "shared_configuration": {
+    "application": "2ad32d097dae169ff437ecb9f66098a2dc6ffea4",
+    "engine_tree": "53020ce3efef3ed362e9af0db77147b39070f064",
+    "write_back_batch_nodes": 32,
+    "root_count": 156,
+    "arrival_schedule_sha256": "00e1d626e23f619c00a8238bd08bbb94e55ceded2c8cf48b0a181127f47a4552",
+    "same_task_set": true,
+    "same_physical_pool_capacity": true
+  },
+  "predictive_h2d": {
+    "outcomes": {"completed": 155, "incomplete": 1},
+    "collection_duration_seconds": 7919.167762887664,
+    "all_task_raw_duration_mean_seconds": 1806.8971281316644,
+    "completed_only_raw_duration_mean_seconds": 1783.1299644662788,
+    "completed_workflows_per_hour": 70.46194962746054,
+    "native_agent_jct_eligible_workflows": 144,
+    "guard_labeled_workflows": 11,
+    "client_llm_request_count": 39211,
+    "client_tool_call_count": 38927,
+    "output_tokens_per_second": 1003.3488666873077,
+    "gpu_utilization_mean_percent": 92.72670681200294,
+    "native_h2d_bytes": 115202826240,
+    "predictive_h2d_bytes": 12155617280,
+    "native_h2d_stream_ms": 3898.535550430417,
+    "predictive_h2d_stream_ms": 725.9469769448042,
+    "d2h_bytes": 1749251461120,
+    "d2h_stream_ms": 213983.57419149205,
+    "observed_uncached_prompt_tokens": 45174567,
+    "previously_served_prefix_recompute_proxy_tokens": 1222664
+  },
+  "native": {
+    "outcomes": {"completed": 153, "incomplete": 3},
+    "collection_duration_seconds": 6841.74337251205,
+    "all_task_raw_duration_mean_seconds": 1665.373886756396,
+    "completed_only_raw_duration_mean_seconds": 1608.4451914583606,
+    "completed_workflows_per_hour": 80.50579655076501,
+    "native_agent_jct_eligible_workflows": 141,
+    "guard_labeled_workflows": 13,
+    "client_llm_request_count": 36166,
+    "client_tool_call_count": 35896,
+    "output_tokens_per_second": 1050.3254227382004,
+    "gpu_utilization_mean_percent": 95.81258457374831,
+    "native_h2d_bytes": 13610455040,
+    "native_h2d_stream_ms": 661.4988813400269,
+    "d2h_bytes": 1935036805120,
+    "d2h_stream_ms": 276723.3001533281,
+    "observed_uncached_prompt_tokens": 41693116,
+    "previously_served_prefix_recompute_proxy_tokens": 1147667
+  },
+  "predictive_relative_to_native_percent": {
+    "all_task_raw_duration_mean": 8.497986097939215,
+    "completed_workflows_per_hour": -12.475930123827872,
+    "collection_duration": 15.74780478765636
+  },
+  "paired_completed_diagnostic": {
+    "paired_completed_workflows": 152,
+    "both_explicitly_jct_eligible": 132,
+    "predictive_raw_mean_seconds": 1776.1990716892453,
+    "native_raw_mean_seconds": 1606.822106888867,
+    "mean_predictive_minus_native_seconds": 169.3769648003784,
+    "predictive_shorter_workflows": 78,
+    "native_shorter_workflows": 74,
+    "scope": "Outcome-based completed pairs, with eligibility flags retained. Not the complete quality-matched cohort."
+  },
+  "native_incomplete": [
+    {
+      "instance_id": "django__django-11179",
+      "duration_seconds": 5208.511526167393,
+      "error": null,
+      "deadline_expired": false,
+      "guard_intervened_completions": 1,
+      "all_joins_satisfied": true,
+      "all_subagents_returned": true,
+      "last_two_root_finish_reasons": ["length", "length"],
+      "last_two_root_output_chars": [0, 33124],
+      "sources_sha256": {
+        "result.json": "fb2fb01ec810fd155e2f9df0c89e8ba801768ee548a7b47ee38db32c16c9b162",
+        "runtime_events.deepagents.jsonl": "855b5e2123b03ecd209391956362eaf8d8dd57341516733c750d2cce882ccc00"
+      }
+    },
+    {
+      "instance_id": "django__django-13089",
+      "duration_seconds": 3578.9677667142823,
+      "error": null,
+      "deadline_expired": false,
+      "guard_intervened_completions": 0,
+      "all_joins_satisfied": true,
+      "all_subagents_returned": true,
+      "last_two_root_finish_reasons": ["length", "length"],
+      "last_two_root_output_chars": [0, 33284],
+      "sources_sha256": {
+        "result.json": "11cccc771dbe76f83b4b547e83be4377e6b098524ebadf902ef3f903ba692490",
+        "runtime_events.deepagents.jsonl": "d7d90962438829fee40d17fb7804cccc355f66baa916d802809d6245836383ab"
+      }
+    },
+    {
+      "instance_id": "pytest-dev__pytest-6197",
+      "duration_seconds": 4918.732747986913,
+      "error": null,
+      "deadline_expired": false,
+      "guard_intervened_completions": 0,
+      "all_joins_satisfied": true,
+      "all_subagents_returned": true,
+      "last_two_root_finish_reasons": ["length", "length"],
+      "last_two_root_output_chars": [0, 33333],
+      "sources_sha256": {
+        "result.json": "d3255c8bffd441d3b9d246760d5f6565bb24973c73d6035887a55891d2c9ba76",
+        "runtime_events.deepagents.jsonl": "3e84d467c00d662036f147cfb9629266b7503e59c198802a776ee1382c8d9720"
+      }
+    }
+  ],
+  "limits": [
+    "The three native failures are not workflow-deadline or JOIN-timeout evidence; all end after two root responses with finish_reason=length.",
+    "Keep the existing 8192-token cap and guard labels; do not relabel incomplete as natural completion.",
+    "Host restoration bytes include policy and trajectory effects; extra H2D is not automatically replacement of native demand.",
+    "CUDA-stream and submit-to-ACK sums are not exposed critical-path waits or subtractable JCT.",
+    "Prefix loss is a bounded-history proxy, not exact useful FULL/Mamba recomputation.",
+    "Official quality and complete quality-matched performance acceptance remain pending."
+  ]
+}

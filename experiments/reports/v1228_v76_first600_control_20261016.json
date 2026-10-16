@@ -1,0 +1,676 @@
+{
+  "created_at": "2026-10-16T12:52:34.387354-07:00",
+  "scope": "Complete first600s observed windows; different realized work. Python self-wall is not thread CPU, GPU stall or removable JCT. No runtime instrumentation changed.",
+  "analysis_module": "scripts/analyze_busy_context_control.py",
+  "analysis_module_sha256": "032b6c61d41c29692c7ba474882aa46ce149373142838c63d33c5123519cc789",
+  "methods": [
+    "monitor_window",
+    "control_profile"
+  ],
+  "start_seconds": 0,
+  "end_seconds": 600,
+  "arms": {
+    "v76_reactive": {
+      "arm": "experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive",
+      "monitor_window": {
+        "source": "experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/client_156/gpu_samples.csv",
+        "first_row": {
+          "timestamp": "2026/10/16 12:37:01.503",
+          "memory_used_mib": " 136596",
+          "memory_free_mib": " 6563",
+          "gpu_utilization_percent": " 0",
+          "memory_utilization_percent": " 0",
+          "power_watts": " 105.60"
+        },
+        "origin_ts_ms": 1792179421503.0,
+        "begin_ts_ms": 1792179421503.0,
+        "end_ts_ms": 1792180021503.0,
+        "observed_through_ts_ms": 1792180021619.0,
+        "timezone": "America/Los_Angeles"
+      },
+      "control_profile": {
+        "source": "experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v76_no_prefetch/reactive/opportunities/admission_opportunities.jsonl",
+        "read_prefix_bytes": 84534990,
+        "read_prefix_sha256": "86d2ac774ee78a66204cfea793ed8d325b160c40156e74a9febea32147304bcd",
+        "boundary_state_ts_ms": [
+          1792179420676.606,
+          1792180021293.6646
+        ],
+        "raw_boundary_line_sha256": [
+          "63966b47baa491f8b25c7186b403dd4a34bf01d053d8efb7a1ed6218dd0789c9",
+          "4d0b05c5e6b2a56bf32396a4aad498da9b48f1f1a86afc64580defae9f2232aa"
+        ],
+        "observed_duration_ms": 600617.05859375,
+        "summed_python_self_ms": 15043.439255,
+        "background_writer_timing": {
+          "available": true,
+          "sample_every": 64,
+          "cpu_clock": "thread_time_ns",
+          "wall_clock": "perf_counter_ns",
+          "boundary_snapshot_ts_ms": [
+            1792179420676.9233,
+            1792180021295.115
+          ],
+          "raw_boundary_line_sha256": [
+            "63966b47baa491f8b25c7186b403dd4a34bf01d053d8efb7a1ed6218dd0789c9",
+            "4d0b05c5e6b2a56bf32396a4aad498da9b48f1f1a86afc64580defae9f2232aa"
+          ],
+          "observed_duration_ms": 600618.1916503906,
+          "begin_snapshot_lag_ms": 826.07666015625,
+          "end_snapshot_lag_ms": 207.885009765625,
+          "sampled_cpu_ms": 31.087736999999997,
+          "sampled_wall_ms": 44.451575000000005,
+          "categories": {
+            "terminal_context_cache_sample": {
+              "records_seen": 5945,
+              "samples": 93,
+              "sampled_cpu_ms": 21.85062,
+              "sampled_wall_ms": 34.79564,
+              "mean_sample_cpu_ms": 0.23495290322580645,
+              "mean_sample_wall_ms": 0.3741466666666666
+            },
+            "tool_wait_forecast": {
+              "records_seen": 5290,
+              "samples": 83,
+              "sampled_cpu_ms": 5.599089,
+              "sampled_wall_ms": 5.578328,
+              "mean_sample_cpu_ms": 0.06745890361445783,
+              "mean_sample_wall_ms": 0.06720877108433734
+            },
+            "admission_runtime_state": {
+              "records_seen": 588,
+              "samples": 9,
+              "sampled_cpu_ms": 3.345829,
+              "sampled_wall_ms": 3.778889,
+              "mean_sample_cpu_ms": 0.37175877777777777,
+              "mean_sample_wall_ms": 0.41987655555555553
+            },
+            "terminal_child_cache_reclaimed": {
+              "records_seen": 77,
+              "samples": 2,
+              "sampled_cpu_ms": 0.07826,
+              "sampled_wall_ms": 0.078285,
+              "mean_sample_cpu_ms": 0.03913,
+              "mean_sample_wall_ms": 0.0391425
+            },
+            "prepare_native_issued": {
+              "records_seen": 151,
+              "samples": 3,
+              "sampled_cpu_ms": 0.06026,
+              "sampled_wall_ms": 0.069861,
+              "mean_sample_cpu_ms": 0.020086666666666666,
+              "mean_sample_wall_ms": 0.023287000000000002
+            },
+            "parent_pressure_demoted": {
+              "records_seen": 76,
+              "samples": 2,
+              "sampled_cpu_ms": 0.045499,
+              "sampled_wall_ms": 0.045161,
+              "mean_sample_cpu_ms": 0.0227495,
+              "mean_sample_wall_ms": 0.0225805
+            },
+            "parent_capacity_handoff_first_service": {
+              "records_seen": 17,
+              "samples": 1,
+              "sampled_cpu_ms": 0.035395,
+              "sampled_wall_ms": 0.034594,
+              "mean_sample_cpu_ms": 0.035395,
+              "mean_sample_wall_ms": 0.034594
+            },
+            "terminal_cache_anchor_unavailable": {
+              "records_seen": 47,
+              "samples": 1,
+              "sampled_cpu_ms": 0.030916,
+              "sampled_wall_ms": 0.030138,
+              "mean_sample_cpu_ms": 0.030916,
+              "mean_sample_wall_ms": 0.030138
+            },
+            "prepare_candidate_selected": {
+              "records_seen": 39,
+              "samples": 1,
+              "sampled_cpu_ms": 0.019748,
+              "sampled_wall_ms": 0.019755,
+              "mean_sample_cpu_ms": 0.019748,
+              "mean_sample_wall_ms": 0.019755
+            },
+            "terminal_workflow_root_cache_reclaimed": {
+              "records_seen": 5,
+              "samples": 1,
+              "sampled_cpu_ms": 0.014552,
+              "sampled_wall_ms": 0.013814,
+              "mean_sample_cpu_ms": 0.014552,
+              "mean_sample_wall_ms": 0.013814
+            },
+            "child_final_stage_accepted": {
+              "records_seen": 16,
+              "samples": 1,
+              "sampled_cpu_ms": 0.007569,
+              "sampled_wall_ms": 0.00711,
+              "mean_sample_cpu_ms": 0.007569,
+              "mean_sample_wall_ms": 0.00711
+            }
+          },
+          "semantics": "Measured processing samples completed between writer snapshots. Producer timestamps, queue waiting and status publication are excluded. Samples may span a boundary; cumulative maxima are not window maxima. No multiplication by the sampling interval, full-window cost, GIL attribution, GPU stall or JCT saving is inferred."
+        },
+        "phases": {
+          "control_drain": {
+            "count": 62571,
+            "self_ms": 3342.906466,
+            "total_ms": 6528.791961
+          },
+          "scheduler_maintenance": {
+            "count": 62571,
+            "self_ms": 3059.2681030000003,
+            "total_ms": 9652.312333
+          },
+          "event_apply": {
+            "count": 15877,
+            "self_ms": 2670.85158,
+            "total_ms": 3148.682608
+          },
+          "join_prepare": {
+            "count": 9387,
+            "self_ms": 1692.84988,
+            "total_ms": 1862.3864669999998
+          },
+          "terminal_sampling": {
+            "count": 588,
+            "self_ms": 1136.92911,
+            "total_ms": 1136.92911
+          },
+          "batch_completed": {
+            "count": 34062,
+            "self_ms": 1131.423804,
+            "total_ms": 1131.423804
+          },
+          "admission_plan": {
+            "count": 4094,
+            "self_ms": 489.809036,
+            "total_ms": 520.362431
+          },
+          "post_launch_physical": {
+            "count": 62571,
+            "self_ms": 371.637608,
+            "total_ms": 2602.411577
+          },
+          "graph_apply": {
+            "count": 15877,
+            "self_ms": 348.990952,
+            "total_ms": 348.990952
+          },
+          "tool_prepare": {
+            "count": 5251,
+            "self_ms": 343.348363,
+            "total_ms": 368.38750200000004
+          },
+          "tool_features": {
+            "count": 7240,
+            "self_ms": 137.721072,
+            "total_ms": 137.721072
+          },
+          "prepare_candidate_publication": {
+            "count": 597,
+            "self_ms": 89.255388,
+            "total_ms": 89.255388
+          },
+          "terminal_child_reclaim": {
+            "count": 82,
+            "self_ms": 55.371273,
+            "total_ms": 55.371273
+          },
+          "prepare_candidate_maintenance": {
+            "count": 429,
+            "self_ms": 52.20802,
+            "total_ms": 52.20802
+          },
+          "prepare_backed_registration": {
+            "count": 1330,
+            "self_ms": 48.056775,
+            "total_ms": 48.056775
+          },
+          "residency_hint": {
+            "count": 305,
+            "self_ms": 28.202311,
+            "total_ms": 28.515695
+          },
+          "control_socket_send_sample": {
+            "count": 207,
+            "self_ms": 16.764265,
+            "total_ms": 16.764265
+          },
+          "control_socket_receive_sample": {
+            "count": 1185,
+            "self_ms": 9.639812,
+            "total_ms": 9.639812
+          },
+          "control_event_decode_sample": {
+            "count": 244,
+            "self_ms": 6.220564,
+            "total_ms": 6.220564
+          },
+          "control_json_decode_sample": {
+            "count": 207,
+            "self_ms": 6.218169,
+            "total_ms": 6.218169
+          },
+          "control_ack_encode_sample": {
+            "count": 207,
+            "self_ms": 3.41562,
+            "total_ms": 3.41562
+          },
+          "reentry_inspection": {
+            "count": 34,
+            "self_ms": 2.351084,
+            "total_ms": 2.351084
+          }
+        }
+      }
+    },
+    "v75_predictive": {
+      "arm": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d",
+      "monitor_window": {
+        "source": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/client_156/gpu_samples.csv",
+        "first_row": {
+          "timestamp": "2026/10/16 08:18:35.952",
+          "memory_used_mib": " 136596",
+          "memory_free_mib": " 6563",
+          "gpu_utilization_percent": " 0",
+          "memory_utilization_percent": " 0",
+          "power_watts": " 103.93"
+        },
+        "origin_ts_ms": 1792163915952.0,
+        "begin_ts_ms": 1792163915952.0,
+        "end_ts_ms": 1792164515952.0,
+        "observed_through_ts_ms": 1792164516115.0,
+        "timezone": "America/Los_Angeles"
+      },
+      "control_profile": {
+        "source": "experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/predictive_h2d/opportunities/admission_opportunities.jsonl",
+        "read_prefix_bytes": 113870635,
+        "read_prefix_sha256": "5a4ddb4cbb3a9f47023d294e51e5a3225dd76b4f4847b90aa7300db1377ae55f",
+        "boundary_state_ts_ms": [
+          1792163915658.502,
+          1792164515694.274
+        ],
+        "raw_boundary_line_sha256": [
+          "09edf2eb5f8a36e46dc78e057c78694af6f1025de1dc6e4f4ba310bf12156b0f",
+          "79d0a6a7315c4338857b3e16af15070ce3624c662fafcd4e7a78382b85976820"
+        ],
+        "observed_duration_ms": 600035.7719726562,
+        "summed_python_self_ms": 25377.156852000004,
+        "background_writer_timing": {
+          "available": true,
+          "sample_every": 64,
+          "cpu_clock": "thread_time_ns",
+          "wall_clock": "perf_counter_ns",
+          "boundary_snapshot_ts_ms": [
+            1792163915688.2258,
+            1792164515697.03
+          ],
+          "raw_boundary_line_sha256": [
+            "09edf2eb5f8a36e46dc78e057c78694af6f1025de1dc6e4f4ba310bf12156b0f",
+            "79d0a6a7315c4338857b3e16af15070ce3624c662fafcd4e7a78382b85976820"
+          ],
+          "observed_duration_ms": 600008.8041992188,
+          "begin_snapshot_lag_ms": 263.774169921875,
+          "end_snapshot_lag_ms": 254.969970703125,
+          "sampled_cpu_ms": 40.65679600000001,
+          "sampled_wall_ms": 64.948271,
+          "categories": {
+            "terminal_context_cache_sample": {
+              "records_seen": 6195,
+              "samples": 97,
+              "sampled_cpu_ms": 22.080607,
+              "sampled_wall_ms": 38.358386,
+              "mean_sample_cpu_ms": 0.2276351237113402,
+              "mean_sample_wall_ms": 0.3954472783505155
+            },
+            "tool_wait_forecast": {
+              "records_seen": 6492,
+              "samples": 102,
+              "sampled_cpu_ms": 5.671991,
+              "sampled_wall_ms": 5.653549,
+              "mean_sample_cpu_ms": 0.055607754901960786,
+              "mean_sample_wall_ms": 0.05542695098039216
+            },
+            "session_h2d_opportunity": {
+              "records_seen": 7763,
+              "samples": 122,
+              "sampled_cpu_ms": 4.958723,
+              "sampled_wall_ms": 9.600463,
+              "mean_sample_cpu_ms": 0.040645270491803276,
+              "mean_sample_wall_ms": 0.07869231967213114
+            },
+            "wait_prefetch_plan": {
+              "records_seen": 4137,
+              "samples": 65,
+              "sampled_cpu_ms": 3.15626,
+              "sampled_wall_ms": 5.095683,
+              "mean_sample_cpu_ms": 0.04855784615384615,
+              "mean_sample_wall_ms": 0.07839512307692308
+            },
+            "admission_runtime_state": {
+              "records_seen": 587,
+              "samples": 9,
+              "sampled_cpu_ms": 3.124098,
+              "sampled_wall_ms": 3.445325,
+              "mean_sample_cpu_ms": 0.347122,
+              "mean_sample_wall_ms": 0.3828138888888889
+            },
+            "semantic_child_forecast": {
+              "records_seen": 659,
+              "samples": 11,
+              "sampled_cpu_ms": 0.331259,
+              "sampled_wall_ms": 0.328394,
+              "mean_sample_cpu_ms": 0.03011445454545455,
+              "mean_sample_wall_ms": 0.029854000000000002
+            },
+            "terminal_child_cache_reclaimed": {
+              "records_seen": 80,
+              "samples": 2,
+              "sampled_cpu_ms": 0.249864,
+              "sampled_wall_ms": 0.248785,
+              "mean_sample_cpu_ms": 0.124932,
+              "mean_sample_wall_ms": 0.1243925
+            },
+            "final_stage_latest_start": {
+              "records_seen": 216,
+              "samples": 4,
+              "sampled_cpu_ms": 0.237418,
+              "sampled_wall_ms": 0.236199,
+              "mean_sample_cpu_ms": 0.0593545,
+              "mean_sample_wall_ms": 0.05904975
+            },
+            "wait_prefetch_tail_capacity_reclaimed": {
+              "records_seen": 1,
+              "samples": 1,
+              "sampled_cpu_ms": 0.132018,
+              "sampled_wall_ms": 1.009089,
+              "mean_sample_cpu_ms": 0.132018,
+              "mean_sample_wall_ms": 1.009089
+            },
+            "safe_point_census": {
+              "records_seen": 587,
+              "samples": 9,
+              "sampled_cpu_ms": 0.11188400000000001,
+              "sampled_wall_ms": 0.107846,
+              "mean_sample_cpu_ms": 0.012431555555555557,
+              "mean_sample_wall_ms": 0.011982888888888888
+            },
+            "confirmed_join_client_bound": {
+              "records_seen": 16,
+              "samples": 1,
+              "sampled_cpu_ms": 0.078327,
+              "sampled_wall_ms": 0.343939,
+              "mean_sample_cpu_ms": 0.078327,
+              "mean_sample_wall_ms": 0.343939
+            },
+            "terminal_cache_anchor_unavailable": {
+              "records_seen": 43,
+              "samples": 1,
+              "sampled_cpu_ms": 0.077342,
+              "sampled_wall_ms": 0.07444,
+              "mean_sample_cpu_ms": 0.077342,
+              "mean_sample_wall_ms": 0.07444
+            },
+            "wait_prefetch_capacity_reclaimed": {
+              "records_seen": 4,
+              "samples": 1,
+              "sampled_cpu_ms": 0.069597,
+              "sampled_wall_ms": 0.06875,
+              "mean_sample_cpu_ms": 0.069597,
+              "mean_sample_wall_ms": 0.06875
+            },
+            "parent_capacity_handoff_first_service": {
+              "records_seen": 19,
+              "samples": 1,
+              "sampled_cpu_ms": 0.050677,
+              "sampled_wall_ms": 0.050498,
+              "mean_sample_cpu_ms": 0.050677,
+              "mean_sample_wall_ms": 0.050498
+            },
+            "terminal_workflow_root_cache_reclaimed": {
+              "records_seen": 7,
+              "samples": 1,
+              "sampled_cpu_ms": 0.048604,
+              "sampled_wall_ms": 0.048928,
+              "mean_sample_cpu_ms": 0.048604,
+              "mean_sample_wall_ms": 0.048928
+            },
+            "parent_pressure_demoted": {
+              "records_seen": 72,
+              "samples": 2,
+              "sampled_cpu_ms": 0.047249,
+              "sampled_wall_ms": 0.04684,
+              "mean_sample_cpu_ms": 0.0236245,
+              "mean_sample_wall_ms": 0.02342
+            },
+            "prepare_native_issued": {
+              "records_seen": 125,
+              "samples": 2,
+              "sampled_cpu_ms": 0.042897,
+              "sampled_wall_ms": 0.042489,
+              "mean_sample_cpu_ms": 0.0214485,
+              "mean_sample_wall_ms": 0.0212445
+            },
+            "wait_prefetch_full_extent_split": {
+              "records_seen": 1,
+              "samples": 1,
+              "sampled_cpu_ms": 0.030402,
+              "sampled_wall_ms": 0.030635,
+              "mean_sample_cpu_ms": 0.030402,
+              "mean_sample_wall_ms": 0.030635
+            },
+            "prefetch_native_issued": {
+              "records_seen": 2,
+              "samples": 1,
+              "sampled_cpu_ms": 0.029742,
+              "sampled_wall_ms": 0.03041,
+              "mean_sample_cpu_ms": 0.029742,
+              "mean_sample_wall_ms": 0.03041
+            },
+            "prefetch_residency_released": {
+              "records_seen": 2,
+              "samples": 1,
+              "sampled_cpu_ms": 0.027631,
+              "sampled_wall_ms": 0.027108,
+              "mean_sample_cpu_ms": 0.027631,
+              "mean_sample_wall_ms": 0.027108
+            },
+            "prefetch_residency_registered": {
+              "records_seen": 2,
+              "samples": 1,
+              "sampled_cpu_ms": 0.022437,
+              "sampled_wall_ms": 0.022629,
+              "mean_sample_cpu_ms": 0.022437,
+              "mean_sample_wall_ms": 0.022629
+            },
+            "confirmed_join_ticket": {
+              "records_seen": 19,
+              "samples": 1,
+              "sampled_cpu_ms": 0.019651,
+              "sampled_wall_ms": 0.018737,
+              "mean_sample_cpu_ms": 0.019651,
+              "mean_sample_wall_ms": 0.018737
+            },
+            "prepare_candidate_selected": {
+              "records_seen": 36,
+              "samples": 1,
+              "sampled_cpu_ms": 0.019304,
+              "sampled_wall_ms": 0.018908,
+              "mean_sample_cpu_ms": 0.019304,
+              "mean_sample_wall_ms": 0.018908
+            },
+            "confirmed_join_ticket_closed": {
+              "records_seen": 19,
+              "samples": 1,
+              "sampled_cpu_ms": 0.019277,
+              "sampled_wall_ms": 0.019032,
+              "mean_sample_cpu_ms": 0.019277,
+              "mean_sample_wall_ms": 0.019032
+            },
+            "prefetch_submit_queue_observed": {
+              "records_seen": 2,
+              "samples": 1,
+              "sampled_cpu_ms": 0.011418,
+              "sampled_wall_ms": 0.012428,
+              "mean_sample_cpu_ms": 0.011418,
+              "mean_sample_wall_ms": 0.012428
+            },
+            "child_final_stage_accepted": {
+              "records_seen": 17,
+              "samples": 1,
+              "sampled_cpu_ms": 0.008119,
+              "sampled_wall_ms": 0.008781,
+              "mean_sample_cpu_ms": 0.008119,
+              "mean_sample_wall_ms": 0.008781
+            }
+          },
+          "semantics": "Measured processing samples completed between writer snapshots. Producer timestamps, queue waiting and status publication are excluded. Samples may span a boundary; cumulative maxima are not window maxima. No multiplication by the sampling interval, full-window cost, GIL attribution, GPU stall or JCT saving is inferred."
+        },
+        "phases": {
+          "control_drain": {
+            "count": 56149,
+            "self_ms": 4246.387970999999,
+            "total_ms": 8710.2815
+          },
+          "event_apply": {
+            "count": 25099,
+            "self_ms": 3913.580971,
+            "total_ms": 4404.792145
+          },
+          "scheduler_maintenance": {
+            "count": 56149,
+            "self_ms": 3062.277209,
+            "total_ms": 13258.915315999999
+          },
+          "tool_prefetch": {
+            "count": 8126,
+            "self_ms": 2794.442789,
+            "total_ms": 2794.442789
+          },
+          "opportunity_sampling": {
+            "count": 587,
+            "self_ms": 2298.139882,
+            "total_ms": 2298.139882
+          },
+          "batch_completed": {
+            "count": 33417,
+            "self_ms": 1910.161044,
+            "total_ms": 1910.161044
+          },
+          "semantic_updates": {
+            "count": 56149,
+            "self_ms": 1406.902154,
+            "total_ms": 1406.902154
+          },
+          "join_prefetch": {
+            "count": 56149,
+            "self_ms": 1301.7738490000002,
+            "total_ms": 1401.0809160000001
+          },
+          "terminal_sampling": {
+            "count": 587,
+            "self_ms": 1187.1593,
+            "total_ms": 1187.1593
+          },
+          "join_prepare": {
+            "count": 9231,
+            "self_ms": 1105.479393,
+            "total_ms": 1165.622498
+          },
+          "post_launch_physical": {
+            "count": 56149,
+            "self_ms": 600.8790250000001,
+            "total_ms": 6195.119138
+          },
+          "admission_plan": {
+            "count": 4275,
+            "self_ms": 499.582647,
+            "total_ms": 527.6621719999999
+          },
+          "graph_apply": {
+            "count": 16635,
+            "self_ms": 359.028909,
+            "total_ms": 359.028909
+          },
+          "tool_prepare": {
+            "count": 5200,
+            "self_ms": 224.584356,
+            "total_ms": 233.09391
+          },
+          "tool_features": {
+            "count": 8550,
+            "self_ms": 152.318747,
+            "total_ms": 152.318747
+          },
+          "prepare_candidate_publication": {
+            "count": 920,
+            "self_ms": 107.935646,
+            "total_ms": 107.935646
+          },
+          "terminal_child_reclaim": {
+            "count": 87,
+            "self_ms": 59.317971,
+            "total_ms": 59.317971
+          },
+          "residency_hint": {
+            "count": 327,
+            "self_ms": 25.343258,
+            "total_ms": 26.057914
+          },
+          "prepare_backed_registration": {
+            "count": 656,
+            "self_ms": 24.625878,
+            "total_ms": 24.625878
+          },
+          "control_socket_send_sample": {
+            "count": 342,
+            "self_ms": 21.071906,
+            "total_ms": 21.071906
+          },
+          "control_socket_receive_sample": {
+            "count": 1220,
+            "self_ms": 19.04158,
+            "total_ms": 19.04158
+          },
+          "wait_prefetch_enqueue": {
+            "count": 2,
+            "self_ms": 17.44091,
+            "total_ms": 17.998226
+          },
+          "prepare_candidate_maintenance": {
+            "count": 190,
+            "self_ms": 12.987277,
+            "total_ms": 12.987277
+          },
+          "control_event_decode_sample": {
+            "count": 395,
+            "self_ms": 9.23125,
+            "total_ms": 9.23125
+          },
+          "control_json_decode_sample": {
+            "count": 342,
+            "self_ms": 9.144104,
+            "total_ms": 9.144104
+          },
+          "control_ack_encode_sample": {
+            "count": 342,
+            "self_ms": 5.177695,
+            "total_ms": 5.177695
+          },
+          "reentry_inspection": {
+            "count": 51,
+            "self_ms": 2.736267,
+            "total_ms": 2.736267
+          },
+          "wait_prefetch_tail_reclaim": {
+            "count": 2,
+            "self_ms": 0.404864,
+            "total_ms": 0.544838
+          }
+        }
+      }
+    }
+  }
+}

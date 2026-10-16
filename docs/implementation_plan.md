@@ -2,6 +2,36 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 12:52 PDT: V1228 seals complete first600s control prefixes with the
+existing read-only monitor/control functions. V76/V75-predictive Python self
+wall totals15.043/25.377s over actual snapshot intervals600.617/600.036s.
+Different work is observed; this is not thread CPU, exposed stall or net JCT.
+Remaining V76 phases include control_drain3.343s, maintenance3.059s,
+event_apply2.671s and join_prepare1.693s. V1229 observes1001.40/932.72 decode
+token/s for V76/native, with weighted batch25.68/23.66 and different input/
+generation. V76 has5 demand H2D batches/0.758GB and1.781GB PREPARE; native has
+no H2D in this window. Keep source frozen and inspect later pressured windows,
+state-movement attribution and complete quality rather than treating this early
+positive ordering as a result. Screening4.19 records remaining uncertainty.
+
+2026-10-16 12:41 PDT: the full V75 pair and postprocessing are complete,
+driver exit0 and no observer errors. Predictive/native outcomes are155/153
+completed and1/3 incomplete. All-task raw duration means1806.897/1665.374s
+include incomplete/guard labels; completed throughput is70.462/80.506wf/h.
+Official quality is ungraded and these are not quality-matched JCT gains.
+V1226 binds full summaries/comparison/transfers and three native failures:
+the last two root responses arelength, deadlines unexpired; retain8192 and labels.
+V76 launched12:34:09 and actual startup V1166 verified12:37:09, scheduler1102179.
+Keep its frozen no-prefetch configuration and the queued V77 baseline unchanged.
+V1223/V1225 now register an independent V77 official-quality queue;17 CPU cases
+and actual quality-venv composition pass. Supervisor1121673/start_ticks634983330
+is live and waits for full V77 plus the original grading series, including any
+future live drivers/workers. Use the unchanged frozen evaluator/exporter/scorer,
+all156 patches/outcomes and one worker/1 core/8GiB/no GPU. Do not relax
+measurement_complete for incomplete or guard-labeled workflows. Future V1222
+inputs and V1224 environment are not grading results. See V1227 and research
+screening4.17/4.18; selected novelty and quality-matched performance remain open.
+
 2026-10-16 12:20 PDT: V77 native-close is frozen at application52a2b8e and
 engine tree76cf97d2. The independent native-only driver passes34 new CPU cases;
 V1214 binds the existing103 engine/151 telemetry/58 launcher checks and sources.

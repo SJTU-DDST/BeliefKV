@@ -4,6 +4,32 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 12:52 PDT：V76当前臂名是reactive，不能为复用旧分析器伪装成
+predictive_h2d目录/标签。V1228直接调用既有monitor_window/control_profile，
+保留真实臂名、模块摘要、方法及封存的控制前缀/边界行摘要；V1229使用支持任意
+臂名的现有service分析CLI。两者窗口均完整覆盖0–600s，控制counter使用其
+各自前置快照，实际跨度600.617/600.036s不等于恰好600s的线程CPU采样。
+V76/V75 predictive的self墙钟15.043/25.377s不是可减JCT或隔离提速；两侧工作量
+与batch不同。早期decode1001.40高于历史native932.72也不是正式收益证明，
+不能覆盖V75完整负结果。当前V76有5批需求H2D、无预测H2D；PREPARE仍单列。
+
+2026-10-16 12:41 PDT：V75完整AB流程已退出0并保留全部终态，153/155 completed
+分别对应native/predictive；不能把native客户端exit1误当没有完整收集，也不能
+把AB exit0解释为每个workflow都成功。三例native incomplete末两次均length，
+deadline未过期；保留既有guard标签与8192上限，不自动重跑或改写终态。
+原始全任务duration、完成子集均值及132个共同显式JCT可用样本的口径分开。
+H2D为native13.610GB，predictive需求115.203GB加预测12.156GB；数据量差额
+含策略/轨迹效果，不能自动称为替代需求、收益或可扣除关键路径等待。见V1226。
+V76真实运行由V1166核验，当前是最新GPU trace，继续优先它的完整已观测窗口；
+V75可作刚完成的同配置参考。不得热改V75/V76/V77源码、引擎或已登记helper。
+V77质量队列已独立登记V1223/V1225，监督1121673实际存活，等待完整V77和旧
+质量队列退出，动态核对未来worker/driver的start_ticks；不另起重复评测。
+新冻结helper为ops/quality_eval/run_v77_quality_cpu_20261016.py，源自已测试
+的main脚本快照；17项CPU检查及quality venv组合核验见V1221/V1227。
+保留全156项、失败/空patch/guard标签，使用原冻结scorer和measurement_complete
+门槛；官方正确率完整评分与性能测量有效性是不同条件。不得为得到吞吐数字
+放宽门槛。V1222/V1224尚未产生，当前grading_started=false；没有新增GPU工作。
+
 2026-10-16 12:20 PDT：V77已由独立单臂驱动登记，源码52a2b8e、引擎76cf97d2、
 V1214资格、V1215登记、V1218监督记录及其依赖此后冻结，不修改等待中的候选。
 监督1076769已实测存活，仅等待完整V76及真实进程/资源释放；不得再启动第二份。
