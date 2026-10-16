@@ -988,6 +988,147 @@ def test_complete_restore_uses_native_quota_and_preserves_ordinary_turns(
         runtime.close()
 
 
+def _partial_restore_quota_fixture():
+    runtime, _, _, _, _, _ = locked_runtime()
+    restored = submit_restored_request(runtime)
+    ordinary = req("ordinary")
+    restored.origin_input_ids = ordinary.origin_input_ids = range(8321)
+    runtime.register_visible_request(ordinary)
+    runtime._visible_since[ordinary.rid] = time.monotonic() - 11.
+    runtime._prefetch_priority_normal_admissions = 1
+    runtime._residency_pool_bytes = (20480, 64389120)
+    observations = {
+        restored.rid: {
+            "checkpoint_tokens": 8192, "device_checkpoint_tokens": 4096,
+            "missing_full_tokens": 512, "missing_mamba_slots": 1,
+        },
+        ordinary.rid: {
+            "checkpoint_tokens": 8192, "device_checkpoint_tokens": 0,
+            "missing_full_tokens": 8192, "missing_mamba_slots": 1,
+        },
+    }
+    return runtime, restored, ordinary, observations
+
+
+def test_cheaper_partial_restore_uses_native_quota_without_claiming_complete_recovery():
+    runtime, restored, ordinary, observations = _partial_restore_quota_fixture()
+    rows = []
+    runtime._opportunity_writer = NS(record=rows.append)
+    try:
+        with patch.object(runtime, "_causal_rank", side_effect=lambda key, index, ranks: (0, 0, index)), \
+             patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+                 1, 1024, source="native_next_prefill",
+             )), \
+             patch.object(runtime, "_read_request_reentry", side_effect=(
+                 lambda request, **kwargs: observations[request.rid]
+             )) as inspect:
+            for _ in range(3):
+                assert select(runtime, [ordinary, restored]).candidates[0] is restored
+                assert inspect.call_args.kwargs["refresh"] is True
+                runtime.on_prefill_candidate_result(restored, admitted=True, result="ok")
+                assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+                runtime.on_prefill_candidate_result(ordinary, admitted=True, result="ok")
+        assert runtime.counts["prefetch_priority_partial_restore_admitted"] == 3
+        assert runtime.counts["prefetch_priority_complete_ready_admitted"] == 0
+        assert runtime.counts["native_admitted"] == 6
+        assert all(row["complete_checkpoint_ordinary_quota"] is None for row in rows)
+        for row in rows:
+            details = row["partial_checkpoint_cost_comparison"]
+            assert details["ordinary_admission_quota"] == 1
+            assert details["selected_restore_bytes"] == 512 * 20480 + 64389120
+            assert details["head_restore_bytes"] == 8192 * 20480 + 64389120
+            assert details["selected_next_input_tokens"] == details["head_next_input_tokens"] == 129
+        assert runtime.physical_ledger.pending_count == 0
+        assert runtime.counts["prefetch_native_issued"] == 0
+    finally:
+        runtime._opportunity_writer = None
+        runtime.close()
+
+
+@pytest.mark.parametrize("change", (
+    "unknown_head", "hot_head", "equal_cost", "larger_input", "unknown_geometry",
+    "entirely_host_only", "invalid_observation", "stronger_head", "no_slot", "quota",
+))
+def test_partial_restore_reduced_quota_requires_comparable_cost_work_and_fairness(change):
+    runtime, restored, ordinary, observations = _partial_restore_quota_fixture()
+    slots = 1
+    if change == "unknown_head":
+        observations[ordinary.rid] = None
+    elif change == "hot_head":
+        observations[ordinary.rid].update(missing_full_tokens=0, missing_mamba_slots=0)
+    elif change == "equal_cost":
+        observations[ordinary.rid] = observations[restored.rid].copy()
+    elif change == "larger_input":
+        restored.origin_input_ids = range(9000)
+    elif change == "unknown_geometry":
+        runtime._residency_pool_bytes = None
+    elif change == "entirely_host_only":
+        observations[restored.rid]["missing_full_tokens"] = 8192
+    elif change == "invalid_observation":
+        observations[restored.rid]["missing_full_tokens"] = True
+    elif change == "no_slot":
+        slots = 0
+    elif change == "quota":
+        runtime._prefetch_priority_normal_admissions = 0
+
+    def causal_rank(key, index, ranks):
+        return (int(change == "stronger_head" and key.request_id == restored.rid), 0, index)
+
+    try:
+        with patch.object(runtime, "_causal_rank", side_effect=causal_rank), \
+             patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+                 slots, 1024, source="native_next_prefill",
+             )), \
+             patch.object(runtime, "_read_request_reentry", side_effect=(
+                 lambda request, **kwargs: observations[request.rid]
+             )):
+            assert select(runtime, [ordinary, restored]).candidates[0] is ordinary
+        assert runtime._prefetch_priority_partial_restore_details is None
+        assert runtime.counts["prefetch_priority_partial_restore_ordered"] == 0
+        assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
+
+
+def test_native_partial_restore_decline_preserves_quota_and_does_not_credit_service():
+    runtime, restored, ordinary, observations = _partial_restore_quota_fixture()
+    try:
+        with patch.object(runtime, "_causal_rank", side_effect=lambda key, index, ranks: (0, 0, index)), \
+             patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+                 1, 1024, source="native_next_prefill",
+             )), \
+             patch.object(runtime, "_read_request_reentry", side_effect=(
+                 lambda request, **kwargs: observations[request.rid]
+             )):
+            assert select(runtime, [ordinary, restored]).candidates[0] is restored
+        runtime.on_prefill_candidate_result(restored, admitted=False, result="NO_TOKEN")
+        assert runtime._prefetch_priority_normal_admissions == 1
+        assert runtime.counts["prefetch_priority_partial_restore_admitted"] == 0
+        assert runtime.counts["prefetch_priority_admitted"] == 0
+        assert runtime.physical_ledger.pending_count == 0
+    finally:
+        runtime.close()
+
+
+def test_partial_restore_does_not_reinspect_head_when_ordinary_quota_already_met():
+    runtime, restored, ordinary, observations = _partial_restore_quota_fixture()
+    runtime._prefetch_priority_normal_admissions = 4
+    try:
+        with patch.object(runtime, "_causal_rank", side_effect=lambda key, index, ranks: (0, 0, index)), \
+             patch.object(runtime, "_current_residency_budget", return_value=PrefetchResidencyBudget(
+                 1, 1024, source="native_next_prefill",
+             )), \
+             patch.object(runtime, "_read_request_reentry", side_effect=(
+                 lambda request, **kwargs: observations[request.rid]
+             )) as inspect:
+            assert select(runtime, [ordinary, restored]).candidates[0] is restored
+        assert [call.args[0].rid for call in inspect.call_args_list] == [restored.rid]
+        assert runtime.counts["prefetch_priority_partial_restore_inspected"] == 0
+        assert runtime._prefetch_priority_partial_restore_details is None
+    finally:
+        runtime.close()
+
+
 @pytest.mark.parametrize("observation", [
     None,
     {"missing_full_tokens": 1, "missing_mamba_slots": 0, "device_checkpoint_tokens": 100},

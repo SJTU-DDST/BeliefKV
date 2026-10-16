@@ -413,6 +413,7 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_native_rank: int | None = None
         self._prefetch_priority_aged_head_bypassed = False
         self._prefetch_priority_complete_ready_quota: int | None = None
+        self._prefetch_priority_partial_restore_details: dict | None = None
         self._resident_priority_promoted: str | None = None
         self._resident_priority_details: dict | None = None
         self._native_running_batch: object | None = None
@@ -8289,6 +8290,27 @@ class NativeAdmissionRuntime:
             return float(remaining), "notice_budget"
         return None, "unknown"
 
+    def _request_restore_cost(
+        self, request: object, observation: dict | None,
+    ) -> tuple[int, int] | None:
+        if observation is None or self._residency_pool_bytes is None:
+            return None
+        values = tuple(observation.get(name) for name in (
+            "checkpoint_tokens", "missing_full_tokens", "missing_mamba_slots",
+        ))
+        if any(type(value) is not int or value < 0 for value in values):
+            return None
+        checkpoint, full, mamba = values
+        inputs = getattr(request, "origin_input_ids", ())
+        if not 0 < checkpoint < len(inputs):
+            return None
+        new_input = len(inputs) - checkpoint
+        chunk = self._native_chunk_input_reserve
+        if type(chunk) is int and chunk > 0:
+            new_input = min(new_input, chunk)
+        full_unit, mamba_unit = self._residency_pool_bytes
+        return full * full_unit + mamba * mamba_unit, new_input
+
     def _resident_aged_bypass(
         self, ordered: list[tuple[int, object]],
         keys: dict[int, PrefillCandidateKey | None],
@@ -8300,28 +8322,8 @@ class NativeAdmissionRuntime:
         head_key = keys[head_index]
         if head_key is None:
             return None
-        full_unit, mamba_unit = self._residency_pool_bytes
-        chunk = self._native_chunk_input_reserve
-
-        def cost(request: object, observation: dict | None) -> tuple[int, int] | None:
-            if observation is None:
-                return None
-            values = tuple(observation.get(name) for name in (
-                "checkpoint_tokens", "missing_full_tokens", "missing_mamba_slots",
-            ))
-            if any(type(value) is not int or value < 0 for value in values):
-                return None
-            checkpoint, full, mamba = values
-            inputs = getattr(request, "origin_input_ids", ())
-            if not 0 < checkpoint < len(inputs):
-                return None
-            new_input = len(inputs) - checkpoint
-            if type(chunk) is int and chunk > 0:
-                new_input = min(new_input, chunk)
-            return full * full_unit + mamba * mamba_unit, new_input
-
         head_observation = self._read_request_residency_hint(head, key=head_key)
-        head_cost = cost(head, head_observation)
+        head_cost = self._request_restore_cost(head, head_observation)
         if head_cost is None or head_cost[0] == 0:
             return None
         candidates = []
@@ -8334,7 +8336,7 @@ class NativeAdmissionRuntime:
             ):
                 continue
             observation = self._read_request_residency_hint(request, key=key)
-            candidate_cost = cost(request, observation)
+            candidate_cost = self._request_restore_cost(request, observation)
             if (
                 candidate_cost is None or observation["missing_full_tokens"] != 0
                 or candidate_cost[0] >= head_cost[0]
@@ -8507,6 +8509,7 @@ class NativeAdmissionRuntime:
         self._prefetch_priority_native_rank = None
         self._prefetch_priority_aged_head_bypassed = False
         self._prefetch_priority_complete_ready_quota = None
+        self._prefetch_priority_partial_restore_details = None
         self._resident_priority_promoted = None
         self._resident_priority_details = None
         priority_candidates = []
@@ -8585,6 +8588,7 @@ class NativeAdmissionRuntime:
             )
             ordinary_quota = 4 if aged_head else restore_stride
             complete_ready = False
+            partial_restore_details = None
             if (
                 aged_head and source == "prefetch" and native_rank > 0
                 and budget.source == "native_next_prefill"
@@ -8605,6 +8609,35 @@ class NativeAdmissionRuntime:
                 )
                 if complete_ready:
                     ordinary_quota = restore_stride
+                elif (
+                    self._residency_pool_bytes is not None
+                    and self._prefetch_priority_normal_admissions < ordinary_quota
+                    and ranks[candidate[0]][:2] <= ranks[ordered[0][0]][:2]
+                ):
+                    selected_cost = self._request_restore_cost(candidate[1], observation)
+                    if (
+                        selected_cost is not None and selected_cost[0] > 0
+                        and observation["missing_full_tokens"] < observation["checkpoint_tokens"]
+                    ):
+                        self.counts["prefetch_priority_partial_restore_inspected"] += 1
+                        head_observation = self._read_request_reentry(
+                            ordered[0][1], key=head, refresh=True,
+                        )
+                        head_cost = self._request_restore_cost(ordered[0][1], head_observation)
+                        if (
+                            head_cost is not None and selected_cost[0] < head_cost[0]
+                            and selected_cost[1] <= head_cost[1]
+                        ):
+                            ordinary_quota = restore_stride
+                            partial_restore_details = {
+                                "head_request_id": ordered[0][1].rid,
+                                "head_restore_bytes": head_cost[0],
+                                "selected_restore_bytes": selected_cost[0],
+                                "head_next_input_tokens": head_cost[1],
+                                "selected_next_input_tokens": selected_cost[1],
+                                "ordinary_admission_quota": ordinary_quota,
+                                "evidence": "fresh_native_reentry;native_admission_remains",
+                            }
             ordinary_quota_met = self._prefetch_priority_normal_admissions >= ordinary_quota
             if native_rank > 0 and ordinary_quota_met:
                 ordered.remove(candidate)
@@ -8618,6 +8651,9 @@ class NativeAdmissionRuntime:
                     if complete_ready:
                         self._prefetch_priority_complete_ready_quota = ordinary_quota
                         self.counts["prefetch_priority_complete_ready_ordered"] += 1
+                    elif partial_restore_details is not None:
+                        self._prefetch_priority_partial_restore_details = partial_restore_details
+                        self.counts["prefetch_priority_partial_restore_ordered"] += 1
                 self._prefetch_priority_native_rank = native_rank
                 self._prefetch_priority_aged_head_bypassed = aged_head
                 if aged_head:
@@ -8811,6 +8847,8 @@ class NativeAdmissionRuntime:
                         self.counts["prefetch_priority_admitted"] += 1
                         if self._prefetch_priority_complete_ready_quota is not None:
                             self.counts["prefetch_priority_complete_ready_admitted"] += 1
+                        if self._prefetch_priority_partial_restore_details is not None:
+                            self.counts["prefetch_priority_partial_restore_admitted"] += 1
                         if self._prefetch_priority_aged_head_bypassed:
                             self.counts["prefetch_priority_aged_head_bypass_admitted"] += 1
                         if self._opportunity_writer is not None:
@@ -8822,6 +8860,8 @@ class NativeAdmissionRuntime:
                                 "aged_head_bounded_bypass": self._prefetch_priority_aged_head_bypassed,
                                 "complete_checkpoint_ordinary_quota":
                                     self._prefetch_priority_complete_ready_quota,
+                                "partial_checkpoint_cost_comparison":
+                                    self._prefetch_priority_partial_restore_details,
                                 "queue_wait_ms": (
                                     time.monotonic() - self._visible_since.get(req.rid, time.monotonic())
                                 ) * 1000.,
