@@ -113,7 +113,8 @@ def terminal_invocation_scopes(arm: Path) -> dict:
             scope = (
                 "runtime_internal"
                 if (row.get("attributes") or {}).get("runtime_internal") is True
-                else "dynamic_subagent" if row.get("relation_type") == "spawn" else "other"
+                else "dynamic_subagent" if row.get("relation_type") == "spawn"
+                else "workflow_root" if row.get("relation_type") == "root" else "other"
             )
             scopes[row["workflow_id"], row["invocation_id"]] = scope
     return scopes
@@ -1570,7 +1571,9 @@ def audit(arm: Path) -> dict:
             parks.append(row)
         elif event == "prepare_candidate_selected":
             prepare_selections.append(row)
-        elif event == "terminal_child_cache_reclaimed":
+        elif event in (
+            "terminal_child_cache_reclaimed", "terminal_workflow_root_cache_reclaimed",
+        ):
             terminal_reclaims.append(row)
         elif event == "parent_capacity_handoff_first_service":
             parent_handoff_services.append(row)

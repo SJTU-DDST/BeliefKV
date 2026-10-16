@@ -560,6 +560,7 @@ class NativeAdmissionRuntime:
         self._execution_handoff_capacity_blocked: set[PrefillCandidateKey] = set()
         self._reentry_observations: dict[PrefillCandidateKey, tuple[float, dict | None]] = {}
         self._terminal_child_reclaims: OrderedDict[tuple, _TerminalChildReclaim] = OrderedDict()
+        self._terminal_root_contexts: OrderedDict[tuple[str, str], _TerminalChildReclaim] = OrderedDict()
         self._terminal_child_reclaim_next_ms = 0.
         self._parent_capacity_handoffs: dict[str, _ParentCapacityHandoff] = {}
         self._parent_handoff_priority_promoted: str | None = None
@@ -709,6 +710,7 @@ class NativeAdmissionRuntime:
         self._final_request_stages.clear()
         self._terminal_cache_watches.clear()
         self._terminal_child_reclaims.clear()
+        self._terminal_root_contexts.clear()
         self._parent_capacity_handoffs.clear()
         if self._opportunity_writer is not None:
             self._record_runtime_state(final=True)
@@ -990,6 +992,7 @@ class NativeAdmissionRuntime:
             self._wait_context_cache = None
             self._join_parent_cache = None
             self._terminal_child_reclaims.clear()
+            self._terminal_root_contexts.clear()
             self._parent_capacity_handoffs.clear()
             self.tool_wait_hint = None
             self.join_wait_hint = None
@@ -1127,6 +1130,7 @@ class NativeAdmissionRuntime:
                         returned = terminal_returns.get(key.invocation_id)
                         if returned is not None:
                             self._retire_terminal_child(key, returned)
+                            self._remember_terminal_root(key, returned)
                         invocation = self.graph.invocations.get(key.invocation_id)
                         if invocation is not None and invocation.state.terminal:
                             self._parent_capacity_handoffs.pop(context_id, None)
@@ -1160,7 +1164,9 @@ class NativeAdmissionRuntime:
                         (identity, reclaim)
                         for identity, reclaim in self._terminal_child_reclaims.items()
                         if reclaim.key.root_workflow_id != event.workflow_id
+                        or reclaim.invocation_scope == "workflow_root"
                     )
+                    self._retire_ended_workflow_roots(event.workflow_id)
                     self._child_report_notices = {
                         child: notice for child, notice in self._child_report_notices.items()
                         if notice.workflow_id != event.workflow_id
@@ -3900,6 +3906,60 @@ class NativeAdmissionRuntime:
             self._terminal_cache_watches.pop(scope, None)
             self.counts["terminal_cache_watch_anchors_gone"] += 1
 
+    def _remember_terminal_root(self, key: PrefillCandidateKey, event: RuntimeEvent) -> None:
+        invocation = self.graph.invocations.get(key.invocation_id)
+        context = self.graph.contexts.get(key.context_id)
+        if (
+            invocation is None or context is None
+            or invocation.relation_type is not RelationType.ROOT
+            or invocation.parent_invocation_id is not None
+            or invocation.state is not InvocationState.DONE
+            or invocation.workflow_id != key.root_workflow_id
+            or context.workflow_id != key.root_workflow_id
+            or context.epoch != key.context_epoch
+            or key.session_id is None or key.session_generation is None
+        ):
+            return
+        identity = key.root_workflow_id, key.context_id
+        self._terminal_root_contexts[identity] = _TerminalChildReclaim(
+            key, None, None, event.ts_ms, time.time() * 1000.,
+            invocation_scope="workflow_root",
+        )
+        self._terminal_root_contexts.move_to_end(identity)
+        if len(self._terminal_root_contexts) > 512:
+            self._terminal_root_contexts.popitem(last=False)
+            self.counts["terminal_root_provenance_expired"] += 1
+
+    def _retire_ended_workflow_roots(self, workflow_id: str) -> None:
+        workflow = self.graph.workflows.get(workflow_id)
+        retire = getattr(self._native_cache, "retire_beliefkv_child_session", None)
+        if workflow is None or workflow.end_ts_ms is None or not callable(retire):
+            return
+        for identity, reclaim in tuple(self._terminal_root_contexts.items()):
+            key = reclaim.key
+            if key.root_workflow_id != workflow_id:
+                continue
+            del self._terminal_root_contexts[identity]
+            invocation = self.graph.invocations.get(key.invocation_id)
+            context = self.graph.contexts.get(key.context_id)
+            if (
+                invocation is None or invocation.state is not InvocationState.DONE
+                or context is None or context.epoch != key.context_epoch
+                or context.workflow_id != workflow_id
+                or any(
+                    other.root_workflow_id != workflow_id
+                    and (other.session_id, other.session_generation)
+                    == (key.session_id, key.session_generation)
+                    and not self._terminal(other)
+                    for other in self.context_sessions.values()
+                )
+            ):
+                self.counts["terminal_root_retirement_invalidated"] += 1
+                continue
+            # Session close alone retains cached KV. Native releases only
+            # unreferenced leaves and retries locked/in-flight suffixes.
+            self._apply_terminal_child_reclaim(reclaim, retry=False)
+
     def _retire_terminal_child(self, key: PrefillCandidateKey, event: RuntimeEvent) -> None:
         child = self.graph.invocations.get(key.invocation_id)
         context = self.graph.contexts.get(key.context_id)
@@ -3988,10 +4048,11 @@ class NativeAdmissionRuntime:
         if handoff is not None and handoff.join_id == reclaim.join_id:
             handoff.freed_device_units.update(device)
             handoff.freed_host_units.update(host)
-        self.counts["terminal_child_reclaim_calls"] += 1
-        self.counts["terminal_child_discarded_nodes"] += len(result["discarded_nodes"])
-        self.counts["terminal_child_freed_full_tokens"] += device.get(0, 0)
-        self.counts["terminal_child_freed_mamba_slots"] += device.get(2, 0)
+        counter = "terminal_root" if reclaim.invocation_scope == "workflow_root" else "terminal_child"
+        self.counts[f"{counter}_reclaim_calls"] += 1
+        self.counts[f"{counter}_discarded_nodes"] += len(result["discarded_nodes"])
+        self.counts[f"{counter}_freed_full_tokens"] += device.get(0, 0)
+        self.counts[f"{counter}_freed_mamba_slots"] += device.get(2, 0)
         reclaim.retry_anchors = result["retry_anchors"]
         identity = (key.session_id, key.session_generation)
         if reclaim.retry_anchors:
@@ -4010,7 +4071,11 @@ class NativeAdmissionRuntime:
                 if (entry := entries.get(pool)) is not None
             }
             self._opportunity_writer.record({
-                "event": "terminal_child_cache_reclaimed", "ts_ms": time.time() * 1000.,
+                "event": (
+                    "terminal_workflow_root_cache_reclaimed"
+                    if reclaim.invocation_scope == "workflow_root"
+                    else "terminal_child_cache_reclaimed"
+                ), "ts_ms": time.time() * 1000.,
                 "workflow_id": key.root_workflow_id, "invocation_id": key.invocation_id,
                 "invocation_scope": reclaim.invocation_scope,
                 "context_id": key.context_id, "context_epoch": key.context_epoch,
