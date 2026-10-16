@@ -2,6 +2,30 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 V78 is now registered as the independent native-order ablation.
+Freeze application56f2c5e in the separate V1278 checkout, retaining the complete
+53020ce3 engine and V76 workload, PREPARE, tool timing and terminal lifecycle.
+Disable extra ordering/custom capacity bypass, keeping prefetch/handoff off;
+do not combine FULL-only, native close GC or ReplaySSM. V1280 passes324 CPU
+cases, including40 driver,20 ordering and151 telemetry checks. V1281/V1282
+bind source, plan, receipts and helpers. Supervisor3412628/start_ticks636206265
+is actually live and waiting for full successful V77, exact process exit and
+resource release. This registration has no V78 GPU service or speedup evidence.
+Require actual prefill_ordering_mode=native and positive native ordering counts;
+configured priority booleans do not establish effective ordering. Keep V77
+and both official quality queues frozen. The latest2400-3000s V77/native
+window has174.643/7.190GB H2D and1093.70/1304.05 decode token/s; rapid
+continuation positive FULL Host fractions are9.86%/0.20%. Extra workflow
+ordering is absent in V77, so it cannot be the sole explanation. At3000s,
+all156 tasks retain their denominator, with74/83 recorded completions and
+1032.496/1027.185s capped runner sojourn, not final or quality-matched JCT.
+Keep V78 to isolate ordering's contribution, and also inspect terminal
+reclamation, hybrid-prefix recovery and realized working sets. Do not infer
+GC causality merely from this historical single-run difference.
+V76's1473 positive Host samples
+all wait at least10s, matching a candidate aging boundary, not proven causality.
+Screening4.31/4.32 records registration and current evidence.
+
 2026-10-16 latest evidence: V77 remains frozen and running. Its first600s
 has102.134GB D2H versus139.944GB native, no H2D on either side, and946.62/
 932.72 decode token/s. All42 due workflows remain in the completion cohort:

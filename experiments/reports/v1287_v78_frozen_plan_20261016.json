@@ -1,0 +1,918 @@
+{
+  "prefetch_lead_ms": 2000,
+  "semantic_work_statistic": "center",
+  "eos_protocol_window_ms": 250,
+  "eos_prefetch_evidence_window_ms": 2000,
+  "eos_prefetch_evidence_semantics": "normal native EOS and visible body; causal request/epoch/tool/JOIN checks remain live; evidence age is bounded by existing restore lead and semantic-key lifetime, distinct from the protocol-only window",
+  "tool_timing_enabled": true,
+  "tool_timing_artifact": "/home/longhao/experiment/BeliefKV/experiments/models/qwen35_native_event_horizons_20260928_calibrated.json",
+  "tool_timing_sha256": "55ea6fdc3307ecbbc4bb06020dbc961801cf7d5da3a3c13ad09a619276c64e80",
+  "transfer_service_seed": "/home/longhao/experiment/BeliefKV/experiments/models/native_transfer_service_seed_v4.json",
+  "transfer_service_seed_sha256": "da149a32fe8b4ff8ea88387cac5be2c1e9929a0721778768b92b3d11a54a49f5",
+  "tool_prepare_in_both_arms": true,
+  "tool_prefetch_predictive_only": true,
+  "scope": "Development native-order isolation against V76; historical native is a reference, not causal proof.",
+  "repetition_id": 0,
+  "trajectory_control": "live_agent_uncontrolled_realized_trajectory",
+  "same_seed_is_not_same_trajectory": true,
+  "formal_paired_repetition_target": 4,
+  "formal_repetition_order": null,
+  "native_reference_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback",
+  "code_commit": "56f2c5e5ff399ee2ce4a930574a5abaee917657c",
+  "root_count": 156,
+  "server_running": 48,
+  "workflow_arrival_mode": "poisson",
+  "workflow_arrival_rate_per_second": 0.06666666666666667,
+  "workflow_arrival_seed": 21,
+  "workflow_arrival_batch_size": 0,
+  "workflow_arrival_batch_interval_ms": 0,
+  "arrival_schedule": [
+    {
+      "instance_id": "pydata__xarray-7229",
+      "offset_seconds": 2.7039457915162664
+    },
+    {
+      "instance_id": "pydata__xarray-7233",
+      "offset_seconds": 20.26041689116747
+    },
+    {
+      "instance_id": "pydata__xarray-7393",
+      "offset_seconds": 35.37828332304129
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4551",
+      "offset_seconds": 45.16125483002694
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4661",
+      "offset_seconds": 48.81172322529103
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6386",
+      "offset_seconds": 72.41072576599424
+    },
+    {
+      "instance_id": "pylint-dev__pylint-7080",
+      "offset_seconds": 97.15324602706902
+    },
+    {
+      "instance_id": "pylint-dev__pylint-8898",
+      "offset_seconds": 107.92887444297244
+    },
+    {
+      "instance_id": "django__django-10554",
+      "offset_seconds": 118.47938751111846
+    },
+    {
+      "instance_id": "django__django-11400",
+      "offset_seconds": 122.51830651231997
+    },
+    {
+      "instance_id": "django__django-14631",
+      "offset_seconds": 122.56609200582511
+    },
+    {
+      "instance_id": "pallets__flask-5014",
+      "offset_seconds": 129.52156585432374
+    },
+    {
+      "instance_id": "psf__requests-1766",
+      "offset_seconds": 142.72682526906638
+    },
+    {
+      "instance_id": "psf__requests-1921",
+      "offset_seconds": 143.80353168837865
+    },
+    {
+      "instance_id": "psf__requests-2317",
+      "offset_seconds": 167.48359981194315
+    },
+    {
+      "instance_id": "psf__requests-6028",
+      "offset_seconds": 171.4480196795677
+    },
+    {
+      "instance_id": "pydata__xarray-3993",
+      "offset_seconds": 175.4210822814359
+    },
+    {
+      "instance_id": "pydata__xarray-6461",
+      "offset_seconds": 176.06994754268908
+    },
+    {
+      "instance_id": "pydata__xarray-6599",
+      "offset_seconds": 266.31373955305816
+    },
+    {
+      "instance_id": "pydata__xarray-6721",
+      "offset_seconds": 286.4443280647026
+    },
+    {
+      "instance_id": "pydata__xarray-6744",
+      "offset_seconds": 317.6406944489895
+    },
+    {
+      "instance_id": "pydata__xarray-6938",
+      "offset_seconds": 331.9930925603692
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10051",
+      "offset_seconds": 332.51305214923696
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5262",
+      "offset_seconds": 338.49626492187014
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5787",
+      "offset_seconds": 348.8202213226599
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5840",
+      "offset_seconds": 350.66646771796866
+    },
+    {
+      "instance_id": "pytest-dev__pytest-6202",
+      "offset_seconds": 396.20357252959195
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7236",
+      "offset_seconds": 403.09716520260883
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7324",
+      "offset_seconds": 405.6201268246917
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7571",
+      "offset_seconds": 431.1359795898051
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4970",
+      "offset_seconds": 433.13684379135384
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6528",
+      "offset_seconds": 472.59149056444926
+    },
+    {
+      "instance_id": "pylint-dev__pylint-6903",
+      "offset_seconds": 481.6445870424499
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5631",
+      "offset_seconds": 493.6891140015512
+    },
+    {
+      "instance_id": "pydata__xarray-4356",
+      "offset_seconds": 499.9883890419014
+    },
+    {
+      "instance_id": "pydata__xarray-3305",
+      "offset_seconds": 509.93358531933075
+    },
+    {
+      "instance_id": "pydata__xarray-4966",
+      "offset_seconds": 513.037264636696
+    },
+    {
+      "instance_id": "psf__requests-2931",
+      "offset_seconds": 513.6049665302106
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7205",
+      "offset_seconds": 543.7408964424246
+    },
+    {
+      "instance_id": "django__django-15368",
+      "offset_seconds": 547.7564632607524
+    },
+    {
+      "instance_id": "django__django-16877",
+      "offset_seconds": 570.4860726305603
+    },
+    {
+      "instance_id": "psf__requests-1724",
+      "offset_seconds": 573.994632734782
+    },
+    {
+      "instance_id": "django__django-11141",
+      "offset_seconds": 625.9897928554705
+    },
+    {
+      "instance_id": "mwaskom__seaborn-3069",
+      "offset_seconds": 659.6497010785899
+    },
+    {
+      "instance_id": "pylint-dev__pylint-7277",
+      "offset_seconds": 680.7344554322248
+    },
+    {
+      "instance_id": "django__django-14500",
+      "offset_seconds": 702.3167645743378
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7521",
+      "offset_seconds": 715.3566448054783
+    },
+    {
+      "instance_id": "pytest-dev__pytest-8399",
+      "offset_seconds": 734.9831715768871
+    },
+    {
+      "instance_id": "pydata__xarray-3151",
+      "offset_seconds": 736.9429681607753
+    },
+    {
+      "instance_id": "django__django-13023",
+      "offset_seconds": 746.6462395570569
+    },
+    {
+      "instance_id": "django__django-12741",
+      "offset_seconds": 772.9647629727143
+    },
+    {
+      "instance_id": "django__django-14349",
+      "offset_seconds": 776.3321690955231
+    },
+    {
+      "instance_id": "pydata__xarray-2905",
+      "offset_seconds": 814.8240717935931
+    },
+    {
+      "instance_id": "django__django-15315",
+      "offset_seconds": 847.6040668909636
+    },
+    {
+      "instance_id": "django__django-16938",
+      "offset_seconds": 855.508434927695
+    },
+    {
+      "instance_id": "django__django-16255",
+      "offset_seconds": 862.3255997910551
+    },
+    {
+      "instance_id": "django__django-11734",
+      "offset_seconds": 871.3292425772979
+    },
+    {
+      "instance_id": "django__django-10097",
+      "offset_seconds": 878.6402176608221
+    },
+    {
+      "instance_id": "django__django-12754",
+      "offset_seconds": 957.650426473124
+    },
+    {
+      "instance_id": "django__django-15103",
+      "offset_seconds": 964.9813324741601
+    },
+    {
+      "instance_id": "django__django-11820",
+      "offset_seconds": 965.3893671950723
+    },
+    {
+      "instance_id": "django__django-13964",
+      "offset_seconds": 966.8579020214056
+    },
+    {
+      "instance_id": "django__django-16667",
+      "offset_seconds": 985.8505496792149
+    },
+    {
+      "instance_id": "django__django-16502",
+      "offset_seconds": 1059.904507333868
+    },
+    {
+      "instance_id": "django__django-10880",
+      "offset_seconds": 1070.1825129013803
+    },
+    {
+      "instance_id": "mwaskom__seaborn-3187",
+      "offset_seconds": 1080.3280322026544
+    },
+    {
+      "instance_id": "psf__requests-1142",
+      "offset_seconds": 1092.3200178058976
+    },
+    {
+      "instance_id": "pydata__xarray-3095",
+      "offset_seconds": 1113.005391708123
+    },
+    {
+      "instance_id": "pylint-dev__pylint-4604",
+      "offset_seconds": 1116.7714596884548
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10081",
+      "offset_seconds": 1130.8533930085546
+    },
+    {
+      "instance_id": "django__django-10914",
+      "offset_seconds": 1143.0488155341259
+    },
+    {
+      "instance_id": "psf__requests-5414",
+      "offset_seconds": 1157.666463341732
+    },
+    {
+      "instance_id": "pydata__xarray-3677",
+      "offset_seconds": 1160.6556232624384
+    },
+    {
+      "instance_id": "pytest-dev__pytest-10356",
+      "offset_seconds": 1163.4522269626384
+    },
+    {
+      "instance_id": "django__django-10973",
+      "offset_seconds": 1169.8726569892387
+    },
+    {
+      "instance_id": "pydata__xarray-4075",
+      "offset_seconds": 1209.1472270848974
+    },
+    {
+      "instance_id": "pytest-dev__pytest-5809",
+      "offset_seconds": 1215.5310218721077
+    },
+    {
+      "instance_id": "django__django-10999",
+      "offset_seconds": 1229.1721106662515
+    },
+    {
+      "instance_id": "pydata__xarray-4094",
+      "offset_seconds": 1234.6646362103022
+    },
+    {
+      "instance_id": "pytest-dev__pytest-6197",
+      "offset_seconds": 1236.299697208122
+    },
+    {
+      "instance_id": "django__django-11066",
+      "offset_seconds": 1237.318162653314
+    },
+    {
+      "instance_id": "pydata__xarray-4629",
+      "offset_seconds": 1262.5237828817017
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7432",
+      "offset_seconds": 1285.0337858272594
+    },
+    {
+      "instance_id": "django__django-11087",
+      "offset_seconds": 1292.0808538626966
+    },
+    {
+      "instance_id": "pydata__xarray-4687",
+      "offset_seconds": 1309.3303120235798
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7490",
+      "offset_seconds": 1326.2309420268957
+    },
+    {
+      "instance_id": "django__django-11095",
+      "offset_seconds": 1360.5756247714728
+    },
+    {
+      "instance_id": "pydata__xarray-6992",
+      "offset_seconds": 1408.2272869728886
+    },
+    {
+      "instance_id": "pytest-dev__pytest-7982",
+      "offset_seconds": 1416.0660710016402
+    },
+    {
+      "instance_id": "django__django-11099",
+      "offset_seconds": 1483.8642152835905
+    },
+    {
+      "instance_id": "django__django-11119",
+      "offset_seconds": 1532.693331643659
+    },
+    {
+      "instance_id": "django__django-11138",
+      "offset_seconds": 1546.0862957585334
+    },
+    {
+      "instance_id": "django__django-11149",
+      "offset_seconds": 1578.2917821693068
+    },
+    {
+      "instance_id": "django__django-11163",
+      "offset_seconds": 1588.418793886579
+    },
+    {
+      "instance_id": "django__django-11179",
+      "offset_seconds": 1595.4822978828038
+    },
+    {
+      "instance_id": "django__django-11206",
+      "offset_seconds": 1599.7417884675408
+    },
+    {
+      "instance_id": "django__django-11211",
+      "offset_seconds": 1631.0713968829862
+    },
+    {
+      "instance_id": "django__django-11239",
+      "offset_seconds": 1633.7276923473728
+    },
+    {
+      "instance_id": "django__django-11265",
+      "offset_seconds": 1634.8055332003019
+    },
+    {
+      "instance_id": "django__django-11276",
+      "offset_seconds": 1659.3485597778072
+    },
+    {
+      "instance_id": "django__django-11292",
+      "offset_seconds": 1681.651331093109
+    },
+    {
+      "instance_id": "django__django-11299",
+      "offset_seconds": 1691.5520351296598
+    },
+    {
+      "instance_id": "django__django-11333",
+      "offset_seconds": 1718.762001567968
+    },
+    {
+      "instance_id": "django__django-11433",
+      "offset_seconds": 1719.5657607538797
+    },
+    {
+      "instance_id": "django__django-11451",
+      "offset_seconds": 1724.0413784830653
+    },
+    {
+      "instance_id": "django__django-11477",
+      "offset_seconds": 1729.1760852857883
+    },
+    {
+      "instance_id": "django__django-11490",
+      "offset_seconds": 1737.33539405287
+    },
+    {
+      "instance_id": "django__django-11532",
+      "offset_seconds": 1740.1417217248393
+    },
+    {
+      "instance_id": "django__django-11133",
+      "offset_seconds": 1741.2214341479328
+    },
+    {
+      "instance_id": "django__django-11551",
+      "offset_seconds": 1747.4106468484854
+    },
+    {
+      "instance_id": "django__django-11555",
+      "offset_seconds": 1781.8217484407419
+    },
+    {
+      "instance_id": "django__django-11603",
+      "offset_seconds": 1843.3396226930536
+    },
+    {
+      "instance_id": "django__django-11728",
+      "offset_seconds": 1863.886948232521
+    },
+    {
+      "instance_id": "django__django-11740",
+      "offset_seconds": 1873.6662550831127
+    },
+    {
+      "instance_id": "django__django-11749",
+      "offset_seconds": 1878.025847660956
+    },
+    {
+      "instance_id": "django__django-11790",
+      "offset_seconds": 1925.893859641563
+    },
+    {
+      "instance_id": "django__django-11815",
+      "offset_seconds": 1937.0803053354691
+    },
+    {
+      "instance_id": "django__django-11848",
+      "offset_seconds": 1956.6431981059607
+    },
+    {
+      "instance_id": "django__django-11880",
+      "offset_seconds": 1957.0738117407705
+    },
+    {
+      "instance_id": "django__django-11885",
+      "offset_seconds": 1960.6494113791593
+    },
+    {
+      "instance_id": "django__django-11951",
+      "offset_seconds": 1987.9762411390477
+    },
+    {
+      "instance_id": "django__django-11964",
+      "offset_seconds": 2011.7634026804938
+    },
+    {
+      "instance_id": "django__django-11999",
+      "offset_seconds": 2043.7500641639256
+    },
+    {
+      "instance_id": "django__django-12039",
+      "offset_seconds": 2057.545353323325
+    },
+    {
+      "instance_id": "django__django-12050",
+      "offset_seconds": 2065.8743975235307
+    },
+    {
+      "instance_id": "django__django-12125",
+      "offset_seconds": 2078.927658191016
+    },
+    {
+      "instance_id": "django__django-12143",
+      "offset_seconds": 2107.3188070144715
+    },
+    {
+      "instance_id": "django__django-12155",
+      "offset_seconds": 2112.840854281141
+    },
+    {
+      "instance_id": "django__django-12193",
+      "offset_seconds": 2124.3051795890688
+    },
+    {
+      "instance_id": "django__django-12209",
+      "offset_seconds": 2129.149260971271
+    },
+    {
+      "instance_id": "django__django-12262",
+      "offset_seconds": 2151.0810763999493
+    },
+    {
+      "instance_id": "django__django-12273",
+      "offset_seconds": 2151.235370553907
+    },
+    {
+      "instance_id": "django__django-12276",
+      "offset_seconds": 2168.577342351257
+    },
+    {
+      "instance_id": "django__django-12304",
+      "offset_seconds": 2214.7557176565742
+    },
+    {
+      "instance_id": "django__django-12308",
+      "offset_seconds": 2215.1124357331305
+    },
+    {
+      "instance_id": "django__django-12325",
+      "offset_seconds": 2228.6218908980977
+    },
+    {
+      "instance_id": "django__django-12406",
+      "offset_seconds": 2244.1083149286032
+    },
+    {
+      "instance_id": "django__django-12419",
+      "offset_seconds": 2272.734272340548
+    },
+    {
+      "instance_id": "django__django-12663",
+      "offset_seconds": 2285.902594036134
+    },
+    {
+      "instance_id": "django__django-12708",
+      "offset_seconds": 2290.3624554871813
+    },
+    {
+      "instance_id": "django__django-12713",
+      "offset_seconds": 2298.1656565757803
+    },
+    {
+      "instance_id": "django__django-12774",
+      "offset_seconds": 2345.9737465929043
+    },
+    {
+      "instance_id": "django__django-12858",
+      "offset_seconds": 2381.3780461253064
+    },
+    {
+      "instance_id": "django__django-12965",
+      "offset_seconds": 2383.5280976597114
+    },
+    {
+      "instance_id": "django__django-13012",
+      "offset_seconds": 2385.0227365529054
+    },
+    {
+      "instance_id": "django__django-13028",
+      "offset_seconds": 2386.502463414716
+    },
+    {
+      "instance_id": "django__django-13033",
+      "offset_seconds": 2386.887108298925
+    },
+    {
+      "instance_id": "django__django-13089",
+      "offset_seconds": 2395.769147398798
+    },
+    {
+      "instance_id": "django__django-13109",
+      "offset_seconds": 2398.0459039043685
+    },
+    {
+      "instance_id": "django__django-13112",
+      "offset_seconds": 2428.344957203772
+    },
+    {
+      "instance_id": "django__django-13121",
+      "offset_seconds": 2444.3221818994393
+    },
+    {
+      "instance_id": "django__django-13128",
+      "offset_seconds": 2446.351370691045
+    },
+    {
+      "instance_id": "django__django-13158",
+      "offset_seconds": 2457.9556254835525
+    },
+    {
+      "instance_id": "django__django-13195",
+      "offset_seconds": 2463.8352036260544
+    },
+    {
+      "instance_id": "django__django-13212",
+      "offset_seconds": 2474.049533583115
+    },
+    {
+      "instance_id": "django__django-13279",
+      "offset_seconds": 2477.7689159454885
+    }
+  ],
+  "arrival_schedule_sha256": "00e1d626e23f619c00a8238bd08bbb94e55ceded2c8cf48b0a181127f47a4552",
+  "activation_wall_clock_seconds": 14400.0,
+  "sandbox_command_timeout_s": 180,
+  "recursion_limit": 2048,
+  "finalization_reserve_steps": 32,
+  "native_reactive_guard_profile": true,
+  "completion_gate_enabled": false,
+  "child_final_report_shadow": true,
+  "child_finish_chunk_shadow": true,
+  "stream_http_timing_shadow": true,
+  "fanout_profile": "native_in_graph_2to4",
+  "in_graph_initial_tool_choice": "task",
+  "in_graph_initial_parallel_tool_calls": true,
+  "in_graph_initial_fanout_generation_bounds": [
+    2,
+    4
+  ],
+  "in_graph_named_task_constraint": "BeliefKV-only native task repetition; first 2to4 generation bounded to 2-4; no response rejection; complete prompt tool schema unchanged",
+  "requested_children_per_round": [
+    2,
+    4
+  ],
+  "join_prediction_semantics": "complete ALL membership; prefetch from the last observed unfinished child; no joint calibration claim from marginal child intervals",
+  "prediction_regime_status": "frozen heads under a changed root/fanout regime; diagnostic, not assumed calibrated or a source of offline net-benefit targets",
+  "context_tokens": 131072,
+  "max_completion_tokens": 8192,
+  "sampling_seed": 21,
+  "temperature": 0.0,
+  "host_numa_node": 1,
+  "mem_fraction_static": 0.94,
+  "host_gb": 200,
+  "host_split": "80:20",
+  "host_numa_memory_policy": "preferred",
+  "host_split_semantics": "explicit_full_mamba_percentages",
+  "resident_first_in_both_arms": true,
+  "execution_handoff_predictive_only": false,
+  "demand_restore_policy": "native_prefill_layerwise_dependencies",
+  "mamba_full_memory_ratio": 0.9,
+  "native_write_policy": "write_back",
+  "semantic_artifact": "/home/longhao/experiment/BeliefKV/experiments/models/child_semantic_work_live_v7_quantiles/semantic_event_calibrated.json",
+  "semantic_artifact_sha256": "126e9447789c4361df436383a42afc8db092ca7cf085e8af24eb83aa39feb74d",
+  "workload_manifest": "/home/longhao/experiment/.worktrees/beliefkv-v1278-native-order-gpu-20261016/configs/migration/qwen35_native_predictive_replenished_108plus48_2026-10-09.json",
+  "workload_sha256": "3dffa3f8a10867d342fad8184b02364f91a9e4a92fac8b9e7d42c75fa45e82a0",
+  "workload_instance_ids_in_manifest_order": [
+    "pydata__xarray-7229",
+    "pydata__xarray-7233",
+    "pydata__xarray-7393",
+    "pylint-dev__pylint-4551",
+    "pylint-dev__pylint-4661",
+    "pylint-dev__pylint-6386",
+    "pylint-dev__pylint-7080",
+    "pylint-dev__pylint-8898",
+    "django__django-10554",
+    "django__django-11400",
+    "django__django-14631",
+    "pallets__flask-5014",
+    "psf__requests-1766",
+    "psf__requests-1921",
+    "psf__requests-2317",
+    "psf__requests-6028",
+    "pydata__xarray-3993",
+    "pydata__xarray-6461",
+    "pydata__xarray-6599",
+    "pydata__xarray-6721",
+    "pydata__xarray-6744",
+    "pydata__xarray-6938",
+    "pytest-dev__pytest-10051",
+    "pytest-dev__pytest-5262",
+    "pytest-dev__pytest-5787",
+    "pytest-dev__pytest-5840",
+    "pytest-dev__pytest-6202",
+    "pytest-dev__pytest-7236",
+    "pytest-dev__pytest-7324",
+    "pytest-dev__pytest-7571",
+    "pylint-dev__pylint-4970",
+    "pylint-dev__pylint-6528",
+    "pylint-dev__pylint-6903",
+    "pytest-dev__pytest-5631",
+    "pydata__xarray-4356",
+    "pydata__xarray-3305",
+    "pydata__xarray-4966",
+    "psf__requests-2931",
+    "pytest-dev__pytest-7205",
+    "django__django-15368",
+    "django__django-16877",
+    "psf__requests-1724",
+    "django__django-11141",
+    "mwaskom__seaborn-3069",
+    "pylint-dev__pylint-7277",
+    "django__django-14500",
+    "pytest-dev__pytest-7521",
+    "pytest-dev__pytest-8399",
+    "pydata__xarray-3151",
+    "django__django-13023",
+    "django__django-12741",
+    "django__django-14349",
+    "pydata__xarray-2905",
+    "django__django-15315",
+    "django__django-16938",
+    "django__django-16255",
+    "django__django-11734",
+    "django__django-10097",
+    "django__django-12754",
+    "django__django-15103",
+    "django__django-11820",
+    "django__django-13964",
+    "django__django-16667",
+    "django__django-16502",
+    "django__django-10880",
+    "mwaskom__seaborn-3187",
+    "psf__requests-1142",
+    "pydata__xarray-3095",
+    "pylint-dev__pylint-4604",
+    "pytest-dev__pytest-10081",
+    "django__django-10914",
+    "psf__requests-5414",
+    "pydata__xarray-3677",
+    "pytest-dev__pytest-10356",
+    "django__django-10973",
+    "pydata__xarray-4075",
+    "pytest-dev__pytest-5809",
+    "django__django-10999",
+    "pydata__xarray-4094",
+    "pytest-dev__pytest-6197",
+    "django__django-11066",
+    "pydata__xarray-4629",
+    "pytest-dev__pytest-7432",
+    "django__django-11087",
+    "pydata__xarray-4687",
+    "pytest-dev__pytest-7490",
+    "django__django-11095",
+    "pydata__xarray-6992",
+    "pytest-dev__pytest-7982",
+    "django__django-11099",
+    "django__django-11119",
+    "django__django-11138",
+    "django__django-11149",
+    "django__django-11163",
+    "django__django-11179",
+    "django__django-11206",
+    "django__django-11211",
+    "django__django-11239",
+    "django__django-11265",
+    "django__django-11276",
+    "django__django-11292",
+    "django__django-11299",
+    "django__django-11333",
+    "django__django-11433",
+    "django__django-11451",
+    "django__django-11477",
+    "django__django-11490",
+    "django__django-11532",
+    "django__django-11133",
+    "django__django-11551",
+    "django__django-11555",
+    "django__django-11603",
+    "django__django-11728",
+    "django__django-11740",
+    "django__django-11749",
+    "django__django-11790",
+    "django__django-11815",
+    "django__django-11848",
+    "django__django-11880",
+    "django__django-11885",
+    "django__django-11951",
+    "django__django-11964",
+    "django__django-11999",
+    "django__django-12039",
+    "django__django-12050",
+    "django__django-12125",
+    "django__django-12143",
+    "django__django-12155",
+    "django__django-12193",
+    "django__django-12209",
+    "django__django-12262",
+    "django__django-12273",
+    "django__django-12276",
+    "django__django-12304",
+    "django__django-12308",
+    "django__django-12325",
+    "django__django-12406",
+    "django__django-12419",
+    "django__django-12663",
+    "django__django-12708",
+    "django__django-12713",
+    "django__django-12774",
+    "django__django-12858",
+    "django__django-12965",
+    "django__django-13012",
+    "django__django-13028",
+    "django__django-13033",
+    "django__django-13089",
+    "django__django-13109",
+    "django__django-13112",
+    "django__django-13121",
+    "django__django-13128",
+    "django__django-13158",
+    "django__django-13195",
+    "django__django-13212",
+    "django__django-13279"
+  ],
+  "sglang_patch_sha256": "ea859cf0e8d02db87e1b586fa149c7a8ddf798e867ee7888e21fa4a25f1785ce",
+  "priority_in_both_arms": true,
+  "prepare_host_in_both_arms": true,
+  "shared_pressure_parent_parking": true,
+  "prepare_policy": "next_prefill_slots_and_active_decode_page_growth;exhausted_probe_backoff_1000ms;host_no_reclaim;real_allocator_pressure;missing_full_extents_only;reuse_valid_host_extents;safe_input_prefix_and_proven_private_idle_full_tail;budget_all_selected_full_extents;no_speculative_mamba_backup",
+  "prepare_pool_scope": "missing_full_session_path",
+  "wait_prefetch_policy": "safe_next_input_checkpoint_missing_prefix;ancestor_first;up_to_16_extents;pool_capacity_and_prefill_reserve;residency_byte_budget;whole_burst_start_window;cold_reclaim_excludes_target_closure;per_node_ACK",
+  "wait_prefetch_residency_policy": "deepest_prefix_lock_covers_ancestors;target_counted_slots_and_restore_priority;group_pressure_release",
+  "wait_event_attribution": "independent_JOIN_or_tool_context_epoch;bounded_plan_snapshots;pre_boundary_submit_and_next_request_FULL_reuse;native_Host_hit_and_demand_handoff_separate;matched_first_service_waits;missing_evidence_unknown",
+  "mamba_backup_policy": "native_actual_eviction_writeback;no_speculative_prepare",
+  "pressure_candidate_policy": "separate_FULL_leaf_and_Mamba_state_indexes;native_revalidation",
+  "capacity_bypass_policy": "native_capacity_only;runtime_custom_bypass_disabled",
+  "restore_ready_admission_policy": "submitted_demand_ready_only;dynamic_unaged_quota;aged_head_one_restore_after_four_ordinary_admissions;rejected_admission_does_not_spend_quota;native_capacity_checks",
+  "prepare_consumption_telemetry": "reconciled_native_per_operation_pool_receipts;latest_node_pool_writer_to_H2D;restore_is_not_forward_use",
+  "shared_path_profiling": "aggregated CPU inclusive/exclusive scopes; no CUDA synchronization",
+  "restore_wait_profiling": "one in 16 load-consuming prefills; asynchronous CUDA events around per-layer dependencies in both arms; includes event overhead",
+  "native_baseline_disables": [],
+  "policy_configuration": {
+    "reactive": {
+      "control": true,
+      "resident_first": true,
+      "final_stage_priority": true,
+      "prepare_host": true,
+      "predictive_h2d": false,
+      "h2d_opportunity_sampling": false,
+      "semantic_text_stream": false,
+      "execution_handoff": false,
+      "prefill_ordering_mode": "native"
+    }
+  },
+  "order": [
+    "reactive"
+  ],
+  "measurement_windows_seconds": [
+    [
+      0,
+      3600
+    ],
+    [
+      3600,
+      7200
+    ],
+    [
+      7200,
+      null
+    ]
+  ],
+  "headline_metric": "all-arrival completed workflows per collection hour",
+  "h2d_seed_artifact": "/home/longhao/experiment/BeliefKV/experiments/models/native_h2d_ack_seed_20261004.json",
+  "h2d_seed_sha256": "76fbfd712963a2b3ca4dcc2a4a3629f74e36d61e7cb8044a69a75926991d2fcd",
+  "shared_system_configuration": {
+    "write_back_batch_nodes": 32,
+    "policy_scope": "native_device_FULL_order_ancestor_chain",
+    "both_arms": false,
+    "default_without_override": 1,
+    "status": "engineering_validation_not_paper_novelty_or_performance_claim",
+    "matched_historical_native_run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback"
+  },
+  "development_ablation": "Retain V76 workload, engine, PREPARE, tool timing and lifecycle; disable extra workflow/residency/aging/final/attained-work ordering and custom capacity bypass. Configured priority booleans remain true for compatibility; prefill_ordering_mode records effective behavior.",
+  "prefill_ordering_mode": "native",
+  "formal_acceptance": false,
+  "cpu_quality_overlap_possible": true
+}

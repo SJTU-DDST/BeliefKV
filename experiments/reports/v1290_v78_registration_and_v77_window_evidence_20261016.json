@@ -1,0 +1,358 @@
+{
+  "created_at": "2026-10-16T16:27:06.866225-07:00",
+  "status": "registered_future_ablation_and_latest_observational_evidence_not_goal_acceptance",
+  "source_bindings": [
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1280_v78_native_order_final_cpu_20261016.xml",
+      "sha256": "c3806ee1cc55e862c2132e65d00023e91a51a0266a156fe7c50962246ff182fb"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1281_v78_native_order_candidate_20261016.json",
+      "sha256": "995f2fa93a18fd704c586d66a795a699b6752888aad6caf62b414f923660090c"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1282_v78_native_order_registration_20261016.json",
+      "sha256": "01270e4eddc65ed66eeffd6407d9ccfa23d926ee978eb641ab369ccc9d897c9d"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1285_v78_native_order_supervisor_20261016.json",
+      "sha256": "ca0ebe8eedfd10abf93fbeb101c4c825a50734861e8dcb38b52e946fc9fd4130"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1288_v77_native_close_service_1200_2400_20261016.json",
+      "sha256": "00e65669901a0c52915bafc223ea82e3d52a4450644b38c30ac5575579e58b1e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1289_v77_service_window_reference_basis_20261016.json",
+      "sha256": "9d4fac75a0c19fb01b85fdc9b1fb3b8f7ed9d8315702a965f2ad9cae1cf1fbb4"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1291_v77_host_continuation_cohorts_1800_2400_20261016.json",
+      "sha256": "683644b825d2ae4cd369523a368214575c2d07a9d12c1ea1c548867bd505ef06"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1292_v77_completion_cohorts_1800_2400_20261016.json",
+      "sha256": "6520fc27540aebe071896406014f83e542bf86085d3dfda6d903b508c575c109"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1293_v77_native_close_service_2400_3000_20261016.json",
+      "sha256": "a0d5baa636292ad4f35397e272a7ccac25334a0193c61d8ab268c33a320c9d63"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1294_v77_service_window_reference_basis_2400_3000_20261016.json",
+      "sha256": "a9183c048b2a463ae0082cae8833ae8359780713ad918ade0191ca60ed2de244"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1295_v77_host_continuation_cohorts_2400_3000_20261016.json",
+      "sha256": "bf78506b3d1a6df059f3b62298ea124d9e9a0a891cd3fc50a1cdb4c4ac02f802"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1297_v77_completion_cohorts_3000_20261016.json",
+      "sha256": "ef3be7050640dd886a235565835ccecf56fea00065757c853febd84f664e228f"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1275_v76_native_served_continuation_denominators_20261016.json",
+      "sha256": "2482a59b64cc9eeb2174d315584af573d4e355cc9aa18097f70e59f2a33fa1d9"
+    }
+  ],
+  "v78": {
+    "application_commit": "56f2c5e5ff399ee2ce4a930574a5abaee917657c",
+    "engine_tree": "53020ce3efef3ed362e9af0db77147b39070f064",
+    "plan": {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78_native_order/ab_plan.json",
+      "sha256": "63b5e342ec5883c93d19b415ed46184924663477ed84615cb6105c0a81e9b0e2"
+    },
+    "cpu_cases_passed": 324,
+    "cpu_by_classname": {
+      "tests.test_native_order_baseline": 40,
+      "tests.test_native_prefill_order": 20,
+      "tests.test_no_prefetch_runtime": 5,
+      "tests.test_v0520_native_telemetry": 151,
+      "tests.test_compare_native_policy_runs": 31,
+      "tests.test_launch_semantic_h2d_after_pair": 26,
+      "tests.test_summarize_semantic_h2d_ab": 51
+    },
+    "actual_supervisor": {
+      "pid": 3412628,
+      "state": "S",
+      "ppid": 1,
+      "start_ticks": "636206265",
+      "argv": [
+        "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+        "/home/longhao/experiment/.worktrees/beliefkv-v1278-native-order-gpu-20261016/scripts/start_v78_native_order_20261016.py",
+        "--watch"
+      ]
+    },
+    "actual_wait_state": {
+      "status": "waiting_for_complete_v77",
+      "supervisor": {
+        "pid": 3412628,
+        "state": "R",
+        "ppid": 1,
+        "start_ticks": "636206265",
+        "argv": [
+          "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+          "/home/longhao/experiment/.worktrees/beliefkv-v1278-native-order-gpu-20261016/scripts/start_v78_native_order_20261016.py",
+          "--watch"
+        ]
+      },
+      "registration": {
+        "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1282_v78_native_order_registration_20261016.json",
+        "sha256": "01270e4eddc65ed66eeffd6407d9ccfa23d926ee978eb641ab369ccc9d897c9d"
+      },
+      "run_root": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_reactive_online_poisson_156root_20261016_v78_native_order",
+      "started_at": "2026-10-16T16:03:19.800610-07:00",
+      "observed_at": "2026-10-16T16:27:00.140766-07:00",
+      "previous_status": "running_native_close",
+      "wait_supervisor_live": true,
+      "wait_driver_live": true
+    },
+    "gpu_work_started": false,
+    "startup_and_completion_receipts": "V1283/V1284/V1286 are future outputs and do not exist yet."
+  },
+  "service_window_1800_2400": {
+    "native_close": {
+      "decode_token_per_second": 1300.0483333333334,
+      "weighted_decode_batch": 47.457638880076104,
+      "prefill_worker_seconds": 118.73730932617187,
+      "h2d_bytes": 0,
+      "d2h_bytes": 169213624320
+    },
+    "reactive": {
+      "decode_token_per_second": 1317.2283333333332,
+      "weighted_decode_batch": 47.466328278474,
+      "prefill_worker_seconds": 121.316462890625,
+      "h2d_bytes": 6089400320,
+      "d2h_bytes": 174661611520
+    },
+    "native": {
+      "decode_token_per_second": 1296.6916666666666,
+      "weighted_decode_batch": 47.43376014499678,
+      "prefill_worker_seconds": 108.09549340820313,
+      "h2d_bytes": 0,
+      "d2h_bytes": 206565478400
+    },
+    "predictive": {
+      "decode_token_per_second": 1270.0466666666666,
+      "weighted_decode_batch": 47.452217880932736,
+      "prefill_worker_seconds": 120.956970703125,
+      "h2d_bytes": 3152752640,
+      "d2h_bytes": 167369768960
+    }
+  },
+  "service_window_2400_3000": {
+    "native_close": {
+      "decode_token_per_second": 1093.6983333333333,
+      "weighted_decode_batch": 47.30727447312802,
+      "prefill_worker_seconds": 96.27273071289062,
+      "h2d_bytes": 174642933760,
+      "d2h_bytes": 322882396160
+    },
+    "reactive": {
+      "decode_token_per_second": 1009.645,
+      "weighted_decode_batch": 47.18830671721612,
+      "prefill_worker_seconds": 85.56992016601562,
+      "h2d_bytes": 637786132480,
+      "d2h_bytes": 725582868480
+    },
+    "native": {
+      "decode_token_per_second": 1304.05,
+      "weighted_decode_batch": 47.489897088760365,
+      "prefill_worker_seconds": 122.57521240234375,
+      "h2d_bytes": 7189831680,
+      "d2h_bytes": 224260116480
+    },
+    "predictive": {
+      "decode_token_per_second": 1245.1983333333333,
+      "weighted_decode_batch": 47.43827425817551,
+      "prefill_worker_seconds": 115.62198046875,
+      "h2d_bytes": 102896128000,
+      "d2h_bytes": 263760670720
+    }
+  },
+  "rapid_continuation_queue_cohort_2400_3000": {
+    "native_close": {
+      "first_served_requests_queued_in_window": 3367,
+      "host_counter_known_requests": 3367,
+      "positive_full_host_requests": 332,
+      "zero_full_host_requests": 3035,
+      "full_host_counter_unknown_requests": 0,
+      "positive_full_host_fraction_of_known": 0.0986040986040986,
+      "reported_host_full_bytes": 98389237760,
+      "previous_completed_same_invocation_requests": 3367,
+      "preceding_completion_status_counts": {
+        "previous_completed_request": 3367
+      },
+      "previous_completion_to_queue_ms": {
+        "count": 3367,
+        "sum": 1346584.8044433594,
+        "min": 63.988525390625,
+        "p50": 338.921142578125,
+        "p90": 745.556689453125,
+        "p99": 960.9900195312501,
+        "max": 996.268310546875
+      }
+    },
+    "reactive": {
+      "first_served_requests_queued_in_window": 3243,
+      "host_counter_known_requests": 3243,
+      "positive_full_host_requests": 1328,
+      "zero_full_host_requests": 1915,
+      "full_host_counter_unknown_requests": 0,
+      "positive_full_host_fraction_of_known": 0.4094973789700894,
+      "reported_host_full_bytes": 408622653440,
+      "previous_completed_same_invocation_requests": 3243,
+      "preceding_completion_status_counts": {
+        "previous_completed_request": 3243
+      },
+      "previous_completion_to_queue_ms": {
+        "count": 3243,
+        "sum": 1399057.56640625,
+        "min": 82.28662109375,
+        "p50": 368.31884765625,
+        "p90": 785.076220703125,
+        "p99": 976.5467089843748,
+        "max": 999.968505859375
+      }
+    },
+    "native": {
+      "first_served_requests_queued_in_window": 3475,
+      "host_counter_known_requests": 3475,
+      "positive_full_host_requests": 7,
+      "zero_full_host_requests": 3468,
+      "full_host_counter_unknown_requests": 0,
+      "positive_full_host_fraction_of_known": 0.002014388489208633,
+      "reported_host_full_bytes": 935301120,
+      "previous_completed_same_invocation_requests": 3475,
+      "preceding_completion_status_counts": {
+        "previous_completed_request": 3475
+      },
+      "previous_completion_to_queue_ms": {
+        "count": 3475,
+        "sum": 1565130.59375,
+        "min": 71.65478515625,
+        "p50": 399.96337890625,
+        "p90": 802.918603515625,
+        "p99": 969.5340722656244,
+        "max": 999.53515625
+      }
+    },
+    "predictive": {
+      "first_served_requests_queued_in_window": 3249,
+      "host_counter_known_requests": 3249,
+      "positive_full_host_requests": 199,
+      "zero_full_host_requests": 3050,
+      "full_host_counter_unknown_requests": 0,
+      "positive_full_host_fraction_of_known": 0.06124961526623576,
+      "reported_host_full_bytes": 47736852480,
+      "previous_completed_same_invocation_requests": 3249,
+      "preceding_completion_status_counts": {
+        "previous_completed_request": 3249
+      },
+      "previous_completion_to_queue_ms": {
+        "count": 3249,
+        "sum": 1582283.2062988281,
+        "min": 74.926025390625,
+        "p50": 452.082763671875,
+        "p90": 842.6220214843751,
+        "p99": 975.206923828125,
+        "max": 999.925048828125
+      }
+    }
+  },
+  "all_due_completion_3000": {
+    "native_close": {
+      "horizon_seconds": 3000.0,
+      "counts": {
+        "due_workflows": 156,
+        "submitted": 156,
+        "started": 156,
+        "runner_finished": 74,
+        "due_submission_unobserved": 0,
+        "runner_unfinished": 82,
+        "recorded_completed": 74,
+        "explicitly_jct_eligible_completed": 74
+      },
+      "capped_sojourn_mean_seconds": {
+        "runner_finish_capped_seconds": 1032.4958620632476,
+        "recorded_completed_capped_seconds": 1032.4958620632476,
+        "eligible_completed_capped_seconds": 1032.4958620632476
+      }
+    },
+    "native": {
+      "horizon_seconds": 3000.0,
+      "counts": {
+        "due_workflows": 156,
+        "submitted": 156,
+        "started": 156,
+        "runner_finished": 83,
+        "due_submission_unobserved": 0,
+        "runner_unfinished": 73,
+        "recorded_completed": 83,
+        "explicitly_jct_eligible_completed": 83
+      },
+      "capped_sojourn_mean_seconds": {
+        "runner_finish_capped_seconds": 1027.1851985022931,
+        "recorded_completed_capped_seconds": 1027.1851985022931,
+        "eligible_completed_capped_seconds": 1027.1851985022931
+      }
+    },
+    "reactive": {
+      "horizon_seconds": 3000.0,
+      "counts": {
+        "due_workflows": 156,
+        "submitted": 156,
+        "started": 156,
+        "runner_finished": 66,
+        "due_submission_unobserved": 0,
+        "runner_unfinished": 90,
+        "recorded_completed": 66,
+        "explicitly_jct_eligible_completed": 66
+      },
+      "capped_sojourn_mean_seconds": {
+        "runner_finish_capped_seconds": 1148.2245720514184,
+        "recorded_completed_capped_seconds": 1148.2245720514184,
+        "eligible_completed_capped_seconds": 1148.2245720514184
+      }
+    }
+  },
+  "v76_10s_association": {
+    "service_window_2400_3000": {
+      "reactive": {
+        "positive_host_service_rows": 1473,
+        "queue_wait_at_least_10000ms": 1473
+      },
+      "native": {
+        "positive_host_service_rows": 34,
+        "queue_wait_at_least_10000ms": 0
+      },
+      "predictive": {
+        "positive_host_service_rows": 273,
+        "queue_wait_at_least_10000ms": 264
+      }
+    },
+    "frozen_runtime": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v1160-no-prefetch-20261016/beliefkv/runtime/sglang_v0520_runtime.py",
+      "sha256": "b6fe2198fd86de277f0f20a40b2eef1d352b2ec39ef8182cbdcf78e1beeaac16"
+    },
+    "interpretation": "Temporal association with an aging branch, not causal attribution. V77 has no extra ordering yet also exhibits substantial restoration."
+  },
+  "coverage_attempt": {
+    "unwritten_report": "v1296_v77_completion_cohorts_3000_20261016.json",
+    "reason": "The first attempt was rejected because the arrival/finish log had not covered the horizon. No output, relaxation, fabricated heartbeat or experiment restart followed. V1297 uses a later actually covered prefix."
+  },
+  "interpretation": [
+    "Extra workflow ordering cannot be the sole explanation: native-close V77 has no such ordering and records174.643GB H2D versus7.190GB historical native in the same relative service window.",
+    "V78 remains useful to isolate ordering/custom capacity bypass amplification, not to establish an already assumed root cause.",
+    "Also inspect terminal reclamation, effective hybrid-prefix recovery, native admission and realized working sets before selecting a fix.",
+    "All416 V77 positive Host service observations associate with the preceding safe-input checkpoint on the current path; this is not physical page reuse or a proof that a checkpoint was deleted.",
+    "V77 has74 versus83 historical native recorded completions at3000s. Earlier capped-sojourn advantages did not persist."
+  ],
+  "limits": [
+    "Single historical development runs have different realized model/tool work and CPU-quality overlap; neither GC nor ordering causality is established.",
+    "The reused service-window CLI does not seal each JSONL input prefix. Host and completion auditors separately bind their actual prefixes and results.",
+    "GPU-service and runner-arrival horizons have distinct origins; queue-time and positive-Host service-time cohorts have distinct membership.",
+    "Reported Host bytes are not unique physical pages, waste or removable JCT. Official quality and final performance remain unaccepted.",
+    "Current V77, V78 and official quality helpers/sources remain frozen; this does not establish a new paper contribution."
+  ]
+}

@@ -1,0 +1,96 @@
+{
+  "at": "2026-10-16T16:01:58.134943-07:00",
+  "source": {
+    "commit": "56f2c5e5ff399ee2ce4a930574a5abaee917657c",
+    "dirty": false,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+    "state_sha256": "c2944e32a73b2e2c189ea6f4a405c930a1b915ad391de5e3a555cee9df40489c"
+  },
+  "engine": {
+    "commit": "94602c9c2b7cbdb8efd5c52802dac6a1c180089e",
+    "dirty": true,
+    "excluded_provenance_paths": [],
+    "tracked_change_paths": [
+      "python/sglang/srt/arg_groups/fields/schedule.py",
+      "python/sglang/srt/entrypoints/openai/protocol.py",
+      "python/sglang/srt/entrypoints/openai/serving_chat.py",
+      "python/sglang/srt/environ.py",
+      "python/sglang/srt/layers/attention/hybrid_linear_attn_backend.py",
+      "python/sglang/srt/layers/attention/linear/gdn_backend.py",
+      "python/sglang/srt/layers/attention/linear/kernels/gdn_flashinfer.py",
+      "python/sglang/srt/managers/cache_controller.py",
+      "python/sglang/srt/managers/io_struct.py",
+      "python/sglang/srt/managers/schedule_batch.py",
+      "python/sglang/srt/managers/scheduler.py",
+      "python/sglang/srt/managers/scheduler_components/idle_sleeper.py",
+      "python/sglang/srt/managers/tokenizer_manager.py",
+      "python/sglang/srt/mem_cache/hybrid_cache/hybrid_cache_controller.py",
+      "python/sglang/srt/mem_cache/hybrid_cache/hybrid_pool_assembler.py",
+      "python/sglang/srt/mem_cache/memory_pool.py",
+      "python/sglang/srt/mem_cache/radix_cache.py",
+      "python/sglang/srt/mem_cache/unified_cache/components/full.py",
+      "python/sglang/srt/mem_cache/unified_cache/components/mamba.py",
+      "python/sglang/srt/mem_cache/unified_cache/session_ref_tracker.py",
+      "python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py",
+      "python/sglang/srt/mem_cache/unified_cache/unified_tree_core_interface.py",
+      "python/sglang/srt/mem_cache/unified_radix_cache.py",
+      "python/sglang/srt/model_executor/forward_batch_info.py",
+      "python/sglang/srt/observability/req_time_stats.py",
+      "python/sglang/srt/session/session_controller.py",
+      "test/registered/unit/mem_cache/test_hybrid_pool_assembler.py",
+      "test/registered/unit/mem_cache/test_unified_radix_cache_unittest.py",
+      "test/srt/test_beliefkv_backed_full_scan.py",
+      "test/srt/test_beliefkv_execution_handoff.py",
+      "test/srt/test_beliefkv_full_host_eviction.py",
+      "test/srt/test_beliefkv_gdn_prefill_mask.py",
+      "test/srt/test_beliefkv_host_eviction_observer.py",
+      "test/srt/test_beliefkv_latest_mamba_state.py",
+      "test/srt/test_beliefkv_layer_wait_probe.py",
+      "test/srt/test_beliefkv_lifecycle.py",
+      "test/srt/test_beliefkv_mamba_request_mapping.py",
+      "test/srt/test_beliefkv_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_metadata.py",
+      "test/srt/test_beliefkv_prefill_track_slots.py",
+      "test/srt/test_beliefkv_radix_prefix.py",
+      "test/srt/test_beliefkv_scheduler_hook.py",
+      "test/srt/test_beliefkv_session_anchors.py",
+      "test/srt/test_beliefkv_shadow_dispatch.py",
+      "test/srt/test_beliefkv_terminal_capacity.py",
+      "test/srt/test_beliefkv_text_prompt_ids.py",
+      "test/srt/test_beliefkv_transfer_receipts.py",
+      "test/srt/test_beliefkv_unified_ack.py",
+      "test/srt/test_beliefkv_write_back_batch.py",
+      "test/srt/test_beliefkv_write_back_batch_integration.py"
+    ],
+    "untracked_paths": [],
+    "tracked_change_tree_sha256": "d1f850b94b3b1f15a4f63c9bf1cf68cabe4174395561d65f990bdccf842f4099",
+    "canonical_patch": {
+      "path": "/home/longhao/experiment/.worktrees/beliefkv-v1278-native-order-gpu-20261016/patches/sglang-v0.5.20-beliefkv-staging.patch",
+      "sha256": "ea859cf0e8d02db87e1b586fa149c7a8ddf798e867ee7888e21fa4a25f1785ce",
+      "expected_tree": "53020ce3efef3ed362e9af0db77147b39070f064",
+      "actual_tree": "53020ce3efef3ed362e9af0db77147b39070f064",
+      "matches_worktree": true,
+      "covered_untracked_paths": []
+    },
+    "state_sha256": "6f5b6794fbb91ed78367628c9a212045f8d17aba929031d7f329ee86dd3a8f5e"
+  },
+  "checks": [
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1280_v78_native_order_final_cpu_20261016.xml",
+      "sha256": "c3806ee1cc55e862c2132e65d00023e91a51a0266a156fe7c50962246ff182fb"
+    }
+  ],
+  "unique_cpu_test_cases": 324,
+  "ordering_qualification": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1252_native_prefill_order_qualification_20261016.json",
+    "sha256": "73123b56f08ac734076975e1e4d23093a21d45d0817cc66b284caf123486c0b0"
+  },
+  "application_changed_paths": [
+    "beliefkv/runtime/sglang_v0520_runtime.py",
+    "beliefkv/runtime/v0520_native_telemetry.py"
+  ],
+  "scope": "CPU/configuration qualification; no GPU speedup, quality or novelty established."
+}
