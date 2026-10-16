@@ -87,6 +87,23 @@ controls still inspect the head,adding0.095-1.943ms without reordering.
 All-cold controls add no native reads but about0.018ms. This strengthens
 the fixture evidence without measuring live deep-tree frequency or GPU gain.
 Keep the registered candidate and judge service waits,control CPU and full JCT.
+The V68 fourth3600-3900s window yields372397/388781 request steps,
+about4.2% behind,with17.930s control exclusive wall. Short-prefill53/75
+samples have7.539/4.027ms selection thread CPU,45.464/39.102ms run_batch
+and8.745/4.853ms return-to-result;different samples are not removable JCT.
+
+Deve284084 reuses only the best PREPARE selection within one synchronous
+dispatch and its first native attempt. Nonempty/unknown control delivery or
+an earlier native attempt forces recapture. Keep native session,node,prefix,
+Host-capacity checks,final causal validation and per-extent ledger/ACK.
+V1031 passes730 checks against the same real engine on CPU fixtures.
+V1028/V1030 preserve complete-dispatch transfer selection/publication.
+Final16/256-depth eligible means improve0.147/1.405ms;64-depth median
+improves4.926 to4.562ms,but a37.840ms outlier raises the mean4.933 to5.218ms.
+Control-delivery negatives add0.039-0.068ms with no extra native reads.
+Retain both cost and outlier evidence;this is not GPU/JCT acceptance.
+Do not replace registered V69/c27ca37 on this narrow evidence or hot-edit V68.
+The new PREPARE change remains Dev-only while V69 tests resident consumption.
 V1018 preserves a registration bug:the imported generic register function
 spawned its old defining-module watcher,which exited before GPU launch.
 No driver/raw collection was created;its old observer state was overwritten.
