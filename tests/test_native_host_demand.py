@@ -1,6 +1,6 @@
 import pytest
 
-from scripts.audit_native_host_demand import host_demand
+from scripts.audit_native_host_demand import host_demand, repeated_context_demand
 
 
 def event(request="r", queued=10., served=20., tokens=5, **extra):
@@ -62,3 +62,45 @@ def test_duplicate_native_request_and_unordered_times_are_rejected():
 def test_invalid_host_demand_is_rejected(tokens):
     with pytest.raises(ValueError, match="invalid"):
         host_demand([event(tokens=tokens)], {}, 0., 30., 10)
+
+
+def test_repeated_positive_observations_use_service_order_and_keep_singletons():
+    report = host_demand([
+        event("later", served=25., tokens=7),
+        event("first", served=20., tokens=3),
+        event("singleton", served=26., tokens=2, context_id="other"),
+    ], {}, 0., 30., 10)["repeated_context_demand"]
+    assert report["known_identity_contexts"] == 2
+    assert report["contexts_with_multiple_positive_observations"] == 1
+    assert report["first_positive_observations_in_window"] == 2
+    assert report["later_positive_observations_in_same_context"] == 1
+    assert report["first_reported_host_full_bytes"] == 50
+    assert report["later_reported_host_full_bytes"] == 70
+    assert report["later_fraction_of_known_reported_host_full_bytes"] == 70 / 120
+    assert report["interval_between_positive_observations_ms"]["p50"] == 5.
+
+
+def test_repeated_demand_does_not_merge_context_names_across_workflows():
+    report = host_demand([
+        event("one"), event("two", workflow_id="other"),
+    ], {}, 0., 30., 10)["repeated_context_demand"]
+    assert report["known_identity_contexts"] == 2
+    assert report["later_positive_observations_in_same_context"] == 0
+    assert report["later_fraction_of_known_reported_host_full_bytes"] == 0.
+    assert report["interval_between_positive_observations_ms"]["count"] == 0
+
+
+def test_missing_context_identity_is_unknown_instead_of_a_shared_context():
+    report = host_demand([
+        event("one", context_id=None), event("two", context_id=None),
+    ], {}, 0., 30., 10)["repeated_context_demand"]
+    assert report["unknown_context_identity_rows"] == 2
+    assert report["known_identity_contexts"] == 0
+    assert report["later_positive_observations_in_same_context"] == 0
+    assert report["later_fraction_of_known_reported_host_full_bytes"] is None
+
+
+def test_empty_repeated_demand_keeps_unknown_fraction():
+    report = repeated_context_demand([])
+    assert report["first_reported_host_full_bytes"] == report["later_reported_host_full_bytes"] == 0
+    assert report["later_fraction_of_known_reported_host_full_bytes"] is None

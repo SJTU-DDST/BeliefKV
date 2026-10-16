@@ -2,6 +2,12 @@
 
 更新日期：2026-10-16（PDT）
 
+2026-10-16 14:32 PDT：V1253以同一封存窗口区分首次与后续正Host观测，
+V76后续需求417.048GB，占报告FULL需求93.07%，native对应0.262GB/9.32%。
+这将排查重点收敛到重复需求、排序和周转，尚不证明同页浪费或因果机制；
+50项离线检查通过，见
+[研究筛选4.23](research/non_scheduling_directions_20261016_zh.md#423-重复-context-的-host-需求集中度)。
+
 2026-10-16 14:22 PDT：b698416新增默认关闭的原生prefill顺序消融；启动时设
 BELIEFKV_NATIVE_PREFILL_ORDER=1后，仅移除额外候选排序和容量绕行，身份、终态、
 原生准入与恢复、PREPARE及生命周期继续。实际模式由prefill_ordering_mode记录，

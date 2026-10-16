@@ -1,0 +1,175 @@
+{
+  "created_at": "2026-10-16T14:31:03.539977-07:00",
+  "source_report": {
+    "path": "experiments/reports/v1246_v76_native_host_demand_2400_3000_20261016.json",
+    "sha256": "2d02c48b52aa34a207faebc687a569829d74a36bc10a233677e3fb850c813919"
+  },
+  "source_scope": "Reanalysis of the exact sealed report rows; no dynamic raw trace is reread.",
+  "window_seconds": [
+    2400.0,
+    3000.0
+  ],
+  "arms": {
+    "reactive": {
+      "source_summary": {
+        "host_hit_requests": 1473,
+        "contexts": 145,
+        "reported_host_full_tokens": 21879677,
+        "reported_host_full_bytes": 448095784960,
+        "host_full_tokens_per_request": {
+          "count": 1473,
+          "sum": 21879677,
+          "min": 19,
+          "p50": 14794,
+          "p90": 23163.399999999998,
+          "p99": 26723.199999999997,
+          "max": 30663
+        },
+        "queue_to_first_service_observation_ms": {
+          "count": 1473,
+          "sum": 22378445.62841797,
+          "min": 10075.0244140625,
+          "p50": 15574.0654296875,
+          "p90": 17074.4638671875,
+          "p99": 18824.43755859375,
+          "max": 19201.80615234375
+        }
+      },
+      "repeated_context_demand": {
+        "known_identity_contexts": 145,
+        "contexts_with_multiple_positive_observations": 137,
+        "first_positive_observations_in_window": 145,
+        "later_positive_observations_in_same_context": 1328,
+        "first_reported_host_full_bytes": 31048007680,
+        "later_reported_host_full_bytes": 417047777280,
+        "later_fraction_of_known_reported_host_full_bytes": 0.9307112257644389,
+        "later_positive_observations_by_role": {
+          "root": 254,
+          "child": 1074
+        },
+        "interval_between_positive_observations_ms": {
+          "count": 1328,
+          "sum": 40956612.02758789,
+          "min": 13945.917236328125,
+          "p50": 21644.7548828125,
+          "p90": 53537.701464843725,
+          "p99": 131671.0550439454,
+          "max": 282540.55712890625
+        },
+        "unknown_context_identity_rows": 0,
+        "semantics": "First/later refer only to positive Host observations within the sealed window, not to the context lifetime or consecutive model requests. Intervening resident requests may exist. Repeated request accounting does not prove identical physical pages, redundant traffic, or avoidable restore time; epochs and prefixes can change."
+      }
+    },
+    "native": {
+      "source_summary": {
+        "host_hit_requests": 34,
+        "contexts": 32,
+        "reported_host_full_tokens": 137274,
+        "reported_host_full_bytes": 2811371520,
+        "host_full_tokens_per_request": {
+          "count": 34,
+          "sum": 137274,
+          "min": 226,
+          "p50": 610.0,
+          "p90": 12074.799999999997,
+          "p99": 20850.350000000006,
+          "max": 22172
+        },
+        "queue_to_first_service_observation_ms": {
+          "count": 34,
+          "sum": 218813.763671875,
+          "min": 3902.5,
+          "p50": 6386.8087158203125,
+          "p90": 8101.290087890625,
+          "p99": 9257.246525878907,
+          "max": 9333.762939453125
+        }
+      },
+      "repeated_context_demand": {
+        "known_identity_contexts": 32,
+        "contexts_with_multiple_positive_observations": 2,
+        "first_positive_observations_in_window": 32,
+        "later_positive_observations_in_same_context": 2,
+        "first_reported_host_full_bytes": 2549370880,
+        "later_reported_host_full_bytes": 262000640,
+        "later_fraction_of_known_reported_host_full_bytes": 0.0931931756924108,
+        "later_positive_observations_by_role": {
+          "root": 1,
+          "child": 1
+        },
+        "interval_between_positive_observations_ms": {
+          "count": 2,
+          "sum": 144499.47827148438,
+          "min": 60355.1416015625,
+          "p50": 72249.73913574219,
+          "p90": 81765.41716308593,
+          "p99": 83906.44471923828,
+          "max": 84144.33666992188
+        },
+        "unknown_context_identity_rows": 0,
+        "semantics": "First/later refer only to positive Host observations within the sealed window, not to the context lifetime or consecutive model requests. Intervening resident requests may exist. Repeated request accounting does not prove identical physical pages, redundant traffic, or avoidable restore time; epochs and prefixes can change."
+      }
+    },
+    "predictive": {
+      "source_summary": {
+        "host_hit_requests": 273,
+        "contexts": 111,
+        "reported_host_full_tokens": 3195565,
+        "reported_host_full_bytes": 65445171200,
+        "host_full_tokens_per_request": {
+          "count": 273,
+          "sum": 3195565,
+          "min": 145,
+          "p50": 11020,
+          "p90": 21756.4,
+          "p99": 26219.71999999998,
+          "max": 26913
+        },
+        "queue_to_first_service_observation_ms": {
+          "count": 273,
+          "sum": 2996462.4899902344,
+          "min": 5607.933837890625,
+          "p50": 10897.741455078125,
+          "p90": 11988.588134765625,
+          "p99": 13109.523769531246,
+          "max": 13432.06005859375
+        }
+      },
+      "repeated_context_demand": {
+        "known_identity_contexts": 111,
+        "contexts_with_multiple_positive_observations": 75,
+        "first_positive_observations_in_window": 111,
+        "later_positive_observations_in_same_context": 162,
+        "first_reported_host_full_bytes": 24456683520,
+        "later_reported_host_full_bytes": 40988487680,
+        "later_fraction_of_known_reported_host_full_bytes": 0.6263027039036915,
+        "later_positive_observations_by_role": {
+          "root": 34,
+          "child": 128
+        },
+        "interval_between_positive_observations_ms": {
+          "count": 162,
+          "sum": 5692024.693603516,
+          "min": 12787.682373046875,
+          "p50": 17937.349731445312,
+          "p90": 65078.23725585939,
+          "p99": 193380.46354003905,
+          "max": 318531.6506347656
+        },
+        "unknown_context_identity_rows": 0,
+        "semantics": "First/later refer only to positive Host observations within the sealed window, not to the context lifetime or consecutive model requests. Intervening resident requests may exist. Repeated request accounting does not prove identical physical pages, redundant traffic, or avoidable restore time; epochs and prefixes can change."
+      }
+    }
+  },
+  "analysis_source_sha256": {
+    "scripts/audit_native_host_demand.py": "0f9fd30014e9665674d7a8a7ae2cdc4ac93e25c5141fb6139e630e6508302999"
+  },
+  "limits": [
+    "These are repeated positive Host demand observations in one complete window, not unique physical bytes or identical-page reload proofs.",
+    "First observation is left censored at the window boundary. Resident requests may intervene between positive Host observations.",
+    "Context epochs and token prefixes can change. This does not identify eviction cause or prove all repeated demand avoidable.",
+    "Intervals include generation, tools, native admission and recovery. Neither these nor queue-to-service medians are removable JCT bounds.",
+    "Single differing trajectories and rare native positive hits do not establish an isolated ordering effect or paper novelty.",
+    "The independent native-order option remains CPU-qualified only; no existing experiment or GPU registration is changed."
+  ]
+}

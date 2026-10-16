@@ -2,6 +2,14 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 14:32 PDT: V1253 reuses sealed V1246 rows to separate the first
+positive Host observation in the window from later demand in the same context.
+V76 later observations account for417.048GB/93.07% of reported FULL demand,
+versus native0.262GB/9.32%. This is request accounting, not identical-page
+reload proof or avoidable JCT. V1254 passes50 offline cases. Prioritize isolated
+ordering/lifecycle/turnover attribution; retain frozen V76/V77 and quality queues.
+See screening4.23; no new GPU registration or production behavior changed.
+
 2026-10-16 14:22 PDT: independent ordering candidate b698416 is now on main.
 BELIEFKV_NATIVE_PREFILL_ORDER=1 is read once at startup; default0 retains
 workflow ordering. Native mode skips extra priorities/aging and custom capacity

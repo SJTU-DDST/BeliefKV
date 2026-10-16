@@ -19,6 +19,50 @@ from scripts.audit_native_system_costs import distribution, finite_number
 from scripts.audit_sealed_wait_prefetch import SealedRecords
 
 
+def repeated_context_demand(rows):
+    grouped, unknown = defaultdict(list), 0
+    for row in rows:
+        identity = row.get("workflow_id"), row.get("context_id")
+        if any(type(value) is not str or not value for value in identity):
+            unknown += 1
+            continue
+        grouped[identity].append(row)
+    first_bytes, later_bytes, later, gaps, roles = 0, 0, 0, [], Counter()
+    for group in grouped.values():
+        ordered = sorted(group, key=lambda row: (
+            row["first_service_observation_ts_ms"], row["request_id"],
+        ))
+        first_bytes += ordered[0]["reported_host_full_bytes"]
+        later += len(ordered) - 1
+        later_bytes += sum(row["reported_host_full_bytes"] for row in ordered[1:])
+        roles.update(row["role"] for row in ordered[1:])
+        gaps.extend(
+            after["first_service_observation_ts_ms"] - before["first_service_observation_ts_ms"]
+            for before, after in zip(ordered, ordered[1:])
+        )
+    known_bytes = first_bytes + later_bytes
+    return {
+        "known_identity_contexts": len(grouped),
+        "contexts_with_multiple_positive_observations": sum(len(group) > 1 for group in grouped.values()),
+        "first_positive_observations_in_window": len(grouped),
+        "later_positive_observations_in_same_context": later,
+        "first_reported_host_full_bytes": first_bytes,
+        "later_reported_host_full_bytes": later_bytes,
+        "later_fraction_of_known_reported_host_full_bytes": (
+            later_bytes / known_bytes if known_bytes else None
+        ),
+        "later_positive_observations_by_role": dict(roles),
+        "interval_between_positive_observations_ms": distribution(gaps),
+        "unknown_context_identity_rows": unknown,
+        "semantics": (
+            "First/later refer only to positive Host observations within the sealed window, "
+            "not to the context lifetime or consecutive model requests. Intervening resident "
+            "requests may exist. Repeated request accounting does not prove identical physical "
+            "pages, redundant traffic, or avoidable restore time; epochs and prefixes can change."
+        ),
+    }
+
+
 def host_demand(events, scopes, begin, end, bytes_per_token):
     rows, seen, unknown = [], set(), Counter()
     for event in events:
@@ -90,6 +134,7 @@ def host_demand(events, scopes, begin, end, bytes_per_token):
         workflows[row["instance_id"]].append(row)
     return {
         "summary": summary(rows),
+        "repeated_context_demand": repeated_context_demand(rows),
         "by_role": {
             role: summary([row for row in rows if row["role"] == role])
             for role in sorted({row["role"] for row in rows})
