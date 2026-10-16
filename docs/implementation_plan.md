@@ -8,9 +8,37 @@ recomputation checked. All three workstreams remain open: actual short-prefill
 and high-frequency control cost; useful JOIN/tool FULL prefetch conversion;
 recovery, KV lifecycle and first-service coordination. CPU checks, local
 microseconds, ACK counts and transferred bytes are not acceptance. Inspect
-running V70_terminal_root/06f031b and completed V68_partial_restore/e4aa180; use V58
+running V71_aged_head/0bcf78f and completed V70_terminal_root/06f031b; use V58
 for development and matched repeated formal controls. Keep source/engine frozen.
-V70 cold-started at2026-10-15 21:10:19 PDT,port18474,supervisor3447145/
+V71 cold-started at2026-10-15 23:20:16 PDT,port18475,driver840154/
+start_ticks630187941,scheduler840544/start_ticks630189245. V1058/V1059 bind
+registration/launch,V1060 verifies actual service/source/settings/identical
+pool capacity,V1061 records NUMA. State:ops/v71_aged_head_20261015.state.json.
+At23:28,new quota inspection15/order8/admission8 proves activation only.
+First120-300s window yields225567/246021 steps,-8.31%,15.230s control self-wall.
+Short-prefill52/51 samples run_batch41.111/35.072ms,return-to-result12.376/
+6.013ms. Keep the regression evidence;do not credit activation as performance.
+
+V1067 audits full V70:155 completed/one incomplete,exit0,migration enabled.
+153 completed pairs mean2005.764/2306.855s,-13.05%,95 faster/58 slower;
+P95 is4424.256/4987.354s. The144 explicitly eligible pairs mean1820.834/
+2237.344s,-18.62%,but request/tool counts are24.10%/24.03% lower.
+Early verified FULL is59/34 JOIN/tool events,1.271/2.485GB,combined0.192%
+of same-run native FULL H2D. First5400s terminal counts138/132 are not
+independently correct completions. V70 quality is ungraded;do not reuse V68
+quality or attribute historical tail/demand differences to transfer modules.
+
+V1064 rejects raw tool median routing:positive-FULL last-second P90 worsens
+1054.8->1132.1ms in V70 and756.7->1473.2ms in V68,without fewer first windows
+over10s early,despite better overall quantiles. Keep existing model/routing.
+Devef2b782 skips native child-semantic decode history only for declared roots
+confirmed by the graph;keep child/unknown paths,tool token features and first
+reuse. V1065 passes381/skips one unchanged process integration test requiring
+the absent old pinned encoder. V1066 complete-callback CPU fixtures improve
+34.47%/12.52% for all/half roots,but child/unknown negatives cost8.78%/5.40%
+more,about6.0/3.7us. No end-to-end claim;not in frozen V70/V71.
+
+Historical V70 cold-started at2026-10-15 21:10:19 PDT,port18474,supervisor3447145/
 start_ticks629347135,driver3452941/start_ticks629408220 and scheduler3454060/
 start_ticks629409521. V1043/V1045 bind registration/launch;V1046 verifies
 actual GPU service,source,dedbe1a0 engine and unchanged physical pools.
