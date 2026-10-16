@@ -22,6 +22,23 @@ The first120-300s window has219279/246021 request steps,-10.87%,and17.632s
 control self-wall. Short-prefill37/51 samples select at5.392/2.734ms CPU,
 run_batch41.563/35.072ms and return-to-result11.087/6.013ms. Keep this
 negative evidence;inspect later fixed windows and full quality/JCT outcomes.
+The600-900s window yields330045/386707 steps,-14.65%,and36.832s control
+self-wall;actual work-priority activation has not established a service gain.
+
+V1084 audits external arrivals:V72 and historical V58 share the root
+timestamps/task order,but the first108 tasks span seven repositories with47
+Django tasks and all48 second-wave tasks are Django. Treat two bursts as
+a controlled development stress test,not sufficient online-load generality.
+For formal evaluation,freeze a shared root-arrival schedule for each pair,
+assign tasks independently by randomization/stratification,and vary offered
+load,continuous arrival timing,burstiness and two-wave gap/batch sizes.
+Keep live internal agent/tool/spawn/JOIN behavior;no fixed demand replay.
+Repeating one fixed mapping does not remove mixture/time confounding.
+Report warmup,measurement and drain/tool tails explicitly,all failures and
+quality,and repeated matched uncertainty. Real LLM request timestamps may
+test arrival shape but cannot be labeled real multi-agent workflow traces.
+Current V72 and budgets remain frozen;new arrival modes are not implemented
+or run. This updates formal-evaluation requirements,not the live workload.
 
 V71 failed at00:12:53 PDT with loading_check KeyError:364,driver exit1.
 V1075 preserves83 completed,13 connection-interruption errors and60 missing
