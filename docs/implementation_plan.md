@@ -2,14 +2,59 @@
 
 Status date: 2026-10-16 (Asia/Shanghai).
 
-The active goal requires measured mean-workflow-JCT and completion-throughput
-improvements over native, with task quality, completion, fairness, tails and
-recomputation checked. All three workstreams remain open: actual short-prefill
-and high-frequency control cost; useful JOIN/tool FULL prefetch conversion;
-recovery, KV lifecycle and first-service coordination. CPU checks, local
-microseconds, ACK counts and transferred bytes are not acceptance. Inspect
-running V72_workflow_work/f7aec98 and completed V70_terminal_root/06f031b; use V58
-for development and matched repeated formal controls. Keep source/engine frozen.
+The goal was reset on2026-10-16 PDT and remains active: use dynamic workflow
+events on the native service path to lower mean workflow JCT and raise useful
+completion throughput, preserving quality, completion, fairness, tails and
+useful-KV recomputation. Prioritize exposed recovery waits, short-prefill/control
+cost and recovery/lifecycle/admission coordination. Treat pre-completion
+prediction as an optional extension; widespread subsecond RETURN accuracy and
+more transferred bytes are not prerequisites or acceptance criteria.
+
+Execute the following stage sequence:
+
+1. Audit residual exposure after native layer overlap using existing traces.
+   Separate forward-stream layer waits from pre-admission planning,load queue,
+   capacity/state preparation,client work and summaries. Bucket by actual
+   extend tokens,missing FULL,necessary Mamba and concurrency. Keep absent
+   evidence unknown. Report independent JOIN/tool episodes and actual consumers.
+2. Measure the usable completion-to-submit/admission window. Reuse the existing
+   per-layer pipeline immediately on confirmed JOIN satisfaction or completion
+   of all blocking tools,with safe-checkpoint continuity and real capacity.
+   A fixed lead allowance must not introduce a sleep or assume full-copy
+   completion. Count pre-completion prediction,post-completion early restoration
+   and post-arrival demand restoration separately.
+3. Couple missing-page/state recovery with terminal private-KV reclamation,
+   bounded residency and near-term admission;continue reducing short-prefill
+   and high-frequency control work. Retain long-tool-wait predictions as a
+   separate possible input to cold-KV management.
+4. Select one promising change only after identifying operational exposure.
+   Validate its isolated net effect with a minimal same-code ablation: actual
+   dependency/first-service delay,CPU work,residency,eviction/recomputation,
+   mean JCT and useful completions. Shrink paths without demonstrated benefit.
+   Do not fund extra scans or restore volume with unmeasured stall estimates.
+
+V1105 completes the first bounded CPU audit over five disjoint V72/V58 sealed
+windows. Of9329/10445 observed prefills,4282/4986 are single-request,extend<512.
+Pair load-consuming probes directly with services instead of intersecting
+independent turnover sampling. Short-prefill layer-wait samples are46/79:
+V72 P50/P90/max0.096/0.267/1.356ms;historical native0.091/0.105/0.782ms.
+No native short sample exceeds1ms. This currently gives little evidence for
+large extra forward-stream overlap gains. Timing includes event overhead,
+sampling is sparse/window-concentrated,and earlier recovery/state/admission
+cost is not ruled out. Do not extrapolate to all batches or JCT,or infer the
+tool module's net effect from these different-version/demand arms.
+CPU preparation may already overlap transfers;reassess exposure after reducing
+that CPU cost instead of treating the current small waits as a hardware limit.
+Receipt:experiments/reports/v1105_short_prefill_existing_layer_restore_space_20261016.json.
+V1104 independently aggregates41 exact tool episodes:ACK-to-service P50/P90
+1.117/68.304s. V1103's20.560s P50 is node-weighted. Two44/72s client phases
+include internal model summaries;existing context_summary_started lease
+invalidation must be checked before proposing duplicate fixes.
+
+Inspect running V72_workflow_work/f7aec98 and completed V70_terminal_root/06f031b.
+Use V58 for historical diagnosis;the online workload requires V73's same-table
+native arm. Formal acceptance adds matched repetitions and uncertainty.
+Keep V72/V73 source,engine and registered launch helpers frozen.
 V72 cold-started at2026-10-16 00:27:06 PDT,port18476,on independent engine
 tree791dd37f. V1080/V1081 bind registration/launch;state is
 ops/v72_workflow_work_20261016.state.json. Keep the agreed156-workflow
