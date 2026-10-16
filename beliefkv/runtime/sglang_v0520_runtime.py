@@ -9174,6 +9174,20 @@ class NativeAdmissionRuntime:
                             )
             if self._semantic_worker is not None:
                 key = visible_key
+                metadata = getattr(req, "beliefkv_metadata", None)
+                if (
+                    key is not None and isinstance(metadata, dict)
+                    and metadata.get("parent_invocation_id", False) is None
+                ):
+                    invocation = self.graph.invocations.get(key.invocation_id)
+                    if (
+                        invocation is not None
+                        and invocation.relation_type is RelationType.ROOT
+                        and invocation.parent_invocation_id is None
+                        and invocation.workflow_id == key.root_workflow_id
+                        and invocation.context_id == key.context_id
+                    ):
+                        key = None
                 if key is not None:
                     self._semantic_keys[key.request_id] = key
                     history = self._semantic_progress.get(key.request_id)

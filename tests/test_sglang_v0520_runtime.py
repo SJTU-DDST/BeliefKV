@@ -3522,6 +3522,50 @@ def test_semantic_pending_snapshot_coalesces_then_resubmits_at_existing_interval
     runtime.close()
 
 
+@pytest.mark.parametrize("parent_metadata, linked_child, tracked", [
+    ("missing", False, True),
+    (None, False, False),
+    ("parent", False, True),
+    (None, True, True),
+])
+def test_native_child_decode_history_skips_only_confirmed_roots(
+    parent_metadata, linked_child, tracked,
+):
+    runtime = NativeAdmissionRuntime()
+    request = req("served")
+    request.session_id, request.session_generation = "session", 1
+    request.origin_input_ids, request.output_ids = [1, 2], [7, 8]
+    if parent_metadata != "missing":
+        request.beliefkv_metadata["parent_invocation_id"] = parent_metadata
+    runtime.on_events((
+        event(0, RuntimeEventKind.WORKFLOW_START),
+        event(1, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="parent", context_id="ctx-parent"),
+        event(2, RuntimeEventKind.INVOCATION_CREATE,
+              invocation_id="served", context_id="ctx-served",
+              parent_invocation_id="parent" if linked_child else None),
+    ))
+    runtime.register_visible_request(request)
+    runtime._semantic_worker = NS(close=lambda: None)
+    runtime._tool_open_token_ids = frozenset({7})
+    try:
+        runtime.on_batch_completed(NS(reqs=(request,)))
+        assert ("served" in runtime._semantic_progress) is tracked
+        assert ("served" in runtime._semantic_keys) is tracked
+        assert ("served" in runtime._decoded_tool_requests) is tracked
+        assert runtime.counts["semantic_native_tool_marker_invalidated"] == int(tracked)
+        assert runtime._context_tokens["ctx-served"] == (
+            0, 2, 2, parent_metadata not in ("missing", None),
+        )
+        request.finished = lambda: True
+        runtime.on_batch_completed(NS(reqs=(request,)))
+        assert "served" not in runtime.visible
+        assert ("served" in runtime._semantic_finished) is tracked
+        assert runtime._context_tokens["ctx-served"][:3] == (0, 2, 2)
+    finally:
+        runtime.close()
+
+
 def test_semantic_pending_snapshot_retries_missing_target_without_new_text():
     runtime, now, submitted, text = semantic_pending_fixture()
     text(now, 128)
