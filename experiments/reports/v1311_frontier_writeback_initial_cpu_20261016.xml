@@ -1,0 +1,1028 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="19" skipped="0" tests="28" time="12.155" timestamp="2026-10-16T17:05:53.340820-07:00" hostname="ddst-12"><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_plan_crosses_branches_without_changing_native_heap_or_source_pages" time="0.042" /><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_merged_cross_branch_ack_precedes_every_demote" time="0.247" /><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_every_new_parent_survives_batch_boundary_in_native_order[2]" time="0.039"><failure message="AttributeError: 'Loaded' object has no attribute '_evict_device_request_cnt'">max_nodes = 2
+
+    @pytest.mark.parametrize("max_nodes", [2, 3])
+    def test_every_new_parent_survives_batch_boundary_in_native_order(max_nodes):
+        result, full, _, _ = frontier_fixture(max_nodes=max_nodes, other_parent=True)
+        tracker = {Component.FULL: 0}
+        assert result._try_write_back_chain(3, tracker, 1000)
+        selected = []
+&gt;       while (identity := full._evict_device_next_node(tracker, {}, {})) is not None:
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+test/srt/test_beliefkv_write_back_frontier.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;Loaded object at 0x74da28550f90&gt;, tracker = {&lt;Component.FULL: 0&gt;: 128}
+device_frees = {}, host_frees = {}
+
+    def _evict_device_next_node(
+        self,
+        tracker: dict[ComponentType, int],
+        device_frees: dict[ComponentType, list[torch.Tensor]],
+        host_frees: dict[ComponentType, list[torch.Tensor]],
+    ) -&gt; Optional[NodeId]:
+        ct = self.component_type
+        lv = self._evict_device_last_node
+        if (
+            lv is not None
+            and lv.parent is not None
+            and lv.parent in self.tree_core.evictable_device_leaves
+        ):
+            heapq.heappush(
+                self._evict_device_heap,
+                (self.session_ref_eviction_strategy(lv.parent), lv.parent),
+            )
+        self._evict_device_last_node = None
+&gt;       while tracker[ct] &lt; self._evict_device_request_cnt and self._evict_device_heap:
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Loaded' object has no attribute '_evict_device_request_cnt'
+
+python/sglang/srt/mem_cache/unified_cache/components/full.py:236: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_every_new_parent_survives_batch_boundary_in_native_order[3]" time="0.038"><failure message="AttributeError: 'Loaded' object has no attribute '_evict_device_request_cnt'">max_nodes = 3
+
+    @pytest.mark.parametrize("max_nodes", [2, 3])
+    def test_every_new_parent_survives_batch_boundary_in_native_order(max_nodes):
+        result, full, _, _ = frontier_fixture(max_nodes=max_nodes, other_parent=True)
+        tracker = {Component.FULL: 0}
+        assert result._try_write_back_chain(3, tracker, 1000)
+        selected = []
+&gt;       while (identity := full._evict_device_next_node(tracker, {}, {})) is not None:
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+test/srt/test_beliefkv_write_back_frontier.py:74: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;Loaded object at 0x74da2841d890&gt;, tracker = {&lt;Component.FULL: 0&gt;: 192}
+device_frees = {}, host_frees = {}
+
+    def _evict_device_next_node(
+        self,
+        tracker: dict[ComponentType, int],
+        device_frees: dict[ComponentType, list[torch.Tensor]],
+        host_frees: dict[ComponentType, list[torch.Tensor]],
+    ) -&gt; Optional[NodeId]:
+        ct = self.component_type
+        lv = self._evict_device_last_node
+        if (
+            lv is not None
+            and lv.parent is not None
+            and lv.parent in self.tree_core.evictable_device_leaves
+        ):
+            heapq.heappush(
+                self._evict_device_heap,
+                (self.session_ref_eviction_strategy(lv.parent), lv.parent),
+            )
+        self._evict_device_last_node = None
+&gt;       while tracker[ct] &lt; self._evict_device_request_cnt and self._evict_device_heap:
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Loaded' object has no attribute '_evict_device_request_cnt'
+
+python/sglang/srt/mem_cache/unified_cache/components/full.py:236: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_native_next_victim_that_cannot_join_stops_lookahead[backed]" time="0.038" /><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_native_next_victim_that_cannot_join_stops_lookahead[device_lock]" time="0.037" /><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_native_next_victim_that_cannot_join_stops_lookahead[host_lock]" time="0.213" /><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_native_next_victim_that_cannot_join_stops_lookahead[load]" time="0.039" /><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_native_next_victim_that_cannot_join_stops_lookahead[write]" time="0.037" /><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_shortfall_node_budget_and_stale_heap_entries_are_bounded" time="0.037" /><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_partial_enqueue_repairs_parents_and_preserves_unsent_sources" time="0.037"><failure message="AttributeError: 'Loaded' object has no attribute '_evict_device_request_cnt'">def test_partial_enqueue_repairs_parents_and_preserves_unsent_sources():
+        result, full, nodes, trace = frontier_fixture(remaining=128)
+        tracker = {Component.FULL: 0}
+        assert result._try_write_back_chain(3, tracker, 256)
+        assert tracker[Component.FULL] == 128
+        assert nodes[2].component_data[Component.FULL].value is not None
+&gt;       assert full._evict_device_next_node(tracker, {}, {}) == 2
+               ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+test/srt/test_beliefkv_write_back_frontier.py:113: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;Loaded object at 0x74da28fab250&gt;, tracker = {&lt;Component.FULL: 0&gt;: 128}
+device_frees = {}, host_frees = {}
+
+    def _evict_device_next_node(
+        self,
+        tracker: dict[ComponentType, int],
+        device_frees: dict[ComponentType, list[torch.Tensor]],
+        host_frees: dict[ComponentType, list[torch.Tensor]],
+    ) -&gt; Optional[NodeId]:
+        ct = self.component_type
+        lv = self._evict_device_last_node
+        if (
+            lv is not None
+            and lv.parent is not None
+            and lv.parent in self.tree_core.evictable_device_leaves
+        ):
+            heapq.heappush(
+                self._evict_device_heap,
+                (self.session_ref_eviction_strategy(lv.parent), lv.parent),
+            )
+        self._evict_device_last_node = None
+&gt;       while tracker[ct] &lt; self._evict_device_request_cnt and self._evict_device_heap:
+                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: 'Loaded' object has no attribute '_evict_device_request_cnt'
+
+python/sglang/srt/mem_cache/unified_cache/components/full.py:236: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_ack_failure_does_not_free_any_frontier_source" time="0.199" /><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[6-0]" time="0.004"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da2842cf10&gt;
+seed = 0, requested = 6
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da2842cf10&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[6-1]" time="0.004"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da284cfc50&gt;
+seed = 1, requested = 6
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da284cfc50&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[6-2]" time="0.004"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da2837b4d0&gt;
+seed = 2, requested = 6
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da2837b4d0&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[6-3]" time="0.003"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da286de810&gt;
+seed = 3, requested = 6
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da286de810&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[6-4]" time="0.003"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da283407d0&gt;
+seed = 4, requested = 6
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da283407d0&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[6-5]" time="0.003"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da2836b7d0&gt;
+seed = 5, requested = 6
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da2836b7d0&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[6-6]" time="0.003"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da28fdb110&gt;
+seed = 6, requested = 6
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da28fdb110&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[6-7]" time="0.003"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da28471b10&gt;
+seed = 7, requested = 6
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da28471b10&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[18-0]" time="0.003"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da2837a310&gt;
+seed = 0, requested = 18
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da2837a310&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[18-1]" time="0.003"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da28341490&gt;
+seed = 1, requested = 18
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da28341490&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[18-2]" time="0.003"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da28670c10&gt;
+seed = 2, requested = 18
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da28670c10&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[18-3]" time="0.004"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da286dead0&gt;
+seed = 3, requested = 18
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da286dead0&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[18-4]" time="0.003"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da284da290&gt;
+seed = 4, requested = 18
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da284da290&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[18-5]" time="0.003"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da285e3d10&gt;
+seed = 5, requested = 18
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da285e3d10&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[18-6]" time="0.003"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da2837bf50&gt;
+seed = 6, requested = 18
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da2837bf50&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase><testcase classname="srt.test_beliefkv_write_back_frontier" name="test_real_tree_native_order_and_page_mapping_match_single_and_chain[18-7]" time="0.003"><failure message="AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'">cache = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da28471650&gt;
+seed = 7, requested = 18
+
+    @pytest.mark.parametrize("seed", range(8))
+    @pytest.mark.parametrize("requested", [6, 18])
+    def test_real_tree_native_order_and_page_mapping_match_single_and_chain(cache, seed, requested):
+        results = {}
+        for mode in ("single", "chain", "frontier"):
+&gt;           cache.reset()
+
+test/srt/test_beliefkv_write_back_frontier.py:239: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_radix_cache.py:426: in reset
+    self._reset_full()
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;sglang.srt.mem_cache.unified_radix_cache.UnifiedRadixCache object at 0x74da28471650&gt;
+
+    def _reset_full(self) -&gt; None:
+        """Full reset: destroy entire tree and all state."""
+        self.write_back_batch_nodes = max(
+            1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+        )
+        self.write_back_batch_frontier = (
+            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
+        )
+        self.write_back_batch_counts = {
+            "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+            "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+            "no_chain": 0, "planned_nodes": 0, "enqueue_failed": 0,
+        }
+        self._beliefkv_prefetch_consumer_index = None
+        self.tree_core.reset()
+        self.session_refs.reset()
+    
+        # Reset Controller.
+        self.session.slots.clear()
+        self.ongoing_write_through: dict[int, _OngoingWriteThrough] = {}
+        self.ongoing_load_back: dict[int, _OngoingLoadBack] = {}
+        self.enable_storage = False
+        self.prefetch_loaded_tokens_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.prefetch_loaded_storage_start_by_reqid: dict[CacheRequestHandle, int] = {}
+        self.ongoing_prefetch: dict[CacheRequestHandle, _OngoingPrefetch] = {}
+        # Rank-agreed L3-hit tokens not yet resolved as usable or unfulfilled.
+        # Cache-mode entries survive L3-&gt;L2 until H2D succeeds or admission
+        # fails; buffer-mode entries survive staging until the H2D ack.
+        self._storage_prefetch_hit_remaining_by_reqid: dict[str, int] = {}
+        self.storage_prefetch_retries = StoragePrefetchRetries()
+        self.ongoing_backup: dict[int, tuple[NodeId, DecLockRefParams]] = {}
+        if self.buffer_pipeline is not None:
+            self.buffer_pipeline.reset()
+    
+        if self.cache_controller is not None:
+&gt;           self.cache_controller.reset()
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E           AttributeError: 'types.SimpleNamespace' object has no attribute 'reset'
+
+python/sglang/srt/mem_cache/unified_radix_cache.py:463: AttributeError</failure></testcase></testsuite></testsuites>

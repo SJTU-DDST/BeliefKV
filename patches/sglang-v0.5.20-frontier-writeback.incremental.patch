@@ -1,0 +1,547 @@
+diff --git a/python/sglang/srt/environ.py b/python/sglang/srt/environ.py
+index 56ed772..903cfd6 100644
+--- a/python/sglang/srt/environ.py
++++ b/python/sglang/srt/environ.py
+@@ -751,6 +751,7 @@ class Envs:
+     SGLANG_HICACHE_DECODE_OFFLOAD_STRIDE = EnvInt(None)
+     SGLANG_HICACHE_SKIP_HOST_DUPLICATE_RECLAIM = EnvBool(False)
+     SGLANG_HICACHE_WRITE_BACK_BATCH_NODES = EnvInt(1)
++    SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER = EnvBool(False)
+     SGLANG_HICACHE_FILE_BACKEND_STORAGE_DIR = EnvStr(None)
+     # File-backend LRU eviction (opt-in; sizes accept SI/IEC suffixes, "0" disables).
+     SGLANG_HICACHE_FILE_BACKEND_MAX_SIZE = EnvStr(None)
+diff --git a/python/sglang/srt/mem_cache/unified_cache/components/full.py b/python/sglang/srt/mem_cache/unified_cache/components/full.py
+index a356e63..573132e 100644
+--- a/python/sglang/srt/mem_cache/unified_cache/components/full.py
++++ b/python/sglang/srt/mem_cache/unified_cache/components/full.py
+@@ -289,6 +289,97 @@ class FullComponent(TreeComponent):
+         # The next native step must consider the last demoted node's parent.
+         self._evict_device_last_node = self.tree_core.node_by_id(last_node_id)
+ 
++    def plan_write_back_frontier(
++        self, node_id: NodeId, full_tokens: int, max_nodes: int
++    ) -> tuple[NodeId, ...]:
++        """Merge native heap victims and newly exposed parents without mutation."""
++        if full_tokens <= 0 or max_nodes <= 1:
++            return ()
++        tree = self.tree_core
++        node = tree.node_by_id(node_id)
++        if (
++            node is not self._evict_device_last_node
++            or node not in tree.evictable_device_leaves
++        ):
++            return ()
++
++        # Traverse only the needed head of the existing binary heap. Copying
++        # the entire heap for every short restore would add another O(N) scan.
++        heap = self._evict_device_heap
++        frontier = [(*heap[0], 0)] if heap else []
++        planned, virtual_parents, nodes = set(), set(), []
++        tokens = 0
++        while node is not None and len(nodes) < max_nodes:
++            cd = node.component_data[self.component_type]
++            if (
++                node is tree.root_node or cd.value is None or not len(cd.value)
++                or node.backuped
++                or node.write_through_pending_id is not None
++                or node.load_back_pending_id is not None
++                or any(data.lock_ref or data.host_lock_ref for data in node.component_data)
++                or any(
++                    child.component_data[self.component_type].value is not None
++                    and child.id not in planned
++                    for child in node.children.values()
++                )
++            ):
++                break
++            planned.add(node.id)
++            nodes.append(node.id)
++            tokens += len(cd.value)
++            if tokens >= full_tokens or len(nodes) >= max_nodes:
++                break
++
++            parent = node.parent
++            if (
++                parent is not None and parent is not tree.root_node
++                and parent.id not in virtual_parents
++                and parent.component_data[self.component_type].value is not None
++                and not any(
++                    child.component_data[self.component_type].value is not None
++                    and child.id not in planned
++                    for child in parent.children.values()
++                )
++            ):
++                virtual_parents.add(parent.id)
++                heapq.heappush(
++                    frontier, (self.session_ref_eviction_strategy(parent), parent, -1)
++                )
++            node = None
++            while frontier:
++                _, candidate, index = heapq.heappop(frontier)
++                if index >= 0:
++                    for child_index in (2 * index + 1, 2 * index + 2):
++                        if child_index < len(heap):
++                            heapq.heappush(
++                                frontier, (*heap[child_index], child_index)
++                            )
++                if candidate.id not in planned and (
++                    candidate in tree.evictable_device_leaves
++                    or candidate.id in virtual_parents
++                ):
++                    node = candidate
++                    break
++        return tuple(nodes)
++
++    def finish_write_back_frontier(self, node_ids: tuple[NodeId, ...]) -> None:
++        """Expose parents from every completed branch to the native heap."""
++        tree = self.tree_core
++        last = tree.node_by_id(node_ids[-1])
++        parents = {}
++        for node_id in node_ids:
++            parent = tree.node_by_id(node_id).parent
++            if parent is not None and parent is not last.parent:
++                parents[parent.id] = parent
++        for parent in parents.values():
++            if parent in tree.evictable_device_leaves:
++                heapq.heappush(
++                    self._evict_device_heap,
++                    (self.session_ref_eviction_strategy(parent), parent),
++                )
++        # The regular next-node step inserts this final parent itself.
++        self._evict_device_last_node = last
++
+     def drive_host_eviction(
+         self,
+         num_tokens: int,
+diff --git a/python/sglang/srt/mem_cache/unified_radix_cache.py b/python/sglang/srt/mem_cache/unified_radix_cache.py
+index 51cf1b5..7922f59 100644
+--- a/python/sglang/srt/mem_cache/unified_radix_cache.py
++++ b/python/sglang/srt/mem_cache/unified_radix_cache.py
+@@ -430,6 +430,9 @@ class UnifiedRadixCache(BasePrefixCache):
+         self.write_back_batch_nodes = max(
+             1, envs.SGLANG_HICACHE_WRITE_BACK_BATCH_NODES.get()
+         )
++        self.write_back_batch_frontier = (
++            envs.SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER.get()
++        )
+         self.write_back_batch_counts = {
+             "batches": 0, "nodes": 0, "full_tokens": 0, "partial_batches": 0,
+             "attempts": 0, "unsupported_or_queued": 0, "no_planner": 0,
+@@ -1387,7 +1390,12 @@ class UnifiedRadixCache(BasePrefixCache):
+         component = getattr(self.tree_core, "components_by_type", {}).get(
+             BASE_COMPONENT_TYPE
+         )
+-        planner = getattr(component, "plan_write_back_chain", None)
++        frontier = getattr(self, "write_back_batch_frontier", False)
++        planner = getattr(
++            component,
++            "plan_write_back_frontier" if frontier else "plan_write_back_chain",
++            None,
++        )
+         if not callable(planner):
+             counts["no_planner"] = counts.get("no_planner", 0) + 1
+             return False
+@@ -1417,7 +1425,11 @@ class UnifiedRadixCache(BasePrefixCache):
+                 self.writing_check(write_back=True)
+                 for candidate in queued:
+                     self._demote(candidate, tracker)
+-                component.finish_write_back_chain(queued[-1])
++                if frontier:
++                    component.finish_write_back_frontier(tuple(queued))
++                    counts["frontier_batches"] = counts.get("frontier_batches", 0) + 1
++                else:
++                    component.finish_write_back_chain(queued[-1])
+                 counts["batches"] += 1
+                 counts["nodes"] += len(queued)
+                 counts["full_tokens"] += tracker[BASE_COMPONENT_TYPE] - before
+diff --git a/test/srt/test_beliefkv_write_back_frontier.py b/test/srt/test_beliefkv_write_back_frontier.py
+new file mode 100644
+index 0000000..785e42a
+--- /dev/null
++++ b/test/srt/test_beliefkv_write_back_frontier.py
+@@ -0,0 +1,386 @@
++"""Native-order frontier coalescing, including real CPU cache/allocator wiring."""
++
++from array import array
++import heapq
++import random
++from types import SimpleNamespace as NS
++from unittest.mock import Mock
++
++import pytest
++import torch
++
++from test_beliefkv_full_host_eviction import cache as cpu_cache_fixture
++from test_beliefkv_terminal_capacity import hybrid_cache, insert_session
++from test_beliefkv_write_back_batch import Component, Node, SOURCE, fixture, methods
++from sglang.srt.managers.cache_controller import CacheOperation
++from sglang.srt.mem_cache.base_prefix_cache import EvictParams, InsertParams
++from sglang.srt.mem_cache.hicache_storage import PoolName
++from sglang.srt.mem_cache.radix_cache import RadixKey
++from sglang.srt.mem_cache.unified_cache.component_type import ComponentType
++
++
++def frontier_fixture(*, max_nodes=32, remaining=1000, other_parent=False):
++    result, full, nodes, trace = fixture(max_nodes=max_nodes, remaining=remaining)
++    loaded = methods(
++        SOURCE / "unified_cache/components/full.py", "FullComponent",
++        {"plan_write_back_frontier", "finish_write_back_frontier"}, heapq=heapq,
++    )
++    for name in ("plan_write_back_frontier", "finish_write_back_frontier"):
++        setattr(full, name, getattr(loaded, name).__get__(full))
++    result.write_back_batch_frontier = True
++    other = Node(9, 1.5)
++    nodes[9] = other
++    if other_parent:
++        parent = Node(8, 2.5)
++        nodes[8] = parent
++        parent.parent = nodes[0]
++        nodes[0].children[8] = parent
++        other.parent = parent
++        parent.children[9] = other
++    else:
++        other.parent = nodes[0]
++        nodes[0].children[9] = other
++    full.tree_core.evictable_device_leaves.add(other)
++    full._evict_device_heap = [(other.priority, other)]
++    full._evict_device_request_cnt = 1000
++    return result, full, nodes, trace
++
++
++def test_plan_crosses_branches_without_changing_native_heap_or_source_pages():
++    _, full, nodes, _ = frontier_fixture()
++    before = list(full._evict_device_heap)
++    assert full.plan_write_back_chain(3, 256, 32) == (3,)
++    assert full.plan_write_back_frontier(3, 256, 32) == (3, 9, 2, 1)
++    assert full._evict_device_heap == before
++    assert all(nodes[key].component_data[Component.FULL].value is not None for key in (1, 2, 3, 9))
++
++
++def test_merged_cross_branch_ack_precedes_every_demote():
++    result, _, _, trace = frontier_fixture()
++    tracker = {Component.FULL: 0}
++    assert result._try_write_back_chain(3, tracker, 256)
++    assert trace == [
++        ("enqueue", 3), ("enqueue", 9), ("enqueue", 2), ("enqueue", 1),
++        ("submit", (3, 9, 2, 1)), ("ack", (3, 9, 2, 1)),
++        ("demote", 3), ("demote", 9), ("demote", 2), ("demote", 1),
++    ]
++    assert tracker[Component.FULL] == 256
++    assert result.write_back_batch_counts["frontier_batches"] == 1
++
++
++@pytest.mark.parametrize("max_nodes", [2, 3])
++def test_every_new_parent_survives_batch_boundary_in_native_order(max_nodes):
++    result, full, _, _ = frontier_fixture(max_nodes=max_nodes, other_parent=True)
++    tracker = {Component.FULL: 0}
++    assert result._try_write_back_chain(3, tracker, 1000)
++    selected = []
++    while (identity := full._evict_device_next_node(tracker, {}, {})) is not None:
++        selected.append(identity)
++        result._execute_and_commit_kv_backup(NS(node_ids=[identity]), write_back=True)
++        result.writing_check(write_back=True)
++        result._demote(identity, tracker)
++    assert selected == ([2, 1, 8] if max_nodes == 2 else [1, 8])
++
++
++@pytest.mark.parametrize("condition", ["backed", "device_lock", "host_lock", "load", "write"])
++def test_native_next_victim_that_cannot_join_stops_lookahead(condition):
++    _, full, nodes, _ = frontier_fixture()
++    other = nodes[9]
++    if condition == "backed":
++        other.backuped = True
++    elif condition == "device_lock":
++        other.component_data[Component.FULL].lock_ref = 1
++    elif condition == "host_lock":
++        other.component_data[Component.FULL].host_lock_ref = 1
++    elif condition == "load":
++        other.load_back_pending_id = 1
++    else:
++        other.write_through_pending_id = 1
++    assert full.plan_write_back_frontier(3, 256, 32) == (3,)
++
++
++def test_shortfall_node_budget_and_stale_heap_entries_are_bounded():
++    _, full, _, _ = frontier_fixture()
++    stale = Node(99, .5)
++    heapq.heappush(full._evict_device_heap, (stale.priority, stale))
++    assert full.plan_write_back_frontier(3, 1, 32) == (3,)
++    assert full.plan_write_back_frontier(3, 256, 2) == (3, 9)
++    assert full.plan_write_back_frontier(3, 256, 1) == ()
++    assert full.plan_write_back_frontier(3, 0, 32) == ()
++
++
++def test_small_plan_reads_only_the_needed_head_of_a_large_native_heap():
++    _, full, nodes, _ = frontier_fixture()
++    candidates = [Node(10000 + index, 100 + index) for index in range(4096)]
++    for node in candidates:
++        node.parent = nodes[0]
++        nodes[0].children[node.id] = node
++        full.tree_core.evictable_device_leaves.add(node)
++
++    class IndexedHeap:
++        reads = 0
++
++        def __len__(self):
++            return len(candidates)
++
++        def __getitem__(self, index):
++            self.reads += 1
++            node = candidates[index]
++            return node.priority, node
++
++    heap = IndexedHeap()
++    full._evict_device_heap = heap
++    plan = full.plan_write_back_frontier(3, 512, 8)
++    assert plan == (3, 2, 1, 10000, 10001, 10002, 10003, 10004)
++    assert heap.reads <= 2 * 8 + 1
++
++
++def test_partial_enqueue_repairs_parents_and_preserves_unsent_sources():
++    result, full, nodes, trace = frontier_fixture(remaining=128)
++    tracker = {Component.FULL: 0}
++    assert result._try_write_back_chain(3, tracker, 256)
++    assert tracker[Component.FULL] == 128
++    assert nodes[2].component_data[Component.FULL].value is not None
++    assert full._evict_device_next_node(tracker, {}, {}) == 2
++    assert trace[-2:] == [("demote", 3), ("demote", 9)]
++
++
++def test_ack_failure_does_not_free_any_frontier_source():
++    result, _, nodes, trace = frontier_fixture()
++    result.writing_check = Mock(side_effect=RuntimeError("ack failed"))
++    tracker = {Component.FULL: 0}
++    with pytest.raises(RuntimeError, match="ack failed"):
++        result._try_write_back_chain(3, tracker, 256)
++    assert tracker[Component.FULL] == 0
++    assert all(nodes[key].component_data[Component.FULL].value is not None for key in (1, 2, 3, 9))
++    assert not any(row[0] == "demote" for row in trace)
++
++
++def test_enqueue_exception_drains_only_the_successful_frontier_prefix():
++    result, full, nodes, trace = frontier_fixture()
++    enqueue = result._execute_and_commit_kv_backup
++
++    def fail_second(action, **kwargs):
++        if action.node_ids == [9]:
++            raise RuntimeError("second enqueue failed")
++        return enqueue(action, **kwargs)
++
++    result._execute_and_commit_kv_backup = fail_second
++    tracker = {Component.FULL: 0}
++    with pytest.raises(RuntimeError, match="second enqueue failed"):
++        result._try_write_back_chain(3, tracker, 256)
++    assert tracker[Component.FULL] == 64
++    assert nodes[9].component_data[Component.FULL].value is not None
++    assert full._evict_device_next_node(tracker, {}, {}) == 9
++    assert trace[-3:] == [("submit", (3,)), ("ack", (3,)), ("demote", 3)]
++
++
++@pytest.mark.parametrize("enabled", [False, True])
++def test_frontier_requires_explicit_environment_enable(monkeypatch, enabled):
++    monkeypatch.setenv("SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER", "1" if enabled else "0")
++    candidate = cpu_cache_fixture.__wrapped__()
++    assert candidate.write_back_batch_frontier is enabled
++
++
++def prefix(node, root):
++    parts = []
++    while node is not root:
++        parts.append(tuple(node.key))
++        node = node.parent
++    return tuple(token for part in reversed(parts) for token in part)
++
++
++def run_real_frontier(cache, *, mode, seed, requested):
++    keys = [
++        [1, 2], [1, 2, 3, 4], [1, 2, 3, 4, 5, 6], [1, 2, 7, 8],
++        [11, 12], [11, 12, 13, 14], [11, 12, 13, 14, 15, 16],
++        [11, 12, 17, 18], [21, 22], [21, 22, 23, 24],
++    ]
++    allocator = cache.token_to_kv_pool_allocator
++    for index, tokens in enumerate(keys):
++        values = allocator.alloc(len(tokens))
++        inserted = cache.insert(InsertParams(
++            key=RadixKey(array("q", tokens)), value=values,
++        ))
++        allocator.free(values[:inserted.prefix_len])
++        if index % 3 == 0:
++            session = f"session-{index}"
++            cache.session_refs.register_session_ref(NS(
++                session_id=session, session_generation=cache.ensure_session_generation(session),
++                session=None, last_node=inserted.last_device_node,
++                origin_input_ids=array("q", tokens), output_ids=array("q"), extra_key=None,
++            ))
++    cache.tree_core.is_write_back = True
++    root = cache.tree_core.root_node
++    stack = list(root.children.values())
++    nodes = []
++    while stack:
++        node = stack.pop()
++        nodes.append(node)
++        stack.extend(node.children.values())
++    nodes.sort(key=lambda node: prefix(node, root))
++    order = list(range(len(nodes)))
++    random.Random(seed).shuffle(order)
++    for node, priority in zip(nodes, order):
++        node.last_access_time = float(priority)
++    original = {
++        node.id: node.component_data[ComponentType.FULL].value.clone() for node in nodes
++    }
++    contents = torch.arange(64) * 17 + 3
++    host_contents = torch.full((64,), -1, dtype=torch.int64)
++    offset, batches, evicted = [0], [], []
++    controller = NS(write_queue=[], ack_write_queue=[], write_policy="write_back")
++    controller.mem_pool_host = NS(available_size=lambda: 64 - offset[0])
++    cache.cache_controller = controller
++    cache.write_back_batch_nodes = 1 if mode == "single" else 32
++    cache.write_back_batch_frontier = mode == "frontier"
++    cache.write_back_batch_counts = {}
++    cache.write_back_batch_counts.update(
++        attempts=0, batches=0, nodes=0, full_tokens=0, partial_batches=0,
++    )
++
++    def submit():
++        operation = CacheOperation.merge_ops(controller.write_queue)
++        controller.write_queue.clear()
++        batches.append(tuple(operation.node_ids))
++
++        def synchronize():
++            for identity in operation.node_ids:
++                node = cache.tree_core.node_by_id(identity)
++                assert node.component_data[ComponentType.FULL].value is not None
++                assert node.write_through_pending_id is not None
++            host_contents[operation.host_indices] = contents[operation.device_indices]
++
++        controller.ack_write_queue.append(NS(
++            node_ids=operation.node_ids, finish_event=NS(synchronize=synchronize),
++        ))
++
++    def write(indices, *, node_id, beliefkv_defer_writing=False, **kwargs):
++        start = offset[0]
++        offset[0] += len(indices)
++        host_indices = torch.arange(start, offset[0], dtype=torch.int64)
++        controller.write_queue.append(CacheOperation(host_indices, indices.clone(), node_id))
++        if not beliefkv_defer_writing:
++            submit()
++        return host_indices
++
++    controller.write = write
++    controller.start_writing = submit
++    native_demote = cache._demote
++
++    def demote(identity, tracker):
++        evicted.append(prefix(cache.tree_core.node_by_id(identity), root))
++        native_demote(identity, tracker)
++
++    cache._demote = demote
++    before = allocator.available_size()
++    result = cache.evict(EvictParams(num_tokens=requested))
++    assert allocator.available_size() - before == result.num_tokens_evicted
++    for node in nodes:
++        state = node.component_data[ComponentType.FULL]
++        if state.host_value is not None:
++            assert torch.equal(host_contents[state.host_value], contents[original[node.id]])
++    assert not controller.write_queue and not controller.ack_write_queue
++    assert not cache.ongoing_write_through
++    return {
++        "evicted": evicted, "freed": result.num_tokens_evicted,
++        "batches": len(batches), "nodes": sum(map(len, batches)),
++    }
++
++
++@pytest.mark.parametrize("seed", range(8))
++@pytest.mark.parametrize("requested", [6, 18])
++def test_real_tree_native_order_and_page_mapping_match_single_and_chain(seed, requested):
++    results = {}
++    for mode in ("single", "chain", "frontier"):
++        candidate = cpu_cache_fixture.__wrapped__()
++        results[mode] = run_real_frontier(
++            candidate, mode=mode, seed=seed, requested=requested,
++        )
++    for mode in ("chain", "frontier"):
++        assert results[mode]["evicted"] == results["single"]["evicted"]
++        assert results[mode]["freed"] == results["single"]["freed"]
++        assert results[mode]["nodes"] == results["single"]["nodes"]
++    assert results["frontier"]["batches"] <= results["chain"]["batches"]
++
++
++@pytest.mark.parametrize("frontier", [False, True])
++def test_real_hybrid_batch_preserves_full_and_mamba_host_mapping(hybrid_cache, frontier):
++    candidate, allocator, request_pool = hybrid_cache
++    leaves = [
++        insert_session(candidate, tokens, identity)[0]
++        for tokens, identity in (([1, 2], "first"), ([9, 10], "second"))
++    ]
++    candidate._execute_and_commit_kv_backup = (
++        type(candidate)._execute_and_commit_kv_backup.__get__(candidate)
++    )
++    candidate.tree_core.is_write_back = True
++    candidate.write_back_batch_nodes = 32
++    candidate.write_back_batch_frontier = frontier
++    original_full = {
++        node.id: node.component_data[ComponentType.FULL].value.clone() for node in leaves
++    }
++    original_state = {
++        node.id: node.component_data[ComponentType.MAMBA].value.clone() for node in leaves
++    }
++    full_contents, state_contents = torch.arange(64) * 19, torch.arange(64) * 23 + 7
++    host_full, host_state = torch.full((64,), -1), torch.full((64,), -1)
++    offsets, batches = [0, 0], []
++    controller = NS(write_queue=[], ack_write_queue=[], write_policy="write_back")
++    controller.mem_pool_host = NS(available_size=lambda: 64 - offsets[0])
++    candidate.cache_controller = controller
++
++    def submit():
++        operation = CacheOperation.merge_ops(controller.write_queue)
++        controller.write_queue.clear()
++        batches.append(operation)
++
++        def synchronize():
++            for identity in operation.node_ids:
++                node = candidate.tree_core.node_by_id(identity)
++                assert node.component_data[ComponentType.FULL].value is not None
++                assert node.component_data[ComponentType.MAMBA].value is not None
++                assert node.write_through_pending_id is not None
++            host_full[operation.host_indices] = full_contents[operation.device_indices]
++            for transfer in operation.pool_transfers:
++                assert transfer.name == PoolName.MAMBA
++                host_state[transfer.host_indices] = state_contents[transfer.device_indices]
++
++        controller.ack_write_queue.append(NS(
++            node_ids=operation.node_ids, finish_event=NS(synchronize=synchronize),
++        ))
++
++    def write(indices, *, node_id, extra_pools, beliefkv_defer_writing=False, **kwargs):
++        start = offsets[0]
++        offsets[0] += len(indices)
++        host_indices = torch.arange(start, offsets[0])
++        for transfer in extra_pools:
++            assert transfer.name == PoolName.MAMBA
++            start = offsets[1]
++            offsets[1] += len(transfer.device_indices)
++            transfer.host_indices = torch.arange(start, offsets[1])
++        controller.write_queue.append(CacheOperation(
++            host_indices, indices.clone(), node_id, pool_transfers=extra_pools,
++        ))
++        if not beliefkv_defer_writing:
++            submit()
++        return host_indices
++
++    controller.write, controller.start_writing = write, submit
++    before_full = allocator.available_size()
++    before_state = request_pool.mamba_allocator.available_size()
++    result = candidate.evict(EvictParams(num_tokens=4))
++    assert result.num_tokens_evicted == 4
++    assert allocator.available_size() == before_full + 4
++    assert request_pool.mamba_allocator.available_size() == before_state + 2
++    assert len(batches) == (1 if frontier else 2)
++    for node in leaves:
++        full, state = (
++            node.component_data[ComponentType.FULL],
++            node.component_data[ComponentType.MAMBA],
++        )
++        assert full.value is None and state.value is None
++        assert torch.equal(host_full[full.host_value], full_contents[original_full[node.id]])
++        assert torch.equal(host_state[state.host_value], state_contents[original_state[node.id]])
++    assert not candidate.ongoing_write_through
++    assert not controller.write_queue and not controller.ack_write_queue

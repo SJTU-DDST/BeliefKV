@@ -1,0 +1,648 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-17T00:17:52.118687+00:00",
+  "inputs": [
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1309_selection_transfer_overlap_cpu_20261016.xml",
+      "bytes": 1001,
+      "sha256": "649b7f5620b2cde3e59746d6dcac38b0f8b095dc3c1a0a6ca0d6f131b979045e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1310_v77_selection_transfer_overlap_20261016.json",
+      "bytes": 412864,
+      "sha256": "a40d02653f66a7d7dbee45bce21e9c538d55835f5a4414fdec4794de3ecf95ca"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1311_frontier_writeback_initial_cpu_20261016.xml",
+      "bytes": 57753,
+      "sha256": "5a861415600f90176086d50d0fb363a23de7c99c6dfafc83681ebabe27e4f5b7"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1312_frontier_writeback_cpu_20261016.xml",
+      "bytes": 5564,
+      "sha256": "ccb393168649cb7fd063d57f60495c9dfeb3e2b698594a5df4d7b2893a036133"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1313_frontier_writeback_regression_cpu_20261016.xml",
+      "bytes": 30399,
+      "sha256": "91febcdb7c2eeeed61742869adb6a641d627404a9dcde80e028de04201dabcfc"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1314_frontier_writeback_final_cpu_20261016.xml",
+      "bytes": 30547,
+      "sha256": "8509241d5ba57487e39cc75bca08b7b4234ae8f3710822a597af3b380f278a44"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1315_frontier_writeback_fixture_batches_20261016.json",
+      "bytes": 76277,
+      "sha256": "3633d84f86e9413b0c888b45710a4ef9d96e38cf9c3edf36b9b46b990be2518a"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1316_frontier_writeback_candidate_20261016.json",
+      "bytes": 6348,
+      "sha256": "33985023aef7cab29c3fbc137f2194cca99a50e75e02072089f474942639f41e"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1317_v77_completion_cohorts_6000_20261016.json",
+      "bytes": 484903,
+      "sha256": "c250ea9db624f36692dce3c9451bc861e7e01b4531a4f99b496c2598b58a2385"
+    }
+  ],
+  "sampled_selection_transfer_summary": {
+    "native_close": {
+      "known_zero_host_counters": {
+        "samples": 87,
+        "selection_observed_samples": 87,
+        "selection_wall_ms": {
+          "count": 87,
+          "sum": 488.0134320000001,
+          "min": 1.64484,
+          "p50": 3.422728,
+          "p90": 10.491173,
+          "p99": 32.81820532000001,
+          "max": 46.733726
+        },
+        "selection_thread_cpu_ms": {
+          "count": 87,
+          "sum": 462.33711599999987,
+          "min": 1.645475,
+          "p50": 3.374336,
+          "p90": 9.994173400000003,
+          "p99": 30.95340878000001,
+          "max": 46.663568
+        },
+        "d2h": {
+          "submitted_batches": 23,
+          "completed_by_selection_end": 23,
+          "actual_bytes": 950415360,
+          "recorded_node_count": 35,
+          "multi_node_batches": 5,
+          "measured_stream_ms": 111.75600171089172,
+          "unmeasured_stream_batches": 0,
+          "samples_with_submission": 19,
+          "batches_per_sample": {
+            "count": 87,
+            "sum": 23,
+            "min": 0,
+            "p50": 0,
+            "p90": 1.0,
+            "p99": 2.0,
+            "max": 2
+          }
+        },
+        "h2d": {
+          "submitted_batches": 0,
+          "completed_by_selection_end": 0,
+          "actual_bytes": 0,
+          "recorded_node_count": 0,
+          "multi_node_batches": 0,
+          "measured_stream_ms": 0,
+          "unmeasured_stream_batches": 0,
+          "samples_with_submission": 0,
+          "batches_per_sample": {
+            "count": 87,
+            "sum": 0,
+            "min": 0,
+            "p50": 0,
+            "p90": 0.0,
+            "p99": 0.0,
+            "max": 0
+          }
+        }
+      },
+      "positive_full_host": {
+        "samples": 11,
+        "selection_observed_samples": 11,
+        "selection_wall_ms": {
+          "count": 11,
+          "sum": 1959.536097,
+          "min": 83.219978,
+          "p50": 167.601813,
+          "p90": 252.684268,
+          "p99": 256.2013987,
+          "max": 256.592191
+        },
+        "selection_thread_cpu_ms": {
+          "count": 11,
+          "sum": 1746.250009,
+          "min": 72.668414,
+          "p50": 162.935022,
+          "p90": 210.527462,
+          "p99": 227.80455949999998,
+          "max": 229.724237
+        },
+        "d2h": {
+          "submitted_batches": 43,
+          "completed_by_selection_end": 43,
+          "actual_bytes": 6371983360,
+          "recorded_node_count": 590,
+          "multi_node_batches": 28,
+          "measured_stream_ms": 1439.7489255666733,
+          "unmeasured_stream_batches": 0,
+          "samples_with_submission": 11,
+          "batches_per_sample": {
+            "count": 11,
+            "sum": 43,
+            "min": 2,
+            "p50": 4,
+            "p90": 5.0,
+            "p99": 5.0,
+            "max": 5
+          }
+        },
+        "h2d": {
+          "submitted_batches": 11,
+          "completed_by_selection_end": 0,
+          "actual_bytes": 5613629440,
+          "recorded_node_count": 11,
+          "multi_node_batches": 0,
+          "measured_stream_ms": 158.61167907714844,
+          "unmeasured_stream_batches": 0,
+          "samples_with_submission": 11,
+          "batches_per_sample": {
+            "count": 11,
+            "sum": 11,
+            "min": 1,
+            "p50": 1,
+            "p90": 1.0,
+            "p99": 1.0,
+            "max": 1
+          }
+        }
+      }
+    },
+    "native": {
+      "known_zero_host_counters": {
+        "samples": 124,
+        "selection_observed_samples": 124,
+        "selection_wall_ms": {
+          "count": 124,
+          "sum": 482.4742510000001,
+          "min": 1.531398,
+          "p50": 2.4698655,
+          "p90": 9.1870307,
+          "p99": 17.44415543999999,
+          "max": 19.137509
+        },
+        "selection_thread_cpu_ms": {
+          "count": 124,
+          "sum": 458.002651,
+          "min": 1.531702,
+          "p50": 2.433561,
+          "p90": 8.441418800000003,
+          "p99": 15.375193869999997,
+          "max": 16.815553
+        },
+        "d2h": {
+          "submitted_batches": 28,
+          "completed_by_selection_end": 28,
+          "actual_bytes": 1382871040,
+          "recorded_node_count": 35,
+          "multi_node_batches": 5,
+          "measured_stream_ms": 134.18387115001678,
+          "unmeasured_stream_batches": 0,
+          "samples_with_submission": 23,
+          "batches_per_sample": {
+            "count": 124,
+            "sum": 28,
+            "min": 0,
+            "p50": 0.0,
+            "p90": 1.0,
+            "p99": 2.0,
+            "max": 3
+          }
+        },
+        "h2d": {
+          "submitted_batches": 0,
+          "completed_by_selection_end": 0,
+          "actual_bytes": 0,
+          "recorded_node_count": 0,
+          "multi_node_batches": 0,
+          "measured_stream_ms": 0,
+          "unmeasured_stream_batches": 0,
+          "samples_with_submission": 0,
+          "batches_per_sample": {
+            "count": 124,
+            "sum": 0,
+            "min": 0,
+            "p50": 0.0,
+            "p90": 0.0,
+            "p99": 0.0,
+            "max": 0
+          }
+        }
+      }
+    },
+    "reactive": {
+      "known_zero_host_counters": {
+        "samples": 75,
+        "selection_observed_samples": 75,
+        "selection_wall_ms": {
+          "count": 75,
+          "sum": 539.3127760000001,
+          "min": 3.056445,
+          "p50": 6.194128,
+          "p90": 11.898076,
+          "p99": 22.0346148,
+          "max": 22.154887
+        },
+        "selection_thread_cpu_ms": {
+          "count": 75,
+          "sum": 518.921598,
+          "min": 3.056672,
+          "p50": 6.043532,
+          "p90": 11.436705800000004,
+          "p99": 21.54305602,
+          "max": 21.710427
+        },
+        "d2h": {
+          "submitted_batches": 24,
+          "completed_by_selection_end": 24,
+          "actual_bytes": 891023360,
+          "recorded_node_count": 28,
+          "multi_node_batches": 3,
+          "measured_stream_ms": 75.97526356577873,
+          "unmeasured_stream_batches": 0,
+          "samples_with_submission": 19,
+          "batches_per_sample": {
+            "count": 75,
+            "sum": 24,
+            "min": 0,
+            "p50": 0,
+            "p90": 1.0,
+            "p99": 2.260000000000005,
+            "max": 3
+          }
+        },
+        "h2d": {
+          "submitted_batches": 0,
+          "completed_by_selection_end": 0,
+          "actual_bytes": 0,
+          "recorded_node_count": 0,
+          "multi_node_batches": 0,
+          "measured_stream_ms": 0,
+          "unmeasured_stream_batches": 0,
+          "samples_with_submission": 0,
+          "batches_per_sample": {
+            "count": 75,
+            "sum": 0,
+            "min": 0,
+            "p50": 0,
+            "p90": 0.0,
+            "p99": 0.0,
+            "max": 0
+          }
+        }
+      },
+      "positive_full_host": {
+        "samples": 37,
+        "selection_observed_samples": 37,
+        "selection_wall_ms": {
+          "count": 37,
+          "sum": 3559.630147999999,
+          "min": 39.829935,
+          "p50": 100.391325,
+          "p90": 134.9330476,
+          "p99": 166.52889968000002,
+          "max": 177.294947
+        },
+        "selection_thread_cpu_ms": {
+          "count": 37,
+          "sum": 3299.661857,
+          "min": 36.64478,
+          "p50": 88.571005,
+          "p90": 125.8034052,
+          "p99": 151.77279240000001,
+          "max": 163.305891
+        },
+        "d2h": {
+          "submitted_batches": 108,
+          "completed_by_selection_end": 108,
+          "actual_bytes": 15791984640,
+          "recorded_node_count": 1375,
+          "multi_node_batches": 88,
+          "measured_stream_ms": 2842.4109615311027,
+          "unmeasured_stream_batches": 0,
+          "samples_with_submission": 37,
+          "batches_per_sample": {
+            "count": 37,
+            "sum": 108,
+            "min": 1,
+            "p50": 3,
+            "p90": 4.0,
+            "p99": 7.560000000000002,
+            "max": 9
+          }
+        },
+        "h2d": {
+          "submitted_batches": 37,
+          "completed_by_selection_end": 0,
+          "actual_bytes": 15808778240,
+          "recorded_node_count": 37,
+          "multi_node_batches": 0,
+          "measured_stream_ms": 461.08163118362427,
+          "unmeasured_stream_batches": 0,
+          "samples_with_submission": 37,
+          "batches_per_sample": {
+            "count": 37,
+            "sum": 37,
+            "min": 1,
+            "p50": 1,
+            "p90": 1.0,
+            "p99": 1.0,
+            "max": 1
+          }
+        }
+      }
+    }
+  },
+  "actual_process_observations": [
+    {
+      "path": "/home/longhao/experiment/ops/v77_native_close_20261016.state.json",
+      "read_sha256": "57c52783aebc8e4dcd272d90813b9d89bd75101ff03d522b4baa1e99eeda2a23",
+      "status": "running_native_close",
+      "state_observed_at": "2026-10-16T17:17:42.520198-07:00",
+      "handles": {
+        "supervisor": {
+          "pid": 2645733,
+          "state": "S",
+          "ppid": 1,
+          "start_ticks": "635951139",
+          "argv": [
+            "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+            "/home/longhao/experiment/ops/resume_v77_after_v76_postprocess_20261016.py",
+            "--watch"
+          ],
+          "matches_recorded_incarnation": true
+        },
+        "driver": {
+          "pid": 2646017,
+          "state": "S",
+          "ppid": 2645733,
+          "start_ticks": "635951275",
+          "argv": [
+            "bash",
+            "/home/longhao/experiment/.worktrees/beliefkv-v1213-native-close-gpu-20261016/scripts/run_qwen35_native_regime_probe.sh"
+          ],
+          "matches_recorded_incarnation": true
+        }
+      }
+    },
+    {
+      "path": "/home/longhao/experiment/ops/v78_native_order_20261016.state.json",
+      "read_sha256": "d83b9c49bfd8e20efd07351de451e9ae237c1a4e23e06d59456a9bca11d48778",
+      "status": "waiting_for_complete_v77",
+      "state_observed_at": "2026-10-16T17:17:50.537647-07:00",
+      "handles": {
+        "supervisor": {
+          "pid": 3412628,
+          "state": "S",
+          "ppid": 1,
+          "start_ticks": "636206265",
+          "argv": [
+            "/home/longhao/miniconda3/envs/beliefkv-next/bin/python",
+            "/home/longhao/experiment/.worktrees/beliefkv-v1278-native-order-gpu-20261016/scripts/start_v78_native_order_20261016.py",
+            "--watch"
+          ],
+          "matches_recorded_incarnation": true
+        }
+      }
+    },
+    {
+      "path": "/home/longhao/experiment/ops/quality_eval/quality_v75_v76_cpu_20261016.state.json",
+      "read_sha256": "915453c524a46b3c755a12f5993506d568649767e72769569ec44cb24523ceb9",
+      "status": "running_official_cpu_grading",
+      "state_observed_at": "2026-10-16T17:17:51.955107-07:00",
+      "handles": {
+        "supervisor": {
+          "pid": 3806721,
+          "state": "S",
+          "ppid": 1,
+          "start_ticks": "634129312",
+          "argv": [
+            "/home/longhao/experiment/ops/quality_eval/venv/bin/python",
+            "/home/longhao/experiment/ops/quality_eval/run_v75_v76_quality_cpu_20261016.py",
+            "--watch"
+          ],
+          "matches_recorded_incarnation": true
+        },
+        "worker": {
+          "pid": 3802150,
+          "state": "S",
+          "ppid": 3806721,
+          "start_ticks": "636358459",
+          "argv": [
+            "/home/longhao/experiment/ops/quality_eval/venv/bin/python",
+            "/home/longhao/experiment/ops/quality_eval/run_v75_v76_quality_cpu_20261016.py",
+            "--worker",
+            "v75_native"
+          ],
+          "matches_recorded_incarnation": true
+        }
+      }
+    },
+    {
+      "path": "/home/longhao/experiment/ops/quality_eval/quality_v77_cpu_20261016.state.json",
+      "read_sha256": "c5c9fe600ae034f7b63dd43bc582116ece3b165e684122fc5b9e44357a5a7fbc",
+      "status": "waiting_for_complete_v77_and_prior_quality",
+      "state_observed_at": "2026-10-16T17:17:43.283338-07:00",
+      "handles": {
+        "supervisor": {
+          "pid": 1121673,
+          "state": "S",
+          "ppid": 1,
+          "start_ticks": "634983330",
+          "argv": [
+            "/home/longhao/experiment/ops/quality_eval/venv/bin/python",
+            "/home/longhao/experiment/ops/quality_eval/run_v77_quality_cpu_20261016.py",
+            "--watch"
+          ],
+          "matches_recorded_incarnation": true
+        }
+      }
+    }
+  ],
+  "scheduler_kernel_observation": {
+    "pid": 2646481,
+    "state": "R",
+    "ppid": 2646030,
+    "start_ticks": "635952682",
+    "argv": [
+      "sglang::scheduler",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      "",
+      ""
+    ]
+  },
+  "frozen_source_verifications": [
+    {
+      "checkout": "/home/longhao/experiment/.worktrees/beliefkv-v1213-native-close-gpu-20261016",
+      "call": "scripts.start_v77_native_close_20261016.verify_source(load(REGISTRATION))",
+      "returncode": 0,
+      "scope": "Exact registered app, engine, source receipts and helpers verified during this goal turn; no launch action"
+    },
+    {
+      "checkout": "/home/longhao/experiment/.worktrees/beliefkv-v1278-native-order-gpu-20261016",
+      "call": "scripts.start_v78_native_order_20261016.verify_source(load(REGISTRATION))",
+      "returncode": 0,
+      "scope": "Exact registered app, engine, plan, source receipts, environment and helpers verified during this goal turn; no launch action"
+    }
+  ],
+  "conclusions": [
+    "Every one of the 11 V77 positive-Host short-prefill samples has D2H submitted during selection and acknowledged by selection end: 43 physical batches and 590 recorded nodes. All 11 H2D submissions finish after selection end.",
+    "The 37 V76 positive-Host samples likewise contain 108 D2H batches acknowledged by selection end. This is consistent with the blocking native allocation write-back path; temporal overlap does not assign exclusive per-function costs or removable JCT.",
+    "Independent opt-in frontier coalescing retains native device-victim order in the qualified CPU fixtures and repairs parents across partial/complete batch boundaries. It does not reduce copied bytes or prove GPU benefit.",
+    "Final candidate qualification is 196 CPU cases including 34 new cases. Earlier overlapping test receipts are retained, not added to this count.",
+    "The independent engine and incremental patch are saved; canonical engine and V77/V78 remain frozen, with no new GPU experiment registered.",
+    "If this common engine optimization is selected for GPU later, compare native and the proposed policy with the same common engine. This is engineering work, not a new paper mechanism.",
+    "V77 6000-second completion evidence still has a worse all-arrival capped runner sojourn than historical native. Full quality-matched performance and novelty remain unproved."
+  ]
+}

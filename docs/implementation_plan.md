@@ -2,6 +2,32 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 V1310 narrows the sampled restore transition: all 11 positive-FULL-
+Host V77 short-prefill selection intervals contain D2H acknowledged before
+selection ends, totaling 43 batches/590 nodes/6.372GB. Their H2D ACKs all
+follow selection. Native capacity write-back explicitly blocks; temporal
+coincidence still does not assign exclusive function costs or removable JCT.
+
+An independent, opt-in common-engine candidate is now CPU qualified at
+98b2670/tree c8424eb3, based on exact V75/V76 tree 53020ce3. It coalesces
+native-order victims across branches and newly exposed parents, with no
+full-heap copy and no source release before ACK. The default remains off.
+V1314 passes 196 engine CPU cases, including 34 new cases and real hybrid
+mapping. V1315's 32 real-CPU FULL fixtures retain identical victims and
+capacity while submissions change from chain 135 to frontier 32. These are
+simulated-DMA counts, not measured GPU or workflow gains. V1316 verifies the
+incremental patch reconstructs the exact candidate tree; it does not replace
+the selected canonical patch or register GPU work. Preserve initial fixture
+failure receipts and do not sum overlapping suites.
+
+Continue the registered V77 -> V78 sequence without altering either frozen
+candidate. V1317 at 6000s retains all 156 tasks: V77/native 149/150 recorded
+completions and 1769.327/1654.199s capped runner sojourn. Official quality
+and final performance remain unproved. If frontier batching is selected
+after the independent ordering ablation, apply the common optimization to
+both native and the proposed policy. It is an engineering baseline change,
+not a selected paper mechanism. Screening 4.35/4.36 records the evidence.
+
 2026-10-16 latest necessary-condition evidence: V1301/V1306 associate sampled
 short-prefill selection cost with exact native Host counters. In V77, 11/98
 positive FULL Host samples account for 79.07% of sampled selection-thread CPU:

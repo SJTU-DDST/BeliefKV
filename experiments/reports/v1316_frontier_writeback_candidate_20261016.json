@@ -1,0 +1,124 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-17T00:16:23.622579+00:00",
+  "status": "cpu_qualified_independent_common_engine_candidate_not_gpu_selected",
+  "engine": "/home/longhao/experiment/.worktrees/sglang-v1311-frontier-writeback-cpu-20261016",
+  "commit": "98b2670a96b54e516d153c03650630602ec257c7",
+  "tree": "c8424eb37dac2cd5b7dfdf713fab7391a8a04ad1",
+  "base_commit": "0fa4118a0b1ed1d066aae18fa431c935502686d7",
+  "base_tree": "53020ce3efef3ed362e9af0db77147b39070f064",
+  "incremental_patch": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-frontier-writeback.incremental.patch",
+    "bytes": 24534,
+    "sha256": "2577f3f145811f8c4752f83bbb56dbc8e7a68e381de577935cdb689a636d556d"
+  },
+  "reconstructed_tree": "c8424eb37dac2cd5b7dfdf713fab7391a8a04ad1",
+  "canonical_selected_patch_unchanged": {
+    "path": "/home/longhao/experiment/BeliefKV/patches/sglang-v0.5.20-beliefkv-staging.patch",
+    "bytes": 583113,
+    "sha256": "ea859cf0e8d02db87e1b586fa149c7a8ddf798e867ee7888e21fa4a25f1785ce"
+  },
+  "candidate_flag": "SGLANG_HICACHE_WRITE_BACK_BATCH_FRONTIER",
+  "default_enabled": false,
+  "required_batch_nodes_greater_than_one": true,
+  "checks": [
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1311_frontier_writeback_initial_cpu_20261016.xml",
+      "bytes": 57753,
+      "sha256": "5a861415600f90176086d50d0fb363a23de7c99c6dfafc83681ebabe27e4f5b7"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1312_frontier_writeback_cpu_20261016.xml",
+      "bytes": 5564,
+      "sha256": "ccb393168649cb7fd063d57f60495c9dfeb3e2b698594a5df4d7b2893a036133"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1313_frontier_writeback_regression_cpu_20261016.xml",
+      "bytes": 30399,
+      "sha256": "91febcdb7c2eeeed61742869adb6a641d627404a9dcde80e028de04201dabcfc"
+    },
+    {
+      "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1314_frontier_writeback_final_cpu_20261016.xml",
+      "bytes": 30547,
+      "sha256": "8509241d5ba57487e39cc75bca08b7b4234ae8f3710822a597af3b380f278a44"
+    }
+  ],
+  "final_cpu_case_counts": {
+    "tests": 196,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0
+  },
+  "new_frontier_cases": 34,
+  "batch_fixture_receipt": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1315_frontier_writeback_fixture_batches_20261016.json",
+    "bytes": 76277,
+    "sha256": "3633d84f86e9413b0c888b45710a4ef9d96e38cf9c3edf36b9b46b990be2518a"
+  },
+  "batch_fixture_totals": {
+    "single": {
+      "fixtures": 32,
+      "batches": 192,
+      "nodes": 192,
+      "freed_full_tokens": 384
+    },
+    "chain": {
+      "fixtures": 32,
+      "batches": 135,
+      "nodes": 192,
+      "freed_full_tokens": 384
+    },
+    "frontier": {
+      "fixtures": 32,
+      "batches": 32,
+      "nodes": 192,
+      "freed_full_tokens": 384
+    }
+  },
+  "production_paths": [
+    "python/sglang/srt/environ.py",
+    "python/sglang/srt/mem_cache/unified_cache/components/full.py",
+    "python/sglang/srt/mem_cache/unified_radix_cache.py"
+  ],
+  "sources": [
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-v1311-frontier-writeback-cpu-20261016/python/sglang/srt/environ.py",
+      "bytes": 103717,
+      "sha256": "b47d21aad6c4a07463924366301b26da18fd5e1ed07a34da03fd17ffc7947881"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-v1311-frontier-writeback-cpu-20261016/python/sglang/srt/mem_cache/unified_cache/components/full.py",
+      "bytes": 26041,
+      "sha256": "9222242612263ff59410c8ca9b7f07b76224e7d502a623d8383ddd3bdc7fde41"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-v1311-frontier-writeback-cpu-20261016/python/sglang/srt/mem_cache/unified_radix_cache.py",
+      "bytes": 228122,
+      "sha256": "a1e468a02e0c208eb986388dd94d58141d0ec6b0ce06690221b4a02cd85f347e"
+    },
+    {
+      "path": "/home/longhao/experiment/.worktrees/sglang-v1311-frontier-writeback-cpu-20261016/test/srt/test_beliefkv_write_back_frontier.py",
+      "bytes": 16532,
+      "sha256": "31416a666e211f3267b319e99185cf403ef048e3462c74f822023cd61bae4a12"
+    }
+  ],
+  "initial_failure_explanation": [
+    "Initial 19 fixture failures: fake next-node cursor lacked request count; repeated fixture reset reused a simulated controller without reset wiring.",
+    "Second receipt retains two fixture failures where the test attempted to demote the next native victim without issuing its backup and ACK. The corrected test performs that native sequence.",
+    "The final fixture uses fresh actual caches per comparison mode. Production eligibility and ACK-before-release rules were not relaxed to make tests pass."
+  ],
+  "validated_scope": [
+    "Thirty-four new frontier cases plus existing Full/Mamba/cache/ACK/receipt regressions: 196 total final cases, not summed with overlapping earlier receipts.",
+    "Exact victim prefix order and freed FULL capacity compared with native single-node and chain batching across two deficits and eight priority seeds.",
+    "Real CPU allocator/tree and operation merge verify source data survive until simulated ACK and FULL/Mamba Host index mappings remain correct.",
+    "Partial Host capacity, enqueue exceptions and ACK failure preserve unsent or unacknowledged source pages; parents of every completed branch remain eligible after a batch boundary.",
+    "An eight-node plan probes only the needed head of a 4096-candidate heap; no full-heap copy is made."
+  ],
+  "limits": [
+    "CPU-only qualification with simulated DMA. No measured GPU, PCIe, JCT, task quality or causal performance gain.",
+    "Batching protects several pending Host destinations simultaneously, which can change Host staging/eviction behavior even when the planned device-victim order is preserved.",
+    "Multi-rank GPU correctness and performance remain untested. Existing single-node, chain and unsupported-component fallbacks remain available.",
+    "This is a common-path engineering candidate, not a selected paper innovation. Any future comparison must match the common engine optimization in native and the proposed policy.",
+    "No V77/V78 application, engine, frozen helper or quality queue was changed. The canonical patch remains selected; this incremental patch has not been registered for GPU."
+  ]
+}
