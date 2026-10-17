@@ -2,6 +2,32 @@
 
 Status date: 2026-10-16 (PDT).
 
+V79b now has three complete600s compatibility windows through1800s.
+V1405/V1403/V1409 associate100.511/122.726/117.124GB Mamba writes with previously
+observed output-tail checkpoints. For95.296/110.170/104.825GB of write units,
+successor inputs appeared inside the window before submit and all observed
+comparisons were incompatible. Input enqueue time is not asynchronous result
+availability; historical node association is not physical-generation reuse or
+safe discard. V1407 passes57 CPU cases; prior48/51/56-case receipts overlap.
+
+The next systems candidate is actual-successor-prefix feedback for hybrid-state
+Host admission/retirement, preserving usable input anchors and native reference
+rules. It is not implemented/deployed and is not yet a defensible paper
+contribution. First qualify native without Host offload, the existing native
+path cap and a reasonable hybrid adaptation of capacity-conditioned admission.
+Per-path furthest-two retains the best compatible checkpoint in3992/3993,
+4829/4833 and4729/4736 observations, so simple alternatives must remain strong.
+These selections are not native-cap execution or a global cache simulation.
+
+Keep V79b frozen; next inspect later pressure and exposed writeback cost, then
+prepare only an isolated candidate. Require full task quality, useful throughput,
+JCT and recomputation evidence. Do not call byte reduction or repairing our own
+control overhead novelty, and do not force application work to manufacture gains.
+Screening4.56/4.57 and V1401 bind these necessary conditions and prior-work limits.
+V77 official grading is now complete:90 resolved,65 unresolved,one empty patch,
+no evaluator errors/incomplete; measurement_complete remains false. V1406 and
+screening4.58 preserve all156 IDs, original labels and the finished worker state.
+
 Current continuation is V79b, not the stopped original V79. The original had
 actual service/probe observations but failed NUMA qualification because the
 observer resolved ops relative to a .worktrees source location. V1386 preserves

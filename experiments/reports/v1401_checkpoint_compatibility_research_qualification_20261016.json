@@ -1,0 +1,87 @@
+{
+  "schema_version": 1,
+  "status": "cpu_qualified_read_only_evidence_and_falsifiable_candidate",
+  "base_main_commit": "43e5325",
+  "source_sha256": {
+    "scripts/audit_checkpoint_continuation_compatibility.py": "9b0e82f902494d2ac4f22b426409588420e5a03932fa855ebb6f9978c2642e22",
+    "tests/test_checkpoint_continuation_compatibility_audit.py": "b26df5573a5e44d05f3dd9e584f46011ee2db75ad5c2f0147ba27238cd22cad5"
+  },
+  "cpu": {
+    "path": "experiments/reports/v1407_checkpoint_successor_history_final_cpu_20261016.xml",
+    "sha256": "f468ba4f53cb2486184941413104e76e7a87132619b2673b395e76133fe4db97",
+    "cases": 57,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "cuda_visible_devices": "999",
+    "nice": 10,
+    "intermediate_case_counts_not_additive": [48, 51, 56]
+  },
+  "final_audits": [
+    {
+      "path": "experiments/reports/v1405_v79b_first_600_successor_before_write_20261016.json",
+      "sha256": "e6bf62d4604c070ddc072d5470e8f1c96d60afc08bfb1198480bf47d4ffc2473",
+      "window_seconds": [0, 600]
+    },
+    {
+      "path": "experiments/reports/v1403_v79b_600_1200_checkpoint_compatibility_20261016.json",
+      "sha256": "2b99cfc1867cdb93b7da3c2a655dd6ec0d893cc09c89468de473bdba1d6c5150",
+      "window_seconds": [600, 1200]
+    },
+    {
+      "path": "experiments/reports/v1409_v79b_1200_1800_checkpoint_compatibility_20261016.json",
+      "sha256": "807eacd2b1ba2bda33ebdda62ac9ab6391713acea4d0ec29cb1eebfb9f3e813e",
+      "window_seconds": [1200, 1800]
+    }
+  ],
+  "clock_reports": [
+    {
+      "path": "experiments/reports/v1396_v79b_first_600_service_reference_20261016.json",
+      "sha256": "05af9c6537070ed7cc67ea16b7800b36cab0f6c6fe6d60199d67d2719b7263c3"
+    },
+    {
+      "path": "experiments/reports/v1402_v79b_600_1200_service_reference_20261016.json",
+      "sha256": "e646ca072252c27b6c88b646e7b57f51ac7aa8576f20d165be1649e901c1a760"
+    },
+    {
+      "path": "experiments/reports/v1408_v79b_1200_1800_service_reference_20261016.json",
+      "sha256": "7a734f0d4ad939da8cf082e1822dc52dde128a8bf337c34ef073303f6aaa2e17"
+    }
+  ],
+  "related_primary_sources": [
+    {
+      "paper": "Marconi",
+      "url": "https://arxiv.org/html/2411.19379v3",
+      "sections": ["4.1", "4.2"],
+      "boundary": "Selective prefill admission and post-decode end-state caching already exist; append-style continuation is an explicit motivation, not a guarantee for this trace."
+    },
+    {
+      "paper": "EfficientAgent",
+      "url": "https://arxiv.org/html/2609.33762v1",
+      "sections": ["4", "D"],
+      "boundary": "Working-set-conditioned write admission already exists. Compare a reasonable hybrid adaptation and native without Host offload."
+    },
+    {
+      "paper": "Just Let Linear States Forget the Distant Past: Prefix Caching via Suffix Replay for Hybrid LLMs",
+      "url": "https://arxiv.org/abs/2609.33477",
+      "scope": "Abstract and formal title verified; full implementation and quality not reproduced."
+    }
+  ],
+  "scope": {
+    "observed_problem": "Large historical output-tail-associated Mamba writes despite previously appeared nonmatching successor inputs.",
+    "next_candidate": "Actual-successor-prefix feedback for component-level Host admission and retirement, only after simple controls.",
+    "new_runtime_policy_implemented": false,
+    "frozen_runtime_or_workload_changed": false,
+    "new_gpu_policy_registered": false,
+    "novelty_or_quality_matched_performance_accepted": false
+  },
+  "limits": [
+    "These are three windows of one run, not independent repeats or independent workflow samples.",
+    "Successor input enqueue timestamps do not establish asynchronous comparison-result availability.",
+    "Historical node roles are not write-time references or physical-copy-generation identity.",
+    "Incompatibility with observed successors does not prove global uselessness, future non-use or safe discard.",
+    "Per-path restricted selections are not native path-cap execution, global cache simulation or byte savings.",
+    "All D2H stream time and byte counts are not removable JCT or an oracle performance bound.",
+    "The phenomenon is not established as unique to dynamic fork/join."
+  ]
+}

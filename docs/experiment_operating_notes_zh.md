@@ -4,6 +4,19 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+生成前缀审计只统计实际已出现的同会话后继，缺历史、换会话及未出现后继不算
+miss。检查点重复观测与不同物理副本分开；单节点/单Mamba单位以外的batch保持
+未知，不均摊字节。历史写角色仅用submit之前严格更早的完成快照；后继比较则
+只用窗口内、写前已出现的输入，保留所有正兼容反例，后来的分歧不能抹去它们。
+探针ts_ms是输入进入比较队列的时刻，不能当作后台结果或调度动作就绪时刻。
+V1407最终57项CPU检查通过，V1397/V1399/V1404的48/51/56项中间凭据不相加。
+原生path cap保护尾节点、分叉、锁和device leaf，不等于离线选最远两点；也不
+阻止Host写回或清掉所有旧分支。新候选须与无Host原生和容量条件写入对照，
+不能因native H2D为0就把此前备份全部算作无用或把GB/stream秒数换成JCT。
+V77原质量队列已正常结束，worker_returncode=0及完整156项评分解释进程退出；
+不要因旧PID消失重新启动。90 resolved/65 unresolved/1空patch各类互斥且完整，
+原非完成、JCT资格和measurement_complete=false保留，V1406封存最新状态。
+
 V79b仅修复独立观测接线后重试。原V79的NUMA observer从自身parents[2]解析ops，
 在.worktrees中指向错误目录；不能修改其冻结文件或把首服当完整启动成功。
 主线observer从明确run-root的祖先查找server_reservation.py，登记绑定其hash。

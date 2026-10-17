@@ -1,0 +1,50 @@
+{
+  "schema_version": 1,
+  "status": "official_grading_complete_measurement_still_incomplete",
+  "state": {
+    "path": "/home/longhao/experiment/ops/quality_eval/quality_v77_cpu_20261016.state.json",
+    "sha256": "cf4ed1f63d56e3e375b804c73d812a60e1d385aba12fc803ed7707a3c7fc6614",
+    "terminal_status": "official_grading_finished",
+    "worker_returncode": 0,
+    "finished_at": "2026-10-16T20:38:37.051478-07:00",
+    "original_supervisor_and_worker_confirmed_exited": true
+  },
+  "score": {
+    "path": "experiments/reports/v1222_v77_quality_inputs_20261016/official_quality_summary.json",
+    "sha256": "ba20815807ff8fd13b584e4f0be0e3a95413da55ea709a812ae10d136876dfc6",
+    "workflow_count": 156,
+    "resolved": 90,
+    "unresolved": 65,
+    "empty_patch": 1,
+    "empty_patch_ids": ["django__django-11138"],
+    "evaluator_incomplete": 0,
+    "evaluator_error": 0,
+    "native_non_completed_ids": ["django__django-12708"],
+    "correctly_completed": 90,
+    "measurement_complete": false,
+    "correctly_completed_workflows_per_hour": null
+  },
+  "official_report": {
+    "path": "experiments/reports/v1222_v77_quality_inputs_20261016/beliefkv-Qwen3.5-35B-A3B-4e3c7eecfc1745fc85ee239409a2847e.beliefkv-v77-native-close-quality-cpu-20261016.json",
+    "sha256": "e0651d47f0e0b7de44aac35c746c0acd6e9bd341ae1f54e83eaf195543cf2dd0"
+  },
+  "native_reference": {
+    "path": "experiments/reports/v1182_v75_native_quality_inputs_20261016/official_quality_summary.json",
+    "sha256": "f25b72acc3e61ee2dbb9eddb0e63b66a022d32411363a14227d0e5975f07502a",
+    "resolved": 95,
+    "correctly_completed": 90,
+    "same_156_instance_ids": true,
+    "both_resolved": 80,
+    "only_v77_resolved": 10,
+    "only_native_resolved": 15,
+    "neither_resolved": 51
+  },
+  "validation": {
+    "category_lists_have_unique_ids": true,
+    "categories_are_disjoint": true,
+    "category_union_equals_original_156_ids": true,
+    "original_task_labels_or_scorer_modified": false,
+    "restart_triggered_for_normally_exited_worker": false,
+    "quality_equivalence_or_causal_speedup_proved": false
+  }
+}
