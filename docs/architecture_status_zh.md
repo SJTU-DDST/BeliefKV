@@ -2,6 +2,17 @@
 
 更新日期：2026-10-16（PDT）。
 
+2026-10-16 V1364/V1365补齐V78b至4800s观察：全156项中132 completed、
+1 incomplete，native为131 completed；runner截断逗留1643.987/1533.602s，
+completed端点口径1663.087/1533.602s，仍无质量匹配优势。4200–4800s的
+V78b/native H2D为1.000/1.286GB，decode1082.763/1056.228token/s、加权batch
+24.513/25.881，不能用这一后段速率覆盖先前恢复和逗留成本。
+V79独立native诊断候选新增启动器，沿用V75引擎53020ce3、全部156任务、Poisson
+到达与资源，只开默认关闭的checkpoint路径及生成前缀兼容性观测。最终V1374
+的257项CPU检查通过，含worktree路径、真实开关与前轮全任务/干净遥测条件。
+V1366/V1373为先前253/256项通过凭据，三套重叠不累加。当前尚未登记新GPU，
+后续独立检出/登记后才可接续；原V78b和V77评分继续冻结。详见研究筛选4.49/4.50。
+
 2026-10-16 19:14:33 PDT原队列完成V75 predictive官方评分：98 resolved、
 56 unresolved、2空patch（django-11087/12304），无evaluator error/incomplete，
 correctly_completed_ids为95项。原生为95/59/2及90项，V76为101/54/1及97项，

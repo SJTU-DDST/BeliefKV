@@ -2,6 +2,30 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 V79 full native diagnostic is CPU prepared, not yet GPU registered.
+V1374 passes257 cases, including the existing203 probe/auditor cases,39 driver
+cases and15 lifecycle-window cases. Earlier V1366/V1373 pass253/256 cases;
+overlapping receipts are not cumulative. A relocated-helper check catches the
+main-directory derivation problem before freezing. The driver now retains the
+authoritative experiment base when executed from its isolated worktree.
+
+Freeze a separate candidate with the exact V75 engine53020ce3, task manifest,
+156-task Poisson arrival table, pool geometry, tool180s/root14400s/output8192,
+write-back32 and unchanged native policy. Enable only checkpoint-path and exact
+generated-prefix compatibility diagnostics; no prefetch, PREPARE, native-close
+GC, path cap, frontier batching or additional ordering. Startup must verify the
+actual probe event, server configuration, NUMA and physical capacity, not env alone.
+Start only after actual V78b supervisor/driver exit, complete clean156-task
+collection, verified frozen source and resource release. Preserve native-gate
+exit1 and original task labels when collection is complete; never call that
+performance acceptance. Registration and actual GPU startup remain separate.
+
+V1365 at4800s retains all156 tasks: V78b132 completed/one incomplete versus
+native131 completed, runner-capped means1643.987/1533.602s. V1364's4200-4800s
+H2D is1.000/1.143/1.286GB across V78b/V76/native, with different remaining
+work and batches. The overall goal remains unachieved. Screening4.49/4.50
+defines what the next diagnostic can prove and its cross-session limitations.
+
 2026-10-16 at19:14:33 PDT the original V75/V76 grading queue completed normally.
 Predictive has98 resolved,56 unresolved and2 empty patches; native has95/59/2,
 V76 has101/54/1, each retaining all156 tasks and no evaluator errors/incomplete.

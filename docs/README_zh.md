@@ -7,6 +7,13 @@ write-back 补丁、当前研究文档和只读审计器。日常查看和后续
 实验仍使用各自登记的独立 worktree 固定版本。V75/V76 的运行源码、引擎和
 helper 保持冻结，不随 `main` 的新提交变化。
 
+V1364/V1365将V78b观察推进到4800s：132 completed、1 incomplete，native
+131 completed；保留全156项的runner截断逗留为1643.987/1533.602s，完成数
+略多仍不是JCT优势。4200–4800s两侧H2D仅1.000/1.286GB，恢复爆发已明显回落。
+V79独立native前缀诊断启动器已准备，最终257项CPU检查通过，尚未登记GPU；
+只开启checkpoint路径及真实生成前缀比较，不改原生缓存/调度策略。见研究筛选
+4.49/4.50，后续登记与实际启动仍须单独验证。
+
 19:14 PDT原V75/V76官方评分队列已完整结束，三侧全156项均保留：
 V75 predictive为98 resolved/56 unresolved/2空patch，native为95/59/2，
 V76为101/54/1；评分器错误和未评分任务均0。冻结评分器三侧measurement_complete
