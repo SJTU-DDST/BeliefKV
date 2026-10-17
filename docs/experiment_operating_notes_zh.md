@@ -4,6 +4,20 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+研究候选撤回时同时检查未启动的自动队列。V80在21:53:57 PDT取消前核验
+waiting_for_complete_v79b、无driver、无子进程及PID/start_ticks一致，只向
+该等待监督发送SIGTERM，随后确认进程不存在。V1442保留取消前完整state、
+登记及launcher哈希；ops state明确改为cancelled_before_gpu，不以旧等待快照
+误报正在实验。原实现、资格和冻结来源保留，V79b继续；不设置全局暂停。
+
+函数根因必须取自该轮冻结应用实际解析到的引擎，不能直接读取主目录旧脏
+third_party推断运行行为。V79b实际使用sglang-v1138/树53020ce3，已有批量
+write-back。选批中D2H ACK先于结束、H2D ACK晚于结束，只证明时序关联；
+writing_check中的同步调用也不能据此分摊每个区间或当成纯GPU空闲。
+V1440/V1441的采样不外推总请求，诊断臂大恢复量不代替native收益空间。
+下一项筛选要求纯Attention也成立，且超过已有异步写回/缓冲等强工程对照；
+不因一处synchronize可去除便宣布新主线或直接修改运行引擎。
+
 无Host对照必须保留原生session引用规则、CPU/内存NUMA策略和实际HBM池容量；
 不能关闭session、扩大HBM或更改任务工作来制造优势。V80预备实现允许原生入口
 使用HICACHE_SIZE_GB=0，显式固定FULL1798992/Mamba513，并用实际census核验

@@ -2,6 +2,41 @@
 
 Status date: 2026-10-16 (PDT).
 
+Current steering supersedes the hybrid-state candidate below. Withdraw
+actual-successor-prefix Host admission/retirement as the research direction;
+do not substitute another Mamba-only policy or restore the withdrawn
+branch-admission/complete-state-budget/parent-child-handoff agenda.
+
+The next research screen is model-general migration blocking and interference:
+can capacity writeback for one agent continuation delay unrelated runnable
+requests, and does substantial exposed cost remain in a correctly configured
+native baseline? First distinguish existing async-DMA engineering from a new
+systems mechanism. CachedAttention already has async saving/write buffering;
+LMCache has async retrieval and allocator-budget backpressure; KVBM has
+event-driven block lifecycles. Simple async conversion is not a contribution.
+Screening4.61 records primary sources, candidate boundaries and falsification.
+
+V1431-V1441 seal verified-window geometry and selection/transfer association
+through3600s. Positive FULL Host samples show expensive capacity-recovery
+intervals, but they are from the diagnostic arm, not a causal estimate of
+native headroom. Next audit native exposed stalls and physical recovery
+identities before implementing a policy. Do not extrapolate sampled CPU,
+transfer-stream sums or diagnostic churn into JCT or promised speedup.
+V1443-V1445 exact adjacent-forward accounting finds2.831/2.852ms from
+prefill run return to the next run entry in the47->1->48 cohort; this is
+neither GPU idle nor a measurement of the earlier expensive selection.
+An isolated mechanism is justified only if a strong async baseline still
+leaves material cost at equal memory, tasks, quality and recomputation.
+The study must establish applicability to pure Attention, not merely claim
+that a FULL code path exists in a hybrid model.
+
+V80 automatic continuation is cancelled before GPU at21:53:57 PDT.
+V1442 preserves the original waiting state, exact PID/start_ticks, registration
+and launcher hash. Driver/GPU were not started; no performance result exists.
+Retain its implementation and CPU qualification for an independently justified
+future control. V79b remains frozen and running. This is not a global pause.
+The V80-waiting and hybrid-candidate statements below are historical snapshots.
+
 V79b now has sealed service/compatibility evidence through3000s. Native H2D
 changes from0.421GB at1800-2400s to821.767GB at2400-3000s, versus7.190GB in the
 historical native latter window. Do not extrapolate early zero-restore windows.
