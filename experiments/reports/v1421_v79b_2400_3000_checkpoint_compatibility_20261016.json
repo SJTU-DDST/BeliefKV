@@ -1,0 +1,744 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-17T04:18:41.222213+00:00",
+  "run": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_checkpoint_diagnostic_online_poisson_156root_20261016_v79b/native",
+  "start_seconds": 2400.0,
+  "end_seconds": 3000.0,
+  "clock_source": {
+    "path": "experiments/reports/v1420_v79b_2400_3000_service_reference_20261016.json",
+    "sha256": "4dd4deec72f1006ed40d72c111d68e6617f9a62f7236d014f39ee9e91ee0063d"
+  },
+  "startup_source": {
+    "path": "experiments/reports/v1389_v79b_checkpoint_diagnostic_actual_startup_20261016.json",
+    "sha256": "5cfc3baf4ed59253bbe68319b183e808486a7781df4e50e9755ef1e88a2e8fa9"
+  },
+  "continuation_compatibility": {
+    "counts": {
+      "continuations": 3386,
+      "prior_input_fully_preserved": 21,
+      "prior_input_last_token_diverges": 3365,
+      "positive_generated_prefix_preserved": 21,
+      "prior_generated_tokens": 500935,
+      "preserved_generated_prefix_tokens": 4691,
+      "checkpoint_path_observed": 3386,
+      "checkpoint_path_unavailable": 0,
+      "observed_paths_without_checkpoints": 0
+    },
+    "logical_contexts": 161,
+    "prior_input_suffix_not_preserved_tokens": {
+      "count": 3386,
+      "sum": 3365,
+      "min": 0,
+      "p50": 1.0,
+      "p90": 1.0,
+      "p99": 1.0,
+      "max": 1
+    },
+    "prior_generated_output_tokens": {
+      "count": 3386,
+      "sum": 500935,
+      "min": 11,
+      "p50": 78.0,
+      "p90": 274.5,
+      "p99": 1053.2000000000007,
+      "max": 8192
+    },
+    "preserved_generated_prefix_tokens": {
+      "count": 3386,
+      "sum": 4691,
+      "min": 0,
+      "p50": 0.0,
+      "p90": 0.0,
+      "p99": 0.0,
+      "max": 1157
+    },
+    "checkpoint_observations_by_role_and_compatibility": {
+      "generated_output_tail/exact_prefix_compatible": 9,
+      "generated_output_tail/new_input_ends_before_checkpoint": 56,
+      "generated_output_tail/token_prefix_diverges": 1304,
+      "input_boundary/token_prefix_diverges": 16,
+      "input_prefix/exact_prefix_compatible": 19518
+    },
+    "distinct_logical_checkpoints": 4997,
+    "logical_checkpoint_prefix_conflicts": 0,
+    "distinct_checkpoints_ever_observed_as_output_tail": 1369,
+    "output_tail_checkpoints_also_observed_compatible": 9,
+    "illustrative_per_path_selections": {
+      "furthest_one": {
+        "observed_paths": 3386,
+        "paths_with_compatible_checkpoint": 3386,
+        "retained_checkpoint_observations": 3386,
+        "retains_some_compatible_checkpoint": 2018,
+        "retains_furthest_compatible_checkpoint": 2018
+      },
+      "furthest_two": {
+        "observed_paths": 3386,
+        "paths_with_compatible_checkpoint": 3386,
+        "retained_checkpoint_observations": 6772,
+        "retains_some_compatible_checkpoint": 3378,
+        "retains_furthest_compatible_checkpoint": 3378
+      },
+      "latest_at_or_before_input_boundary": {
+        "observed_paths": 3386,
+        "paths_with_compatible_checkpoint": 3386,
+        "retained_checkpoint_observations": 3386,
+        "retains_some_compatible_checkpoint": 3370,
+        "retains_furthest_compatible_checkpoint": 3361
+      },
+      "latest_strict_input_prefix": {
+        "observed_paths": 3386,
+        "paths_with_compatible_checkpoint": 3386,
+        "retained_checkpoint_observations": 3386,
+        "retains_some_compatible_checkpoint": 3386,
+        "retains_furthest_compatible_checkpoint": 3377
+      }
+    },
+    "samples": {
+      "input_prefix/exact_prefix_compatible": [
+        {
+          "request_id": "beliefkv:01a14804-5581-78d2-9801-e30011657a41",
+          "prior_request_id": "beliefkv:01a14804-2d2e-7733-a46d-13ef00efd130",
+          "node_id": 35819,
+          "creation_time": 1463219.0,
+          "prefix_tokens": 8512,
+          "role": "input_prefix",
+          "prefix_compatibility": "exact_prefix_compatible"
+        },
+        {
+          "request_id": "beliefkv:01a14804-5581-78d2-9801-e30011657a41",
+          "prior_request_id": "beliefkv:01a14804-2d2e-7733-a46d-13ef00efd130",
+          "node_id": 35976,
+          "creation_time": 1470638.0,
+          "prefix_tokens": 9024,
+          "role": "input_prefix",
+          "prefix_compatibility": "exact_prefix_compatible"
+        },
+        {
+          "request_id": "beliefkv:01a14804-5581-78d2-9801-e30011657a41",
+          "prior_request_id": "beliefkv:01a14804-2d2e-7733-a46d-13ef00efd130",
+          "node_id": 36156,
+          "creation_time": 1478888.0,
+          "prefix_tokens": 13120,
+          "role": "input_prefix",
+          "prefix_compatibility": "exact_prefix_compatible"
+        },
+        {
+          "request_id": "beliefkv:01a14804-5581-78d2-9801-e30011657a41",
+          "prior_request_id": "beliefkv:01a14804-2d2e-7733-a46d-13ef00efd130",
+          "node_id": 36157,
+          "creation_time": 1478931.0,
+          "prefix_tokens": 14016,
+          "role": "input_prefix",
+          "prefix_compatibility": "exact_prefix_compatible"
+        }
+      ],
+      "generated_output_tail/token_prefix_diverges": [
+        {
+          "request_id": "beliefkv:01a14804-5581-78d2-9801-e30011657a41",
+          "prior_request_id": "beliefkv:01a14804-2d2e-7733-a46d-13ef00efd130",
+          "node_id": 36207,
+          "creation_time": 1481219.0,
+          "prefix_tokens": 14080,
+          "role": "generated_output_tail",
+          "prefix_compatibility": "token_prefix_diverges"
+        },
+        {
+          "request_id": "beliefkv:01a14804-574a-7171-8d9b-e9cfeaa68dc8",
+          "prior_request_id": "beliefkv:01a14804-2772-7d62-941c-c044cb3f7fb8",
+          "node_id": 36216,
+          "creation_time": 1481621.0,
+          "prefix_tokens": 26624,
+          "role": "generated_output_tail",
+          "prefix_compatibility": "token_prefix_diverges"
+        },
+        {
+          "request_id": "beliefkv:01a14804-57ca-7403-b397-17b0d70c986c",
+          "prior_request_id": "beliefkv:01a14804-2d68-7210-891b-a5287683baed",
+          "node_id": 36219,
+          "creation_time": 1481771.0,
+          "prefix_tokens": 26368,
+          "role": "generated_output_tail",
+          "prefix_compatibility": "token_prefix_diverges"
+        },
+        {
+          "request_id": "beliefkv:01a14804-58a1-7160-ae55-4923d99c2a1b",
+          "prior_request_id": "beliefkv:01a14804-32bd-7192-b459-3f548a7b6ec9",
+          "node_id": 36224,
+          "creation_time": 1482106.0,
+          "prefix_tokens": 25344,
+          "role": "generated_output_tail",
+          "prefix_compatibility": "token_prefix_diverges"
+        }
+      ],
+      "generated_output_tail/new_input_ends_before_checkpoint": [
+        {
+          "request_id": "beliefkv:01a14804-7e4f-7601-bca0-2fa445137e8f",
+          "prior_request_id": "beliefkv:01a14803-efeb-79e1-82c4-5330bd83e86b",
+          "node_id": 36372,
+          "creation_time": 1488514.0,
+          "prefix_tokens": 24064,
+          "role": "generated_output_tail",
+          "prefix_compatibility": "new_input_ends_before_checkpoint"
+        },
+        {
+          "request_id": "beliefkv:01a14805-04ce-7ea3-a641-1520f089891f",
+          "prior_request_id": "beliefkv:01a14804-8fcb-7c02-80b8-a78b501caa9d",
+          "node_id": 36830,
+          "creation_time": 1509046.0,
+          "prefix_tokens": 28416,
+          "role": "generated_output_tail",
+          "prefix_compatibility": "new_input_ends_before_checkpoint"
+        },
+        {
+          "request_id": "beliefkv:01a14805-0ec8-7412-ace5-f744e56f9273",
+          "prior_request_id": "beliefkv:01a14804-c3b0-7012-8fd3-e5c933b58f89",
+          "node_id": 36878,
+          "creation_time": 1511365.0,
+          "prefix_tokens": 8960,
+          "role": "generated_output_tail",
+          "prefix_compatibility": "new_input_ends_before_checkpoint"
+        },
+        {
+          "request_id": "beliefkv:01a14805-2595-7730-9c43-9ed6f0321bbe",
+          "prior_request_id": "beliefkv:01a14800-767f-7bc2-a0c7-ae007c80592d",
+          "node_id": 36973,
+          "creation_time": 1515524.0,
+          "prefix_tokens": 26112,
+          "role": "generated_output_tail",
+          "prefix_compatibility": "new_input_ends_before_checkpoint"
+        }
+      ],
+      "input_boundary/token_prefix_diverges": [
+        {
+          "request_id": "beliefkv:01a14804-98bb-7a30-bf57-1c8bb86c9bcb",
+          "prior_request_id": "beliefkv:01a14804-18c7-7601-b5e1-313431c781ba",
+          "node_id": 36082,
+          "creation_time": 1475060.0,
+          "prefix_tokens": 45016,
+          "role": "input_boundary",
+          "prefix_compatibility": "token_prefix_diverges"
+        },
+        {
+          "request_id": "beliefkv:01a14804-e547-78b2-a18c-b0021e6ee463",
+          "prior_request_id": "beliefkv:01a14804-7e4f-7601-bca0-2fa445137e8f",
+          "node_id": 36515,
+          "creation_time": 1494396.0,
+          "prefix_tokens": 23678,
+          "role": "input_boundary",
+          "prefix_compatibility": "token_prefix_diverges"
+        },
+        {
+          "request_id": "beliefkv:01a14805-1257-7ac1-8159-446c00dec4ae",
+          "prior_request_id": "beliefkv:01a14804-e0bd-7590-b277-09fa226d9d5b",
+          "node_id": 36850,
+          "creation_time": 1510064.0,
+          "prefix_tokens": 7131,
+          "role": "input_boundary",
+          "prefix_compatibility": "token_prefix_diverges"
+        },
+        {
+          "request_id": "beliefkv:01a14807-1667-7493-a631-0fda2ccbc4f9",
+          "prior_request_id": "beliefkv:01a14806-c7ce-7851-b483-ae9cf1c74306",
+          "node_id": 38702,
+          "creation_time": 1597168.0,
+          "prefix_tokens": 13275,
+          "role": "input_boundary",
+          "prefix_compatibility": "token_prefix_diverges"
+        }
+      ],
+      "generated_output_tail/exact_prefix_compatible": [
+        {
+          "request_id": "beliefkv:01a14805-5593-76e3-b7d4-1e188face5e1",
+          "prior_request_id": "beliefkv:01a14805-2595-7730-9c43-9ed6f0321bbe",
+          "node_id": 37168,
+          "creation_time": 1524506.0,
+          "prefix_tokens": 18176,
+          "role": "generated_output_tail",
+          "prefix_compatibility": "exact_prefix_compatible"
+        },
+        {
+          "request_id": "beliefkv:01a14805-dec7-7da3-96c0-a54ea05b6b89",
+          "prior_request_id": "beliefkv:01a14805-7f88-74c3-9ca6-91aaed106410",
+          "node_id": 37746,
+          "creation_time": 1551081.0,
+          "prefix_tokens": 24576,
+          "role": "generated_output_tail",
+          "prefix_compatibility": "exact_prefix_compatible"
+        },
+        {
+          "request_id": "beliefkv:01a14806-3d5a-7313-953b-5b6b4fc9a8db",
+          "prior_request_id": "beliefkv:01a14806-0b36-7d33-a2bb-7d6dd4c63854",
+          "node_id": 38121,
+          "creation_time": 1568675.0,
+          "prefix_tokens": 23040,
+          "role": "generated_output_tail",
+          "prefix_compatibility": "exact_prefix_compatible"
+        },
+        {
+          "request_id": "beliefkv:01a14807-38ef-71b0-ac9f-bbff567207aa",
+          "prior_request_id": "beliefkv:01a14806-24d7-7430-9d15-7010fed72cae",
+          "node_id": 38881,
+          "creation_time": 1605942.0,
+          "prefix_tokens": 24576,
+          "role": "generated_output_tail",
+          "prefix_compatibility": "exact_prefix_compatible"
+        }
+      ]
+    }
+  },
+  "historical_mamba_write_roles": {
+    "counts": {
+      "completed_requests": 3517,
+      "completion_path_observed": 3517,
+      "completed_mamba_write_units": 4300
+    },
+    "write_units_by_last_observed_role": {
+      "last_observed_generated_output_tail": {
+        "copy_units": 860,
+        "mamba_bytes": 55374643200
+      },
+      "last_observed_input_boundary": {
+        "copy_units": 4,
+        "mamba_bytes": 257556480
+      },
+      "last_observed_input_prefix": {
+        "copy_units": 154,
+        "mamba_bytes": 9915924480
+      },
+      "unassignable_aggregate_batch": {
+        "copy_units": 3282,
+        "mamba_bytes": 211325091840
+      }
+    },
+    "prior_observation_age_ms_by_role": {
+      "last_observed_generated_output_tail": {
+        "count": 860,
+        "sum": 14593709.883789062,
+        "min": 106.29248046875,
+        "p50": 16124.727783203125,
+        "p90": 25366.59411621094,
+        "p99": 30549.126623535154,
+        "max": 33438.212646484375
+      },
+      "last_observed_input_boundary": {
+        "count": 4,
+        "sum": 76365.80053710938,
+        "min": 11270.045654296875,
+        "p50": 17503.915893554688,
+        "p90": 26756.91953125,
+        "p99": 29754.822739257812,
+        "max": 30087.923095703125
+      },
+      "last_observed_input_prefix": {
+        "count": 154,
+        "sum": 1503924.416015625,
+        "min": 176.53662109375,
+        "p50": 10311.792236328125,
+        "p90": 14108.201879882825,
+        "p99": 33699.75948974609,
+        "max": 51374.351806640625
+      }
+    },
+    "synchronous_completion_path_probe_wall_ms": {
+      "count": 3517,
+      "sum": 447.3082060000006,
+      "min": 0.028484,
+      "p50": 0.118503,
+      "p90": 0.19955720000000005,
+      "p99": 0.29456288,
+      "max": 0.434214
+    },
+    "synchronous_completion_path_probe_thread_cpu_ms": {
+      "count": 3517,
+      "sum": 446.4035419999991,
+      "min": 0.028563,
+      "p50": 0.118247,
+      "p90": 0.19940180000000002,
+      "p99": 0.2943985200000001,
+      "max": 0.433138
+    },
+    "samples": {
+      "unassignable_aggregate_batch": [
+        {
+          "command_id": "native-hicache-000016676",
+          "submit_ts_ms": 1792209614826.037,
+          "node_ids": [
+            36130,
+            35892,
+            35891,
+            35630,
+            35266,
+            35265,
+            34787,
+            34784,
+            34331,
+            34330,
+            33912
+          ],
+          "last_observation": null
+        },
+        {
+          "command_id": "native-hicache-000016692",
+          "submit_ts_ms": 1792209616841.758,
+          "node_ids": [
+            35951,
+            35948,
+            35709,
+            35708,
+            35493,
+            35491,
+            35101
+          ],
+          "last_observation": null
+        },
+        {
+          "command_id": "native-hicache-000016707",
+          "submit_ts_ms": 1792209617867.1892,
+          "node_ids": [
+            36189,
+            36188,
+            36025
+          ],
+          "last_observation": null
+        },
+        {
+          "command_id": "native-hicache-000016713",
+          "submit_ts_ms": 1792209618949.819,
+          "node_ids": [
+            36204,
+            36049,
+            36048,
+            35538,
+            35381,
+            35241,
+            35240,
+            34454,
+            34452,
+            34306,
+            34303,
+            33742,
+            33603,
+            33450,
+            33292,
+            33291,
+            33140,
+            32977,
+            32826,
+            32670,
+            32518,
+            32363,
+            32362,
+            32228,
+            32103,
+            31959,
+            31822,
+            31655,
+            31654,
+            31509,
+            31392,
+            31391
+          ],
+          "last_observation": null
+        }
+      ],
+      "last_observed_generated_output_tail": [
+        {
+          "command_id": "native-hicache-000016680",
+          "submit_ts_ms": 1792209615395.094,
+          "node_ids": [
+            36148
+          ],
+          "last_observation": {
+            "ts_ms": 1792209602385.0557,
+            "creation_time": 1478476.0,
+            "prefix_tokens": 31744,
+            "request_id": "beliefkv:01a14804-16b0-7320-8ce4-5288db26134d"
+          }
+        },
+        {
+          "command_id": "native-hicache-000016682",
+          "submit_ts_ms": 1792209615777.6433,
+          "node_ids": [
+            36127
+          ],
+          "last_observation": {
+            "ts_ms": 1792209600997.2646,
+            "creation_time": 1477294.0,
+            "prefix_tokens": 14336,
+            "request_id": "beliefkv:01a14804-0645-73d3-91c4-21d7be61d9ec"
+          }
+        },
+        {
+          "command_id": "native-hicache-000016683",
+          "submit_ts_ms": 1792209615781.8513,
+          "node_ids": [
+            36170
+          ],
+          "last_observation": {
+            "ts_ms": 1792209603898.8533,
+            "creation_time": 1479744.0,
+            "prefix_tokens": 23296,
+            "request_id": "beliefkv:01a14804-2417-7330-83a5-57824732086e"
+          }
+        },
+        {
+          "command_id": "native-hicache-000016687",
+          "submit_ts_ms": 1792209616531.6409,
+          "node_ids": [
+            36120
+          ],
+          "last_observation": {
+            "ts_ms": 1792209600528.895,
+            "creation_time": 1476867.0,
+            "prefix_tokens": 14336,
+            "request_id": "beliefkv:01a14803-fade-7373-9ff7-51ecc901d07b"
+          }
+        }
+      ],
+      "last_observed_input_prefix": [
+        {
+          "command_id": "native-hicache-000016785",
+          "submit_ts_ms": 1792209629751.6277,
+          "node_ids": [
+            36252
+          ],
+          "last_observation": {
+            "ts_ms": 1792209611362.0828,
+            "creation_time": 1483347.0,
+            "prefix_tokens": 32960,
+            "request_id": "beliefkv:01a14804-450a-7a01-911e-ced11df4582a"
+          }
+        },
+        {
+          "command_id": "native-hicache-000016786",
+          "submit_ts_ms": 1792209629880.02,
+          "node_ids": [
+            36060
+          ],
+          "last_observation": {
+            "ts_ms": 1792209611362.0828,
+            "creation_time": 1474127.0,
+            "prefix_tokens": 32576,
+            "request_id": "beliefkv:01a14804-450a-7a01-911e-ced11df4582a"
+          }
+        },
+        {
+          "command_id": "native-hicache-000016860",
+          "submit_ts_ms": 1792209638924.8257,
+          "node_ids": [
+            35989
+          ],
+          "last_observation": {
+            "ts_ms": 1792209637314.9155,
+            "creation_time": 1471106.0,
+            "prefix_tokens": 21888,
+            "request_id": "beliefkv:01a14803-fd52-7d80-a3d2-83ce053cb838"
+          }
+        },
+        {
+          "command_id": "native-hicache-000016996",
+          "submit_ts_ms": 1792209659868.487,
+          "node_ids": [
+            36393
+          ],
+          "last_observation": {
+            "ts_ms": 1792209655615.1284,
+            "creation_time": 1489371.0,
+            "prefix_tokens": 24448,
+            "request_id": "beliefkv:01a14804-5f45-7ff2-988e-65b42739dfdd"
+          }
+        }
+      ],
+      "last_observed_input_boundary": [
+        {
+          "command_id": "native-hicache-000017030",
+          "submit_ts_ms": 1792209665502.6477,
+          "node_ids": [
+            36850
+          ],
+          "last_observation": {
+            "ts_ms": 1792209654232.602,
+            "creation_time": 1510064.0,
+            "prefix_tokens": 7131,
+            "request_id": "beliefkv:01a14804-e0bd-7590-b277-09fa226d9d5b"
+          }
+        },
+        {
+          "command_id": "native-hicache-000018982",
+          "submit_ts_ms": 1792209802317.6812,
+          "node_ids": [
+            38702
+          ],
+          "last_observation": {
+            "ts_ms": 1792209786294.4272,
+            "creation_time": 1597168.0,
+            "prefix_tokens": 13275,
+            "request_id": "beliefkv:01a14806-c7ce-7851-b483-ae9cf1c74306"
+          }
+        },
+        {
+          "command_id": "native-hicache-000024267",
+          "submit_ts_ms": 1792210095681.065,
+          "node_ids": [
+            41486
+          ],
+          "last_observation": {
+            "ts_ms": 1792210076696.487,
+            "creation_time": 1739609.0,
+            "prefix_tokens": 19114,
+            "request_id": "beliefkv:01a1480b-218a-7b63-87af-3d261013977f"
+          }
+        },
+        {
+          "command_id": "native-hicache-000025082",
+          "submit_ts_ms": 1792210147719.8591,
+          "node_ids": [
+            41924
+          ],
+          "last_observation": {
+            "ts_ms": 1792210117631.936,
+            "creation_time": 1762244.0,
+            "prefix_tokens": 24554,
+            "request_id": "beliefkv:01a1480b-d64d-74f1-8e58-284c964bf01a"
+          }
+        }
+      ]
+    }
+  },
+  "physical_copy_balance": {
+    "cohort_submit_window_ms": [
+      1792209614252.0,
+      1792210214252.0
+    ],
+    "receipt_observed_through_ts_ms": 1792210716710.2595,
+    "non_completed_records_not_credited": 0,
+    "totals": {
+      "cohort_d2h": {
+        "batches": 7765,
+        "actual_bytes": 923519672320,
+        "copy_units": {
+          "kv": 31574534,
+          "mamba": 4300
+        },
+        "bytes_by_pool": {
+          "kv": 646646456320,
+          "mamba": 276873216000
+        },
+        "measured_stream_ms": 168737.80634185672,
+        "unmeasured_stream_batches": 0
+      },
+      "all_observed_d2h": {
+        "batches": 28304,
+        "actual_bytes": 1977807667200,
+        "copy_units": {
+          "kv": 53242032,
+          "mamba": 13782
+        },
+        "bytes_by_pool": {
+          "kv": 1090396815360,
+          "mamba": 887410851840
+        },
+        "measured_stream_ms": 321642.9923811052,
+        "unmeasured_stream_batches": 0
+      },
+      "all_observed_h2d": {
+        "batches": 1800,
+        "actual_bytes": 872521646080,
+        "copy_units": {
+          "kv": 29776076,
+          "mamba": 4080
+        },
+        "bytes_by_pool": {
+          "kv": 609814036480,
+          "mamba": 262707609600
+        },
+        "measured_stream_ms": 24816.476333141327,
+        "unmeasured_stream_batches": 0
+      }
+    },
+    "completed_read_source_bounds": {
+      "kv": {
+        "cohort_completed_write_copy_units": 31574534,
+        "all_observed_completed_read_copy_units": 29776076,
+        "maximum_write_copy_units_that_can_back_completed_reads": 29776076,
+        "maximum_fraction_that_can_back_completed_reads": 0.9430408695817966,
+        "minimum_write_copy_units_not_needed_as_distinct_sources_of_completed_reads": 1798458,
+        "read_copy_units_per_cohort_write_copy_unit": 0.9430408695817966
+      },
+      "mamba": {
+        "cohort_completed_write_copy_units": 4300,
+        "all_observed_completed_read_copy_units": 4080,
+        "maximum_write_copy_units_that_can_back_completed_reads": 4080,
+        "maximum_fraction_that_can_back_completed_reads": 0.9488372093023256,
+        "minimum_write_copy_units_not_needed_as_distinct_sources_of_completed_reads": 220,
+        "read_copy_units_per_cohort_write_copy_unit": 0.9488372093023256
+      }
+    }
+  },
+  "successor_inputs_before_write": {
+    "counts": {
+      "completed_mamba_write_units": 4300
+    },
+    "copy_units_by_observed_successor_status": {
+      "compatible_successor_observed": {
+        "copy_units": 14,
+        "mamba_bytes": 901447680
+      },
+      "no_comparison_input_in_window_before_write": {
+        "copy_units": 189,
+        "mamba_bytes": 12169543680
+      },
+      "only_incompatible_successors_observed": {
+        "copy_units": 815,
+        "mamba_bytes": 52477132800
+      },
+      "unassignable_aggregate_batch": {
+        "copy_units": 3282,
+        "mamba_bytes": 211325091840
+      }
+    },
+    "incompatible_input_observation_lead_ms": {
+      "count": 815,
+      "sum": 4564668.770996094,
+      "min": 180.94580078125,
+      "p50": 4138.8916015625,
+      "p90": 13164.671142578125,
+      "p99": 16217.791450195313,
+      "max": 17064.78515625
+    },
+    "observation_scope": "Only successor-input observations inside the requested window and strictly before D2H submit. Earlier comparisons are not credited. Input enqueue time does not establish asynchronous comparison-completion or action availability."
+  },
+  "input_jsonl_prefixes": {
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_checkpoint_diagnostic_online_poisson_156root_20261016_v79b/native/server/transfer_telemetry.jsonl": {
+      "complete_prefix_bytes": 21420410,
+      "complete_prefix_sha256": "64b07cdf59a0fa7193ab6e3cf726d586e16f43c42db8ced6284f18bfeb4ef7bb",
+      "first_read_limit_bytes": 21420410
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_checkpoint_diagnostic_online_poisson_156root_20261016_v79b/native/server/runtime_events.sglang.jsonl": {
+      "complete_prefix_bytes": 98189089,
+      "complete_prefix_sha256": "9d8589ec2cbce23037d17a6b998b8f760e74d0a4af307bac276fbedc184a4318",
+      "first_read_limit_bytes": 98189089
+    },
+    "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_checkpoint_diagnostic_online_poisson_156root_20261016_v79b/native/server/eviction_attribution.jsonl": {
+      "complete_prefix_bytes": 186127112,
+      "complete_prefix_sha256": "b7059255b82da404a915158a7334e98c4b1b664caf10c42f9e7aa6e1075501dc",
+      "first_read_limit_bytes": 186127112
+    }
+  },
+  "auditor_sources": {
+    "scripts/audit_checkpoint_continuation_compatibility.py": "9b0e82f902494d2ac4f22b426409588420e5a03932fa855ebb6f9978c2642e22",
+    "scripts/audit_checkpoint_write_read_balance.py": "bb0e80d8d6ac22c4c5f3d03cc8f3bf87183350481f753adfe8a01e93fe6f2bd2",
+    "scripts/audit_native_system_costs.py": "a9262996530573c11cc2bbdaf6184a87443b30e02fbd8f983c74e5bbbb862952",
+    "scripts/audit_sealed_wait_prefetch.py": "1bb8064854266d012423ce3bf4eea5b3aa1865a1fcc59308642ee645e7361db3"
+  },
+  "semantics": [
+    "Continuation cohorts contain only observed same-session successor comparisons, not every completed request. Missing history, new sessions and unfinished successors are not misses.",
+    "Checkpoint observations can repeat the same logical node. Distinct node/creation identities are not allocated slots, physical copies or deduplicated bytes.",
+    "Compatibility is with one actual next input. Divergence does not prove global uselessness, future non-use, safe discard, its formatting cause or avoidable computation.",
+    "Illustrative per-path selections use only prior input length and observed checkpoint positions. Successor compatibility is an offline evaluation label. They do not model native fork/lock protection, global capacity, Host-write admission, eviction or changed execution, and are not native path-cap performance.",
+    "Write roles use only strictly earlier completion snapshots and identify the last observed role by node ID. Receipts lack creation/physical-generation identity; roles and ages are historical associations, not write-time references or proof of consumption.",
+    "Successor-input status uses observations inside this window before each write. A known incompatibility in observed successors does not establish absent sharing, future non-use, current references or safe discard. Its timestamp is input enqueue time, not asynchronous comparison completion.",
+    "The completed-read source bound allows all observed H2D units and is not an online policy or an end-to-end oracle bound.",
+    "Probe timings cover only the synchronous path walk, not output snapshots, queueing, asynchronous comparisons/serialization or total diagnostic overhead."
+  ]
+}

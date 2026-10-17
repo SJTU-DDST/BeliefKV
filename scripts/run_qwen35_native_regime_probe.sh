@@ -12,6 +12,8 @@ WORKFLOW_ARRIVAL_SCHEDULE="${WORKFLOW_ARRIVAL_SCHEDULE:-}"
 HOST_SPLIT="${HOST_SPLIT:-80:20}"
 HOST_NUMA_MEMORY_POLICY="${HOST_NUMA_MEMORY_POLICY:-preferred}"
 HICACHE_SIZE_GB="${HICACHE_SIZE_GB:-200}"
+DEVICE_FULL_TOKENS="${DEVICE_FULL_TOKENS:-}"
+DEVICE_MAMBA_SLOTS="${DEVICE_MAMBA_SLOTS:-}"
 HICACHE_WRITE_POLICY="${HICACHE_WRITE_POLICY:-write_back}"
 SGLANG_PATCH_FLAVOR="${SGLANG_PATCH_FLAVOR:-staging}"
 # Qwen3.5 advertises VLM support; its image warmup OOMs after 94% static KV sizing.
@@ -70,8 +72,11 @@ if [[ $# -ne 0 || ! "$ROOT_COUNT" =~ ^[1-9][0-9]*$ ]] \
   || { (( ARRIVAL_BATCH_SIZE > 0 )) && (( ARRIVAL_BATCH_INTERVAL_MS == 0 )); } \
   || { [[ "$ARRIVAL_BATCH_SIZE" == "0" ]] && [[ "$ARRIVAL_BATCH_INTERVAL_MS" != "0" ]]; } \
   || [[ ! "$SAMPLING_SEED" =~ ^[0-9]+$ ]] \
-  || [[ ! "$HICACHE_SIZE_GB" =~ ^[1-9][0-9]*$ ]] \
+  || [[ ! "$HICACHE_SIZE_GB" =~ ^(0|[1-9][0-9]{0,2})$ ]] \
   || (( HICACHE_SIZE_GB > 200 )) \
+  || { [[ "$HICACHE_SIZE_GB" == "0" ]] && [[ "$NATIVE_POLICY_BASELINE" != "1" || "$AB_MODE" != "off" ]]; } \
+  || { [[ -n "$DEVICE_FULL_TOKENS" ]] && [[ ! "$DEVICE_FULL_TOKENS" =~ ^[1-9][0-9]{0,8}$ ]]; } \
+  || { [[ -n "$DEVICE_MAMBA_SLOTS" ]] && [[ ! "$DEVICE_MAMBA_SLOTS" =~ ^[1-9][0-9]{0,8}$ ]]; } \
   || [[ "$HICACHE_WRITE_POLICY" != "write_through_selective" && "$HICACHE_WRITE_POLICY" != "write_back" ]] \
   || [[ "$SKIP_SERVER_WARMUP" != "0" && "$SKIP_SERVER_WARMUP" != "1" ]] \
   || [[ "$CONFIRMED_JOIN_CANARY" != "0" && "$CONFIRMED_JOIN_CANARY" != "1" ]] \
@@ -112,6 +117,12 @@ mkdir -p "$RUN_ROOT/server" "$RUN_ROOT/opportunities"
 server_flags=(
   --mamba-full-memory-ratio 0.9
 )
+if [[ -n "$DEVICE_FULL_TOKENS" ]]; then
+  server_flags+=(--max-total-tokens "$DEVICE_FULL_TOKENS")
+fi
+if [[ -n "$DEVICE_MAMBA_SLOTS" ]]; then
+  server_flags+=(--max-mamba-cache-size "$DEVICE_MAMBA_SLOTS")
+fi
 control_flags=(--control-socket "$SOCKET")
 telemetry_env=(BELIEFKV_ADMISSION_TELEMETRY_DIR="$RUN_ROOT/server"
   BELIEFKV_ADMISSION_OPPORTUNITY_DIR="$RUN_ROOT/opportunities")

@@ -215,7 +215,9 @@ def _device_ceiling(pool: object, buffer: object, name: str) -> tuple[int, int]:
     )
 
 
-def _static_full_mamba_pool_geometry(cache: object) -> dict[str, int | str]:
+def _static_full_mamba_pool_geometry(
+    cache: object, *, allow_without_host: bool = False,
+) -> dict[str, int | str]:
     """Validate pool ownership and ceilings without traversing tensor storage."""
     _named(cache, "UnifiedRadixCache")
     if cache.disable is not False or tuple(
@@ -239,6 +241,19 @@ def _static_full_mamba_pool_geometry(cache: object) -> dict[str, int | str]:
         raise ValueError("static FULL allocator and physical pool disagree")
     if type(mamba.mamba_cache).__name__ != "State":
         raise ValueError("unknown static MAMBA state layout")
+    if allow_without_host and cache.cache_controller is None:
+        if cache.host_pool_group is not None:
+            raise ValueError("Host pools exist without a cache controller")
+        return {
+            "pool_layout": "static_separate_full_mamba",
+            "device_full_tokens": full_tokens,
+            "device_mamba_slots": mamba_slots,
+            "host_full_tokens": 0,
+            "host_mamba_slots": 0,
+            "host_full_bytes": 0,
+            "host_mamba_bytes": 0,
+            "host_total_bytes": 0,
+        }
     group = _named(cache.host_pool_group, "HostPoolGroup")
     if cache.cache_controller.mem_pool_host is not group or set(group.entry_map) != {
         "kv", "mamba",
@@ -275,13 +290,17 @@ def _static_full_mamba_pool_geometry(cache: object) -> dict[str, int | str]:
     }
 
 
-def observe_static_full_mamba(cache: object) -> dict[str, int | str]:
+def observe_static_full_mamba(
+    cache: object, *, allow_without_host: bool = False,
+) -> dict[str, int | str]:
     """Read persistent tensor bytes for the separately allocated device pools.
 
     These allocations cannot lend bytes to each other. CUDA scratch and graph
     buffers consume additional GPU memory outside these pools.
     """
-    capacity = _static_full_mamba_pool_geometry(cache)
+    capacity = _static_full_mamba_pool_geometry(
+        cache, allow_without_host=allow_without_host,
+    )
     full = cache.token_to_kv_pool_allocator._kvcache.full_kv_pool
     full_k_bytes, full_v_bytes = full.get_kv_size_bytes()
     device_full_bytes = (

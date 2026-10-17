@@ -2,6 +2,29 @@
 
 Status date: 2026-10-16 (PDT).
 
+V79b now has sealed service/compatibility evidence through3000s. Native H2D
+changes from0.421GB at1800-2400s to821.767GB at2400-3000s, versus7.190GB in the
+historical native latter window. Do not extrapolate early zero-restore windows.
+V1421 retains211.325GB of aggregate Mamba writes as unassignable; no proportional
+role attribution or global useless-state claim is allowed. V1410/V1411/V1420/V1421
+bind the new windows. Diagnostic overhead and changed realized work remain open.
+
+The independent V80 no-Host native engineering control is CPU prepared, not
+registered or GPU started. V1423 passes301 cases, including actual shell argument
+capture for fixed FULL1798992/Mamba513 device limits, no-Host telemetry, NUMA,
+and rejection of mixed policy/capacity/arrival configurations. V1412 preserves
+an initial test-field-name failure; V1413/V1422's301 passes are intermediate and
+overlap V1423. The final source preserves legacy no-Host admission-only launch;
+only the new no-Host experiment selector is native-only. No receipt is overwritten.
+Freeze a separate application and the unchanged53020ce3 engine; wait for complete
+V79b and actual resource release. Preserve its full156 tasks, arrivals, session,
+HBM and task limits; Host allocation0 is the intentional variable under the same
+200GB available Host budget. Disable all extra diagnostics/policies. Verify
+actual service, zero Host allocation, physical HBM and NUMA before accepting
+startup. This control may reveal useful-recompute cost; retain all outcomes.
+Screening4.59 records the scope. The actual-successor cache policy remains
+unimplemented and novelty/performance goals remain unachieved.
+
 V79b now has three complete600s compatibility windows through1800s.
 V1405/V1403/V1409 associate100.511/122.726/117.124GB Mamba writes with previously
 observed output-tail checkpoints. For95.296/110.170/104.825GB of write units,

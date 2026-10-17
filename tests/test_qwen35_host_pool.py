@@ -410,6 +410,46 @@ def test_no_host_smoke_does_not_bind_or_preflight(tmp_path: Path) -> None:
     assert "--hicache-size" not in (tmp_path / "python-args").read_text()
 
 
+@pytest.mark.parametrize("policy", ["bind", "preferred"])
+def test_no_host_native_session_keeps_numa_policy_without_host_allocation(
+    tmp_path: Path, policy: str,
+) -> None:
+    env = {
+        **_stub(tmp_path), "HICACHE_SIZE_GB": "0", "ENABLE_SESSION_RADIX_CACHE": "1",
+        "HOST_NUMA_MEMORY_POLICY": policy,
+    }
+    result = subprocess.run(
+        ["bash", str(LAUNCH)], env=env, capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    args = (tmp_path / "numactl-args").read_text().splitlines()
+    assert args[:2] == ["--cpunodebind=1", f"--{'membind' if policy == 'bind' else policy}=1"]
+    assert "--enable-session-radix-cache" in args
+    assert "--enable-hierarchical-cache" not in args
+    assert "--hicache-size" not in args
+    assert not (tmp_path / "preflight-args").exists()
+    assert (tmp_path / "auto-numa").read_text() == "0"
+
+
+def test_existing_no_host_admission_only_launch_remains_available(tmp_path: Path) -> None:
+    checkout = tmp_path / "sglang"
+    scheduler = checkout / "python/sglang/srt/managers/scheduler.py"
+    scheduler.parent.mkdir(parents=True)
+    scheduler.write_text("")
+    env = {
+        **_stub(tmp_path), "HICACHE_SIZE_GB": "0",
+        "BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH": "0",
+        "SGLANG_SOURCE_CHECKOUT": str(checkout),
+    }
+    result = subprocess.run(
+        ["bash", str(LAUNCH), "--enable-beliefkv-admission"],
+        env=env, capture_output=True, text=True,
+    )
+    assert result.returncode == 0, result.stderr
+    assert "--enable-beliefkv-admission" in (tmp_path / "python-args").read_text()
+    assert not (tmp_path / "numactl-args").exists()
+
+
 @pytest.mark.parametrize(
     "env_override,extra_args,error",
     [

@@ -1302,6 +1302,49 @@ def test_capacity_census_is_scheduler_local_and_fail_closed(
     assert not hasattr(unsupported_cache, "on_hicache_host_eviction")
 
 
+def test_no_host_native_census_and_writer_do_not_require_host_observers(
+    tmp_path: Path, monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    from beliefkv.runtime import sglang_v0520_observer
+
+    calls = []
+    capacity = {
+        "pool_layout": "static_separate_full_mamba",
+        "device_full_tokens": 12, "device_mamba_slots": 3,
+        "device_full_bytes": 260, "device_mamba_bytes": 240,
+        "device_total_bytes": 500,
+        "host_full_tokens": 0, "host_mamba_slots": 0,
+        "host_full_bytes": 0, "host_mamba_bytes": 0, "host_total_bytes": 0,
+    }
+
+    def observe(cache, **kwargs):
+        calls.append(kwargs)
+        return capacity
+
+    def unexpected(*args):
+        raise AssertionError("no Host attachment may be inspected")
+
+    monkeypatch.setattr(sglang_v0520_observer, "observe_static_full_mamba", observe)
+    monkeypatch.setattr(
+        sglang_v0520_observer, "observe_static_full_mamba_host_usage", unexpected,
+    )
+    cache = SimpleNamespace(cache_controller=None, host_pool_group=None)
+    audit = NativeReactiveTelemetry(tmp_path / "no-host")
+    audit.record_capacity(cache)
+    audit.record_host_pool_usage(cache)
+    audit.close()
+    assert calls == [{"allow_without_host": True}]
+    assert json.loads((tmp_path / "no-host/native_capacity_census.json").read_text())[
+        "capacity"
+    ] == capacity
+    status = json.loads((tmp_path / "no-host/native_telemetry_status.json").read_text())
+    assert status["host_tier_enabled"] is False
+    assert status["writer_error"] is None
+    assert not status["host_block_eviction_attribution"]["available"]
+    assert not (tmp_path / "no-host/host_pool_telemetry.jsonl").read_text()
+    assert not hasattr(cache, "on_hicache_host_eviction")
+
+
 def test_native_transfer_stream_and_submit_ack_are_distinct_evidence(
     tmp_path: Path,
 ) -> None:

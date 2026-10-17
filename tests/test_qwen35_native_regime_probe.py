@@ -126,8 +126,11 @@ def test_native_policy_baseline_rejects_predictive_mix_before_launch(tmp_path: P
     assert not run_root.exists()
 
 
-@pytest.mark.parametrize("mode,native", (("reactive", False), ("predictive_h2d", False), ("off", True)))
-def test_effective_policy_environment_without_launching_gpu(tmp_path, mode, native):
+@pytest.mark.parametrize("mode,native,host_gb", (
+    ("reactive", False, "200"), ("predictive_h2d", False, "200"),
+    ("off", True, "200"), ("off", True, "0"),
+))
+def test_effective_policy_environment_without_launching_gpu(tmp_path, mode, native, host_gb):
     from sys import executable
 
     binary = tmp_path / "bin"
@@ -135,9 +138,10 @@ def test_effective_policy_environment_without_launching_gpu(tmp_path, mode, nati
     capture = binary / "bash"
     capture.write_text(
         "#!/bin/sh\nexec " + executable + " -c '"
-        'import json,os;print(json.dumps({k:v for k,v in os.environ.items() '
-        'if k.startswith("BELIEFKV_")}))'
-        "'\n"
+        'import json,os,sys;print(json.dumps({"environment":'
+        '{k:v for k,v in os.environ.items() if k.startswith("BELIEFKV_")},'
+        '"arguments":sys.argv[1:]}))'
+        "' \"$@\"\n"
     )
     capture.chmod(0o755)
     artifact = tmp_path / "model.json"
@@ -149,6 +153,9 @@ def test_effective_policy_environment_without_launching_gpu(tmp_path, mode, nati
             **os.environ, "PATH": str(binary) + os.pathsep + os.environ["PATH"],
             "RUN_ROOT": str(run_root), "AB_MODE": mode,
             "NATIVE_POLICY_BASELINE": str(int(native)),
+            "HICACHE_SIZE_GB": host_gb,
+            "DEVICE_FULL_TOKENS": "1798992" if host_gb == "0" else "",
+            "DEVICE_MAMBA_SLOTS": "513" if host_gb == "0" else "",
             "PREPARE_HOST": "1", "ENABLE_TOOL_TIMING": "1", "PORT": "1",
             "CONFIRMED_JOIN_CANARY": "0",
             "SEMANTIC_REPORT_ARTIFACT": str(artifact),
@@ -161,7 +168,14 @@ def test_effective_policy_environment_without_launching_gpu(tmp_path, mode, nati
     )
     assert result.returncode == 1
     rows = (run_root / "server.log").read_text().splitlines()
-    environment = json.loads(next(line for line in rows if line.startswith("{")))
+    payload = json.loads(next(line for line in rows if line.startswith("{")))
+    environment, arguments = payload["environment"], payload["arguments"]
+    if host_gb == "0":
+        assert arguments[arguments.index("--max-total-tokens") + 1] == "1798992"
+        assert arguments[arguments.index("--max-mamba-cache-size") + 1] == "513"
+    else:
+        assert "--max-total-tokens" not in arguments
+        assert "--max-mamba-cache-size" not in arguments
     predictive = mode == "predictive_h2d"
     assert environment["BELIEFKV_EMIT_SEMANTIC_TEXT"] == str(int(predictive))
     assert environment["BELIEFKV_ENABLE_FINAL_STAGE_PREFETCH"] == str(int(predictive))
@@ -178,3 +192,17 @@ def test_effective_policy_environment_without_launching_gpu(tmp_path, mode, nati
     if mode == "reactive":
         assert environment["BELIEFKV_H2D_OPPORTUNITY_SAMPLING"] == "0"
         assert environment["BELIEFKV_ENABLE_EXECUTION_HANDOFF"] == "0"
+
+
+@pytest.mark.parametrize("mode", ["off", "reactive", "predictive_h2d"])
+def test_probe_without_host_is_native_only(tmp_path, mode):
+    run_root = tmp_path / "no-host"
+    result = subprocess.run(
+        ["bash", str(SCRIPT)],
+        env={
+            **os.environ, "RUN_ROOT": str(run_root), "HICACHE_SIZE_GB": "0",
+            "AB_MODE": mode, "NATIVE_POLICY_BASELINE": "0",
+        }, text=True, capture_output=True, timeout=5,
+    )
+    assert result.returncode == 2
+    assert not run_root.exists()

@@ -98,6 +98,7 @@ class NativeReactiveTelemetry:
         self._writer_timing = SampledWriterTiming()
         self._state_lock = Lock()
         self._host_pool_geometry: dict[str, dict[str, int]] = {}
+        self._host_tier_enabled: bool | None = None
         self._host_pool_high_water: dict[str, dict[str, int]] = {}
         self._host_evictions: Counter[str] = Counter()
         self._host_evicted_units: Counter[str] = Counter()
@@ -165,10 +166,25 @@ class NativeReactiveTelemetry:
             observe_static_full_mamba_host_usage,
         )
 
+        without_host = hasattr(cache, "cache_controller") and cache.cache_controller is None
         try:
-            observation = observe_static_full_mamba(cache)
+            observation = (
+                observe_static_full_mamba(cache, allow_without_host=True)
+                if without_host else observe_static_full_mamba(cache)
+            )
         except (AttributeError, KeyError, TypeError, ValueError) as exc:
             raise RuntimeError(f"native FULL/MAMBA capacity census failed: {exc}") from exc
+        if without_host:
+            with path.open("x", encoding="utf-8") as output:
+                json.dump({
+                    "schema_version": 1, "source": "native_sglang_v0520",
+                    "collection_mode": self.collection_mode,
+                    "scheduler_pid": os.getpid(), "capacity": observation,
+                }, output, indent=2, sort_keys=True)
+                output.write("\n")
+            self._cache = cache
+            self._host_tier_enabled = False
+            return
         host_usage = observe_static_full_mamba_host_usage(cache)
         if not host_usage.observable:
             raise RuntimeError(
@@ -216,6 +232,7 @@ class NativeReactiveTelemetry:
             }, output, indent=2, sort_keys=True)
             output.write("\n")
         self._cache = cache
+        self._host_tier_enabled = True
         if getattr(getattr(cache, "cache_controller", None), "layer_done_counter", None) is not None:
             from sglang.srt.utils import get_device_module
 
@@ -225,6 +242,8 @@ class NativeReactiveTelemetry:
 
     def record_host_pool_usage(self, cache: object) -> None:
         """Persist at most one scheduler-safe-point Host-pool sample per second."""
+        if self._host_tier_enabled is False:
+            return
         now_ms = time.time() * 1000.0
         if now_ms - self._last_host_snapshot_ms < self._host_snapshot_interval_ms:
             return
@@ -2165,6 +2184,7 @@ class NativeReactiveTelemetry:
             "collection_mode": self.collection_mode,
             "record_output_token_ids": self._record_output_token_ids,
             "checkpoint_path_shadow": self._checkpoint_path_shadow,
+            "host_tier_enabled": self._host_tier_enabled,
             "record_counts": dict(self._counts),
             "pending_request_count": len(self._pending) + len(self._active),
             "pending_batch_count": len(self._launched),

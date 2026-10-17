@@ -1,8 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Native fixed-size HiCache by default; HICACHE_SIZE_GB=0 retains the no-host
-# smoke mode. Source checkout + explicit CLI flag can enable admission-only.
+# Native fixed-size HiCache by default; HICACHE_SIZE_GB=0 disables Host caching.
+# Source checkout + explicit CLI flag can enable admission-only.
 MODEL_PATH="${MODEL_PATH:-/srv/ai/models/Qwen/Qwen3.5-35B-A3B}"
 SERVED_MODEL_NAME="${SERVED_MODEL_NAME:-Qwen3.5-35B-A3B}"
 PYTHON="${PYTHON:-/home/longhao/miniconda3/envs/beliefkv-next/bin/python}"
@@ -115,8 +115,7 @@ if ! [[ "${HICACHE_SIZE_GB}" =~ ^(0|[1-9][0-9]{0,2})$ ]] \
   exit 2
 fi
 if [[ "${HICACHE_WRITE_POLICY}" != "write_back" && "${HICACHE_WRITE_POLICY}" != "write_through" && "${HICACHE_WRITE_POLICY}" != "write_through_selective" ]] \
-    || [[ "${ENABLE_SESSION_RADIX_CACHE}" != "0" && "${ENABLE_SESSION_RADIX_CACHE}" != "1" ]] \
-    || [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" && "${HICACHE_SIZE_GB}" -le 0 ]]; then
+    || [[ "${ENABLE_SESSION_RADIX_CACHE}" != "0" && "${ENABLE_SESSION_RADIX_CACHE}" != "1" ]]; then
   printf 'Invalid HiCache write/session configuration\n' >&2
   exit 2
 fi
@@ -134,7 +133,7 @@ for arg in "$@"; do
       ;;
   esac
 done
-if (( HICACHE_SIZE_GB > 0 )); then
+if (( HICACHE_SIZE_GB > 0 )) || [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" ]]; then
   if [[ "$HOST_NUMA_MEMORY_POLICY" != bind && "$HOST_NUMA_MEMORY_POLICY" != preferred ]]; then
     printf 'HOST_NUMA_MEMORY_POLICY must be bind or preferred\n' >&2
     exit 2
@@ -143,9 +142,11 @@ if (( HICACHE_SIZE_GB > 0 )); then
     printf 'numactl is required for NUMA-local HiCache\n' >&2
     exit 2
   fi
-  "${PYTHON}" "${BELIEFKV_ROOT}/scripts/preflight_qwen35_host_pool.py" \
-    --memory-policy "$HOST_NUMA_MEMORY_POLICY" \
-    --node "${HOST_NUMA_NODE}" --size-gb "${HICACHE_SIZE_GB}"
+  if (( HICACHE_SIZE_GB > 0 )); then
+    "${PYTHON}" "${BELIEFKV_ROOT}/scripts/preflight_qwen35_host_pool.py" \
+      --memory-policy "$HOST_NUMA_MEMORY_POLICY" \
+      --node "${HOST_NUMA_NODE}" --size-gb "${HICACHE_SIZE_GB}"
+  fi
   # SGLang's automatic worker binding otherwise replaces this policy with membind.
   export SGLANG_AUTO_NUMA_BIND=0
 fi
@@ -244,7 +245,7 @@ fi
 if [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" ]]; then
   server_args+=(--enable-session-radix-cache)
 fi
-if (( HICACHE_SIZE_GB > 0 )); then
+if (( HICACHE_SIZE_GB > 0 )) || [[ "${ENABLE_SESSION_RADIX_CACHE}" == "1" ]]; then
   memory_args=("--membind=${HOST_NUMA_NODE}")
   if [[ "$HOST_NUMA_MEMORY_POLICY" == preferred ]]; then
     memory_args=("--preferred=${HOST_NUMA_NODE}")

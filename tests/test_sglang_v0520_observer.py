@@ -110,6 +110,35 @@ def test_static_full_mamba_census_counts_separate_device_allocations() -> None:
     assert result["host_total_bytes"] == 980
 
 
+def test_native_without_host_preserves_device_census_and_requires_opt_in() -> None:
+    cache = _static_cache()
+    expected = observe_static_full_mamba(cache)
+    cache.cache_controller = cache.host_pool_group = None
+    with pytest.raises((AttributeError, ValueError)):
+        observe_static_full_mamba(cache)
+    result = observe_static_full_mamba(cache, allow_without_host=True)
+    assert {
+        key: value for key, value in result.items() if key.startswith("device_")
+    } == {key: value for key, value in expected.items() if key.startswith("device_")}
+    assert all(value == 0 for key, value in result.items() if key.startswith("host_"))
+    assert not observe_static_full_mamba_headroom(cache).observable
+    assert not observe_static_full_mamba_host_usage(cache).observable
+
+
+@pytest.mark.parametrize("fault", ["orphan_host_pool", "orphan_controller", "unlinked_mamba"])
+def test_no_host_census_rejects_partially_attached_or_unlinked_pools(fault) -> None:
+    cache = _static_cache()
+    if fault == "orphan_host_pool":
+        cache.cache_controller = None
+    elif fault == "orphan_controller":
+        cache.host_pool_group = None
+    else:
+        cache.cache_controller = cache.host_pool_group = None
+        cache.token_to_kv_pool_allocator._kvcache.mamba_pool = object()
+    with pytest.raises((AttributeError, ValueError)):
+        observe_static_full_mamba(cache, allow_without_host=True)
+
+
 def test_static_pool_headroom_is_read_only_and_not_a_certificate() -> None:
     cache = _static_cache()
     result = observe_static_full_mamba_headroom(cache)
