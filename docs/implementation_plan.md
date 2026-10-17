@@ -2,6 +2,17 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 at19:14:33 PDT the original V75/V76 grading queue completed normally.
+Predictive has98 resolved,56 unresolved and2 empty patches; native has95/59/2,
+V76 has101/54/1, each retaining all156 tasks and no evaluator errors/incomplete.
+Frozen correctly_completed_ids counts are95/90/97 respectively. All three still
+have measurement_complete=false and null useful completion throughput; do not
+relax labels, remove tasks or substitute resolved counts for quality-matched
+performance. V77 grading automatically starts worker1604042/start_ticks637354434,
+confirmed live. V1363 seals the new summary and denominator checks. Earlier
+running/waiting descriptions below are historical snapshots; screening4.48 is
+the current grading status. The full research/performance objective remains open.
+
 2026-10-16 latest V78b evidence takes priority over old V77 snapshots. V1353's
 2400-3000s native-order/V76/native H2D is275.811/637.786/7.190GB despite
 disabled extra ordering and prefetch. Full48, context-matched graph cohorts

@@ -1792,6 +1792,34 @@ beliefkv:01a14776-f396-7551-a473-0bc85e345a03的llm_result.finish_reason为lengt
 1121673和原监督3806721继续，未放宽质量门槛。新审计只推进归因与研究筛选，
 完整性能、质量和已有方法差异仍不足，目标继续保持未验收。
 
+### 4.48 V75/V76三侧官方评分已完整收尾
+
+19:14:33 PDT原队列完成最后一臂V75 predictive评分，监督和worker正常退出。
+V1363绑定三份原始official_quality_summary，检查结果类别互斥且其并集精确
+覆盖原156项instance_ids；没有修改冻结评分器、任务结果、输出限制或资格标签。
+
+| 官方评分 | V75 predictive | V75 native | V76 reactive |
+| --- | ---: | ---: | ---: |
+| Resolved | 98 | 95 | 101 |
+| Unresolved | 56 | 59 | 54 |
+| Empty patch | 2 | 2 | 1 |
+| Evaluator incomplete/error | 0/0 | 0/0 | 0/0 |
+| 冻结correctly_completed_ids | 95 | 90 | 97 |
+| Measurement complete | false | false | false |
+| 有效完成吞吐 | null | null | null |
+
+predictive的空patch为django-11087/12304。resolved与correctly_completed
+不相等，原predictive的1项incomplete、native的3项及各臂guard/语义终态资格
+继续保留，不能以官方评分完成为由重标或从分母删除。评分器给出的正确完成
+子集JCT分位数也不能当全156任务的质量匹配JCT。当前单轮resolved多3项不证明
+质量等价，更不能覆盖V75 predictive原始全任务均值1806.897s落后native
+1665.374s这一负结果；正式收益仍须按原完整口径验收。
+
+V77原等待器1121673已自动接续其官方CPU评分，worker1604042/
+start_ticks637354434于19:14:40启动，后续ps确认真实存活。原GPU V78b仍冻结运行，
+不因评分队列切换热改资源参数或注册新候选。本次是补齐质量证据与状态更新，
+不宣布研究机制已成立或目标完成。
+
 ## 5. 既有候选一：降低上下文摘要和重建的计算量
 
 这是目前最有规模证据的性能对象。当前 `_summary_input` 把历史消息转成 XML，

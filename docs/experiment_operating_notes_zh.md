@@ -4,6 +4,13 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 19:14 PDT V75/V76原评分队列正常结束，进程消失由完整成功state及
+三份已完成评分验证，不作为重新启动理由。V77原监督自动启动worker1604042，
+以真实PID/start_ticks和ps存活核对，不能继续沿用先前“等待”状态。predictive
+的98 resolved、56 unresolved和2空patch覆盖全156项；评分器无错误不表示
+measurement_complete=true。三侧原生JCT/guard/语义资格保留，不把null有效
+吞吐补成按resolved数量估算的值。新来源与核对封存V1363。
+
 2026-10-16 生命周期窗口审计须验证runtime/client时钟和完整服务窗口，再用
 admission_runtime_state覆盖起止边界；事件按半开精确时间窗计数，累计计数则
 按边界前最近快照求差，两种区间不可混用。无文件、缺失边界和非法字段必须

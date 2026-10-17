@@ -1,0 +1,80 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-16T19:19:20-07:00",
+  "status": "three_arm_official_grading_complete_measurement_still_incomplete",
+  "prior_supervisor_state": "official_grading_finished",
+  "prior_grading_finished_at": "2026-10-16T19:14:33.405608-07:00",
+  "arms": {
+    "v75_predictive": {
+      "path": "experiments/reports/v1183_v75_predictive_quality_inputs_20261016/official_quality_summary.json",
+      "sha256": "2f2a800838a9850ca1290fd402ba9e6c7d00e81eeacf02a27aec71bd1246ba5d",
+      "workflow_count": 156,
+      "resolved": 98,
+      "unresolved": 56,
+      "empty_patch": 2,
+      "evaluator_incomplete": 0,
+      "evaluator_error": 0,
+      "correctly_completed": 95,
+      "native_non_completed": 1,
+      "measurement_complete": false,
+      "correctly_completed_workflows_per_hour": null
+    },
+    "v75_native": {
+      "path": "experiments/reports/v1182_v75_native_quality_inputs_20261016/official_quality_summary.json",
+      "sha256": "f25b72acc3e61ee2dbb9eddb0e63b66a022d32411363a14227d0e5975f07502a",
+      "workflow_count": 156,
+      "resolved": 95,
+      "unresolved": 59,
+      "empty_patch": 2,
+      "evaluator_incomplete": 0,
+      "evaluator_error": 0,
+      "correctly_completed": 90,
+      "native_non_completed": 3,
+      "measurement_complete": false,
+      "correctly_completed_workflows_per_hour": null
+    },
+    "v76_reactive": {
+      "path": "experiments/reports/v1181_v76_quality_inputs_20261016/official_quality_summary.json",
+      "sha256": "e67eae48a6934fbe2c7e48b539ae20cf183c5f89c0a02d009a29ee7e02e46e95",
+      "workflow_count": 156,
+      "resolved": 101,
+      "unresolved": 54,
+      "empty_patch": 1,
+      "evaluator_incomplete": 0,
+      "evaluator_error": 0,
+      "correctly_completed": 97,
+      "native_non_completed": 0,
+      "measurement_complete": false,
+      "correctly_completed_workflows_per_hour": null
+    }
+  },
+  "validation": {
+    "all_category_lists_have_unique_ids": true,
+    "categories_are_disjoint_for_each_arm": true,
+    "category_union_equals_original_156_instance_ids_for_each_arm": true,
+    "all_complete_official_grading": true,
+    "all_frozen_measurement_complete_false": true,
+    "all_useful_completion_throughputs_null": true,
+    "scorer_or_original_task_labels_modified": false
+  },
+  "predictive_empty_patch_ids": [
+    "django__django-11087",
+    "django__django-12304"
+  ],
+  "v77_continuation": {
+    "state_path": "/home/longhao/experiment/ops/quality_eval/quality_v77_cpu_20261016.state.json",
+    "observed_status": "running_official_cpu_grading",
+    "supervisor_pid": 1121673,
+    "worker_pid": 1604042,
+    "worker_start_ticks": "637354434",
+    "worker_arm": "v77_native_close",
+    "worker_ps_confirmed_live": true,
+    "gpu_work": false
+  },
+  "limits": [
+    "Resolved counts are not quality equivalence, useful completion throughput or causal performance.",
+    "Keep native incomplete, guard and semantic eligibility labels in their original task denominators.",
+    "Conditional correctly-completed JCT quantiles do not establish all-task quality-matched JCT.",
+    "The full performance, quality and novelty goal remains unachieved."
+  ]
+}

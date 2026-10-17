@@ -7,6 +7,12 @@ write-back 补丁、当前研究文档和只读审计器。日常查看和后续
 实验仍使用各自登记的独立 worktree 固定版本。V75/V76 的运行源码、引擎和
 helper 保持冻结，不随 `main` 的新提交变化。
 
+19:14 PDT原V75/V76官方评分队列已完整结束，三侧全156项均保留：
+V75 predictive为98 resolved/56 unresolved/2空patch，native为95/59/2，
+V76为101/54/1；评分器错误和未评分任务均0。冻结评分器三侧measurement_complete
+仍为false，有效完成吞吐保持null，不能用resolved数量直接宣布加速。V77原队列
+已自动接续，真实worker1604042；来源见V1363及研究筛选4.48。
+
 最新V1353–V1361优先观察V78b：2400–3000s关闭额外排序和预取后，H2D仍为
 275.811GB，V76/native为637.786/7.190GB；相近上下文的满48 decode区间接近，
 正Host短prefill的选批CPU仍明显偏高。新生命周期审计15项CPU检查通过，该

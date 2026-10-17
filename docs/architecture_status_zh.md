@@ -2,6 +2,15 @@
 
 更新日期：2026-10-16（PDT）。
 
+2026-10-16 19:14:33 PDT原队列完成V75 predictive官方评分：98 resolved、
+56 unresolved、2空patch（django-11087/12304），无evaluator error/incomplete，
+correctly_completed_ids为95项。原生为95/59/2及90项，V76为101/54/1及97项，
+均保留156任务，measurement_complete=false、有效完成吞吐null。原predictive
+的1个incomplete及全部guard/语义资格标签未改。V77自动接续，worker1604042/
+start_ticks637354434真实存活；原V75/V76监督及worker已正常结束，不当作故障。
+V1363封存原始predictive评分和三侧互斥类别/分母核对；完整性能目标仍未验收。
+下文19:13及更早的“评分中/等待”描述保留为当时状态，现以本段及研究筛选4.48为准。
+
 2026-10-16 V1353–V1359补齐V78b后续压力证据。2400–3000s的V78b/V76/native
 H2D为275.811/637.786/7.190GB，decode1201.168/1009.645/1304.050token/s。
 V78b已关闭额外排序和预取，二者不是恢复增加的必要条件；平均上下文22239/
