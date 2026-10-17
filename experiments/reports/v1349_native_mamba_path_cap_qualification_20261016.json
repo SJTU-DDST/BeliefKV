@@ -1,0 +1,22 @@
+{
+  "at": "2026-10-17T01:48:58.559974+00:00",
+  "status": "cpu_existing_path_cap_qualified",
+  "engine": "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016",
+  "engine_tree": "0fa78f29657df0caa5520eca15bde377d19b9411",
+  "selected_suite": "TestMambaPathStateCap",
+  "xml_cases": 7,
+  "pytest_exit_code": 0,
+  "cpu_receipt": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/reports/v1348_native_mamba_path_cap_final_cpu_20261016.xml",
+    "sha256": "35fb2930c51f0759a36100afbe9576a967e31da22b88247aa37b210f50959278"
+  },
+  "sources": {
+    "/home/longhao/experiment/BeliefKV/scripts/qualify_native_mamba_path_cap_cpu.py": "aca4681d661677f5557f72ba24632384a602c6e1228be9d47e32f840e333eff0",
+    "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/test/registered/unit/mem_cache/test_mamba_path_state_cap.py": "6f1588dd80d287906ee41e8b59119c5dd6db443d5ab7e3aa921604fabbc451d5",
+    "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/python/sglang/srt/mem_cache/unified_cache/components/mamba.py": "64f1590aafe1cb84345fb230439eed8bc4213f0cd235930fa59702e596ae9097",
+    "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py": "0e20068dad9e4b360e673a557a5890b71c906005751d0869701251f885a41d18",
+    "/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/python/sglang/srt/arg_groups/fields/exec_.py": "2b7de0829d9032b123d26c5cdbeb6ba18fc68e32a0c62b673fd33304b871534d"
+  },
+  "fixture_adapter": "Initialize only the fake tree's observer to the production constructor default None; native source files and eviction conditions are unchanged.",
+  "scope": "Existing CPU policy/CLI cases only; CUDA fixtures are not selected. No GPU, traffic, JCT or quality improvement is established."
+}

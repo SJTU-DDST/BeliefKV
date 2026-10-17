@@ -8,6 +8,52 @@ from typing import Any
 from beliefkv.runtime.sglang_v0520_observer import normalize_native_creation_time
 
 
+def generation_prefix_compatibility(
+    prior_input: Any, prior_output: Any, current_input: Any,
+    input_common: int, common_prefix: Any, path: dict[str, Any],
+) -> dict[str, Any]:
+    """Compare an observed transcript with the next actual same-scope input."""
+    generated_common = 0
+    if input_common == len(prior_input):
+        start = len(prior_input)
+        generated_common = common_prefix(
+            prior_output, current_input[start:start + len(prior_output)],
+        )
+    common = input_common + generated_common
+    prior_length = len(prior_input) + len(prior_output)
+    checkpoints = []
+    observed = path.get("status") == "observed"
+    if observed:
+        for state in path.get("mamba_states", ()):
+            prefix = state["prefix_tokens"]
+            compatibility = (
+                "outside_observed_transcript" if prefix > prior_length else
+                "exact_prefix_compatible" if prefix <= common else
+                "new_input_ends_before_checkpoint" if prefix > len(current_input) else
+                "token_prefix_diverges"
+            )
+            checkpoints.append({
+                key: state[key] for key in (
+                    "node_id", "creation_time", "prefix_tokens", "role",
+                )
+            } | {"prefix_compatibility": compatibility})
+    return {
+        "prior_input_tokens": len(prior_input),
+        "prior_generated_output_tokens": len(prior_output),
+        "current_input_tokens": len(current_input),
+        "common_prior_input_prefix_tokens": input_common,
+        "common_generated_output_prefix_tokens": generated_common,
+        "common_prior_transcript_prefix_tokens": common,
+        "checkpoint_path_observed": observed,
+        "checkpoint_compatibility": checkpoints,
+        "semantics": (
+            "Exact token-prefix compatibility with the next observed same-session input. "
+            "Not cache residency, forward consumption, physical-copy reuse or safe global "
+            "discard permission; token mismatch does not identify its formatting cause."
+        ),
+    }
+
+
 def checkpoint_path_evidence(req: Any, cache: Any, *, max_nodes: int = 256) -> dict[str, Any]:
     start_wall, start_cpu = time.perf_counter_ns(), time.thread_time_ns()
     result: dict[str, Any]

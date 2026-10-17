@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 from beliefkv.runtime.clock_evidence import local_monotonic_clock_domain
-from beliefkv.runtime.checkpoint_path_probe import checkpoint_path_evidence
+from beliefkv.runtime.checkpoint_path_probe import (
+    checkpoint_path_evidence,
+    generation_prefix_compatibility,
+)
 from beliefkv.runtime.restore_wait_probe import RestoreWaitProbe
 from beliefkv.runtime.prefill_turnover_probe import PrefillTurnoverProbe
 from beliefkv.runtime.writer_timing import SampledWriterTiming
@@ -472,7 +475,10 @@ class NativeReactiveTelemetry:
             ),
         })
 
-    def _queue_context_prefix(self, req: Any, identity: dict[str, Any], *, served: bool) -> None:
+    def _queue_context_prefix(
+        self, req: Any, identity: dict[str, Any], *, served: bool,
+        checkpoint_path: dict[str, Any] | None = None,
+    ) -> None:
         if served and not getattr(req, "output_ids", ()):
             return
         self._emit("eviction_attribution", {
@@ -487,6 +493,13 @@ class NativeReactiveTelemetry:
             "cached_tokens_device": int(getattr(req, "cached_tokens_device", 0) or 0),
             "cached_tokens_host": int(getattr(req, "cached_tokens_host", 0) or 0),
             "mamba_host_hit_slots": int(getattr(req, "mamba_host_hit_length", 0) or 0),
+            **(
+                {
+                    "_generation_output_ids": tuple(req.output_ids),
+                    "_checkpoint_path_evidence": checkpoint_path,
+                }
+                if served and self._checkpoint_path_shadow else {}
+            ),
         })
 
     @staticmethod
@@ -548,6 +561,17 @@ class NativeReactiveTelemetry:
             self._context_prefix_history[scope] = {
                 "tokens": token_ids, "request_id": record["request_id"],
                 "context_epoch": record["context_epoch"],
+                **(
+                    {
+                        "generation_output_ids": self._request_token_array(
+                            record["_generation_output_ids"], snapshot=True,
+                        ),
+                        "checkpoint_path_evidence": (
+                            record.get("_checkpoint_path_evidence") or {}
+                        ),
+                    }
+                    if "_generation_output_ids" in record else {}
+                ),
             }
             self._context_prefix_history.move_to_end(scope)
             while len(self._context_prefix_history) > self._context_prefix_history_limit:
@@ -563,6 +587,19 @@ class NativeReactiveTelemetry:
             self._context_prefix_counts["epoch_regression"] += 1
             return
         common = self._common_array_prefix(token_ids, previous["tokens"])
+        if "generation_output_ids" in previous:
+            output.write(encode_record({
+                "event": "generation_continuation_prefix_probe",
+                "ts_ms": record["ts_ms"],
+                **{name: record[name] for name in (
+                    "workflow_id", "invocation_id", "context_id", "context_epoch", "request_id",
+                )},
+                "prior_request_id": previous["request_id"],
+                **generation_prefix_compatibility(
+                    previous["tokens"], previous["generation_output_ids"], token_ids,
+                    common, self._common_array_prefix, previous["checkpoint_path_evidence"],
+                ),
+            }) + "\n")
         cached = min(len(token_ids), max(0, record["cached_tokens_device"] + record["cached_tokens_host"]))
         lost = max(0, common - cached)
         new = len(token_ids) - common
@@ -1479,11 +1516,15 @@ class NativeReactiveTelemetry:
                 req, sample, complete_wall, descriptor["sample_id"]
             )
             if req.finished() and rid in self._active:
+                checkpoint_path = (
+                    checkpoint_path_evidence(req, self._cache)
+                    if self._checkpoint_path_shadow else None
+                )
                 self._queue_context_prefix(req, {
                     key: sample[key] for key in (
                         "workflow_id", "invocation_id", "context_id", "context_epoch"
                     )
-                }, served=True)
+                }, served=True, checkpoint_path=checkpoint_path)
                 attributes = {
                     "request_id": rid,
                     "output_tokens": len(req.output_ids),
@@ -1492,9 +1533,7 @@ class NativeReactiveTelemetry:
                     "reentry_checkpoint": self._reentry_checkpoint_evidence(req),
                 }
                 if self._checkpoint_path_shadow:
-                    attributes["checkpoint_path_evidence"] = checkpoint_path_evidence(
-                        req, self._cache,
-                    )
+                    attributes["checkpoint_path_evidence"] = checkpoint_path
                 if self._record_output_token_ids:
                     attributes["output_token_evidence"] = {
                         "schema_version": 1,

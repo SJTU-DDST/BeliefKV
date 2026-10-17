@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="utf-8"?><testsuites name="pytest tests"><testsuite name="pytest" errors="0" failures="3" skipped="5" tests="14" time="9.370" timestamp="2026-10-16T18:45:44.217610-07:00" hostname="ddst-12"><testcase classname="registered.unit.mem_cache.test_mamba_path_state_cap.TestMambaPathStateCap" name="test_server_arg_cli" time="0.018" /><testcase classname="registered.unit.mem_cache.test_mamba_path_state_cap.TestMambaPathStateCap" name="test_server_arg_defaults_to_unlimited" time="0.001" /><testcase classname="registered.unit.mem_cache.test_mamba_path_state_cap.TestMambaPathStateCap" name="test_server_arg_rejects_zero_and_values_below_negative_one" time="0.001" /><testcase classname="registered.unit.mem_cache.test_mamba_path_state_cap.TestMambaPathStateCap" name="test_unified_cache_cap_is_soft_for_fork_and_locked_nodes" time="0.001"><failure message="AttributeError: '_FakeTreeCore' object has no attribute '_beliefkv_host_eviction_observer'">self = &lt;test_mamba_path_state_cap.TestMambaPathStateCap testMethod=test_unified_cache_cap_is_soft_for_fork_and_locked_nodes&gt;
+
+    def test_unified_cache_cap_is_soft_for_fork_and_locked_nodes(self):
+        component, nodes, core, cache = _build_unified_chain(cap=1, length=4)
+        fork_child = UnifiedTreeNode(core.tree_components)
+        fork_child.parent = nodes[0]
+        nodes[0].children["fork"] = fork_child
+        nodes[1].component_data[ComponentType.MAMBA].lock_ref = 1
+    
+        device_frees = defaultdict(list)
+        host_frees = defaultdict(list)
+&gt;       component._evict_excess_path_states(nodes[-1], device_frees, host_frees)
+
+test/registered/unit/mem_cache/test_mamba_path_state_cap.py:154: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_cache/components/mamba.py:329: in _evict_excess_path_states
+    self.tree_core._evict_component_and_detach_lru(
+test/registered/unit/mem_cache/test_mamba_path_state_cap.py:57: in _evict_component_and_detach_lru
+    return UnifiedTreeCore._evict_component_and_detach_lru(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;test_mamba_path_state_cap._FakeTreeCore object at 0x7f58acf396d0&gt;
+node = &lt;sglang.srt.mem_cache.unified_cache.unified_tree_core.UnifiedTreeNode object at 0x7f58ac68c8d0&gt;
+comp = &lt;sglang.srt.mem_cache.unified_cache.components.mamba.MambaComponent object at 0x7f58ac68c2d0&gt;
+device_frees = defaultdict(&lt;class 'list'&gt;, {&lt;ComponentType.MAMBA: 2&gt;: [tensor([2])]})
+host_frees = defaultdict(&lt;class 'list'&gt;, {}), target = &lt;EvictLayer.DEVICE: 1&gt;
+tracker = {&lt;ComponentType.FULL: 0&gt;: 0, &lt;ComponentType.MAMBA: 2&gt;: 0}
+
+    def _evict_component_and_detach_lru(
+        self,
+        node: UnifiedTreeNode,
+        comp: TreeComponent,
+        device_frees: dict[ComponentType, list[torch.Tensor]],
+        host_frees: dict[ComponentType, list[torch.Tensor]],
+        target: EvictLayer = EvictLayer.DEVICE,
+        tracker: Optional[dict[ComponentType, int]] = None,
+    ) -&gt; tuple[int, int]:
+        had_host_copy = node.component_data[comp.component_type].host_value is not None
+        device_freed, host_freed = comp.evict_component(
+            node, target=target, device_frees=device_frees, host_frees=host_frees
+        )
+&gt;       observer = self._beliefkv_host_eviction_observer
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: '_FakeTreeCore' object has no attribute '_beliefkv_host_eviction_observer'
+
+python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py:2065: AttributeError</failure></testcase><testcase classname="registered.unit.mem_cache.test_mamba_path_state_cap.TestMambaPathStateCap" name="test_unified_cache_negative_one_disables_cap" time="0.001" /><testcase classname="registered.unit.mem_cache.test_mamba_path_state_cap.TestMambaPathStateCap" name="test_unified_cache_preserves_existing_host_backup" time="0.001"><failure message="AttributeError: '_FakeTreeCore' object has no attribute '_beliefkv_host_eviction_observer'">self = &lt;test_mamba_path_state_cap.TestMambaPathStateCap testMethod=test_unified_cache_preserves_existing_host_backup&gt;
+
+    def test_unified_cache_preserves_existing_host_backup(self):
+        component, nodes, core, cache = _build_unified_chain(cap=2)
+        mamba_data = nodes[0].component_data[ComponentType.MAMBA]
+        mamba_data.host_value = torch.tensor([10])
+    
+        device_frees = defaultdict(list)
+        host_frees = defaultdict(list)
+&gt;       component._evict_excess_path_states(nodes[-1], device_frees, host_frees)
+
+test/registered/unit/mem_cache/test_mamba_path_state_cap.py:169: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_cache/components/mamba.py:329: in _evict_excess_path_states
+    self.tree_core._evict_component_and_detach_lru(
+test/registered/unit/mem_cache/test_mamba_path_state_cap.py:57: in _evict_component_and_detach_lru
+    return UnifiedTreeCore._evict_component_and_detach_lru(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;test_mamba_path_state_cap._FakeTreeCore object at 0x7f58ac407890&gt;
+node = &lt;sglang.srt.mem_cache.unified_cache.unified_tree_core.UnifiedTreeNode object at 0x7f58ac52c110&gt;
+comp = &lt;sglang.srt.mem_cache.unified_cache.components.mamba.MambaComponent object at 0x7f58b4f67dd0&gt;
+device_frees = defaultdict(&lt;class 'list'&gt;, {&lt;ComponentType.MAMBA: 2&gt;: [tensor([0])]})
+host_frees = defaultdict(&lt;class 'list'&gt;, {}), target = &lt;EvictLayer.DEVICE: 1&gt;
+tracker = {&lt;ComponentType.FULL: 0&gt;: 0, &lt;ComponentType.MAMBA: 2&gt;: 0}
+
+    def _evict_component_and_detach_lru(
+        self,
+        node: UnifiedTreeNode,
+        comp: TreeComponent,
+        device_frees: dict[ComponentType, list[torch.Tensor]],
+        host_frees: dict[ComponentType, list[torch.Tensor]],
+        target: EvictLayer = EvictLayer.DEVICE,
+        tracker: Optional[dict[ComponentType, int]] = None,
+    ) -&gt; tuple[int, int]:
+        had_host_copy = node.component_data[comp.component_type].host_value is not None
+        device_freed, host_freed = comp.evict_component(
+            node, target=target, device_frees=device_frees, host_frees=host_frees
+        )
+&gt;       observer = self._beliefkv_host_eviction_observer
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: '_FakeTreeCore' object has no attribute '_beliefkv_host_eviction_observer'
+
+python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py:2065: AttributeError</failure></testcase><testcase classname="registered.unit.mem_cache.test_mamba_path_state_cap.TestMambaPathStateCap" name="test_unified_cache_removes_only_shallow_mamba_state" time="0.001"><failure message="AttributeError: '_FakeTreeCore' object has no attribute '_beliefkv_host_eviction_observer'">self = &lt;test_mamba_path_state_cap.TestMambaPathStateCap testMethod=test_unified_cache_removes_only_shallow_mamba_state&gt;
+
+    def test_unified_cache_removes_only_shallow_mamba_state(self):
+        component, nodes, core, cache = _build_unified_chain(cap=2)
+    
+        device_frees = defaultdict(list)
+        host_frees = defaultdict(list)
+&gt;       component._evict_excess_path_states(nodes[-1], device_frees, host_frees)
+
+test/registered/unit/mem_cache/test_mamba_path_state_cap.py:126: 
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+python/sglang/srt/mem_cache/unified_cache/components/mamba.py:329: in _evict_excess_path_states
+    self.tree_core._evict_component_and_detach_lru(
+test/registered/unit/mem_cache/test_mamba_path_state_cap.py:57: in _evict_component_and_detach_lru
+    return UnifiedTreeCore._evict_component_and_detach_lru(
+_ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ _ 
+
+self = &lt;test_mamba_path_state_cap._FakeTreeCore object at 0x7f58ac404610&gt;
+node = &lt;sglang.srt.mem_cache.unified_cache.unified_tree_core.UnifiedTreeNode object at 0x7f58ac406950&gt;
+comp = &lt;sglang.srt.mem_cache.unified_cache.components.mamba.MambaComponent object at 0x7f58ac68b550&gt;
+device_frees = defaultdict(&lt;class 'list'&gt;, {&lt;ComponentType.MAMBA: 2&gt;: [tensor([0])]})
+host_frees = defaultdict(&lt;class 'list'&gt;, {}), target = &lt;EvictLayer.DEVICE: 1&gt;
+tracker = {&lt;ComponentType.FULL: 0&gt;: 0, &lt;ComponentType.MAMBA: 2&gt;: 0}
+
+    def _evict_component_and_detach_lru(
+        self,
+        node: UnifiedTreeNode,
+        comp: TreeComponent,
+        device_frees: dict[ComponentType, list[torch.Tensor]],
+        host_frees: dict[ComponentType, list[torch.Tensor]],
+        target: EvictLayer = EvictLayer.DEVICE,
+        tracker: Optional[dict[ComponentType, int]] = None,
+    ) -&gt; tuple[int, int]:
+        had_host_copy = node.component_data[comp.component_type].host_value is not None
+        device_freed, host_freed = comp.evict_component(
+            node, target=target, device_frees=device_frees, host_frees=host_frees
+        )
+&gt;       observer = self._beliefkv_host_eviction_observer
+                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+E       AttributeError: '_FakeTreeCore' object has no attribute '_beliefkv_host_eviction_observer'
+
+python/sglang/srt/mem_cache/unified_cache/unified_tree_core.py:2065: AttributeError</failure></testcase><testcase classname="registered.unit.mem_cache.test_mamba_path_state_cap.TestMambaPathCapWriteThroughOrdering" name="test_backup_retry_after_mamba_cap_skips_tombstoned_state" time="0.001"><skipped type="pytest.skip" message="mamba pool fixtures need CUDA">/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/test/registered/unit/mem_cache/test_mamba_path_state_cap.py:257: mamba pool fixtures need CUDA</skipped></testcase><testcase classname="registered.unit.mem_cache.test_mamba_path_state_cap.TestMambaPathCapWriteThroughOrdering" name="test_cap_walk_failure_still_drains_collected_frees" time="0.001"><skipped type="pytest.skip" message="mamba pool fixtures need CUDA">/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/test/registered/unit/mem_cache/test_mamba_path_state_cap.py:323: mamba pool fixtures need CUDA</skipped></testcase><testcase classname="registered.unit.mem_cache.test_mamba_path_state_cap.TestMambaPathCapWriteThroughOrdering" name="test_walk_backup_excludes_same_insert_restamped_mamba" time="0.001"><skipped type="pytest.skip" message="mamba pool fixtures need CUDA">/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/test/registered/unit/mem_cache/test_mamba_path_state_cap.py:297: mamba pool fixtures need CUDA</skipped></testcase><testcase classname="registered.unit.mem_cache.test_mamba_path_state_cap.TestMambaPathCapWriteThroughOrdering" name="test_write_through_backup_chain_survives_mamba_path_cap" time="0.001"><skipped type="pytest.skip" message="mamba pool fixtures need CUDA">/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/test/registered/unit/mem_cache/test_mamba_path_state_cap.py:225: mamba pool fixtures need CUDA</skipped></testcase><testcase classname="registered.unit.mem_cache.test_mamba_path_state_cap.TestMambaPathCapWriteThroughOrdering" name="test_write_through_backup_survives_mamba_path_cap" time="0.001"><skipped type="pytest.skip" message="mamba pool fixtures need CUDA">/home/longhao/experiment/.worktrees/sglang-v1138-batched-writeback-gpu-20261016/test/registered/unit/mem_cache/test_mamba_path_state_cap.py:206: mamba pool fixtures need CUDA</skipped></testcase></testsuite></testsuites>

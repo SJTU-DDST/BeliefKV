@@ -1,0 +1,49 @@
+{
+  "schema_version": 1,
+  "observed_at_local": "2026-10-16T18:57:24-07:00",
+  "status": "cpu_qualified_main_integration",
+  "base_main_commit": "ba8af097ade81de7a7b4b9b5364b2b6bb671d2e5",
+  "source_sha256": {
+    "beliefkv/runtime/checkpoint_path_probe.py": "2acfb768bd30089cedf777dba87c5fedccf63c2994da50dcd96fae8ab5fc5c1a",
+    "beliefkv/runtime/v0520_native_telemetry.py": "24262bf61d9adbd9d753338be9508ef0964abbb38c36f16a1283c426279f280f",
+    "tests/test_generation_prefix_compatibility.py": "146e9b635391078cf37a8706738172a5651b89d5ba53a2b845ef0883d01abee4",
+    "scripts/qualify_native_mamba_path_cap_cpu.py": "81060b9db01865d865f8311d232ea64ab606635634f715482f4ff91a91198f1f"
+  },
+  "application_cpu": {
+    "path": "experiments/reports/v1345_generation_prefix_compatibility_cpu_20261016.xml",
+    "sha256": "7e123c5437c6bee9ceed099a00d9031bf72727fc25d3507ac88f980fd486a17d",
+    "cases": 203,
+    "failures": 0,
+    "errors": 0,
+    "skipped": 0,
+    "main_integration_recheck": {
+      "command": "python -m pytest -q tests/test_generation_prefix_compatibility.py tests/test_checkpoint_path_probe.py tests/test_v0520_native_telemetry.py tests/test_checkpoint_write_roles.py tests/test_checkpoint_write_read_balance.py tests/test_native_system_costs.py",
+      "cuda_visible_devices": "999",
+      "exit_code": 0,
+      "result": "203 passed in 8.05s",
+      "overlaps_existing_xml": true
+    }
+  },
+  "native_path_cap_cpu": {
+    "path": "experiments/reports/v1351_native_mamba_path_cap_bound_qualification_20261016.json",
+    "sha256": "3ee228c2b8ea17e76282d681ecca43a54fbe8130f3e65c3fa1320b20f6d77ac0",
+    "cases": 7,
+    "engine_head_tree": "0fa78f29657df0caa5520eca15bde377d19b9411",
+    "engine_actual_tree": "53020ce3efef3ed362e9af0db77147b39070f064"
+  },
+  "scope": {
+    "checkpoint_path_shadow_default": "0",
+    "raw_token_ids_written_by_new_probe": false,
+    "gpu_qualified": false,
+    "registered_new_gpu_experiment": false,
+    "existing_v78b_frozen_checkout_replaced": false,
+    "native_path_cap_enabled_by_integration": false,
+    "quality_matched_performance_goal_achieved": false
+  },
+  "limits": [
+    "Exact token-prefix compatibility is not cache residency, forward consumption, physical-copy reuse or global safe-discard permission.",
+    "The native path cap is an existing soft-cap comparator and does not independently protect session_ref.",
+    "CPU qualification does not establish GPU overhead, recomputation reduction or workflow performance gains.",
+    "Keep V1339 and all initial failure receipts immutable; this receipt binds the extended source separately."
+  ]
+}

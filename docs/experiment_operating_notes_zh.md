@@ -4,6 +4,19 @@
 guard、终态门禁或模型动作授权。启动前同时阅读
 `docs/implementation_plan.md`；旧诊断脚本和历史计划不能覆盖当前约定。
 
+2026-10-16 主线整合后的前缀诊断仍由BELIEFKV_CHECKPOINT_PATH_SHADOW显式开启，
+默认0。只比较同workflow/context/namespace/session/generation的真实输入；
+epoch倒退或历史缺失时保持未知。生成token仅在内存有界历史中保存，不写入
+新诊断日志；token前缀不符不能直接归因为序列化，兼容也不等于真实缓存复用。
+生成的最后token可能尚无KV，仅评估实际观测到的checkpoint位置。203项CPU
+检查及源码绑定见V1345/V1352，采样/快照的实机开销仍未验证。
+已有原生Mamba路径上限不是严格容量保证，也不单独保护session_ref；不能由
+7项CPU策略检查推断小上限一定无重算损失。独立资格脚本只给fake tree补齐
+生产默认observer=None，不修改引擎。V1347原始失败XML保留原字节；V1349的
+engine_tree字段只表示HEAD树，实际patched tree以V1351明确区分的字段为准。
+源码/文档空白检查与原始XML凭据分开，不能为格式检查重写失败证据。
+本次合入main不更换已登记实验的worktree、运行参数或评分器。
+
 2026-10-16 写回角色审计只连接D2H submit之前严格更早的观测；新请求和未知
 snapshot使旧锚点的当前状态保持unknown，同刻/未来观测不得作为在线输入。
 多节点Mamba单位没有逐节点身份时单列，不按均摊字节补标签。“此前未观察为

@@ -1,0 +1,2886 @@
+{
+  "schema_version": 1,
+  "created_at": "2026-10-17T01:39:48.863753+00:00",
+  "auditor_path": "/home/longhao/experiment/BeliefKV/scripts/audit_native_system_costs.py",
+  "auditor_sha256": "a9262996530573c11cc2bbdaf6184a87443b30e02fbd8f983c74e5bbbb862952",
+  "source": {
+    "path": "/home/longhao/experiment/BeliefKV/experiments/raw/qwen35_native_predictive_online_poisson_156root_20261016_v75_batched_writeback/native/server/runtime_events.sglang.jsonl",
+    "observed_size_bytes": 61695327,
+    "analyzed_bytes": 61695327,
+    "sha256": "a2cc76a6d3130d20325ed204068129118d3da7da8fcb6ac9f4abaac7868445cd",
+    "discarded_partial_tail_bytes": 0
+  },
+  "semantics": [
+    "Only requests with a native first-service registration event are present.",
+    "Frontend spans are wall time, include waits, and are not exclusive CPU.",
+    "Chat conversion can already include chat-template tokenization.",
+    "Post-conversion tokenization alone does not measure total tokenization.",
+    "Summed or union frontend spans are not exposed GPU idle or JCT savings.",
+    "FULL match depth can exceed the effective all-component reuse boundary.",
+    "The positive gap is a candidate token-work opportunity, not removable work.",
+    "A gap does not prove a missing Mamba checkpoint is the sole cause.",
+    "Branch target observations do not prove resident or recoverable checkpoints.",
+    "No task quality, speedup, baseline equivalence or GPU effect is established."
+  ],
+  "all": {
+    "requests": 36786,
+    "stages_ms": {
+      "receipt_to_conversion_start": {
+        "count": 36786,
+        "sum": 621996.4248046875,
+        "min": 0.0078125,
+        "p50": 14.620849609375,
+        "p90": 26.89208984375,
+        "p99": 34.389111328125004,
+        "max": 69.68701171875,
+        "interval_union_ms": 621996.4248046875,
+        "missing_or_invalid_requests": 0
+      },
+      "chat_conversion_including_template_tokenization": {
+        "count": 36786,
+        "sum": 1918133.0737304688,
+        "min": 10.779296875,
+        "p50": 51.8150634765625,
+        "p90": 76.593017578125,
+        "p99": 88.14357910156251,
+        "max": 131.0400390625,
+        "interval_union_ms": 1918133.0737304688,
+        "missing_or_invalid_requests": 0
+      },
+      "post_conversion_to_tokenized": {
+        "count": 36786,
+        "sum": 23385.220458984375,
+        "min": 0.193359375,
+        "p50": 0.6298828125,
+        "p90": 0.8743896484375,
+        "p99": 1.0933349609375007,
+        "max": 27.69482421875,
+        "interval_union_ms": 23385.220458984375,
+        "missing_or_invalid_requests": 0
+      },
+      "tokenized_to_dispatch": {
+        "count": 36786,
+        "sum": 172.513671875,
+        "min": 0.0029296875,
+        "p50": 0.004638671875,
+        "p90": 0.00537109375,
+        "p99": 0.006591796875,
+        "max": 0.069091796875,
+        "interval_union_ms": 172.513671875,
+        "missing_or_invalid_requests": 0
+      },
+      "dispatch_to_scheduler": {
+        "count": 36786,
+        "sum": 664148.9584960938,
+        "min": 0.390869140625,
+        "p50": 11.7998046875,
+        "p90": 40.5484619140625,
+        "p99": 101.80805664062531,
+        "max": 898.634033203125,
+        "interval_union_ms": 629844.9958496094,
+        "missing_or_invalid_requests": 0
+      },
+      "scheduler_to_queue_registration": {
+        "count": 36786,
+        "sum": 3932.503662109375,
+        "min": 0.035888671875,
+        "p50": 0.095947265625,
+        "p90": 0.126953125,
+        "p99": 0.21630859375,
+        "max": 104.342529296875,
+        "interval_union_ms": 3932.503662109375,
+        "missing_or_invalid_requests": 0
+      },
+      "receipt_to_queue_registration": {
+        "count": 36786,
+        "sum": 3231768.6948242188,
+        "min": 24.6435546875,
+        "p50": 84.88134765625,
+        "p90": 119.0203857421875,
+        "p99": 179.0542602539065,
+        "max": 960.338623046875,
+        "interval_union_ms": 2915435.9567871094,
+        "missing_or_invalid_requests": 0
+      }
+    },
+    "prompt_tokens": {
+      "count": 36786,
+      "sum": 775765383,
+      "min": 5471,
+      "p50": 21086.0,
+      "p90": 30795.0,
+      "p99": 36089.450000000004,
+      "max": 50029
+    },
+    "effective_cache_hit_tokens": {
+      "count": 36786,
+      "sum": 734072267,
+      "min": 0,
+      "p50": 20288.0,
+      "p90": 30272.0,
+      "p99": 35456.0,
+      "max": 48640
+    },
+    "uncached_prompt_tokens": {
+      "count": 36786,
+      "sum": 41693116,
+      "min": 3,
+      "p50": 412.0,
+      "p90": 1555.5,
+      "p99": 21255.05000000001,
+      "max": 32546
+    },
+    "hybrid_prefix": {
+      "observed_requests": 36786,
+      "cache_status_counts": {
+        "observed": 36786
+      },
+      "positive_full_match_gap_requests": 17278,
+      "positive_gap_with_branching_target_requests": 1754,
+      "positive_gap_tokens": {
+        "count": 17278,
+        "sum": 3086927,
+        "min": 1,
+        "p50": 36.0,
+        "p90": 60.0,
+        "p99": 5486.0,
+        "max": 8366
+      },
+      "gap_fraction_of_observed_uncached_tokens": 0.07403924906931879,
+      "branching_target_gap_tokens": {
+        "count": 1754,
+        "sum": 2579745,
+        "min": 3,
+        "p50": 191.0,
+        "p90": 5485.7,
+        "p99": 8350.47,
+        "max": 8366
+      },
+      "gap_at_least_threshold": {
+        "64": {
+          "requests": 944,
+          "tokens": 2545498
+        },
+        "512": {
+          "requests": 774,
+          "tokens": 2505259
+        },
+        "4096": {
+          "requests": 288,
+          "tokens": 1688726
+        }
+      }
+    }
+  },
+  "by_prompt_length": {
+    "16384_to_32767": {
+      "requests": 24912,
+      "stages_ms": {
+        "receipt_to_conversion_start": {
+          "count": 24912,
+          "sum": 422515.61865234375,
+          "min": 0.0078125,
+          "p50": 14.6407470703125,
+          "p90": 27.522631835937503,
+          "p99": 34.61150390624999,
+          "max": 57.83447265625,
+          "interval_union_ms": 422515.61865234375,
+          "missing_or_invalid_requests": 0
+        },
+        "chat_conversion_including_template_tokenization": {
+          "count": 24912,
+          "sum": 1469565.359375,
+          "min": 27.764892578125,
+          "p50": 57.7030029296875,
+          "p90": 75.99733886718751,
+          "p99": 85.50334716796874,
+          "max": 131.0400390625,
+          "interval_union_ms": 1469565.359375,
+          "missing_or_invalid_requests": 0
+        },
+        "post_conversion_to_tokenized": {
+          "count": 24912,
+          "sum": 17362.447021484375,
+          "min": 0.385986328125,
+          "p50": 0.686279296875,
+          "p90": 0.85986328125,
+          "p99": 0.9569775390624997,
+          "max": 3.911376953125,
+          "interval_union_ms": 17362.447021484375,
+          "missing_or_invalid_requests": 0
+        },
+        "tokenized_to_dispatch": {
+          "count": 24912,
+          "sum": 118.659423828125,
+          "min": 0.003173828125,
+          "p50": 0.004638671875,
+          "p90": 0.00537109375,
+          "p99": 0.006591796875,
+          "max": 0.069091796875,
+          "interval_union_ms": 118.659423828125,
+          "missing_or_invalid_requests": 0
+        },
+        "dispatch_to_scheduler": {
+          "count": 24912,
+          "sum": 440025.0349121094,
+          "min": 0.4091796875,
+          "p50": 11.41357421875,
+          "p90": 39.53962402343752,
+          "p99": 102.87054687499999,
+          "max": 867.415771484375,
+          "interval_union_ms": 425864.8781738281,
+          "missing_or_invalid_requests": 0
+        },
+        "scheduler_to_queue_registration": {
+          "count": 24912,
+          "sum": 2602.11767578125,
+          "min": 0.036376953125,
+          "p50": 0.096923828125,
+          "p90": 0.125,
+          "p99": 0.213623046875,
+          "max": 1.34375,
+          "interval_union_ms": 2602.11767578125,
+          "missing_or_invalid_requests": 0
+        },
+        "receipt_to_queue_registration": {
+          "count": 24912,
+          "sum": 2352189.237060547,
+          "min": 42.188232421875,
+          "p50": 90.2393798828125,
+          "p90": 120.93867187500003,
+          "p99": 184.42757812499985,
+          "max": 941.88720703125,
+          "interval_union_ms": 2208239.6791992188,
+          "missing_or_invalid_requests": 0
+        }
+      },
+      "prompt_tokens": {
+        "count": 24912,
+        "sum": 594230835,
+        "min": 16384,
+        "p50": 23547.5,
+        "p90": 30377.0,
+        "p99": 32430.0,
+        "max": 32766
+      },
+      "effective_cache_hit_tokens": {
+        "count": 24912,
+        "sum": 566203701,
+        "min": 0,
+        "p50": 22912.0,
+        "p90": 29824.0,
+        "p99": 32049.89,
+        "max": 32704
+      },
+      "uncached_prompt_tokens": {
+        "count": 24912,
+        "sum": 28027134,
+        "min": 3,
+        "p50": 403.0,
+        "p90": 1432.0,
+        "p99": 22244.229999999996,
+        "max": 32546
+      },
+      "hybrid_prefix": {
+        "observed_requests": 24912,
+        "cache_status_counts": {
+          "observed": 24912
+        },
+        "positive_full_match_gap_requests": 11814,
+        "positive_gap_with_branching_target_requests": 723,
+        "positive_gap_tokens": {
+          "count": 11814,
+          "sum": 599332,
+          "min": 1,
+          "p50": 34.0,
+          "p90": 58.0,
+          "p99": 207.0,
+          "max": 8365
+        },
+        "gap_fraction_of_observed_uncached_tokens": 0.021383991670357733,
+        "branching_target_gap_tokens": {
+          "count": 723,
+          "sum": 236577,
+          "min": 5,
+          "p50": 51,
+          "p90": 255.0,
+          "p99": 8326.0,
+          "max": 8365
+        },
+        "gap_at_least_threshold": {
+          "64": {
+            "requests": 143,
+            "tokens": 211653
+          },
+          "512": {
+            "requests": 50,
+            "tokens": 189991
+          },
+          "4096": {
+            "requests": 25,
+            "tokens": 154430
+          }
+        }
+      }
+    },
+    "8192_to_16383": {
+      "requests": 8305,
+      "stages_ms": {
+        "receipt_to_conversion_start": {
+          "count": 8305,
+          "sum": 139614.5537109375,
+          "min": 0.015380859375,
+          "p50": 14.590087890625,
+          "p90": 25.080126953125003,
+          "p99": 33.90904296874998,
+          "max": 69.68701171875,
+          "interval_union_ms": 139614.5537109375,
+          "missing_or_invalid_requests": 0
+        },
+        "chat_conversion_including_template_tokenization": {
+          "count": 8305,
+          "sum": 279957.421875,
+          "min": 16.843994140625,
+          "p50": 34.180419921875,
+          "p90": 41.362548828125,
+          "p99": 46.75938476562497,
+          "max": 76.904541015625,
+          "interval_union_ms": 279957.421875,
+          "missing_or_invalid_requests": 0
+        },
+        "post_conversion_to_tokenized": {
+          "count": 8305,
+          "sum": 3805.013671875,
+          "min": 0.241943359375,
+          "p50": 0.4462890625,
+          "p90": 0.51220703125,
+          "p99": 1.170810546874998,
+          "max": 3.9443359375,
+          "interval_union_ms": 3805.013671875,
+          "missing_or_invalid_requests": 0
+        },
+        "tokenized_to_dispatch": {
+          "count": 8305,
+          "sum": 37.002685546875,
+          "min": 0.0029296875,
+          "p50": 0.00439453125,
+          "p90": 0.0048828125,
+          "p99": 0.005859375,
+          "max": 0.015869140625,
+          "interval_union_ms": 37.002685546875,
+          "missing_or_invalid_requests": 0
+        },
+        "dispatch_to_scheduler": {
+          "count": 8305,
+          "sum": 157777.837890625,
+          "min": 0.390869140625,
+          "p50": 12.607421875,
+          "p90": 43.08491210937501,
+          "p99": 98.97419921874979,
+          "max": 898.634033203125,
+          "interval_union_ms": 154312.68725585938,
+          "missing_or_invalid_requests": 0
+        },
+        "scheduler_to_queue_registration": {
+          "count": 8305,
+          "sum": 968.5185546875,
+          "min": 0.03662109375,
+          "p50": 0.093505859375,
+          "p90": 0.1396484375,
+          "p99": 0.2275292968749998,
+          "max": 104.342529296875,
+          "interval_union_ms": 968.5185546875,
+          "missing_or_invalid_requests": 0
+        },
+        "receipt_to_queue_registration": {
+          "count": 8305,
+          "sum": 582160.3483886719,
+          "min": 32.3134765625,
+          "p50": 65.02294921875,
+          "p90": 94.531787109375,
+          "p99": 150.24914062499982,
+          "max": 960.338623046875,
+          "interval_union_ms": 561957.5627441406,
+          "missing_or_invalid_requests": 0
+        }
+      },
+      "prompt_tokens": {
+        "count": 8305,
+        "sum": 110412592,
+        "min": 8196,
+        "p50": 13719,
+        "p90": 15922.6,
+        "p99": 16330.0,
+        "max": 16383
+      },
+      "effective_cache_hit_tokens": {
+        "count": 8305,
+        "sum": 99282424,
+        "min": 0,
+        "p50": 12864,
+        "p90": 15424.0,
+        "p99": 16128.0,
+        "max": 16267
+      },
+      "uncached_prompt_tokens": {
+        "count": 8305,
+        "sum": 11130168,
+        "min": 3,
+        "p50": 461,
+        "p90": 2774.2000000000007,
+        "p99": 12906.799999999996,
+        "max": 16354
+      },
+      "hybrid_prefix": {
+        "observed_requests": 8305,
+        "cache_status_counts": {
+          "observed": 8305
+        },
+        "positive_full_match_gap_requests": 3663,
+        "positive_gap_with_branching_target_requests": 616,
+        "positive_gap_tokens": {
+          "count": 3663,
+          "sum": 1719827,
+          "min": 1,
+          "p50": 40,
+          "p90": 1379.0,
+          "p99": 8326.380000000001,
+          "max": 8366
+        },
+        "gap_fraction_of_observed_uncached_tokens": 0.15451941066837446,
+        "branching_target_gap_tokens": {
+          "count": 616,
+          "sum": 1618872,
+          "min": 3,
+          "p50": 1787.0,
+          "p90": 5546.0,
+          "p99": 8365.0,
+          "max": 8366
+        },
+        "gap_at_least_threshold": {
+          "64": {
+            "requests": 476,
+            "tokens": 1613292
+          },
+          "512": {
+            "requests": 409,
+            "tokens": 1598266
+          },
+          "4096": {
+            "requests": 211,
+            "tokens": 1252470
+          }
+        }
+      }
+    },
+    "ge_32768": {
+      "requests": 1681,
+      "stages_ms": {
+        "receipt_to_conversion_start": {
+          "count": 1681,
+          "sum": 29047.6806640625,
+          "min": 10.94970703125,
+          "p50": 14.692138671875,
+          "p90": 27.2099609375,
+          "p99": 33.447265625,
+          "max": 39.04833984375,
+          "interval_union_ms": 29047.6806640625,
+          "missing_or_invalid_requests": 0
+        },
+        "chat_conversion_including_template_tokenization": {
+          "count": 1681,
+          "sum": 137968.0751953125,
+          "min": 54.921630859375,
+          "p50": 82.956298828125,
+          "p90": 89.120849609375,
+          "p99": 95.640185546875,
+          "max": 123.58154296875,
+          "interval_union_ms": 137968.0751953125,
+          "missing_or_invalid_requests": 0
+        },
+        "post_conversion_to_tokenized": {
+          "count": 1681,
+          "sum": 1624.705810546875,
+          "min": 0.6904296875,
+          "p50": 0.95068359375,
+          "p90": 1.06591796875,
+          "p99": 1.2445800781250003,
+          "max": 1.631591796875,
+          "interval_union_ms": 1624.705810546875,
+          "missing_or_invalid_requests": 0
+        },
+        "tokenized_to_dispatch": {
+          "count": 1681,
+          "sum": 8.4931640625,
+          "min": 0.00341796875,
+          "p50": 0.0048828125,
+          "p90": 0.005859375,
+          "p99": 0.0068359375,
+          "max": 0.010498046875,
+          "interval_union_ms": 8.4931640625,
+          "missing_or_invalid_requests": 0
+        },
+        "dispatch_to_scheduler": {
+          "count": 1681,
+          "sum": 28940.55712890625,
+          "min": 0.574951171875,
+          "p50": 11.150146484375,
+          "p90": 36.322509765625,
+          "p99": 101.098486328125,
+          "max": 662.867431640625,
+          "interval_union_ms": 28940.55712890625,
+          "missing_or_invalid_requests": 0
+        },
+        "scheduler_to_queue_registration": {
+          "count": 1681,
+          "sum": 177.136474609375,
+          "min": 0.046630859375,
+          "p50": 0.0966796875,
+          "p90": 0.125732421875,
+          "p99": 0.20556640625,
+          "max": 1.0009765625,
+          "interval_union_ms": 177.136474609375,
+          "missing_or_invalid_requests": 0
+        },
+        "receipt_to_queue_registration": {
+          "count": 1681,
+          "sum": 197766.6484375,
+          "min": 74.287353515625,
+          "p50": 112.93115234375,
+          "p90": 137.820556640625,
+          "p99": 204.59711914062504,
+          "max": 751.454833984375,
+          "interval_union_ms": 197297.08862304688,
+          "missing_or_invalid_requests": 0
+        }
+      },
+      "prompt_tokens": {
+        "count": 1681,
+        "sum": 59095733,
+        "min": 32768,
+        "p50": 34320,
+        "p90": 38383.0,
+        "p99": 44747.8,
+        "max": 50029
+      },
+      "effective_cache_hit_tokens": {
+        "count": 1681,
+        "sum": 58006719,
+        "min": 23936,
+        "p50": 33792,
+        "p90": 37568.0,
+        "p99": 44044.8,
+        "max": 48640
+      },
+      "uncached_prompt_tokens": {
+        "count": 1681,
+        "sum": 1089014,
+        "min": 3,
+        "p50": 504,
+        "p90": 1303.0,
+        "p99": 2579.0000000000005,
+        "max": 15889
+      },
+      "hybrid_prefix": {
+        "observed_requests": 1681,
+        "cache_status_counts": {
+          "observed": 1681
+        },
+        "positive_full_match_gap_requests": 875,
+        "positive_gap_with_branching_target_requests": 92,
+        "positive_gap_tokens": {
+          "count": 875,
+          "sum": 34552,
+          "min": 1,
+          "p50": 33,
+          "p90": 57.0,
+          "p99": 143.63999999999942,
+          "max": 1599
+        },
+        "gap_fraction_of_observed_uncached_tokens": 0.031727783113899365,
+        "branching_target_gap_tokens": {
+          "count": 92,
+          "sum": 9354,
+          "min": 8,
+          "p50": 48.0,
+          "p90": 120.50000000000037,
+          "p99": 900.1200000000026,
+          "max": 1599
+        },
+        "gap_at_least_threshold": {
+          "64": {
+            "requests": 10,
+            "tokens": 5942
+          },
+          "512": {
+            "requests": 4,
+            "tokens": 3964
+          },
+          "4096": {
+            "requests": 0,
+            "tokens": 0
+          }
+        }
+      }
+    },
+    "lt_8192": {
+      "requests": 1888,
+      "stages_ms": {
+        "receipt_to_conversion_start": {
+          "count": 1888,
+          "sum": 30818.57177734375,
+          "min": 10.980712890625,
+          "p50": 14.392822265625,
+          "p90": 23.092626953125,
+          "p99": 33.621687011718734,
+          "max": 52.781494140625,
+          "interval_union_ms": 30818.57177734375,
+          "missing_or_invalid_requests": 0
+        },
+        "chat_conversion_including_template_tokenization": {
+          "count": 1888,
+          "sum": 30642.21728515625,
+          "min": 10.779296875,
+          "p50": 15.4444580078125,
+          "p90": 20.003076171875,
+          "p99": 22.932392578124997,
+          "max": 34.353759765625,
+          "interval_union_ms": 30642.21728515625,
+          "missing_or_invalid_requests": 0
+        },
+        "post_conversion_to_tokenized": {
+          "count": 1888,
+          "sum": 593.053955078125,
+          "min": 0.193359375,
+          "p50": 0.2606201171875,
+          "p90": 0.305908203125,
+          "p99": 1.0503979492187496,
+          "max": 27.69482421875,
+          "interval_union_ms": 593.053955078125,
+          "missing_or_invalid_requests": 0
+        },
+        "tokenized_to_dispatch": {
+          "count": 1888,
+          "sum": 8.3583984375,
+          "min": 0.0029296875,
+          "p50": 0.00439453125,
+          "p90": 0.0048828125,
+          "p99": 0.00634765625,
+          "max": 0.011962890625,
+          "interval_union_ms": 8.3583984375,
+          "missing_or_invalid_requests": 0
+        },
+        "dispatch_to_scheduler": {
+          "count": 1888,
+          "sum": 37405.528564453125,
+          "min": 0.41748046875,
+          "p50": 14.2989501953125,
+          "p90": 43.9246337890625,
+          "p99": 96.16489990234348,
+          "max": 430.548583984375,
+          "interval_union_ms": 36551.4677734375,
+          "missing_or_invalid_requests": 0
+        },
+        "scheduler_to_queue_registration": {
+          "count": 1888,
+          "sum": 184.73095703125,
+          "min": 0.035888671875,
+          "p50": 0.09033203125,
+          "p90": 0.12548828125,
+          "p99": 0.20436523437499954,
+          "max": 0.31201171875,
+          "interval_union_ms": 184.73095703125,
+          "missing_or_invalid_requests": 0
+        },
+        "receipt_to_queue_registration": {
+          "count": 1888,
+          "sum": 99652.4609375,
+          "min": 24.6435546875,
+          "p50": 47.713134765625,
+          "p90": 75.80180664062499,
+          "p99": 125.4905639648436,
+          "max": 458.078369140625,
+          "interval_union_ms": 95940.31005859375,
+          "missing_or_invalid_requests": 0
+        }
+      },
+      "prompt_tokens": {
+        "count": 1888,
+        "sum": 12026223,
+        "min": 5471,
+        "p50": 6018.5,
+        "p90": 7672.6,
+        "p99": 8145.0,
+        "max": 8189
+      },
+      "effective_cache_hit_tokens": {
+        "count": 1888,
+        "sum": 10579423,
+        "min": 0,
+        "p50": 5696.0,
+        "p90": 7104.0,
+        "p99": 7936.0,
+        "max": 8064
+      },
+      "uncached_prompt_tokens": {
+        "count": 1888,
+        "sum": 1446800,
+        "min": 9,
+        "p50": 262.5,
+        "p90": 1825.6,
+        "p99": 5545.0,
+        "max": 5612
+      },
+      "hybrid_prefix": {
+        "observed_requests": 1888,
+        "cache_status_counts": {
+          "observed": 1888
+        },
+        "positive_full_match_gap_requests": 926,
+        "positive_gap_with_branching_target_requests": 323,
+        "positive_gap_tokens": {
+          "count": 926,
+          "sum": 733216,
+          "min": 1,
+          "p50": 47.0,
+          "p90": 2042.0,
+          "p99": 5496.0,
+          "max": 5524
+        },
+        "gap_fraction_of_observed_uncached_tokens": 0.5067846281448715,
+        "branching_target_gap_tokens": {
+          "count": 323,
+          "sum": 714942,
+          "min": 19,
+          "p50": 1711,
+          "p90": 5487.8,
+          "p99": 5518.0,
+          "max": 5524
+        },
+        "gap_at_least_threshold": {
+          "64": {
+            "requests": 315,
+            "tokens": 714611
+          },
+          "512": {
+            "requests": 311,
+            "tokens": 713038
+          },
+          "4096": {
+            "requests": 52,
+            "tokens": 281826
+          }
+        }
+      }
+    }
+  },
+  "by_observed_context_position": {
+    "first": {
+      "requests": 1140,
+      "stages_ms": {
+        "receipt_to_conversion_start": {
+          "count": 1140,
+          "sum": 8792.830810546875,
+          "min": 0.0078125,
+          "p50": 0.0244140625,
+          "p90": 17.377783203125006,
+          "p99": 32.82693359374996,
+          "max": 37.109619140625,
+          "interval_union_ms": 8792.830810546875,
+          "missing_or_invalid_requests": 0
+        },
+        "chat_conversion_including_template_tokenization": {
+          "count": 1140,
+          "sum": 40717.413818359375,
+          "min": 10.779296875,
+          "p50": 44.46240234375,
+          "p90": 56.98950195312501,
+          "p99": 72.26000488281248,
+          "max": 88.415283203125,
+          "interval_union_ms": 40717.413818359375,
+          "missing_or_invalid_requests": 0
+        },
+        "post_conversion_to_tokenized": {
+          "count": 1140,
+          "sum": 556.579345703125,
+          "min": 0.193359375,
+          "p50": 0.5794677734375,
+          "p90": 0.7041259765625001,
+          "p99": 1.0309521484374806,
+          "max": 1.4375,
+          "interval_union_ms": 556.579345703125,
+          "missing_or_invalid_requests": 0
+        },
+        "tokenized_to_dispatch": {
+          "count": 1140,
+          "sum": 5.209228515625,
+          "min": 0.003173828125,
+          "p50": 0.00439453125,
+          "p90": 0.005126953125,
+          "p99": 0.0068359375,
+          "max": 0.01416015625,
+          "interval_union_ms": 5.209228515625,
+          "missing_or_invalid_requests": 0
+        },
+        "dispatch_to_scheduler": {
+          "count": 1140,
+          "sum": 25131.905029296875,
+          "min": 0.498291015625,
+          "p50": 13.216796875,
+          "p90": 47.316601562500026,
+          "p99": 99.01439453124972,
+          "max": 898.634033203125,
+          "interval_union_ms": 24591.109130859375,
+          "missing_or_invalid_requests": 0
+        },
+        "scheduler_to_queue_registration": {
+          "count": 1140,
+          "sum": 238.999755859375,
+          "min": 0.036865234375,
+          "p50": 0.100341796875,
+          "p90": 0.18605957031250003,
+          "p99": 0.35305175781249976,
+          "max": 104.342529296875,
+          "interval_union_ms": 238.999755859375,
+          "missing_or_invalid_requests": 0
+        },
+        "receipt_to_queue_registration": {
+          "count": 1140,
+          "sum": 75442.93798828125,
+          "min": 28.363525390625,
+          "p50": 60.6358642578125,
+          "p90": 89.68830566406261,
+          "p99": 150.6052294921873,
+          "max": 960.338623046875,
+          "interval_union_ms": 73122.76953125,
+          "missing_or_invalid_requests": 0
+        }
+      },
+      "prompt_tokens": {
+        "count": 1140,
+        "sum": 17216515,
+        "min": 5471,
+        "p50": 19379.0,
+        "p90": 24071.800000000003,
+        "p99": 29285.29999999999,
+        "max": 32738
+      },
+      "effective_cache_hit_tokens": {
+        "count": 1140,
+        "sum": 2232442,
+        "min": 0,
+        "p50": 192.0,
+        "p90": 5440.0,
+        "p99": 8295.039999999994,
+        "max": 8320
+      },
+      "uncached_prompt_tokens": {
+        "count": 1140,
+        "sum": 14984073,
+        "min": 31,
+        "p50": 19187.0,
+        "p90": 23905.2,
+        "p99": 29093.29999999999,
+        "max": 32546
+      },
+      "hybrid_prefix": {
+        "observed_requests": 1140,
+        "cache_status_counts": {
+          "observed": 1140
+        },
+        "positive_full_match_gap_requests": 1136,
+        "positive_gap_with_branching_target_requests": 501,
+        "positive_gap_tokens": {
+          "count": 1136,
+          "sum": 1151735,
+          "min": 1,
+          "p50": 43.0,
+          "p90": 2717.5,
+          "p99": 8349.65,
+          "max": 8351
+        },
+        "gap_fraction_of_observed_uncached_tokens": 0.07686394747275992,
+        "branching_target_gap_tokens": {
+          "count": 501,
+          "sum": 1136572,
+          "min": 90,
+          "p50": 1550,
+          "p90": 5488.0,
+          "p99": 8350.0,
+          "max": 8351
+        },
+        "gap_at_least_threshold": {
+          "64": {
+            "requests": 501,
+            "tokens": 1136572
+          },
+          "512": {
+            "requests": 403,
+            "tokens": 1115293
+          },
+          "4096": {
+            "requests": 108,
+            "tokens": 625997
+          }
+        }
+      }
+    },
+    "continuation": {
+      "requests": 35646,
+      "stages_ms": {
+        "receipt_to_conversion_start": {
+          "count": 35646,
+          "sum": 613203.5939941406,
+          "min": 0.015380859375,
+          "p50": 14.6339111328125,
+          "p90": 27.0704345703125,
+          "p99": 34.403503417968764,
+          "max": 69.68701171875,
+          "interval_union_ms": 613203.5939941406,
+          "missing_or_invalid_requests": 0
+        },
+        "chat_conversion_including_template_tokenization": {
+          "count": 35646,
+          "sum": 1877415.6599121094,
+          "min": 11.8583984375,
+          "p50": 52.3138427734375,
+          "p90": 76.8590087890625,
+          "p99": 88.24821777343752,
+          "max": 131.0400390625,
+          "interval_union_ms": 1877415.6599121094,
+          "missing_or_invalid_requests": 0
+        },
+        "post_conversion_to_tokenized": {
+          "count": 35646,
+          "sum": 22828.64111328125,
+          "min": 0.198486328125,
+          "p50": 0.632568359375,
+          "p90": 0.876220703125,
+          "p99": 1.09326171875,
+          "max": 27.69482421875,
+          "interval_union_ms": 22828.64111328125,
+          "missing_or_invalid_requests": 0
+        },
+        "tokenized_to_dispatch": {
+          "count": 35646,
+          "sum": 167.304443359375,
+          "min": 0.0029296875,
+          "p50": 0.004638671875,
+          "p90": 0.00537109375,
+          "p99": 0.006591796875,
+          "max": 0.069091796875,
+          "interval_union_ms": 167.304443359375,
+          "missing_or_invalid_requests": 0
+        },
+        "dispatch_to_scheduler": {
+          "count": 35646,
+          "sum": 639017.0534667969,
+          "min": 0.390869140625,
+          "p50": 11.755859375,
+          "p90": 40.3687744140625,
+          "p99": 101.89321289062562,
+          "max": 867.415771484375,
+          "interval_union_ms": 609043.3937988281,
+          "missing_or_invalid_requests": 0
+        },
+        "scheduler_to_queue_registration": {
+          "count": 35646,
+          "sum": 3693.50390625,
+          "min": 0.035888671875,
+          "p50": 0.095947265625,
+          "p90": 0.12548828125,
+          "p99": 0.21337890625,
+          "max": 1.389404296875,
+          "interval_union_ms": 3693.50390625,
+          "missing_or_invalid_requests": 0
+        },
+        "receipt_to_queue_registration": {
+          "count": 35646,
+          "sum": 3156325.7568359375,
+          "min": 24.6435546875,
+          "p50": 85.64501953125,
+          "p90": 119.45263671875,
+          "p99": 179.7882324218752,
+          "max": 941.88720703125,
+          "interval_union_ms": 2860646.307373047,
+          "missing_or_invalid_requests": 0
+        }
+      },
+      "prompt_tokens": {
+        "count": 35646,
+        "sum": 758548868,
+        "min": 5549,
+        "p50": 21188.5,
+        "p90": 30870.5,
+        "p99": 36180.55,
+        "max": 50029
+      },
+      "effective_cache_hit_tokens": {
+        "count": 35646,
+        "sum": 731839825,
+        "min": 0,
+        "p50": 20656.0,
+        "p90": 30336.0,
+        "p99": 35520.0,
+        "max": 48640
+      },
+      "uncached_prompt_tokens": {
+        "count": 35646,
+        "sum": 26709043,
+        "min": 3,
+        "p50": 394.0,
+        "p90": 1461.5,
+        "p99": 8286.550000000061,
+        "max": 30872
+      },
+      "hybrid_prefix": {
+        "observed_requests": 35646,
+        "cache_status_counts": {
+          "observed": 35646
+        },
+        "positive_full_match_gap_requests": 16142,
+        "positive_gap_with_branching_target_requests": 1253,
+        "positive_gap_tokens": {
+          "count": 16142,
+          "sum": 1935192,
+          "min": 1,
+          "p50": 35.0,
+          "p90": 59.0,
+          "p99": 4231.0,
+          "max": 8366
+        },
+        "gap_fraction_of_observed_uncached_tokens": 0.07245456155055799,
+        "branching_target_gap_tokens": {
+          "count": 1253,
+          "sum": 1443173,
+          "min": 3,
+          "p50": 56,
+          "p90": 5476.8,
+          "p99": 8363.48,
+          "max": 8366
+        },
+        "gap_at_least_threshold": {
+          "64": {
+            "requests": 443,
+            "tokens": 1408926
+          },
+          "512": {
+            "requests": 371,
+            "tokens": 1389966
+          },
+          "4096": {
+            "requests": 180,
+            "tokens": 1062729
+          }
+        }
+      }
+    }
+  },
+  "ignored_event_counts": {
+    "llm_result": 36786
+  },
+  "slowest_conversion_requests": [
+    {
+      "request_id": "beliefkv:01a145f5-e707-7270-a752-2346a566b16d",
+      "workflow_id": "deepagents:autonomous:django__django-12304:865eeb51370f",
+      "invocation_id": "deepagents-invocation:bd6f0d007ee49403",
+      "context_id": "deepagents-context:bd6f0d007ee49403",
+      "context_epoch": 46,
+      "prompt_tokens": 30314,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175105817.9314,
+          1792175105832.1975
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175105832.1975,
+          1792175105963.2375
+        ],
+        "post_conversion_to_tokenized": [
+          1792175105963.2375,
+          1792175105964.097
+        ],
+        "tokenized_to_dispatch": [
+          1792175105964.097,
+          1792175105964.1038
+        ],
+        "dispatch_to_scheduler": [
+          1792175105964.1038,
+          1792175105994.9163
+        ],
+        "scheduler_to_queue_registration": [
+          1792175105994.9163,
+          1792175105995.025
+        ],
+        "receipt_to_queue_registration": [
+          1792175105817.9314,
+          1792175105995.025
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 29696,
+      "uncached_prompt_tokens": 618,
+      "full_kv_hit_length": 29696,
+      "matched_full_beyond_effective_prefix_tokens": 0,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145ef-8fef-79c3-9509-43993f4181fb",
+      "workflow_id": "deepagents:autonomous:django__django-11551:52c5bdc33eae",
+      "invocation_id": "deepagents-invocation:48e9d161c8bb74b1",
+      "context_id": "deepagents-context:48e9d161c8bb74b1",
+      "context_epoch": 61,
+      "prompt_tokens": 31741,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792174690347.0408,
+          1792174690361.606
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792174690361.606,
+          1792174690492.5012
+        ],
+        "post_conversion_to_tokenized": [
+          1792174690492.5012,
+          1792174690493.3855
+        ],
+        "tokenized_to_dispatch": [
+          1792174690493.3855,
+          1792174690493.392
+        ],
+        "dispatch_to_scheduler": [
+          1792174690493.392,
+          1792174690499.3677
+        ],
+        "scheduler_to_queue_registration": [
+          1792174690499.3677,
+          1792174690499.4832
+        ],
+        "receipt_to_queue_registration": [
+          1792174690347.0408,
+          1792174690499.4832
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 31232,
+      "uncached_prompt_tokens": 509,
+      "full_kv_hit_length": 31232,
+      "matched_full_beyond_effective_prefix_tokens": 0,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a14611-7797-7422-94dd-5fb97af5a7b8",
+      "workflow_id": "deepagents:autonomous:django__django-13028:064992a5aaa4",
+      "invocation_id": "deepagents:autonomous:django__django-13028:064992a5aaa4:root",
+      "context_id": "deepagents:autonomous:django__django-13028:064992a5aaa4:context:root",
+      "context_epoch": 41,
+      "prompt_tokens": 30953,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792176912312.5754,
+          1792176912336.512
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792176912336.512,
+          1792176912465.5786
+        ],
+        "post_conversion_to_tokenized": [
+          1792176912465.5786,
+          1792176912467.2288
+        ],
+        "tokenized_to_dispatch": [
+          1792176912467.2288,
+          1792176912467.236
+        ],
+        "dispatch_to_scheduler": [
+          1792176912467.236,
+          1792176912470.2095
+        ],
+        "scheduler_to_queue_registration": [
+          1792176912470.2095,
+          1792176912470.3115
+        ],
+        "receipt_to_queue_registration": [
+          1792176912312.5754,
+          1792176912470.3115
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 30464,
+      "uncached_prompt_tokens": 489,
+      "full_kv_hit_length": 30517,
+      "matched_full_beyond_effective_prefix_tokens": 53,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145df-8156-7c01-977e-edf99245bd2a",
+      "workflow_id": "deepagents:autonomous:django__django-10880:daee8fcbdad8",
+      "invocation_id": "deepagents-invocation:43f9271dbb26e339",
+      "context_id": "deepagents-context:43f9271dbb26e339",
+      "context_epoch": 50,
+      "prompt_tokens": 31796,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792173638107.9197,
+          1792173638122.0493
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792173638122.0493,
+          1792173638250.873
+        ],
+        "post_conversion_to_tokenized": [
+          1792173638250.873,
+          1792173638252.5735
+        ],
+        "tokenized_to_dispatch": [
+          1792173638252.5735,
+          1792173638252.5806
+        ],
+        "dispatch_to_scheduler": [
+          1792173638252.5806,
+          1792173638303.018
+        ],
+        "scheduler_to_queue_registration": [
+          1792173638303.018,
+          1792173638303.1338
+        ],
+        "receipt_to_queue_registration": [
+          1792173638107.9197,
+          1792173638303.1338
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 31488,
+      "uncached_prompt_tokens": 308,
+      "full_kv_hit_length": 31488,
+      "matched_full_beyond_effective_prefix_tokens": 0,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a14620-f9b4-7891-a52c-e5330f4833b3",
+      "workflow_id": "deepagents:autonomous:django__django-11964:daf0fc6ea71f",
+      "invocation_id": "deepagents:autonomous:django__django-11964:daf0fc6ea71f:root",
+      "context_id": "deepagents:autonomous:django__django-11964:daf0fc6ea71f:context:root",
+      "context_epoch": 222,
+      "prompt_tokens": 31294,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792177928660.1416,
+          1792177928684.2434
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792177928684.2434,
+          1792177928812.5723
+        ],
+        "post_conversion_to_tokenized": [
+          1792177928812.5723,
+          1792177928814.1875
+        ],
+        "tokenized_to_dispatch": [
+          1792177928814.1875,
+          1792177928814.1948
+        ],
+        "dispatch_to_scheduler": [
+          1792177928814.1948,
+          1792177928824.3633
+        ],
+        "scheduler_to_queue_registration": [
+          1792177928824.3633,
+          1792177928824.4578
+        ],
+        "receipt_to_queue_registration": [
+          1792177928660.1416,
+          1792177928824.4578
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 31104,
+      "uncached_prompt_tokens": 190,
+      "full_kv_hit_length": 31104,
+      "matched_full_beyond_effective_prefix_tokens": 0,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145f2-240a-7ef3-a574-a6929c7384df",
+      "workflow_id": "deepagents:autonomous:django__django-11999:812296fd3984",
+      "invocation_id": "deepagents-invocation:b7451617ce14b0c8",
+      "context_id": "deepagents-context:b7451617ce14b0c8",
+      "context_epoch": 52,
+      "prompt_tokens": 30626,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792174859340.23,
+          1792174859357.0134
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792174859357.0134,
+          1792174859485.0874
+        ],
+        "post_conversion_to_tokenized": [
+          1792174859485.0874,
+          1792174859485.9758
+        ],
+        "tokenized_to_dispatch": [
+          1792174859485.9758,
+          1792174859485.981
+        ],
+        "dispatch_to_scheduler": [
+          1792174859485.981,
+          1792174859488.198
+        ],
+        "scheduler_to_queue_registration": [
+          1792174859488.198,
+          1792174859488.2952
+        ],
+        "receipt_to_queue_registration": [
+          1792174859340.23,
+          1792174859488.2952
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 29632,
+      "uncached_prompt_tokens": 994,
+      "full_kv_hit_length": 29677,
+      "matched_full_beyond_effective_prefix_tokens": 45,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145f6-6120-7bd0-ab86-cd1a26c8b0e6",
+      "workflow_id": "deepagents:autonomous:django__django-11964:daf0fc6ea71f",
+      "invocation_id": "deepagents-invocation:83888716a72a14f0",
+      "context_id": "deepagents-context:83888716a72a14f0",
+      "context_epoch": 87,
+      "prompt_tokens": 32356,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175137195.3655,
+          1792175137209.5203
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175137209.5203,
+          1792175137336.9983
+        ],
+        "post_conversion_to_tokenized": [
+          1792175137336.9983,
+          1792175137337.979
+        ],
+        "tokenized_to_dispatch": [
+          1792175137337.979,
+          1792175137337.9866
+        ],
+        "dispatch_to_scheduler": [
+          1792175137337.9866,
+          1792175137361.1301
+        ],
+        "scheduler_to_queue_registration": [
+          1792175137361.1301,
+          1792175137361.254
+        ],
+        "receipt_to_queue_registration": [
+          1792175137195.3655,
+          1792175137361.254
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 32256,
+      "uncached_prompt_tokens": 100,
+      "full_kv_hit_length": 32256,
+      "matched_full_beyond_effective_prefix_tokens": 0,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a1460b-6403-7112-a3c5-12e2a3475c06",
+      "workflow_id": "deepagents:autonomous:django__django-11740:6d6039407d07",
+      "invocation_id": "deepagents-invocation:61aad9705fc4aab6",
+      "context_id": "deepagents-context:61aad9705fc4aab6",
+      "context_epoch": 281,
+      "prompt_tokens": 29638,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792176514071.4773,
+          1792176514101.5083
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792176514101.5083,
+          1792176514227.7637
+        ],
+        "post_conversion_to_tokenized": [
+          1792176514227.7637,
+          1792176514228.6108
+        ],
+        "tokenized_to_dispatch": [
+          1792176514228.6108,
+          1792176514228.6155
+        ],
+        "dispatch_to_scheduler": [
+          1792176514228.6155,
+          1792176514232.4966
+        ],
+        "scheduler_to_queue_registration": [
+          1792176514232.4966,
+          1792176514232.592
+        ],
+        "receipt_to_queue_registration": [
+          1792176514071.4773,
+          1792176514232.592
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 29440,
+      "uncached_prompt_tokens": 198,
+      "full_kv_hit_length": 29440,
+      "matched_full_beyond_effective_prefix_tokens": 0,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145f5-c3eb-7061-a8d7-c1f8eafcc600",
+      "workflow_id": "deepagents:autonomous:django__django-12304:865eeb51370f",
+      "invocation_id": "deepagents-invocation:bd6f0d007ee49403",
+      "context_id": "deepagents-context:bd6f0d007ee49403",
+      "context_epoch": 45,
+      "prompt_tokens": 29724,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175096831.1672,
+          1792175096845.718
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175096845.718,
+          1792175096971.4177
+        ],
+        "post_conversion_to_tokenized": [
+          1792175096971.4177,
+          1792175096972.3203
+        ],
+        "tokenized_to_dispatch": [
+          1792175096972.3203,
+          1792175096972.327
+        ],
+        "dispatch_to_scheduler": [
+          1792175096972.327,
+          1792175097004.7
+        ],
+        "scheduler_to_queue_registration": [
+          1792175097004.7,
+          1792175097004.8323
+        ],
+        "receipt_to_queue_registration": [
+          1792175096831.1672,
+          1792175097004.8323
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 29440,
+      "uncached_prompt_tokens": 284,
+      "full_kv_hit_length": 29479,
+      "matched_full_beyond_effective_prefix_tokens": 39,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145ed-c311-7512-8487-c6f0aed2a531",
+      "workflow_id": "deepagents:autonomous:django__django-11551:52c5bdc33eae",
+      "invocation_id": "deepagents-invocation:48e9d161c8bb74b1",
+      "context_id": "deepagents-context:48e9d161c8bb74b1",
+      "context_epoch": 50,
+      "prompt_tokens": 29317,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792174572327.4727,
+          1792174572345.8982
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792174572345.8982,
+          1792174572470.8782
+        ],
+        "post_conversion_to_tokenized": [
+          1792174572470.8782,
+          1792174572471.778
+        ],
+        "tokenized_to_dispatch": [
+          1792174572471.778,
+          1792174572471.7844
+        ],
+        "dispatch_to_scheduler": [
+          1792174572471.7844,
+          1792174572484.6702
+        ],
+        "scheduler_to_queue_registration": [
+          1792174572484.6702,
+          1792174572484.7842
+        ],
+        "receipt_to_queue_registration": [
+          1792174572327.4727,
+          1792174572484.7842
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 29120,
+      "uncached_prompt_tokens": 197,
+      "full_kv_hit_length": 29121,
+      "matched_full_beyond_effective_prefix_tokens": 1,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145f0-55dd-7890-ac65-5f47f1f21ac5",
+      "workflow_id": "deepagents:autonomous:django__django-12273:5311eee9c9de",
+      "invocation_id": "deepagents-invocation:6be0150cc52ba99a",
+      "context_id": "deepagents-context:6be0150cc52ba99a",
+      "context_epoch": 34,
+      "prompt_tokens": 32124,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792174741009.3445,
+          1792174741023.8901
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792174741023.8901,
+          1792174741148.4404
+        ],
+        "post_conversion_to_tokenized": [
+          1792174741148.4404,
+          1792174741149.3164
+        ],
+        "tokenized_to_dispatch": [
+          1792174741149.3164,
+          1792174741149.3223
+        ],
+        "dispatch_to_scheduler": [
+          1792174741149.3223,
+          1792174741168.4338
+        ],
+        "scheduler_to_queue_registration": [
+          1792174741168.4338,
+          1792174741168.5557
+        ],
+        "receipt_to_queue_registration": [
+          1792174741009.3445,
+          1792174741168.5557
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 31872,
+      "uncached_prompt_tokens": 252,
+      "full_kv_hit_length": 31910,
+      "matched_full_beyond_effective_prefix_tokens": 38,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145fb-c0c4-7392-a458-c3bab508de40",
+      "workflow_id": "deepagents:autonomous:django__django-12125:84373e079e97",
+      "invocation_id": "deepagents-invocation:4081a1eb92eb8000",
+      "context_id": "deepagents-context:4081a1eb92eb8000",
+      "context_epoch": 131,
+      "prompt_tokens": 28957,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175489259.2388,
+          1792175489276.962
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175489276.962,
+          1792175489400.7896
+        ],
+        "post_conversion_to_tokenized": [
+          1792175489400.7896,
+          1792175489401.6013
+        ],
+        "tokenized_to_dispatch": [
+          1792175489401.6013,
+          1792175489401.6072
+        ],
+        "dispatch_to_scheduler": [
+          1792175489401.6072,
+          1792175489417.0303
+        ],
+        "scheduler_to_queue_registration": [
+          1792175489417.0303,
+          1792175489417.169
+        ],
+        "receipt_to_queue_registration": [
+          1792175489259.2388,
+          1792175489417.169
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 28800,
+      "uncached_prompt_tokens": 157,
+      "full_kv_hit_length": 28800,
+      "matched_full_beyond_effective_prefix_tokens": 0,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145fc-ae7d-7f81-91db-a80fe73a4ec0",
+      "workflow_id": "deepagents:autonomous:django__django-12406:2b7aa22bcb7f",
+      "invocation_id": "deepagents:autonomous:django__django-12406:2b7aa22bcb7f:root",
+      "context_id": "deepagents:autonomous:django__django-12406:2b7aa22bcb7f:context:root",
+      "context_epoch": 43,
+      "prompt_tokens": 36513,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175550124.773,
+          1792175550155.0537
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175550155.0537,
+          1792175550278.6353
+        ],
+        "post_conversion_to_tokenized": [
+          1792175550278.6353,
+          1792175550279.6208
+        ],
+        "tokenized_to_dispatch": [
+          1792175550279.6208,
+          1792175550279.627
+        ],
+        "dispatch_to_scheduler": [
+          1792175550279.627,
+          1792175550306.5674
+        ],
+        "scheduler_to_queue_registration": [
+          1792175550306.5674,
+          1792175550306.6787
+        ],
+        "receipt_to_queue_registration": [
+          1792175550124.773,
+          1792175550306.6787
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 35586,
+      "uncached_prompt_tokens": 927,
+      "full_kv_hit_length": 36417,
+      "matched_full_beyond_effective_prefix_tokens": 831,
+      "mamba_branching_seqlen": 36416,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145eb-2e4a-7103-8ecf-bbc973c40b0f",
+      "workflow_id": "deepagents:autonomous:django__django-12754:bf286e722ba0",
+      "invocation_id": "deepagents-invocation:6b01c4274731fbdc",
+      "context_id": "deepagents-context:6b01c4274731fbdc",
+      "context_epoch": 173,
+      "prompt_tokens": 30781,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792174403228.2664,
+          1792174403242.839
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792174403242.839,
+          1792174403365.4697
+        ],
+        "post_conversion_to_tokenized": [
+          1792174403365.4697,
+          1792174403366.3762
+        ],
+        "tokenized_to_dispatch": [
+          1792174403366.3762,
+          1792174403366.3826
+        ],
+        "dispatch_to_scheduler": [
+          1792174403366.3826,
+          1792174403388.5525
+        ],
+        "scheduler_to_queue_registration": [
+          1792174403388.5525,
+          1792174403388.805
+        ],
+        "receipt_to_queue_registration": [
+          1792174403228.2664,
+          1792174403388.805
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 30528,
+      "uncached_prompt_tokens": 253,
+      "full_kv_hit_length": 30528,
+      "matched_full_beyond_effective_prefix_tokens": 0,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145f5-2810-7c41-ac10-fe824a76cfe5",
+      "workflow_id": "deepagents:autonomous:django__django-11885:7027eb4dbc71",
+      "invocation_id": "deepagents:autonomous:django__django-11885:7027eb4dbc71:root",
+      "context_id": "deepagents:autonomous:django__django-11885:7027eb4dbc71:context:root",
+      "context_epoch": 43,
+      "prompt_tokens": 33461,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175056973.6821,
+          1792175056988.4492
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175056988.4492,
+          1792175057110.9634
+        ],
+        "post_conversion_to_tokenized": [
+          1792175057110.9634,
+          1792175057111.8828
+        ],
+        "tokenized_to_dispatch": [
+          1792175057111.8828,
+          1792175057111.8882
+        ],
+        "dispatch_to_scheduler": [
+          1792175057111.8882,
+          1792175057124.4543
+        ],
+        "scheduler_to_queue_registration": [
+          1792175057124.4543,
+          1792175057124.5552
+        ],
+        "receipt_to_queue_registration": [
+          1792175056973.6821,
+          1792175057124.5552
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 32773,
+      "uncached_prompt_tokens": 688,
+      "full_kv_hit_length": 32810,
+      "matched_full_beyond_effective_prefix_tokens": 37,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145e1-b4f2-7262-87a7-cf8d39258679",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-4094:9d3922aafdb9",
+      "invocation_id": "deepagents-invocation:8d6f6364882eb377",
+      "context_id": "deepagents-context:8d6f6364882eb377",
+      "context_epoch": 48,
+      "prompt_tokens": 34881,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792173782305.5415,
+          1792173782329.5222
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792173782329.5222,
+          1792173782451.8867
+        ],
+        "post_conversion_to_tokenized": [
+          1792173782451.8867,
+          1792173782452.84
+        ],
+        "tokenized_to_dispatch": [
+          1792173782452.84,
+          1792173782452.8457
+        ],
+        "dispatch_to_scheduler": [
+          1792173782452.8457,
+          1792173782454.253
+        ],
+        "scheduler_to_queue_registration": [
+          1792173782454.253,
+          1792173782454.3538
+        ],
+        "receipt_to_queue_registration": [
+          1792173782305.5415,
+          1792173782454.3538
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 34368,
+      "uncached_prompt_tokens": 513,
+      "full_kv_hit_length": 34368,
+      "matched_full_beyond_effective_prefix_tokens": 0,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145fa-8a84-7890-906f-bb25115aa1eb",
+      "workflow_id": "deepagents:autonomous:django__django-12325:c9cad6221839",
+      "invocation_id": "deepagents-invocation:e235a4172ea3bbf2",
+      "context_id": "deepagents-context:e235a4172ea3bbf2",
+      "context_epoch": 98,
+      "prompt_tokens": 29487,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175409833.6184,
+          1792175409853.6006
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175409853.6006,
+          1792175409975.5515
+        ],
+        "post_conversion_to_tokenized": [
+          1792175409975.5515,
+          1792175409976.4272
+        ],
+        "tokenized_to_dispatch": [
+          1792175409976.4272,
+          1792175409976.4321
+        ],
+        "dispatch_to_scheduler": [
+          1792175409976.4321,
+          1792175410056.956
+        ],
+        "scheduler_to_queue_registration": [
+          1792175410056.956,
+          1792175410057.0972
+        ],
+        "receipt_to_queue_registration": [
+          1792175409833.6184,
+          1792175410057.0972
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 29283,
+      "uncached_prompt_tokens": 204,
+      "full_kv_hit_length": 29283,
+      "matched_full_beyond_effective_prefix_tokens": 0,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145d0-caea-7992-80c7-b9c75d3d751e",
+      "workflow_id": "deepagents:autonomous:pydata__xarray-6599:7ae66091b513",
+      "invocation_id": "deepagents-invocation:ccab8d9dea4ada08",
+      "context_id": "deepagents-context:ccab8d9dea4ada08",
+      "context_epoch": 69,
+      "prompt_tokens": 34306,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792172673834.9348,
+          1792172673854.6602
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792172673854.6602,
+          1792172673975.1482
+        ],
+        "post_conversion_to_tokenized": [
+          1792172673975.1482,
+          1792172673976.764
+        ],
+        "tokenized_to_dispatch": [
+          1792172673976.764,
+          1792172673976.77
+        ],
+        "dispatch_to_scheduler": [
+          1792172673976.77,
+          1792172673993.701
+        ],
+        "scheduler_to_queue_registration": [
+          1792172673993.701,
+          1792172673993.8027
+        ],
+        "receipt_to_queue_registration": [
+          1792172673834.9348,
+          1792172673993.8027
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 33864,
+      "uncached_prompt_tokens": 442,
+      "full_kv_hit_length": 33886,
+      "matched_full_beyond_effective_prefix_tokens": 22,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145f1-29c9-7b50-a979-bdabd5693c87",
+      "workflow_id": "deepagents:autonomous:django__django-12050:05e0406bedd8",
+      "invocation_id": "deepagents-invocation:645a7469756e3f28",
+      "context_id": "deepagents-context:645a7469756e3f28",
+      "context_epoch": 46,
+      "prompt_tokens": 29874,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792174795454.0889,
+          1792174795468.6155
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792174795468.6155,
+          1792174795588.1409
+        ],
+        "post_conversion_to_tokenized": [
+          1792174795588.1409,
+          1792174795588.9595
+        ],
+        "tokenized_to_dispatch": [
+          1792174795588.9595,
+          1792174795588.9648
+        ],
+        "dispatch_to_scheduler": [
+          1792174795588.9648,
+          1792174795598.2483
+        ],
+        "scheduler_to_queue_registration": [
+          1792174795598.2483,
+          1792174795598.3425
+        ],
+        "receipt_to_queue_registration": [
+          1792174795454.0889,
+          1792174795598.3425
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 29760,
+      "uncached_prompt_tokens": 114,
+      "full_kv_hit_length": 29760,
+      "matched_full_beyond_effective_prefix_tokens": 0,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145fc-d2b4-7693-990e-f399cb721549",
+      "workflow_id": "deepagents:autonomous:django__django-13121:314452113f0b",
+      "invocation_id": "deepagents-invocation:f78c299117d39d6f",
+      "context_id": "deepagents-context:f78c299117d39d6f",
+      "context_epoch": 103,
+      "prompt_tokens": 32283,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175559391.7166,
+          1792175559410.0361
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175559410.0361,
+          1792175559529.4087
+        ],
+        "post_conversion_to_tokenized": [
+          1792175559529.4087,
+          1792175559530.3005
+        ],
+        "tokenized_to_dispatch": [
+          1792175559530.3005,
+          1792175559530.3066
+        ],
+        "dispatch_to_scheduler": [
+          1792175559530.3066,
+          1792175559534.6562
+        ],
+        "scheduler_to_queue_registration": [
+          1792175559534.6562,
+          1792175559534.7676
+        ],
+        "receipt_to_queue_registration": [
+          1792175559391.7166,
+          1792175559534.7676
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 31040,
+      "uncached_prompt_tokens": 1243,
+      "full_kv_hit_length": 31040,
+      "matched_full_beyond_effective_prefix_tokens": 0,
+      "mamba_branching_seqlen": null,
+      "mamba_host_hit_slots": 0
+    }
+  ],
+  "largest_full_match_gap_requests": [
+    {
+      "request_id": "beliefkv:01a1460a-af3c-7453-b495-b2125e543f37",
+      "workflow_id": "deepagents:autonomous:django__django-11885:7027eb4dbc71",
+      "invocation_id": "deepagents:autonomous:django__django-11885:7027eb4dbc71:root",
+      "context_id": "deepagents:autonomous:django__django-11885:7027eb4dbc71:context:root",
+      "context_epoch": 174,
+      "prompt_tokens": 16108,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792176467780.2551,
+          1792176467796.417
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792176467796.417,
+          1792176467837.5498
+        ],
+        "post_conversion_to_tokenized": [
+          1792176467837.5498,
+          1792176467838.0554
+        ],
+        "tokenized_to_dispatch": [
+          1792176467838.0554,
+          1792176467838.0596
+        ],
+        "dispatch_to_scheduler": [
+          1792176467838.0596,
+          1792176467841.5886
+        ],
+        "scheduler_to_queue_registration": [
+          1792176467841.5886,
+          1792176467841.6968
+        ],
+        "receipt_to_queue_registration": [
+          1792176467780.2551,
+          1792176467841.6968
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 16108,
+      "full_kv_hit_length": 8366,
+      "matched_full_beyond_effective_prefix_tokens": 8366,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145f6-45bf-7db2-bcaa-af13608eeabd",
+      "workflow_id": "deepagents:autonomous:django__django-11141:93106db8a8ab",
+      "invocation_id": "deepagents:autonomous:django__django-11141:93106db8a8ab:root",
+      "context_id": "deepagents:autonomous:django__django-11141:93106db8a8ab:context:root",
+      "context_epoch": 91,
+      "prompt_tokens": 14150,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175130073.8418,
+          1792175130089.487
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175130089.487,
+          1792175130126.435
+        ],
+        "post_conversion_to_tokenized": [
+          1792175130126.435,
+          1792175130126.9087
+        ],
+        "tokenized_to_dispatch": [
+          1792175130126.9087,
+          1792175130126.9138
+        ],
+        "dispatch_to_scheduler": [
+          1792175130126.9138,
+          1792175130145.3538
+        ],
+        "scheduler_to_queue_registration": [
+          1792175130145.3538,
+          1792175130145.48
+        ],
+        "receipt_to_queue_registration": [
+          1792175130073.8418,
+          1792175130145.48
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 14150,
+      "full_kv_hit_length": 8365,
+      "matched_full_beyond_effective_prefix_tokens": 8365,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145fb-f400-7b52-9ffa-032c849ef52d",
+      "workflow_id": "deepagents:autonomous:django__django-12663:9770e7c66b76",
+      "invocation_id": "deepagents:autonomous:django__django-12663:9770e7c66b76:root",
+      "context_id": "deepagents:autonomous:django__django-12663:9770e7c66b76:context:root",
+      "context_epoch": 35,
+      "prompt_tokens": 16930,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175502524.4885,
+          1792175502540.1682
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175502540.1682,
+          1792175502580.2356
+        ],
+        "post_conversion_to_tokenized": [
+          1792175502580.2356,
+          1792175502580.756
+        ],
+        "tokenized_to_dispatch": [
+          1792175502580.756,
+          1792175502580.7605
+        ],
+        "dispatch_to_scheduler": [
+          1792175502580.7605,
+          1792175502598.2834
+        ],
+        "scheduler_to_queue_registration": [
+          1792175502598.2834,
+          1792175502598.3826
+        ],
+        "receipt_to_queue_registration": [
+          1792175502524.4885,
+          1792175502598.3826
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 16930,
+      "full_kv_hit_length": 8365,
+      "matched_full_beyond_effective_prefix_tokens": 8365,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145fc-a3b8-7fd1-a07b-c7a3dbaf24d3",
+      "workflow_id": "deepagents:autonomous:django__django-11490:787e449e49a3",
+      "invocation_id": "deepagents:autonomous:django__django-11490:787e449e49a3:root",
+      "context_id": "deepagents:autonomous:django__django-11490:787e449e49a3:context:root",
+      "context_epoch": 66,
+      "prompt_tokens": 14954,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175547351.53,
+          1792175547374.358
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175547374.358,
+          1792175547412.7693
+        ],
+        "post_conversion_to_tokenized": [
+          1792175547412.7693,
+          1792175547413.7336
+        ],
+        "tokenized_to_dispatch": [
+          1792175547413.7336,
+          1792175547413.7385
+        ],
+        "dispatch_to_scheduler": [
+          1792175547413.7385,
+          1792175547431.1575
+        ],
+        "scheduler_to_queue_registration": [
+          1792175547431.1575,
+          1792175547431.2551
+        ],
+        "receipt_to_queue_registration": [
+          1792175547351.53,
+          1792175547431.2551
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 14954,
+      "full_kv_hit_length": 8365,
+      "matched_full_beyond_effective_prefix_tokens": 8365,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145ff-dcf7-76e3-9485-a741db69e0f8",
+      "workflow_id": "deepagents:autonomous:django__django-11141:93106db8a8ab",
+      "invocation_id": "deepagents:autonomous:django__django-11141:93106db8a8ab:root",
+      "context_id": "deepagents:autonomous:django__django-11141:93106db8a8ab:context:root",
+      "context_epoch": 138,
+      "prompt_tokens": 15865,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175758715.0586,
+          1792175758730.1082
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175758730.1082,
+          1792175758770.09
+        ],
+        "post_conversion_to_tokenized": [
+          1792175758770.09,
+          1792175758770.6035
+        ],
+        "tokenized_to_dispatch": [
+          1792175758770.6035,
+          1792175758770.608
+        ],
+        "dispatch_to_scheduler": [
+          1792175758770.608,
+          1792175758786.8303
+        ],
+        "scheduler_to_queue_registration": [
+          1792175758786.8303,
+          1792175758786.919
+        ],
+        "receipt_to_queue_registration": [
+          1792175758715.0586,
+          1792175758786.919
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 15865,
+      "full_kv_hit_length": 8365,
+      "matched_full_beyond_effective_prefix_tokens": 8365,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a14600-a06f-79a1-af32-edd11c7807a1",
+      "workflow_id": "deepagents:autonomous:django__django-11333:48f4b5412f44",
+      "invocation_id": "deepagents:autonomous:django__django-11333:48f4b5412f44:root",
+      "context_id": "deepagents:autonomous:django__django-11333:48f4b5412f44:context:root",
+      "context_epoch": 59,
+      "prompt_tokens": 15357,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175809079.7188,
+          1792175809094.3435
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175809094.3435,
+          1792175809134.7708
+        ],
+        "post_conversion_to_tokenized": [
+          1792175809134.7708,
+          1792175809135.2534
+        ],
+        "tokenized_to_dispatch": [
+          1792175809135.2534,
+          1792175809135.258
+        ],
+        "dispatch_to_scheduler": [
+          1792175809135.258,
+          1792175809138.854
+        ],
+        "scheduler_to_queue_registration": [
+          1792175809138.854,
+          1792175809138.9626
+        ],
+        "receipt_to_queue_registration": [
+          1792175809079.7188,
+          1792175809138.9626
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 15357,
+      "full_kv_hit_length": 8365,
+      "matched_full_beyond_effective_prefix_tokens": 8365,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a14601-766c-7a60-ac7d-ee9a3f247518",
+      "workflow_id": "deepagents:autonomous:django__django-11292:be64dc14b282",
+      "invocation_id": "deepagents:autonomous:django__django-11292:be64dc14b282:root",
+      "context_id": "deepagents:autonomous:django__django-11292:be64dc14b282:context:root",
+      "context_epoch": 57,
+      "prompt_tokens": 15477,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175863430.7102,
+          1792175863448.8677
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175863448.8677,
+          1792175863490.013
+        ],
+        "post_conversion_to_tokenized": [
+          1792175863490.013,
+          1792175863490.563
+        ],
+        "tokenized_to_dispatch": [
+          1792175863490.563,
+          1792175863490.567
+        ],
+        "dispatch_to_scheduler": [
+          1792175863490.567,
+          1792175863539.7288
+        ],
+        "scheduler_to_queue_registration": [
+          1792175863539.7288,
+          1792175863539.8254
+        ],
+        "receipt_to_queue_registration": [
+          1792175863430.7102,
+          1792175863539.8254
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 15477,
+      "full_kv_hit_length": 8365,
+      "matched_full_beyond_effective_prefix_tokens": 8365,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a14602-5cac-7df0-b006-e21dc5676415",
+      "workflow_id": "deepagents:autonomous:django__django-12308:77c933fbdcc8",
+      "invocation_id": "deepagents:autonomous:django__django-12308:77c933fbdcc8:root",
+      "context_id": "deepagents:autonomous:django__django-12308:77c933fbdcc8:context:root",
+      "context_epoch": 59,
+      "prompt_tokens": 15119,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175922396.918,
+          1792175922417.8096
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175922417.8096,
+          1792175922456.9724
+        ],
+        "post_conversion_to_tokenized": [
+          1792175922456.9724,
+          1792175922457.4563
+        ],
+        "tokenized_to_dispatch": [
+          1792175922457.4563,
+          1792175922457.4604
+        ],
+        "dispatch_to_scheduler": [
+          1792175922457.4604,
+          1792175922482.1946
+        ],
+        "scheduler_to_queue_registration": [
+          1792175922482.1946,
+          1792175922482.2874
+        ],
+        "receipt_to_queue_registration": [
+          1792175922396.918,
+          1792175922482.2874
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 15119,
+      "full_kv_hit_length": 8365,
+      "matched_full_beyond_effective_prefix_tokens": 8365,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a1460e-877f-7902-aaf2-17d4ac369277",
+      "workflow_id": "deepagents:autonomous:django__django-11141:93106db8a8ab",
+      "invocation_id": "deepagents:autonomous:django__django-11141:93106db8a8ab:root",
+      "context_id": "deepagents:autonomous:django__django-11141:93106db8a8ab:context:root",
+      "context_epoch": 209,
+      "prompt_tokens": 14422,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792176719898.1213,
+          1792176719912.6516
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792176719912.6516,
+          1792176719951.133
+        ],
+        "post_conversion_to_tokenized": [
+          1792176719951.133,
+          1792176719951.6033
+        ],
+        "tokenized_to_dispatch": [
+          1792176719951.6033,
+          1792176719951.607
+        ],
+        "dispatch_to_scheduler": [
+          1792176719951.607,
+          1792176719959.8406
+        ],
+        "scheduler_to_queue_registration": [
+          1792176719959.8406,
+          1792176719959.9287
+        ],
+        "receipt_to_queue_registration": [
+          1792176719898.1213,
+          1792176719959.9287
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 14422,
+      "full_kv_hit_length": 8365,
+      "matched_full_beyond_effective_prefix_tokens": 8365,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145f2-48ef-7c31-bfc7-5a6c13e7f9a3",
+      "workflow_id": "deepagents:autonomous:django__django-11490:787e449e49a3",
+      "invocation_id": "deepagents:autonomous:django__django-11490:787e449e49a3:root",
+      "context_id": "deepagents:autonomous:django__django-11490:787e449e49a3:context:root",
+      "context_epoch": 39,
+      "prompt_tokens": 15191,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792174868859.8445,
+          1792174868874.6907
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792174868874.6907,
+          1792174868927.4543
+        ],
+        "post_conversion_to_tokenized": [
+          1792174868927.4543,
+          1792174868928.3694
+        ],
+        "tokenized_to_dispatch": [
+          1792174868928.3694,
+          1792174868928.3772
+        ],
+        "dispatch_to_scheduler": [
+          1792174868928.3772,
+          1792174868941.764
+        ],
+        "scheduler_to_queue_registration": [
+          1792174868941.764,
+          1792174868941.866
+        ],
+        "receipt_to_queue_registration": [
+          1792174868859.8445,
+          1792174868941.866
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 15191,
+      "full_kv_hit_length": 8364,
+      "matched_full_beyond_effective_prefix_tokens": 8364,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145f3-f3e6-75b3-b60f-bae4088d1338",
+      "workflow_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef",
+      "invocation_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef:root",
+      "context_id": "deepagents:autonomous:django__django-11138:3234f8cb87ef:context:root",
+      "context_epoch": 25,
+      "prompt_tokens": 16129,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792174978037.9138,
+          1792174978049.4949
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792174978049.4949,
+          1792174978082.4
+        ],
+        "post_conversion_to_tokenized": [
+          1792174978082.4,
+          1792174978082.8628
+        ],
+        "tokenized_to_dispatch": [
+          1792174978082.8628,
+          1792174978082.867
+        ],
+        "dispatch_to_scheduler": [
+          1792174978082.867,
+          1792174978084.9084
+        ],
+        "scheduler_to_queue_registration": [
+          1792174978084.9084,
+          1792174978085.021
+        ],
+        "receipt_to_queue_registration": [
+          1792174978037.9138,
+          1792174978085.021
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 16129,
+      "full_kv_hit_length": 8364,
+      "matched_full_beyond_effective_prefix_tokens": 8364,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a14604-fb37-7e11-ad74-fa8a318df31f",
+      "workflow_id": "deepagents:autonomous:django__django-11734:08aaffab09f0",
+      "invocation_id": "deepagents:autonomous:django__django-11734:08aaffab09f0:root",
+      "context_id": "deepagents:autonomous:django__django-11734:08aaffab09f0:context:root",
+      "context_epoch": 151,
+      "prompt_tokens": 15833,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792176094025.991,
+          1792176094040.5981
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792176094040.5981,
+          1792176094081.6233
+        ],
+        "post_conversion_to_tokenized": [
+          1792176094081.6233,
+          1792176094082.1357
+        ],
+        "tokenized_to_dispatch": [
+          1792176094082.1357,
+          1792176094082.1404
+        ],
+        "dispatch_to_scheduler": [
+          1792176094082.1404,
+          1792176094097.3032
+        ],
+        "scheduler_to_queue_registration": [
+          1792176094097.3032,
+          1792176094097.4153
+        ],
+        "receipt_to_queue_registration": [
+          1792176094025.991,
+          1792176094097.4153
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 15833,
+      "full_kv_hit_length": 8364,
+      "matched_full_beyond_effective_prefix_tokens": 8364,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a14607-b33a-7080-9f40-e85c70b728ee",
+      "workflow_id": "deepagents:autonomous:django__django-11292:be64dc14b282",
+      "invocation_id": "deepagents:autonomous:django__django-11292:be64dc14b282:root",
+      "context_id": "deepagents:autonomous:django__django-11292:be64dc14b282:context:root",
+      "context_epoch": 125,
+      "prompt_tokens": 16100,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792176272223.466,
+          1792176272251.22
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792176272251.22,
+          1792176272294.19
+        ],
+        "post_conversion_to_tokenized": [
+          1792176272294.19,
+          1792176272294.7158
+        ],
+        "tokenized_to_dispatch": [
+          1792176272294.7158,
+          1792176272294.7205
+        ],
+        "dispatch_to_scheduler": [
+          1792176272294.7205,
+          1792176272299.086
+        ],
+        "scheduler_to_queue_registration": [
+          1792176272299.086,
+          1792176272299.186
+        ],
+        "receipt_to_queue_registration": [
+          1792176272223.466,
+          1792176272299.186
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 16100,
+      "full_kv_hit_length": 8364,
+      "matched_full_beyond_effective_prefix_tokens": 8364,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145d8-b8d1-7281-9cfc-1504c2e8ca6f",
+      "workflow_id": "deepagents:autonomous:django__django-11400:9a33693a5b5e",
+      "invocation_id": "deepagents:autonomous:django__django-11400:9a33693a5b5e:root",
+      "context_id": "deepagents:autonomous:django__django-11400:9a33693a5b5e:context:root",
+      "context_epoch": 90,
+      "prompt_tokens": 14773,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792173193605.4792,
+          1792173193620.1504
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792173193620.1504,
+          1792173193657.492
+        ],
+        "post_conversion_to_tokenized": [
+          1792173193657.492,
+          1792173193657.9573
+        ],
+        "tokenized_to_dispatch": [
+          1792173193657.9573,
+          1792173193657.962
+        ],
+        "dispatch_to_scheduler": [
+          1792173193657.962,
+          1792173193659.202
+        ],
+        "scheduler_to_queue_registration": [
+          1792173193659.202,
+          1792173193659.2905
+        ],
+        "receipt_to_queue_registration": [
+          1792173193605.4792,
+          1792173193659.2905
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 14773,
+      "full_kv_hit_length": 8363,
+      "matched_full_beyond_effective_prefix_tokens": 8363,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145f5-156f-7ca0-b7ec-c7c8af8d9bbd",
+      "workflow_id": "deepagents:autonomous:django__django-11433:8d519930d2f1",
+      "invocation_id": "deepagents:autonomous:django__django-11433:8d519930d2f1:root",
+      "context_id": "deepagents:autonomous:django__django-11433:8d519930d2f1:context:root",
+      "context_epoch": 49,
+      "prompt_tokens": 15767,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175053122.6704,
+          1792175053137.0288
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175053137.0288,
+          1792175053176.419
+        ],
+        "post_conversion_to_tokenized": [
+          1792175053176.419,
+          1792175053177.186
+        ],
+        "tokenized_to_dispatch": [
+          1792175053177.186,
+          1792175053177.1907
+        ],
+        "dispatch_to_scheduler": [
+          1792175053177.1907,
+          1792175053244.676
+        ],
+        "scheduler_to_queue_registration": [
+          1792175053244.676,
+          1792175053244.7253
+        ],
+        "receipt_to_queue_registration": [
+          1792175053122.6704,
+          1792175053244.7253
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 15767,
+      "full_kv_hit_length": 8363,
+      "matched_full_beyond_effective_prefix_tokens": 8363,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145fa-0334-7c82-8822-61add233c34f",
+      "workflow_id": "deepagents:autonomous:django__django-11451:d2772fe47b46",
+      "invocation_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:root",
+      "context_id": "deepagents:autonomous:django__django-11451:d2772fe47b46:context:root",
+      "context_epoch": 30,
+      "prompt_tokens": 15034,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792175375183.558,
+          1792175375198.2324
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792175375198.2324,
+          1792175375237.4402
+        ],
+        "post_conversion_to_tokenized": [
+          1792175375237.4402,
+          1792175375237.9216
+        ],
+        "tokenized_to_dispatch": [
+          1792175375237.9216,
+          1792175375237.9263
+        ],
+        "dispatch_to_scheduler": [
+          1792175375237.9263,
+          1792175375254.1365
+        ],
+        "scheduler_to_queue_registration": [
+          1792175375254.1365,
+          1792175375254.3232
+        ],
+        "receipt_to_queue_registration": [
+          1792175375183.558,
+          1792175375254.3232
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 15034,
+      "full_kv_hit_length": 8363,
+      "matched_full_beyond_effective_prefix_tokens": 8363,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145e2-3526-7073-93bb-12757f4f2e03",
+      "workflow_id": "deepagents:autonomous:django__django-11149:763c4aad1784",
+      "invocation_id": "deepagents:autonomous:django__django-11149:763c4aad1784:root",
+      "context_id": "deepagents:autonomous:django__django-11149:763c4aad1784:context:root",
+      "context_epoch": 0,
+      "prompt_tokens": 8743,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792173815173.779,
+          1792173815188.5432
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792173815188.5432,
+          1792173815210.0305
+        ],
+        "post_conversion_to_tokenized": [
+          1792173815210.0305,
+          1792173815210.346
+        ],
+        "tokenized_to_dispatch": [
+          1792173815210.346,
+          1792173815210.3499
+        ],
+        "dispatch_to_scheduler": [
+          1792173815210.3499,
+          1792173815274.2617
+        ],
+        "scheduler_to_queue_registration": [
+          1792173815274.2617,
+          1792173815274.4524
+        ],
+        "receipt_to_queue_registration": [
+          1792173815173.779,
+          1792173815274.4524
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 8743,
+      "full_kv_hit_length": 8351,
+      "matched_full_beyond_effective_prefix_tokens": 8351,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145e5-5146-7721-b950-61006c4926cc",
+      "workflow_id": "deepagents:autonomous:django__django-11555:5d22d789d37b",
+      "invocation_id": "deepagents:autonomous:django__django-11555:5d22d789d37b:root",
+      "context_id": "deepagents:autonomous:django__django-11555:5d22d789d37b:context:root",
+      "context_epoch": 0,
+      "prompt_tokens": 8717,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792174018899.3245,
+          1792174018913.95
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792174018913.95,
+          1792174018936.384
+        ],
+        "post_conversion_to_tokenized": [
+          1792174018936.384,
+          1792174018936.7078
+        ],
+        "tokenized_to_dispatch": [
+          1792174018936.7078,
+          1792174018936.7124
+        ],
+        "dispatch_to_scheduler": [
+          1792174018936.7124,
+          1792174018977.3965
+        ],
+        "scheduler_to_queue_registration": [
+          1792174018977.3965,
+          1792174018977.7402
+        ],
+        "receipt_to_queue_registration": [
+          1792174018899.3245,
+          1792174018977.7402
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 8717,
+      "full_kv_hit_length": 8351,
+      "matched_full_beyond_effective_prefix_tokens": 8351,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145d7-10ac-73a2-88fe-c132d87b2c39",
+      "workflow_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9",
+      "invocation_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:root",
+      "context_id": "deepagents:autonomous:django__django-15315:f2e23844cdc9:context:root",
+      "context_epoch": 0,
+      "prompt_tokens": 8756,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792173084983.3938,
+          1792173084997.8013
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792173084997.8013,
+          1792173085018.24
+        ],
+        "post_conversion_to_tokenized": [
+          1792173085018.24,
+          1792173085018.559
+        ],
+        "tokenized_to_dispatch": [
+          1792173085018.559,
+          1792173085018.5632
+        ],
+        "dispatch_to_scheduler": [
+          1792173085018.5632,
+          1792173085031.6643
+        ],
+        "scheduler_to_queue_registration": [
+          1792173085031.6643,
+          1792173085031.8408
+        ],
+        "receipt_to_queue_registration": [
+          1792173084983.3938,
+          1792173085031.8408
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 8756,
+      "full_kv_hit_length": 8350,
+      "matched_full_beyond_effective_prefix_tokens": 8350,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    },
+    {
+      "request_id": "beliefkv:01a145de-e583-7631-81ee-87bc84fd5ffd",
+      "workflow_id": "deepagents:autonomous:django__django-11095:67d9455d8566",
+      "invocation_id": "deepagents:autonomous:django__django-11095:67d9455d8566:root",
+      "context_id": "deepagents:autonomous:django__django-11095:67d9455d8566:context:root",
+      "context_epoch": 0,
+      "prompt_tokens": 8640,
+      "stage_intervals_ms": {
+        "receipt_to_conversion_start": [
+          1792173598140.9478,
+          1792173598155.5288
+        ],
+        "chat_conversion_including_template_tokenization": [
+          1792173598155.5288,
+          1792173598176.2002
+        ],
+        "post_conversion_to_tokenized": [
+          1792173598176.2002,
+          1792173598176.5342
+        ],
+        "tokenized_to_dispatch": [
+          1792173598176.5342,
+          1792173598176.5386
+        ],
+        "dispatch_to_scheduler": [
+          1792173598176.5386,
+          1792173598194.6926
+        ],
+        "scheduler_to_queue_registration": [
+          1792173598194.6926,
+          1792173598194.87
+        ],
+        "receipt_to_queue_registration": [
+          1792173598140.9478,
+          1792173598194.87
+        ]
+      },
+      "cache_status": "observed",
+      "cache_hit_tokens": 0,
+      "uncached_prompt_tokens": 8640,
+      "full_kv_hit_length": 8350,
+      "matched_full_beyond_effective_prefix_tokens": 8350,
+      "mamba_branching_seqlen": 8320,
+      "mamba_host_hit_slots": 0
+    }
+  ]
+}

@@ -2,6 +2,28 @@
 
 Status date: 2026-10-16 (PDT).
 
+2026-10-16 main integration adds exact generated-prefix compatibility to the
+default-off checkpoint-path diagnostic. Compare the prior actual input plus
+generated output with the next same-scope input, then classify observed
+checkpoint boundaries. Keep residency, physical-copy reuse, forward consumption
+and safe discard separate. Scheduler-side output snapshots are opt-in; comparison
+uses the existing bounded asynchronous history. All203 application CPU cases
+pass; V1352 binds the current source and existing receipts.
+
+Qualify the existing native Mamba path cap as a simple comparator, not a new
+mechanism. V1351 records seven passing CPU cases and explicitly separates the
+HEAD tree from actual patched source53020ce3. The native cap retains FULL and
+Host copies and protects tail/forks/locks, but session_ref alone is not protected.
+Do not assume a small cap preserves the next required input anchor. The initial
+fixture failures remain in V1347; no cap policy or new diagnostic is deployed.
+
+V1346's complete native audit has734072267 effective hits out of775765383 prompt
+tokens. FULL match beyond the hybrid boundary is3086927 tokens,7.404% of uncached
+input; this is candidate work, not removable JCT. The newly archived V1343/V1344
+window covers1200-1800s and the1800s task cohort only, not the live run endpoint.
+Screening4.42-4.44 records these limits. Preserve frozen experiments and grading;
+the systems contribution and quality-matched performance goal remain unachieved.
+
 2026-10-16 V1334 narrows write-admission evidence. Of16642 native Mamba copies
 written in0-6000s,16298 are single-node assignable; only369/23.760GB are prior
 safe anchors superseded by an observed new anchor. Another14888 were not
