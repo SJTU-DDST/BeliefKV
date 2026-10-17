@@ -2,15 +2,31 @@
 
 Status date: 2026-10-16 (PDT).
 
-V81 launched at22:21:51 PDT after complete V79b collection and resource release.
-V1450/V1451 verify actual GPU service, all planned arrivals, matching physical
-pools and NUMA at22:24:43. Frozen app87ce506 and unchanged engine53020ce3 use
-one native10s-Poisson workload,200GB Host and the original device limits.
-Supervisor3592377/start_ticks638458271, driver3595930 and scheduler3596344
-are actually live at nice0. Preserve source, plan and helpers. V1447/V1448
-remain configuration/loader qualifications, not a new policy test suite.
-V1452 is still reserved for complete collection; startup is not workload or
-performance acceptance. V1455 binds source revalidation and live identities.
+Current steering: idea research first, with an OSDI-level systems contribution
+as the selection target. Do not continue GPU experiments or automatically
+restart V81 during this research phase. This does not pause the overall goal.
+V1456 preserves the stop request and exact owned process identities; V1457
+verifies supervisor/client/server/driver/scheduler absent and no GPU compute
+processes at22:30. State is stopped_by_user. Preserve frozen app87ce506,
+engine53020ce3, registration/startup/NUMA and partial traces. No complete
+V81 workload or performance result exists; V1452 must not be fabricated.
+
+Research deliverable precedes implementation: a concrete workload phenomenon,
+the existing abstraction/algorithm that fails on it, a defensible new mechanism,
+strong simple and published baselines, and a CPU/trace falsification plan.
+Require a model-general systems argument, natural task demand and material
+end-to-end headroom. Existing workflow scheduling, graph orchestration, async
+writeback and ordinary GPU overlap cannot be renamed as new contributions.
+Agentix(NSDI26), Murakkab(OSDI26), Parrot(OSDI24) and NanoFlow(OSDI25) are
+newly verified primary baselines, alongside TokenCake/CONCUR/SAGA.
+
+V1458 audits the latest complete V79b using existing CPU-only tooling:
+44.332M actual extend tokens across41046 prefill batches,21.133M(47.669%)
+associated with compaction and its first successor. This is a cost object,
+not an avoidable-work count, GPU-time fraction or speedup estimate.
+Do not reinstate the summary-prompt prototype as paper novelty; prior work and
+the mathematical conditions for state/compute reuse must be checked first.
+Screening4.64 records the research-first scope and initial exclusion matrix.
 
 V1453 adds complete3600-4200s and4200-4800s windows: V79b FULL H2D totals0.894GB
 while D2H totals404.086GB. Queue pressure falls sharply after the earlier
@@ -30,7 +46,8 @@ rate0.1 root/s, retaining the156 distinct tasks, exact task order and seed21.
 The profile is configs/migration/qwen35_native_poisson_156root_mean10s_2026-10-16.json.
 V1446 binds the reference/profile and the generated arrival table; the existing
 client loader verifies all156 identities and its digest. That candidate now
-runs as V81; V79b retained its original15s input through complete collection.
+was partially exercised by stopped V81; V79b retained its original15s input
+through complete collection. The10s stream remains a future workload candidate.
 
 First qualify this offered load with native and the same device/Host budgets,
 running48, context/output limits and task behavior. Measure useful FULL writes
@@ -51,7 +68,7 @@ actual-successor-prefix Host admission/retirement as the research direction;
 do not substitute another Mamba-only policy or restore the withdrawn
 branch-admission/complete-state-budget/parent-child-handoff agenda.
 
-The next research screen is model-general migration blocking and interference:
+A previously proposed screening object is migration blocking and interference:
 can capacity writeback for one agent continuation delay unrelated runnable
 requests, and does substantial exposed cost remain in a correctly configured
 native baseline? First distinguish existing async-DMA engineering from a new
@@ -59,6 +76,8 @@ systems mechanism. CachedAttention already has async saving/write buffering;
 LMCache has async retrieval and allocator-budget backpressure; KVBM has
 event-driven block lifecycles. Simple async conversion is not a contribution.
 Screening4.61 records primary sources, candidate boundaries and falsification.
+This is one unselected phenomenon; current research remains open to other
+model-general systems problems under the stronger requirements in4.64.
 
 V1431-V1441 seal verified-window geometry and selection/transfer association
 through3600s. Positive FULL Host samples show expensive capacity-recovery

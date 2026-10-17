@@ -2,15 +2,17 @@
 
 更新：2026-10-16，已撤下混合状态Host准入候选、取消V80自动启动，
 补齐V79b至3600s的迁移阻塞证据与模型通用方向筛选，并准备10秒Poisson
-到达的独立负载V81已通过真实首服核验，尚未选定新论文贡献。
+到达的独立负载V81在首服后按用户要求停止，已释放GPU。
+当前仅做OSDI目标的研究论证，尚未选定新论文贡献，最新决策见4.64。
 
 ## 1. 本次调整
 
 最新决策覆盖下文历史候选：用户明确否定“根据真实后继token前缀决定混合
 状态Host写入/保留”作为主线。撤下该候选，不继续为Mamba checkpoint设计
-专用控制器。新的研究筛选转向模型通用的迁移阻塞及跨请求干扰，详见4.61；
-不预设一次异步工程修复就有足够新颖性，也不恢复更早撤下的三个机制。
-V80未启动的自动接续已取消，V1442保留证据；V79b已完成，V81继续负载验证。
+专用控制器。4.61的模型通用迁移阻塞及跨请求干扰保留为待证伪现象，
+当前按4.64开放研究筛选；不预设一次异步工程修复就有足够新颖性，
+也不恢复更早撤下的三个机制。
+V80未启动的自动接续已取消，V1442保留证据；V79b已完成，V81已停止。
 
 最新用户约束：重点是 serving/runtime 系统，目标投稿系统领域会议。当前目标是
 在相同 agent 任务和行为下，通过系统执行、物理缓存/状态和请求处理取得收益。
@@ -2368,6 +2370,68 @@ V79b原生JCT资格仅145项，11项guard介入完成，其中3项另缺semantic
 若已有异步强对照覆盖收益，不把共用工程修复升级成论文新贡献。
 研究问题、新颖性、纯Attention泛化和同质量性能目标继续未验收。
 
+### 4.64 研究先于GPU：按OSDI目标重新筛选
+
+用户明确要求先想idea，再占用GPU验证，且研究应朝OSDI创新程度推进。
+V81提前进入负载实验的次序已纠正：V1456封存停止前状态及精确owned进程身份，
+22:29发送终止信号，22:30的V1457确认监督、driver、server、scheduler、client
+均退出，nvidia-smi无计算进程。保留冻结源码、注册、首服及部分trace，
+不自动重启、不另排GPU、不把部分结果当完整负载/性能结论。研究目标继续，
+没有将整体目标置为paused或把旧的三个机制恢复为指定研究主线。
+
+OSDI是选题和论证目标，不是当前候选已达标或保证录用。当前异步写回、恢复
+优先级和到达率调参都只作为工程能力/测量对象；“workflow感知”也不是充分的
+新意。新候选必须具体回答：
+
+1. 一个真实的动态多agent案例发生了什么，哪个原有抽象或机制使它昂贵；
+   不能从一个坏配置、我们的控制开销或人为强制行为推出新问题。
+2. 系统凭借什么新信息/执行语义改变了可实现的设计空间，究竟少做了哪些
+   必要计算以外的工作；不是为已有策略增加几个优先级和常量。
+3. 哪个强简单方案、哪个已发表系统最接近，以及一个它们处理不好的具体
+   反例。文献没有报告当前指标不等于没有能力解决它。
+4. 收益是否来自有规模的成本对象，而非被原生重叠覆盖的少量传输；候选应
+   对纯Attention成立，不以Mamba独有行为或修改任务目标作为前提。
+5. 先用CPU/已有trace验证必要条件和失败条件，再决定是否值得实现、启动
+   GPU。最终仍需同任务、质量、资源、JCT、有效吞吐和公平/长尾的完整证据。
+
+本轮重新核对原始USENIX页面，扩展强基线而非仅比较native：
+
+| 工作与已核对范围 | 对候选创新的约束 |
+| --- | --- |
+| Parrot，OSDI24，Semantic Variable API及数据流依赖 [R24] | 暴露LLM调用之间的依赖不能单列为新执行抽象 |
+| Agentix，NSDI26，程序上下文及LLM调用抢占/优先机制 [R25] | 将workflow作为单位、缩短程序排队不自动构成新贡献 |
+| Murakkab，OSDI26，声明式workflow与跨模型/硬件配置 [R26] | DAG暴露加跨层编排本身已存在；需说明新问题/约束 |
+| NanoFlow，OSDI25，设备内异构操作重叠 [R27] | 普通GPU计算/内存/通信流水化不能仅凭agent负载重命名 |
+
+以上按本次原始摘要所述范围筛选，不据摘要声称这些系统不能处理某种动态
+控制流、状态迁移或失败。具体候选成立前，仍需通读相应机制与artifact。
+原TokenCake、CONCUR、SAGA及CachedAttention等约束继续，不能遗漏新强对照。
+
+**CPU证据更新。** V1458使用现有审计器读取完整V79b，保留实际文件前缀hash：
+
+| 真实工作量 | 完整V79b |
+| --- | ---: |
+| 有已知extend geometry的prefill批次 | 41046 |
+| root + child + summary实际extend token | 44331657 |
+| summary请求extend token | 14785177 |
+| compaction后首个普通请求extend token | 6347474 |
+| 两类compaction关联token合计占比 | 47.669% |
+| root相同已观测epoch、同结果重复工具 | 1539次，84个workflow |
+| 发出这些重复的请求输出token | 316344 |
+
+“compaction后首请求”是root/child中的子集，不重复加进总extend分母。
+47.669%是工作量分布，不是可避免计算、GPU时间比例或JCT上界。后继输入中
+有必要的新内容，Transformer不同上下文下的KV也不能直接视为可复用。
+普通摘要prompt格式修复、增量tokenization或工具缓存都有强已有方法，
+这份数据不恢复旧harness原型为论文机制。先区分可复用计算的真实条件、
+不可避免重算及现有方法覆盖范围，再决定是否形成新的系统问题。
+原直接文件入口缺scripts模块路径，未生成报告；改用python -m成功，
+没有更改GPU服务、模型或原始trace。
+
+当前交付阶段是候选研究论证：每个候选应有具体案例、核心insight、机制草图、
+相关工作差异、收益量级和可证伪条件。目前不宣布新的核心创新成立。
+只有该论证支持后才安排独立实现/实验，不用密集GPU试跑替代idea筛选。
+
 ## 5. 既有候选一：降低上下文摘要和重建的计算量
 
 这是目前最有规模证据的性能对象。当前 `_summary_input` 把历史消息转成 XML，
@@ -2568,3 +2632,15 @@ agent 相关草稿长度控制；其生成吞吐结果不能直接当本项目 J
   本次仅比较反馈准入机制，不沿用跨论文加速比。
   `https://arxiv.org/abs/2601.22705`
   `https://arxiv.org/html/2601.22705v1`
+- [R24] Parrot: Efficient Serving of LLM-based Applications with Semantic
+  Variable，OSDI24；本轮核对原始摘要及API目标，未声称完整复现。
+  `https://www.usenix.org/conference/osdi24/presentation/lin-chaofan`
+- [R25] Agentix: An Efficient Serving Engine for LLM Agents as General Programs，
+  NSDI26；本轮核对USENIX原始摘要，具体候选比较仍需正文/artifact。
+  `https://www.usenix.org/conference/nsdi26/presentation/luo`
+- [R26] Murakkab: Resource-Efficient Agentic Workflow Orchestration in Cloud
+  Platforms，OSDI26；本轮核对USENIX原始摘要，按其跨层编排范围比较。
+  `https://www.usenix.org/conference/osdi26/presentation/chaudhry`
+- [R27] NanoFlow: Towards Optimal Large Language Model Serving Throughput，
+  OSDI25；本轮核对USENIX原始摘要，不将其加速数字用于本项目估算。
+  `https://www.usenix.org/conference/osdi25/presentation/zhu-kan`
